@@ -1,0 +1,314 @@
+import {
+  User, Mail, Phone, MapPin, School, Calendar, Edit, Camera, Eye, EyeOff
+} from "lucide-react";
+import {
+  Card, CardContent, CardHeader, CardTitle
+} from "@/components/ui/card";
+import {
+  Avatar, AvatarFallback, AvatarImage
+} from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger
+} from "@/components/ui/tabs";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
+import { useUser } from "@supabase/auth-helpers-react";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient";
+
+export function Profile() {
+  const { profile, loading } = useUserProfile();
+  const user = useUser();
+  const navigate = useNavigate();
+
+  const [showDialog, setShowDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const handleProfileUpdate = () => {
+    navigate("/settings");
+  };
+
+  const handleAvatarUpdate = () => {
+    toast({
+      title: "Redirect to Settings",
+      description: "Please update your photo in the Settings page.",
+    });
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast({ title: "Weak Password", description: "Password must be at least 6 characters." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Mismatch", description: "Passwords do not match." });
+      return;
+    }
+
+    setPasswordLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordLoading(false);
+
+    if (error) {
+      toast({ title: "Error", description: error.message });
+    } else {
+      toast({ title: "Success", description: "Password updated successfully." });
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowDialog(false);
+    }
+  };
+
+  const getDaysMessage = () => {
+    if (!profile?.joined_date) return "No join date available.";
+    const joinDate = new Date(profile.joined_date);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - joinDate.getTime());
+    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const years = Math.floor(days / 365);
+
+    if (years === 0) {
+      return `You are ${days} day${days !== 1 ? "s" : ""} old on the platform. Keep going strong!`;
+    }
+
+    const nextAnniversary = years + 1;
+    return `You are ${years} year${years > 1 ? "s" : ""} old on the platform. Waiting to celebrate your ${nextAnniversary}${getOrdinalSuffix(nextAnniversary)} anniversary!`;
+  };
+
+  const getOrdinalSuffix = (i: number) => {
+    const j = i % 10,
+      k = i % 100;
+    if (j === 1 && k !== 11) return "st";
+    if (j === 2 && k !== 12) return "nd";
+    if (j === 3 && k !== 13) return "rd";
+    return "th";
+  };
+
+  if (!user) {
+    return <p className="text-center mt-10 text-muted-foreground">Authenticating user...</p>;
+  }
+
+  if (loading || !profile) {
+    return <p className="text-center mt-10 text-muted-foreground">Loading profile...</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <User className="h-6 w-6 text-primary" />
+        <h1 className="text-2xl font-bold">My Profile</h1>
+      </div>
+
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="stats">Statistics</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row items-start gap-6">
+                <div className="relative">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={profile.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                      {profile.name?.split(" ").map((n) => n[0]).join("") || "??"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
+                    onClick={handleAvatarUpdate}
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex-1 space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-bold">{profile.name}</h2>
+                      <p className="text-muted-foreground">@{profile.username}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant="secondary" className="capitalize">
+                        {profile.role}
+                      </Badge>
+                      <Badge variant="outline">
+                        {profile.subscription || "Free"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <p className="text-muted-foreground">{profile.bio}</p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{profile.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{profile.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{profile.county}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <School className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{profile.institution}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          Joined{" "}
+                          {profile.joined_date
+                            ? new Date(profile.joined_date).toLocaleDateString()
+                            : "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button variant="outline" onClick={handleProfileUpdate}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit My Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Academic Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Course</label>
+                  <p className="font-medium">{profile.course}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Block/Class</label>
+                  <p className="font-medium">{profile.block}</p>
+                </div>
+                {profile.nckNumber && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">NCK Number</label>
+                    <p className="font-medium">{profile.nckNumber}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="stats" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Statistics</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 text-center">
+              <p className="text-lg font-medium text-muted-foreground">{getDaysMessage()}</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                Update your account settings and preferences in the Settings page.
+              </p>
+
+              {/* Password Modal */}
+              <Dialog open={showDialog} onOpenChange={setShowDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Change Password</Button>
+                </DialogTrigger>
+
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Change Password</DialogTitle>
+                    <DialogDescription>
+                      Enter and confirm your new password.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4 mt-2">
+                    <div>
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="newPassword"
+                          type={showNewPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Enter new password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-3 flex items-center text-muted-foreground"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm new password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-3 flex items-center text-muted-foreground"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="mt-4">
+                    <Button onClick={handleChangePassword} disabled={passwordLoading}>
+                      {passwordLoading ? "Updating..." : "Update Password"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
