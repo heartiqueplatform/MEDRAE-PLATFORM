@@ -323,7 +323,7 @@ export function Resources() {
       </div>
 
       <Tabs defaultValue="PTS" className="space-y-4">
-      <TabsList className="flex w-full gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
 
           {blockCategories.map((cat) => (
             <TabsTrigger key={cat.id} value={cat.id} className="text-xs">
