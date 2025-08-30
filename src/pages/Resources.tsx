@@ -323,12 +323,17 @@ export function Resources() {
       </div>
 
       <Tabs defaultValue="PTS" className="space-y-4">
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
   {blockCategories.map((cat) => (
     <TabsTrigger
       key={cat.id}
       value={cat.id}
-      className="p-4 rounded-xl border shadow-sm text-sm font-medium bg-white hover:bg-gray-100 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-500 transition"
+      className="px-3 py-2 rounded-lg text-xs font-medium 
+                 bg-gray-100 text-gray-700 
+                 hover:bg-gray-200 
+                 data-[state=active]:bg-blue-600 
+                 data-[state=active]:text-white 
+                 transition-colors"
     >
       {cat.name}
     </TabsTrigger>
