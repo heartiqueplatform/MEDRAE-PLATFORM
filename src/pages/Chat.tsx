@@ -1,4 +1,5 @@
 "use client";
+import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -89,40 +90,72 @@ const filteredProfiles = profiles.filter((profile) =>
 
   // Fetch current user & all profiles
   useEffect(() => {
-    const fetchProfiles = async () => {
-      setLoadingProfiles(true);
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError || !user) {
-        setLoadingProfiles(false);
-        return;
-      }
+  let channel: any;
 
-      setCurrentUserId(user.id);
-
-      await supabase
-        .from("profiles")
-        .update({ last_seen: new Date().toISOString() })
-        .eq("user_id", user.id);
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("user_id, name, phone, avatar_url, last_seen");
-
-      if (error) console.error("Error fetching profiles:", error);
-      else {
-        setProfiles(
-          (data || [])
-            .filter((p) => p.user_id !== user.id)
-            .map((p) => ({ ...p, unread_count: 0 }))
-        );
-      }
+  const fetchProfiles = async () => {
+    setLoadingProfiles(true);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
       setLoadingProfiles(false);
-    };
-    fetchProfiles();
-  }, []);
+      return;
+    }
+
+    setCurrentUserId(user.id);
+
+    await supabase
+      .from("profiles")
+      .update({ last_seen: new Date().toISOString() })
+      .eq("user_id", user.id);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("user_id, name, phone, avatar_url, last_seen");
+
+    if (error) console.error("Error fetching profiles:", error);
+    else {
+      setProfiles(
+        (data || [])
+          .filter((p) => p.user_id !== user.id)
+          .map((p) => ({ ...p, unread_count: 0 }))
+      );
+    }
+    setLoadingProfiles(false);
+
+    // --- REAL-TIME SUBSCRIPTION ---
+    channel = supabase
+      .channel("profiles")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        (payload) => {
+          if (payload.new.user_id === user.id) return; // skip current user
+          setProfiles((prev) => {
+            const exists = prev.find((p) => p.user_id === payload.new.user_id);
+            if (exists) {
+              // Update existing profile
+              return prev.map((p) =>
+                p.user_id === payload.new.user_id ? { ...p, ...payload.new } : p
+              );
+            } else {
+              // Add new profile
+              return [...prev, { ...payload.new, unread_count: 0 }];
+            }
+          });
+        }
+      )
+      .subscribe();
+  };
+
+  fetchProfiles();
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+}, []);
+
 
   // Load chat & subscribe to selected chat
   useEffect(() => {
@@ -562,18 +595,12 @@ const filteredProfiles = profiles.filter((profile) =>
           <TabsContent value="all" className="mt-0">
             <ScrollArea className="h-[300px] px-3">
               <div className="space-y-1">
-                {loadingProfiles ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
-                      <div className="h-10 w-10 rounded-full bg-muted" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 w-2/3 bg-muted rounded" />
-                        <div className="h-3 w-1/2 bg-muted rounded" />
-                      </div>
-                    </div>
-                  ))
-                ) : filteredProfiles.length > 0 ? (
-                  filteredProfiles.map((profile) => (
+               {loadingProfiles ? (
+  <div className="flex items-center justify-center h-60">
+    <GlobalLoader />
+  </div>
+) : filteredProfiles.length > 0 ? (
+  filteredProfiles.map((profile) => (
                     <div
                       key={profile.user_id}
                       className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 ${
@@ -633,22 +660,27 @@ const filteredProfiles = profiles.filter((profile) =>
             </CardContent>
           </>
       ) : (
- <div className="flex flex-col items-center justify-end flex-1 text-center gap-4 bg-gradient-to-br from-red-400 to-blue-500 text-white">
+<div className="flex flex-col items-center justify-end flex-1 text-center gap-4 bg-gradient-to-br from-red-400 to-blue-500 text-white">
 
+  {/* Instruction text above the icon */}
   <p className="text-2xl font-extrabold">
     Click the chat icon below to choose someone
   </p>
 
-  {/* Floating chat icon moved just above the text */}
-  <div className="mt-4">
+  {/* Floating chat icon with DropdownMenu */}
+  <div className="relative mt-4">
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          size="icon"
-          className="rounded-full shadow-lg bg-primary text-white hover:bg-primary/90"
-        >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
+        <div className="flex flex-col items-center">
+          <span className="mb-2 text-lg font-semibold">Chat</span> {/* Text above */}
+          <Button
+            className="rounded-full bg-primary text-white shadow-2xl 
+                       p-6 hover:bg-primary/90 transition-all duration-300"
+          >
+            <MessageCircle className="h-12 w-12" />
+          </Button>
+        </div>
+
       </DropdownMenuTrigger>
       <DropdownMenuContent
          side="top"          // 👈 open from the right side
