@@ -358,7 +358,8 @@ useEffect(() => {
                  border border-amber-200 dark:border-amber-700 
                  rounded-b-lg shadow px-4 py-3 
                  text-sm leading-relaxed 
-                 text-amber-900 dark:text-amber-100"
+                 text-amber-900 dark:text-amber-100
+                 max-h-[60vh] sm:max-h-[50vh] overflow-y-auto"
     >
       Welcome to your <b>academic & professional support group</b>  
       <br /><br />
@@ -366,18 +367,18 @@ useEffect(() => {
       to keep conversations <b>focused, respectful, and meaningful</b>.  
       Only text messages are allowed <b>no pictures or documents</b>.
       <br /><br />
-       Here’s what this space is for:
+      Here’s what this space is for:
       <ul className="list-disc list-inside mt-2 space-y-1">
-        <li> Sharing short academic updates, quick study tips, and helpful reminders</li>
-        <li> Asking brief questions or requesting clarification from peers</li>
-        <li> Offering useful suggestions, encouragement, or professional insights</li>
-        <li> Learning about opportunities internships, workshops, or events</li>
+        <li>Sharing short academic updates, quick study tips, and helpful reminders</li>
+        <li>Asking brief questions or requesting clarification from peers</li>
+        <li>Offering useful suggestions, encouragement, or professional insights</li>
+        <li>Learning about opportunities, internships, workshops, or events</li>
         <li>Building supportive friendships and networks within the profession</li>
       </ul>
       <br />
       Please keep messages <b>short, kind, and relevant</b>.  
       Together, we’re creating a <b>safe, supportive, and inspiring community </b> 
-       to grow in knowledge, career, and friendship 
+      to grow in knowledge, career, and friendship 
     </div>
   )}
 </div>

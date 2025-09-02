@@ -431,7 +431,7 @@ const filteredProfiles = profiles.filter((profile) =>
                 </DropdownMenu>
               </div>
             </CardHeader>
- <div className="m-3">
+<div className="m-3">
   <div
     className="flex items-center justify-between 
                bg-amber-200 dark:bg-amber-700 
@@ -449,7 +449,8 @@ const filteredProfiles = profiles.filter((profile) =>
                  border border-amber-200 dark:border-amber-700 
                  rounded-b-lg shadow px-4 py-3 
                  text-sm leading-relaxed 
-                 text-amber-900 dark:text-amber-100"
+                 text-amber-900 dark:text-amber-100
+                 max-h-[60vh] sm:max-h-[50vh] overflow-y-auto"
     >
       Welcome to your <b>personal academic & professional support chat</b>
       <br /><br />
@@ -457,21 +458,22 @@ const filteredProfiles = profiles.filter((profile) =>
       to keep the conversation <b>focused, respectful, and meaningful</b>.  
       Only text messages are allowed <b>no pictures or documents</b>.
       <br /><br />
-       Here’s what this space is for:
+      Here’s what this space is for:
       <ul className="list-disc list-inside mt-2 space-y-1">
-        <li> Exchanging quick study updates, tips, and useful reminders</li>
-        <li> Asking brief questions or requesting clarification directly</li>
-        <li> Sharing encouragement, professional insights, or guidance</li>
-        <li> Passing along opportunities like internships, workshops, or events</li>
+        <li>Exchanging quick study updates, tips, and useful reminders</li>
+        <li>Asking brief questions or requesting clarification directly</li>
+        <li>Sharing encouragement, professional insights, or guidance</li>
+        <li>Passing along opportunities like internships, workshops, or events</li>
         <li>Building supportive one-to-one academic or career connections</li>
       </ul>
       <br />
       Please keep messages <b>short, kind, and relevant</b>.  
       Together, we’re creating a <b>safe, supportive, and inspiring space</b> 
-       to grow in knowledge, career, and friendship 
+      to grow in knowledge, career, and friendship 
     </div>
   )}
 </div>
+
          <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
