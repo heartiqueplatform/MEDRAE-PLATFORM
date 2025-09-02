@@ -557,7 +557,7 @@ useEffect(() => {
 ) : (
   <>
     {/* When no forum is selected */}
-    <div className="flex flex-col items-center justify-center flex-1 bg-gradient-to-br from-red-400 to-blue-500 text-white p-6">
+    <div className="flex flex-col items-center justify-end flex-1 text-center gap-4 bg-gradient-to-br from-red-400 to-blue-500 text-white">
       <p className="text-lg font-semibold text-center mb-4">
         Select a forum to start conversations, share ideas, and collaborate.
       </p>
@@ -572,8 +572,8 @@ useEffect(() => {
 
   {/* prevent portal -> keeps dropdown positioned relative, no page jump */}
 <DropdownMenuContent
-    className="w-80 max-h-[80vh] h-auto overflow-y-auto p-0"
-    side="right"
+     className="w-80 max-h-[60vh] h-auto overflow-y-auto p-0"
+    side="top"
     align="center"
     avoidCollisions={false}
     asChild

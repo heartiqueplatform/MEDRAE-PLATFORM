@@ -631,7 +631,8 @@ const filteredProfiles = profiles.filter((profile) =>
             </CardContent>
           </>
       ) : (
-  <div className="flex flex-col items-center justify-center flex-1 text-center gap-4 bg-gradient-to-br from-red-400 to-blue-500 text-white">
+ <div className="flex flex-col items-center justify-end flex-1 text-center gap-4 bg-gradient-to-br from-red-400 to-blue-500 text-white">
+
   <p className="text-2xl font-extrabold">
     Click the chat icon below to choose someone
   </p>
@@ -648,7 +649,7 @@ const filteredProfiles = profiles.filter((profile) =>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-         side="right"          // 👈 open from the right side
+         side="top"          // 👈 open from the right side
     align="center"        // 👈 keep vertically centered
         className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto"
         avoidCollisions={false}
