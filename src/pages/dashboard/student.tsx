@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from 'react-router-dom';
 export default function StudentDashboard() {
+   const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
   const [name, setName] = useState<string | null>(null);
   const [studyProgress, setStudyProgress] = useState(0);
@@ -41,6 +42,7 @@ const [latestPostId, setLatestPostId] = useState<string | null>(null);
 const [loading, setLoading] = useState(true);
 
 const loadDashboardData = async () => {
+  
   if (!user?.id) return;
 
   setLoading(true); // Show spinner at the very start
@@ -719,20 +721,22 @@ return (
       </CardDescription>
     </div>
     <Button
-      asChild
-      className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
-    >
-      <a href="/heartique-quizzes">Go to Quizzes</a>
-    </Button>
+  asChild
+  className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+>
+  <Link to="/heartique-quizzes">Go to Quizzes</Link>
+</Button>
+
   </CardHeader>
   <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {unitCounts.length > 0 ? (
       unitCounts.map((unit) => (
-        <div
-          key={unit.unit_code}
-          className="p-4 border rounded-lg flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => (window.location.href = '/heartique-quizzes')}
-        >
+       <div
+  key={unit.unit_code}
+  className="p-4 border rounded-lg flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
+  onClick={() => navigate('/heartique-quizzes')}
+>
+
           <div>
             <p className="text-sm font-medium">{unit.unit}</p>
             <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
@@ -767,14 +771,16 @@ return (
   </CardHeader>
   <CardContent className="space-y-3">
     <Button
-      className="w-full justify-start"
-      variant="outline"
-      asChild
-    >
-      <a href="/ai-assistant">
-        <Brain className="mr-2 h-4 w-4" />
-        Ask AI Assistant
-      </a>
+  className="w-full justify-start"
+  variant="outline"
+  asChild
+>
+  <Link to="/ai-assistant">
+    <Brain className="mr-2 h-4 w-4" />
+    Ask AI Assistant
+  </Link>
+</Button>
+
     </Button>
   </CardContent>
 </Card>
