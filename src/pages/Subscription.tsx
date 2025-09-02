@@ -1,47 +1,33 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, CreditCard, Calendar, Users, Smartphone, Crown } from "lucide-react";
+import { Check, CreditCard, Smartphone, Users, Crown } from "lucide-react";
 
 export function Subscription() {
-  const [billingCycle, setBillingCycle] = useState("monthly");
-
-  const currentPlan = "Free";
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   const studentPlans = [
     {
       id: "pro",
       name: "Pro",
       price: 99,
-      yearlyPrice: 99 * 12,
       description: "Perfect for serious learners",
-      features: [
-        "Unlimited quizzes",
-        "Advanced progress tracking",
-        "Priority support",
-        "Download study materials",
-        "AI study assistant"
-      ],
-      popular: true,
-      billingType: "both"
+      features: ["Unlimited quizzes","Advanced progress tracking","Priority support","Download study materials","AI study assistant"],
+      popular: true
     },
     {
       id: "premium",
       name: "Premium",
       price: 450,
-      yearlyPrice: 450,
-      description: "Annual plan for committed learners",
-      features: [
-        "Everything in Pro",
-        "Offline access",
-        "Video content library",
-        "Advanced analytics",
-        "Certificate programs"
-      ],
-      popular: false,
-      billingType: "yearly"
+      description: "For committed learners",
+      features: ["Everything in Pro","Offline access","Video content library","Advanced analytics","Certificate programs"],
+      popular: false
     }
   ];
 
@@ -50,20 +36,54 @@ export function Subscription() {
       id: "tutor-basic",
       name: "Tutor Plan",
       price: 500,
-      yearlyPrice: 500,
       description: "Start teaching with essential tools",
-      features: [
-        "Create and share content",
-        "Student progress tracking",
-        "Basic analytics",
-        "Community access"
-      ],
-      billingType: "yearly"
+      features: ["Create and share content","Student progress tracking","Basic analytics","Community access"]
     }
   ];
 
+  const handleMpesapayment = async (planId: string, amount: number) => {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const phone = prompt("Enter your phone number in format 2547XXXXXXXX:");
+      if (!phone) throw new Error("Phone number is required");
+
+      const res = await fetch("https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/stk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, amount })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "STK request failed");
+
+      setMessage(`STK Request sent! CheckoutRequestID: ${data.CheckoutRequestID}`);
+    } catch (err: any) {
+      setMessage(`Payment failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/stk-callback");
+        if (!res.ok) return;
+        const data = await res.json();
+        setTransactions(data || []);
+      } catch (err) {
+        console.error("Error fetching transactions:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
           <CreditCard className="h-8 w-8" />
@@ -74,38 +94,21 @@ export function Subscription() {
         </p>
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="student" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="student" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Student Plans
+            <Users className="h-4 w-4" /> Student Plans
           </TabsTrigger>
           <TabsTrigger value="tutor" className="flex items-center gap-2">
-            <Crown className="h-4 w-4" />
-            Tutor Plans
+            <Crown className="h-4 w-4" /> Tutor Plans
           </TabsTrigger>
         </TabsList>
 
         {/* Student Plans */}
         <TabsContent value="student" className="space-y-6">
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-4">
-            <span className={billingCycle === "monthly" ? "font-semibold" : "text-muted-foreground"}>Monthly</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Switch to {billingCycle === "monthly" ? "Yearly" : "Monthly"}
-            </Button>
-            <span className={billingCycle === "yearly" ? "font-semibold" : "text-muted-foreground"}>
-              Yearly <Badge variant="secondary" className="ml-1">Best Value</Badge>
-            </span>
-          </div>
-
           <div className="grid gap-6 md:grid-cols-2">
-            {studentPlans.map((plan) => (
+            {studentPlans.map(plan => (
               <Card key={plan.id} className={`relative ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -117,23 +120,15 @@ export function Subscription() {
                     <CardTitle className="text-xl">{plan.name}</CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
                     <div className="mt-4">
-                      <span className="text-3xl font-bold">
-                        {plan.billingType === "yearly"
-                          ? `KSh ${plan.yearlyPrice}`
-                          : billingCycle === "yearly"
-                            ? `KSh ${plan.yearlyPrice}`
-                            : `KSh ${plan.price}`}
-                      </span>
-                      <span className="text-muted-foreground">
-                        /{plan.billingType === "yearly" ? "year" : billingCycle === "yearly" ? "year" : "month"}
-                      </span>
+                      <span className="text-3xl font-bold">KSh {plan.price}</span>
+                      <span className="text-muted-foreground">/month</span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                         {feature}
                       </li>
@@ -141,10 +136,12 @@ export function Subscription() {
                   </ul>
                   <Button 
                     className="w-full"
-                    onClick={() => window.location.href = "https://heartique-platform-payment-system.vercel.app/"}
+                    onClick={() => handleMpesapayment(plan.id, plan.price)}
+                    disabled={loading}
                   >
-                    Choose {plan.name}
+                    {loading ? "Processing..." : "Pay with M-Pesa"}
                   </Button>
+                  {message && <p className="mt-2 text-sm text-blue-600">{message}</p>}
                 </CardContent>
               </Card>
             ))}
@@ -154,7 +151,7 @@ export function Subscription() {
         {/* Tutor Plans */}
         <TabsContent value="tutor" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-1">
-            {tutorPlans.map((plan) => (
+            {tutorPlans.map(plan => (
               <Card key={plan.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -163,14 +160,13 @@ export function Subscription() {
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="text-2xl font-bold">
-                    KSh {plan.yearlyPrice}
-                    <span className="text-sm font-normal text-muted-foreground">/year</span>
+                    KSh {plan.price}<span className="text-sm font-normal text-muted-foreground">/year</span>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                         {feature}
                       </li>
@@ -178,10 +174,12 @@ export function Subscription() {
                   </ul>
                   <Button 
                     className="w-full"
-                    onClick={() => window.location.href = "https://heartique-platform-payment-system.vercel.app/"}
+                    onClick={() => handleMpesapayment(plan.id, plan.price)}
+                    disabled={loading}
                   >
-                    Choose {plan.name}
+                    {loading ? "Processing..." : "Pay with M-Pesa"}
                   </Button>
+                  {message && <p className="mt-2 text-sm text-blue-600">{message}</p>}
                 </CardContent>
               </Card>
             ))}
@@ -189,28 +187,31 @@ export function Subscription() {
         </TabsContent>
       </Tabs>
 
-      {/* Payment Methods */}
+      {/* Recent Transactions */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5" />
-            Payment Methods
+            <Smartphone className="h-5 w-5" /> Recent Payments
           </CardTitle>
           <CardDescription>
-            Secure payment options available
+            Real-time M-Pesa payment statuses
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="border rounded-lg p-4 text-center">
-              <h3 className="font-semibold mb-2">M-Pesa</h3>
-              <p className="text-sm text-muted-foreground">Pay using your mobile money account</p>
-            </div>
-            <div className="border rounded-lg p-4 text-center">
-              <h3 className="font-semibold mb-2">Credit/Debit Card</h3>
-              <p className="text-sm text-muted-foreground">Visa, Mastercard accepted</p>
-            </div>
-          </div>
+          {transactions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No recent transactions</p>
+          ) : (
+            <ul className="space-y-2">
+              {transactions.map((tx, i) => (
+                <li key={i} className="border p-2 rounded flex justify-between items-center">
+                  <span>Checkout ID: {tx.checkout_request_id}</span>
+                  <span className={tx.result_code === 0 ? "text-green-600" : "text-red-600"}>
+                    {tx.result_desc}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>
