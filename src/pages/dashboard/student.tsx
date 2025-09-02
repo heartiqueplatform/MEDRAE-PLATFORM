@@ -16,7 +16,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
 export default function StudentDashboard() {
    const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
