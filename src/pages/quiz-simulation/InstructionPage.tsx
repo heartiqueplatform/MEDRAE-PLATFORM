@@ -15,15 +15,13 @@ export default function InstructionPage() {
   const [micReady, setMicReady] = useState(false);
   const [loudWarning, setLoudWarning] = useState(false);
 const [loadingPage, setLoadingPage] = useState(true); // show spinner before page
-const [loadingOnClick, setLoadingOnClick] = useState(false); // spinner when opening instructions
-
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationIdRef = useRef<number | null>(null);
 useEffect(() => {
   const timer = setTimeout(() => {
     setLoadingPage(false);
-  }, 1000); // 1 second delay, adjust if needed
+  }, 300); // 0.3 second delay
 
   return () => clearTimeout(timer);
 }, []);
