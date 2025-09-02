@@ -89,7 +89,7 @@ const App = () => (
             <Routes>
               {/* Public Routes */}
              <Route path="/" element={<RedirectToRoleDashboard />} />
-<Route path="/index" element={<Index />} />
+
 
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
