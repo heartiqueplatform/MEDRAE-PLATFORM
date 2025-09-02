@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { HeartiqueQuizzes } from "@/pages/HeartiqueQuizzes";
@@ -77,55 +77,20 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
-const PreventBackNavigation = () => {
-  const location = useLocation();
 
-  React.useEffect(() => {
-    if (location.pathname.startsWith("/dashboard")) {
-      // push a fake history state
-      window.history.pushState(null, "", window.location.href);
-
-      const handlePopState = () => {
-        // stay on dashboard when back is pressed
-        if (location.pathname.startsWith("/dashboard")) {
-          window.history.pushState(null, "", window.location.href);
-        }
-      };
-
-      window.addEventListener("popstate", handlePopState);
-      return () => window.removeEventListener("popstate", handlePopState);
-    }
-  }, [location]);
-
-  return null;
-};
-
-const App = () => {
-  const navigate = useNavigate();
-
-  // ✅ Auto redirect on app load
-  React.useEffect(() => {
-    const storedRole = localStorage.getItem("userRole");
-    if (storedRole) {
-      navigate(`/dashboard/${storedRole}`);
-    }
-  }, [navigate]);
-
-  return (
+const App = () => (
   <SessionContextProvider supabaseClient={supabase}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-  <PreventBackNavigation />
           <AIWrapper>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
-            <Route path="/login" element={localStorage.getItem("userRole") ? <RedirectToRoleDashboard /> : <Login />} />
-<Route path="/register" element={localStorage.getItem("userRole") ? <RedirectToRoleDashboard /> : <Register />} />
-
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
               {/* Optional: Redirect to role dashboard */}
               <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
