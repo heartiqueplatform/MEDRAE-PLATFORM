@@ -156,12 +156,14 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     setUnreadCount(0);
   };
 
-  // Helper: collapse sidebar on mobile
-  const handleCollapse = () => {
-    if (window.innerWidth < 1024) {
-      setState("collapsed");
-    }
-  };
+  // Helper: collapse sidebar on mobile and close all groups
+const handleCollapse = () => {
+  if (window.innerWidth < 1024) {
+    setState("collapsed");
+    setOpenGroups([]); // closes all collapsible groups on mobile
+  }
+};
+
 
   return (
     <Sidebar className={`${isCollapsed ? "w-16" : "w-64"} transition-all duration-300`}>
