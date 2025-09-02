@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient"; // adjust path if needed
 
 export function RedirectToRoleDashboard() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getRoleAndRedirect = async () => {
@@ -35,21 +36,25 @@ export function RedirectToRoleDashboard() {
       } catch (error) {
         console.error("Redirect error:", error);
         navigate("/dashboard/student"); // safe fallback
+      } finally {
+        setLoading(false);
       }
     };
 
     getRoleAndRedirect();
   }, [navigate]);
 
-  // ✅ Professional spinner + message
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-lg font-medium text-muted-foreground">
-          Redirecting to your dashboard...
-        </p>
+  if (loading) {
+    // ✅ Unity-style global spinner
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+          <p className="mt-4 text-white text-lg">Redirecting to your dashboard...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null; // nothing to show after redirect
 }
