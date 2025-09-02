@@ -11,9 +11,8 @@ export function RedirectToRoleDashboard() {
     const getRoleAndRedirect = async () => {
       try {
         // 1. Check Supabase session
-       const { data: { session } } = await supabase.auth.getSession();
-const user = session?.user;
-
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
 
         let role = localStorage.getItem("userRole") || "student";
 
@@ -42,5 +41,15 @@ const user = session?.user;
     getRoleAndRedirect();
   }, [navigate]);
 
-  return <p className="text-center mt-10">Redirecting to your dashboard...</p>;
+  // ✅ Professional spinner + message
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-lg font-medium text-muted-foreground">
+          Redirecting to your dashboard...
+        </p>
+      </div>
+    </div>
+  );
 }
