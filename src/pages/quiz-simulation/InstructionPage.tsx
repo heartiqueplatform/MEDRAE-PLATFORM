@@ -234,13 +234,16 @@ export default function InstructionPage() {
       </div>
       {/* Enriched Environment Warning */}
       <div className="mt-6 text-sm text-gray-600">
-        You may see your face on the screen, notice your motor activity being monitored,
-        and hear audio playback. This simulates a real NCK-like exam environment.  
-        <br />
-        Please remember to <strong>double-click</strong> the Camera & Mic buttons to enable them.  
-        <br />
-        These monitoring features are for simulation only and are not fully automated.
-      </div>
+  <strong>Note: This will work only on desktop.</strong>
+  <br /><br />
+  You may see your face on the screen, notice your motor activity being monitored,
+  and hear audio playback. This simulates a real NCK-like exam environment.  
+  <br />
+  Please remember to <strong>double-click</strong> the Camera & Mic buttons to enable them.  
+  <br />
+  These monitoring features are for simulation only and are not fully automated.
+</div>
+
       {/* Instructions Card */}
       <Card>
         <CardHeader>
