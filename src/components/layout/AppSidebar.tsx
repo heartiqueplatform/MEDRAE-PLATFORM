@@ -14,11 +14,9 @@ import {
   Play,
   Settings,
   Star,
-  Target,
   TrendingUp,
   Users,
   Video,
-  Zap,
   CreditCard,
   Bell,
   MessageSquareX,
@@ -49,7 +47,8 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ userRole }: AppSidebarProps) {
-  const { state } = useSidebar();
+  const { state, setState } = useSidebar();
+
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -148,7 +147,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     const user = supabase.auth.user();
     if (!user) return;
 
-    // Mark all unread messages as read for current user
     await supabase
       .from('messages')
       .update({ is_read: true })
@@ -156,6 +154,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       .eq('is_read', false);
 
     setUnreadCount(0);
+  };
+
+  // Helper: collapse sidebar on mobile
+  const handleCollapse = () => {
+    if (window.innerWidth < 1024) {
+      setState("collapsed");
+    }
   };
 
   return (
@@ -176,7 +181,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         </div>
       </div>
 
-  <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
+      <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
         {/* Main Navigation */}
         <SidebarGroup>
           <Collapsible open={openGroups.includes('main')} onOpenChange={() => toggleGroup('main')}>
@@ -192,10 +197,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   {mainItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={item.url} 
-                          className={getNavClass(item.url)} 
-                          onClick={item.title === "Chat Room" ? handleChatClick : undefined}
+                        <NavLink
+                          to={item.url}
+                          className={getNavClass(item.url)}
+                          onClick={() => {
+                            if (item.title === "Chat Room") handleChatClick();
+                            handleCollapse();
+                          }}
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
@@ -238,7 +246,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   {learningItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <NavLink to={item.url} className={getNavClass(item.url)}>
+                        <NavLink
+                          to={item.url}
+                          className={getNavClass(item.url)}
+                          onClick={handleCollapse}
+                        >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && <span>{item.title}</span>}
                         </NavLink>
@@ -266,7 +278,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   {mediaItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <NavLink to={item.url} className={getNavClass(item.url)}>
+                        <NavLink
+                          to={item.url}
+                          className={getNavClass(item.url)}
+                          onClick={handleCollapse}
+                        >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && <span>{item.title}</span>}
                         </NavLink>
@@ -295,7 +311,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     {tutorItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <NavLink to={item.url} className={getNavClass(item.url)}>
+                          <NavLink
+                            to={item.url}
+                            className={getNavClass(item.url)}
+                            onClick={handleCollapse}
+                          >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </NavLink>
@@ -325,7 +345,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     {staffItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <NavLink to={item.url} className={getNavClass(item.url)}>
+                          <NavLink
+                            to={item.url}
+                            className={getNavClass(item.url)}
+                            onClick={handleCollapse}
+                          >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </NavLink>
@@ -346,7 +370,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
               {otherItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClass(item.url)}>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClass(item.url)}
+                      onClick={handleCollapse}
+                    >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
