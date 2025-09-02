@@ -1,5 +1,5 @@
 "use client";
-
+import { GlobalLoader } from "@/components/GlobalLoader"; // adjust the path if needed
 import { useEffect, useState } from "react";
 import {
   Card,
@@ -178,8 +178,7 @@ export function Settings() {
       });
     }
   };
-
-  if (!profile) return <p>Loading profile...</p>;
+if (!profile) return <GlobalLoader message="Loading profile..." />;
 
   return (
     <div className="space-y-6">
@@ -354,13 +353,12 @@ export function Settings() {
 
               {/* Save Button */}
               <Button
-                onClick={handleSaveProfile}
-                className="flex items-center gap-2"
-                disabled={loading}
-              >
-                <Save className="h-4 w-4" />
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
+  onClick={handleSaveProfile}
+  className="flex items-center gap-2"
+  disabled={loading}
+>
+  {loading ? <GlobalLoader message="Saving profile..." /> : <><Save className="h-4 w-4" />Save Changes</>}
+</Button>
             </CardContent>
           </Card>
         </TabsContent>
