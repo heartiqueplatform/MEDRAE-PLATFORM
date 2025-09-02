@@ -11,7 +11,9 @@ export function RedirectToRoleDashboard() {
     const getRoleAndRedirect = async () => {
       try {
         // 1. Check Supabase session
-        const { data: { user } } = await supabase.auth.getUser();
+       const { data: { session } } = await supabase.auth.getSession();
+const user = session?.user;
+
 
         let role = localStorage.getItem("userRole") || "student";
 
