@@ -770,7 +770,7 @@ return (
     <CardTitle className="text-white">Quick Actions</CardTitle>
   </CardHeader>
   <CardContent className="space-y-3">
-    <Button
+  <Button
   className="w-full justify-start"
   variant="outline"
   asChild
@@ -781,7 +781,6 @@ return (
   </Link>
 </Button>
 
-    </Button>
   </CardContent>
 </Card>
 
