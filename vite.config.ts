@@ -31,10 +31,11 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit to fix Vercel build
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
         runtimeCaching: [
+          // ✅ Only cache CSS & JSON (skip large JS bundles)
           {
-            urlPattern: /\/.*\.(?:js|ts|css|json)$/, // cache all JS, CSS, JSON
+            urlPattern: /\/.*\.(?:css|json)$/,
             handler: "NetworkFirst",
             options: {
               cacheName: "static-resources",
@@ -42,8 +43,9 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 days
             },
           },
+          // ✅ Cache images
           {
-            urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif)$/, // cache images
+            urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif)$/,
             handler: "CacheFirst",
             options: {
               cacheName: "image-cache",
