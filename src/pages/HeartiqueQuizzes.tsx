@@ -310,7 +310,8 @@ return (
             </Button>
           </Link>
         </div>
-        <Button
+      </div>
+<Button
           onClick={handleRefresh}
           disabled={refreshing}
           className={`flex items-center gap-2 transition-transform ${refreshing ? "animate-spin" : ""}`}
@@ -318,8 +319,6 @@ return (
           <RefreshCw className="h-4 w-4" />
           {refreshing ? "Refreshing..." : "Refresh Counts"}
         </Button>
-      </div>
-
       {/* PAPER ONE */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-yellow-500">
