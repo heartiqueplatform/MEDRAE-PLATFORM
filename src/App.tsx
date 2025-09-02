@@ -77,6 +77,28 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
+const PreventBackNavigation = () => {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (location.pathname.startsWith("/dashboard")) {
+      // push a fake history state
+      window.history.pushState(null, "", window.location.href);
+
+      const handlePopState = () => {
+        // stay on dashboard when back is pressed
+        if (location.pathname.startsWith("/dashboard")) {
+          window.history.pushState(null, "", window.location.href);
+        }
+      };
+
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+    }
+  }, [location]);
+
+  return null;
+};
 
 const App = () => {
   const navigate = useNavigate();
@@ -96,6 +118,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+  <PreventBackNavigation />
           <AIWrapper>
             <Routes>
               {/* Public Routes */}
