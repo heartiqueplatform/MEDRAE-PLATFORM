@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { HeartiqueQuizzes } from "@/pages/HeartiqueQuizzes";
@@ -78,7 +78,18 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const App = () => (
+const App = () => {
+  const navigate = useNavigate();
+
+  // ✅ Auto redirect on app load
+  React.useEffect(() => {
+    const storedRole = localStorage.getItem("userRole");
+    if (storedRole) {
+      navigate(`/dashboard/${storedRole}`);
+    }
+  }, [navigate]);
+
+  return (
   <SessionContextProvider supabaseClient={supabase}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -89,8 +100,9 @@ const App = () => (
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+            <Route path="/login" element={localStorage.getItem("userRole") ? <RedirectToRoleDashboard /> : <Login />} />
+<Route path="/register" element={localStorage.getItem("userRole") ? <RedirectToRoleDashboard /> : <Register />} />
+
 
               {/* Optional: Redirect to role dashboard */}
               <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
