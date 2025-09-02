@@ -1,5 +1,7 @@
 "use client";
-
+import { Worker, Viewer } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -699,6 +701,7 @@ setShowUploadForm(false);
     </Badge>
   )}
 
+
   </div>
 )}
 
@@ -731,12 +734,19 @@ setShowUploadForm(false);
               <X className="h-6 w-6" />
             </Button>
           </div>
-          <iframe
-            src={fullscreenNote.file_url}
-            className="flex-1 w-full"
-            style={{ border: "none" }}
-            title={fullscreenNote.title}
-          />
+          {fullscreenNote.file_type === 'pdf' ? (
+  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.5.141/build/pdf.worker.min.js">
+    <Viewer fileUrl={fullscreenNote.file_url} />
+  </Worker>
+) : (
+  <iframe
+    src={fullscreenNote.file_url}
+    className="flex-1 w-full"
+    style={{ border: "none" }}
+    title={fullscreenNote.title}
+  />
+)}
+
         </div>
       )}
     </div>
