@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
+import { GlobalLoader } from "@/components/GlobalLoader";
 
 export default function InstructionPage() {
   const navigate = useNavigate();
@@ -13,10 +14,19 @@ export default function InstructionPage() {
   const [cameraReady, setCameraReady] = useState(false);
   const [micReady, setMicReady] = useState(false);
   const [loudWarning, setLoudWarning] = useState(false);
+const [loadingPage, setLoadingPage] = useState(true); // show spinner before page
+const [loadingOnClick, setLoadingOnClick] = useState(false); // spinner when opening instructions
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationIdRef = useRef<number | null>(null);
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setLoadingPage(false);
+  }, 1000); // 1 second delay, adjust if needed
+
+  return () => clearTimeout(timer);
+}, []);
 
   // countdown logic
   useEffect(() => {
@@ -120,7 +130,9 @@ export default function InstructionPage() {
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
     };
   }, []);
-
+if (loadingPage) {
+  return <GlobalLoader message="Setting simulation page..." />;
+}
   return (
     <div className="max-w-4xl mx-auto mt-10 space-y-6">
       {/* Timer + Countdown + Start Button + Explanation */}
@@ -245,6 +257,7 @@ export default function InstructionPage() {
 </div>
 
       {/* Instructions Card */}
+      
       <Card>
         <CardHeader>
           <CardTitle className="text-center text-lg">

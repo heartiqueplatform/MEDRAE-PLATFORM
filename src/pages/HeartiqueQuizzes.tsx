@@ -16,6 +16,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/lib/supabaseClient";
+import { GlobalLoader } from "@/components/GlobalLoader";
 
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
@@ -271,8 +272,9 @@ useEffect(() => {
     setRefreshing(false);
   };
 if (!subscriptionChecked) {
-  return <p className="text-center mt-10">Checking subscription...</p>;
+  return <GlobalLoader message="Checking subscription..." />;
 }
+
 
 return (
     <div className="space-y-10">
