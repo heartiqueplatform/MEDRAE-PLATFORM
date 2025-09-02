@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Moon, Sun, User, Menu } from "lucide-react";
+import { Bell, Moon, Sun, User, Menu, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ interface HeaderProps {
   };
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  streak?: number; // new optional prop
+  streak?: number; // optional
 }
 
 export function Header({
@@ -29,8 +29,6 @@ export function Header({
   const navigate = useNavigate();
   const authUser = useUser();
   const [streak, setStreak] = useState(propStreak);
-
-  // 🔔 notification count state
   const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
@@ -40,7 +38,7 @@ export function Header({
     }
   }, [authUser]);
 
-  // ✅ fetch unread notification count
+  // fetch unread notifications
   const fetchNotifications = async () => {
     if (!authUser?.id) return;
 
@@ -48,14 +46,14 @@ export function Header({
       .from("notifications")
       .select("id", { count: "exact", head: true })
       .eq("user_id", authUser.id)
-      .eq("is_read", false); // 👈 only unread
+      .eq("is_read", false);
 
     if (!error && typeof count === "number") {
       setNotificationCount(count);
     }
   };
 
-  // ✅ realtime subscription to keep bell live
+  // realtime notifications
   useEffect(() => {
     if (!authUser?.id) return;
 
@@ -69,9 +67,7 @@ export function Header({
           table: "notifications",
           filter: `user_id=eq.${authUser.id}`,
         },
-        () => {
-          fetchNotifications();
-        }
+        () => fetchNotifications()
       )
       .subscribe();
 
@@ -80,11 +76,10 @@ export function Header({
     };
   }, [authUser?.id]);
 
-  // ✅ streak fetcher
+  // streak fetcher
   const fetchStreak = async () => {
-    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+    const today = new Date().toISOString().split("T")[0];
 
-    // Ensure today's login is recorded
     const { data: existing } = await supabase
       .from("login_activity")
       .select("*")
@@ -93,12 +88,11 @@ export function Header({
       .maybeSingle();
 
     if (!existing) {
-      await supabase.from("login_activity").insert([
-        { user_id: authUser.id, login_date: today },
-      ]);
+      await supabase
+        .from("login_activity")
+        .insert([{ user_id: authUser.id, login_date: today }]);
     }
 
-    // Fetch latest streak value
     const { data, error } = await supabase
       .from("login_activity")
       .select("streak")
@@ -110,6 +104,15 @@ export function Header({
     if (!error && data) {
       setStreak(data.streak || 0);
     }
+  };
+
+  // smart reload function: clears cache and reloads
+  const handleReload = async () => {
+    if ("caches" in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+    }
+    window.location.reload();
   };
 
   return (
@@ -132,6 +135,11 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-3">
+        {/* 🔄 Reload PWA */}
+        <Button variant="ghost" size="sm" onClick={handleReload}>
+          <RefreshCcw className="h-5 w-5" />
+        </Button>
+
         {/* 🔔 Notifications */}
         <Button
           variant="ghost"
