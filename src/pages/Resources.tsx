@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ import {
   Eye,
   X,
 } from "lucide-react";
+import { saveFile, getFile } from "@/lib/offlineStorage";
 
 export function Resources() {
   const [notes, setNotes] = useState<any[]>([]);
@@ -46,14 +48,57 @@ export function Resources() {
   const [uploading, setUploading] = useState(false);
   const [floatingBlockOpen, setFloatingBlockOpen] = useState(false);
 const [selectedBlock, setSelectedBlock] = useState("PTS");
+const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
 
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const [session, setSession] = useState<any>(null);
+  useEffect(() => {
+  const getSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setSession(session);
+
+    supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+  };
+  getSession();
+}, []);
+
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [fullscreenNote, setFullscreenNote] = useState<any>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
 const [loadingNotes, setLoadingNotes] = useState(true);
+
+const loadOfflineFile = async (fileId: string, fileUrl: string) => {
+  // Try getting the file from offline storage first
+  const file = await getFile(fileId);
+  if (file) {
+    const url = URL.createObjectURL(file);
+    window.open(url, "_blank");
+    return;
+  }
+
+  // If not offline, fallback to opening original URL
+  window.open(fileUrl, "_blank");
+};
+const handleDownload = async (fileId: string, url: string) => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    await saveFile(fileId, blob);
+    console.log(`File ${fileId} saved for offline use`);
+    
+    // ✅ Mark this file as offline
+    setOfflineFiles((prev) => [...prev, fileId]);
+
+    alert("Saved offline!");
+  } catch (err) {
+    console.error("Failed to save offline:", err);
+  }
+};
+
+
 
   const blockCategories = [
     { id: "PTS", name: "YR 1.O/PTS" },
@@ -595,42 +640,68 @@ setShowUploadForm(false);
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {note.file_type === "pdf" && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="flex gap-1 items-center"
-                        onClick={async () => {
-                          setFullscreenNote(note);
-                          if (session?.user?.id) {
-                            const { error } = await supabase
-                              .from("note_views")
-                              .insert({ note_id: note.id, user_id: session.user.id });
-                            if (!error) {
-                              setViewCounts((prev) => ({
-                                ...prev,
-                                [note.id]: (prev[note.id] || 0) + 1,
-                              }));
-                            }
-                          }
-                        }}
-                      >
-                        <Eye className="h-4 w-4" /> Fullscreen View
-                      </Button>
-                    )}
-                    {note.file_type !== "pdf" && (
-                      <Button size="sm" asChild>
-                        <a
-                          href={note.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1"
-                        >
-                          <Download className="h-3 w-3" />
-                          Open {note.file_type}
-                        </a>
-                      </Button>
-                    )}
+                    
+                   {note.file_type === "pdf" && (
+  <div className="flex gap-2">
+   <Button
+  size="sm"
+  variant="secondary"
+  className="flex gap-1 items-center"
+  onClick={async () => {
+    try {
+      // 1️⃣ Try offline first
+      const file = await getFile(note.id);
+      if (file) {
+        const url = URL.createObjectURL(file);
+        setFullscreenNote({ ...note, file_url: url });
+      } else {
+        setFullscreenNote(note);
+      }
+
+      // 2️⃣ Record view in Supabase
+      const { error } = await supabase
+        .from("note_views")
+        .insert({
+          note_id: note.id,
+          user_id: session?.user?.id || null, // allow anonymous views
+        });
+
+      if (error) {
+        console.error("Error recording view:", error);
+      } else {
+        // 3️⃣ Update UI immediately
+        setViewCounts((prev) => ({
+          ...prev,
+          [note.id]: (prev[note.id] || 0) + 1,
+        }));
+      }
+    } catch (err) {
+      console.error("Unexpected error recording view:", err);
+    }
+  }}
+>
+  <Eye className="h-4 w-4" /> Fullscreen View
+</Button>
+
+
+    <Button
+      size="sm"
+      onClick={() => handleDownload(note.id, note.file_url)}
+      className="flex items-center gap-1"
+    >
+      <Download className="h-3 w-3" />
+      Save temporary for smooth preview
+    </Button>
+     {/* ✅ Show badge if file is saved offline */}
+  {offlineFiles.includes(note.id) && (
+    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+      saved Temporary
+    </Badge>
+  )}
+
+  </div>
+)}
+
                     <div className="text-sm text-muted-foreground flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       <span>{viewCounts[note.id] || 0} views</span>
