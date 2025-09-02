@@ -69,6 +69,8 @@ const initMedia = useCallback(async (force = false) => {
     // Request audio separately
     const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
     setAudioStream(mic);
+  setMediaAllowed(true);
+
 
     // ---- Audio analyser setup ----
     const audioCtx = new (window.AudioContext ||
@@ -140,7 +142,7 @@ const fetchProfile = async (userId: string) => {
 };
 
 // Fetch active papers and mark which ones are already done
-useEffect(() => {
+
   const fetchPapers = async () => {
     const { data: papers } = await supabase
       .from("simulation_papers")
@@ -153,6 +155,28 @@ const { data: userData } = await supabase.auth.getUser();
 if (userData?.user?.id) {
   const profileData = await fetchProfile(userData.user.id);
   setProfile(profileData);
+}
+// ✅ Fetch active subscription for this user
+if (userData?.user?.id) {
+  const { data: subData, error: subError } = await supabase
+    .from("subscriptions")
+    .select("plan_type, is_active")
+    .eq("user_id", userData.user.id)
+    .eq("is_active", true)
+    .single();
+
+  if (subError) {
+    console.log("Subscription error:", subError.message);
+  }
+  console.log("Subscription check:", subData);
+
+  if (subData) {
+    setProfile((prev: any) => ({
+      ...prev,
+      subscription: subData.plan_type,
+      subscription_active: subData.is_active,
+    }));
+  }
 }
 
 
@@ -172,8 +196,61 @@ if (userData?.user?.id) {
     setPaperList(papersWithStatus);
   };
 
+useEffect(() => {
   fetchPapers();
 }, []);
+// 🔴 Realtime subscription for simulation (papers, results, subscription)
+useEffect(() => {
+  let channel = supabase.channel("simulation_realtime");
+
+  channel
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "simulation_papers",
+      },
+      () => {
+        console.log("Realtime: papers changed, refreshing...");
+        fetchPapers(); // refresh paper list
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "simulation_results",
+      },
+      () => {
+        console.log("Realtime: results changed, refreshing...");
+        fetchPapers(); // refresh paper statuses
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "subscriptions",
+      },
+      async () => {
+        console.log("Realtime: subscription changed, refreshing profile...");
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user?.id) {
+          const profileData = await fetchProfile(userData.user.id);
+          setProfile(profileData);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
+
   // Fetch questions for selected paper
   useEffect(() => {
     if (!selectedPaper) return;
@@ -305,24 +382,7 @@ await supabase.from("simulation_results").insert({
   setShowDonePanel(false);
   setPendingAction(null);
 
-  // 🔄 refresh paper list so "Done" shows up
-  const { data: papers } = await supabase
-    .from("simulation_papers")
-    .select("*")
-    .eq("is_active", true);
-
-  if (papers) {
-    const { data: results } = await supabase
-      .from("simulation_results")
-      .select("paper_id");
-
-    const donePaperIds = results?.map((r) => r.paper_id) || [];
-    const papersWithStatus = papers.map((p) => ({
-      ...p,
-      is_done: donePaperIds.includes(p.id),
-    }));
-    setPaperList(papersWithStatus);
-  }
+    // ✅ No manual refresh needed, realtime will update the paper list
 };
 const generatePDF = async () => {
   const doc = new jsPDF();
@@ -543,7 +603,10 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
    {paperList.map((paper) => {
   const canAccess =
-    paper.is_free || profile?.subscription === "pro" || profile?.subscription === "premium";
+  profile?.subscription_active
+    ? true
+    : paper.is_free;
+
 
   return (
     <Card
@@ -558,13 +621,16 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {paper.title}
-          {paper.is_done ? (
-            <Badge variant={getStatusVariant("done")}>Done</Badge>
-          ) : paper.is_free ? (
-        <Badge className="bg-emerald-500 text-white">Free</Badge>
-          ) : (
-            <Badge variant="destructive">Premium / Pro</Badge>
-          )}
+         {paper.is_done ? (
+  <Badge variant={getStatusVariant("done")}>Done</Badge>
+) : profile?.subscription_active ? (
+  <Badge className="bg-green-600 text-white">Unlocked</Badge>
+) : paper.is_free ? (
+  <Badge className="bg-emerald-500 text-white">Free</Badge>
+) : (
+  <Badge variant="destructive">Premium / Pro</Badge>
+)}
+
         </CardTitle>
       </CardHeader>
 
@@ -589,25 +655,9 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
                   .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
 
                 // refresh paper list after reset
-                const { data: papers } = await supabase
-                  .from("simulation_papers")
-                  .select("*")
-                  .eq("is_active", true);
+                              // ✅ No manual refresh needed, realtime will update the paper list
+                alert("Paper reset successfully. You can now retake it.");
 
-                if (papers) {
-                  const { data: results } = await supabase
-                    .from("simulation_results")
-                    .select("paper_id");
-
-                  const donePaperIds = results?.map((r) => r.paper_id) || [];
-                  const papersWithStatus = papers.map((p) => ({
-                    ...p,
-                    is_done: donePaperIds.includes(p.id),
-                  }));
-                  setPaperList(papersWithStatus);
-                }
-
-                alert(" Paper reset successfully. You can now retake it.");
               }}
             >
               Reset Paper

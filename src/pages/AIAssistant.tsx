@@ -11,6 +11,13 @@ import {
   Brain,
   Stethoscope,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +29,39 @@ interface Message {
   sender: "user" | "ai";
   timestamp: Date;
 }
+// 🔑 Supabase Project Keys
+import { supabase } from "@/lib/supabaseClient";
+function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
+  const bubbleColor = isDarkTheme ? "bg-green-400" : "bg-green-600"; // light/dark brand colors
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
+      <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay200`}></span>
+      <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay400`}></span>
+      <style jsx>{`
+        .animate-bounceDelay {
+          display: inline-block;
+          animation: bounce 1.2s infinite;
+        }
+        .animate-bounceDelay200 {
+          display: inline-block;
+          animation: bounce 1.2s infinite 0.2s;
+        }
+        .animate-bounceDelay400 {
+          display: inline-block;
+          animation: bounce 1.2s infinite 0.4s;
+        }
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+
 
 export function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
@@ -61,20 +101,20 @@ export function AIAssistant() {
     setIsLoading(true);
 
     const typingMessage: Message = {
-      id: (Date.now() + 0.1).toString(),
-      content: "❤️Heartique is generating full reply… in a few just few second",
-      sender: "ai",
-      timestamp: new Date(),
-    };
+  id: (Date.now() + 0.1).toString(),
+  content: "<TypingBubbles />", // ⬅️ placeholder for bubble animation
+  sender: "ai",
+  timestamp: new Date(),
+};
     setMessages((prev) => [...prev, typingMessage]);
 
     try {
-      const res = await fetch("http://localhost:5000/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage.content }),
-      });
-      const data = await res.json();
+const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
+  body: { message: userMessage.content },
+});
+
+if (error) throw error;
+
 
       setTimeout(() => {
         setMessages((prev) =>
@@ -82,7 +122,7 @@ export function AIAssistant() {
             msg.id === typingMessage.id
               ? {
                   ...msg,
-                  content: `💉 ${data.reply || "Ooops Sorry, I couldn't generate a response seems your offline."}`,
+                 content: `💉 ${data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline."}`,
                 }
               : msg
           )
@@ -143,36 +183,52 @@ export function AIAssistant() {
 
       {/* Layout: Sidebar + Chat */}
       <div className="flex flex-1 gap-4 overflow-hidden">
-        {/* Sidebar */}
-        <Card className="w-80 flex flex-col h-full overflow-hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5" />
-              Quick Study Topics
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto space-y-3">
-            {quickQuestions.map((q, i) => (
-              <Button
-                key={i}
-                variant="outline"
-                className="justify-start h-auto p-3 text-left w-full break-words whitespace-normal"
-                onClick={() => handleQuickQuestion(q)}
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  {i % 4 === 0 && <Heart className="h-4 w-4 text-red-500" />}
-                  {i % 4 === 1 && <Pill className="h-4 w-4 text-blue-500" />}
-                  {i % 4 === 2 && <BookOpen className="h-4 w-4 text-green-500" />}
-                  {i % 4 === 3 && <Brain className="h-4 w-4 text-purple-500" />}
-                  <span className="text-sm">{q}</span>
-                </div>
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
+      
 
         {/* Chat */}
-        <Card className="flex-1 flex flex-col h-full overflow-hidden">
+       <Card className="flex-1 flex flex-col h-full w-full overflow-hidden relative">
+        {/* Quick Topics Dropdown (inside chat card, below heading) */}
+<div className="px-4 py-2 border-b bg-background shadow-sm mb-2 flex justify-start animate-bounce-slow">
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-lg transform transition-transform duration-300 hover:scale-105">
+        <Sparkles className="w-4 h-4 animate-spin-slow" />
+        Quick Topics
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent className="w-60">
+      {quickQuestions.map((q, i) => (
+        <DropdownMenuItem key={i} onClick={() => handleQuickQuestion(q)}>
+          <div className="flex items-center gap-2 flex-wrap">
+            {i % 4 === 0 && <Heart className="h-4 w-4 text-red-500" />}
+            {i % 4 === 1 && <Pill className="h-4 w-4 text-blue-500" />}
+            {i % 4 === 2 && <BookOpen className="h-4 w-4 text-green-500" />}
+            {i % 4 === 3 && <Brain className="h-4 w-4 text-purple-500" />}
+            <span className="text-sm">{q}</span>
+          </div>
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuContent>
+  </DropdownMenu>
+
+  <style jsx>{`
+    .animate-bounce-slow {
+      animation: bounce 2s infinite;
+    }
+    .animate-spin-slow {
+      animation: spin 4s linear infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `}</style>
+</div>
+
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4">
             {messages.map((msg, index) => (
               <div
@@ -197,7 +253,7 @@ export function AIAssistant() {
     msg.sender === "user" ? userBubbleClass : aiBubbleClass
   }`}
 >
-  <ReactMarkdown>{msg.content}</ReactMarkdown>
+ {msg.content === "<TypingBubbles />" ? <TypingBubbles isDarkTheme={isDarkTheme} /> : <ReactMarkdown>{msg.content}</ReactMarkdown>}
 </div>
   <span className="text-xs text-gray-500 mt-1">
     {new Date(msg.timestamp).toLocaleString("en-US", {

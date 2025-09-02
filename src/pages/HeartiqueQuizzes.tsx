@@ -98,25 +98,77 @@ const getLevelVariant = (level: string) => {
 export function HeartiqueQuizzes() {
     const user = useUser();
   const [isPremium, setIsPremium] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
+
   const [freeUnits, setFreeUnits] = useState<string[]>([]);
 
   // Check user subscription
   useEffect(() => {
     if (!user) return;
     const checkSubscription = async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("plan_type, expires_at")
-        .eq("user_id", user.id)
-        .single();
+     const { data, error } = await supabase
+  .from("subscriptions")
+  .select("plan_type, expires_at, is_active")
+  .eq("user_id", user.id)
+  .order("created_at", { ascending: false })
+  .limit(1)
+  .single();
 
-      if (!error && data) {
-        const stillActive = !data.expires_at || new Date(data.expires_at) > new Date();
-        setIsPremium(data.plan_type !== "free" && stillActive);
+    if (!error && data) {
+      if (data.is_active) {
+        setIsPremium(true);
+      } else {
+        setIsPremium(false);
       }
+    }
+console.log("Subscription check:", data, "isPremium:", isPremium);
+
+setSubscriptionChecked(true);
     };
     checkSubscription();
   }, [user]);
+
+  // 🔴 Realtime subscription for subscription changes
+useEffect(() => {
+  if (!user) return;
+
+  const channel = supabase
+    .channel("subscription_changes_channel")
+    .on(
+      "postgres_changes",
+      {
+        event: "*", // INSERT, UPDATE, DELETE
+        schema: "public",
+        table: "subscriptions",
+        filter: `user_id=eq.${user.id}`,
+      },
+      (payload) => {
+        console.log("Realtime subscription update:", payload);
+        // re-check subscription immediately
+        (async () => {
+          const { data } = await supabase
+            .from("subscriptions")
+            .select("plan_type, expires_at, is_active")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (data?.is_active) {
+            setIsPremium(true);
+          } else {
+            setIsPremium(false);
+          }
+        })();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [user]);
+
 
   // Fetch free units
   useEffect(() => {
@@ -134,7 +186,64 @@ const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
     };
     fetchFreeUnits();
   }, []);
+
+  // 🔴 Realtime subscription for quiz changes (free/locked)
+useEffect(() => {
+  const channel = supabase
+    .channel("quiz_changes_channel")
+    .on(
+      "postgres_changes",
+      {
+        event: "*", // listen to INSERT, UPDATE, DELETE
+        schema: "public",
+        table: "quizzes",
+      },
+      (payload) => {
+        console.log("Realtime quiz update:", payload);
+        // re-fetch free units immediately
+        (async () => {
+          const { data } = await supabase
+            .from("quizzes")
+            .select("unit_code, is_free")
+            .eq("is_active", true);
+
+          if (data) {
+            const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
+            setFreeUnits(free);
+          }
+        })();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
+
   const { data: unitCounts, loading, incrementCount } = useUnitQuestionCount();
+  // 🔴 Realtime subscription for question count updates
+useEffect(() => {
+  const channel = supabase
+    .channel("question_changes_channel")
+    .on(
+      "postgres_changes",
+      {
+        event: "*", 
+        schema: "public",
+        table: "questions",
+      },
+      () => {
+        incrementCount(""); // refresh all counts live
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [incrementCount]);
+
   const [refreshing, setRefreshing] = useState(false);
   const [popup, setPopup] = useState<string | null>(null);
 
@@ -161,8 +270,11 @@ const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
     }
     setRefreshing(false);
   };
+if (!subscriptionChecked) {
+  return <p className="text-center mt-10">Checking subscription...</p>;
+}
 
-  return (
+return (
     <div className="space-y-10">
       {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
 
@@ -228,15 +340,25 @@ const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
     {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
   </Badge>
   <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-{isPremium || freeUnits.includes(unit.code.trim()) ? (
-    <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
+{isPremium ? (
+  <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
+) : freeUnits.includes(unit.code.trim()) ? (
+  <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
 ) : (
-    <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
+  <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
 )}
+
 
 </div>
 
-{isPremium || freeUnits.includes(unit.code.trim()) ? (
+{isPremium ? (
+  <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+    <Button className="w-full mt-4">
+      <Play className="h-4 w-4 mr-2" />
+      Start Quiz
+    </Button>
+  </Link>
+) : freeUnits.includes(unit.code.trim()) ? (
   <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
     <Button className="w-full mt-4">
       <Play className="h-4 w-4 mr-2" />
@@ -248,6 +370,7 @@ const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
     Premium/Pro Only
   </Button>
 )}
+
 
                 </div>
               </CardContent>
@@ -278,14 +401,24 @@ const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
     {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
   </Badge>
   <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-{isPremium || freeUnits.includes(unit.code.trim()) ? (
-    <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
+{isPremium ? (
+  <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
+) : freeUnits.includes(unit.code.trim()) ? (
+  <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
 ) : (
-    <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
+  <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
 )}
 
+
 </div>
-{isPremium || freeUnits.includes(unit.code.trim()) ? (
+{isPremium ? (
+  <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+    <Button className="w-full mt-4">
+      <Play className="h-4 w-4 mr-2" />
+      Start Quiz
+    </Button>
+  </Link>
+) : freeUnits.includes(unit.code.trim()) ? (
   <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
     <Button className="w-full mt-4">
       <Play className="h-4 w-4 mr-2" />
@@ -297,6 +430,7 @@ const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
     Premium/Pro Only
   </Button>
 )}
+
 
 
                 </div>

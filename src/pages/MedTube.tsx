@@ -15,13 +15,15 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
-
+import { useRef } from "react";
 export function MedTube() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
@@ -33,6 +35,25 @@ export function MedTube() {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState<string>("00:00");
+const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null);
+
+// Track progress in localStorage
+useEffect(() => {
+  const savedProgress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
+  Object.entries(savedProgress).forEach(([id, time]) => {
+    const vid = videoRefs.current[id];
+    if (vid) {
+      vid.currentTime = Number(time);
+    }
+  });
+}, []);
+
+const saveProgress = (videoId: string, time: number) => {
+  const progress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
+  progress[videoId] = time;
+  localStorage.setItem("videoProgress", JSON.stringify(progress));
+};
 
   const categories = [
     { id: "trending", name: "Trending", icon: TrendingUp },
@@ -44,12 +65,27 @@ export function MedTube() {
     { id: "mine", name: "My Uploads", icon: Upload },
   ];
 
-  useEffect(() => {
-    const getUser = async () => {
+   useEffect(() => {
+    const getUserAndSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      if (user) {
+        const { data: subData, error } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (!error && subData) {
+          setSubscription(subData);
+        } else {
+          setSubscription(null);
+        }
+      }
     };
-    getUser();
+    getUserAndSubscription();
   }, []);
 
   const fetchVideos = async () => {
@@ -70,17 +106,13 @@ export function MedTube() {
 const enrichedVideos = await Promise.all(
   videosData.map(async (video) => {
     // Check if video is blocked or premium
-const isBlocked = video.block === 'true' || video.is_visible === false;
+// If subscription exists, nothing is blocked
+const isBlocked = subscription ? false : (video.block === 'true' || video.is_visible === false);
 const isPremium = video.is_premium === true;
 const isFreeVideo = video.is_free === true;
 
-// Enforce access rules
-const canAccess =
-  !isBlocked &&
-  (
-    isFreeVideo ||                  // Free videos are always accessible
-    (isPremium && user?.is_premium) // Premium videos accessible only to premium users
-  );
+// Access rules
+const canAccess = subscription ? true : !isBlocked && isFreeVideo;
 
 
     const [likesRes, viewsRes, uploaderRes] = await Promise.all([
@@ -115,9 +147,66 @@ const canAccess =
     setLoading(false);
   };
 
-  useEffect(() => {
+useEffect(() => {
+  if (user !== undefined) {
     fetchVideos();
-  }, [user]);
+  }
+}, [user, subscription]);
+// 🔴 Realtime subscription for MedTube (videos, likes, views, subscriptions)
+useEffect(() => {
+  const channel = supabase.channel("medtube_realtime");
+
+  channel
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "medtube_videos" },
+      () => {
+        console.log("Realtime: videos changed, refreshing...");
+        fetchVideos();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "medtube_video_likes" },
+      () => {
+        console.log("Realtime: likes changed, refreshing...");
+        fetchVideos();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "medtube_video_views" },
+      () => {
+        console.log("Realtime: views changed, refreshing...");
+        fetchVideos();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "subscriptions" },
+      async () => {
+        console.log("Realtime: subscription changed, refreshing user subscription...");
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        if (user) {
+          const { data: subData } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .maybeSingle();
+          setSubscription(subData || null);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
+
+
 
   const recordView = async (videoId: string) => {
     if (!user || !videoId) return;
@@ -244,7 +333,8 @@ const canAccess =
       setPreviewUrl(null);
       setDuration("00:00");
       setShowUploadForm(false);
-      fetchVideos();
+            //  No manual refresh needed, realtime will update video list
+
     }
 
     setUploading(false);
@@ -274,6 +364,12 @@ const canAccess =
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">MedTube</h1>
+          {subscription && (
+  <Badge className="ml-2 bg-green-600 text-white">
+    {subscription.plan_type.toUpperCase()}
+  </Badge>
+)}
+
           <p className="text-muted-foreground mt-2">Educational videos for nursing and medical education</p>
         </div>
         <Button className="flex items-center gap-2" onClick={() => setShowUploadForm(!showUploadForm)}>
@@ -324,7 +420,15 @@ const canAccess =
 
         {categories.map((cat) => (
           <TabsContent key={cat.id} value={cat.id}>
-            {loading ? <p>Loading...</p> : (
+           {loading ? (
+  <div className="flex flex-col justify-center items-center h-64 space-y-4">
+    <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+    <p className="text-center text-gray-600 font-medium">
+      Be patient ❤️ Heartique is loading videos...
+    </p>
+  </div>
+) : (
+
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredVideos
                   .filter((video) => {
@@ -341,28 +445,58 @@ const canAccess =
                   .map((video) => (
                     <Card key={video.id} className="group cursor-pointer transition-all hover:shadow-lg">
                       <div className="relative" onPlay={() => recordView(video.id)}>
-  {video.video_url && video.canAccess ? (
-<video
-  id={`video-${video.id}`}
-  controls={video.canAccess}      // Disable controls if user can't access
-  preload="metadata"
-  className={`w-full h-48 rounded-t-lg bg-black ${!video.canAccess ? "pointer-events-none opacity-50" : ""}`} // Gray out blocked video
->
-  {video.canAccess && <source src={video.video_url} type="video/mp4" />}
-  {!video.canAccess && (
-    <div className="w-full h-full flex items-center justify-center text-white text-center">
-      {video.isBlocked ? "This video has been blocked." : "Upgrade to Premium to watch this video."}
+{video.video_url ? (
+  video.canAccess ? (
+<div className="relative w-full h-48">
+  <video
+    ref={(el) => (videoRefs.current[video.id] = el)}
+    id={`video-${video.id}`}
+    controls
+    preload="none"
+    poster={video.thumbnail_url || "/placeholder.svg"}
+    className="w-full h-48 rounded-t-lg bg-black"
+    onPlay={() => {
+      setLoadingVideoId(video.id);
+      recordView(video.id);
+      const vid = videoRefs.current[video.id];
+      if (vid && vid.src === "") {
+        vid.src = video.video_url;
+        vid.play();
+      }
+    }}
+    onLoadedData={() => {
+      setLoadingVideoId(null);
+      const vid = videoRefs.current[video.id];
+      if (vid) {
+        const savedProgress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
+        if (savedProgress[video.id]) {
+          vid.currentTime = savedProgress[video.id];
+        }
+      }
+    }}
+    onTimeUpdate={(e) => {
+      const vid = e.currentTarget;
+      saveProgress(video.id, vid.currentTime);
+    }}
+  />
+  
+  {/* Spinner overlay */}
+  {loadingVideoId === video.id && (
+    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+      <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
     </div>
   )}
-  Your browser does not support the video tag.
-</video>
+</div>
 
-) : video.video_url && !video.canAccess ? (
-  <div className="w-full h-48 rounded-t-lg bg-black flex items-center justify-center text-white text-center p-2">
-    {video.isBlocked
-      ? "This video has been blocked."
-      : "Upgrade to Premium to watch this video."}
-  </div>
+
+
+  ) : (
+    <div className="w-full h-48 rounded-t-lg bg-black flex items-center justify-center text-white text-center p-2">
+      {video.isBlocked
+        ? "This video has been blocked."
+        : "Upgrade to Premium to watch this video."}
+    </div>
+  )
 ) : (
   <img
     src={video.thumbnail_url || "/placeholder.svg"}
@@ -373,41 +507,42 @@ const canAccess =
 
 
 
+
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg flex items-center justify-center pointer-events-none">
                           <Button
                             size="lg"
                             className="rounded-full w-16 h-16 pointer-events-auto"
                             onClick={(e) => {
   e.stopPropagation();
-
   // Do nothing if user cannot access the video
   if (!video.canAccess) {
   const message = video.isBlocked 
     ? "This video has been blocked." 
     : "Upgrade to Premium to watch this video.";
-    
   alert(message);
-  
   // Redirect free users to subscription page
   if (!video.isBlocked) {
     navigate("/subscription");
   }
   return;
 }
-
-
-  const vid = document.getElementById(`video-${video.id}`) as HTMLVideoElement;
-  if (!vid) return;
-
-  if (vid.paused) {
-    vid.play();
-    setPlayingVideoId(video.id);
-  } else {
-    vid.pause();
-    setPlayingVideoId(null);
+const vid = videoRefs.current[video.id];
+if (!vid) return;
+// Pause any other playing video
+Object.entries(videoRefs.current).forEach(([id, v]) => {
+  if (id !== video.id && v && !v.paused) {
+    v.pause();
   }
-}}
+});
 
+if (vid.paused) {
+  vid.play();
+  setPlayingVideoId(video.id);
+} else {
+  vid.pause();
+  setPlayingVideoId(null);
+}
+}}
                           >
                             {playingVideoId === video.id ? (
                               <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -429,6 +564,11 @@ const canAccess =
                         <CardTitle className="text-base line-clamp-2 group-hover:text-primary transition-colors">
                           {video.title}
                         </CardTitle>
+                        {subscription && (
+  <Badge className="bg-green-600 text-white ml-2">
+    UNLOCKED
+  </Badge>
+)}
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={"/placeholder.svg"} />

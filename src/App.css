@@ -40,3 +40,38 @@
 .read-the-docs {
   color: #888;
 }
+/* Bounce once on page load */
+.animate-bounce-once {
+  animation: bounce-once 0.6s ease forwards;
+  animation-delay: 0.2s; /* slight delay before starting */
+}
+
+/* Bounce slowly on hover after the initial bounce */
+.animate-bounce-hover {
+  /* No initial animation; only triggers on hover */
+}
+
+.animate-bounce-hover:hover {
+  animation: bounce-hover 1s infinite;
+  animation-delay: 0.6s; /* ensures it starts after initial bounce */
+}
+
+@keyframes bounce-once {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes bounce-hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Spin for the Plus icon */
+.animate-spin-slow {
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

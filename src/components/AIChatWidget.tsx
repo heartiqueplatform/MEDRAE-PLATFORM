@@ -5,6 +5,7 @@ import { MessageCircle, Send, X, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { supabase } from "@/lib/supabaseClient";
 
 type Message = {
   role: string;
@@ -12,13 +13,43 @@ type Message = {
   timestamp: string;
 };
 
+function FloatingTypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
+  return (
+    <div className="flex items-center gap-1">
+      <span className={`w-2 h-2 rounded-full ${isDarkTheme ? 'bg-teal-400' : 'bg-teal-600'} animate-float1`}></span>
+      <span className={`w-2 h-2 rounded-full ${isDarkTheme ? 'bg-teal-400' : 'bg-teal-600'} animate-float2`}></span>
+      <span className={`w-2 h-2 rounded-full ${isDarkTheme ? 'bg-teal-400' : 'bg-teal-600'} animate-float3`}></span>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-5px); }
+        }
+        .animate-float1 { animation: float 1.2s infinite; }
+        .animate-float2 { animation: float 1.2s infinite 0.2s; }
+        .animate-float3 { animation: float 1.2s infinite 0.4s; }
+      `}</style>
+    </div>
+  );
+}
+
+
 export default function AIChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  setIsDarkTheme(media.matches);
+  const listener = (e: MediaQueryListEvent) => setIsDarkTheme(e.matches);
+  media.addEventListener("change", listener);
+  return () => media.removeEventListener("change", listener);
+}, []);
 
   // ✅ Auto-scroll whenever messages change
   useEffect(() => {
@@ -43,21 +74,23 @@ export default function AIChatWidget() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
-      });
+      const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
+  body: { message: input },
+});
 
-      const data = await res.json();
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: data.reply,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
+if (error) {
+  throw error;
+}
+
+setMessages([
+  ...newMessages,
+  {
+    role: "assistant",
+    content: data?.reply || "⚠️ Sorry, I couldn’t generate a response.",
+    timestamp: new Date().toISOString(),
+  },
+]);
+
     } catch (error) {
       console.error("Error sending message:", error);
       setMessages([
@@ -83,9 +116,7 @@ export default function AIChatWidget() {
 >
   <MessageCircle size={48} className="drop-shadow-xl text-white" />
 </Button>
-
       )}
-
       {/* Chat Window */}
       {open && (
         <Card
@@ -165,17 +196,18 @@ export default function AIChatWidget() {
                   </div>
                 );
               })}
+{loading && (
+  <div className="flex items-start gap-2">
+    <div className="p-2 bg-teal-600 text-white rounded-full">
+      <Stethoscope size={24} className="text-white drop-shadow-xl" />
+    </div>
+    <div className="p-2 rounded-xl bg-teal-200 text-teal-900 max-w-[75%] shadow flex items-center">
+      <FloatingTypingBubbles isDarkTheme={isDarkTheme} />
+    </div>
+  </div>
+)}
 
-              {loading && (
-                <div className="flex items-start gap-2">
-                  <div className="p-2 bg-teal-600 text-white rounded-full">
-                   <Stethoscope size={24} className="text-white drop-shadow-xl" />
-                  </div>
-                  <div className="p-2 rounded-xl bg-teal-200 text-teal-900 max-w-[75%] shadow">
-                    ❤️ Heartique is generating full reply… in a few just few second...
-                  </div>
-                </div>
-              )}
+
             </div>
 
             {/* Input */}

@@ -44,10 +44,16 @@ export function Resources() {
   });
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [floatingBlockOpen, setFloatingBlockOpen] = useState(false);
+const [selectedBlock, setSelectedBlock] = useState("PTS");
+
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
   const [session, setSession] = useState<any>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [fullscreenNote, setFullscreenNote] = useState<any>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
+const [loadingNotes, setLoadingNotes] = useState(true);
 
   const blockCategories = [
     { id: "PTS", name: "YR 1.O/PTS" },
@@ -59,29 +65,58 @@ export function Resources() {
     { id: "BLOCK 6", name: "YR 3.1/BLOCK 6" },
     { id: "OTHER", name: "ADDITIONAL RESOURCES" },
   ];
+useEffect(() => {
+  const fetchNotes = async () => {
+    setLoadingNotes(true); // start spinner
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-    };
-    fetchSession();
-  }, []);
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .eq("is_public", true)
+      .eq("approved", true)
+      .order("created_at", { ascending: false });
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      const { data, error } = await supabase
-        .from("notes")
-        .select("*")
-        .eq("is_public", true)
-        .eq("approved", true)
-        .order("created_at", { ascending: false });
+    if (error) console.error("Error fetching notes:", error);
+    else setNotes(data || []);
 
-      if (error) console.error("Error fetching notes:", error);
-      else setNotes(data || []);
-    };
-    fetchNotes();
-  }, []);
+    setLoadingNotes(false); // stop spinner
+  };
+  fetchNotes();
+}, []);
+
+
+  // ✅ Realtime subscription for notes table
+useEffect(() => {
+  const channel = supabase
+    .channel("notes-changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "notes" },
+      (payload) => {
+        console.log("Realtime change:", payload);
+
+        if (payload.eventType === "INSERT") {
+          setNotes((prev) => [payload.new as any, ...prev]);
+        }
+
+        if (payload.eventType === "UPDATE") {
+          setNotes((prev) =>
+            prev.map((n) => (n.id === payload.new.id ? payload.new : n))
+          );
+        }
+
+        if (payload.eventType === "DELETE") {
+          setNotes((prev) => prev.filter((n) => n.id !== payload.old.id));
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
+
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -121,6 +156,68 @@ export function Resources() {
 
     fetchStats();
   }, [notes, session]);
+  // ✅ Realtime subscription for likes & views
+useEffect(() => {
+    const likeChannel = supabase
+    .channel("likes-changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "note_likes" },
+      (payload) => {
+        if (payload.eventType === "INSERT") {
+          // update like counts
+          setLikeCounts((prev) => ({
+            ...prev,
+            [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
+          }));
+
+          // if it's THIS USER → update bookmarkedItems too
+          if (payload.new.user_id === session?.user?.id) {
+            setBookmarkedItems((prev) => [...prev, payload.new.note_id]);
+          }
+        }
+
+        if (payload.eventType === "DELETE") {
+          // update like counts
+          setLikeCounts((prev) => ({
+            ...prev,
+            [payload.old.note_id]: Math.max(
+              (prev[payload.old.note_id] || 1) - 1,
+              0
+            ),
+          }));
+
+          // if it's THIS USER → remove from bookmarkedItems
+          if (payload.old.user_id === session?.user?.id) {
+            setBookmarkedItems((prev) =>
+              prev.filter((id) => id !== payload.old.note_id)
+            );
+          }
+        }
+      }
+    )
+    .subscribe();
+
+  const viewChannel = supabase
+    .channel("views-changes")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "note_views" },
+      (payload) => {
+        setViewCounts((prev) => ({
+          ...prev,
+          [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
+        }));
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(likeChannel);
+    supabase.removeChannel(viewChannel);
+  };
+}, []);
+
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -136,41 +233,89 @@ export function Resources() {
       (note.description || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+    // ✅ Like toggle function with optimistic UI
   const toggleLike = async (noteId: string) => {
     if (!session?.user?.id) return alert("Login required");
 
-    const alreadyLiked = bookmarkedItems.includes(noteId);
+    const hasLiked = bookmarkedItems.includes(noteId);
 
-    if (alreadyLiked) {
-      await supabase
+    // 🔹 Optimistic UI update
+    if (hasLiked) {
+      setBookmarkedItems((prev) => prev.filter((id) => id !== noteId));
+      setLikeCounts((prev) => ({
+        ...prev,
+        [noteId]: Math.max((prev[noteId] || 1) - 1, 0),
+      }));
+    } else {
+      setBookmarkedItems((prev) => [...prev, noteId]);
+      setLikeCounts((prev) => ({
+        ...prev,
+        [noteId]: (prev[noteId] || 0) + 1,
+      }));
+    }
+
+    // 🔹 Then sync with Supabase
+    if (hasLiked) {
+      const { error } = await supabase
         .from("note_likes")
         .delete()
-        .match({ note_id: noteId, user_id: session.user.id });
+        .eq("note_id", noteId)
+        .eq("user_id", session.user.id);
 
-      setBookmarkedItems((prev) => prev.filter((id) => id !== noteId));
-      setLikeCounts((prev) => ({ ...prev, [noteId]: (prev[noteId] || 1) - 1 }));
+      if (error) {
+        console.error("Error unliking:", error);
+        // rollback UI if failed
+        setBookmarkedItems((prev) => [...prev, noteId]);
+        setLikeCounts((prev) => ({
+          ...prev,
+          [noteId]: (prev[noteId] || 0) + 1,
+        }));
+      }
     } else {
-      await supabase.from("note_likes").insert({
-        note_id: noteId,
-        user_id: session.user.id,
-      });
+      const { error } = await supabase
+        .from("note_likes")
+        .insert([{ note_id: noteId, user_id: session.user.id }]);
 
-      setBookmarkedItems((prev) => [...prev, noteId]);
-      setLikeCounts((prev) => ({ ...prev, [noteId]: (prev[noteId] || 0) + 1 }));
+      if (error) {
+        console.error("Error liking:", error);
+        // rollback UI if failed
+        setBookmarkedItems((prev) => prev.filter((id) => id !== noteId));
+        setLikeCounts((prev) => ({
+          ...prev,
+          [noteId]: Math.max((prev[noteId] || 1) - 1, 0),
+        }));
+      }
     }
   };
+
 
   const uploadResource = async () => {
     if (!file || !session?.user) return alert("Missing file or user.");
     setUploading(true);
     const filePath = `${Date.now()}_${file.name}`;
-    const { error: storageError } = await supabase.storage
-      .from("notes")
-      .upload(filePath, file);
+// Fake progress simulation
+setUploadProgress(0);
+const progressInterval = setInterval(() => {
+  setUploadProgress((prev) => {
+    if (prev === null) return 0;
+    if (prev >= 90) return prev; // stop at 90% until upload finishes
+    return prev + 10;
+  });
+}, 300);
+
+const { error: storageError } = await supabase.storage
+  .from("notes")
+  .upload(filePath, file);
+
+clearInterval(progressInterval);
+setUploadProgress(100);
+
 
     if (storageError) {
       console.error("Storage error", storageError);
       setUploading(false);
+      setTimeout(() => setUploadProgress(null), 1000); // hide bar after 1s
+
       return;
     }
 
@@ -192,16 +337,34 @@ export function Resources() {
       console.error("DB error", dbError);
       alert("Upload failed");
     } else {
-      alert("Upload successful!");
-      setUploadForm({
-        title: "",
-        description: "",
-        block: "PTS",
-        course: "",
-        fileType: "pdf",
-      });
-      setFile(null);
-      setShowUploadForm(false);
+     alert("Upload successful!");
+
+// ✅ Immediately update UI without waiting for subscription
+setNotes((prev) => [
+  {
+    id: crypto.randomUUID(),
+    title: uploadForm.title,
+    description: uploadForm.description,
+    block: uploadForm.block,
+    course: uploadForm.course,
+    file_type: uploadForm.fileType,
+    file_url,
+    created_at: new Date().toISOString(),
+    uploaded_by: session.user.id,
+  },
+  ...prev,
+]);
+
+setUploadForm({
+  title: "",
+  description: "",
+  block: "PTS",
+  course: "",
+  fileType: "pdf",
+});
+setFile(null);
+setShowUploadForm(false);
+
     }
     setUploading(false);
   };
@@ -310,6 +473,15 @@ export function Resources() {
           <Button onClick={uploadResource} disabled={uploading}>
             {uploading ? "Uploading..." : "Submit Resource"}
           </Button>
+          {uploadProgress !== null && (
+  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+    <div
+      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+      style={{ width: `${uploadProgress}%` }}
+    />
+  </div>
+)}
+
         </div>
       )}
       <div className="relative">
@@ -321,138 +493,159 @@ export function Resources() {
           className="pl-10"
         />
       </div>
+{/* Static Block Selector Below Search */}
+<div className="relative mt-4">
+  <Button
+    onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
+  className="bg-blue-500 text-white dark:bg-blue-600 dark:text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
 
-      <Tabs defaultValue="PTS" className="space-y-4">
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-  {blockCategories.map((cat) => (
-    <TabsTrigger
-      key={cat.id}
-      value={cat.id}
-      className="px-3 py-2 rounded-lg text-xs font-medium 
-                 bg-gray-100 text-gray-700 
-                 hover:bg-gray-200 
-                 data-[state=active]:bg-blue-600 
-                 data-[state=active]:text-white 
-                 transition-colors"
-    >
-      {cat.name}
-    </TabsTrigger>
-  ))}
-</TabsList>
+  >
+    Choose Block OR Semester here
+  </Button>
 
+  {floatingBlockOpen && (
+    <div className="mt-2 bg-white dark:bg-gray-800 shadow-md rounded-lg w-48">
+      {blockCategories.map((cat) => (
+        <button
+          key={cat.id}
+          onClick={() => {
+            setSelectedBlock(cat.id);
+            setFloatingBlockOpen(false);
+          }}
+          className={`w-full text-left px-4 py-2 hover:bg-blue-100 dark:hover:bg-blue-700 ${
+            selectedBlock === cat.id ? "font-bold" : ""
+          }`}
+        >
+          {cat.name}
+        </button>
+      ))}
+    </div>
+  )}
+</div>
 
-        {blockCategories.map((cat) => (
-          <TabsContent key={cat.id} value={cat.id}>
-            <div className="grid gap-4">
-              {filteredResources
-                .filter((note) =>
-                  cat.id === "OTHER"
-                    ? !blockCategories
-                        .slice(0, 7)
-                        .some((b) => (note.block || "").toUpperCase() === b.id)
-                    : (note.block || "").toUpperCase() === cat.id
-                )
-                .map((note) => (
-                  <Card key={note.id} className="transition-all hover:shadow-lg">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            {getTypeIcon(note.file_type)}
-                            <CardTitle className="text-lg">
-                              {note.title}
-                            </CardTitle>
-                            <Badge className={getTypeColor(note.file_type)}>
-                              {note.file_type.toUpperCase()}
-                            </Badge>
-                          </div>
-                          <CardDescription>{note.description}</CardDescription>
-                          <div className="text-sm text-muted-foreground">
-                            {note.course && <span>{note.course}</span>}
-                            <span>
-                              {" "}
-                              · Uploaded{" "}
-                              {new Date(
-                                note.created_at
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleLike(note.id)}
-                          className={
-                            bookmarkedItems.includes(note.id)
-                              ? "text-red-500"
-                              : ""
-                          }
-                        >
-                          <Heart
-                            className={`h-4 w-4 ${
-                              bookmarkedItems.includes(note.id)
-                                ? "fill-current"
-                                : ""
-                            }`}
-                          />
-                          <span className="ml-1 text-xs">
-                            {likeCounts[note.id] || 0}
-                          </span>
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {note.file_type === "pdf" && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="flex gap-1 items-center"
-                          onClick={async () => {
-                            setFullscreenNote(note);
-                            if (session?.user?.id) {
-                              const { error } = await supabase
-                                .from("note_views")
-                                .insert({
-                                  note_id: note.id,
-                                  user_id: session.user.id,
-                                });
-                              if (!error) {
-                                setViewCounts((prev) => ({
-                                  ...prev,
-                                  [note.id]: (prev[note.id] || 0) + 1,
-                                }));
-                              }
-                            }
-                          }}
-                        >
-                          <Eye className="h-4 w-4" /> Fullscreen View
-                        </Button>
-                      )}
-                      {note.file_type !== "pdf" && (
-                        <Button size="sm" asChild>
-                          <a
-                            href={note.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1"
-                          >
-                            <Download className="h-3 w-3" />
-                            Open {note.file_type}
-                          </a>
-                        </Button>
-                      )}
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        <span>{viewCounts[note.id] || 0} views</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+{/* Tabs content controlled by selectedBlock */}
+<div className="space-y-4 mt-2">
+  {blockCategories
+    .filter((cat) => cat.id === selectedBlock)
+    .map((cat) => (
+      <div key={cat.id}>
+        <div className="grid gap-4">
+          {loadingNotes ? (
+            <div className="flex flex-col items-center justify-center py-20 col-span-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-muted-foreground text-center">
+                Please be patient, Heartique is preparing your notes...
+              </p>
             </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+          ) : filteredResources.filter((note) =>
+              cat.id === "OTHER"
+                ? !blockCategories
+                    .slice(0, 7)
+                    .some((b) => (note.block || "").toUpperCase() === b.id)
+                : (note.block || "").toUpperCase() === cat.id
+            ).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 col-span-full">
+              <p className="text-muted-foreground text-center">
+                No notes available for this category yet. Check back soon for updates!
+              </p>
+            </div>
+          ) : (
+            filteredResources
+              .filter((note) =>
+                cat.id === "OTHER"
+                  ? !blockCategories
+                      .slice(0, 7)
+                      .some((b) => (note.block || "").toUpperCase() === b.id)
+                  : (note.block || "").toUpperCase() === cat.id
+              )
+              .map((note) => (
+                <Card key={note.id} className="transition-all hover:shadow-lg">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          {getTypeIcon(note.file_type)}
+                          <CardTitle className="text-lg">{note.title}</CardTitle>
+                          <Badge className={getTypeColor(note.file_type)}>
+                            {note.file_type.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <CardDescription>{note.description}</CardDescription>
+                        <div className="text-sm text-muted-foreground">
+                          {note.course && <span>{note.course}</span>}
+                          <span>
+                            {" "}
+                            · Uploaded {new Date(note.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleLike(note.id)}
+                        className={bookmarkedItems.includes(note.id) ? "text-red-500" : ""}
+                      >
+                        <Heart
+                          className={`h-4 w-4 ${
+                            bookmarkedItems.includes(note.id) ? "fill-current" : ""
+                          }`}
+                        />
+                        <span className="ml-1 text-xs">{likeCounts[note.id] || 0}</span>
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {note.file_type === "pdf" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="flex gap-1 items-center"
+                        onClick={async () => {
+                          setFullscreenNote(note);
+                          if (session?.user?.id) {
+                            const { error } = await supabase
+                              .from("note_views")
+                              .insert({ note_id: note.id, user_id: session.user.id });
+                            if (!error) {
+                              setViewCounts((prev) => ({
+                                ...prev,
+                                [note.id]: (prev[note.id] || 0) + 1,
+                              }));
+                            }
+                          }
+                        }}
+                      >
+                        <Eye className="h-4 w-4" /> Fullscreen View
+                      </Button>
+                    )}
+                    {note.file_type !== "pdf" && (
+                      <Button size="sm" asChild>
+                        <a
+                          href={note.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1"
+                        >
+                          <Download className="h-3 w-3" />
+                          Open {note.file_type}
+                        </a>
+                      </Button>
+                    )}
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      <span>{viewCounts[note.id] || 0} views</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+          )}
+        </div>
+      </div>
+    ))}
+</div>
 
+
+      
       {fullscreenNote && (
         <div
           ref={fullscreenRef}

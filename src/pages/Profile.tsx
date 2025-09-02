@@ -98,9 +98,16 @@ export function Profile() {
     return <p className="text-center mt-10 text-muted-foreground">Authenticating user...</p>;
   }
 
-  if (loading || !profile) {
-    return <p className="text-center mt-10 text-muted-foreground">Loading profile...</p>;
-  }
+if (loading || !profile) {
+  return (
+    <div className="flex flex-col items-center justify-center mt-20 space-y-4">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
+      <p className="text-muted-foreground text-center">
+        Please be patient, Heartique is aligning your content...
+      </p>
+    </div>
+  );
+}
 
   return (
     <div className="space-y-6">

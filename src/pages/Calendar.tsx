@@ -53,6 +53,32 @@ export function Calendar() {
     getUserAndEvents();
   }, []);
 
+  // 🔴 Realtime subscription
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("calendar_events_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // listen to INSERT, UPDATE, DELETE
+          schema: "public",
+          table: "calendar_events",
+          filter: `user_id=eq.${userId}`,
+        },
+               () => {
+          if (userId) fetchEvents(userId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  
   async function fetchEvents(user_id: string) {
     const { data, error } = await supabase
       .from("calendar_events")
@@ -97,7 +123,7 @@ export function Calendar() {
       toast({ title: "Event added!" });
       setShowModal(false);
       setForm({ title: "", description: "", time: "", type: "exam", priority: "high" });
-      fetchEvents(userId);
+            // realtime will refresh automatically
     } else {
       toast({ title: "Error saving event." });
       console.error(error);
@@ -119,7 +145,7 @@ export function Calendar() {
 
     if (!error) {
       toast({ title: "Event deleted!" });
-      fetchEvents(userId);
+            // No manual fetch needed — realtime handles update
     } else {
       toast({ title: "Error deleting event." });
       console.error(error);

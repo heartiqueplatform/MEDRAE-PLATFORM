@@ -33,7 +33,7 @@ export function StudyProgress() {
   const [loading, setLoading] = useState(true);
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchProgress = async () => {
       setLoading(true);
 
@@ -69,15 +69,12 @@ export function StudyProgress() {
         grouped[key].count += 1;
       });
 
-      // Only include units with submissions
       const unitsWithStats = allUnits
         .filter((unit) => grouped[unit.title])
         .map((unit) => {
           const stats = grouped[unit.title];
           const progress = stats.total > 0 ? Math.round((stats.score / stats.total) * 100) : 0;
           const hours = stats.count * 1.5;
-
-          // If done at least one quiz → 5 stars
           const rating = stats.count > 0 ? 5 : 0;
 
           return {
@@ -87,7 +84,7 @@ export function StudyProgress() {
             rating,
             hoursStudied: hours,
             topicsCompleted: stats.count,
-            totalTopics: stats.count, // using completed count for now
+            totalTopics: stats.count,
           };
         });
 
@@ -96,8 +93,30 @@ export function StudyProgress() {
       setLoading(false);
     };
 
+    // Run once on mount
     fetchProgress();
+
+    // ✅ Realtime subscription
+    const channel = supabase
+      .channel("quiz_results_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "quiz_results" },
+        (payload) => {
+          console.log("Realtime update:", payload);
+          setLoading(true); // show spinner while updating
+fetchProgress();
+
+        }
+      )
+      .subscribe();
+
+    // Cleanup on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
 
   const overallStats = {
     totalHours: subjects.reduce((acc, s) => acc + s.hoursStudied, 0),
@@ -197,9 +216,13 @@ export function StudyProgress() {
         </TabsList>
 
         <TabsContent value="subjects" className="space-y-4">
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
+        {loading ? (
+  <div className="flex justify-center items-center py-10">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+    <p className="ml-4 text-muted-foreground">Updating progress...</p>
+  </div>
+) : (
+
             <div className="grid gap-4">
               {subjects.map((subject) => (
                 <Card key={subject.id} className="transition-all hover:shadow-lg">

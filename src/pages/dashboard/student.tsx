@@ -37,6 +37,31 @@ const { toast } = useToast();
 const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 // Track the latest post ID
 const [latestPostId, setLatestPostId] = useState<string | null>(null);
+// Global loading state for spinner
+const [loading, setLoading] = useState(true);
+
+const loadDashboardData = async () => {
+  if (!user?.id) return;
+
+  setLoading(true); // Show spinner at the very start
+
+  try {
+    // Run all fetches in parallel
+    await Promise.all([
+      fetchProfile(),
+      fetchProgress(),
+      fetchQuizzes(),
+      handleLoginAndStreak(),
+      fetchCalendarEvents(),
+      fetchUnitCounts(),
+      fetchDailyPosts(),
+    ]);
+  } catch (err) {
+    console.error("Error loading dashboard data:", err);
+  } finally {
+    setLoading(false); // Hide spinner when all data is loaded
+  }
+};
 
 // Handle posting daily thought
 const handlePostDaily = async () => {
@@ -157,11 +182,11 @@ if (dailyDuration === "3m") durationMs = 90 * 24 * 60 * 60 * 1000;
 const since = new Date(Date.now() - durationMs).toISOString();
 
   // Fetch all posts regardless of user
-  const { data: posts, error: postsError } = await supabase
-    .from("daily_posts")
-    .select("*")
-    .gte("created_at", since)
-    .order("created_at", { ascending: false });
+const { data: posts, error: postsError } = await supabase
+  .from("valid_daily_posts") // 👈 query the view instead of the table
+  .select("*")
+  .order("created_at", { ascending: false });
+
 
   if (postsError) {
     console.error("Error fetching daily posts:", postsError.message);
@@ -214,9 +239,13 @@ const since = new Date(Date.now() - durationMs).toISOString();
 };
 
 // Initial fetch
+// Load all dashboard data on page open
 useEffect(() => {
-  fetchDailyPosts(); // no user check needed, public
-}, []);
+  if (user?.id) {
+    loadDashboardData(); // spinner controlled inside this function
+  }
+}, [user]);
+
 
 // Auto-refresh every 60s
 useEffect(() => {
@@ -228,19 +257,9 @@ useEffect(() => {
 
   // New: unit question counts from view
   const [unitCounts, setUnitCounts] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (user?.id) {
-      fetchProfile();
-      fetchProgress();
-      fetchQuizzes();
-      handleLoginAndStreak();
-      fetchCalendarEvents();
-      fetchUnitCounts();
-    }
-  }, [user]);
-
+  
   const fetchProfile = async () => {
+    setLoading(true); // show spinner
     const { data, error } = await supabase
       .from("profiles")
       .select("name")
@@ -249,6 +268,7 @@ useEffect(() => {
     if (!error && data?.name) {
       setName(data.name.split(" ")[0]);
     }
+    setLoading(false); // hide spinner
   };
 
   const handleLoginAndStreak = async () => {
@@ -404,8 +424,17 @@ const fetchProgress = async () => {
     }
   };
 
-  return (
-    <div className="space-y-6">
+return (
+  <div className="space-y-6">
+    {loading && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+          <p className="mt-4 text-white text-lg">Updating dashboard...</p>
+        </div>
+      </div>
+    )}
+
       {/* Welcome Section */}
       <div className="bg-gradient-hero rounded-xl p-6 text-white">
         <h1 className="text-2xl md:text-3xl font-bold mb-2">
@@ -418,27 +447,58 @@ const fetchProgress = async () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Study Progress</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{studyProgress}%</div>
-            <Progress value={studyProgress} className="mt-2" />
-          </CardContent>
-        </Card>
+        <Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background06.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Quizzes Completed</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{quizCount}</div>
-            <p className="text-xs text-muted-foreground">+3 this week</p>
-          </CardContent>
-        </Card>
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Study Progress
+      </CardTitle>
+      <TrendingUp className="h-4 w-4 text-white" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{studyProgress}%</div>
+      <Progress value={studyProgress} className="mt-2" />
+    </CardContent>
+  </div>
+</Card>
+
+    <Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background07.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
+
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Quizzes Completed
+      </CardTitle>
+      <Target className="h-4 w-4 text-white" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{quizCount}</div>
+      <p className="text-xs text-white/80">+3 this week</p>
+    </CardContent>
+  </div>
+</Card>
+
 
       <Card className="relative cursor-pointer hover:shadow-lg transition-shadow">
   {/* Background Image */}
@@ -467,31 +527,187 @@ const fetchProgress = async () => {
   </div>
 </Card>
 
+<Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background08.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{studyStreak} days</div>
-            <p className="text-xs text-muted-foreground">Keep it up!</p>
-          </CardContent>
-        </Card>
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Current Streak
+      </CardTitle>
+      <Clock className="h-4 w-4 text-white" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{studyStreak} days</div>
+      <p className="text-xs text-white/80">Keep it up!</p>
+    </CardContent>
+  </div>
+</Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Best Streak</CardTitle>
-            <Trophy className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{bestStreak} days</div>
-            <p className="text-xs text-muted-foreground">All-time record</p>
-          </CardContent>
-        </Card>
+<Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background09.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
+
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Best Streak
+      </CardTitle>
+      <Trophy className="h-4 w-4 text-yellow-500" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{bestStreak} days</div>
+      <p className="text-xs text-white/80">All-time record</p>
+    </CardContent>
+  </div>
+</Card>
+
       </div>
+<Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+  <CardHeader>
+    <CardTitle className="text-gray-900 dark:text-white">💖 Heartique Daily Status</CardTitle>
+    <CardDescription className="text-gray-700 dark:text-gray-300">
+      This section is designed not just for posting daily thoughts, personal reflections, or fun images, but as a dedicated space where nursing and medical professionals can learn, reflect, and inspire each other. Every note, idea, or snapshot you share has the potential to enrich others, spark meaningful discussion, provide insight into practical healthcare experiences, and offer real-life lessons from the medical field. Think of this as a daily mini-journal for your professional growth, where small learnings, important observations, and unique experiences are carefully captured, shared, and preserved so that they can be revisited and learned from in the future. Contributions here should aim to be educational, informative, or thought-provoking, helping yourself and your peers grow in knowledge, clinical reasoning, and professional awareness. Posting anything that is irrelevant, uneducative, or not aligned with the learning purpose may lead to removal of the content or, in serious cases, a ban from the site. By participating responsibly, you are creating content that is memorable, educational, inspiring, and meaningful, contributing to a community of learners who support and uplift each other every day.
+    </CardDescription>
+  </CardHeader>
 
-      
+  <CardContent className="space-y-4">
+    <textarea
+      className="w-full p-3 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      placeholder="Write today's thought..."
+      value={dailyContent}
+      onChange={(e) => setDailyContent(e.target.value)}
+    />
+
+    <div className="flex items-center gap-2 mt-2">
+      <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
+      <select
+        value={dailyDuration}
+        onChange={(e) => setDailyDuration(e.target.value as any)}
+        className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded"
+      >
+        <option value="24h">24 Hours</option>
+        <option value="1w">1 Week</option>
+        <option value="1m">1 Month</option>
+        <option value="3m">3 Months</option>
+      </select>
+    </div>
+
+    <input
+      type="file"
+      accept="image/*"
+      onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
+      className="text-gray-900 dark:text-white"
+    />
+
+    <Button onClick={handlePostClick} className="w-full mt-2" disabled={uploading}>
+      {uploading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Uploading...
+        </>
+      ) : (
+        "Post"
+      )}
+    </Button>
+
+    {/* Display recent daily posts */}
+    <div className="space-y-3 mt-4">
+      {dailyPosts.length > 0 ? dailyPosts.map((post) => (
+        <motion.div
+          key={post.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+        >
+          <div className="flex flex-col md:flex-row gap-4 items-start">
+            {/* User Info */}
+            <div className="flex-shrink-0 flex flex-col items-center md:items-start gap-2">
+              {post.profiles?.avatar_url ? (
+                <img
+                  src={post.profiles.avatar_url}
+                  alt={post.profiles.username}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
+                  {post.profiles?.username?.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{post.profiles?.full_name}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">@{post.profiles?.username}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{post.profiles?.institution}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">{post.profiles?.county}</p>
+            </div>
+
+            {/* Post Content & Image */}
+            <div className="flex-1 flex flex-col gap-2">
+              {post.content && <p className="text-gray-900 dark:text-white">{post.content}</p>}
+              {post.image_url && (
+                <img
+                  src={post.image_url}
+                  alt="daily"
+                  className="rounded w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
+                  onClick={() => setFullscreenImage(post.image_url)}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              )}
+            </div>
+
+            {/* Delete Button */}
+            {user?.id === post.user_id && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="ml-auto md:ml-0 mt-2 md:mt-0"
+                onClick={() => handleDeletePost(post.id, post.user_id)}
+              >
+                Delete
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} • 
+            Expires on {new Date(post.expires_at).toLocaleString()}
+          </p>
+        </motion.div>
+      )) : (
+        <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
+      )}
+    </div>
+  </CardContent>
+
+  {/* Fullscreen modal */}
+  {fullscreenImage && (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+      onClick={() => setFullscreenImage(null)}
+    >
+      <img
+        src={fullscreenImage}
+        alt="fullscreen"
+        className="max-w-full max-h-full object-contain rounded"
+      />
+    </div>
+  )}
+</Card>
 
       {/* New Unit Question Counts Section */}
       <Card>
@@ -669,133 +885,7 @@ const fetchProgress = async () => {
 </Card>
 
         </div>
-<Card className="lg:col-span-3 w-full bg-gray-800 dark:bg-gray-900">
-  <CardHeader>
-    <CardTitle className="text-white">💖 Heartique Daily Status</CardTitle>
-    <CardDescription className="text-white">
-      This section is designed not just for posting daily thoughts, personal reflections, or fun images, but as a dedicated space where nursing and medical professionals can learn, reflect, and inspire each other. Every note, idea, or snapshot you share has the potential to enrich others, spark meaningful discussion, provide insight into practical healthcare experiences, and offer real-life lessons from the medical field. Think of this as a daily mini-journal for your professional growth, where small learnings, important observations, and unique experiences are carefully captured, shared, and preserved so that they can be revisited and learned from in the future. Contributions here should aim to be educational, informative, or thought-provoking, helping yourself and your peers grow in knowledge, clinical reasoning, and professional awareness. Posting anything that is irrelevant, uneducative, or not aligned with the learning purpose may lead to removal of the content or, in serious cases, a ban from the site. By participating responsibly, you are creating content that is memorable, educational, inspiring, and meaningful, contributing to a community of learners who support and uplift each other every day.
-    </CardDescription>
-  </CardHeader>
 
-  <CardContent className="space-y-4">
-    <textarea
-      className="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      placeholder="Write today's thought..."
-      value={dailyContent}
-      onChange={(e) => setDailyContent(e.target.value)}
-    />
-<div className="flex items-center gap-2 mt-2">
-  <label className="text-white text-sm">Visible for:</label>
-  <select
-    value={dailyDuration}
-    onChange={(e) => setDailyDuration(e.target.value as any)}
-    className="bg-gray-700 text-white text-sm p-1 rounded"
-  >
-    <option value="24h">24 Hours</option>
-    <option value="1w">1 Week</option>
-    <option value="1m">1 Month</option>
-    <option value="3m">3 Months</option>
-  </select>
-</div>
-
-    <input
-      type="file"
-      accept="image/*"
-      onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
-      className="text-white"
-    />
-
-    <Button onClick={handlePostClick} className="w-full mt-2" disabled={uploading}>
-      {uploading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Uploading...
-        </>
-      ) : (
-        "Post"
-      )}
-    </Button>
-
-    {/* Display recent daily posts */}
-    <div className="space-y-3 mt-4">
-      {dailyPosts.length > 0 ? dailyPosts.map((post) => (
-        <motion.div
-          key={post.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-3 border rounded-lg bg-gray-700/50"
-        >
-          <div className="flex flex-col md:flex-row gap-4 items-start">
-            {/* User Info */}
-            <div className="flex-shrink-0 flex flex-col items-center md:items-start gap-2">
-              {post.profiles?.avatar_url ? (
-                <img
-                  src={post.profiles.avatar_url}
-                  alt={post.profiles.username}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center text-white">
-                  {post.profiles?.username?.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <p className="text-sm font-semibold text-white">{post.profiles?.full_name}</p>
-              <p className="text-xs text-white/70">@{post.profiles?.username}</p>
-              <p className="text-xs text-white/70">{post.profiles?.institution}</p>
-              <p className="text-xs text-white/70">{post.profiles?.county}</p>
-            </div>
-
-            {/* Post Content & Image */}
-            <div className="flex-1 flex flex-col gap-2">
-              {post.content && <p className="text-white">{post.content}</p>}
-              {post.image_url && (
-                <img
-                  src={post.image_url}
-                  alt="daily"
-                  className="rounded w-full max-h-96 object-contain bg-black cursor-pointer"
-                  onClick={() => setFullscreenImage(post.image_url)}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                />
-              )}
-            </div>
-
-            {/* Delete Button */}
-            {user?.id === post.user_id && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="ml-auto md:ml-0 mt-2 md:mt-0"
-                onClick={() => handleDeletePost(post.id, post.user_id)}
-              >
-                Delete
-              </Button>
-            )}
-          </div><p className="text-xs text-white/70 mt-1">
-  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} • 
-  Visible for {post.duration === "24h" ? "24 Hours" : post.duration === "1w" ? "1 Week" : post.duration === "1m" ? "1 Month" : "3 Months"}
-</p>
-
-        </motion.div>
-      )) : (
-        <p className="text-sm text-white/70">No posts yet.</p>
-      )}
-    </div>
-  </CardContent>
-
-  {/* Fullscreen modal */}
-  {fullscreenImage && (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
-      onClick={() => setFullscreenImage(null)}
-    >
-      <img
-        src={fullscreenImage}
-        alt="fullscreen"
-        className="max-w-full max-h-full object-contain rounded"
-      />
-    </div>
-  )}
-</Card>
       </div>
     </div>
   );

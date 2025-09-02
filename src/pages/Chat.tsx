@@ -55,7 +55,7 @@ interface Message {
 }
 
 export function Chat() {
-  const [showRules, setShowRules] = useState(true);
+ const [showRules, setShowRules] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(true);
@@ -330,103 +330,133 @@ const filteredProfiles = profiles.filter((profile) =>
 
     return (
     <div className="h-screen flex gap-4 overflow-hidden">
-      {/* Sidebar */}
-      <Card className="w-80 flex flex-col overflow-hidden">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              People
-            </CardTitle>
-          </div>
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-  placeholder="Search people..."
-  className="pl-10"
-  value={searchQuery}
-  onChange={(e) => setSearchQuery(e.target.value)}
-/>
-
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 p-0 overflow-hidden">
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-1 mx-4 mb-4">
-              <TabsTrigger value="all">All People</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="mt-0">
-              <ScrollArea className="h-full">
-                <div className="space-y-1 px-4">
-                  {loadingProfiles ? (
-                    // Loader skeletons
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-3 p-3 animate-pulse"
-                      >
-                        <div className="h-10 w-10 rounded-full bg-muted" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 w-2/3 bg-muted rounded" />
-                          <div className="h-3 w-1/2 bg-muted rounded" />
-                        </div>
-                      </div>
-                    ))
-                  ) : filteredProfiles.length > 0 ? (
-  filteredProfiles.map((profile) => (
-                      <div
-                        key={profile.user_id}
-                        className={`p-3 rounded-lg cursor-pointer ${
-                          selectedUser?.user_id === profile.user_id
-                            ? "bg-primary/10"
-                            : "hover:bg-muted/50"
-                        }`}
-                        onClick={() => setSelectedUser(profile)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-  <AvatarImage src={getAvatarUrl(profile.avatar_url)} />
-  <AvatarFallback>
-    {profile.name ? profile.name[0].toUpperCase() : "?"}
-  </AvatarFallback>
-</Avatar>
-
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium truncate flex justify-between">
-                              <span>{profile.name}</span>
-                              {profile.unread_count ? (
-                                <span className="bg-primary text-white rounded-full px-2 text-xs">
-                                  {profile.unread_count}
-                                </span>
-                              ) : null}
-                            </h4>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {profile.phone}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-sm text-muted-foreground py-4">
-                      No people found
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
 
       {/* Chat Area */}
-     <Card className="flex-1 flex flex-col overflow-hidden">
+      <Card className="relative flex-1 flex flex-col overflow-hidden">
+  {/* Floating "Choose Person" tab inside Chat Card */}
+<div className="absolute top-1/2 left-4 z-50 animate-bounce-once hover:animate-bounce-hover">
+
+
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button className="bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-2 shadow-lg transform transition-transform duration-300 hover:scale-110 ring-4 ring-slate-400/50">
+
+        Choose Person to chat with here
+        <span className="ml-1 text-yellow-200 animate-pulse"></span>
+      </Button>
+    </DropdownMenuTrigger>
+
+<DropdownMenuContent className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto">
+      {/* Header with search */}
+      <div className="p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <MessageCircle className="h-5 w-5" />
+          <span className="font-semibold">People</span>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search people..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-1 px-3 mb-2">
+          <TabsTrigger value="all">All People</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="mt-0">
+          <ScrollArea className="h-[300px] px-3">
+            <div className="space-y-1">
+              {loadingProfiles ? (
+                // Loader skeletons
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 p-3 animate-pulse"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-2/3 bg-muted rounded" />
+                      <div className="h-3 w-1/2 bg-muted rounded" />
+                    </div>
+                  </div>
+                ))
+              ) : filteredProfiles.length > 0 ? (
+                filteredProfiles.map((profile) => (
+                  <div
+                    key={profile.user_id}
+                    className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 ${
+                      selectedUser?.user_id === profile.user_id
+                        ? "bg-primary/10"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => setSelectedUser(profile)}
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={getAvatarUrl(profile.avatar_url)} />
+                      <AvatarFallback>
+                        {profile.name ? profile.name[0].toUpperCase() : "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate flex justify-between">
+                        <span>{profile.name}</span>
+                        {profile.unread_count ? (
+                          <span className="bg-primary text-white rounded-full px-2 text-xs">
+                            {profile.unread_count}
+                          </span>
+                        ) : null}
+                      </h4>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {profile.phone}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-sm text-muted-foreground py-4">
+                  No people found
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+    </DropdownMenuContent>
+  </DropdownMenu>
+</div>
+
         {selectedUser ? ( <>
           <CardHeader className="border-b sticky top-0 bg-background z-10">
            {/* 📌 Universal pinned rules banner */}
-<div className="m-3">
+
+
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+               <AvatarImage src={getAvatarUrl(selectedUser.avatar_url)} />
+
+                    <AvatarFallback>
+                      {selectedUser.name ? selectedUser.name[0] : "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold">{selectedUser.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedUser.last_seen
+                        ? `Last seen ${new Date(selectedUser.last_seen).toLocaleString()}`
+                        : "Last seen unknown"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="m-3">
   <div
     className="flex items-center justify-between 
                bg-amber-200 dark:bg-amber-700 
@@ -467,26 +497,6 @@ const filteredProfiles = profiles.filter((profile) =>
     </div>
   )}
 </div>
-
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-               <AvatarImage src={getAvatarUrl(selectedUser.avatar_url)} />
-
-                    <AvatarFallback>
-                      {selectedUser.name ? selectedUser.name[0] : "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold">{selectedUser.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedUser.last_seen
-                        ? `Last seen ${new Date(selectedUser.last_seen).toLocaleString()}`
-                        : "Last seen unknown"}
-                    </p>
-                  </div>
-                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">
@@ -581,7 +591,8 @@ const filteredProfiles = profiles.filter((profile) =>
                           </AvatarFallback>
                         </Avatar>
                       )}
-                      <div className="max-w-[70%]">
+                 
+<div className="max-w-[65%]">
                         {message.sender_id !== currentUserId && (
                           <p className="text-sm font-medium mb-1">
                             {message.sender_name}
@@ -627,7 +638,8 @@ const filteredProfiles = profiles.filter((profile) =>
             </CardContent>
           </>
         ) : (
-        <div className="flex items-center justify-center flex-1 text-white text-2xl font-extrabold bg-gradient-to-br from-red-400 to-blue-500">
+       // Center placeholder text better
+<div className="flex items-center justify-center flex-1 text-center text-white text-2xl font-extrabold bg-gradient-to-br from-red-400 to-blue-500">
   Select a person to start chatting
 </div>
 
