@@ -45,12 +45,14 @@ export function RedirectToRoleDashboard() {
   }, [navigate]);
 
   if (loading) {
-    // ✅ Unity-style global spinner
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+      <div className="fixed inset-0 flex items-center justify-center 
+                      bg-white dark:bg-gray-900 transition-colors duration-300 z-50">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-          <p className="mt-4 text-white text-lg">Redirecting to your dashboard...</p>
+          <p className="mt-4 text-gray-900 dark:text-gray-100 text-lg">
+            Redirecting to your dashboard...
+          </p>
         </div>
       </div>
     );
