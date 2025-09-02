@@ -16,8 +16,9 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
-
+import { Link } from 'react-router-dom';
 export default function StudentDashboard() {
+  const navigate = useNavigate();  // <-- add this
   const user = useUser();
   const [name, setName] = useState<string | null>(null);
   const [studyProgress, setStudyProgress] = useState(0);
@@ -731,7 +732,8 @@ return (
         <div
           key={unit.unit_code}
           className="p-4 border rounded-lg flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => (window.location.href = '/heartique-quizzes')}
+         onClick={() => navigate('/heartique-quizzes')}
+
         >
           <div>
             <p className="text-sm font-medium">{unit.unit}</p>
