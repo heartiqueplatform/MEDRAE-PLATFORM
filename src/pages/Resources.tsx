@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,8 +52,24 @@ export function Resources() {
   const [floatingBlockOpen, setFloatingBlockOpen] = useState(false);
 const [selectedBlock, setSelectedBlock] = useState("PTS");
 const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
-
+const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+useEffect(() => {
+    const checkDark = () =>
+        setIsDarkMode(document.documentElement.classList.contains("dark"));
+
+    checkDark(); // initial check
+
+    // Optional: observe class changes if Tailwind dark mode toggles dynamically
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+}, []);
+
 
   const [session, setSession] = useState<any>(null);
   useEffect(() => {
@@ -686,20 +703,22 @@ setShowUploadForm(false);
 </Button>
 
 
-    <Button
-      size="sm"
-      onClick={() => handleDownload(note.id, note.file_url)}
-      className="flex items-center gap-1"
-    >
-      <Download className="h-3 w-3" />
-      Save temporary for smooth preview
-    </Button>
-     {/* ✅ Show badge if file is saved offline */}
-  {offlineFiles.includes(note.id) && (
-    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-      saved Temporary
-    </Badge>
-  )}
+  <Button
+  size="sm"
+  onClick={async () => {
+    await handleDownload(note.id, note.file_url);
+  }}
+  className="flex items-center gap-1"
+>
+  <Download className="h-3 w-3" />
+  Cache
+</Button>
+{/* ✅ Show badge if file is saved offline */}
+{offlineFiles.includes(note.id) && (
+  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+    Preserved
+  </Badge>
+)}
 
 
   </div>
@@ -735,9 +754,16 @@ setShowUploadForm(false);
             </Button>
           </div>
           {fullscreenNote.file_type === 'pdf' ? (
-  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.5.141/build/pdf.worker.min.js">
-    <Viewer fileUrl={fullscreenNote.file_url} />
-  </Worker>
+<Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+    <Viewer
+        fileUrl={fullscreenNote.file_url}
+        plugins={[defaultLayoutPluginInstance]}
+        theme={isDarkMode ? "dark" : "light"} // Tailwind-aware
+    />
+</Worker>
+
+
+
 ) : (
   <iframe
     src={fullscreenNote.file_url}

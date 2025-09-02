@@ -129,7 +129,7 @@ export function Header({
 
         <div className="hidden md:block">
           <h1 className="text-xl font-bold bg-gradient-medical bg-clip-text text-transparent">
-            Heartique Scholar
+            Heartique Nursing Nexus Scholar
           </h1>
         </div>
       </div>

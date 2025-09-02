@@ -175,7 +175,7 @@ const handleCollapse = () => {
           {!isCollapsed && (
             <div>
               <h2 className="font-bold text-lg bg-gradient-medical bg-clip-text text-transparent">
-                Heartique
+                Heartique Nursing Nexus
               </h2>
               <p className="text-xs text-muted-foreground">Scholar Platform</p>
             </div>
