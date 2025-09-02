@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Pin, Calendar, Users, AlertCircle, Info, CheckCircle, XCircle } from "lucide-react";
+import { GlobalLoader } from "@/components/GlobalLoader"; // adjust the path if needed
 
 export function Announcements() {
   const [readAnnouncements, setReadAnnouncements] = useState<string[]>([]);
@@ -101,12 +102,9 @@ export function Announcements() {
   const regularAnnouncements = announcements.filter((a) => !a.pinned);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-40">
-        <p>Loading announcements...</p>
-      </div>
-    );
-  }
+  return <GlobalLoader message="Fetching announcements..." />;
+}
+
 
   return (
     <div className="space-y-6">
