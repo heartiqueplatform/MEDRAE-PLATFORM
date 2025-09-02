@@ -22,6 +22,12 @@ import { supabase } from "@/lib/supabaseClient";
 
 export function Login() {
   const navigate = useNavigate();
+  / ✅ Auto redirect if user is already logged in
+  const storedRole = localStorage.getItem("userRole");
+  if (storedRole) {
+    navigate(`/dashboard/${storedRole}`);
+    return null; // stop rendering the login page
+  }
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (

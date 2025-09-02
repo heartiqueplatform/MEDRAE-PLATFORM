@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate", // auto update service worker
       includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.png", "pwa-512x512.png"], 
       manifest: {
-        name: "NCK Simulation App",
-        short_name: "Simulation",
-        description: "Simulation app for NCK exams",
+        name: "HEARTIQUE NURSING NEXUS SCHOLAR",
+        short_name: "HEARTIQUE X",
+        description: "App for NCK/FQE exam revision ",
         theme_color: "#4ade80",
         background_color: "#ffffff",
         display: "standalone", // looks like native app
