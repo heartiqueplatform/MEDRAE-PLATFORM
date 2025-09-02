@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit to fix Vercel build
         runtimeCaching: [
           {
             urlPattern: /\/.*\.(?:js|ts|css|json)$/, // cache all JS, CSS, JSON
