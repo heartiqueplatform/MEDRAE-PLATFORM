@@ -331,100 +331,6 @@ useEffect(() => {
 
       {/* Chat Area */}
       <Card className="flex-1 flex flex-col relative">
-{/* Floating Tab for Forum Selection */}
-<div className="absolute top-1/2 left-4 z-50 animate-bounce-once hover:animate-bounce-hover">
-
-  <DropdownMenu>
-    {/* Tab button */}
-    <DropdownMenuTrigger asChild>
-     <Button className="bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-2 shadow-lg transform transition-transform duration-300 hover:scale-110 ring-4 ring-slate-400/50">
-     
-             Choose Forum here
-             <span className="ml-1 text-yellow-200 animate-pulse"></span>
-           </Button>
-
-    </DropdownMenuTrigger>
-    {/* Dropdown panel */}
-    <DropdownMenuContent className="w-80 max-h-[80vh] overflow-hidden p-0">
-      <Card className="flex flex-col shadow-xl dark:bg-gray-900 bg-white transition-all duration-300">
-        {/* Sticky header with search */}
-        <CardHeader className="sticky top-0 bg-card z-10 shadow-sm">
-          <CardTitle>Discussions, School, Career, Units, Forums</CardTitle>
-          <div className="relative mt-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground/80" />
-            <Input
-              placeholder="Search discussions..."
-              className="pl-10"
-              value={unitSearch}
-              onChange={(e) => setUnitSearch(e.target.value)}
-            />
-          </div>
-        </CardHeader>
-
-        {/* Scrollable content */}
-        <CardContent className="flex-1 p-0 overflow-y-auto">
-          <ScrollArea className="h-full">
-            <div className="space-y-2 px-4 mt-2">
-              {loadingUnits ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-500"></div>
-                </div>
-              ) : units.length > 0 ? (
-                units
-                  .filter((u) =>
-                    u.name.toLowerCase().includes(unitSearch.toLowerCase())
-                  )
-                  .sort((a, b) => (b.member_count || 0) - (a.member_count || 0))
-                  .map((unit) => (
-                    <div
-                      key={unit.id}
-                      className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all duration-200 ${
-                        selectedUnit?.id === unit.id
-                          ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
-                          : "hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
-                      onClick={() => handleSelectUnit(unit)}
-                    >
-                      <span>{unit.name}</span>
-                      {joinedUnits.includes(unit.id) ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            leaveUnit(unit.id);
-                          }}
-                        >
-                          Leave
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            joinUnit(unit.id);
-                          }}
-                        >
-                          Join
-                        </Button>
-                      )}
-                    </div>
-                  ))
-              ) : (
-                <p className="text-sm text-muted-foreground dark:text-muted-foreground/80">
-                  No discussions found.
-                </p>
-              )}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </DropdownMenuContent>
-  </DropdownMenu>
-</div>
-
-
         {selectedUnit ? (
           joinedUnits.includes(selectedUnit.id) ? (
             <>
@@ -537,14 +443,13 @@ useEffect(() => {
 </ScrollArea>
 
 
-{/* Input + Send */}
-<div className="border-t p-4 bg-card flex gap-2">
+{/* Input + Send + Forum Selector */}
+<div className="border-t p-4 bg-card flex gap-2 items-center">
   <Input
     placeholder="Type a message..."
     value={messageInput}
     onChange={(e) => {
       setMessageInput(e.target.value);
-
     }}
     onKeyDown={(e) => {
       if (e.key === "Enter") {
@@ -556,7 +461,89 @@ useEffect(() => {
   <Button onClick={handleSendMessage} disabled={!messageInput.trim()}>
     <Send className="h-4 w-4" />
   </Button>
+
+  {/* Forum Selector Dropdown */}
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button className="bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-2 shadow-lg">
+        Forums
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent className="w-80 max-h-[80vh] overflow-hidden p-0">
+      <Card className="flex flex-col shadow-xl dark:bg-gray-900 bg-white transition-all duration-300">
+        <CardHeader className="sticky top-0 bg-card z-10 shadow-sm">
+          <CardTitle>Discussions, School, Career, Units, Forums</CardTitle>
+          <div className="relative mt-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground/80" />
+            <Input
+              placeholder="Search discussions..."
+              className="pl-10"
+              value={unitSearch}
+              onChange={(e) => setUnitSearch(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 p-0 overflow-y-auto">
+          <ScrollArea className="h-full">
+            <div className="space-y-2 px-4 mt-2">
+              {loadingUnits ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-500"></div>
+                </div>
+              ) : units.length > 0 ? (
+                units
+                  .filter((u) =>
+                    u.name.toLowerCase().includes(unitSearch.toLowerCase())
+                  )
+                  .map((unit) => (
+                    <div
+                      key={unit.id}
+                      className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all duration-200 ${
+                        selectedUnit?.id === unit.id
+                          ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
+                          : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                      }`}
+                      onClick={() => handleSelectUnit(unit)}
+                    >
+                      <span>{unit.name}</span>
+                      {joinedUnits.includes(unit.id) ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            leaveUnit(unit.id);
+                          }}
+                        >
+                          Leave
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            joinUnit(unit.id);
+                          }}
+                        >
+                          Join
+                        </Button>
+                      )}
+                    </div>
+                  ))
+              ) : (
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground/80">
+                  No discussions found.
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </DropdownMenuContent>
+  </DropdownMenu>
 </div>
+
               </div>
             </>
           ) : (
@@ -567,10 +554,108 @@ useEffect(() => {
   and respectful exchanges only.
             </div>
           )
-        ) : (
-         <div className="flex items-center justify-center flex-1 text-white text-xl font-bold text-center p-4 bg-gradient-to-br from-red-400 to-blue-500">
-  Select a group or unit to start conversations, share ideas, and collaborate. Learn, grow, and build solutions together.
-</div>
+) : (
+  <>
+    {/* When no forum is selected */}
+    <div className="flex flex-col items-center justify-center flex-1 bg-gradient-to-br from-red-400 to-blue-500 text-white p-6">
+      <p className="text-lg font-semibold text-center mb-4">
+        Select a forum to start conversations, share ideas, and collaborate.
+      </p>
+
+      {/* Chat Icon that opens the Forum Selector */}
+      <DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button className="rounded-full h-16 w-16 bg-slate-800 hover:bg-slate-900 flex items-center justify-center shadow-lg">
+      <Send className="h-8 w-8 text-white" />
+    </Button>
+  </DropdownMenuTrigger>
+
+  {/* prevent portal -> keeps dropdown positioned relative, no page jump */}
+<DropdownMenuContent
+    className="w-80 max-h-[80vh] h-auto overflow-y-auto p-0"
+    side="right"
+    align="center"
+    avoidCollisions={false}
+    asChild
+>
+
+    <div>
+      <Card className="flex flex-col shadow-xl dark:bg-gray-900 bg-white transition-all duration-300">
+        <CardHeader className="sticky top-0 bg-card z-10 shadow-sm">
+          <CardTitle>Discussions, School, Career, Units, Forums</CardTitle>
+          <div className="relative mt-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground/80" />
+            <Input
+              placeholder="Search discussions..."
+              className="pl-10"
+              value={unitSearch}
+              onChange={(e) => setUnitSearch(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 p-0 overflow-y-auto">
+          <ScrollArea className="h-full">
+            <div className="space-y-2 px-4 mt-2">
+              {loadingUnits ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-500"></div>
+                </div>
+              ) : units.length > 0 ? (
+                units
+                  .filter((u) =>
+                    u.name.toLowerCase().includes(unitSearch.toLowerCase())
+                  )
+                  .map((unit) => (
+                    <div
+                      key={unit.id}
+                      className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all duration-200 ${
+                        selectedUnit?.id === unit.id
+                          ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
+                          : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                      }`}
+                      onClick={() => handleSelectUnit(unit)}
+                    >
+                      <span>{unit.name}</span>
+                      {joinedUnits.includes(unit.id) ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            leaveUnit(unit.id);
+                          }}
+                        >
+                          Leave
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            joinUnit(unit.id);
+                          }}
+                        >
+                          Join
+                        </Button>
+                      )}
+                    </div>
+                  ))
+              ) : (
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground/80">
+                  No discussions found.
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
+  </DropdownMenuContent>
+</DropdownMenu>
+
+    </div>
+  </>
 
 
         )}

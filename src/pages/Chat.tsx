@@ -333,104 +333,6 @@ const filteredProfiles = profiles.filter((profile) =>
 
       {/* Chat Area */}
       <Card className="relative flex-1 flex flex-col overflow-hidden">
-  {/* Floating "Choose Person" tab inside Chat Card */}
-<div className="absolute top-1/2 left-4 z-50 animate-bounce-once hover:animate-bounce-hover">
-
-
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button className="bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-2 shadow-lg transform transition-transform duration-300 hover:scale-110 ring-4 ring-slate-400/50">
-
-        Choose Person to chat with here
-        <span className="ml-1 text-yellow-200 animate-pulse"></span>
-      </Button>
-    </DropdownMenuTrigger>
-
-<DropdownMenuContent className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto">
-      {/* Header with search */}
-      <div className="p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <MessageCircle className="h-5 w-5" />
-          <span className="font-semibold">People</span>
-        </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search people..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 px-3 mb-2">
-          <TabsTrigger value="all">All People</TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-0">
-          <ScrollArea className="h-[300px] px-3">
-            <div className="space-y-1">
-              {loadingProfiles ? (
-                // Loader skeletons
-                Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 p-3 animate-pulse"
-                  >
-                    <div className="h-10 w-10 rounded-full bg-muted" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-2/3 bg-muted rounded" />
-                      <div className="h-3 w-1/2 bg-muted rounded" />
-                    </div>
-                  </div>
-                ))
-              ) : filteredProfiles.length > 0 ? (
-                filteredProfiles.map((profile) => (
-                  <div
-                    key={profile.user_id}
-                    className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 ${
-                      selectedUser?.user_id === profile.user_id
-                        ? "bg-primary/10"
-                        : "hover:bg-muted/50"
-                    }`}
-                    onClick={() => setSelectedUser(profile)}
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={getAvatarUrl(profile.avatar_url)} />
-                      <AvatarFallback>
-                        {profile.name ? profile.name[0].toUpperCase() : "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate flex justify-between">
-                        <span>{profile.name}</span>
-                        {profile.unread_count ? (
-                          <span className="bg-primary text-white rounded-full px-2 text-xs">
-                            {profile.unread_count}
-                          </span>
-                        ) : null}
-                      </h4>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {profile.phone}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-sm text-muted-foreground py-4">
-                  No people found
-                </p>
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
-    </DropdownMenuContent>
-  </DropdownMenu>
-</div>
-
         {selectedUser ? ( <>
           <CardHeader className="border-b sticky top-0 bg-background z-10">
            {/* 📌 Universal pinned rules banner */}
@@ -456,47 +358,7 @@ const filteredProfiles = profiles.filter((profile) =>
                   </div>
                 </div>
 
-                <div className="m-3">
-  <div
-    className="flex items-center justify-between 
-               bg-amber-200 dark:bg-amber-700 
-               text-amber-900 dark:text-amber-50
-               px-4 py-2 rounded-t-lg cursor-pointer"
-    onClick={() => setShowRules(!showRules)}
-  >
-    <span className="font-semibold">Heartique Brief Chat Rules & Purpose</span>
-    <span className="text-sm">{showRules ? "Hide ▲" : "Show ▼"}</span>
-  </div>
-
-  {showRules && (
-    <div
-      className="bg-amber-50 dark:bg-amber-900/40 
-                 border border-amber-200 dark:border-amber-700 
-                 rounded-b-lg shadow px-4 py-3 
-                 text-sm leading-relaxed 
-                 text-amber-900 dark:text-amber-100"
-    >
-      Welcome to your <b>personal academic & professional support chat</b>
-      <br /><br />
-      This is <b>not a casual chat room</b>. Features are intentionally limited 
-      to keep the conversation <b>focused, respectful, and meaningful</b>.  
-      Only text messages are allowed <b>no pictures or documents</b>.
-      <br /><br />
-       Here’s what this space is for:
-      <ul className="list-disc list-inside mt-2 space-y-1">
-        <li> Exchanging quick study updates, tips, and useful reminders</li>
-        <li> Asking brief questions or requesting clarification directly</li>
-        <li> Sharing encouragement, professional insights, or guidance</li>
-        <li> Passing along opportunities like internships, workshops, or events</li>
-        <li>Building supportive one-to-one academic or career connections</li>
-      </ul>
-      <br />
-      Please keep messages <b>short, kind, and relevant</b>.  
-      Together, we’re creating a <b>safe, supportive, and inspiring space</b> 
-       to grow in knowledge, career, and friendship 
-    </div>
-  )}
-</div>
+               
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">
@@ -569,7 +431,47 @@ const filteredProfiles = profiles.filter((profile) =>
                 </DropdownMenu>
               </div>
             </CardHeader>
+ <div className="m-3">
+  <div
+    className="flex items-center justify-between 
+               bg-amber-200 dark:bg-amber-700 
+               text-amber-900 dark:text-amber-50
+               px-4 py-2 rounded-t-lg cursor-pointer"
+    onClick={() => setShowRules(!showRules)}
+  >
+    <span className="font-semibold">Heartique Brief Chat Rules & Purpose</span>
+    <span className="text-sm">{showRules ? "Hide ▲" : "Show ▼"}</span>
+  </div>
 
+  {showRules && (
+    <div
+      className="bg-amber-50 dark:bg-amber-900/40 
+                 border border-amber-200 dark:border-amber-700 
+                 rounded-b-lg shadow px-4 py-3 
+                 text-sm leading-relaxed 
+                 text-amber-900 dark:text-amber-100"
+    >
+      Welcome to your <b>personal academic & professional support chat</b>
+      <br /><br />
+      This is <b>not a casual chat room</b>. Features are intentionally limited 
+      to keep the conversation <b>focused, respectful, and meaningful</b>.  
+      Only text messages are allowed <b>no pictures or documents</b>.
+      <br /><br />
+       Here’s what this space is for:
+      <ul className="list-disc list-inside mt-2 space-y-1">
+        <li> Exchanging quick study updates, tips, and useful reminders</li>
+        <li> Asking brief questions or requesting clarification directly</li>
+        <li> Sharing encouragement, professional insights, or guidance</li>
+        <li> Passing along opportunities like internships, workshops, or events</li>
+        <li>Building supportive one-to-one academic or career connections</li>
+      </ul>
+      <br />
+      Please keep messages <b>short, kind, and relevant</b>.  
+      Together, we’re creating a <b>safe, supportive, and inspiring space</b> 
+       to grow in knowledge, career, and friendship 
+    </div>
+  )}
+</div>
          <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
@@ -616,32 +518,189 @@ const filteredProfiles = profiles.filter((profile) =>
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
-              <div className="p-4 border-t">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Type your message..."
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handleSendMessage()
-                    }
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!messageInput.trim()}
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
+           <div className="p-4 border-t">
+  <div className="flex items-center gap-2">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-muted-foreground hover:text-primary"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </Button>
+      </DropdownMenuTrigger>
+        <DropdownMenuContent
+    side="top"
+    align="start"
+    className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto"
+    avoidCollisions={false}
+  >
+
+        {/* Search + People List (same as before) */}
+        <div className="p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageCircle className="h-5 w-5" />
+            <span className="font-semibold">Choose Someone</span>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search people..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="grid w-full grid-cols-1 px-3 mb-2">
+            <TabsTrigger value="all">All People</TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="mt-0">
+            <ScrollArea className="h-[300px] px-3">
+              <div className="space-y-1">
+                {loadingProfiles ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+                      <div className="h-10 w-10 rounded-full bg-muted" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-2/3 bg-muted rounded" />
+                        <div className="h-3 w-1/2 bg-muted rounded" />
+                      </div>
+                    </div>
+                  ))
+                ) : filteredProfiles.length > 0 ? (
+                  filteredProfiles.map((profile) => (
+                    <div
+                      key={profile.user_id}
+                      className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 ${
+                        selectedUser?.user_id === profile.user_id
+                          ? "bg-primary/10"
+                          : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => setSelectedUser(profile)}
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={getAvatarUrl(profile.avatar_url)} />
+                        <AvatarFallback>
+                          {profile.name ? profile.name[0].toUpperCase() : "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium truncate flex justify-between">
+                          <span>{profile.name}</span>
+                          {profile.unread_count ? (
+                            <span className="bg-primary text-white rounded-full px-2 text-xs">
+                              {profile.unread_count}
+                            </span>
+                          ) : null}
+                        </h4>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {profile.phone}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-sm text-muted-foreground py-4">
+                    No people found
+                  </p>
+                )}
               </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+      </DropdownMenuContent>
+    </DropdownMenu>
+
+    {/* Message input */}
+    <Input
+      placeholder="Type your message..."
+      value={messageInput}
+      onChange={(e) => setMessageInput(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+      className="flex-1"
+    />
+    <Button onClick={handleSendMessage} disabled={!messageInput.trim()}>
+      <Send className="h-4 w-4" />
+    </Button>
+  </div>
+</div>
+
             </CardContent>
           </>
-        ) : (
-       // Center placeholder text better
-<div className="flex items-center justify-center flex-1 text-center text-white text-2xl font-extrabold bg-gradient-to-br from-red-400 to-blue-500">
-  Select a person to start chatting
+      ) : (
+  <div className="flex flex-col items-center justify-center flex-1 text-center gap-4 bg-gradient-to-br from-red-400 to-blue-500 text-white">
+  <p className="text-2xl font-extrabold">
+    Click the chat icon below to choose someone
+  </p>
+
+  {/* Floating chat icon moved just above the text */}
+  <div className="mt-4">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="icon"
+          className="rounded-full shadow-lg bg-primary text-white hover:bg-primary/90"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+         side="right"          // 👈 open from the right side
+    align="center"        // 👈 keep vertically centered
+        className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto"
+        avoidCollisions={false}
+      >
+        {/* 👥 Same people list block you already have */}
+        <div className="p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageCircle className="h-5 w-5" />
+            <span className="font-semibold">Choose Someone</span>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search people..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+        <ScrollArea className="h-[300px] px-3">
+          <div className="space-y-1">
+            {filteredProfiles.map((profile) => (
+              <div
+                key={profile.user_id}
+                className="p-3 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-muted/50"
+                onClick={() => {
+                  setSelectedUser(profile);
+                  document.body.click(); // close menu
+                }}
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={getAvatarUrl(profile.avatar_url)} />
+                  <AvatarFallback>
+                    {profile.name ? profile.name[0].toUpperCase() : "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium truncate">{profile.name}</h4>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {profile.phone}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
 </div>
+
 
 
         )}
