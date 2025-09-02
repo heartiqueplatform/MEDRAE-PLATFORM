@@ -756,11 +756,12 @@ return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
        
         {/* Right - Actions & Assessments */}
-        <div className="flex w-full h-auto gap-6">
+        <div className="flex flex-col md:flex-row w-full h-auto gap-6">
+
 
 
 <Card
-  className="w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
   style={{
     backgroundImage: "url('/background04.jpg')",
     backgroundSize: "cover",
@@ -786,7 +787,8 @@ return (
 </Card>
 
 <Card
-  className="w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+
   style={{
     backgroundImage: "url('/background05.jpg')",
     backgroundSize: "cover",
@@ -819,7 +821,8 @@ return (
 </Card>
 
 <Card
-  className="w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+
   style={{
     backgroundImage: "url('/background03.jpg')",
     backgroundSize: "cover",
@@ -844,7 +847,8 @@ return (
 </Card>
 
 <Card
-  className="w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+
   style={{
     backgroundImage: "url('/background02.jpg')",
     backgroundSize: "cover",
@@ -869,7 +873,7 @@ return (
 </Card>
 
 <Card
-  className="w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
   style={{
     backgroundImage: "url('/background1.jpeg')",
     backgroundSize: "cover",
