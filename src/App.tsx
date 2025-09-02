@@ -88,7 +88,9 @@ const App = () => (
           <AIWrapper>
             <Routes>
               {/* Public Routes */}
-             <Route path="/" element={<RedirectToRoleDashboard />} />
+            <Route path="/" element={<Index />} />
+<Route path="/redirect" element={<RedirectToRoleDashboard />} />
+
 
 
               <Route path="/login" element={<Login />} />

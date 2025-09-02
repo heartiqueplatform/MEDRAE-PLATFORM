@@ -2,9 +2,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+
 
 const Index = () => {
   const navigate = useNavigate();
+    useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // 🔹 already logged in → send to redirect handler
+        navigate("/redirect");
+      }
+    };
+    checkSession();
+  }, [navigate]);
+
 
   const features = [
     {

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient"; // adjust path if needed
 
 export function RedirectToRoleDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,8 +17,10 @@ export function RedirectToRoleDashboard() {
         const user = session?.user;
 
         if (!user) {
-          // 🔹 Not logged in → go to index/login
-          navigate("/");
+          // 🔹 Not logged in → stay on Index (only redirect if not already there)
+          if (location.pathname !== "/") {
+            navigate("/");
+          }
           return;
         }
 
@@ -46,7 +49,7 @@ export function RedirectToRoleDashboard() {
     };
 
     getRoleAndRedirect();
-  }, [navigate]);
+  }, [navigate, location]);
 
   if (loading) {
     return (
