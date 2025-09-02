@@ -61,8 +61,12 @@ export function Login() {
         description: `Welcome back, ${userData.role}`,
       });
 
-      localStorage.setItem("userRole", userData.role);
-     navigate(`/dashboard/${userData.role}`, { replace: false });
+      // Save role in localStorage (Supabase saves session automatically)
+localStorage.setItem("userRole", userData.role);
+
+// Navigate to role-based dashboard
+navigate(`/dashboard/${userData.role}`, { replace: true });
+
     } catch (err: any) {
       console.error("Login error:", err);
       toast({
