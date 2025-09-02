@@ -25,7 +25,7 @@ export function Login() {
   / ✅ Auto redirect if user is already logged in
   const storedRole = localStorage.getItem("userRole");
   if (storedRole) {
-    navigate(`/dashboard/${storedRole}`);
+   navigate(`/dashboard/${storedRole}`, { replace: true });
     return null; // stop rendering the login page
   }
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +68,8 @@ export function Login() {
       });
 
       localStorage.setItem("userRole", userData.role);
-      navigate(`/dashboard/${userData.role}`);
+     navigate(`/dashboard/${userData.role}`, { replace: true });
+
     } catch (err: any) {
       console.error("Login error:", err);
       toast({
