@@ -830,15 +830,16 @@ return (
     <CardTitle className="text-white">Go Premium / Subscription</CardTitle>
   </CardHeader>
   <CardContent className="flex items-center justify-center">
-    <Button
-      asChild
-      className="w-full bg-purple-500 hover:bg-purple-600 text-white"
-    >
-      <a href="/subscription">
-        <Star className="mr-2 h-4 w-4" />
-        Subscribe Now
-      </a>
-    </Button>
+<Button
+  asChild
+  className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+>
+  <Link to="/subscription">
+    <Star className="mr-2 h-4 w-4" />
+    Subscribe Now
+  </Link>
+</Button>
+
   </CardContent>
 </Card>
 
@@ -855,14 +856,15 @@ return (
   </CardHeader>
   <CardContent className="flex items-center justify-center">
     <Button
-      asChild
-      className="w-full bg-green-500 hover:bg-green-600 text-white"
-    >
-      <a href="/simulation/candidate">
-        <BookOpen className="mr-2 h-4 w-4" />
-        Go to Simulation
-      </a>
-    </Button>
+  asChild
+  className="w-full bg-green-500 hover:bg-green-600 text-white"
+>
+  <Link to="/simulation/candidate">
+    <BookOpen className="mr-2 h-4 w-4" />
+    Go to Simulation
+  </Link>
+</Button>
+
   </CardContent>
 </Card>
 
@@ -878,15 +880,16 @@ return (
     <CardTitle>Resources</CardTitle>
   </CardHeader>
   <CardContent className="flex items-center justify-center">
-    <Button
-      asChild
-      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-    >
-      <a href="/resources">
-        <ListChecks className="mr-2 h-4 w-4" />
-        Access Resources
-      </a>
-    </Button>
+   <Button
+  asChild
+  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+>
+  <Link to="/resources">
+    <ListChecks className="mr-2 h-4 w-4" />
+    Access Resources
+  </Link>
+</Button>
+
   </CardContent>
 </Card>
 
