@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient"; // adjust path if needed
+import { supabase } from "@/lib/supabaseClient";
 
 export function RedirectToRoleDashboard() {
   const navigate = useNavigate();
@@ -17,16 +17,12 @@ export function RedirectToRoleDashboard() {
         const user = session?.user;
 
         if (!user) {
-          // 🔹 Not logged in → stay on Index (only redirect if not already there)
-          if (location.pathname !== "/") {
-            navigate("/");
-          }
+          if (location.pathname !== "/") navigate("/");
           return;
         }
 
-        // 2. If logged in, fetch role
+        // 2. Fetch role
         let role = localStorage.getItem("userRole") || "student";
-
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
@@ -35,14 +31,14 @@ export function RedirectToRoleDashboard() {
 
         if (profile?.role) {
           role = profile.role;
-          localStorage.setItem("userRole", role); // sync localStorage
+          localStorage.setItem("userRole", role);
         }
 
-        // 3. Redirect to dashboard by role
+        // 3. Redirect
         navigate(`/dashboard/${role}`);
       } catch (error) {
         console.error("Redirect error:", error);
-        navigate("/"); // fallback → send to index
+        navigate("/"); // fallback
       } finally {
         setLoading(false);
       }
@@ -51,16 +47,11 @@ export function RedirectToRoleDashboard() {
     getRoleAndRedirect();
   }, [navigate, location]);
 
+  // Minimal redirecting message at the very top
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center 
-                      bg-white dark:bg-gray-900 transition-colors duration-300 z-50">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-          <p className="mt-4 text-gray-900 dark:text-gray-100 text-lg">
-            Redirecting...
-          </p>
-        </div>
+      <div className="w-full text-center mt-4 text-blue-600 dark:text-blue-400 font-semibold">
+        Heartique redirecting you...
       </div>
     );
   }

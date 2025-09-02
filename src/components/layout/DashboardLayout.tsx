@@ -5,6 +5,7 @@ import { Header } from "./Header";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
+import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -78,9 +79,10 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
     localStorage.setItem("theme", newMode ? "dark" : "light");
   };
 
-  if (loading) {
-    return <p className="text-center mt-10 text-muted-foreground">Loading profile...</p>;
-  }
+if (loading) {
+  return <GlobalLoader message="Loading profile..." />;
+}
+
 
   const user = profile
     ? {
