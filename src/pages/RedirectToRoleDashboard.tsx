@@ -13,11 +13,15 @@ export function RedirectToRoleDashboard() {
     const getRoleAndRedirect = async () => {
       try {
         // 1. Check Supabase session
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         const user = session?.user;
 
         if (!user) {
-          if (location.pathname !== "/") navigate("/");
+          // 🚪 User not logged in → always go to login
+          if (location.pathname !== "/login") navigate("/login");
+          setLoading(false);
           return;
         }
 
@@ -32,13 +36,20 @@ export function RedirectToRoleDashboard() {
         if (profile?.role) {
           role = profile.role;
           localStorage.setItem("userRole", role);
+        } else {
+          // 🚫 No profile row → send to login
+          if (location.pathname !== "/login") navigate("/login");
+          setLoading(false);
+          return;
         }
 
-        // 3. Redirect
-        navigate(`/dashboard/${role}`);
+        // 3. Redirect (only if on non-dashboard route)
+        if (!location.pathname.startsWith(`/dashboard/${role}`)) {
+          navigate(`/dashboard/${role}`);
+        }
       } catch (error) {
         console.error("Redirect error:", error);
-        navigate("/"); // fallback
+        navigate("/login"); // fallback
       } finally {
         setLoading(false);
       }
@@ -47,7 +58,7 @@ export function RedirectToRoleDashboard() {
     getRoleAndRedirect();
   }, [navigate, location]);
 
-  // Minimal redirecting message at the very top
+  // Minimal redirecting message, styled for light + dark themes
   if (loading) {
     return (
       <div className="w-full text-center mt-4 text-blue-600 dark:text-blue-400 font-semibold">
