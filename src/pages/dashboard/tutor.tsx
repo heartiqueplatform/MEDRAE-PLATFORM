@@ -7,6 +7,7 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { useName, useEmail, useTheme, useLanguage, useNotificationsEnabled } from "@/utils/storageManager";
 
 // UI components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,12 @@ export default function TutorDashboard() {
   const user = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
+const [name, setName] = useName();
+const [email, setEmail] = useEmail();
+const [theme, setTheme] = useTheme();
+const [language, setLanguage] = useLanguage();
+const [notifications, setNotifications] = useNotificationsEnabled();
+
 
   // Tutor-specific states
   const [tutorName, setTutorName] = useState("");

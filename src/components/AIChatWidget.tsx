@@ -86,7 +86,7 @@ setMessages([
   ...newMessages,
   {
     role: "assistant",
-    content: data?.reply || "⚠️ Sorry, I couldn’t generate a response.",
+    content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again.",
     timestamp: new Date().toISOString(),
   },
 ]);
@@ -97,7 +97,7 @@ setMessages([
         ...newMessages,
         {
           role: "assistant",
-          content: "⚠️ Error: Unable to connect to server.",
+          content: "Ooops your Offline connect to network first.",
           timestamp: new Date().toISOString(),
         },
       ]);

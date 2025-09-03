@@ -6,6 +6,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
+import { useName, useEmail, useTheme, useLanguage, useNotificationsEnabled } from "@/utils/storageManager";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -14,8 +15,14 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, userRole = 'student' }: DashboardLayoutProps) {
   const { profile, loading } = useUserProfile();
-  const authUser = useUser();
+  const [name, setName] = useName();
+const [email, setEmail] = useEmail();
+const [theme, setTheme] = useTheme();
+const [language, setLanguage] = useLanguage();
+const [notifications, setNotifications] = useNotificationsEnabled();
 
+  const authUser = useUser();
+   
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") === "dark";
@@ -84,17 +91,24 @@ if (loading) {
 }
 
 
-  const user = profile
-    ? {
-        name: profile.name,
-        role: profile.role,
-        avatar: profile.avatar || '/avatars/default.jpg',
-      }
-    : {
-        name: userRole === 'student' ? 'Jane Doe' : userRole === 'tutor' ? 'Dr. Smith' : 'Nurse Mary',
-        role: userRole === 'student' ? 'Nursing Student' : userRole === 'tutor' ? 'Clinical Tutor' : 'Staff Nurse',
-        avatar: userRole === 'student' ? '/avatars/student.jpg' : userRole === 'tutor' ? '/avatars/tutor.jpg' : '/avatars/staff.jpg',
-      };
+const user = profile
+  ? {
+      name: profile.name || "Unknown User",
+      role: profile.role || (userRole === 'student' ? 'Nursing Student' : userRole === 'tutor' ? 'Clinical Tutor' : 'Staff Nurse'),
+      avatar: profile.avatar_url || '/avatars/default.jpg',
+    }
+  : authUser
+  ? {
+      name: authUser.email || "Unknown User",
+      role: userRole === 'student' ? 'Nursing Student' : userRole === 'tutor' ? 'Clinical Tutor' : 'Staff Nurse',
+      avatar: '/avatars/default.jpg',
+    }
+  : {
+      name: "Offline",
+      role: "Offline",
+      avatar: '/avatars/default.jpg',
+    };
+
 
   return (
     <SidebarProvider>

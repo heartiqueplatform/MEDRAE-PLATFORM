@@ -122,7 +122,7 @@ if (error) throw error;
             msg.id === typingMessage.id
               ? {
                   ...msg,
-                 content: `💉 ${data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline."}`,
+                 content: ` ${data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again"}`,
                 }
               : msg
           )
