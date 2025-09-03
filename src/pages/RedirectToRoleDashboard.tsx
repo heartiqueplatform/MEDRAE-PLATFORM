@@ -19,13 +19,13 @@ export function RedirectToRoleDashboard() {
         const user = session?.user;
 
         if (!user) {
-          // 🚪 User not logged in → always go to login
+          // 🚪 User logged out → must log in manually
           if (location.pathname !== "/login") navigate("/login");
           setLoading(false);
           return;
         }
 
-        // 2. Fetch role
+        // 2. Fetch role (default student if none found)
         let role = localStorage.getItem("userRole") || "student";
         const { data: profile } = await supabase
           .from("profiles")
@@ -37,28 +37,40 @@ export function RedirectToRoleDashboard() {
           role = profile.role;
           localStorage.setItem("userRole", role);
         } else {
-          // 🚫 No profile row → send to login
+          // 🚫 No profile row → must log in manually
           if (location.pathname !== "/login") navigate("/login");
           setLoading(false);
           return;
         }
 
-        // 3. Redirect (only if on non-dashboard route)
+        // 3. Redirect only if not already on the correct dashboard
         if (!location.pathname.startsWith(`/dashboard/${role}`)) {
           navigate(`/dashboard/${role}`);
         }
       } catch (error) {
         console.error("Redirect error:", error);
-        navigate("/login"); // fallback
+        navigate("/login"); // safer fallback
       } finally {
         setLoading(false);
       }
     };
 
     getRoleAndRedirect();
+
+    // ✅ Watch for explicit logout → force to /login
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === "SIGNED_OUT") {
+          navigate("/login");
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [navigate, location]);
 
-  // Minimal redirecting message, styled for light + dark themes
   if (loading) {
     return (
       <div className="w-full text-center mt-4 text-blue-600 dark:text-blue-400 font-semibold">
