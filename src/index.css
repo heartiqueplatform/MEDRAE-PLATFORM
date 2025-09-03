@@ -149,13 +149,10 @@ html, body {
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent; /* removes gray highlight on tap */
 }
-/* Handle phones with system bars / notches */
+
+/* Handle phones with system bars (like Android gesture nav) */
 body {
-  padding-top: env(safe-area-inset-top);
-  padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  min-height: -webkit-fill-available;
   background-color: #fff;
 }
 

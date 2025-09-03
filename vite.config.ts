@@ -20,11 +20,9 @@ export default defineConfig(({ mode }) => ({
         name: "HEARTIQUE NURSING NEXUS SCHOLAR",
         short_name: "HEARTIQUE X",
         description: "App for NCK/FQE exam revision ",
-        theme_color: "#00000000", // transparent nav bar
+        theme_color: "#4ade80",
         background_color: "#ffffff",
         display: "standalone", // looks like native app
-        display_override: ["standalone", "fullscreen"], // try fullscreen when possible
-        orientation: "portrait",
         scope: "/",
         start_url: "/",
         icons: [
