@@ -18,6 +18,9 @@ const Index = () => {
     };
     checkSession();
   }, [navigate]);
+useEffect(() => {
+  document.documentElement.classList.remove("dark");
+}, []);
 
 
   const features = [

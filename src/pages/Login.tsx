@@ -19,8 +19,13 @@ import {
 import { GraduationCap, UserCheck, Heart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { useEffect } from "react";
 
 export function Login() {
+  useEffect(() => {
+  document.documentElement.classList.remove("dark");
+}, []);
+
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 

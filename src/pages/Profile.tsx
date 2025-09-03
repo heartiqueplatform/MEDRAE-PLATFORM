@@ -21,7 +21,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-
+import { GlobalLoader } from "@/components/GlobalLoader";
 export function Profile() {
   const { profile, loading } = useUserProfile();
   const user = useUser();
@@ -33,6 +33,69 @@ export function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+const [deleting, setDeleting] = useState(false);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/"); // redirect to Index ("/")
+    toast({ title: "Logged out", description: "You have been logged out." });
+  };
+const handleDeleteAccount = async () => {
+  if (!user) return;
+  setDeleting(true);
+
+  try {
+    // ✅ Always get fresh access token
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      toast({ title: "Error", description: "No active session found." });
+      return;
+    }
+
+    const res = await fetch(
+      "https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/delete-user",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId: user.id }),
+        
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast({
+        title: "Error",
+        description: data.error || "Something went wrong while deleting your account.",
+      });
+      return;
+    }
+
+    toast({
+      title: "Deleted",
+      description: "Your account has been permanently deleted.",
+    });
+
+    setShowDeleteDialog(false); // ✅ close confirmation dialog
+    await supabase.auth.signOut();
+    navigate("/");
+  } catch (err: any) {
+    toast({ title: "Error", description: err.message });
+      } finally {
+    setDeleting(false);
+  }
+};
 
   const handleProfileUpdate = () => {
     navigate("/settings");
@@ -99,15 +162,9 @@ export function Profile() {
   }
 
 if (loading || !profile) {
-  return (
-    <div className="flex flex-col items-center justify-center mt-20 space-y-4">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
-      <p className="text-muted-foreground text-center">
-        Please be patient, Heartique is aligning your content...
-      </p>
-    </div>
-  );
+  return <GlobalLoader message="Please be patient, Heartique is aligning your content..." />;
 }
+
 
   return (
     <div className="space-y-6">
@@ -248,13 +305,61 @@ if (loading || !profile) {
               <p className="text-muted-foreground">
                 Update your account settings and preferences in the Settings page.
               </p>
+{/* Logout Confirmation */}
+<Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+  <DialogTrigger asChild>
+    <Button variant="outline">Logout</Button>
+  </DialogTrigger>
+
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Confirm Logout</DialogTitle>
+      <DialogDescription>
+        Are you sure you want to log out?
+      </DialogDescription>
+    </DialogHeader>
+
+    <DialogFooter className="mt-4">
+      <Button variant="secondary" onClick={() => setShowLogoutDialog(false)}>
+        Cancel
+      </Button>
+      <Button variant="destructive" onClick={handleLogout}>
+        Logout
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+{/* Delete Account Confirmation */}
+<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+  <DialogTrigger asChild>
+    <Button variant="destructive">Delete My Account</Button>
+  </DialogTrigger>
+
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Confirm Delete</DialogTitle>
+      <DialogDescription>
+        This action cannot be undone. Your account and all associated data
+        will be permanently deleted.
+      </DialogDescription>
+    </DialogHeader>
+
+    <DialogFooter className="mt-4">
+      <Button variant="secondary" onClick={() => setShowDeleteDialog(false)}>
+        Cancel
+      </Button>
+      <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
+  {deleting ? "Deleting..." : "Delete"}
+</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
               {/* Password Modal */}
               <Dialog open={showDialog} onOpenChange={setShowDialog}>
                 <DialogTrigger asChild>
                   <Button variant="outline">Change Password</Button>
                 </DialogTrigger>
-
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Change Password</DialogTitle>

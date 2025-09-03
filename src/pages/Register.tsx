@@ -10,8 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { GraduationCap, UserCheck, Stethoscope, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { useEffect } from "react";
 
 export function Register() {
+  useEffect(() => {
+  document.documentElement.classList.remove("dark");
+}, []);
+
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
