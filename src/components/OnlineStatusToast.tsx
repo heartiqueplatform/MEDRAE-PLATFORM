@@ -8,22 +8,27 @@ export default function OnlineStatusToast() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    setVisible(true);
-
-    // Hide toast automatically after 3 seconds
-    const timer = setTimeout(() => {
-      setVisible(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
+    if (isOnline) {
+      // Show online message briefly (3s)
+      setVisible(true);
+      const timer = setTimeout(() => {
+        setVisible(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      // Stay visible while offline
+      setVisible(true);
+    }
   }, [isOnline]);
+
+  if (!visible) return null;
 
   return (
     <div
       className={`
-        fixed top-16 right-4 z-50 px-4 py-2 rounded-md text-white font-medium shadow-lg
-        transition-transform duration-300
-        ${visible ? "translate-y-0 opacity-100" : "-translate-y-10 opacity-0"}
+        fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50
+        px-4 py-2 rounded-md text-white font-medium shadow-lg
+        transition-all duration-300
         ${isOnline ? "bg-green-500" : "bg-red-500"}
       `}
     >
