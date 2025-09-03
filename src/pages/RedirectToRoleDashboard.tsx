@@ -69,12 +69,17 @@ export function RedirectToRoleDashboard() {
   }, [navigate, location]);
 
   if (loading) {
-    return (
-      <div className="w-full text-center mt-4 text-blue-600 dark:text-blue-400 font-semibold">
+  return (
+    <div
+      className="flex items-center justify-center h-screen w-screen text-center text-blue-600 dark:text-blue-400 font-semibold bg-cover bg-center"
+      style={{ backgroundImage: "url('/background07.jpg')" }}
+    >
+      <div className="bg-white/70 dark:bg-black/60 px-6 py-4 rounded-2xl shadow-lg">
         Heartique redirecting you...
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return null;
 }
