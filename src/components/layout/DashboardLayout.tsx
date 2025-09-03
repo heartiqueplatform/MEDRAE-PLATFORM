@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // or "next/router" if using pages router
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -44,12 +43,12 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
       fetchStreak();
     }
   }, [authUser]);
-// ✅ Redirect if no user
+// ✅ Redirect if no user (Vite/React version)
 useEffect(() => {
   if (!loading && !authUser) {
-    router.replace("/"); // sends user to index.tsx
+    window.location.href = "/"; // send to index.html or home route
   }
-}, [authUser, loading, router]);
+}, [authUser, loading]);
 
   const fetchStreak = async () => {
     const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
