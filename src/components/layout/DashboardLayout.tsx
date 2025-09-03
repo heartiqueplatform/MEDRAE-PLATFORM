@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
@@ -17,8 +16,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, userRole = 'student' }: DashboardLayoutProps) {
   const { profile, loading } = useUserProfile();
   const authUser = useUser();
-   const router = useRouter(); // ✅ initialize router
-
+   
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") === "dark";
@@ -43,12 +41,6 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
       fetchStreak();
     }
   }, [authUser]);
-// ✅ Redirect if no user (Vite/React version)
-useEffect(() => {
-  if (!loading && !authUser) {
-    window.location.href = "/"; // send to index.html or home route
-  }
-}, [authUser, loading]);
 
   const fetchStreak = async () => {
     const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
