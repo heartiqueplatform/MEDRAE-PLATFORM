@@ -1,5 +1,5 @@
 "use client";
-
+import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Countdown from "react-countdown";
@@ -169,7 +169,8 @@ export default function QuizPage() {
   setFinalScore(0);
 };
 
-  if (loading) return <p className="p-4">Loading quiz...</p>;
+  if (loading) return <GlobalLoader message="Be patient Heartique is Loading quiz..." />;
+
   if (questions.length === 0) return <p className="p-4">No questions found for: {unit}</p>;
 
   const filteredQuestions = showUnansweredOnly
@@ -177,7 +178,8 @@ export default function QuizPage() {
     : questions;
 
   return (
-    <div className="min-h-screen w-full p-4 space-y-6 bg-gray-50">
+    <div className="min-h-screen w-full p-4 space-y-6 bg-gray-50 dark:bg-gray-900">
+
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-blue-700">{unit}</h1>
         {!quizFinished && (
@@ -215,8 +217,16 @@ export default function QuizPage() {
         const showFeedback = feedbackShown[q.id];
 
         return (
-          <div key={q.id} className="p-4 border rounded shadow-sm bg-white">
-            <p className="font-bold text-black mb-2">Q{i + 1}: {q.question_text}</p>
+          <div
+  key={q.id}
+  className="w-full p-4 border rounded shadow-sm 
+             bg-white dark:bg-gray-800 
+             border-gray-200 dark:border-gray-700 
+             text-black dark:text-white"
+>
+
+           <p className="font-bold text-black dark:text-white mb-2">Q{i + 1}: {q.question_text}</p>
+
 
             <div className="ml-4 space-y-2 text-sm">
               {["A", "B", "C", "D"].map((letter) => {
@@ -229,14 +239,15 @@ export default function QuizPage() {
                     key={letter}
                     disabled={!!selectedAnswer || quizFinished}
                     onClick={() => handleAnswer(q.id, letter)}
-                    className={`w-full text-left px-3 py-2 rounded font-semibold border transition-all duration-150
-                      ${isSelected
-                        ? correct
-                          ? "bg-green-500 border-green-700 text-black"
-                          : "bg-red-500 border-red-700 text-black"
-                        : "bg-yellow-400 border-yellow-600 text-black hover:bg-yellow-500"}
-                      ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}
-                    `}
+                   className={`w-full text-left px-3 py-2 rounded font-semibold border transition-all duration-150
+  ${isSelected
+    ? correct
+      ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
+      : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
+    : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-yellow-500 dark:hover:bg-amber-800"}
+  ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}
+`}
+
                   >
                     {letter}. {optionText}
                   </button>
@@ -246,16 +257,19 @@ export default function QuizPage() {
 
             {showFeedback && (
               <div className="mt-3">
-                <p className={`font-semibold ${isCorrect ? "text-green-700" : "text-red-600"}`}>
+               <p className={`font-semibold ${isCorrect ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+
                   {isCorrect ? "Correct!" : `Wrong. Correct answer is ${q.correct_answer}`}
                 </p>
                 {q.explanation && (
-                  <p className="text-black mt-1">
+                 <p className="text-black dark:text-white mt-1">
+
                     <span className="font-semibold">Explanation:</span> {q.explanation}
                   </p>
                 )}
                 {q.additional && (
-                  <pre className="mt-2 text-xs bg-gray-100 p-2 whitespace-pre-wrap text-black">
+                 <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-700 p-2 whitespace-pre-wrap text-black dark:text-white">
+
                     {q.additional}
                   </pre>
                 )}
@@ -276,7 +290,7 @@ export default function QuizPage() {
 
       {quizFinished && (
         <>
-          <div className="mt-6 p-4 bg-green-100 rounded text-green-800 font-semibold">
+        <div className="mt-6 p-4 bg-green-100 dark:bg-green-900 rounded text-green-800 dark:text-green-200 font-semibold">
             You got {finalScore} out of {questions.length} correct!
           </div>
 
@@ -294,7 +308,7 @@ export default function QuizPage() {
           <h2 className="text-lg font-bold mb-2">Past Attempts</h2>
           <ul className="space-y-2 text-sm text-gray-800">
             {attempts.map((attempt) => (
-              <li key={attempt.id} className="p-2 border rounded bg-white">
+             <li key={attempt.id} className="p-2 border rounded bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white">
                 🗓 {new Date(attempt.submitted_at).toLocaleString()} — Score: {attempt.score}
               </li>
             ))}

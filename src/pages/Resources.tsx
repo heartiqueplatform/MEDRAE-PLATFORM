@@ -720,7 +720,6 @@ setShowUploadForm(false);
   </Badge>
 )}
 
-
   </div>
 )}
 
