@@ -12,44 +12,40 @@ export function RedirectToRoleDashboard() {
   useEffect(() => {
     const getRoleAndRedirect = async () => {
       try {
-        // 1. Check Supabase session
+        // 1. Get current session (may restore from storage)
         const {
           data: { session },
         } = await supabase.auth.getSession();
+
         const user = session?.user;
 
         if (!user) {
-          // 🚪 User logged out → must log in manually
+          // 🚪 Really logged out
           if (location.pathname !== "/login") navigate("/login");
           setLoading(false);
           return;
         }
 
-        // 2. Fetch role (default student if none found)
+        // 2. Get role (with fallback)
         let role = localStorage.getItem("userRole") || "student";
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", user.id)
-          .single();
+          .maybeSingle(); // ⚡ avoid error if no row
 
         if (profile?.role) {
           role = profile.role;
           localStorage.setItem("userRole", role);
-        } else {
-          // 🚫 No profile row → must log in manually
-          if (location.pathname !== "/login") navigate("/login");
-          setLoading(false);
-          return;
         }
 
-        // 3. Redirect only if not already on the correct dashboard
+        // 3. Redirect if not already in correct dashboard
         if (!location.pathname.startsWith(`/dashboard/${role}`)) {
-          navigate(`/dashboard/${role}`);
+          navigate(`/dashboard/${role}`, { replace: true });
         }
       } catch (error) {
         console.error("Redirect error:", error);
-        navigate("/login"); // safer fallback
+        navigate("/login"); // fallback
       } finally {
         setLoading(false);
       }
@@ -57,10 +53,11 @@ export function RedirectToRoleDashboard() {
 
     getRoleAndRedirect();
 
-    // ✅ Watch for explicit logout → force to /login
+    // ✅ Listen for sign-out only
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === "SIGNED_OUT") {
+          localStorage.removeItem("userRole"); // clear cache
           navigate("/login");
         }
       }
