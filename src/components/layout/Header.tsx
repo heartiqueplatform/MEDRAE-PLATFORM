@@ -10,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import OnlineStatusToast from "@/components/OnlineStatusToast";
-import { useName, useEmail, useTheme, useLanguage, useNotificationsEnabled } from "@/utils/storageManager";
 
 interface HeaderProps {
   user: {
@@ -34,12 +33,6 @@ export function Header({
   const authUser = useUser();
   const [streak, setStreak] = useState(propStreak);
   const isOnline = useOnlineStatus();
-  const [name, setName] = useName();
-const [email, setEmail] = useEmail();
-const [theme, setTheme] = useTheme();
-const [language, setLanguage] = useLanguage();
-const [notifications, setNotifications] = useNotificationsEnabled();
-
   const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {

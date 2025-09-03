@@ -6,7 +6,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
-import { useName, useEmail, useTheme, useLanguage, useNotificationsEnabled } from "@/utils/storageManager";
+
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,12 +15,6 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, userRole = 'student' }: DashboardLayoutProps) {
   const { profile, loading } = useUserProfile();
-  const [name, setName] = useName();
-const [email, setEmail] = useEmail();
-const [theme, setTheme] = useTheme();
-const [language, setLanguage] = useLanguage();
-const [notifications, setNotifications] = useNotificationsEnabled();
-
   const authUser = useUser();
    
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {

@@ -17,7 +17,6 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
-import { useName, useEmail, useTheme, useLanguage, useNotificationsEnabled } from "@/utils/storageManager";
 
 export default function StudentDashboard() {
    const navigate = useNavigate(); // 👈 Add this line
@@ -30,11 +29,7 @@ export default function StudentDashboard() {
   const [bestStreak, setBestStreak] = useState(0);
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [dailyContent, setDailyContent] = useState("");
-  const [name, setName] = useName();
-const [email, setEmail] = useEmail();
-const [theme, setTheme] = useTheme();
-const [language, setLanguage] = useLanguage();
-const [notifications, setNotifications] = useNotificationsEnabled();
+  
 
 // New state for daily post duration
 const [dailyDuration, setDailyDuration] = useState<"24h" | "1w" | "1m" | "3m">("24h");
