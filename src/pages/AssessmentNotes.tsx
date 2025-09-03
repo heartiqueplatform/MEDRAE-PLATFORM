@@ -443,7 +443,8 @@ const file_url = urlData.publicUrl;
                       {subNotes.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
                       ) : (
-                        <div className="flex overflow-x-auto gap-4 pb-2">
+                       <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
+
                           {subNotes.map((note) => (
                             <Card key={note.id} className="min-w-[300px] max-w-[300px]">
                               <CardHeader>
