@@ -1,4 +1,8 @@
 "use client";
+import { Worker, Viewer } from "@react-pdf-viewer/core";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -17,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import {
   FileText, Video, Link, UploadCloud, Download, Eye, X, Search, Heart,
 } from "lucide-react";
+import { saveFile, getFile } from "@/lib/offlineStorage";
+
 
 const SECTIONS = [
   {
@@ -64,6 +70,11 @@ export default function AssessmentNotes() {
   const [uploading, setUploading] = useState(false);
   const [fullscreenNote, setFullscreenNote] = useState<any>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
+  // Upload progress & offline caching
+const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+const [pdfLoading, setPdfLoading] = useState(false);
+const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
+const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [selectedBlock, setSelectedBlock] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
 
@@ -71,6 +82,55 @@ export default function AssessmentNotes() {
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const [bookmarkedItems, setBookmarkedItems] = useState<string[]>([]);
+
+  const fullscreenRef = useRef<HTMLDivElement>(null);
+
+const [isDarkMode, setIsDarkMode] = useState<boolean>(
+  typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
+);
+
+useEffect(() => {
+  if (typeof window === 'undefined') return;
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const listener = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+  mediaQuery.addEventListener('change', listener);
+  return () => mediaQuery.removeEventListener('change', listener);
+}, []);
+
+
+// Load offline file or fallback to online
+const loadOfflineFile = async (fileId: string, fileUrl: string) => {
+  const file = await getFile(fileId);
+  if (file) {
+    const url = URL.createObjectURL(file);
+    window.open(url, "_blank");
+    return;
+  }
+  window.open(fileUrl, "_blank");
+};
+
+// Download and save file for offline use
+const handleDownload = async (fileId: string, url: string) => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    await saveFile(fileId, blob);
+
+    console.log(`File ${fileId} saved for offline use`);
+
+    // Mark file as offline in UI
+    setOfflineFiles((prev) => [...prev, fileId]);
+
+    alert("Saved offline!");
+  } catch (err) {
+    console.error("Failed to save offline:", err);
+  }
+};
+
+
+  useEffect(() => {
+  if (fullscreenNote?.file_type === "pdf") setPdfLoading(true);
+}, [fullscreenNote]);
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -169,16 +229,32 @@ export default function AssessmentNotes() {
     const ext = file.name.split(".").pop();
     const path = `assessment/${Date.now()}-${file.name}`;
 
-    setUploading(true);
-    const { error: uploadErr } = await supabase.storage.from("notes").upload(path, file);
-    if (uploadErr) {
-      console.error("Storage error:", uploadErr);
-      setUploading(false);
-      return;
-    }
+   setUploading(true);
+setUploadProgress(0);
 
-    const { data: urlData } = supabase.storage.from("notes").getPublicUrl(path);
-    const file_url = urlData.publicUrl;
+// Simulate progress while uploading
+const progressInterval = setInterval(() => {
+  setUploadProgress((prev) => {
+    if (prev === null) return 0;
+    if (prev >= 90) return prev;
+    return prev + 10;
+  });
+}, 300);
+
+const { error: uploadErr } = await supabase.storage.from("notes").upload(path, file);
+
+clearInterval(progressInterval);
+setUploadProgress(100);
+
+if (uploadErr) {
+  console.error("Storage error:", uploadErr);
+  setUploading(false);
+  setTimeout(() => setUploadProgress(null), 1000);
+  return;
+}
+
+const { data: urlData } = supabase.storage.from("notes").getPublicUrl(path);
+const file_url = urlData.publicUrl;
 
     const payload = {
       title: formData.get("title"),
@@ -281,6 +357,15 @@ export default function AssessmentNotes() {
             </select>
             <Input type="file" name="file" required />
           </div>
+          {uploadProgress !== null && (
+  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+    <div
+      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+      style={{ width: `${uploadProgress}%` }}
+    />
+  </div>
+)}
+
           <Button type="submit" disabled={uploading}>
             <UploadCloud className="w-4 h-4 mr-1" />
             {uploading ? "Uploading..." : "Upload Note"}
@@ -304,13 +389,49 @@ export default function AssessmentNotes() {
             <AccordionTrigger>{section.title}</AccordionTrigger>
             <AccordionContent>
               <Tabs defaultValue={section.subcategories[0]}>
-                <TabsList className="overflow-x-auto flex w-full gap-2">
-                  {section.subcategories.map((sub) => (
-                    <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
-                      {sub}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+               {/* Only for Practical Assessments & Case Studies */}
+{["Practical Assessments", "Case Studies"].includes(section.title) ? (
+  <div className="space-y-2">
+    <Button
+      variant="outline"
+      className="w-full"
+      onClick={() =>
+        setSelectedSubcategory((prev) =>
+          prev && section.subcategories.includes(prev) ? "" : section.subcategories[0]
+        )
+      }
+    >
+      {selectedSubcategory || "Select Subcategory"}
+    </Button>
+    {selectedSubcategory === section.subcategories[0] && (
+    <div className="flex flex-wrap gap-2 mt-2">
+
+        {section.subcategories.map((sub) => (
+          <Button
+            key={sub}
+            size="sm"
+            variant="ghost"
+            className="justify-start"
+            onClick={() => setSelectedSubcategory(sub)}
+          >
+            {sub}
+          </Button>
+        ))}
+      </div>
+    )}
+  </div>
+) : (
+  // Keep original horizontal tabs for others
+ <TabsList className="flex flex-wrap gap-2 w-full">
+
+    {section.subcategories.map((sub) => (
+      <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
+        {sub}
+      </TabsTrigger>
+    ))}
+  </TabsList>
+)}
+
 
                 {section.subcategories.map((sub) => {
                   const subNotes = filteredNotes.filter(
@@ -339,50 +460,73 @@ export default function AssessmentNotes() {
                                   {new Date(note.created_at).toLocaleDateString()}
                                 </p>
                               </CardHeader>
-                              <CardContent>
-                                <Button
-                                  size="sm"
-                                  className="w-full flex gap-1 justify-center"
-                                  variant="secondary"
-                                  onClick={async () => {
-                                    setFullscreenNote(note);
-                                    if (session?.user?.id) {
-                                      const { error } = await supabase.from("note_views").insert({
-                                        note_id: note.id,
-                                        user_id: session.user.id,
-                                      });
-                                      if (!error) {
-                                        setViewCounts((prev) => ({
-                                          ...prev,
-                                          [note.id]: (prev[note.id] || 0) + 1,
-                                        }));
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  View Document
-                                </Button>
-                                <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
-                                  <div className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
-                                    {viewCounts[note.id] || 0}
-                                  </div>
-                                  <button
-                                    className={`flex items-center gap-1 ${
-                                      bookmarkedItems.includes(note.id) ? "text-red-500" : ""
-                                    }`}
-                                    onClick={() => toggleLike(note.id)}
-                                  >
-                                    <Heart
-                                      className={`h-4 w-4 ${
-                                        bookmarkedItems.includes(note.id) ? "fill-current" : ""
-                                      }`}
-                                    />
-                                    <span>{likeCounts[note.id] || 0}</span>
-                                  </button>
-                                </div>
-                              </CardContent>
+                            <CardContent>
+  <Button
+    size="sm"
+    className="w-full flex gap-1 justify-center"
+    variant="secondary"
+    onClick={async () => {
+      setFullscreenNote(note);
+      if (session?.user?.id) {
+        const { error } = await supabase.from("note_views").insert({
+          note_id: note.id,
+          user_id: session.user.id,
+        });
+        if (!error) {
+          setViewCounts((prev) => ({
+            ...prev,
+            [note.id]: (prev[note.id] || 0) + 1,
+          }));
+        }
+      }
+    }}
+  >
+    <Eye className="h-4 w-4" />
+    View Document
+  </Button>
+
+  {/* Offline download button */}
+<div className="flex gap-2 mt-2">
+  <Button
+    size="sm"
+    onClick={async () => {
+      await handleDownload(note.id, note.file_url);
+    }}
+    className="flex items-center gap-1 w-full justify-center"
+  >
+    <Download className="h-3 w-3" />
+    Cache
+  </Button>
+
+  {/* Show badge if file is saved offline */}
+  {offlineFiles.includes(note.id) && (
+    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+      Preserved
+    </Badge>
+  )}
+</div>
+
+  <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
+    <div className="flex items-center gap-1">
+      <Eye className="h-3 w-3" />
+      {viewCounts[note.id] || 0}
+    </div>
+    <button
+      className={`flex items-center gap-1 ${
+        bookmarkedItems.includes(note.id) ? "text-red-500" : ""
+      }`}
+      onClick={() => toggleLike(note.id)}
+    >
+      <Heart
+        className={`h-4 w-4 ${
+          bookmarkedItems.includes(note.id) ? "fill-current" : ""
+        }`}
+      />
+      <span>{likeCounts[note.id] || 0}</span>
+    </button>
+  </div>
+</CardContent>
+
                             </Card>
                           ))}
                         </div>
@@ -396,19 +540,38 @@ export default function AssessmentNotes() {
         ))}
       </Accordion>
 
-      {fullscreenNote && (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col">
-          <div className="flex justify-end p-2">
-            <Button onClick={() => setFullscreenNote(null)} variant="ghost" className="text-white">
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-          <iframe
-            src={fullscreenNote.file_url}
-            className="flex-1 w-full"
-            style={{ border: "none" }}
-            title={fullscreenNote.title}
-          />
+    {fullscreenNote && (
+  <div
+    ref={fullscreenRef}
+    className="fixed inset-0 bg-black z-50 flex flex-col"
+  >
+    <div className="flex justify-end p-2">
+      <Button
+        onClick={() => setFullscreenNote(null)}
+        variant="ghost"
+        className="text-white"
+      >
+        <X className="h-6 w-6" />
+      </Button>
+    </div>
+{fullscreenNote.file_type === "pdf" ? (
+<Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+    <Viewer
+        fileUrl={fullscreenNote.file_url}
+        plugins={[defaultLayoutPluginInstance]}
+        theme={isDarkMode ? "dark" : "light"}
+        renderLoader={() => <GlobalLoader message="Be Patient Heartique is Loading PDF..." />}
+    />
+</Worker>
+    ) : (
+      <iframe
+        src={fullscreenNote.file_url}
+        className="flex-1 w-full"
+        style={{ border: "none" }}
+        title={fullscreenNote.title}
+      />
+    )}
+
         </div>
       )}
     </div>
