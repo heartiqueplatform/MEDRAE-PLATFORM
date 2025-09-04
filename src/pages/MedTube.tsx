@@ -33,6 +33,8 @@ export function MedTube() {
   const [tags, setTags] = useState("");
   const [category, setCategory] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState<string>("00:00");
 const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
@@ -289,10 +291,16 @@ useEffect(() => {
     setUploading(true);
 
     const filename = `${Date.now()}_${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
-    const { data, error: uploadError } = await supabase
-      .storage
-      .from("videos")
-      .upload(filename, file);
+  const { data, error: uploadError } = await supabase.storage
+  .from("videos")
+  .upload(filename, file, {
+    upsert: false,
+    onUploadProgress: (event) => {
+      const percent = Math.round((event.loaded / event.total) * 100);
+      setUploadProgress(percent);
+    },
+  });
+
 
     if (uploadError) {
       console.error("Upload Error:", uploadError);
@@ -396,6 +404,15 @@ useEffect(() => {
           <Button onClick={handleUpload} disabled={uploading}>
             {uploading ? "Uploading..." : "Submit"}
           </Button>
+          {uploading && (
+  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+    <div
+      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+      style={{ width: `${uploadProgress}%` }}
+    />
+  </div>
+)}
+
         </div>
       )}
 
