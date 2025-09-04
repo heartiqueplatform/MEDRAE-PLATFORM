@@ -94,17 +94,18 @@ export function Settings() {
   };
 
   // Upload avatar (PRESERVED)
-  const uploadAvatar = async () => {
+// Upload avatar (with cache-busting)
+const uploadAvatar = async () => {
   if (!avatarFile || !userId) return null;
 
   const fileExt = avatarFile.name.split(".").pop();
-  const folder = "avatars"; // 👈 define it here
+  const folder = "avatars";
   const filePath = `${folder}/${userId}-avatar.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
     .from("profilepics")
     .upload(filePath, avatarFile, {
-      cacheControl: "3600",
+      cacheControl: "60", // only cache for 60 seconds
       upsert: true,
     });
 
@@ -113,37 +114,63 @@ export function Settings() {
     return null;
   }
 
-  const { data } = supabase.storage
-    .from("profilepics")
-    .getPublicUrl(filePath);
+  const { data } = supabase.storage.from("profilepics").getPublicUrl(filePath);
 
-  return data.publicUrl;
+  // 👇 Add a timestamp to bust browser cache
+  return `${data.publicUrl}?t=${Date.now()}`;
 };
 
 
-  // Remove avatar with confirmation
-  const handleRemoveAvatar = async () => {
-    if (!userId) return;
 
-    const { error } = await supabase
+  // Remove avatar with confirmation
+const handleRemoveAvatar = async () => {
+  if (!userId) return;
+
+  try {
+    // 👇 figure out the folder + filename convention
+    const folder = "avatars";
+    const fileExt = profile?.avatar_url?.split(".").pop() || "png";
+    const filePath = `${folder}/${userId}-avatar.${fileExt}`;
+
+    // 1. Delete from storage
+    const { error: storageError } = await supabase
+      .storage
+      .from("profilepics")
+      .remove([filePath]);
+
+    if (storageError) {
+      toast({ title: "Error", description: "Failed to delete file from storage" });
+      console.error(storageError);
+      return;
+    }
+
+    // 2. Clear DB field
+    const { error: dbError } = await supabase
       .from("profiles")
-      .update({
-        avatar_url: null,
-      })
+      .update({ avatar_url: null })
       .eq("user_id", userId);
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to remove avatar" });
-    } else {
-      setProfile((prev: any) => ({ ...prev, avatar_url: null }));
-      setAvatarPreview(null);
-      setAvatarFile(null);
-      toast({
-        title: "Avatar Removed",
-        description: "Your avatar has been deleted.",
-      });
+    if (dbError) {
+      toast({ title: "Error", description: "Failed to remove avatar reference" });
+      console.error(dbError);
+      return;
     }
-  };
+
+    // 3. Update local state
+    setProfile((prev: any) => ({ ...prev, avatar_url: null }));
+    setAvatarPreview(null);
+    setAvatarFile(null);
+
+    toast({
+      title: "Avatar Removed",
+      description: "Your avatar has been deleted.",
+    });
+  } catch (err) {
+    console.error(err);
+    toast({ title: "Error", description: "Unexpected error while removing avatar" });
+  }
+};
+
 
   // Save profile
   const handleSaveProfile = async () => {
