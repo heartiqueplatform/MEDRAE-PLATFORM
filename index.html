@@ -49,34 +49,40 @@
     }
     </script>
 
-    <!-- Medical-themed glowing gradient -->
-     <script>
-    // Detect dark mode and set solid fallback color immediately
-    const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.body.style.backgroundColor = darkMode ? 'hsl(215,28%,8%)' : 'hsl(210,20%,98%)';
-  </script>
+    <!-- JS solid fallback & theme-based gradient -->
+    <script>
+      const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    
+      // Immediate solid fallback color to prevent white flash
+      document.body.style.backgroundColor = darkMode ? 'hsl(215,28%,8%)' : 'hsl(210,20%,98%)';
+
+      // Apply gradient dynamically based on theme
+      const gradient = darkMode 
+        ? 'linear-gradient(135deg, #4d6eff, #1e90ff, #0a1f2e)'  // Dark theme gradient
+        : 'linear-gradient(135deg, #ff4d6d, #4dd2ff, #1e90ff)'; // Light theme gradient
+
+      const styleEl = document.createElement('style');
+      styleEl.innerHTML = `
+        html, body, #root {
+          height: 100%;
+          margin: 0;
+          background: ${gradient};
+          background-size: 400% 400%;
+          animation: glow 6s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `;
+      document.head.appendChild(styleEl);
+    </script>
+
   </head>
 
- <body style="margin:0;">
-  <style>
-      html, body, #root {
-        height: 100%;
-        margin: 0;
-        background: linear-gradient(135deg, #ff4d6d, #4dd2ff, #1e90ff);
-        background-size: 400% 400%;
-        animation: glow 6s ease-in-out infinite alternate;
-      }
-
-      @keyframes glow {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-    </style>
-  <div id="root" style="height:100%;"></div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
-
+  <body style="margin:0;">
+    <div id="root" style="height:100%;"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
