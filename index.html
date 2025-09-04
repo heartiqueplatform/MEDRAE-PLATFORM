@@ -50,7 +50,17 @@
     </script>
 
     <!-- Medical-themed glowing gradient -->
-    <style>
+     <script>
+    // Detect dark mode and set solid fallback color immediately
+    const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.body.style.backgroundColor = darkMode ? 'hsl(215,28%,8%)' : 'hsl(210,20%,98%)';
+  </script>
+
+    
+  </head>
+
+ <body style="margin:0;">
+  <style>
       html, body, #root {
         height: 100%;
         margin: 0;
@@ -65,15 +75,6 @@
         100% { background-position: 0% 50%; }
       }
     </style>
-  </head>
-
- <body style="margin:0;">
-  <script>
-    // Detect dark mode and set solid fallback color immediately
-    const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.body.style.backgroundColor = darkMode ? 'hsl(215,28%,8%)' : 'hsl(210,20%,98%)';
-  </script>
-
   <div id="root" style="height:100%;"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
