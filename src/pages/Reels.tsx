@@ -266,12 +266,13 @@ export function Reels() {
           </p>
         </div>
         <Button
-          onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center gap-2"
-        >
-          <Upload className="h-4 w-4" />
-          {showUpload ? "Close" : "Upload"}
-        </Button>
+  onClick={() => alert("Coming Soon: This page is under development Upload feature and the entire page  will be available in future!")}
+  className="flex items-center gap-2"
+>
+  <Upload className="h-4 w-4" />
+  Upload
+</Button>
+
       </div>
 
       {showUpload && (
@@ -303,7 +304,8 @@ export function Reels() {
           </Button>
         </Card>
       )}
-<div className="snap-y snap-mandatory overflow-y-scroll h-screen lg:h-[95vh] max-w-md mx-auto">
+<div className="snap-y snap-mandatory overflow-y-auto h-screen lg:h-[95vh] max-w-md mx-auto">
+
   {reels.map((reel, i) => (
    <Card
   key={reel.id}
@@ -481,11 +483,21 @@ export function Reels() {
 
           </Card>
         ))}
-        {loading && (
-          <div className="flex justify-center py-8">
-            <Loader2 className="animate-spin h-8 w-8 text-muted-foreground" />
-          </div>
-        )}
+       
+        {reels.length === 0 && !loading && (
+  <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-6">
+    <h2 className="text-3xl font-bold text-gray-800">
+      Welcome to Medical Reels
+    </h2>
+    <p className="text-gray-700 max-w-xl text-lg leading-relaxed">
+      This page will serve as a hub for short, high-quality educational videos designed to help medical students, professionals, and enthusiasts enhance their knowledge quickly and effectively.  
+      In the near future, you will be able to explore videos covering essential medical concepts, practical skills, quick learning techniques, and real-world clinical insights.  
+      Each video will aim to provide concise, actionable, and easy-to-understand content that can be consumed in just a few minutes, making learning efficient, engaging, and accessible from anywhere.  
+      Stay tuned as we will continue to expand the library, offering a wide variety of topics to support your medical journey and professional growth.
+    </p>
+  </div>
+)}
+
       </div>
     </div>
   );
