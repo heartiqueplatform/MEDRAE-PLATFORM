@@ -513,7 +513,6 @@ useEffect(() => {
     Cancel Upload
   </Button>
 )}
-
           {uploading && (
   <div className="w-full mt-2 space-y-2">
     {/* Progress bar */}
@@ -583,7 +582,6 @@ useEffect(() => {
   <TabsContent
     key={cat.id}
     value={cat.id}
-    className={selectedTab === cat.id ? "" : "hidden md:block"}
   >
 
      {loading ? (
