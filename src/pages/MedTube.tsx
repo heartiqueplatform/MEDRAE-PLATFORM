@@ -1,4 +1,5 @@
 "use client";
+import { GlobalLoader } from "@/components/GlobalLoader";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -33,6 +34,8 @@ export function MedTube() {
   const [tags, setTags] = useState("");
   const [category, setCategory] = useState("");
   const [uploading, setUploading] = useState(false);
+  const uploadXhrRef = useRef<XMLHttpRequest | null>(null);
+
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -126,22 +129,24 @@ const canAccess = subscription ? true : !isBlocked && isFreeVideo;
         .from("medtube_video_views")
         .select("id")
         .eq("video_id", video.id),
-      supabase
-        .from("profiles")
-        .select("username, name")
-        .eq("user_id", video.uploaded_by)
-        .single()
-    ]);
+  supabase
+  .from("profiles")
+  .select("username, name, avatar_url")
+  .eq("user_id", video.uploaded_by)
+  .single()
 
-    return {
-      ...video,
-      likes_count: likesRes.data?.length ?? 0,
-      views_count: viewsRes.data?.length ?? 0,
-      uploader: uploaderRes.data?.username || uploaderRes.data?.name || "Unknown",
-      liked_by_me: likesRes.data?.some((like) => like.user_id === user?.id),
-      isBlocked,
-      canAccess,
-    };
+    ]);
+return {
+  ...video,
+  likes_count: likesRes.data?.length ?? 0,
+  views_count: viewsRes.data?.length ?? 0,
+  uploader: uploaderRes.data?.username || uploaderRes.data?.name || "Unknown",
+  uploader_avatar: uploaderRes.data?.avatar_url || null,
+  liked_by_me: likesRes.data?.some((like) => like.user_id === user?.id),
+  isBlocked,
+  canAccess,
+};
+
   })
 );
 
@@ -167,14 +172,37 @@ useEffect(() => {
         fetchVideos();
       }
     )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "medtube_video_likes" },
-      () => {
-        console.log("Realtime: likes changed, refreshing...");
-        fetchVideos();
-      }
-    )
+.on(
+  "postgres_changes",
+  { event: "*", schema: "public", table: "medtube_video_likes" },
+  (payload) => {
+    console.log("Realtime: like event", payload);
+    const { eventType, new: newRow, old: oldRow } = payload;
+
+    setVideos((prev) =>
+      prev.map((v) => {
+        if (v.id !== (newRow?.video_id || oldRow?.video_id)) return v;
+
+        if (eventType === "INSERT") {
+          return {
+            ...v,
+            likes_count: v.likes_count + 1,
+            liked_by_me: newRow.user_id === user?.id ? true : v.liked_by_me,
+          };
+        }
+        if (eventType === "DELETE") {
+          return {
+            ...v,
+            likes_count: v.likes_count - 1,
+            liked_by_me: oldRow.user_id === user?.id ? false : v.liked_by_me,
+          };
+        }
+        return v;
+      })
+    );
+  }
+)
+
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "medtube_video_views" },
@@ -230,6 +258,50 @@ useEffect(() => {
       console.error("Error tracking view:", err);
     }
   };
+    const handleDeleteVideo = async (video: any) => {
+    if (!user || user.id !== video.uploaded_by) {
+      alert("You can only delete your own videos.");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to delete this video? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      // 1. Delete from bucket
+      const filename = video.video_url.split("/").pop();
+      if (filename) {
+        const { error: storageError } = await supabase.storage
+          .from("videos")
+          .remove([filename]);
+
+        if (storageError) {
+          console.error("Storage delete error:", storageError);
+        }
+      }
+
+      // 2. Delete from DB
+      const { error: dbError } = await supabase
+        .from("medtube_videos")
+        .delete()
+        .eq("id", video.id);
+
+      if (dbError) {
+        console.error("DB delete error:", dbError);
+        alert("Error deleting video from database.");
+        return;
+      }
+
+      // 3. Remove from UI state
+      setVideos((prev) => prev.filter((v) => v.id !== video.id));
+      alert("Video deleted successfully.");
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("An error occurred while deleting the video.");
+    }
+  };
+
 
   const handleLikeToggle = async (videoId: string) => {
     if (!user) return alert("Login to like");
@@ -286,67 +358,85 @@ useEffect(() => {
     return `${Math.ceil(days / 30)} months ago`;
   };
 
-  const handleUpload = async () => {
-    if (!file || !title || !user || !category) return alert("Login and fill in all fields");
-    setUploading(true);
+ const handleUpload = async () => {
+  if (!file || !title || !user || !category) return alert("Login and fill in all fields");
+  setUploading(true);
 
-    const filename = `${Date.now()}_${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
-  const { data, error: uploadError } = await supabase.storage
-  .from("videos")
-  .upload(filename, file, {
-    upsert: false,
-    onUploadProgress: (event) => {
-      const percent = Math.round((event.loaded / event.total) * 100);
-      setUploadProgress(percent);
-    },
+  const filename = `${Date.now()}_${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
+
+  // Step 1: Get a signed URL from Supabase for direct upload
+  const { data: signedUrl, error: signedError } = await supabase.storage
+    .from("videos")
+    .createSignedUploadUrl(filename);
+
+  if (signedError || !signedUrl) {
+    console.error("Signed URL error:", signedError);
+    alert("Upload failed");
+    setUploading(false);
+    return;
+  }
+
+  // Step 2: Upload with XMLHttpRequest to track progress
+ await new Promise<void>((resolve, reject) => {
+  const xhr = new XMLHttpRequest();
+  uploadXhrRef.current = xhr; // ✅ store reference so we can cancel later
+  xhr.open("PUT", signedUrl.signedUrl, true);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percent);
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        resolve();
+      } else {
+        reject(new Error("Upload failed"));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed"));
+        xhr.onabort = () => reject(new Error("Upload cancelled"));
+
+    xhr.send(file);
   });
 
+  // Step 3: Get public URL for DB insert
+  const { data: publicUrlData } = supabase.storage
+    .from("videos")
+    .getPublicUrl(filename);
 
-    if (uploadError) {
-      console.error("Upload Error:", uploadError);
-      alert("Upload failed");
-      setUploading(false);
-      return;
-    }
+  const videoUrl = publicUrlData?.publicUrl;
+  const userId = user.id;
 
-    const { data: publicUrlData } = supabase
-      .storage
-      .from("videos")
-      .getPublicUrl(filename);
+  const { error: insertError } = await supabase.from("medtube_videos").insert({
+    title,
+    description,
+    video_url: videoUrl,
+    uploaded_by: userId,
+    tags: tags.split(",").map((t) => t.trim()),
+    duration,
+    is_visible: true,
+    category,
+  });
 
-    const videoUrl = publicUrlData?.publicUrl;
-    const userId = user.id;
+  if (insertError) {
+    console.error("Database Insert Error:", insertError);
+    alert("Database error");
+  } else {
+    alert("Upload successful");
+    setTitle("");
+    setDescription("");
+    setTags("");
+    setFile(null);
+    setCategory("");
+    setPreviewUrl(null);
+    setDuration("00:00");
+    setShowUploadForm(false);
+  }
 
-    const { error: insertError } = await supabase.from("medtube_videos").insert({
-      title,
-      description,
-      video_url: videoUrl,
-      uploaded_by: userId,
-      tags: tags.split(",").map((t) => t.trim()),
-      duration,
-      is_visible: true,
-      category,
-    });
-
-    if (insertError) {
-      console.error("Database Insert Error:", insertError);
-      alert("Database error");
-    } else {
-      alert("Upload successful");
-      setTitle("");
-      setDescription("");
-      setTags("");
-      setFile(null);
-      setCategory("");
-      setPreviewUrl(null);
-      setDuration("00:00");
-      setShowUploadForm(false);
-            //  No manual refresh needed, realtime will update video list
-
-    }
-
-    setUploading(false);
-  };
+  setUploading(false);
+};
 
   useEffect(() => {
     if (file) {
@@ -405,13 +495,46 @@ useEffect(() => {
             {uploading ? "Uploading..." : "Submit"}
           </Button>
           {uploading && (
-  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-    <div
-      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-      style={{ width: `${uploadProgress}%` }}
-    />
+  <Button
+    variant="destructive"
+    onClick={() => {
+      if (window.confirm("Are you sure you want to cancel this upload?")) {
+        if (uploadXhrRef.current) {
+          uploadXhrRef.current.abort(); // ✅ cancel the request
+          setUploading(false);
+          setUploadProgress(0);
+          alert("Upload cancelled");
+        }
+      }
+    }}
+  >
+    Cancel Upload
+  </Button>
+)}
+
+          {uploading && (
+  <div className="w-full mt-2 space-y-2">
+    {/* Progress bar */}
+    <div className="w-full bg-gray-200 rounded-full h-2">
+      <div
+        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+        style={{ width: `${uploadProgress}%` }}
+      />
+    </div>
+
+    {/* Percentage + MB display */}
+    <div className="flex justify-between text-sm text-gray-600">
+      <span>{uploadProgress}%</span>
+      {file && (
+        <span>
+          {((file.size * uploadProgress) / 100 / (1024 * 1024)).toFixed(2)} MB /{" "}
+          {(file.size / (1024 * 1024)).toFixed(2)} MB
+        </span>
+      )}
+    </div>
   </div>
 )}
+
 
         </div>
       )}
@@ -437,13 +560,8 @@ useEffect(() => {
 
         {categories.map((cat) => (
           <TabsContent key={cat.id} value={cat.id}>
-           {loading ? (
-  <div className="flex flex-col justify-center items-center h-64 space-y-4">
-    <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-    <p className="text-center text-gray-600 font-medium">
-      Be patient ❤️ Heartique is loading videos...
-    </p>
-  </div>
+     {loading ? (
+  <GlobalLoader message="Be patient ❤️ Heartique is loading videos..." />
 ) : (
 
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -587,13 +705,13 @@ if (vid.paused) {
   </Badge>
 )}
                         <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
+<Avatar className="h-6 w-6">
   <AvatarImage
-    src={profile?.avatar_url || "/placeholder.svg"}
+    src={video.uploader_avatar || "/placeholder.svg"}
     className="object-cover"
   />
   <AvatarFallback className="flex items-center justify-center text-xs">
-    👤
+    {video.uploader?.[0]?.toUpperCase() || "👤"}
   </AvatarFallback>
 </Avatar>
 
@@ -618,24 +736,38 @@ if (vid.paused) {
                           ))}
                         </div>
 
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <Eye className="h-4 w-4" /> {formatViews(video.views_count)}
-                          <Heart
-  className="h-4 w-4 ml-3 cursor-pointer"
-  fill={video.liked_by_me ? "red" : "none"}
-  stroke={video.liked_by_me ? "red" : "currentColor"}
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleLikeToggle(video.id);
-  }}
-/>
+           <div className="flex items-center justify-between text-sm text-muted-foreground">
+  <div className="flex items-center gap-2">
+    <Eye className="h-4 w-4" /> {formatViews(video.views_count)}
+    <Heart
+      className="h-4 w-4 ml-3 cursor-pointer"
+      fill={video.liked_by_me ? "red" : "none"}
+      stroke={video.liked_by_me ? "red" : "currentColor"}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleLikeToggle(video.id);
+      }}
+    />
+    {video.likes_count}
+  </div>
 
+  {/* ✅ Delete button visible only for owner */}
+  {user?.id === video.uploaded_by && (
+    <Button
+      variant="destructive"
+      size="sm"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleDeleteVideo(video);
+      }}
+    >
+      Delete
+    </Button>
+  )}
+</div>
 
-                            {video.likes_count}
-                          </div>
-                        </div>
                       </CardContent>
                     </Card>
                   ))}
