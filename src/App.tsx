@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -78,6 +79,15 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
+const App = () => {
+  useEffect(() => {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+
+    splash.style.transition = 'opacity 0.3s ease';
+    splash.style.opacity = '0';
+    setTimeout(() => splash.remove(), 350); // remove after fade
+  }, []);
 
 const App = () => (
   <SessionContextProvider supabaseClient={supabase}>
