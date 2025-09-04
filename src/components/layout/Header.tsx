@@ -34,6 +34,7 @@ export function Header({
   const [streak, setStreak] = useState(propStreak);
   const isOnline = useOnlineStatus();
   const [notificationCount, setNotificationCount] = useState(0);
+const [rotating, setRotating] = useState(false);
 
   useEffect(() => {
     if (authUser?.id) {
@@ -111,13 +112,17 @@ export function Header({
   };
 
   // smart reload function: clears cache and reloads
-  const handleReload = async () => {
-    if ("caches" in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map((name) => caches.delete(name)));
-    }
+ const handleReload = async () => {
+  setRotating(true); // start rotation
+  if ("caches" in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map((name) => caches.delete(name)));
+  }
+  setTimeout(() => {
     window.location.reload();
-  };
+  }, 300); // small delay to see rotation
+};
+
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95">
@@ -149,9 +154,16 @@ export function Header({
   {isOnline ? "Online" : "Offline"}
 </Badge>
         {/* 🔄 Reload PWA */}
-        <Button variant="ghost" size="sm" onClick={handleReload}>
-          <RefreshCcw className="h-5 w-5" />
-        </Button>
+     <Button
+  variant="ghost"
+  size="sm"
+  onClick={handleReload}
+  className="relative"
+>
+<RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
+
+</Button>
+
         {/* 🌐 Online/Offline status */}
 
         {/* 🔔 Notifications */}

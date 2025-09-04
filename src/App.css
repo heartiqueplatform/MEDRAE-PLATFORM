@@ -81,3 +81,12 @@ html, body, #root, #__next {
   margin: 0;
   overflow: hidden; /* prevents scrolling issues on mobile */
 }
+@keyframes spin-fast {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spin-fast {
+  animation: spin-fast 0.5s linear infinite; /* 0.5s per full rotation */
+}
+
