@@ -80,18 +80,13 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
-<SessionContextProvider supabaseClient={supabase}>
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AIWrapper>
-          <>
-  <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-    {/* Sidebar stays mounted in DashboardLayout */}
-    <main className="flex-1 overflow-y-auto">
-  
+  <SessionContextProvider supabaseClient={supabase}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AIWrapper>
             <Routes>
               {/* Public Routes */}
             <Route path="/" element={<Index />} />
@@ -140,15 +135,12 @@ const App = () => (
 
               {/* Catch-all 404 */}
               <Route path="*" element={<NotFound />} />
-          </Routes>
-              </main>
-            </div>
-          </>
-        </AIWrapper>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-</SessionContextProvider>
+            </Routes>
+          </AIWrapper>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </SessionContextProvider>
 );
 
 export default App;
