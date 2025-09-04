@@ -141,9 +141,17 @@
 }
 html, body, #root {
   height: 100%;
-  margin: 0;
-  background-color: hsl(210,20%,98%); /* fallback */
+  background-color: hsl(210, 20%, 98%); /* light mode default */
+  transition: background-color 0.3s; /* optional for smooth switch */
 }
+
+/* Dark mode media query for instant load */
+@media (prefers-color-scheme: dark) {
+  html, body, #root {
+    background-color: hsl(215, 28%, 8%);
+  }
+}
+
 .page {
   opacity: 0;
   animation: fadeIn 0.2s forwards;
