@@ -307,14 +307,26 @@ const file_url = urlData.publicUrl;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
-          Assessment Notes & Uploads
-        </h1>
-        <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
-          {showUploadForm ? "Cancel Upload" : "New Upload"}
-        </Button>
-      </div>
+     <div className="flex flex-col">
+  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
+    Assessment Notes & Uploads
+  </h1>
+  <p className="text-muted-foreground mt-2">
+  This page is dedicated to assessment guides, case study guides, and research
+  resources. It brings together universal materials designed to support nursing
+  education across all colleges and training institutions. Here, you’ll find
+  practical guides, structured case studies, and project references curated to
+  help students prepare effectively, build confidence, and excel both in
+  classroom learning and clinical practice. And note, this does not give you the
+  right to copy-paste it only provides a picture to show you what to expect.
+</p>
+
+  <p className="text-sm italic text-muted-foreground mt-1">
+  Universal nursing assessment resources for all colleges
+</p>
+
+</div>
+
 
       {showUploadForm && (
         <form onSubmit={handleUpload} className="border p-4 rounded space-y-4 bg-muted/20">
@@ -382,7 +394,9 @@ const file_url = urlData.publicUrl;
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
-
+  <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
+          {showUploadForm ? "Cancel Upload" : "New Upload"}
+        </Button>
       <Accordion type="multiple" className="space-y-6">
         {SECTIONS.map((section, i) => (
           <AccordionItem key={i} value={`section-${i}`}>

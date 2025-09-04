@@ -42,15 +42,18 @@ export function Resources() {
   const [bookmarkedItems, setBookmarkedItems] = useState<string[]>([]);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
-  const [uploadForm, setUploadForm] = useState({
+const [uploadForm, setUploadForm] = useState({
     title: "",
     description: "",
     block: "PTS",
-    course: "",
+    course: localStorage.getItem("selectedCourse") || "",
     fileType: "pdf",
-  });
+});
+
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const uploadAbortController = useRef<AbortController | null>(null);
+
   const [floatingBlockOpen, setFloatingBlockOpen] = useState(false);
 const [selectedBlock, setSelectedBlock] = useState("PTS");
 const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
@@ -133,8 +136,9 @@ const handleDownload = async (fileId: string, url: string) => {
   ];
 useEffect(() => {
   const fetchNotes = async () => {
-    setLoadingNotes(true); // start spinner
+    setLoadingNotes(true);
 
+    // Fetch all approved public notes/videos
     const { data, error } = await supabase
       .from("notes")
       .select("*")
@@ -142,12 +146,47 @@ useEffect(() => {
       .eq("approved", true)
       .order("created_at", { ascending: false });
 
-    if (error) console.error("Error fetching notes:", error);
-    else setNotes(data || []);
+    if (error) {
+      console.error("Error fetching notes:", error);
+      setNotes([]);
+    } else {
+      setNotes(data || []);
+    }
 
-    setLoadingNotes(false); // stop spinner
+    setLoadingNotes(false);
   };
+
   fetchNotes();
+
+  // ✅ Subscribe to realtime changes for new video uploads
+  const channel = supabase
+    .channel("notes-videos")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "notes" },
+      (payload) => {
+        console.log("Realtime notes change:", payload);
+
+        if (payload.eventType === "INSERT" && payload.new.is_public && payload.new.approved) {
+          setNotes((prev) => [payload.new, ...prev]);
+        }
+
+        if (payload.eventType === "UPDATE") {
+          setNotes((prev) =>
+            prev.map((n) => (n.id === payload.new.id ? payload.new : n))
+          );
+        }
+
+        if (payload.eventType === "DELETE") {
+          setNotes((prev) => prev.filter((n) => n.id !== payload.old.id));
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }, []);
 
 
@@ -292,12 +331,14 @@ useEffect(() => {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+const filteredResources = notes.filter(
+  (note) =>
+    (note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     (note.description || "").toLowerCase().includes(searchTerm.toLowerCase()))
+    &&
+    (uploadForm.course ? (note.course || "").toUpperCase() === uploadForm.course.toUpperCase() : true)
+);
 
-  const filteredResources = notes.filter(
-    (note) =>
-      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (note.description || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
     // ✅ Like toggle function with optimistic UI
   const toggleLike = async (noteId: string) => {
@@ -355,33 +396,36 @@ useEffect(() => {
   };
 
 
-  const uploadResource = async () => {
-    if (!file || !session?.user) return alert("Missing file or user.");
-    setUploading(true);
-    const filePath = `${Date.now()}_${file.name}`;
-// Fake progress simulation
-setUploadProgress(0);
-const progressInterval = setInterval(() => {
-  setUploadProgress((prev) => {
-    if (prev === null) return 0;
-    if (prev >= 90) return prev; // stop at 90% until upload finishes
-    return prev + 10;
-  });
-}, 300);
+const uploadResource = async () => {
+  if (!file || !session?.user) return alert("Missing file or user.");
+  setUploading(true);
 
-const { error: storageError } = await supabase.storage
-  .from("notes")
-  .upload(filePath, file);
+  const filePath = `${Date.now()}_${file.name}`;
+  uploadAbortController.current = new AbortController(); // 🔹 create controller FIRST
 
-clearInterval(progressInterval);
-setUploadProgress(100);
+  // Fake progress simulation
+  const totalMB = file.size / (1024 * 1024); 
+  let uploadedMB = 0;
 
+  const progressInterval = setInterval(() => {
+    uploadedMB += totalMB * 0.1; // simulate 10% progress increment
+    if (uploadedMB >= totalMB) uploadedMB = totalMB;
+    setUploadProgress((uploadedMB / totalMB) * 100);
+  }, 300);
+
+  try {
+    const { error: storageError } = await supabase.storage
+      .from("notes")
+      .upload(filePath, file, {
+        signal: uploadAbortController.current.signal,
+      });
+
+    clearInterval(progressInterval); // ✅ stop fake progress once done
 
     if (storageError) {
       console.error("Storage error", storageError);
       setUploading(false);
       setTimeout(() => setUploadProgress(null), 1000); // hide bar after 1s
-
       return;
     }
 
@@ -403,37 +447,42 @@ setUploadProgress(100);
       console.error("DB error", dbError);
       alert("Upload failed");
     } else {
-     alert("Upload successful!");
+      alert("Upload successful!");
 
-// ✅ Immediately update UI without waiting for subscription
-setNotes((prev) => [
-  {
-    id: crypto.randomUUID(),
-    title: uploadForm.title,
-    description: uploadForm.description,
-    block: uploadForm.block,
-    course: uploadForm.course,
-    file_type: uploadForm.fileType,
-    file_url,
-    created_at: new Date().toISOString(),
-    uploaded_by: session.user.id,
-  },
-  ...prev,
-]);
+      // ✅ Immediately update UI without waiting for subscription
+      setNotes((prev) => [
+        {
+          id: crypto.randomUUID(),
+          title: uploadForm.title,
+          description: uploadForm.description,
+          block: uploadForm.block,
+          course: uploadForm.course,
+          file_type: uploadForm.fileType,
+          file_url,
+          created_at: new Date().toISOString(),
+          uploaded_by: session.user.id,
+        },
+        ...prev,
+      ]);
 
-setUploadForm({
-  title: "",
-  description: "",
-  block: "PTS",
-  course: "",
-  fileType: "pdf",
-});
-setFile(null);
-setShowUploadForm(false);
-
+      // ✅ Reset form + file
+      setUploadForm({
+        title: "",
+        description: "",
+        block: "PTS",
+        course: "",
+        fileType: "pdf",
+      });
+      setFile(null);
+      setShowUploadForm(false);
     }
+  } catch (err) {
+    console.error("Upload aborted or failed:", err);
+  } finally {
     setUploading(false);
-  };
+    setTimeout(() => setUploadProgress(null), 1000);
+  }
+};
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -460,24 +509,31 @@ setShowUploadForm(false);
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
+if (loadingNotes) {
+  return <GlobalLoader message="Please be patient, Heartique is preparing your notes..." />;
+}
 
-  return (
-    <div className="space-y-6">
+return (
+  <div className="space-y-6">
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
             Notes & Resources
           </h1>
           <p className="text-muted-foreground mt-2">
-            Access study materials, references, and upload your own
-          </p>
+  This page provides access to a wide range of study materials and references.
+  While some notes may appear mixed across blocks and semesters, they are
+  organized to align closely with the curriculum used in most Kenyan KMTC and
+  private institutions. This ensures you’ll find diverse, high-quality content
+  to support your learning, research, and personal note uploads.
+</p>
+<p className="text-sm text-muted-foreground italic mt-1">
+  Well-organized notes aligned with KMTC and private institution curricula
+</p>
+
         </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowUploadForm(!showUploadForm)}
-        >
-          {showUploadForm ? "Cancel Upload" : "New Upload"}
-        </Button>
+        
       </div>
 
       {showUploadForm && (
@@ -491,13 +547,16 @@ setShowUploadForm(false);
                 setUploadForm({ ...uploadForm, title: e.target.value })
               }
             />
-            <Input
-              placeholder="Course (optional)"
-              value={uploadForm.course}
-              onChange={(e) =>
-                setUploadForm({ ...uploadForm, course: e.target.value })
-              }
-            />
+          <Input
+  placeholder="Course (optional)"
+  value={uploadForm.course}
+  onChange={(e) => {
+    const value = e.target.value;
+    setUploadForm({ ...uploadForm, course: value });
+    localStorage.setItem("selectedCourse", value); // ✅ remember optional course
+  }}
+/>
+
             <Input
               placeholder="Short description"
               value={uploadForm.description}
@@ -536,17 +595,53 @@ setShowUploadForm(false);
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
           </div>
-          <Button onClick={uploadResource} disabled={uploading}>
-            {uploading ? "Uploading..." : "Submit Resource"}
-          </Button>
-          {uploadProgress !== null && (
-  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-    <div
-      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-      style={{ width: `${uploadProgress}%` }}
-    />
+         {uploading ? (
+  <div className="flex gap-2">
+    <Button disabled>
+      Uploading...
+    </Button>
+<Button
+  variant="destructive"
+  onClick={() => {
+    uploadAbortController.current?.abort(); // stop Supabase upload
+    setUploading(false);
+    setUploadProgress(null);
+    setFile(null); // ✅ clear file input
+    setUploadForm({
+      title: "",
+      description: "",
+      block: "PTS",
+      course: localStorage.getItem("selectedCourse") || "",
+      fileType: "pdf",
+    }); // ✅ reset form
+    alert("Upload canceled!");
+  }}
+>
+  Cancel Upload
+</Button>
+
+  </div>
+) : (
+  <Button onClick={uploadResource}>
+    Submit Resource
+  </Button>
+)}
+
+
+          {uploadProgress !== null && file && (
+  <div className="w-full mt-2 space-y-1">
+    <div className="w-full bg-gray-200 rounded-full h-2">
+      <div
+        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+        style={{ width: `${uploadProgress}%` }}
+      />
+    </div>
+    <div className="text-xs text-muted-foreground text-right">
+      {((uploadProgress/100)* (file.size / (1024*1024))).toFixed(2)} MB / {(file.size / (1024*1024)).toFixed(2)} MB ({uploadProgress.toFixed(0)}%)
+    </div>
   </div>
 )}
+
 
         </div>
       )}
@@ -559,15 +654,21 @@ setShowUploadForm(false);
           className="pl-10"
         />
       </div>
+      <Button
+          variant="outline"
+          onClick={() => setShowUploadForm(!showUploadForm)}
+        >
+          {showUploadForm ? "Cancel Upload" : "New Upload"}
+        </Button>
 {/* Static Block Selector Below Search */}
 <div className="relative mt-4">
-  <Button
-    onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
-  className="bg-blue-500 text-white dark:bg-blue-600 dark:text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+<Button
+  onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
+  className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+>
+  Choose Block OR Semester here
+</Button>
 
-  >
-    Choose Block OR Semester here
-  </Button>
 
   {floatingBlockOpen && (
     <div className="mt-2 bg-white dark:bg-gray-800 shadow-md rounded-lg w-48">
@@ -591,6 +692,13 @@ setShowUploadForm(false);
 
 {/* Tabs content controlled by selectedBlock */}
 <div className="space-y-4 mt-2">
+    {/* Dynamic Heading for Selected Block */}
+  <h2 className="text-2xl font-bold mb-4">
+    {
+      blockCategories.find((cat) => cat.id === selectedBlock)?.name.split("/").pop()
+    }
+  </h2>
+
   {blockCategories
     .filter((cat) => cat.id === selectedBlock)
     .map((cat) => (
@@ -658,6 +766,49 @@ setShowUploadForm(false);
                         />
                         <span className="ml-1 text-xs">{likeCounts[note.id] || 0}</span>
                       </Button>
+                      {session?.user?.id === note.uploaded_by && (
+  <Button
+    variant="destructive"
+    size="sm"
+    onClick={async () => {
+      if (!confirm("Are you sure you want to delete this note?")) return;
+
+      try {
+        // 1️⃣ Delete from Supabase storage
+        const fileName = note.file_url.split("/").pop(); // extract file name
+        if (fileName) {
+          const { error: storageError } = await supabase.storage
+            .from("notes")
+            .remove([fileName]);
+
+          if (storageError) console.error("Storage deletion error:", storageError);
+        }
+
+        // 2️⃣ Delete from Supabase table
+        const { error: dbError } = await supabase
+          .from("notes")
+          .delete()
+          .eq("id", note.id);
+
+        if (dbError) {
+          console.error("DB deletion error:", dbError);
+          alert("Failed to delete note");
+          return;
+        }
+
+        // 3️⃣ Update UI
+        setNotes((prev) => prev.filter((n) => n.id !== note.id));
+        alert("Note deleted successfully!");
+      } catch (err) {
+        console.error("Unexpected deletion error:", err);
+        alert("Something went wrong while deleting the note");
+      }
+    }}
+  >
+    Delete
+  </Button>
+)}
+
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
