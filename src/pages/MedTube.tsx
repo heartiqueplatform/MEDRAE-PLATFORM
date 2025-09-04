@@ -25,6 +25,7 @@ export function MedTube() {
   const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
 const [selectedTab, setSelectedTab] = useState("trending");
+const [activeTab, setActiveTab] = useState("trending");
 
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
@@ -549,21 +550,22 @@ useEffect(() => {
           className="pl-10"
         />
       </div>
-<Tabs defaultValue="trending" className="space-y-6">
+<Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
   {/* Mobile dropdown */}
   <div className="md:hidden">
-    <select
-      className="w-full p-2 rounded-md border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      onChange={(e) => setSelectedTab(e.target.value)}
-      value={selectedTab}
-    >
-      {categories.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.name}
-        </option>
-      ))}
-    </select>
+<select
+  className="w-full p-2 rounded-md border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+  onChange={(e) => setActiveTab(e.target.value)}
+  value={activeTab}
+>
+  {categories.map((c) => (
+    <option key={c.id} value={c.id}>
+      {c.name}
+    </option>
+  ))}
+</select>
+
   </div>
 
   {/* Desktop tabs (remain unchanged) */}
