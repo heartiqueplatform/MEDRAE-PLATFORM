@@ -50,8 +50,16 @@
     </script>
   </head>
 
-<body style="margin:0; background-color:hsl(210,20%,98%);">
-  <div id="root" style="height:100%; background-color:hsl(210,20%,98%);"></div>
+<body style="margin:0;">
+  <script>
+    // Set initial background immediately based on user preference
+    const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.body.style.backgroundColor = darkMode ? 'hsl(215,28%,8%)' : 'hsl(210,20%,98%)';
+  </script>
+
+  <div id="root" style="height:100%;"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
+
+
 </html>
