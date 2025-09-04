@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -5,18 +7,33 @@ import { Header } from "./Header";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
-import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
-
+import { GlobalLoader } from "@/components/GlobalLoader";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  userRole?: 'student' | 'tutor' | 'staff';
+  userRole?: "student" | "tutor" | "staff";
 }
 
-export function DashboardLayout({ children, userRole = 'student' }: DashboardLayoutProps) {
+export function DashboardLayout({ children, userRole = "student" }: DashboardLayoutProps) {
   const { profile, loading } = useUserProfile();
   const authUser = useUser();
-   
+
+  // ✅ Instant cached profile (if exists)
+  const [cachedProfile, setCachedProfile] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("userProfile");
+      return stored ? JSON.parse(stored) : null;
+    }
+    return null;
+  });
+
+  const [streak, setStreak] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(localStorage.getItem("userStreak")) || 0;
+    }
+    return 0;
+  });
+
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") === "dark";
@@ -24,18 +41,20 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
     return false;
   });
 
-  const [streak, setStreak] = useState<number>(0);
-
-  // Apply dark mode class on mount
+  // ✅ Sync profile into cache when fresh data arrives
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+    if (profile) {
+      localStorage.setItem("userProfile", JSON.stringify(profile));
+      setCachedProfile(profile);
     }
+  }, [profile]);
+
+  // ✅ Dark mode apply
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", isDarkMode);
   }, [isDarkMode]);
 
-  // ✅ Fetch streak from Supabase (same as Header)
+  // ✅ Fetch + cache streak
   useEffect(() => {
     if (authUser?.id) {
       fetchStreak();
@@ -43,9 +62,8 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
   }, [authUser]);
 
   const fetchStreak = async () => {
-    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+    const today = new Date().toISOString().split("T")[0];
 
-    // Ensure today's login is recorded
     const { data: existing } = await supabase
       .from("login_activity")
       .select("*")
@@ -59,7 +77,6 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
       ]);
     }
 
-    // Fetch latest streak
     const { data, error } = await supabase
       .from("login_activity")
       .select("streak")
@@ -70,6 +87,7 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
 
     if (!error && data) {
       setStreak(data.streak || 0);
+      localStorage.setItem("userStreak", String(data.streak || 0));
     }
   };
 
@@ -80,29 +98,42 @@ export function DashboardLayout({ children, userRole = 'student' }: DashboardLay
     localStorage.setItem("theme", newMode ? "dark" : "light");
   };
 
-if (loading) {
-  return <GlobalLoader message="Loading profile..." />;
-}
+  // 🚀 Smooth loader logic
+  if (!cachedProfile && loading) {
+    // Only show loader if no cache exists at all
+    return <GlobalLoader message="Loading profile..." />;
+  }
 
-
-const user = profile
-  ? {
-      name: profile.name || "Unknown User",
-      role: profile.role || (userRole === 'student' ? 'Nursing Student' : userRole === 'tutor' ? 'Clinical Tutor' : 'Staff Nurse'),
-      avatar: profile.avatar_url || '/avatars/default.jpg',
-    }
-  : authUser
-  ? {
-      name: authUser.email || "Unknown User",
-      role: userRole === 'student' ? 'Nursing Student' : userRole === 'tutor' ? 'Clinical Tutor' : 'Staff Nurse',
-      avatar: '/avatars/default.jpg',
-    }
-  : {
-      name: "Offline",
-      role: "Offline",
-      avatar: '/avatars/default.jpg',
-    };
-
+  // ✅ Prefer cached first, then profile
+  const userData = cachedProfile || profile;
+  const user = userData
+    ? {
+        name: userData.name || "Unknown User",
+        role:
+          userData.role ||
+          (userRole === "student"
+            ? "Nursing Student"
+            : userRole === "tutor"
+            ? "Clinical Tutor"
+            : "Staff Nurse"),
+        avatar: userData.avatar_url || "/avatars/default.jpg",
+      }
+    : authUser
+    ? {
+        name: authUser.email || "Unknown User",
+        role:
+          userRole === "student"
+            ? "Nursing Student"
+            : userRole === "tutor"
+            ? "Clinical Tutor"
+            : "Staff Nurse",
+        avatar: "/avatars/default.jpg",
+      }
+    : {
+        name: "Offline",
+        role: "Offline",
+        avatar: "/avatars/default.jpg",
+      };
 
   return (
     <SidebarProvider>
@@ -110,16 +141,14 @@ const user = profile
         <AppSidebar userRole={userRole} />
 
         <div className="flex-1 flex flex-col">
-          <Header 
-            user={user} 
-            isDarkMode={isDarkMode} 
-            onToggleDarkMode={toggleDarkMode} 
-            streak={streak} // ✅ now consistent with DB
+          <Header
+            user={user}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
+            streak={streak}
           />
 
-          <main className="flex-1 p-4 md:p-6 overflow-auto">
-            {children}
-          </main>
+          <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
         </div>
       </div>
     </SidebarProvider>

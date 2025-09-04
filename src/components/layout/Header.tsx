@@ -181,7 +181,8 @@ export function Header({
         >
         <div className="hidden sm:block text-right">
   <p className="text-sm font-medium flex items-center gap-2">
-    {user.name || (isOnline ? "Loading..." : "Offline")}
+    {user.name || (!isOnline ? "Offline" : "")}
+
     {streak > 0 && isOnline && (
       <Badge variant="secondary" className="text-xs">
         🔥 {streak} day{streak !== 1 ? "s" : ""}
@@ -189,7 +190,8 @@ export function Header({
     )}
   </p>
   <p className="text-xs text-muted-foreground">
-    {user.role || (isOnline ? "Loading..." : "Offline")}
+  {user.role || (!isOnline ? "Offline" : "")}
+
   </p>
 </div>
 <Avatar className="h-8 w-8">

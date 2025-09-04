@@ -68,13 +68,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       ? "bg-primary/10 text-primary border-r-2 border-primary font-medium"
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
   };
+const mainItems = [
+  { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home },
+  { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
+  { title: "Chat Room", url: "/chat", icon: MessageCircle },
+  { title: "Forum", url: "/forum", icon: MessageSquare },
+];
 
-  const mainItems = [
-    { title: "Dashboard", url: "/dashboard", icon: Home },
-    { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
-    { title: "Chat Room", url: "/chat", icon: MessageCircle },
-    { title: "Forum", url: "/forum", icon: MessageSquare },
-  ];
 
   const learningItems = [
     { title: "Assessment Calendar", url: "/calendar", icon: Calendar },

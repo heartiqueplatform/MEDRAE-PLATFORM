@@ -4,10 +4,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate} from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { HeartiqueQuizzes } from "@/pages/HeartiqueQuizzes";
+
 
 // Pages
 import { Forum } from "./pages/Forum"; 
@@ -97,7 +98,11 @@ const App = () => (
               <Route path="/register" element={<Register />} />
 
               {/* Optional: Redirect to role dashboard */}
-              <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
+             <Route
+  path="/dashboard"
+  element={<Navigate to={`/dashboard/${getRole()}`} replace />}
+/>
+
 
               {/* Role-specific Dashboards */}
               <Route path="/dashboard/student" element={<DashboardLayout userRole="student"><StudentDashboard /></DashboardLayout>} />

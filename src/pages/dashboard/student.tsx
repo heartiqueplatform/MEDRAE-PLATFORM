@@ -42,7 +42,10 @@ const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 // Track the latest post ID
 const [latestPostId, setLatestPostId] = useState<string | null>(null);
 // Global loading state for spinner
-const [loading, setLoading] = useState(true);
+// ✅ Smarter loading: skip spinner if we already have cached data
+const cachedDashboard = localStorage.getItem("dashboardData");
+const [loading, setLoading] = useState(() => !cachedDashboard);
+
 
 const loadDashboardData = async () => {
   
@@ -61,6 +64,22 @@ const loadDashboardData = async () => {
       fetchUnitCounts(),
       fetchDailyPosts(),
     ]);
+    // ✅ Save merged dashboard state to localStorage
+localStorage.setItem(
+  "dashboardData",
+  JSON.stringify({
+    name,
+    studyProgress,
+    quizCount,
+    avgScore,
+    studyStreak,
+    bestStreak,
+    calendarEvents,
+    dailyPosts,
+    unitCounts,
+  })
+);
+
   } catch (err) {
     console.error("Error loading dashboard data:", err);
   } finally {
@@ -247,9 +266,33 @@ const { data: posts, error: postsError } = await supabase
 // Load all dashboard data on page open
 useEffect(() => {
   if (user?.id) {
-    loadDashboardData(); // spinner controlled inside this function
+    // ✅ Try cached first
+    const cached = localStorage.getItem("dashboardData");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.name) setName(parsed.name);
+        if (parsed.studyProgress) setStudyProgress(parsed.studyProgress);
+        if (parsed.quizCount) setQuizCount(parsed.quizCount);
+        if (parsed.avgScore) setAvgScore(parsed.avgScore);
+        if (parsed.studyStreak) setStudyStreak(parsed.studyStreak);
+        if (parsed.bestStreak) setBestStreak(parsed.bestStreak);
+        if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
+        if (parsed.dailyPosts) setDailyPosts(parsed.dailyPosts);
+        if (parsed.unitCounts) setUnitCounts(parsed.unitCounts);
+
+        // 🚀 Instantly show cached dashboard, no spinner
+        setLoading(false);
+      } catch (e) {
+        console.error("Error parsing cached dashboard:", e);
+      }
+    }
+
+    // 🔄 Then refresh in background
+    loadDashboardData();
   }
 }, [user]);
+
 
 
 // Auto-refresh every 60s
@@ -431,19 +474,17 @@ const fetchProgress = async () => {
 
 return (
   <div className="space-y-6">
-    {loading && (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-          <p className="mt-4 text-white text-lg">Updating dashboard...</p>
-        </div>
-      </div>
-    )}
 
       {/* Welcome Section */}
       <div className="bg-gradient-hero rounded-xl p-6 text-white">
         <h1 className="text-2xl md:text-3xl font-bold mb-2">
           {name ? `Welcome back, ${name}! 👋` : "Loading..."}
+          {loading && (
+  <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
+    Updating…
+  </span>
+)}
+
         </h1>
         <p className="text-white/90">
           You're doing great! Keep up the excellent progress in your nursing studies.
