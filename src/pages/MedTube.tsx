@@ -24,6 +24,7 @@ export function MedTube() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
+const [selectedTab, setSelectedTab] = useState("trending");
 
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
@@ -548,18 +549,41 @@ useEffect(() => {
           className="pl-10"
         />
       </div>
+<Tabs defaultValue="trending" className="space-y-6">
 
-      <Tabs defaultValue="trending" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
-          {categories.map((c) => (
-            <TabsTrigger key={c.id} value={c.id} className="flex items-center gap-1 text-xs">
-              <c.icon className="h-3 w-3" /> {c.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+  {/* Mobile dropdown */}
+  <div className="md:hidden">
+    <select
+      className="w-full p-2 rounded-md border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      onChange={(e) => setSelectedTab(e.target.value)}
+      value={selectedTab}
+    >
+      {categories.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name}
+        </option>
+      ))}
+    </select>
+  </div>
 
-        {categories.map((cat) => (
-          <TabsContent key={cat.id} value={cat.id}>
+  {/* Desktop tabs (remain unchanged) */}
+  <div className="hidden md:block">
+    <TabsList className="grid w-full grid-cols-7">
+      {categories.map((c) => (
+        <TabsTrigger key={c.id} value={c.id} className="flex items-center gap-1 text-xs">
+          <c.icon className="h-3 w-3" /> {c.name}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  </div>
+
+{categories.map((cat) => (
+  <TabsContent
+    key={cat.id}
+    value={cat.id}
+    className={selectedTab === cat.id ? "" : "hidden md:block"}
+  >
+
      {loading ? (
   <GlobalLoader message="Be patient ❤️ Heartique is loading videos..." />
 ) : (
