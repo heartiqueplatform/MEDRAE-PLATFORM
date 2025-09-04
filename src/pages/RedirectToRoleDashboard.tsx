@@ -12,13 +12,25 @@ export function RedirectToRoleDashboard() {
   useEffect(() => {
     const getRoleAndRedirect = async () => {
       try {
-        // 1. Get current session (may restore from storage)
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // 1. Try localStorage first
+        const cachedRole = localStorage.getItem("userRole");
+        const cachedSession = localStorage.getItem("userSession");
+        let role = cachedRole || "student";
+        let session = cachedSession ? JSON.parse(cachedSession) : null;
+
+        if (!session) {
+          // If no cached session, get it fresh
+          const {
+            data: { session: freshSession },
+          } = await supabase.auth.getSession();
+          session = freshSession;
+
+          if (session) {
+            localStorage.setItem("userSession", JSON.stringify(session));
+          }
+        }
 
         const user = session?.user;
-
         if (!user) {
           // 🚪 Really logged out
           if (location.pathname !== "/login") navigate("/login");
@@ -26,20 +38,21 @@ export function RedirectToRoleDashboard() {
           return;
         }
 
-        // 2. Get role (with fallback)
-        let role = localStorage.getItem("userRole") || "student";
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle(); // ⚡ avoid error if no row
+        // 2. Refresh role if not cached
+        if (!cachedRole) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle();
 
-        if (profile?.role) {
-          role = profile.role;
-          localStorage.setItem("userRole", role);
+          if (profile?.role) {
+            role = profile.role;
+            localStorage.setItem("userRole", role);
+          }
         }
 
-        // 3. Redirect if not already in correct dashboard
+        // 3. Navigate only if needed
         if (!location.pathname.startsWith(`/dashboard/${role}`)) {
           navigate(`/dashboard/${role}`, { replace: true });
         }
@@ -53,11 +66,12 @@ export function RedirectToRoleDashboard() {
 
     getRoleAndRedirect();
 
-    // ✅ Listen for sign-out only
+    // ✅ Listen for logout only
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === "SIGNED_OUT") {
-          localStorage.removeItem("userRole"); // clear cache
+          localStorage.removeItem("userRole");
+          localStorage.removeItem("userSession");
           navigate("/login");
         }
       }
@@ -69,17 +83,17 @@ export function RedirectToRoleDashboard() {
   }, [navigate, location]);
 
   if (loading) {
-  return (
-    <div
-      className="flex items-center justify-center h-screen w-screen text-center text-blue-600 dark:text-blue-400 font-semibold bg-cover bg-center"
-      style={{ backgroundImage: "url('/background07.jpg')" }}
-    >
-      <div className="bg-white/70 dark:bg-black/60 px-6 py-4 rounded-2xl shadow-lg">
-        Heartique redirecting you...
+    return (
+      <div
+        className="flex items-center justify-center h-screen w-screen text-center text-blue-600 dark:text-blue-400 font-semibold bg-cover bg-center"
+        style={{ backgroundImage: "url('/background07.jpg')" }}
+      >
+        <div className="bg-white/70 dark:bg-black/60 px-6 py-4 rounded-2xl shadow-lg">
+          Heartique redirecting you...
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return null;
 }
