@@ -38,7 +38,6 @@ import CandidateInfo from "@/pages/quiz-simulation/CandidateInfo";
 import InstructionPage from "@/pages/quiz-simulation/InstructionPage";
 import SimulationPage from "@/pages/quiz-simulation/SimulationPage";
 import AIChatWidget from "@/components/AIChatWidget";
-import { useEffect } from "react";
 
 // Layout
 import { DashboardLayout } from "./components/layout/DashboardLayout";
@@ -53,15 +52,7 @@ const queryClient = new QueryClient();
 const getRole = (): "student" | "tutor" | "staff" => {
   return (localStorage.getItem("userRole") as "student" | "tutor" | "staff") || "student";
 };
-const App = () => {
-  useEffect(() => {
-    const splash = document.getElementById('splash');
-    if (!splash) return;
 
-    splash.style.transition = 'opacity 0.3s ease';
-    splash.style.opacity = '0';
-    setTimeout(() => splash.remove(), 350); // remove after fade
-  }, []);
 // ✅ Wrapper to show AI widget only on specific pages
 const AIWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
