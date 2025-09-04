@@ -185,12 +185,16 @@ if (loading || !profile) {
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-start gap-6">
                 <div className="relative">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={profile.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                      {profile.name?.split(" ").map((n) => n[0]).join("") || "??"}
-                    </AvatarFallback>
-                  </Avatar>
+                 <Avatar className="h-24 w-24">
+  <AvatarImage
+    src={profile.avatar_url || undefined}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-2xl">
+    {profile.name?.split(" ").map((n) => n[0]).join("") || "??"}
+  </AvatarFallback>
+</Avatar>
+
                   <Button
                     size="icon"
                     variant="outline"

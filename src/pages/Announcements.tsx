@@ -262,14 +262,18 @@ function AnnouncementCard({
         </CardDescription>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={announcement.author_avatar || "/placeholder.svg"} />
-              <AvatarFallback>
-                {announcement.author
-                  ? announcement.author.split(" ").map((n: string) => n[0]).join("")
-                  : "??"}
-              </AvatarFallback>
-            </Avatar>
+           <Avatar className="h-6 w-6">
+  <AvatarImage
+    src={announcement.author_avatar || "/placeholder.svg"}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-[10px]">
+    {announcement.author
+      ? announcement.author.split(" ").map((n: string) => n[0]).join("")
+      : "??"}
+  </AvatarFallback>
+</Avatar>
+
             <span>{announcement.author || "Unknown"}</span>
           </div>
           <div className="flex items-center gap-4">

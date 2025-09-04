@@ -570,10 +570,16 @@ if (vid.paused) {
   </Badge>
 )}
                         <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={"/placeholder.svg"} />
-                            <AvatarFallback>👤</AvatarFallback>
-                          </Avatar>
+                        <Avatar className="h-6 w-6">
+  <AvatarImage
+    src={profile?.avatar_url || "/placeholder.svg"}
+    className="object-cover"
+  />
+  <AvatarFallback className="flex items-center justify-center text-xs">
+    👤
+  </AvatarFallback>
+</Avatar>
+
                           <span className="text-sm text-muted-foreground">{video.uploader}</span>
                         </div>
                       </CardHeader>

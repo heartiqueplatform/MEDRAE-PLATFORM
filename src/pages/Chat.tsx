@@ -375,12 +375,15 @@ const filteredProfiles = profiles.filter((profile) =>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-               <AvatarImage src={getAvatarUrl(selectedUser.avatar_url)} />
+  <AvatarImage
+    src={getAvatarUrl(selectedUser.avatar_url)}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-sm">
+    {selectedUser.name ? selectedUser.name[0] : "?"}
+  </AvatarFallback>
+</Avatar>
 
-                    <AvatarFallback>
-                      {selectedUser.name ? selectedUser.name[0] : "?"}
-                    </AvatarFallback>
-                  </Avatar>
                   <div>
                     <h3 className="font-semibold">{selectedUser.name}</h3>
                     <p className="text-sm text-muted-foreground">
@@ -520,13 +523,16 @@ const filteredProfiles = profiles.filter((profile) =>
                       }`}
                     >
                       {message.sender_id !== currentUserId && (
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={getAvatarUrl(message.avatar_url)} />
+                   <Avatar className="h-8 w-8">
+  <AvatarImage
+    src={getAvatarUrl(message.avatar_url)}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xs">
+    {message.sender_name ? message.sender_name[0] : "?"}
+  </AvatarFallback>
+</Avatar>
 
-                          <AvatarFallback>
-                            {message.sender_name ? message.sender_name[0] : "?"}
-                          </AvatarFallback>
-                        </Avatar>
                       )}
                  
 <div className="max-w-[65%]">
@@ -610,12 +616,16 @@ const filteredProfiles = profiles.filter((profile) =>
                       }`}
                       onClick={() => setSelectedUser(profile)}
                     >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={getAvatarUrl(profile.avatar_url)} />
-                        <AvatarFallback>
-                          {profile.name ? profile.name[0].toUpperCase() : "?"}
-                        </AvatarFallback>
-                      </Avatar>
+                    <Avatar className="h-10 w-10">
+  <AvatarImage
+    src={getAvatarUrl(profile.avatar_url)}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-sm">
+    {profile.name ? profile.name[0].toUpperCase() : "?"}
+  </AvatarFallback>
+</Avatar>
+
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium truncate flex justify-between">
                           <span>{profile.name}</span>
@@ -715,12 +725,16 @@ const filteredProfiles = profiles.filter((profile) =>
                   document.body.click(); // close menu
                 }}
               >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={getAvatarUrl(profile.avatar_url)} />
-                  <AvatarFallback>
-                    {profile.name ? profile.name[0].toUpperCase() : "?"}
-                  </AvatarFallback>
-                </Avatar>
+           <Avatar className="h-10 w-10">
+  <AvatarImage
+    src={getAvatarUrl(profile.avatar_url)}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-sm">
+    {profile.name ? profile.name[0].toUpperCase() : "?"}
+  </AvatarFallback>
+</Avatar>
+
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium truncate">{profile.name}</h4>
                   <p className="text-sm text-muted-foreground truncate">

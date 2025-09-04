@@ -460,14 +460,16 @@ export function Reels() {
   {/* Avatar, Name, Title, Description */}
   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 text-white z-10">
     <div className="flex items-center gap-2 mb-2">
-      <Avatar className="h-8 w-8">
-        <AvatarImage
-          src={reel.profiles?.avatar_url || "/placeholder.svg"}
-        />
-        <AvatarFallback>
-          {reel.profiles?.name?.split(" ").map((n: string) => n[0]).join("") || "U"}
-        </AvatarFallback>
-      </Avatar>
+ <Avatar className="h-8 w-8">
+  <AvatarImage
+    src={reel.profiles?.avatar_url || "/placeholder.svg"}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xs">
+    {reel.profiles?.name?.split(" ").map((n: string) => n[0]).join("") || "U"}
+  </AvatarFallback>
+</Avatar>
+
       <span className="font-medium text-sm">
         {reel.profiles?.name || "Unknown"}
       </span>

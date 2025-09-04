@@ -239,7 +239,11 @@ if (!profile) return <GlobalLoader message="Loading profile..." />;
               {/* Avatar */}
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={avatarPreview || "/placeholder.svg"} />
+              <AvatarImage
+  src={avatarPreview || "/placeholder.svg"}
+  className="object-cover"
+/>
+
                   <AvatarFallback className="text-lg">
                     {profile.name?.[0]?.toUpperCase()}
                   </AvatarFallback>

@@ -193,13 +193,17 @@ export function Header({
   </p>
 </div>
 <Avatar className="h-8 w-8">
-  <AvatarImage src={user.avatar && isOnline ? user.avatar : undefined} />
-  <AvatarFallback className="bg-primary text-primary-foreground">
+  <AvatarImage
+    src={user.avatar && isOnline ? user.avatar : undefined}
+    className="object-cover"
+  />
+  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xs">
     {isOnline
-      ? user.name?.split(" ").map((n) => n[0]).join("") || <User className="h-4 w-4" />
+      ? (user.name?.split(" ").map((n) => n[0]).join("") || <User className="h-4 w-4" />)
       : <User className="h-4 w-4" />}
   </AvatarFallback>
 </Avatar>
+
         </div>
       </div>
     </header>
