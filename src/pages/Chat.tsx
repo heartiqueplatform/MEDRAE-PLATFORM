@@ -670,86 +670,106 @@ const filteredProfiles = profiles.filter((profile) =>
             </CardContent>
           </>
       ) : (
-<div className="flex flex-col items-center justify-end flex-1 text-center gap-4 bg-gradient-to-br from-red-400 to-blue-500 text-white">
+        <>
+  <div
+    className="relative flex flex-col items-center justify-center flex-1 text-center gap-6 text-white overflow-hidden"
+    style={{
+      backgroundImage: "url('/background05.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    {/* Semi-transparent overlay for desktop readability */}
+    <div className="absolute inset-0 bg-black/30 md:bg-black/20 pointer-events-none" />
 
-  {/* Instruction text above the icon */}
-  <p className="text-2xl font-extrabold">
-    Click the chat icon below to choose someone
-  </p>
+    {/* Encouragement & purpose text */}
+    <div className="relative z-10 max-w-xl px-4">
+      <h1 className="text-3xl font-extrabold drop-shadow-md">
+        Welcome to Heartique Chat
+      </h1>
+      <p className="mt-3 text-lg leading-relaxed font-medium drop-shadow">
+        This space is designed to uplift, guide, and connect you with peers
+        and mentors. Every conversation here is a chance to learn, grow,
+        and build meaningful support.  
+        <br /><br />
+        Think of this page as your safe corner to spark motivation,
+        share wisdom, and remind yourself: <b>you’re not alone in the journey</b>.
+      </p>
+    </div>
 
-  {/* Floating chat icon with DropdownMenu */}
-  <div className="relative mt-4">
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <div className="flex flex-col items-center">
-          <span className="mb-2 text-lg font-semibold">Chat</span> {/* Text above */}
-          <Button
-            className="rounded-full bg-primary text-white shadow-2xl 
-                       p-6 hover:bg-primary/90 transition-all duration-300"
-          >
-            <MessageCircle className="h-12 w-12" />
-          </Button>
-        </div>
-
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-         side="top"          // 👈 open from the right side
-    align="center"        // 👈 keep vertically centered
-        className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto"
-        avoidCollisions={false}
-      >
-        {/* 👥 Same people list block you already have */}
-        <div className="p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <MessageCircle className="h-5 w-5" />
-            <span className="font-semibold">Choose Someone</span>
+    {/* Floating chat icon with DropdownMenu */}
+    <div className="relative z-10 mt-6">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <div className="flex flex-col items-center">
+            <span className="mb-2 text-lg font-semibold">Start a Chat</span>
+            <Button
+              className="rounded-full bg-primary text-white shadow-2xl 
+                         p-6 hover:bg-primary/90 transition-all duration-300"
+            >
+              <MessageCircle className="h-12 w-12" />
+            </Button>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search people..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        <ScrollArea className="h-[300px] px-3">
-          <div className="space-y-1">
-            {filteredProfiles.map((profile) => (
-              <div
-                key={profile.user_id}
-                className="p-3 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-muted/50"
-                onClick={() => {
-                  setSelectedUser(profile);
-                  document.body.click(); // close menu
-                }}
-              >
-           <Avatar className="h-10 w-10">
-  <AvatarImage
-    src={getAvatarUrl(profile.avatar_url)}
-    className="object-cover"
-  />
-  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-sm">
-    {profile.name ? profile.name[0].toUpperCase() : "?"}
-  </AvatarFallback>
-</Avatar>
+        </DropdownMenuTrigger>
 
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate">{profile.name}</h4>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {profile.phone}
-                  </p>
+        {/* Dropdown list (unchanged) */}
+        <DropdownMenuContent
+          side="top"
+          align="center"
+          className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto"
+          avoidCollisions={false}
+        >
+          {/* 👥 Same people list */}
+          <div className="p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageCircle className="h-5 w-5" />
+              <span className="font-semibold">Choose Someone</span>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search people..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <ScrollArea className="h-[300px] px-3">
+            <div className="space-y-1">
+              {filteredProfiles.map((profile) => (
+                <div
+                  key={profile.user_id}
+                  className="p-3 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-muted/50"
+                  onClick={() => {
+                    setSelectedUser(profile);
+                    document.body.click(); // close menu
+                  }}
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage
+                      src={getAvatarUrl(profile.avatar_url)}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-sm">
+                      {profile.name ? profile.name[0].toUpperCase() : "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">{profile.name}</h4>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {profile.phone}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              ))}
+            </div>
+          </ScrollArea>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   </div>
-</div>
-
+</>
 
 
         )}
