@@ -143,3 +143,11 @@ html, body, #root {
   height: 100%;
   background-color: hsl(var(--background)); /* fallback uses your Tailwind CSS var */
 }
+.page {
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}

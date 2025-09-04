@@ -87,6 +87,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AIWrapper>
+  <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    {/* Sidebar stays mounted in DashboardLayout */}
+    <main className="flex-1 overflow-y-auto">
+  
             <Routes>
               {/* Public Routes */}
             <Route path="/" element={<Index />} />
@@ -136,6 +140,7 @@ const App = () => (
               {/* Catch-all 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </main>
           </AIWrapper>
         </BrowserRouter>
       </TooltipProvider>
