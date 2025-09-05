@@ -158,13 +158,11 @@ const [rotating, setRotating] = useState(false);
   variant="ghost"
   size="sm"
   onClick={handleReload}
-  className="relative"
+  className="relative mobile-reload-button"
 >
-<RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
-
+  <RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
 </Button>
 
-        {/* 🌐 Online/Offline status */}
 
         {/* 🔔 Notifications */}
         <Button
@@ -206,7 +204,7 @@ const [rotating, setRotating] = useState(false);
 
   </p>
 </div>
-<Avatar className="h-8 w-8">
+<Avatar className="h-8 w-8 mobile-profile-avatar">
   <AvatarImage
     src={user.avatar && isOnline ? user.avatar : undefined}
     className="object-cover"
@@ -217,6 +215,7 @@ const [rotating, setRotating] = useState(false);
       : <User className="h-4 w-4" />}
   </AvatarFallback>
 </Avatar>
+
 
         </div>
       </div>
