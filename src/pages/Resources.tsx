@@ -139,7 +139,7 @@ const uploadBatchResources = async (files: FileList) => {
       console.error("DB insert error", error);
       alert("Upload failed");
     } else {
-      alert("✅ Batch upload successful!");
+      alert("Batch upload successful!");
       setNotes((prev) => [...validUploads, ...prev]);
 
       setUploadForm({
