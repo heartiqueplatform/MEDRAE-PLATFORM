@@ -753,19 +753,7 @@ return (
                           </span>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleLike(note.id)}
-                        className={bookmarkedItems.includes(note.id) ? "text-red-500" : ""}
-                      >
-                        <Heart
-                          className={`h-4 w-4 ${
-                            bookmarkedItems.includes(note.id) ? "fill-current" : ""
-                          }`}
-                        />
-                        <span className="ml-1 text-xs">{likeCounts[note.id] || 0}</span>
-                      </Button>
+                    
                       {session?.user?.id === note.uploaded_by && (
   <Button
     variant="destructive"
@@ -876,10 +864,29 @@ return (
   </div>
 )}
 
-                    <div className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      <span>{viewCounts[note.id] || 0} views</span>
-                    </div>
+  <div className="text-sm text-muted-foreground flex items-center gap-3">
+  {/* 👁️ Views */}
+  <div className="flex items-center gap-1">
+    <Eye className="h-3 w-3" />
+    <span>{viewCounts[note.id] || 0}</span>
+  </div>
+
+  {/* ❤️ Likes */}
+  <button
+    onClick={() => toggleLike(note.id)}
+    className={`flex items-center gap-1 ${
+      bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
+    }`}
+  >
+    <Heart
+      className={`h-3 w-3 ${
+        bookmarkedItems.includes(note.id) ? "fill-current" : ""
+      }`}
+    />
+    <span>{likeCounts[note.id] || 0}</span>
+  </button>
+</div>
+            
                   </CardContent>
                 </Card>
               ))
