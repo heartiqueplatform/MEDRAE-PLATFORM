@@ -129,14 +129,14 @@ const [rotating, setRotating] = useState(false);
       <OnlineStatusToast />
 
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleSidebar}
-          className="md:hidden"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+   <Button
+  variant="ghost"
+  size="sm"
+  onClick={toggleSidebar}
+  className="md:hidden mobile-menu-toggle"
+>
+  <Menu className="h-5 w-5" />
+</Button>
 
         <div className="hidden md:block">
           <h1 className="text-xl font-bold bg-gradient-medical bg-clip-text text-transparent">
