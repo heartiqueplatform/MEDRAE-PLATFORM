@@ -59,8 +59,102 @@ const [selectedBlock, setSelectedBlock] = useState("PTS");
 const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
 const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+const [files, setFiles] = useState<File[]>([]);
 
   const [isDarkMode, setIsDarkMode] = useState(false);
+// ✅ Batch upload function with realtime progress
+const uploadBatchResources = async (files: FileList) => {
+  if (!files.length || !session?.user) return alert("Missing files or user.");
+
+  setUploading(true);
+  setUploadProgress(0);
+
+  // Track per-file progress
+  let totalSize = Array.from(files).reduce((sum, f) => sum + f.size, 0);
+  let uploadedSize = 0;
+
+  const uploads = await Promise.all(
+    Array.from(files).map(async (file) => {
+      const filePath = `${Date.now()}_${file.name}`;
+      uploadAbortController.current = new AbortController();
+
+      // Fake per-file progress simulation
+      const fileSize = file.size;
+      let fileUploaded = 0;
+
+      const progressInterval = setInterval(() => {
+        // simulate upload in chunks
+        fileUploaded += fileSize * 0.1;
+        if (fileUploaded > fileSize) fileUploaded = fileSize;
+
+        uploadedSize += fileSize * 0.1;
+        if (uploadedSize > totalSize) uploadedSize = totalSize;
+
+        setUploadProgress((uploadedSize / totalSize) * 100);
+      }, 300);
+
+      try {
+        const { error: storageError } = await supabase.storage
+          .from("notes")
+          .upload(filePath, file, {
+            signal: uploadAbortController.current.signal,
+          });
+
+        clearInterval(progressInterval);
+
+        if (storageError) {
+          console.error("Storage error", storageError);
+          return null;
+        }
+
+        const file_url = supabase.storage
+          .from("notes")
+          .getPublicUrl(filePath).data.publicUrl;
+
+        const fileBaseName = file.name.replace(/\.pdf$/i, "");
+
+        return {
+          title: fileBaseName,
+          description: fileBaseName,
+          block: uploadForm.block,
+          course: uploadForm.course,
+          file_url,
+          file_type: "pdf",
+          uploaded_by: session.user.id,
+        };
+      } catch (err) {
+        clearInterval(progressInterval);
+        console.error("Upload aborted or failed:", err);
+        return null;
+      }
+    })
+  );
+
+  const validUploads = uploads.filter(Boolean);
+
+  if (validUploads.length > 0) {
+    const { error } = await supabase.from("notes").insert(validUploads);
+
+    if (error) {
+      console.error("DB insert error", error);
+      alert("Upload failed");
+    } else {
+      alert("✅ Batch upload successful!");
+      setNotes((prev) => [...validUploads, ...prev]);
+
+      setUploadForm({
+        title: "",
+        description: "",
+        block: "PTS",
+        course: localStorage.getItem("selectedCourse") || "",
+        fileType: "pdf",
+      });
+    }
+  }
+
+  setUploading(false);
+  setTimeout(() => setUploadProgress(null), 1000); // hide after 1s
+};
 
 useEffect(() => {
     const checkDark = () =>
@@ -397,6 +491,7 @@ const filteredResources = notes.filter(
 
 
 const uploadResource = async () => {
+
   if (!file || !session?.user) return alert("Missing file or user.");
   setUploading(true);
 
@@ -540,13 +635,6 @@ return (
         <div className="p-4 border rounded-lg space-y-4 bg-muted/10">
           <h2 className="text-xl font-semibold">Upload New Resource</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            <Input
-              placeholder="Title"
-              value={uploadForm.title}
-              onChange={(e) =>
-                setUploadForm({ ...uploadForm, title: e.target.value })
-              }
-            />
           <Input
   placeholder="Course (optional)"
   value={uploadForm.course}
@@ -589,11 +677,19 @@ return (
               <option value="audio">Audio</option>
               <option value="link">Link</option>
             </select>
-            <Input
-              type="file"
-              accept=".pdf,video/*"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
+<Input
+  type="file"
+  accept=".pdf"
+  multiple
+  onChange={(e) => {
+    if (!e.target.files) return;
+    const selected = Array.from(e.target.files);
+    setFiles(selected); // ✅ keep in state
+    uploadBatchResources(e.target.files); // ✅ start upload
+  }}
+/>
+
+
           </div>
          {uploading ? (
   <div className="flex gap-2">
@@ -626,9 +722,7 @@ return (
     Submit Resource
   </Button>
 )}
-
-
-          {uploadProgress !== null && file && (
+{uploadProgress !== null && (
   <div className="w-full mt-2 space-y-1">
     <div className="w-full bg-gray-200 rounded-full h-2">
       <div
@@ -637,7 +731,11 @@ return (
       />
     </div>
     <div className="text-xs text-muted-foreground text-right">
-      {((uploadProgress/100)* (file.size / (1024*1024))).toFixed(2)} MB / {(file.size / (1024*1024)).toFixed(2)} MB ({uploadProgress.toFixed(0)}%)
+      {(() => {
+        const totalSize = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024); // MB
+        const uploaded = (uploadProgress / 100) * totalSize;
+        return `${uploaded.toFixed(2)} MB / ${totalSize.toFixed(2)} MB (${uploadProgress.toFixed(0)}%)`;
+      })()}
     </div>
   </div>
 )}
@@ -755,46 +853,52 @@ return (
                       </div>
                     
                       {session?.user?.id === note.uploaded_by && (
-  <Button
-    variant="destructive"
-    size="sm"
-    onClick={async () => {
-      if (!confirm("Are you sure you want to delete this note?")) return;
+<Button
+  variant="destructive"
+  size="sm"
+  onClick={async () => {
+    if (!confirm("Are you sure you want to delete this note?")) return;
 
-      try {
-        // 1️⃣ Delete from Supabase storage
-        const fileName = note.file_url.split("/").pop(); // extract file name
-        if (fileName) {
-          const { error: storageError } = await supabase.storage
-            .from("notes")
-            .remove([fileName]);
+    try {
+      // 1️⃣ Delete file from Supabase Storage
+      const url = note.file_url;
+      const parts = url.split("/notes/");
+      const storagePath = parts[1]; // path inside the bucket
 
-          if (storageError) console.error("Storage deletion error:", storageError);
-        }
-
-        // 2️⃣ Delete from Supabase table
-        const { error: dbError } = await supabase
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage
           .from("notes")
-          .delete()
-          .eq("id", note.id);
+          .remove([storagePath]);
 
-        if (dbError) {
-          console.error("DB deletion error:", dbError);
-          alert("Failed to delete note");
-          return;
+        if (storageError) {
+          console.error("Storage deletion error:", storageError);
         }
-
-        // 3️⃣ Update UI
-        setNotes((prev) => prev.filter((n) => n.id !== note.id));
-        alert("Note deleted successfully!");
-      } catch (err) {
-        console.error("Unexpected deletion error:", err);
-        alert("Something went wrong while deleting the note");
       }
-    }}
-  >
-    Delete
-  </Button>
+
+      // 2️⃣ Delete row from database
+      const { error: dbError } = await supabase
+        .from("notes")
+        .delete()
+        .eq("id", note.id);
+
+      if (dbError) {
+        console.error("DB deletion error:", dbError);
+        alert("Failed to delete note");
+        return;
+      }
+
+      // 3️⃣ Update UI
+      setNotes((prev) => prev.filter((n) => n.id !== note.id));
+      alert("Note deleted successfully!");
+    } catch (err) {
+      console.error("Unexpected deletion error:", err);
+      alert("Something went wrong while deleting the note");
+    }
+  }}
+>
+  Delete
+</Button>
+
 )}
 
                     </div>
