@@ -20,6 +20,18 @@ export default function FirstTimeGuide() {
     }
   };
 
+  // Custom beacon: preserve default glow but add text below
+  const CustomBeacon = () => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      {/* default glowing beacon */}
+      <div className="joyride-beacon" /> 
+      {/* text below */}
+      <span style={{ fontSize: 10, marginTop: 4, color: "#fff", textAlign: "center" }}>
+        Click here for guide
+      </span>
+    </div>
+  );
+
   return (
     <Joyride
       steps={[
@@ -44,6 +56,7 @@ export default function FirstTimeGuide() {
       scrollToFirstStep
       showSkipButton
       callback={handleJoyrideCallback}
+      beaconComponent={CustomBeacon}
     />
   );
 }
