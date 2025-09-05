@@ -20,29 +20,6 @@ export default function FirstTimeGuide() {
     }
   };
 
-  // Custom beacon: grows and shows text
-  const CustomBeacon = () => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 50,
-        height: 50,
-        borderRadius: "50%",
-        backgroundColor: "#FF4D4F", // red dot
-        color: "white",
-        fontWeight: "bold",
-        cursor: "pointer",
-        animation: "pulse 1s infinite",
-      }}
-    >
-      👆
-      <span style={{ fontSize: 10, marginTop: 2 }}>Click here</span>
-    </div>
-  );
-
   return (
     <Joyride
       steps={[
@@ -67,13 +44,6 @@ export default function FirstTimeGuide() {
       scrollToFirstStep
       showSkipButton
       callback={handleJoyrideCallback}
-      beaconComponent={CustomBeacon}
-      styles={{
-        options: {
-          primaryColor: "#FF4D4F",
-          zIndex: 1000,
-        },
-      }}
     />
   );
 }
