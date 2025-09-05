@@ -206,13 +206,23 @@ useEffect(() => {
 )
 
     .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "medtube_video_views" },
-      () => {
-        console.log("Realtime: views changed, refreshing...");
-        fetchVideos();
-      }
-    )
+  "postgres_changes",
+  { event: "*", schema: "public", table: "medtube_video_views" },
+  (payload) => {
+    const newView = payload.new;
+    if (!newView) return;
+
+    // Update only the specific video in state silently
+    setVideos((prev) =>
+      prev.map((v) =>
+        v.id === newView.video_id
+          ? { ...v, views_count: (v.views_count ?? 0) + 1 }
+          : v
+      )
+    );
+  }
+)
+
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "subscriptions" },
@@ -240,26 +250,28 @@ useEffect(() => {
 
 
 
-  const recordView = async (videoId: string) => {
-    if (!user || !videoId) return;
+const recordView = async (videoId: string, updateUI = true) => {
+  if (!user || !videoId) return;
 
-    try {
-      const { data, error } = await supabase
+  try {
+    const { error } = await supabase
       .from("medtube_video_views")
       .upsert({ video_id: videoId, user_id: user.id }, { onConflict: ["video_id", "user_id"] });
-      if (!error) {
+
+    if (!error && updateUI) {
       setVideos((prev) =>
-      prev.map((v) =>
-      v.id === videoId
-        ? { ...v, views_count: v.views_count + 1 }
-        : v
-    )
-  );
-}
-    } catch (err) {
-      console.error("Error tracking view:", err);
+        prev.map((v) =>
+          v.id === videoId ? { ...v, views_count: v.views_count + 1 } : v
+        )
+      );
     }
-  };
+  } catch (err) {
+    console.error("Error tracking view:", err);
+  } finally {
+    // hide spinner after recording view
+    setLoadingVideoId(null);
+  }
+};
     const handleDeleteVideo = async (video: any) => {
     if (!user || user.id !== video.uploaded_by) {
       alert("You can only delete your own videos.");
@@ -614,15 +626,23 @@ useEffect(() => {
     preload="none"
     poster={video.thumbnail_url || "/placeholder.svg"}
     className="w-full h-48 rounded-t-lg bg-black"
-    onPlay={() => {
-      setLoadingVideoId(video.id);
-      recordView(video.id);
-      const vid = videoRefs.current[video.id];
-      if (vid && vid.src === "") {
-        vid.src = video.video_url;
-        vid.play();
-      }
-    }}
+onPlay={() => {
+  const vid = videoRefs.current[video.id];
+  if (!vid) return;
+
+  // Only set src if not already set
+  if (!vid.src || vid.src === "") {
+    vid.src = video.video_url;
+    vid.play();
+    return; // exit to wait for video to load
+  }
+
+  // Show loading spinner while the video is buffering
+  setLoadingVideoId(video.id);
+
+  // Record view WITHOUT triggering full fetch
+  recordView(video.id, false); // we'll adjust recordView to optionally skip updating videos state
+}}
     onLoadedData={() => {
       setLoadingVideoId(null);
       const vid = videoRefs.current[video.id];
