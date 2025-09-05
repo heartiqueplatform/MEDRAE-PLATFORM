@@ -476,20 +476,46 @@ return (
   <div className="space-y-6">
 
       {/* Welcome Section */}
-      <div className="bg-gradient-hero rounded-xl p-6 text-white">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">
-          {name ? `Welcome back, ${name}! 👋` : "Loading..."}
-          {loading && (
-  <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
-    Updating…
-  </span>
-)}
+<div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-xl p-6 text-white">
 
-        </h1>
-        <p className="text-white/90">
-          You're doing great! Keep up the excellent progress in your nursing studies.
-        </p>
-      </div>
+  <h1 className="text-2xl md:text-3xl font-bold mb-2">
+  {name ? (() => {
+    // Daily welcome greetings
+     const dailyWelcome = {
+  Sunday: "Hey, ${name} 👋! Welcome, future nurse star! Take today to recharge, reflect on your progress, and prepare for a week full of learning and growth.",
+  Monday: "Hello, ${name} 👋! Welcome, rising healthcare hero! Let’s start the week strong review your notes, practice your skills, and tackle new challenges with confidence.",
+  Tuesday: "Hi, ${name} 👋! Welcome, budding lifesaver! Keep building your skills today, stay curious, and remember that every little step moves you closer to mastery.",
+  Wednesday: "Greetings, ${name} 👋! Welcome, nursing champion! Halfway through the week stay motivated, celebrate your wins, and keep pushing your limits.",
+  Thursday: "Hey, ${name} 👋! Welcome, healthcare rockstar! Push forward and grow your skills today, embrace every learning opportunity, and keep striving for excellence.",
+  Friday: "Hi, ${name} 👋! Welcome, future healer! Finish the week strong review, practice, and reflect on your accomplishments. Your dedication is truly inspiring!",
+  Saturday: "Hello, ${name} 👋! Welcome, caring star! Use today to review, practice, and deepen your understanding. Every effort you make brings you closer to becoming an exceptional nurse."
+};
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    return dailyWelcome[today].replace("${name}", name);
+  })() : "Loading..."}
+  {loading && (
+    <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
+      Updating…
+    </span>
+  )}
+</h1>
+  <p className="text-white/90">
+    {(() => {
+      const nursingMessages = {
+        Sunday: " Sunday reset: Rest up, future nurse! Take today to recharge, reflect on your progress, and plan for the week ahead. Your patients will appreciate your energy and dedication tomorrow!",
+        Monday: " Motivated Monday! A fresh week to sharpen your nursing skills, tackle challenging concepts, and set new goals. Remember, every step today brings you closer to becoming the nurse you aspire to be.",
+        Tuesday: "Triage Tuesday! Keep organizing your notes, practicing procedures, and building your knowledge. Focus on consistency and small victories—they add up to big success in your nursing journey.",
+        Wednesday: " Wellness Wednesday! Halfway through the week—keep your energy high and your mind sharp. Take a moment to celebrate your wins so far, and remember that persistence is key to mastery.",
+        Thursday: " Thriving Thursday! Your dedication to learning and improving as a nurse is inspiring. Push through, review what you’ve learned, and keep challenging yourself—you’re making amazing progress!",
+        Friday: "Fantastic Friday! End the week strong by consolidating your knowledge, practicing skills, and reflecting on your achievements. Celebrate your growth and get ready to recharge for an even better week ahead.",
+        Saturday: " Study Saturday! Use today to review, practice, and deepen your understanding. Whether it’s theory or hands-on skills, every effort counts. Your future patients and colleagues will thank you for your commitment."
+      };
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      return nursingMessages[today] || "Keep pushing—you’re doing amazing! Every effort you make today brings you closer to your dream nursing career.";
+    })()}
+  </p>
+</div>
+
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -628,7 +654,7 @@ return (
       </div>
 <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
   <CardHeader>
-    <CardTitle className="text-gray-900 dark:text-white">💖 Heartique Daily Status</CardTitle>
+    <CardTitle className="text-gray-900 dark:text-white">Heartique Daily Status💖 </CardTitle>
     <CardDescription className="text-gray-700 dark:text-gray-300">
       This section is designed not just for posting daily thoughts, personal reflections, or fun images, but as a dedicated space where nursing and medical professionals can learn, reflect, and inspire each other. Every note, idea, or snapshot you share has the potential to enrich others, spark meaningful discussion, provide insight into practical healthcare experiences, and offer real-life lessons from the medical field. Think of this as a daily mini-journal for your professional growth, where small learnings, important observations, and unique experiences are carefully captured, shared, and preserved so that they can be revisited and learned from in the future. Contributions here should aim to be educational, informative, or thought-provoking, helping yourself and your peers grow in knowledge, clinical reasoning, and professional awareness. Posting anything that is irrelevant, uneducative, or not aligned with the learning purpose may lead to removal of the content or, in serious cases, a ban from the site. By participating responsibly, you are creating content that is memorable, educational, inspiring, and meaningful, contributing to a community of learners who support and uplift each other every day.
     </CardDescription>

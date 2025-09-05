@@ -66,9 +66,11 @@ useEffect(() => {
               Platform
             </h1>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-  Heartique Nursing Nexus Scholar is your all-in-one learning hub. Access a large collection of nursing questions with detailed explanations, arranged by study units for easy comprehension and long-term memory retention. Engage in NCK-style simulations to enhance exam familiarity and confidence. Complement your learning with video tutorials and daily progress updates to make every study day productive and structured.  
+  Heartique Nursing Nexus Scholar is your all-in-one learning hub. Access an extensive collection of nursing questions with detailed explanations, organized by study units for easy understanding and long-term memory retention. Participate in NCK-style simulations to boost exam familiarity and confidence. Enhance your learning further with video tutorials and daily progress updates to make each study session productive and structured.  
   <br /><br />
-  All plans give full access to these features, with the only difference being the duration: <strong>Pro</strong> at KSh 99/month or <strong>Premium</strong> at KSh 450/year. Additionally, the first 1k users enjoy a <strong>free 3-month trial</strong> to start their learning journey with full access!
+  For the best experience, we recommend using a desktop, as the screen displays content more clearly, but you can still use your phone if needed.  
+  <br /><br />
+  All plans provide full access to these features, with the only difference being the duration: <strong>Pro</strong> at KSh 99/month or <strong>Premium</strong> at KSh 450/year. Plus, the first 1,000 users enjoy a <strong>free 3-month trial</strong> to kickstart their learning journey with complete access!
 </p>
 
           </div>
