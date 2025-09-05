@@ -57,17 +57,20 @@ useEffect(() => {
               <span className="text-sm font-medium">Heartique Nursing Nexus Scholar Platform V1.0</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Your AI-Powered
+              HEARTIQUE NURSING
               <br />
               <span className="bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                Nursing Education
+                NEXUS SCHOLAR
               </span>
               <br />
               Platform
             </h1>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Heartique Nursing Nexus Scholar is your all-in-one learning hub. Access a large collection of nursing questions with detailed explanations, arranged by study units for easy comprehension and long-term memory retention. Engage in NCK-style simulations to enhance your exam familiarity and confidence. Complement your learning with video tutorials and daily status updates to make every study day productive and structured.
-            </p>
+  Heartique Nursing Nexus Scholar is your all-in-one learning hub. Access a large collection of nursing questions with detailed explanations, arranged by study units for easy comprehension and long-term memory retention. Engage in NCK-style simulations to enhance exam familiarity and confidence. Complement your learning with video tutorials and daily progress updates to make every study day productive and structured.  
+  <br /><br />
+  All plans give full access to these features, with the only difference being the duration: <strong>Pro</strong> at KSh 99/month or <strong>Premium</strong> at KSh 450/year. Additionally, the first 1k users enjoy a <strong>free 3-month trial</strong> to start their learning journey with full access!
+</p>
+
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -93,20 +96,24 @@ useEffect(() => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 bg-white text-gray-900">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Powerful Features for Modern Nursing Education
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Heartique Nursing Nexus Scholar combines AI, multimedia, and collaborative learning to give students and tutors all the tools needed to excel. Learn, track, and connect—all in one platform.
-            </p>
+  Heartique Nursing Nexus Scholar organizes your study journey with comprehensive notes and high-quality questions arranged by units, tracks your progress, and provides carefully curated video tutorials. Engage in focused chat rooms for collaborative learning, all powered by AI to help students and tutors excel efficiently.
+</p>
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <Card key={index} className="border-0 shadow-soft hover:shadow-medical transition-shadow">
+            <Card 
+  key={index} 
+  className="border border-blue-400 hover:border-blue-600 transition-all duration-300 shadow-sm hover:shadow-md rounded-lg"
+>
                 <CardHeader>
                   <div className="h-12 w-12 bg-gradient-medical rounded-lg flex items-center justify-center mb-4">
                     <feature.icon className="h-6 w-6 text-white" />
@@ -123,14 +130,16 @@ useEffect(() => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-muted/30">
+      <section className="py-20 px-4 bg-gradient-to-tr from-blue-500 to-blue-200 text-gray-900">
+
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Join the Future of Nursing Education
           </h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Heartique Nursing Nexus Scholar provides students and tutors with a comprehensive, interactive, and AI-enhanced learning environment. Explore the platform today and experience a smarter way to study and teach.
-          </p>
+        <p className="text-xl text-white mb-8">
+  Heartique Nursing Nexus Scholar offers students and tutors a fully interactive, AI-powered learning hub. Dive into well-structured lessons, track your progress, and collaborate efficiently—experience a smarter, more effective way to study and teach today.
+</p>
+
           <Button 
             size="lg" 
             className="bg-gradient-medical"

@@ -12,24 +12,26 @@ export function Subscription() {
   const [message, setMessage] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
 
-  const studentPlans = [
-    {
-      id: "pro",
-      name: "Pro",
-      price: 99,
-      description: "Perfect for serious learners",
-      features: ["Unlimited quizzes","Advanced progress tracking","Priority support","Download study materials","AI study assistant"],
-      popular: true
-    },
-    {
-      id: "premium",
-      name: "Premium",
-      price: 450,
-      description: "For committed learners",
-      features: ["Everything in Pro","Offline access","Video content library","Advanced analytics","Certificate programs"],
-      popular: false
-    }
-  ];
+const studentPlans = [
+  {
+    id: "pro",
+    name: "Pro",
+    price: 99,
+    description: "Perfect for serious learners",
+    features: ["Unlimited quizzes","Advanced progress tracking","Priority support","Download study materials","AI study assistant"],
+    popular: true,
+    period: "month"  // <-- add this
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: 450,
+    description: "For committed learners",
+    features: ["Everything in Pro","Offline access","Video content library","Advanced analytics","Certificate programs"],
+    popular: false,
+    period: "year"  // <-- add this
+  }
+];
 
   const tutorPlans = [
     {
@@ -137,7 +139,8 @@ export function Subscription() {
                     <CardDescription>{plan.description}</CardDescription>
                     <div className="mt-4">
                       <span className="text-3xl font-bold">KSh {plan.price}</span>
-                      <span className="text-muted-foreground">/month</span>
+                     <span className="text-muted-foreground">/{plan.period}</span>
+
                     </div>
                   </div>
                 </CardHeader>
