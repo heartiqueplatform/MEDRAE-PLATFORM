@@ -221,19 +221,32 @@ const handleCollapse = () => {
   return (
     <Sidebar className={`${isCollapsed ? "w-16" : "w-64"} transition-all duration-300`}>
       <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-gradient-medical rounded-lg flex items-center justify-center">
-            <GraduationCap className="h-5 w-5 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div>
-              <h2 className="font-bold text-lg bg-gradient-medical bg-clip-text text-transparent">
-                Heartique Nursing Nexus
-              </h2>
-              <p className="text-xs text-muted-foreground">Scholar Platform</p>
-            </div>
-          )}
-        </div>
+<div className="flex items-center gap-3">
+  {/* Mobile toggle button */}
+  <button
+    className="mobile-menu-toggle lg:hidden p-2 rounded-md hover:bg-muted/20"
+    onClick={() => setState(isCollapsed ? "expanded" : "collapsed")}
+  >
+    {/* Hamburger icon */}
+    <span className="block w-5 h-0.5 bg-gray-800 dark:bg-white mb-1"></span>
+    <span className="block w-5 h-0.5 bg-gray-800 dark:bg-white mb-1"></span>
+    <span className="block w-5 h-0.5 bg-gray-800 dark:bg-white"></span>
+  </button>
+
+  <div className="h-8 w-8 bg-gradient-medical rounded-lg flex items-center justify-center">
+    <GraduationCap className="h-5 w-5 text-white" />
+  </div>
+
+  {!isCollapsed && (
+    <div>
+      <h2 className="font-bold text-lg bg-gradient-medical bg-clip-text text-transparent">
+        Heartique Nursing Nexus
+      </h2>
+      <p className="text-xs text-muted-foreground">Scholar Platform</p>
+    </div>
+  )}
+</div>
+
       </div>
 
       <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">

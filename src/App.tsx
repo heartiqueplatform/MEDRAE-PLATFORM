@@ -38,6 +38,7 @@ import CandidateInfo from "@/pages/quiz-simulation/CandidateInfo";
 import InstructionPage from "@/pages/quiz-simulation/InstructionPage";
 import SimulationPage from "@/pages/quiz-simulation/SimulationPage";
 import AIChatWidget from "@/components/AIChatWidget";
+import FirstTimeGuide from "@/components/FirstTimeGuide";
 
 // Layout
 import { DashboardLayout } from "./components/layout/DashboardLayout";
@@ -87,7 +88,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AIWrapper>
+            <FirstTimeGuide />
+
             <Routes>
+              
               {/* Public Routes */}
             <Route path="/" element={<Index />} />
 <Route path="/redirect" element={<RedirectToRoleDashboard />} />
