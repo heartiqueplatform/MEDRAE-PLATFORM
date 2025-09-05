@@ -47,9 +47,8 @@ export default function FirstTimeGuide() {
   styles={{
     options: {
       zIndex: 10000,
-      // Make the step indicator dots bigger
-      dotSize: 16, // default is 12, increase as needed
-      primaryColor: "#FF0000", // optional, your highlight color
+      dotSize: 32, // much bigger
+      primaryColor: "#FF0000", // optional
     },
   }}
 />
