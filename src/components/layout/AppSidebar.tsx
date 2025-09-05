@@ -49,9 +49,15 @@ interface AppSidebarProps {
 export function AppSidebar({ userRole }: AppSidebarProps) {
   const { state, setState } = useSidebar();
 
+
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
+  const [totalSimulationPapers, setTotalSimulationPapers] = useState<number | null>(null);
+const [totalNotes, setTotalNotes] = useState<number | null>(null);
+const [totalVideos, setTotalVideos] = useState<number | null>(null);
+
   const isCollapsed = state === 'collapsed';
   
   const toggleGroup = (group: string) => {
@@ -61,6 +67,12 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         : [...prev, group]
     );
   };
+const formatNumber = (num: number | null) => {
+  if (!num) return "0";
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
+  if (num >= 1_000) return (num / 1_000).toFixed(0) + "k";
+  return num.toString();
+};
 
   const isActive = (path: string) => location.pathname === path;
   const getNavClass = (path: string) => {
@@ -79,14 +91,16 @@ const mainItems = [
   const learningItems = [
     { title: "Assessment Calendar", url: "/calendar", icon: Calendar },
     { title: "Study Progress", url: "/progress", icon: TrendingUp },
-    { title: "Heartique Quizzes App", url: "/heartique-quizzes", icon: Heart, badge: "Pro" }, 
-    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play },
+    { title: "Heartique Quizzes App", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
+    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
+
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
-    { title: "Notes & Resources", url: "/resources", icon: FileText },
+    { title: "Notes & Resources", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)} Notes` : "Loading..." },
+
   ];
 
   const mediaItems = [
-    { title: "MedTube", url: "/medtube", icon: Play },
+    { title: "MedTube", url: "/medtube", icon: Play, badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
     { title: "Reels", url: "/reels", icon: Video },
   ];
 
@@ -125,7 +139,6 @@ const mainItems = [
 
       if (!error) setUnreadCount(count || 0);
     }
-
     fetchUnread();
 
     const subscription = supabase
@@ -141,6 +154,46 @@ const mainItems = [
       supabase.removeChannel(subscription);
     };
   }, []);
+
+// ---- HERE add your totalQuestions hook ----
+  
+
+  useEffect(() => {
+    const fetchTotalQuestions = async () => {
+      const { count, error } = await supabase
+        .from("quiz_questions")
+        .select("*", { count: "exact", head: true });
+      if (!error) setTotalQuestions(count || 0);
+    };
+    fetchTotalQuestions();
+  }, []);
+useEffect(() => {
+  const fetchTotalSimulationPapers = async () => {
+    const { count, error } = await supabase
+      .from("simulation_papers")
+      .select("*", { count: "exact", head: true });
+    if (!error) setTotalSimulationPapers(count || 0);
+  };
+  fetchTotalSimulationPapers();
+}, []);
+useEffect(() => {
+  const fetchTotalNotes = async () => {
+    const { count, error } = await supabase
+      .from("notes")
+      .select("*", { count: "exact", head: true });
+    if (!error) setTotalNotes(count || 0);
+  };
+  fetchTotalNotes();
+}, []);
+useEffect(() => {
+  const fetchTotalVideos = async () => {
+    const { count, error } = await supabase
+      .from("medtube_videos")
+      .select("*", { count: "exact", head: true });
+    if (!error) setTotalVideos(count || 0);
+  };
+  fetchTotalVideos();
+}, []);
 
   // Reset unread count when clicking Chat Room
   const handleChatClick = async () => {
@@ -245,20 +298,30 @@ const handleCollapse = () => {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {learningItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          className={getNavClass(item.url)}
-                          onClick={handleCollapse}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {!isCollapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                 {learningItems.map((item) => (
+  <SidebarMenuItem key={item.title}>
+    <SidebarMenuButton asChild>
+      <NavLink
+        to={item.url}
+        className={getNavClass(item.url)}
+        onClick={handleCollapse}
+      >
+        <item.icon className="h-4 w-4" />
+        {!isCollapsed && (
+          <>
+            <span>{item.title}</span>
+            {item.badge && (
+              <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                {item.badge}
+              </Badge>
+            )}
+          </>
+        )}
+      </NavLink>
+    </SidebarMenuButton>
+  </SidebarMenuItem>
+))}
+
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -278,19 +341,29 @@ const handleCollapse = () => {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {mediaItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          className={getNavClass(item.url)}
-                          onClick={handleCollapse}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {!isCollapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+  <SidebarMenuItem key={item.title}>
+    <SidebarMenuButton asChild>
+      <NavLink
+        to={item.url}
+        className={getNavClass(item.url)}
+        onClick={handleCollapse}
+      >
+        <item.icon className="h-4 w-4" />
+        {!isCollapsed && (
+          <>
+            <span>{item.title}</span>
+            {item.badge && (
+              <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                {item.badge}
+              </Badge>
+            )}
+          </>
+        )}
+      </NavLink>
+    </SidebarMenuButton>
+  </SidebarMenuItem>
+))}
+
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
