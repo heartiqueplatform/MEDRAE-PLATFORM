@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate", // auto update service worker
-      includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.png", "pwa-512x512.png"], 
+      includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.pneg", "pwa-512x512.pneg"], 
       manifest: {
         name: "HEARTIQUE NURSING NEXUS SCHOLAR",
         short_name: "HEARTIQUE X",
@@ -26,8 +26,8 @@ export default defineConfig(({ mode }) => ({
         scope: "/",
         start_url: "/",
         icons: [
-          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "/pwa-192x192.jpeg", sizes: "192x192", type: "image/jpeg" },
+          { src: "/pwa-512x512.jpeg", sizes: "512x512", type: "image/jpeg" },
         ],
       },
       workbox: {
