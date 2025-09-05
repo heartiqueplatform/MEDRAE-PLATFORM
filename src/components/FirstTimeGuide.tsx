@@ -8,7 +8,7 @@ export default function FirstTimeGuide() {
 
   // Check if first-time user
   useEffect(() => {
-    const isFirstTime = true; // force guide to always show
+   const isFirstTime = !localStorage.getItem("firstTimeGuideDone");
     if (isFirstTime) setRunGuide(true);
   }, []);
 

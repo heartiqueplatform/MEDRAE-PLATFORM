@@ -482,11 +482,12 @@ const recordView = async (videoId: string, updateUI = true) => {
   </Badge>
 )}
 
-          <p className="text-muted-foreground mt-2">Educational videos for nursing and medical education</p>
+         <p className="text-muted-foreground mt-2">
+  Explore a rich library of educational videos designed specifically for nursing and medical students. Learn essential clinical skills, master pharmacology concepts, understand complex medical conditions, and stay prepared for emergencies. Our platform empowers you to grow confidently, practice with real-world scenarios, and advance your knowledge at your own pace. Dive in, stay curious, and let MedTube guide your journey to becoming a skilled healthcare professional!
+</p>
+
         </div>
-        <Button className="flex items-center gap-2" onClick={() => setShowUploadForm(!showUploadForm)}>
-          <Upload className="h-4 w-4" /> Upload Video
-        </Button>
+       
       </div>
 
       {showUploadForm && (
@@ -561,6 +562,9 @@ const recordView = async (videoId: string, updateUI = true) => {
           className="pl-10"
         />
       </div>
+       <Button className="flex items-center gap-2" onClick={() => setShowUploadForm(!showUploadForm)}>
+          <Upload className="h-4 w-4" /> Upload Video
+        </Button>
 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
   {/* Mobile dropdown */}
