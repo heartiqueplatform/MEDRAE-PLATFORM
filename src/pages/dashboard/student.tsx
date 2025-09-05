@@ -478,20 +478,78 @@ return (
       {/* Welcome Section */}
 <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-xl p-6 text-white">
 
-  <h1 className="text-2xl md:text-3xl font-bold mb-2">
+ <h1 className="text-2xl md:text-3xl font-bold mb-2">
   {name ? (() => {
-    // Daily welcome greetings
-     const dailyWelcome = {
-  Sunday: "Hey, ${name} 👋! Welcome, future nurse star! Take today to recharge, reflect on your progress, and prepare for a week full of learning and growth.",
-  Monday: "Hello, ${name} 👋! Welcome, rising healthcare hero! Let’s start the week strong review your notes, practice your skills, and tackle new challenges with confidence.",
-  Tuesday: "Hi, ${name} 👋! Welcome, budding lifesaver! Keep building your skills today, stay curious, and remember that every little step moves you closer to mastery.",
-  Wednesday: "Greetings, ${name} 👋! Welcome, nursing champion! Halfway through the week stay motivated, celebrate your wins, and keep pushing your limits.",
-  Thursday: "Hey, ${name} 👋! Welcome, healthcare rockstar! Push forward and grow your skills today, embrace every learning opportunity, and keep striving for excellence.",
-  Friday: "Hi, ${name} 👋! Welcome, future healer! Finish the week strong review, practice, and reflect on your accomplishments. Your dedication is truly inspiring!",
-  Saturday: "Hello, ${name} 👋! Welcome, caring star! Use today to review, practice, and deepen your understanding. Every effort you make brings you closer to becoming an exceptional nurse."
-};
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    return dailyWelcome[today].replace("${name}", name);
+    const now = new Date();
+    const hour = now.getHours();
+
+    // Determine time of day
+    let timeGreeting;
+    if (hour >= 5 && hour < 12) {
+      timeGreeting = "Good morning";
+    } else if (hour >= 12 && hour < 17) {
+      timeGreeting = "Good afternoon";
+    } else if (hour >= 17 && hour < 21) {
+      timeGreeting = "Good evening";
+    } else {
+      timeGreeting = "Hope your day is going well";
+    }
+
+    // Daily messages with slight adjustments for time of day
+    const dailyMessage: { [key: string]: { morning: string; afternoon: string; evening: string; night: string } } = {
+      Sunday: {
+        morning: `Welcome to a new week of professional growth. Reflect on your achievements and prepare for a week full of learning and skill development.`,
+        afternoon: `Keep building momentum today. Take time to consolidate your learning and plan for the week ahead.`,
+        evening: `Wrap up your Sunday with reflection and preparation. Celebrate small wins and set goals for a productive week.`,
+        night: `Hope your Sunday winds down peacefully. Take a moment to rest and recharge for the week ahead.`
+      },
+      Monday: {
+        morning: `Welcome to the start of a productive week. Review your notes and practice essential skills with focus and confidence.`,
+        afternoon: `Keep pushing forward and apply what you've learned so far. Every effort counts towards mastery.`,
+        evening: `Reflect on what you accomplished today and plan your next steps. Your dedication sets the tone for a successful week.`,
+        night: `Hope your Monday winds down smoothly. Rest well and prepare for continued growth tomorrow.`
+      },
+      Tuesday: {
+        morning: `Welcome to another day of advancement. Stay curious and continue building your clinical expertise.`,
+        afternoon: `Keep progressing and challenging yourself. Every step brings you closer to mastery.`,
+        evening: `Review today's achievements and consider areas for improvement. Growth is built daily.`,
+        night: `Hope your Tuesday concludes positively. Rest and recharge to continue your learning journey.`
+      },
+      Wednesday: {
+        morning: `Welcome to midweek. Celebrate your progress so far and stay motivated for the remainder of the week.`,
+        afternoon: `Continue applying your skills and reflect on your learning. Midweek is perfect for focus and refinement.`,
+        evening: `Wrap up your Wednesday with reflection and planning. Your consistent effort is impressive.`,
+        night: `Hope your Wednesday evening is relaxing. Recharge and prepare for the rest of the week.`
+      },
+      Thursday: {
+        morning: `Welcome to a new day of professional growth. Embrace every learning opportunity and refine your skills.`,
+        afternoon: `Keep applying knowledge in practice. Small consistent steps lead to mastery.`,
+        evening: `Reflect on what you learned today and celebrate progress made.`,
+        night: `Hope your Thursday winds down well. Rest and get ready to finish the week strong.`
+      },
+      Friday: {
+        morning: `Welcome to the final stretch of the week. Focus on consolidating knowledge and practicing skills.`,
+        afternoon: `Keep moving forward and apply lessons learned this week.`,
+        evening: `Reflect on the week’s accomplishments and plan for next week’s growth.`,
+        night: `Hope your Friday evening is peaceful. Take time to rest and recharge for the weekend.`
+      },
+      Saturday: {
+        morning: `Welcome to a day for reflection and skill refinement. Review your progress and deepen your understanding.`,
+        afternoon: `Continue exploring new concepts and applying knowledge practically.`,
+        evening: `Wrap up Saturday with reflection and acknowledge your achievements.`,
+        night: `Hope your Saturday concludes positively. Rest well and prepare for the week ahead.`
+      }
+    };
+
+    const today = now.toLocaleDateString('en-US', { weekday: 'long' });
+    let timeOfDay: "morning" | "afternoon" | "evening" | "night";
+
+    if (hour >= 5 && hour < 12) timeOfDay = "morning";
+    else if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
+    else if (hour >= 17 && hour < 21) timeOfDay = "evening";
+    else timeOfDay = "night";
+
+    return `${timeGreeting}, ${name} 👋! ${dailyMessage[today][timeOfDay]}`;
   })() : "Loading..."}
   {loading && (
     <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
@@ -499,6 +557,7 @@ return (
     </span>
   )}
 </h1>
+
   <p className="text-white/90">
     {(() => {
       const nursingMessages = {
