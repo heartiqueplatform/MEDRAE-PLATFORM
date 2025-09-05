@@ -82,7 +82,23 @@ export function Subscription() {
   }, []);
 
   return (
-    <div className="space-y-6">
+   <div className="relative space-y-6">
+
+      {/* Free Trial Overlay (only over subscription page content) */}
+<div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg z-50">
+  <div className="bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700 p-8 rounded-2xl shadow-2xl text-center max-w-md text-white">
+    <h2 className="text-3xl font-extrabold mb-3">Free Trial Active</h2>
+    <p className="text-blue-100 mb-6 leading-relaxed">
+      You are currently on a <span className="font-semibold text-white">3-month free trial</span>.  
+      Payments are disabled while we finalize subscriptions.
+    </p>
+    <Badge className="bg-green-500 text-white px-4 py-1 rounded-full text-sm tracking-wide shadow-md">
+      Free Mode
+    </Badge>
+  </div>
+</div>
+
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
