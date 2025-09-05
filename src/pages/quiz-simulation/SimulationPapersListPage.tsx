@@ -32,7 +32,8 @@ export default function SimulationPapersListPage() {
   if (loading) return <p className="p-6">Loading papers...</p>;
 
   return (
-    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+  <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-white dark:bg-gray-900">
+
       {papers.map((paper) => (
         <Card key={paper.id}>
           <CardHeader>

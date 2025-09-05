@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { GlobalLoader } from "@/components/GlobalLoader";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import jsPDF from "jspdf";
@@ -44,6 +45,7 @@ const canvasRef = useRef<HTMLCanvasElement | null>(null);
 const [loudWarning, setLoudWarning] = useState(false);
 const [mediaAllowed, setMediaAllowed] = useState(false);
 const [profile, setProfile] = useState<any>(null);
+const [loading, setLoading] = useState(true); // new
 
 const initMedia = useCallback(async (force = false) => {
   try {
@@ -144,57 +146,54 @@ const fetchProfile = async (userId: string) => {
 // Fetch active papers and mark which ones are already done
 
   const fetchPapers = async () => {
-    const { data: papers } = await supabase
-      .from("simulation_papers")
-      .select("*")
-      .eq("is_active", true);
+  setLoading(true); // ✅ start loading
 
-    if (!papers) return;
-    // ✅ Also fetch logged-in user profile
-const { data: userData } = await supabase.auth.getUser();
-if (userData?.user?.id) {
-  const profileData = await fetchProfile(userData.user.id);
-  setProfile(profileData);
-}
-// ✅ Fetch active subscription for this user
-if (userData?.user?.id) {
-  const { data: subData, error: subError } = await supabase
-    .from("subscriptions")
-    .select("plan_type, is_active")
-    .eq("user_id", userData.user.id)
-    .eq("is_active", true)
-    .single();
+  const { data: papers } = await supabase
+    .from("simulation_papers")
+    .select("*")
+    .eq("is_active", true);
 
-  if (subError) {
-    console.log("Subscription error:", subError.message);
+  if (!papers) {
+    setLoading(false);
+    return;
   }
-  console.log("Subscription check:", subData);
 
-  if (subData) {
-    setProfile((prev: any) => ({
-      ...prev,
-      subscription: subData.plan_type,
-      subscription_active: subData.is_active,
-    }));
+  // ✅ Fetch logged-in user profile
+  const { data: userData } = await supabase.auth.getUser();
+  if (userData?.user?.id) {
+    const profileData = await fetchProfile(userData.user.id);
+    setProfile(profileData);
+
+    // ✅ Fetch active subscription for this user
+    const { data: subData } = await supabase
+      .from("subscriptions")
+      .select("plan_type, is_active")
+      .eq("user_id", userData.user.id)
+      .eq("is_active", true)
+      .single();
+
+    if (subData) {
+      setProfile((prev: any) => ({
+        ...prev,
+        subscription: subData.plan_type,
+        subscription_active: subData.is_active,
+      }));
+    }
   }
-}
 
+  // ✅ Check which papers are done
+  const { data: results } = await supabase.from("simulation_results").select("paper_id");
+  const donePaperIds = results?.map((r) => r.paper_id) || [];
 
-    // check results for each paper
-    const { data: results } = await supabase
-      .from("simulation_results")
-      .select("paper_id");
+  const papersWithStatus = papers.map((p) => ({
+    ...p,
+    is_done: donePaperIds.includes(p.id),
+  }));
 
-    const donePaperIds = results?.map((r) => r.paper_id) || [];
+  setPaperList(papersWithStatus);
 
-    // add a "done" flag to paper list
-    const papersWithStatus = papers.map((p) => ({
-      ...p,
-      is_done: donePaperIds.includes(p.id),
-    }));
-
-    setPaperList(papersWithStatus);
-  };
+  setLoading(false); // ✅ stop loading
+};
 
 useEffect(() => {
   fetchPapers();
@@ -596,108 +595,110 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
   }
 
   // Render paper selection
-  if (!selectedPaper) {
+if (!selectedPaper) {
+  if (loading) {
     return (
-      <div className="p-4">
-        <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-   {paperList.map((paper) => {
-  const canAccess =
-  profile?.subscription_active
-    ? true
-    : paper.is_free;
-
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <GlobalLoader message="Be patient Heartique is Loading papers..." />
+      </div>
+    );
+  }
 
   return (
-    <Card
-      key={paper.id}
-      className={`cursor-pointer hover:shadow-md transition ${
-        paper.is_done ? "opacity-60" : canAccess ? "" : "opacity-50 cursor-not-allowed"
-      }`}
-      onClick={() => {
-        if (!paper.is_done && canAccess) setSelectedPaper(paper);
-      }}
-    >
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {paper.title}
-         {paper.is_done ? (
-  <Badge variant={getStatusVariant("done")}>Done</Badge>
-) : profile?.subscription_active ? (
-  <Badge className="bg-green-600 text-white">Unlocked</Badge>
-) : paper.is_free ? (
-  <Badge className="bg-emerald-500 text-white">Free</Badge>
-) : (
-  <Badge variant="destructive">Premium / Pro</Badge>
-)}
+    <div className="min-h-screen bg-background text-foreground p-4">
+      <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {paperList.map((paper) => {
+          const canAccess = profile?.subscription_active ? true : paper.is_free;
 
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{paper.description}</p>
-
-        {paper.is_done && (
-          <div className="mt-2 space-y-2">
-            <p className="text-xs text-green-600">
-              You’ve already submitted this paper.
-            </p>
-            <Badge variant="secondary">Completed</Badge>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={async (e) => {
-                e.stopPropagation(); // prevent selecting paper
-                await supabase
-                  .from("simulation_results")
-                  .delete()
-                  .eq("paper_id", paper.id)
-                  .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
-
-                // refresh paper list after reset
-                              // ✅ No manual refresh needed, realtime will update the paper list
-                alert("Paper reset successfully. You can now retake it.");
-
+          return (
+            <Card
+              key={paper.id}
+              className={`cursor-pointer hover:shadow-md transition ${
+                paper.is_done ? "opacity-60" : canAccess ? "" : "opacity-50 cursor-not-allowed"
+              }`}
+              onClick={() => {
+                if (!paper.is_done && canAccess) setSelectedPaper(paper);
               }}
             >
-              Reset Paper
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-})}
-</div>
-</div>
- );
-}
+          
+     
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  {paper.title}
+                  {paper.is_done ? (
+                    <Badge variant={getStatusVariant("done")}>Done</Badge>
+                  ) : profile?.subscription_active ? (
+                    <Badge className="bg-green-600 text-white">Unlocked</Badge>
+                  ) : paper.is_free ? (
+                    <Badge className="bg-emerald-500 text-white">Free</Badge>
+                  ) : (
+                    <Badge variant="destructive">Premium / Pro</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
 
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{paper.description}</p>
+
+                {paper.is_done && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-xs text-green-600">
+                      You’ve already submitted this paper.
+                    </p>
+                    <Badge variant="secondary">Completed</Badge>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await supabase
+                          .from("simulation_results")
+                          .delete()
+                          .eq("paper_id", paper.id)
+                          .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
+
+                        alert("Paper reset successfully. You can now retake it.");
+                      }}
+                    >
+                      Reset Paper
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
   // No questions found / Loading questions
 if (!currentQuestion) {
   if (questions.length === 0 && timeLeft > 0) {
-    // Still loading
+    // Use global spinner instead
     return (
-      <div className="flex flex-col justify-center items-center h-64 space-y-4">
-        <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-        <p className="text-lg text-blue-600">Loading questions...</p>
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <GlobalLoader message="Be patient Heartique is Loading questions..." />
       </div>
     );
   }
 
   // No questions exist
   return (
-    <div className="p-8 text-center text-muted-foreground">
-      <p> No questions found for this paper.</p>
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-8">
+      <p className="text-muted-foreground">No questions found for this paper.</p>
       <Button className="mt-4" onClick={() => setSelectedPaper(null)}>
         Choose Another Paper
       </Button>
     </div>
   );
 }
+
   // Main question view
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 md:p-8">
+    <div className="min-h-screen bg-background text-foreground grid grid-cols-1 md:grid-cols-3 gap-6 p-4 md:p-8">
+
      <div className="md:col-span-2 space-y-4">
   <Card>
     <CardHeader>
