@@ -90,7 +90,7 @@ useEffect(() => {
   className="border-white text-primary hover:bg-white/10"
   onClick={() => navigate('/login')}
 >
-  Sign In
+  Continue Learning Sign In
 </Button>
 
           </div>
