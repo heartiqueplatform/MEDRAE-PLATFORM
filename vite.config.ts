@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.pneg", "pwa-512x512.pneg"], 
       manifest: {
         name: "HEARTIQUE NURSING NEXUS SCHOLAR",
-        short_name: "He X",
+        short_name: "Heartique X",
         description: "App for NCK/FQE exam revision ",
         theme_color: "#4ade80",
         background_color: "#ffffff",
@@ -30,30 +30,30 @@ export default defineConfig(({ mode }) => ({
           { src: "/pwa-512x512.jpeg", sizes: "512x512", type: "image/jpeg" },
         ],
       },
-   workbox: {
-  maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-  navigateFallback: "/offline.html", // ✅ show offline page
-  runtimeCaching: [
-    {
-      urlPattern: /\/.*\.(?:css|json)$/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "static-resources",
-        networkTimeoutSeconds: 5,
-        expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
+        runtimeCaching: [
+          // ✅ Only cache CSS & JSON (skip large JS bundles)
+          {
+            urlPattern: /\/.*\.(?:css|json)$/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "static-resources",
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 days
+            },
+          },
+          // ✅ Cache images
+          {
+            urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "image-cache",
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+        ],
       },
-    },
-    {
-      urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif)$/,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "image-cache",
-        expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
-      },
-    },
-  ],
-},
-
     }),
   ].filter(Boolean),
   resolve: {
