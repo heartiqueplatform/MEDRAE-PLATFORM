@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import confetti from "canvas-confetti";
+
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 import { Bell, Moon, Sun, User, Menu, RefreshCcw } from "lucide-react";
@@ -10,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import OnlineStatusToast from "@/components/OnlineStatusToast";
+import { useToast } from "@/components/ui/use-toast";
+
 
 interface HeaderProps {
   user: {
@@ -29,6 +33,41 @@ export function Header({
   streak: propStreak = 0,
 }: HeaderProps) {
   const { toggleSidebar } = useSidebar();
+  const { toast } = useToast();
+
+    // Swipe gestures for mobile sidebar
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX = e.changedTouches[0].clientX;
+      const swipeDistance = touchEndX - touchStartX;
+
+      // 👉 Swipe right from left edge = OPEN
+      if (touchStartX < 30 && swipeDistance > 70) {
+        toggleSidebar();
+      }
+
+      // 👈 Swipe left starting inside screen = CLOSE
+      if (touchStartX > 200 && swipeDistance < -70) {
+        toggleSidebar();
+      }
+    };
+
+    window.addEventListener("touchstart", handleTouchStart);
+    window.addEventListener("touchend", handleTouchEnd);
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [toggleSidebar]);
+
   const navigate = useNavigate();
   const authUser = useUser();
   const [streak, setStreak] = useState(propStreak);
@@ -107,7 +146,27 @@ const [rotating, setRotating] = useState(false);
       .single();
 
     if (!error && data) {
-      setStreak(data.streak || 0);
+    const newStreak = data.streak || 0;
+
+// 🎉 Trigger confetti on milestones
+if (newStreak > streak && [1, 7, 30, 100].includes(newStreak)) {
+  // 🎉 Confetti
+  confetti({
+    particleCount: 120,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ["#e11d48", "#22c55e"],
+  });
+
+  // 🔔 Toast message
+  toast({
+    title: `🔥 ${newStreak}-day streak!`,
+    description: "Keep up the great work 💪",
+  });
+}
+
+
+setStreak(newStreak);
     }
   };
 
