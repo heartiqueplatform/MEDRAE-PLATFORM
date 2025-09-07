@@ -15,6 +15,16 @@ const Index = () => {
         // 🔹 already logged in → send to redirect handler
         navigate("/redirect");
       }
+else {
+  // 🔹 If offline but user had logged in before → go to their role dashboard
+  const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
+  const userRole = localStorage.getItem("userRole");
+
+  if (hasLoggedInBefore && userRole) {
+    navigate(`/dashboard/${userRole}`);
+  }
+}
+
     };
     checkSession();
   }, [navigate]);

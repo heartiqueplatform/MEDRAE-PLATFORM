@@ -69,6 +69,9 @@ export function Login() {
       // Save role in localStorage (Supabase saves session automatically)
 localStorage.setItem("userRole", userData.role);
 
+localStorage.setItem("hasLoggedInBefore", "true");
+
+
 // Navigate to role-based dashboard
 navigate(`/dashboard/${userData.role}`, { replace: true });
 

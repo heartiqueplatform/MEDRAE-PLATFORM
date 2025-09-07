@@ -139,6 +139,8 @@ export function Register() {
 
       toast({ title: "Welcome!", description: `Account created and logged in as ${role}.` });
       localStorage.setItem("userRole", role);
+      localStorage.setItem("hasLoggedInBefore", "true");
+
       navigate(`/dashboard/${role}`);
     } catch (err) {
       toast({ title: "Registration failed!", description: err.message || "Something went wrong.", variant: "destructive" });

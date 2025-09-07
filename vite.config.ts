@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.pneg", "pwa-512x512.pneg"], 
       manifest: {
         name: "HEARTIQUE NURSING NEXUS SCHOLAR",
-        short_name: "HEARTIQUE X",
+        short_name: "Heartique X",
         description: "App for NCK/FQE exam revision ",
         theme_color: "#4ade80",
         background_color: "#ffffff",
