@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-white dark:bg-black">
   <head>
     <link rel="icon" href="/icon-512.jpg" type="image/jpg" />
     <meta charset="UTF-8" />
@@ -53,10 +53,11 @@
     <script>
       const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-      // Immediate solid fallback color to prevent white flash
-      document.body.style.backgroundColor = darkMode ? 'hsl(215,28%,8%)' : 'hsl(210,20%,98%)';
+      // Immediate fallback to prevent white flash
+      document.documentElement.style.backgroundColor = darkMode ? '#000' : '#fff';
+      document.body.style.backgroundColor = darkMode ? '#000' : '#fff';
 
-      // Apply gradient dynamically based on theme
+      // Apply gradient dynamically
       const gradient = darkMode 
         ? 'linear-gradient(135deg, #4d6eff, #1e90ff, #0a1f2e)'  // Dark theme gradient
         : 'linear-gradient(135deg, #ff4d6d, #4dd2ff, #1e90ff)'; // Light theme gradient
@@ -78,10 +79,9 @@
       `;
       document.head.appendChild(styleEl);
     </script>
-
   </head>
 
-  <body style="margin:0;">
+  <body class="bg-white dark:bg-black" style="margin:0;">
     <div id="root" style="height:100%;"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

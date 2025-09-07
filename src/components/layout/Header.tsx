@@ -224,8 +224,6 @@ setStreak(newStreak);
 <span className="ml-1 text-xs hidden sm:inline text-green-800 dark:text-white">
   Refresh App for updates
 </span>
-
-
 </Button>
 
 

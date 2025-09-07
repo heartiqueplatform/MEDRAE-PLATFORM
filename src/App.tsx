@@ -34,6 +34,9 @@ import { Profile } from "./pages/Profile";
 import { QuizUnits } from "./pages/QuizUnits";
 import { QuizTaking } from "./pages/QuizTaking";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
+import { useEffect, useState } from "react";
+import SplashScreen from "./SplashScreen";
+
 import CandidateInfo from "@/pages/quiz-simulation/CandidateInfo";
 import InstructionPage from "@/pages/quiz-simulation/InstructionPage";
 import SimulationPage from "@/pages/quiz-simulation/SimulationPage";
@@ -79,8 +82,19 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
+const App = () => {
+  const [loading, setLoading] = useState(true);
 
-const App = () => (
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 2000); // 2 sec splash
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <SplashScreen />;
+  }
+
+  return (
   <SessionContextProvider supabaseClient={supabase}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -145,6 +159,8 @@ const App = () => (
       </TooltipProvider>
     </QueryClientProvider>
   </SessionContextProvider>
-);
+  );
+};
+
 
 export default App;
