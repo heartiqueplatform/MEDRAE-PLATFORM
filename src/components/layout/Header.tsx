@@ -221,9 +221,10 @@ setStreak(newStreak);
 >
 
   <RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
-<span className="ml-1 text-xs hidden sm:inline text-green-800 dark:text-white">
+<span className="ml-1 text-xs hidden sm:inline dark:text-white" style={{ color: 'black' }}>
   Refresh App for updates
 </span>
+
 </Button>
 
 
