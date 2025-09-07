@@ -840,6 +840,29 @@ return (
     </div>
   )}
 </Card>
+{/* WhatsApp Channel Card */}
+<Card className="shadow-md">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <MessageCircle className="w-5 h-5 text-primary" />
+      Join Our WhatsApp Channel
+    </CardTitle>
+    <CardDescription>
+      Stay updated with important announcements and new study content.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <a
+      href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button className="w-full">
+        Open WhatsApp Channel
+      </Button>
+    </a>
+  </CardContent>
+</Card>
 
       {/* New Unit Question Counts Section */}
       <Card>

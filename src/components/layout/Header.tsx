@@ -217,9 +217,15 @@ setStreak(newStreak);
   variant="ghost"
   size="sm"
   onClick={handleReload}
-  className="relative mobile-reload-button"
+  className="relative mobile-reload-button group"
 >
+
   <RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
+<span className="ml-1 text-xs hidden sm:inline text-white">
+  Refresh App for updates
+</span>
+
+
 </Button>
 
 
