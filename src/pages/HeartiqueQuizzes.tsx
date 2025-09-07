@@ -318,7 +318,9 @@ return (
     placeholder="Search all papers..."
     value={searchTerm}
     onChange={(e) => setSearchTerm(e.target.value)}
-    className="w-full p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+    className="w-full p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm 
+               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
+               dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
   />
   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300"></span>
 </div>
