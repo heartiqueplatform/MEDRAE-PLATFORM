@@ -235,9 +235,9 @@ setStreak(newStreak);
   onClick={() => {
     const shareMessage = `📚 Heartique Scholar – Your Nursing Learning Companion
 
-• Ordered questions by unit, semester & block for structured study
+• Ordered questions by unit for structured study
 • High-quality media & videos chosen to simplify complex topics
-• Full course units arranged for easy navigation
+• Full course units Notes  arranged in blocks and sems for easy navigation
 • NCLEX simulation practice designed to train you like a pro
 
 Start your journey today: https://heartique-platform.vercel.app`;

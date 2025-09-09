@@ -857,7 +857,7 @@ return (
 
 • Ordered questions by unit for structured study
 • High-quality media & videos chosen to simplify complex topics
-• Full course units Notes arranged in blcoks and sem for easy navigation
+• Full course units Notes arranged in blocks and sems for easy navigation
 • NCLEX simulation practice designed to train you like a pro
 
 Start your journey today: https://heartique-platform.vercel.app`;
