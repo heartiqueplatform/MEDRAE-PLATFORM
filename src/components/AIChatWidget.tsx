@@ -169,7 +169,7 @@ setMessages([
       </div>
 
       {/* User message bubble */}
-      <div className="p-2 rounded-xl max-w-[75%] shadow bg-blue-500 text-white">
+      <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-500 text-white">
         {msg.content}
       </div>
     </div>
@@ -184,7 +184,7 @@ setMessages([
                            <Stethoscope size={24} className="text-white drop-shadow-xl" />
 
                           </div>
-                          <div className="p-2 rounded-xl max-w-[75%] shadow bg-teal-100 text-teal-900">
+                          <div className="p-2 rounded-xl max-w-[95%] shadow bg-teal-100 text-teal-900">
                             {msg.content}
                           </div>
                         </div>
@@ -215,7 +215,7 @@ setMessages([
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about medicine..."
+                placeholder="Ask about Nursing..."
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 className="border-blue-300 focus:ring-blue-500"
               />

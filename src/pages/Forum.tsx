@@ -407,22 +407,21 @@ useEffect(() => {
     </Avatar>
   )}
 
-  <div className="flex flex-col max-w-[70%]">
+ <div className="flex flex-col max-w-[95%]">
     {/* Sender name above message */}
     <span className="text-xs font-semibold text-muted-foreground mb-1">
       {msg.sender_name}
     </span>
 
-    <div
-      className={`px-4 py-2 rounded-lg ${
-        msg.user_id === currentUserId
-          ? "bg-primary text-primary-foreground rounded-tr-none"
-          : "bg-muted text-muted-foreground rounded-tl-none"
-      }`}
-    >
-      <p className="text-sm">{msg.content}</p>
-    
-    </div>
+  <div
+  className={`px-4 py-2 rounded-lg ${
+    msg.user_id === currentUserId
+      ? "bg-primary text-primary-foreground rounded-tr-none"
+      : "bg-muted text-muted-foreground rounded-tl-none"
+  }`}
+>
+  <p className="text-sm">{msg.content}</p>
+</div>
   </div>
 
   {/* Avatar for current user */}

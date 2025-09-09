@@ -534,22 +534,24 @@ const filteredProfiles = profiles.filter((profile) =>
 </Avatar>
 
                       )}
-                 
-<div className="max-w-[65%]">
+                 <div className="flex flex-col max-w-[95%]">
+
+
                         {message.sender_id !== currentUserId && (
                           <p className="text-sm font-medium mb-1">
                             {message.sender_name}
                           </p>
                         )}
-                        <div
-                          className={`rounded-lg p-3 ${
-                            message.sender_id === currentUserId
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
-                          }`}
-                        >
-                          <p className="text-sm">{message.message_text}</p>
-                        </div>
+  <div
+  className={`rounded-lg p-3 max-w-[95%] ${
+    message.sender_id === currentUserId
+      ? "bg-primary text-primary-foreground text-right"
+      : "bg-muted text-left"
+  }`}
+>
+  <p className="text-sm">{message.message_text}</p>
+</div>
+
                         <p className="text-xs text-muted-foreground mt-1">
                           {new Date(message.created_at).toLocaleTimeString()}
                         </p>

@@ -247,12 +247,13 @@ if (error) throw error;
                 </div>
 
                 {/* Message Bubble */}
-           <div className="flex flex-col max-w-[70%]">
+         <div className="flex flex-col max-w-[95%]">
 <div
-  className={`rounded-2xl px-4 py-2 shadow prose prose-sm max-w-none ${
+  className={`rounded-2xl px-4 py-2 shadow prose prose-sm max-w-[95%] ${
     msg.sender === "user" ? userBubbleClass : aiBubbleClass
   }`}
 >
+
  {msg.content === "<TypingBubbles />" ? <TypingBubbles isDarkTheme={isDarkTheme} /> : <ReactMarkdown>{msg.content}</ReactMarkdown>}
 </div>
   <span className="text-xs text-gray-500 mt-1">
