@@ -840,6 +840,61 @@ return (
     </div>
   )}
 </Card>
+{/* Share App Card */}
+<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+  <CardHeader>
+    <CardTitle className="text-lg font-semibold">Share This App</CardTitle>
+    <CardDescription>
+      Help your friends and colleagues discover Heartique by sharing this app.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <Button
+      className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2"
+      onClick={() => {
+        const shareMessage =
+`Heartique Nursing Nexus Scholar – Your Nursing Learning Companion
+
+• Ordered questions by unit for structured study
+• High-quality media & videos chosen to simplify complex topics
+• Full course units Notes arranged in blcoks and sem for easy navigation
+• NCLEX simulation practice designed to train you like a pro
+
+Start your journey today: https://heartique-platform.vercel.app`;
+
+        if (navigator.share) {
+          navigator
+            .share({
+              title: "Heartique Scholar",
+              text: shareMessage,
+              url: "https://heartique-platform.vercel.app",
+            })
+            .catch(err => console.log("Share cancelled:", err));
+        } else {
+          navigator.clipboard.writeText(shareMessage);
+          alert("App link and description copied to clipboard!");
+        }
+      }}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
+        />
+      </svg>
+      Share App
+    </Button>
+  </CardContent>
+</Card>
+
 {/* WhatsApp Channel Card */}
 <Card className="shadow-md">
   <CardHeader>

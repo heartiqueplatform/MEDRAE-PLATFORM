@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import OnlineStatusToast from "@/components/OnlineStatusToast";
 import { useToast } from "@/components/ui/use-toast";
-
+import { Share2 } from "lucide-react";
 
 interface HeaderProps {
   user: {
@@ -228,6 +228,36 @@ setStreak(newStreak);
 
 </Button>
 
+{/* 📤 Share App */}
+<Button
+  variant="ghost"
+  size="sm"
+  onClick={() => {
+    const shareMessage = `📚 Heartique Scholar – Your Nursing Learning Companion
+
+• Ordered questions by unit, semester & block for structured study
+• High-quality media & videos chosen to simplify complex topics
+• Full course units arranged for easy navigation
+• NCLEX simulation practice designed to train you like a pro
+
+Start your journey today: https://heartique-platform.vercel.app`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "Heartique Scholar",
+          text: shareMessage,
+          url: "https://heartique-platform.vercel.app",
+        })
+        .catch((err) => console.log("Share cancelled:", err));
+    } else {
+      navigator.clipboard.writeText(shareMessage);
+      alert("App link and description copied to clipboard!");
+    }
+  }}
+>
+  <Share2 className="h-5 w-5" />
+</Button>
 
         {/* 🔔 Notifications */}
         <Button
