@@ -302,16 +302,10 @@ const handleCollapse = () => {
   <SidebarMenuItem key={item.title}>
     <SidebarMenuButton asChild>
       <NavLink
-  to={item.url}
-  className={({ isActive }) => getNavClass(item.url)}
-  onClick={(e) => {
-    e.preventDefault();        // prevent full page reload
-    handleCollapse();          // collapse sidebar on mobile
-    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
-    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
-  }}
->
-
+        to={item.url}
+        className={getNavClass(item.url)}
+        onClick={handleCollapse}
+      >
         <item.icon className="h-4 w-4" />
         {!isCollapsed && (
           <>
@@ -349,17 +343,11 @@ const handleCollapse = () => {
                   {mediaItems.map((item) => (
   <SidebarMenuItem key={item.title}>
     <SidebarMenuButton asChild>
-     <NavLink
-  to={item.url}
-  className={({ isActive }) => getNavClass(item.url)}
-  onClick={(e) => {
-    e.preventDefault();        // prevent full page reload
-    handleCollapse();          // collapse sidebar on mobile
-    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
-    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
-  }}
->
-
+      <NavLink
+        to={item.url}
+        className={getNavClass(item.url)}
+        onClick={handleCollapse}
+      >
         <item.icon className="h-4 w-4" />
         {!isCollapsed && (
           <>
@@ -398,17 +386,11 @@ const handleCollapse = () => {
                     {tutorItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                   <NavLink
-  to={item.url}
-  className={({ isActive }) => getNavClass(item.url)}
-  onClick={(e) => {
-    e.preventDefault();        // prevent full page reload
-    handleCollapse();          // collapse sidebar on mobile
-    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
-    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
-  }}
->
-
+                          <NavLink
+                            to={item.url}
+                            className={getNavClass(item.url)}
+                            onClick={handleCollapse}
+                          >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </NavLink>
@@ -438,17 +420,11 @@ const handleCollapse = () => {
                     {staffItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                       <NavLink
-  to={item.url}
-  className={({ isActive }) => getNavClass(item.url)}
-  onClick={(e) => {
-    e.preventDefault();        // prevent full page reload
-    handleCollapse();          // collapse sidebar on mobile
-    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
-    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
-  }}
->
-
+                          <NavLink
+                            to={item.url}
+                            className={getNavClass(item.url)}
+                            onClick={handleCollapse}
+                          >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </NavLink>
@@ -469,17 +445,11 @@ const handleCollapse = () => {
               {otherItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                 <NavLink
-  to={item.url}
-  className={({ isActive }) => getNavClass(item.url)}
-  onClick={(e) => {
-    e.preventDefault();        // prevent full page reload
-    handleCollapse();          // collapse sidebar on mobile
-    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
-    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
-  }}
->
-
+                    <NavLink
+                      to={item.url}
+                      className={getNavClass(item.url)}
+                      onClick={handleCollapse}
+                    >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
