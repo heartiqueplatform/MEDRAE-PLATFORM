@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-
+import { NavLink, useLocation } from "react-router-dom";
 import {
   Brain,
   Heart,
@@ -52,8 +51,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
 
   const location = useLocation();
-    const navigate = useNavigate();
-
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
@@ -211,14 +208,6 @@ useEffect(() => {
 
     setUnreadCount(0);
   };
-// Helper: handle navigation clicks on all sidebar items
-const handleNavClick = (e: React.MouseEvent, url: string, isChat?: boolean) => {
-  e.preventDefault(); // stop full page reload
-  if (isChat) handleChatClick(); // reset unread count if Chat Room
-  handleCollapse(); // collapse sidebar on mobile
-
-  navigate(url); // use React Router navigate
-};
 
   // Helper: collapse sidebar on mobile and close all groups
 const handleCollapse = () => {
@@ -264,11 +253,13 @@ const handleCollapse = () => {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <NavLink
-  to={item.url}
-  className={getNavClass(item.url)}
-  onClick={(e) => handleNavClick(e, item.url, item.title === "Chat Room")}
->
-
+                          to={item.url}
+                          className={getNavClass(item.url)}
+                          onClick={() => {
+                            if (item.title === "Chat Room") handleChatClick();
+                            handleCollapse();
+                          }}
+                        >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
@@ -311,11 +302,16 @@ const handleCollapse = () => {
   <SidebarMenuItem key={item.title}>
     <SidebarMenuButton asChild>
       <NavLink
-        to={item.url}
-        className={getNavClass(item.url)}
-        onClick={(e) => handleNavClick(e, item.url, item.title === "Chat Room")}
+  to={item.url}
+  className={({ isActive }) => getNavClass(item.url)}
+  onClick={(e) => {
+    e.preventDefault();        // prevent full page reload
+    handleCollapse();          // collapse sidebar on mobile
+    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
+    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
+  }}
+>
 
-      >
         <item.icon className="h-4 w-4" />
         {!isCollapsed && (
           <>
@@ -353,12 +349,17 @@ const handleCollapse = () => {
                   {mediaItems.map((item) => (
   <SidebarMenuItem key={item.title}>
     <SidebarMenuButton asChild>
-      <NavLink
-        to={item.url}
-        className={getNavClass(item.url)}
-       onClick={(e) => handleNavClick(e, item.url, item.title === "Chat Room")}
+     <NavLink
+  to={item.url}
+  className={({ isActive }) => getNavClass(item.url)}
+  onClick={(e) => {
+    e.preventDefault();        // prevent full page reload
+    handleCollapse();          // collapse sidebar on mobile
+    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
+    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
+  }}
+>
 
-      >
         <item.icon className="h-4 w-4" />
         {!isCollapsed && (
           <>
@@ -397,12 +398,17 @@ const handleCollapse = () => {
                     {tutorItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <NavLink
-                            to={item.url}
-                            className={getNavClass(item.url)}
-                           onClick={(e) => handleNavClick(e, item.url, item.title === "Chat Room")}
+                   <NavLink
+  to={item.url}
+  className={({ isActive }) => getNavClass(item.url)}
+  onClick={(e) => {
+    e.preventDefault();        // prevent full page reload
+    handleCollapse();          // collapse sidebar on mobile
+    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
+    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
+  }}
+>
 
-                          >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </NavLink>
@@ -432,12 +438,17 @@ const handleCollapse = () => {
                     {staffItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <NavLink
-                            to={item.url}
-                            className={getNavClass(item.url)}
-                          onClick={(e) => handleNavClick(e, item.url, item.title === "Chat Room")}
+                       <NavLink
+  to={item.url}
+  className={({ isActive }) => getNavClass(item.url)}
+  onClick={(e) => {
+    e.preventDefault();        // prevent full page reload
+    handleCollapse();          // collapse sidebar on mobile
+    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
+    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
+  }}
+>
 
-                          >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </NavLink>
@@ -451,31 +462,33 @@ const handleCollapse = () => {
           </SidebarGroup>
         )}
 
-       {/* Other Section */}
-<SidebarGroup>
-  <SidebarGroupContent>
-    <SidebarMenu>
-      {otherItems.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton asChild>
-            <NavLink
-              to={item.url}
-              className={getNavClass(item.url)}
-              onClick={(e) => {
-                if (item.title === "Chat Room") handleChatClick();
-                handleCollapse();
-              }}
-            >
-              <item.icon className="h-4 w-4" />
-              {!isCollapsed && <span>{item.title}</span>}
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
-  </SidebarGroupContent>
-</SidebarGroup>
+        {/* Other Section */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {otherItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                 <NavLink
+  to={item.url}
+  className={({ isActive }) => getNavClass(item.url)}
+  onClick={(e) => {
+    e.preventDefault();        // prevent full page reload
+    handleCollapse();          // collapse sidebar on mobile
+    location.pathname !== item.url && window.history.pushState({}, '', item.url); // update URL
+    window.dispatchEvent(new PopStateEvent('popstate')); // notify React Router
+  }}
+>
 
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
       </SidebarContent>
     </Sidebar>
