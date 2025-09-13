@@ -91,11 +91,11 @@ const mainItems = [
   const learningItems = [
     { title: "Assessment Calendar", url: "/calendar", icon: Calendar },
     { title: "Study Progress", url: "/progress", icon: TrendingUp },
-    { title: "Heartique Quizzes App", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
+    { title: "Heartique Quizzes Bank", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
     { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
 
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
-    { title: "Notes & Resources", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)} Notes` : "Loading..." },
+    { title: "Notes & Resources Bank", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)} Notes` : "Loading..." },
 
   ];
 

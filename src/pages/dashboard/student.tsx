@@ -17,6 +17,7 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
+import { Send } from "lucide-react";
 
 export default function StudentDashboard() {
    const navigate = useNavigate(); // 👈 Add this line
@@ -914,6 +915,30 @@ Start your journey today: https://heartique-platform.vercel.app`;
     >
       <Button className="w-full">
         Open WhatsApp Channel
+      </Button>
+    </a>
+  </CardContent>
+</Card>
+{/* Telegram Channel Card */}
+<Card className="shadow-md">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Send className="w-5 h-5 text-blue-600" />
+      Join Our Telegram Channel
+    </CardTitle>
+    <CardDescription>
+       Stay updated with the latest resources, study tips, and announcements.  
+      Be part of our growing community of nursing and medical scholars.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <a
+      href="https://t.me/heartiquenursingnexusscholar"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+        Open Telegram Channel
       </Button>
     </a>
   </CardContent>

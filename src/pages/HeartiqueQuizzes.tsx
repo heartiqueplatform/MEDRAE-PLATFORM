@@ -285,7 +285,7 @@ return (
         <div>
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
             <Heart className="h-8 w-8 text-red-500 animate-pulse" />
-            Heartique Quizzes App
+            Heartique Quizzes Bank
           </h1>
           <p className="text-muted-foreground mt-3 text-base leading-relaxed">
             Explore NCK-aligned quizzes for all core nursing units. Each quiz has been 

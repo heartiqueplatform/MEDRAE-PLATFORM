@@ -183,15 +183,32 @@ export default function QuizPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-blue-700">{unit}</h1>
         {!quizFinished && (
-          <Countdown
-            date={Date.now() + TIMER_DURATION}
-            onComplete={() => handleSubmit(true)}
-            renderer={({ minutes, seconds }) => (
-              <span className="text-red-600 font-semibold">
-                ⏳ {minutes}:{seconds < 10 ? `0${seconds}` : seconds}
-              </span>
-            )}
-          />
+  <Countdown
+  date={Date.now() + TIMER_DURATION}
+  onComplete={() => handleSubmit(true)}
+  renderer={({ hours, minutes, seconds }) => (
+    <div className="px-6 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-2xl shadow-lg text-center">
+      <p className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Time Remaining</p>
+      <div className="flex items-center justify-center space-x-4 text-2xl font-extrabold">
+        <div className="flex flex-col items-center">
+          <span>{hours}</span>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Hours</span>
+        </div>
+        <span>:</span>
+        <div className="flex flex-col items-center">
+          <span>{minutes}</span>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Minutes</span>
+        </div>
+        <span>:</span>
+        <div className="flex flex-col items-center">
+          <span>{seconds < 10 ? `0${seconds}` : seconds}</span>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Seconds</span>
+        </div>
+      </div>
+    </div>
+  )}
+/>
+
         )}
       </div>
 
@@ -294,12 +311,23 @@ export default function QuizPage() {
             You got {finalScore} out of {questions.length} correct!
           </div>
 
-          <button
-            onClick={() => alert(`You scored ${finalScore}/${questions.length}`)}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Get Result
-          </button>
+         <button
+  onClick={() => {
+    alert(
+      `🎉 Amazing effort! You scored ${finalScore} out of ${questions.length} questions.\n\n` +
+      (finalScore === questions.length
+        ? " Perfect score! You’ve shown outstanding focus and knowledge. Keep this energy going — you’re clearly on the path to mastery!"
+        : finalScore > questions.length / 2
+        ? " Well done! That’s a strong performance above average. Each quiz is another step forward, and your hard work is paying off. Keep sharpening your mind — you’re capable of even greater results!"
+        : " Don’t be discouraged! Every great achiever starts somewhere, and each question you attempt makes you stronger. This score is a foundation, not a finish line. Stay consistent, keep practicing, and you’ll surprise yourself with how far you can go!")
+        + "\n\n Remember: progress is about growth, not perfection. The fact that you showed up and tried already puts you ahead. Keep pushing — your future self will thank you! "
+    );
+  }}
+  className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-md hover:bg-indigo-700 transition"
+>
+  View Your Result
+</button>
+
         </>
       )}
 

@@ -37,12 +37,14 @@ export function Profile() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 const [deleting, setDeleting] = useState(false);
+const handleLogout = async () => {
+  await supabase.auth.signOut();
+  localStorage.removeItem("userProfile");
+  localStorage.removeItem("userStreak");
+  navigate("/", { replace: true });
+  toast({ title: "Logged out", description: "You have been logged out." });
+};
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/"); // redirect to Index ("/")
-    toast({ title: "Logged out", description: "You have been logged out." });
-  };
 const handleDeleteAccount = async () => {
   if (!user) return;
   setDeleting(true);
