@@ -252,14 +252,19 @@ const handleCollapse = () => {
                   {mainItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          className={getNavClass(item.url)}
-                          onClick={() => {
-                            if (item.title === "Chat Room") handleChatClick();
-                            handleCollapse();
-                          }}
-                        >
+                       <NavLink
+  to={item.url}
+  className={getNavClass(item.url)}
+  onClick={(e) => {
+    e.preventDefault(); // 🚫 stop full page reload
+    if (item.title === "Chat Room") handleChatClick();
+    handleCollapse();
+    // ✅ use React Router navigation instead of reload
+    window.history.pushState({}, "", item.url);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }}
+>
+
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
