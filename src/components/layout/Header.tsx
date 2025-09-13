@@ -204,7 +204,7 @@ setStreak(newStreak);
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Badge
   className={`h-5 px-2 text-xs ${
     isOnline ? "bg-green-500 text-white" : "bg-red-500 text-white"
