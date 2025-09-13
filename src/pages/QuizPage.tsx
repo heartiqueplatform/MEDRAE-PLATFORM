@@ -183,31 +183,40 @@ export default function QuizPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-blue-700">{unit}</h1>
         {!quizFinished && (
-  <Countdown
+<Countdown
   date={Date.now() + TIMER_DURATION}
   onComplete={() => handleSubmit(true)}
   renderer={({ hours, minutes, seconds }) => (
-    <div className="px-6 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-2xl shadow-lg text-center">
-      <p className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Time Remaining</p>
-      <div className="flex items-center justify-center space-x-4 text-2xl font-extrabold">
+    <div className="px-3 py-2 sm:px-4 sm:py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-md text-center">
+      <p className="text-sm sm:text-base font-bold text-red-600 dark:text-red-400 mb-1">
+        Time Remaining
+      </p>
+      <div className="flex items-center justify-center space-x-2 sm:space-x-3 text-lg sm:text-xl font-extrabold">
         <div className="flex flex-col items-center">
           <span>{hours}</span>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Hours</span>
+          <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
+            Hours
+          </span>
         </div>
         <span>:</span>
         <div className="flex flex-col items-center">
           <span>{minutes}</span>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Minutes</span>
+          <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
+            Minutes
+          </span>
         </div>
         <span>:</span>
         <div className="flex flex-col items-center">
           <span>{seconds < 10 ? `0${seconds}` : seconds}</span>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Seconds</span>
+          <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
+            Seconds
+          </span>
         </div>
       </div>
     </div>
   )}
 />
+
 
         )}
       </div>
