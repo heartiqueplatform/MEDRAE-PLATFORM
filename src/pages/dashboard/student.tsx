@@ -714,7 +714,10 @@ return (
       </div>
 <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
   <CardHeader>
-    <CardTitle className="text-gray-900 dark:text-white">Heartique Daily Status💖 </CardTitle>
+   <CardTitle className="text-gray-900 dark:text-white text-lg sm:text-xl break-words text-center">
+  Heartique Daily Status 💖
+</CardTitle>
+
     <CardDescription className="text-gray-700 dark:text-gray-300">
   This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
 </CardDescription>
