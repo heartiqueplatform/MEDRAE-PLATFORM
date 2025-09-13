@@ -160,8 +160,9 @@ const handleDeleteAccount = async () => {
   };
 
   if (!user) {
-    return <p className="text-center mt-10 text-muted-foreground">Authenticating user...</p>;
-  }
+  navigate("/login", { replace: true }); // or your actual login route
+  return null;
+}
 
 if (loading || !profile) {
   return <GlobalLoader message="Please be patient, Heartique is aligning your content..." />;

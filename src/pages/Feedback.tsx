@@ -242,9 +242,10 @@ export function Feedback() {
 
           {/* Admin Reply */}
           {fb.admin_response ? (
-            <div className="bg-green-50 border-l-4 border-green-500 p-2 text-sm">
-              <strong>Admin:</strong> {fb.admin_response}
-            </div>
+           <div className="bg-green-50 text-gray-900 border-l-4 border-green-500 p-2 text-sm dark:bg-green-900 dark:text-green-100">
+  <strong>Admin:</strong> {fb.admin_response}
+</div>
+
           ) : (
             <p className="text-xs italic text-muted-foreground">No reply yet</p>
           )}

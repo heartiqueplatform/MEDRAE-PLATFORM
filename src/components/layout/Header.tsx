@@ -182,6 +182,10 @@ setStreak(newStreak);
   }, 300); // small delay to see rotation
 };
 
+const handleLogout = async () => {
+  await supabase.auth.signOut();
+  navigate("/login", { replace: true }); // 👈 redirect to login after logout
+};
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95">
@@ -278,6 +282,14 @@ Start your journey today: https://heartique-platform.vercel.app`;
         <Button variant="ghost" size="sm" onClick={onToggleDarkMode}>
           {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
+{/* 🚪 Logout */}
+<Button
+  variant="ghost"
+  size="sm"
+  onClick={handleLogout}
+>
+  Logout
+</Button>
 
         {/* 👤 User Info */}
         <div
