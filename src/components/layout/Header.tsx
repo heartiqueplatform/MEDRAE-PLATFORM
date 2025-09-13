@@ -183,9 +183,8 @@ setStreak(newStreak);
 };
 
 
- return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-2 sm:px-4 md:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 overflow-x-hidden">
-
+  return (
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95">
       <OnlineStatusToast />
 
       <div className="flex items-center gap-4">
@@ -205,7 +204,7 @@ setStreak(newStreak);
         </div>
       </div>
 
-     <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <Badge
   className={`h-5 px-2 text-xs ${
     isOnline ? "bg-green-500 text-white" : "bg-red-500 text-white"
@@ -223,7 +222,7 @@ setStreak(newStreak);
 
   <RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
 <span className="ml-1 text-xs hidden sm:inline text-black dark:text-white">
-  Refresh
+  Refresh App for updates
 </span>
 
 
