@@ -6,9 +6,9 @@ import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
-import { useUser } from "@supabase/auth-helpers-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
+import { useUser, useSessionContext } from "@supabase/auth-helpers-react";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -20,11 +20,13 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
   const authUser = useUser();
 const navigate = useNavigate();
 
+const { isLoading } = useSessionContext();
+
 useEffect(() => {
-  if (!authUser) {
+  if (!isLoading && !authUser) {
     navigate("/login", { replace: true });
   }
-}, [authUser, navigate]);
+}, [authUser, isLoading, navigate]);
 
   // ✅ Instant cached profile (if exists)
   const [cachedProfile, setCachedProfile] = useState<any>(() => {
