@@ -182,13 +182,10 @@ setStreak(newStreak);
   }, 300); // small delay to see rotation
 };
 
-const handleLogout = async () => {
-  await supabase.auth.signOut();
-  navigate("/login", { replace: true }); // 👈 redirect to login after logout
-};
 
-  return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95">
+ return (
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-2 sm:px-4 md:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 overflow-x-hidden">
+
       <OnlineStatusToast />
 
       <div className="flex items-center gap-4">
@@ -226,7 +223,7 @@ const handleLogout = async () => {
 
   <RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
 <span className="ml-1 text-xs hidden sm:inline text-black dark:text-white">
-  Refresh App for updates
+  Refresh
 </span>
 
 
@@ -282,14 +279,6 @@ Start your journey today: https://heartique-platform.vercel.app`;
         <Button variant="ghost" size="sm" onClick={onToggleDarkMode}>
           {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
-{/* 🚪 Logout */}
-<Button
-  variant="ghost"
-  size="sm"
-  onClick={handleLogout}
->
-  Logout
-</Button>
 
         {/* 👤 User Info */}
         <div
