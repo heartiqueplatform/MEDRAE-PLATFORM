@@ -2,25 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-export default function SplashScreen() {
+export default function SplashScreen({ isLoading }: { isLoading: boolean }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [showLoader, setShowLoader] = useState(false); // 👈 controls spinner
 
   useEffect(() => {
-    // Read the user theme from localStorage
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-    if (savedTheme === "dark") {
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
-
-    // Example: Only show loader if something takes long (optional)
-    const timer = setTimeout(() => {
-      setShowLoader(true); // 👈 show after delay if still loading
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    setTheme(savedTheme === "dark" ? "dark" : "light");
   }, []);
 
   return (
@@ -29,15 +16,11 @@ export default function SplashScreen() {
         theme === "dark" ? "bg-black" : "bg-white"
       }`}
     >
-      {/* Logo */}
-      <img
-        src="/icon-512.jpg"
-        alt="App Logo"
-        className="w-32 h-32"
-      />
+      {/* Logo always visible */}
+      <img src="/icon-512.jpg" alt="App Logo" className="w-32 h-32" />
 
-      {/* Loader (only if showLoader is true) */}
-      {showLoader && (
+      {/* Loader only if app is still loading */}
+      {isLoading && (
         <div className="flex flex-col items-center justify-center mt-6">
           <div className="animate-spin rounded-full h-24 w-24 border-t-8 border-b-8 border-blue-500 dark:border-blue-400"></div>
           <p
