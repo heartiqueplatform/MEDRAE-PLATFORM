@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+
 import {
   Brain,
   Heart,
@@ -51,6 +52,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
 
   const location = useLocation();
+    const navigate = useNavigate();
+
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
@@ -214,9 +217,7 @@ const handleNavClick = (e: React.MouseEvent, url: string, isChat?: boolean) => {
   if (isChat) handleChatClick(); // reset unread count if Chat Room
   handleCollapse(); // collapse sidebar on mobile
 
-  // navigate using React Router without reload
-  window.history.pushState({}, "", url);
-  window.dispatchEvent(new PopStateEvent("popstate"));
+  navigate(url); // use React Router navigate
 };
 
   // Helper: collapse sidebar on mobile and close all groups
