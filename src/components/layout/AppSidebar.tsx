@@ -291,47 +291,60 @@ const handleCollapse = () => {
           </Collapsible>
         </SidebarGroup>
 
-        {/* Learning Section */}
-        <SidebarGroup>
-          <Collapsible open={openGroups.includes('learning')} onOpenChange={() => toggleGroup('learning')}>
-            <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-                Learning
-                {!isCollapsed && <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />}
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                 {learningItems.map((item) => (
-  <SidebarMenuItem key={item.title}>
-    <SidebarMenuButton asChild>
-      <NavLink
-        to={item.url}
-        className={getNavClass(item.url)}
-        onClick={handleCollapse}
-      >
-        <item.icon className="h-4 w-4" />
+       {/* Learning Section */}
+<SidebarGroup>
+  <Collapsible
+    open={openGroups.includes("learning")}
+    onOpenChange={() => toggleGroup("learning")}
+  >
+    <CollapsibleTrigger asChild>
+      <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+        Learning
         {!isCollapsed && (
-          <>
-            <span>{item.title}</span>
-            {item.badge && (
-              <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                {item.badge}
-              </Badge>
-            )}
-          </>
+          <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
         )}
-      </NavLink>
-    </SidebarMenuButton>
-  </SidebarMenuItem>
-))}
-
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </SidebarGroup>
+      </SidebarGroupLabel>
+    </CollapsibleTrigger>
+    <CollapsibleContent>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {learningItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to={item.url}
+                  className={getNavClass(item.url)}
+                  onClick={(e) => {
+                    e.preventDefault(); // stop reload
+                    handleCollapse();
+                    // Navigate without reload
+                    window.history.pushState({}, "", item.url);
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                  }}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {!isCollapsed && (
+                    <>
+                      <span>{item.title}</span>
+                      {item.badge && (
+                        <Badge
+                          variant="secondary"
+                          className="ml-auto h-5 text-xs"
+                        >
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </CollapsibleContent>
+  </Collapsible>
+</SidebarGroup>
 
         {/* Media Section */}
         <SidebarGroup>
@@ -351,7 +364,13 @@ const handleCollapse = () => {
       <NavLink
         to={item.url}
         className={getNavClass(item.url)}
-        onClick={handleCollapse}
+    onClick={(e) => {
+  e.preventDefault(); // stop reload
+  handleCollapse();
+  window.history.pushState({}, "", item.url);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}}
+
       >
         <item.icon className="h-4 w-4" />
         {!isCollapsed && (
@@ -394,7 +413,13 @@ const handleCollapse = () => {
                           <NavLink
                             to={item.url}
                             className={getNavClass(item.url)}
-                            onClick={handleCollapse}
+                         onClick={(e) => {
+  e.preventDefault(); // stop reload
+  handleCollapse();
+  window.history.pushState({}, "", item.url);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}}
+
                           >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
@@ -428,7 +453,13 @@ const handleCollapse = () => {
                           <NavLink
                             to={item.url}
                             className={getNavClass(item.url)}
-                            onClick={handleCollapse}
+                          onClick={(e) => {
+  e.preventDefault(); // stop reload
+  handleCollapse();
+  window.history.pushState({}, "", item.url);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}}
+
                           >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
@@ -453,7 +484,13 @@ const handleCollapse = () => {
                     <NavLink
                       to={item.url}
                       className={getNavClass(item.url)}
-                      onClick={handleCollapse}
+                    onClick={(e) => {
+  e.preventDefault(); // stop reload
+  handleCollapse();
+  window.history.pushState({}, "", item.url);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}}
+
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
