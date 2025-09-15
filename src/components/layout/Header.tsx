@@ -161,7 +161,7 @@ if (newStreak > streak && [1, 7, 30, 100].includes(newStreak)) {
   // 🔔 Toast message
   toast({
     title: `🔥 ${newStreak}-day streak!`,
-    description: "Keep up the great work 💪",
+    description: "Keep up the great work ",
   });
 }
 
@@ -233,7 +233,7 @@ setStreak(newStreak);
   variant="ghost"
   size="sm"
   onClick={() => {
-    const shareMessage = `📚 Heartique Scholar – Your Nursing Learning Companion
+    const shareMessage = `Heartique Scholar – Your Nursing Learning Companion
 
 • Ordered questions by unit for structured study
 • High-quality media & videos chosen to simplify complex topics
