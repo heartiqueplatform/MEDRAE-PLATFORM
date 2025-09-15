@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react"; // ✅ standard plugin
+import react from "@vitejs/plugin-react"; // standard plugin
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(), // ✅ use this instead of swc
+    react(), //  use this instead of swc
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate", // auto update service worker
@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
         runtimeCaching: [
-          // ✅ Only cache CSS & JSON (skip large JS bundles)
+          // Only cache CSS & JSON (skip large JS bundles)
           {
             urlPattern: /\/.*\.(?:css|json)$/,
             handler: "NetworkFirst",
@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 days
             },
           },
-          // ✅ Cache images
+          //  Cache images
           {
             urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif)$/,
             handler: "CacheFirst",

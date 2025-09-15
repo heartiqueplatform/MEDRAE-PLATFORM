@@ -108,7 +108,7 @@ const handleDeletePost = async (postId: string, postUserId: string) => {
 // Fetch posts
 const fetchDailyPosts = async () => {
   const { data: posts, error } = await supabase
-    .from("valid_daily_posts") // 👈 query the view
+    .from("valid_daily_posts") // query the view
     .select("*")
     .order("created_at", { ascending: false });
 

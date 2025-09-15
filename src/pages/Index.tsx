@@ -12,21 +12,44 @@ const Index = () => {
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [showWelcome, setShowWelcome] = useState(false);
 
-  useEffect(() => {
-    const handleOffline = () => setIsOffline(true);
-        const handleOnline = () => {
-      setIsOffline(false);
-      setShowWelcome(true);
-      setTimeout(() => setShowWelcome(false), 3000); // hides after 3s
+    useEffect(() => {
+    const checkInternetAccess = async () => {
+      try {
+        // try fetching a small resource
+        const res = await fetch("https://www.gstatic.com/generate_204", {
+          method: "HEAD",
+          cache: "no-store",
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
     };
 
+    const handleConnectionChange = async () => {
+      const hasInternet = await checkInternetAccess();
+      if (navigator.onLine && hasInternet) {
+        setIsOffline(false);
+        setShowWelcome(true);
+        setTimeout(() => setShowWelcome(false), 3000);
+      } else {
+        setIsOffline(true);
+      }
+    };
 
-    window.addEventListener("offline", handleOffline);
-    window.addEventListener("online", handleOnline);
+    // run immediately when app starts
+    handleConnectionChange();
+
+    window.addEventListener("online", handleConnectionChange);
+    window.addEventListener("offline", handleConnectionChange);
+
+    // keep checking every 10s (in case wifi is on but no net)
+    const interval = setInterval(handleConnectionChange, 10000);
 
     return () => {
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("online", handleConnectionChange);
+      window.removeEventListener("offline", handleConnectionChange);
+      clearInterval(interval);
     };
   }, []);
 
@@ -78,35 +101,36 @@ useEffect(() => {
       description: "Access MedTube videos and short-form Reels for visual learning. Update your daily study status to make each day productive and ensure continuous learning without wasting time."
     }
   ];
-  return (
-    <div className="min-h-screen relative">
-            {showWelcome && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
-          <div className="bg-white dark:bg-gray-900 border border-green-400 rounded-2xl shadow-lg px-6 py-4 flex items-center gap-3 animate-bounce">
-            <span className="text-2xl">😊</span>
-            <span className="font-semibold text-green-600 dark:text-green-400">
-              Welcome back!
-            </span>
-          </div>
+return (
+  <div className="min-h-screen relative">
+    {/* Welcome card (only shows if online) */}
+    {!isOffline && showWelcome && (
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
+        <div className="bg-white dark:bg-gray-900 border border-green-400 rounded-2xl shadow-lg px-6 py-4 flex items-center gap-3 animate-bounce">
+          <span className="text-2xl">😊</span>
+          <span className="font-semibold text-green-600 dark:text-green-400">
+            Welcome back!
+          </span>
         </div>
-      )}
+      </div>
+    )}
 
-      {isOffline && (
-        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 text-center p-6 rounded-2xl shadow-xl max-w-sm mx-auto">
-            <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">
-              You are offline
-            </p>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-              Please check your internet connection.
-            </p>
-            <Button onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          </div>
+    {/* Offline card (only shows if offline) */}
+    {isOffline && (
+      <div className="absolute inset-0 bg-black/90 flex items-start justify-center pt-10 z-50">
+        <div className="bg-white dark:bg-gray-900 text-center p-6 rounded-2xl shadow-xl max-w-sm mx-auto">
+          <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">
+            No internet connection
+          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+            Check your internet connection and try again.
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Retry
+          </Button>
         </div>
-      )}
-
+      </div>
+    )}
       {/* Hero Section */}
       <section className="bg-gradient-hero text-white py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">

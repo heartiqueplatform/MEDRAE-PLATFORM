@@ -146,7 +146,7 @@ const fetchProfile = async (userId: string) => {
 // Fetch active papers and mark which ones are already done
 
   const fetchPapers = async () => {
-  setLoading(true); // ✅ start loading
+  setLoading(true); //  start loading
 
   const { data: papers } = await supabase
     .from("simulation_papers")
@@ -158,13 +158,13 @@ const fetchProfile = async (userId: string) => {
     return;
   }
 
-  // ✅ Fetch logged-in user profile
+  //  Fetch logged-in user profile
   const { data: userData } = await supabase.auth.getUser();
   if (userData?.user?.id) {
     const profileData = await fetchProfile(userData.user.id);
     setProfile(profileData);
 
-    // ✅ Fetch active subscription for this user
+    // Fetch active subscription for this user
     const { data: subData } = await supabase
       .from("subscriptions")
       .select("plan_type, is_active")
@@ -181,7 +181,7 @@ const fetchProfile = async (userId: string) => {
     }
   }
 
-  // ✅ Check which papers are done
+  // Check which papers are done
   const { data: results } = await supabase.from("simulation_results").select("paper_id");
   const donePaperIds = results?.map((r) => r.paper_id) || [];
 
@@ -192,13 +192,13 @@ const fetchProfile = async (userId: string) => {
 
   setPaperList(papersWithStatus);
 
-  setLoading(false); // ✅ stop loading
+  setLoading(false); //  stop loading
 };
 
 useEffect(() => {
   fetchPapers();
 }, []);
-// 🔴 Realtime subscription for simulation (papers, results, subscription)
+//  Realtime subscription for simulation (papers, results, subscription)
 useEffect(() => {
   let channel = supabase.channel("simulation_realtime");
 
@@ -368,7 +368,7 @@ const confirmSubmit = async () => {
   const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 await supabase.from("simulation_results").insert({
   paper_id: selectedPaper.id,
-  user_id: (await supabase.auth.getUser()).data.user?.id, // ✅ include user_id
+  user_id: (await supabase.auth.getUser()).data.user?.id, //  include user_id
   score: correctCount,
   total_questions: questions.length,
   });
@@ -381,14 +381,14 @@ await supabase.from("simulation_results").insert({
   setShowDonePanel(false);
   setPendingAction(null);
 
-    // ✅ No manual refresh needed, realtime will update the paper list
+    //  No manual refresh needed, realtime will update the paper list
 };
 const generatePDF = async () => {
   const doc = new jsPDF();
   doc.setFontSize(16);
   doc.text("Heatique nursing nexus scholar Simulation Results", 14, 20);
   
-  // ✅ NEW: Candidate Details Section
+  // NEW: Candidate Details Section
 
   const correctCount = questions.reduce((count, q) => {
     const userAnswer = answers[q.id];
@@ -399,7 +399,7 @@ const generatePDF = async () => {
   doc.setFontSize(12);
   doc.setFont(undefined, "bold");
   doc.text("Candidate Details", 14, 30);
-// ✅ Candidate Profile Details
+//  Candidate Profile Details
 doc.setFont(undefined, "normal");
 let y = 38;
 
@@ -417,7 +417,7 @@ if (profile) {
   y += 6;
 }
 
-// ✅ Paper details
+//  Paper details
 doc.text(`Paper Title: ${selectedPaper?.title || "N/A"}`, 14, y); y += 6;
 doc.text(`Score: ${correctCount}/${questions.length} (${percentageScore}%)`, 14, y); y += 6;
 doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, y); y += 10;
@@ -433,7 +433,7 @@ doc.setFont(undefined, "normal");
 const pageWidth = doc.internal.pageSize.getWidth();
 const splitText = doc.splitTextToSize(advisoryText, pageWidth - 28);
 
-// ✅ Use yPos (after details), not 30
+//  Use yPos (after details), not 30
 doc.text(splitText, 14, yPos);
 
 yPos = yPos + splitText.length * 6 + 4; // continue after advisory
@@ -468,7 +468,7 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
     doc.setFont(undefined, "normal");
   });
 
-  // ✅ Footer + page numbers AFTER all content
+  //  Footer + page numbers AFTER all content
   const pageCount = doc.internal.getNumberOfPages();
   const footerLine1 = "HEARTIQUE NURSING NEXUS SCHOLAR ";
   const footerLine2 = "Keep pushing, your dedication shapes the future of care!";

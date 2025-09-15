@@ -36,21 +36,21 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    console.log("🔵 OpenAI raw response:", JSON.stringify(data, null, 2));
+    console.log("OpenAI raw response:", JSON.stringify(data, null, 2));
 
     if (!data.choices || !data.choices[0]) {
-      console.error("❌ OpenAI error:", data.error || "No choices in response");
+      console.error(" OpenAI error:", data.error || "No choices in response");
       return res
         .status(500)
         .json({ error: data.error || "No response from OpenAI" });
     }
 
     const reply = data.choices[0].message.content;
-    console.log("✅ Sending reply:", reply);
+    console.log(" Sending reply:", reply);
 
     res.status(200).json({ reply });
   } catch (error) {
-    console.error("🔥 Server error:", error);
+    console.error(" Server error:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 }

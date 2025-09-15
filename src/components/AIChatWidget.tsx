@@ -51,7 +51,7 @@ export default function AIChatWidget() {
   return () => media.removeEventListener("change", listener);
 }, []);
 
-  // ✅ Auto-scroll whenever messages change
+  // Auto-scroll whenever messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -61,7 +61,7 @@ export default function AIChatWidget() {
     }
   }, [messages, loading]);
 
-  // ✅ Send message to backend
+  // Send message to backend
   const sendMessage = async () => {
     if (!input.trim()) return;
 
