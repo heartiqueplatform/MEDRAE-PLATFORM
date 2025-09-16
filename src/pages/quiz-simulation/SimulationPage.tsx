@@ -512,85 +512,102 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
     const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 
     return (
-      <div className="p-6 space-y-6">
-        <h2 className="text-2xl font-semibold">
-          Review Before You {pendingAction === "submit" ? "Submit" : "Reset"}
-        </h2>
-        {pendingAction === "submit" && (
-          <h3 className="text-xl font-bold text-blue-700">
-            Your Score Preview: {correctCount}/{questions.length} ({percentageScore}%)
-          </h3>
-        )}
+   <div className="p-6 space-y-6 bg-background text-foreground dark:bg-gray-900 dark:text-gray-100 min-h-screen">
+  <h2 className="text-2xl font-semibold">
+    Review Before You {pendingAction === "submit" ? "Submit" : "Reset"}
+  </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-bold text-lg mb-2 text-green-700">
-               Answered Questions ({answered.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              {answered.map((q, i) => (
-                <li key={q.id}>
-                  Q{i + 1}: {q.question_text.slice(0, 50)}... – <strong>{answers[q.id]}</strong>
-                </li>
-              ))}
-            </ul>
-          </div>
+  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+    Every challenge you face is an opportunity to grow and refine your knowledge. Take a moment to
+    reflect on your progress, celebrate the answers you have mastered, and view the areas you can
+    improve as stepping stones toward mastery. Remember, true learning is not only about the final
+    score but the effort, perseverance, and insight gained along the way. Embrace this moment with
+    confidence, curiosity, and the unwavering belief that each step forward strengthens your
+    professional journey.
+  </p>
 
-          <div>
-            <h3 className="font-bold text-lg mb-2 text-red-600">
-               Unanswered Questions ({unanswered.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              {unanswered.map((q, i) => (
-                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-              ))}
-            </ul>
-          </div>
+  {pendingAction === "submit" && (
+    <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">
+      Your Score Preview: {correctCount}/{questions.length} ({percentageScore}%)
+    </h3>
+  )}
 
-          <div>
-            <h3 className="font-bold text-lg mb-2 text-yellow-600">
-              Flagged ({flaggedQs.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              {flaggedQs.map((q, i) => (
-                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-              ))}
-            </ul>
-          </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    {/* Answered */}
+    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+      <h3 className="font-bold text-lg mb-2 text-green-700 dark:text-green-400">
+        Answered Questions ({answered.length})
+      </h3>
+      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+        {answered.map((q, i) => (
+          <li key={q.id}>
+            Q{i + 1}: {q.question_text.slice(0, 50)}... – <strong>{answers[q.id]}</strong>
+          </li>
+        ))}
+      </ul>
+    </div>
 
-          <div>
-            <h3 className="font-bold text-lg mb-2 text-blue-600">
-              ⏭ Skipped ({skippedQs.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              {skippedQs.map((q, i) => (
-                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-              ))}
-            </ul>
-          </div>
-        </div>
+    {/* Unanswered */}
+    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+      <h3 className="font-bold text-lg mb-2 text-red-600 dark:text-red-400">
+        Unanswered Questions ({unanswered.length})
+      </h3>
+      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+        {unanswered.map((q, i) => (
+          <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
+        ))}
+      </ul>
+    </div>
 
-        <div className="flex gap-4 mt-6">
-          <Button
-            onClick={() => {
-              if (pendingAction === "submit") confirmSubmit();
-              if (pendingAction === "reset") resetNow();
-            }}
-          >
-            Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
-          </Button>
+    {/* Flagged */}
+    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+      <h3 className="font-bold text-lg mb-2 text-yellow-600 dark:text-yellow-400">
+        Flagged ({flaggedQs.length})
+      </h3>
+      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+        {flaggedQs.map((q, i) => (
+          <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
+        ))}
+      </ul>
+    </div>
 
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowDonePanel(false);
-              setPendingAction(null);
-            }}
-          >
-            Cancel Request
-          </Button>
-        </div>
-      </div>
+    {/* Skipped */}
+    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+      <h3 className="font-bold text-lg mb-2 text-blue-600 dark:text-blue-400">
+        ⏭ Skipped ({skippedQs.length})
+      </h3>
+      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+        {skippedQs.map((q, i) => (
+          <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
+        ))}
+      </ul>
+    </div>
+  </div>
+
+  <div className="flex flex-col sm:flex-row gap-4 mt-6">
+    <Button
+      className="flex-1"
+      onClick={() => {
+        if (pendingAction === "submit") confirmSubmit();
+        if (pendingAction === "reset") resetNow();
+      }}
+    >
+      Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
+    </Button>
+
+    <Button
+      variant="ghost"
+      className="flex-1"
+      onClick={() => {
+        setShowDonePanel(false);
+        setPendingAction(null);
+      }}
+    >
+      Cancel Request
+    </Button>
+  </div>
+</div>
+
     );
   }
 
@@ -897,9 +914,10 @@ if (!currentQuestion) {
               console.error("Camera blocked", err);
             }
           }}
-          className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+         className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+
         >
-         DOUBLE CLICK TO ENABLE CAMERA
+         Double click to enable camera
         </motion.button>
 
         {/* Mic Button */}
@@ -970,9 +988,10 @@ if (!currentQuestion) {
               console.error("Mic blocked", err);
             }
           }}
-          className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+         className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+
         >
-          ENABLE MIC
+          Enable mic
         </motion.button>
 
         {/* Final Start Button */}
@@ -987,9 +1006,10 @@ if (!currentQuestion) {
           transition={{ repeat: Infinity, duration: 2 }}
           disabled={!cameraStream || !audioStream}
           onClick={() => setMediaAllowed(true)}
-          className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+        className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+
         >
-          HEY, I'M READY TO START
+          Hey, I'm ready to start!
         </motion.button>
       </div>
     </div>

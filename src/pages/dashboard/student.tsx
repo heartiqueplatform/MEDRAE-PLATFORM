@@ -988,12 +988,12 @@ Start your journey today: https://heartique-platform.vercel.app`;
 
     {/* Warning for users */}
     <div className="mt-2 p-3 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm font-semibold">
-      Strictly desktop or laptop only. This feature will not work on mobile devices.
+     For the best experience and smoothest interaction, we recommend using a desktop or laptop. While some phones can run the simulation, using a larger device ensures optimal comfort and engagement.
     </div>
 
     {/* Extra Tip Box */}
     <div className="mt-2 p-3 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs italic">
-      Tip: Treat each simulation as if it’s the real exam — no distractions, no breaks.
+      Tip: Treat each simulation as if it’s the real exam  no distractions, no breaks.
     </div>
   </CardHeader>
 
