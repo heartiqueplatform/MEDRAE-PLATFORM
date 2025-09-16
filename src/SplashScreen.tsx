@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from "react";
 
-export default function SplashScreen({ isLoading }: { isLoading: boolean }) {
+export default function SplashScreen() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
     setTheme(savedTheme === "dark" ? "dark" : "light");
+
+    // Hide splash after 1s (adjust if you want longer/shorter)
+    const timer = setTimeout(() => setShowSplash(false), 1000);
+    return () => clearTimeout(timer);
   }, []);
+
+  if (!showSplash) return null;
 
   return (
     <div
@@ -16,22 +23,12 @@ export default function SplashScreen({ isLoading }: { isLoading: boolean }) {
         theme === "dark" ? "bg-black" : "bg-white"
       }`}
     >
-      {/* Logo always visible */}
       <img src="/icon-512.jpg" alt="App Logo" className="w-32 h-32" />
 
-      {/* Loader only if app is still loading */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center mt-6">
-          <div className="animate-spin rounded-full h-24 w-24 border-t-8 border-b-8 border-blue-500 dark:border-blue-400"></div>
-          <p
-            className={`mt-4 text-lg font-semibold ${
-              theme === "dark" ? "text-gray-300" : "text-black"
-            }`}
-          >
-            Heartique is loading...
-          </p>
-        </div>
-      )}
+      {/* Optional loader while showing splash */}
+      <div className="flex flex-col items-center justify-center mt-6">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 dark:border-blue-400"></div>
+      </div>
     </div>
   );
 }
