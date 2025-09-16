@@ -1,4 +1,5 @@
 "use client";
+import { GlobalLoader } from "@/components/GlobalLoader"; // ⬅️ adjust path if needed
 
 import { useState, useRef, useEffect } from "react";
 import {
@@ -64,18 +65,42 @@ function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
 
 
 export function AIAssistant() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content:
-        "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug information, study tips, and answer any questions you have about your coursework. How can I assist you today?",
-      sender: "ai",
-      timestamp: new Date(),
-    },
-  ]);
+  const pinnedMessage: Message = {
+  id: "pinned",
+  sender: "ai",
+  content: "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug info, and study tips. How can I assist you today?",
+  timestamp: new Date(0), // very old date ensures it stays at top
+};
+const handleDeleteChat = async () => {
+  const confirmDelete = window.confirm(
+    " Are you sure you want to delete all chat messages? This action cannot be undone."
+  );
+  if (!confirmDelete) return;
+
+  try {
+    // Delete all messages from Supabase
+   const currentUser = (await supabase.auth.getUser()).data.user;
+
+await supabase
+  .from('Aimessages')
+  .delete()
+  .eq('user_id', currentUser?.id); // ← only delete messages of current user
+
+
+    // Clear local state (keep pinned message visible)
+    setMessages([]);
+    alert("All chat messages have been deleted.");
+  } catch (error) {
+    console.error("Error deleting chat messages:", error);
+    alert(" Failed to delete messages. Check your connection.");
+  }
+};
+
+const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
   const quickQuestions = [
     "Explain hypertension pathophysiology",
@@ -97,6 +122,19 @@ export function AIAssistant() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    // Save user message to Supabase
+const currentUser = (await supabase.auth.getUser()).data.user;
+
+await supabase.from('Aimessages').insert([
+  {
+    sender: userMessage.sender,
+    content: userMessage.content,
+    timestamp: userMessage.timestamp,
+    user_id: currentUser?.id, // ← ensure row belongs to current user
+  },
+]);
+
+
     setInputMessage("");
     setIsLoading(true);
 
@@ -116,18 +154,33 @@ const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
 if (error) throw error;
 
 
-      setTimeout(() => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === typingMessage.id
-              ? {
-                  ...msg,
-                 content: ` ${data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again"}`,
-                }
-              : msg
-          )
-        );
-      }, 1200);
+    setTimeout(() => {
+  setMessages((prev) =>
+    prev.map((msg) =>
+      msg.id === typingMessage.id
+        ? {
+            ...msg,
+            content: ` ${data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again"}`,
+          }
+        : msg
+    )
+  );
+
+  // Save AI message to Supabase
+  (async () => {
+const currentUser = (await supabase.auth.getUser()).data.user;
+
+await supabase.from('Aimessages').insert([
+  {
+    sender: 'ai',
+    content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again",
+    timestamp: new Date(),
+    user_id: currentUser?.id, // ← associate AI messages with current user
+  },
+]);
+  })();
+}, 1200);
+
     } catch (error) {
       console.error(error);
       setMessages((prev) => [
@@ -156,6 +209,63 @@ if (error) throw error;
 
   // AI bubble color (light/dark theme aware)
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  // Load chat history from Supabase
+// Load chat history from Supabase
+useEffect(() => {
+  const fetchMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('Aimessages')
+        .select('*')
+        .order('timestamp', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Messages exist, load them
+        setMessages(data.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          sender: msg.sender,
+          timestamp: new Date(msg.timestamp),
+        })));
+      } else {
+        // No messages yet, insert first AI greeting
+        const initialMessage = {
+          sender: 'ai',
+          content: "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug information, study tips, and answer any questions you have about your coursework. How can I assist you today?",
+          timestamp: new Date(),
+        };
+
+        const { data: insertedData, error: insertError } = await supabase
+          .from('Aimessages')
+          .insert([initialMessage])
+          .select();
+
+        if (insertError) throw insertError;
+
+        // Update state with initial message
+        setMessages(insertedData.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          sender: msg.sender,
+          timestamp: new Date(msg.timestamp),
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching or inserting chat history:', err);
+      // Optional: you can also show an error message here
+    } finally {
+      // ✅ This ensures the loader always disappears
+      setIsHistoryLoading(false);
+    }
+  };
+
+  fetchMessages();
+}, []);
+
+
+
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     setIsDarkTheme(media.matches);
@@ -166,9 +276,13 @@ if (error) throw error;
 
   const aiBubbleClass = isDarkTheme ? "bg-green-700 text-white" : "bg-green-100 text-green-900";
   const userBubbleClass = "bg-blue-500 text-white";
+if (isHistoryLoading) {
+  return <GlobalLoader message="Loading chat history..." />;
+}
 
-  return (
-    <div className="h-screen flex flex-col max-w-6xl mx-auto">
+return (
+  <div className="h-screen flex flex-col max-w-6xl mx-auto">
+
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
         <div className="h-10 w-10 bg-gradient-medical rounded-full flex items-center justify-center">
@@ -178,7 +292,8 @@ if (error) throw error;
           <h1 className="text-2xl font-bold">Heartique AI Study Assistant</h1>
           <p className="text-muted-foreground">Your personal nursing education companion</p>
         </div>
-        <Badge className="ml-auto">❤️ Heartique is Powered by AI</Badge>
+<Badge className="ml-auto">❤️ Heartique is Powered by AI</Badge>
+
       </div>
 
       {/* Layout: Sidebar + Chat */}
@@ -210,7 +325,13 @@ if (error) throw error;
       ))}
     </DropdownMenuContent>
   </DropdownMenu>
-
+ {/* Delete button floating at top-right */}
+    <Button
+      onClick={handleDeleteChat}
+      className="bg-red-600 hover:bg-red-700 text-white h-7 px-2 text-sm rounded-md absolute top-2 right-2 shadow"
+    >
+      Delete
+    </Button>
   <style jsx>{`
     .animate-bounce-slow {
       animation: bounce 2s infinite;
@@ -230,7 +351,8 @@ if (error) throw error;
 </div>
 
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4">
-            {messages.map((msg, index) => (
+          {[pinnedMessage, ...messages].map((msg, index) => (
+
               <div
                 key={index}
                 className={`flex items-end gap-2 ${
@@ -249,13 +371,19 @@ if (error) throw error;
                 {/* Message Bubble */}
          <div className="flex flex-col max-w-[95%]">
 <div
-  className={`rounded-2xl px-4 py-2 shadow prose prose-sm max-w-[95%] ${
-    msg.sender === "user" ? userBubbleClass : aiBubbleClass
+  className={`rounded-2xl px-4 py-2 shadow prose prose-sm max-w-[80%] break-words ${
+    msg.sender === "user"
+      ? `${userBubbleClass} text-left` // ← bubble on right, text starts left
+      : `${aiBubbleClass} text-left`   // ← AI bubble also left-aligned text
   }`}
 >
-
- {msg.content === "<TypingBubbles />" ? <TypingBubbles isDarkTheme={isDarkTheme} /> : <ReactMarkdown>{msg.content}</ReactMarkdown>}
+  {msg.content === "<TypingBubbles />" ? (
+    <TypingBubbles isDarkTheme={isDarkTheme} />
+  ) : (
+    <ReactMarkdown>{msg.content}</ReactMarkdown>
+  )}
 </div>
+
   <span className="text-xs text-gray-500 mt-1">
     {new Date(msg.timestamp).toLocaleString("en-US", {
       month: "short",

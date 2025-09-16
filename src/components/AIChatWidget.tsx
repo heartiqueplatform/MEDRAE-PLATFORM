@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
+import { GlobalLoader } from "@/components/GlobalLoader"; // loader for history
 
 type Message = {
   role: string;
@@ -32,58 +33,80 @@ function FloatingTypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
     </div>
   );
 }
+
 function stripMarkdown(text: string): string {
   return text
-    // Bold & italic (**text**, *text*, _text_, ***text***)
     .replace(/(\*\*|__)(.*?)\1/g, "$2")
     .replace(/(\*|_)(.*?)\1/g, "$2")
-
-    // Headings (#, ##, ###, etc.)
     .replace(/^#{1,6}\s*/gm, "")
-
-    // Blockquotes (>)
     .replace(/^\s*>+\s?/gm, "")
-
-    // Inline code (`code`)
     .replace(/`([^`]+)`/g, "$1")
-
-    // Fenced code blocks (```lang ... ```)
     .replace(/```[\s\S]*?```/g, "")
-
-    // Links [text](url)
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-
-    // Images ![alt](url)
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
-
-    // Lists (-, *, +, 1.)
     .replace(/^\s*([-*+]|\d+\.)\s+/gm, "")
-
-    // Horizontal rules (---, ***)
     .replace(/^([-*]_?){3,}$/gm, "")
-
-    // Extra spaces
     .replace(/\s+/g, " ")
     .trim();
 }
-
 
 export default function AIChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  setIsDarkTheme(media.matches);
-  const listener = (e: MediaQueryListEvent) => setIsDarkTheme(e.matches);
-  media.addEventListener("change", listener);
-  return () => media.removeEventListener("change", listener);
-}, []);
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDarkTheme(media.matches);
+    const listener = (e: MediaQueryListEvent) => setIsDarkTheme(e.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  // Load chat history
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const currentUser = (await supabase.auth.getUser()).data.user;
+        const { data, error } = await supabase
+          .from("Aimessages")
+          .select("*")
+          .eq("user_id", currentUser?.id)
+          .order("timestamp", { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setMessages(
+            data.map((msg) => ({
+              role: msg.sender,
+              content: msg.content,
+              timestamp: new Date(msg.timestamp).toISOString(),
+            }))
+          );
+        } else {
+          setMessages([
+            {
+              role: "assistant",
+              content:
+                "❤️ Hello! I'm your AI Study Assistant. Ask me anything about nursing concepts or drug info!",
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("Error fetching chat history:", error);
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+    fetchMessages();
+  }, []);
 
   // Auto-scroll whenever messages change
   useEffect(() => {
@@ -95,63 +118,116 @@ export default function AIChatWidget() {
     }
   }, [messages, loading]);
 
-  // Send message to backend
+  // Send message to backend and save to Supabase
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const newMessages: Message[] = [
-      ...messages,
-      { role: "user", content: input, timestamp: new Date().toISOString() },
-    ];
-    setMessages(newMessages);
+    const currentUser = (await supabase.auth.getUser()).data.user;
+
+    const userMessage: Message = {
+      role: "user",
+      content: input,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
+    // Save user message to Supabase
+    await supabase.from("Aimessages").insert([
+      {
+        sender: userMessage.role,
+        content: userMessage.content,
+        timestamp: userMessage.timestamp,
+        user_id: currentUser?.id,
+      },
+    ]);
+
+    // Typing animation
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "<TypingBubbles />", timestamp: new Date().toISOString() },
+    ]);
+
     try {
       const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
-  body: { message: input },
-});
+        body: { message: input },
+      });
 
-if (error) {
-  throw error;
-}
+      if (error) throw error;
 
-setMessages([
-  ...newMessages,
-  {
-    role: "assistant",
-    content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again.",
-    timestamp: new Date().toISOString(),
-  },
-]);
+      // Replace typing with AI response
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.content === "<TypingBubbles />"
+            ? {
+                ...msg,
+                content:
+                  data?.reply ||
+                  "Oops! Could not generate a response. Check your connection.",
+              }
+            : msg
+        )
+      );
 
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setMessages([
-        ...newMessages,
+      // Save AI response to Supabase
+      await supabase.from("Aimessages").insert([
         {
-          role: "assistant",
-          content: "Ooops your Offline connect to network first.",
+          sender: "assistant",
+          content: data?.reply || "Oops! Could not generate a response.",
           timestamp: new Date().toISOString(),
+          user_id: currentUser?.id,
         },
       ]);
+    } catch (error) {
+      console.error(error);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.content === "<TypingBubbles />"
+            ? {
+                ...msg,
+                content: "Oops! You seem offline. Connect to the internet first.",
+              }
+            : msg
+        )
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // Delete chat history
+  const deleteChat = async () => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete all chat messages? This cannot be undone."
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      await supabase.from("Aimessages").delete().eq("user_id", currentUser?.id);
+      setMessages([]);
+      alert("All messages deleted.");
+    } catch (error) {
+      console.error("Error deleting messages:", error);
+      alert("Failed to delete messages.");
+    }
+  };
+
+  if (isHistoryLoading) return <GlobalLoader message="Loading chat history..." />;
+
   return (
     <>
-      {/* Floating Chat Button */}
       {!open && (
         <Button
-  className="fixed bottom-6 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white animate-bounce"
-  onClick={() => setOpen(true)}
->
-  <MessageCircle size={48} className="drop-shadow-xl text-white" />
-</Button>
+          className="fixed bottom-6 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white animate-bounce"
+          onClick={() => setOpen(true)}
+        >
+          <MessageCircle size={48} className="drop-shadow-xl text-white" />
+        </Button>
       )}
-      {/* Chat Window */}
+
       {open && (
         <Card
           className="fixed bottom-6 right-6 w-80 shadow-2xl border border-blue-300 rounded-2xl
@@ -162,69 +238,66 @@ setMessages([
               <Stethoscope size={20} />
               <h3 className="font-semibold">Heartique AI Assistance</h3>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-blue-700"
-              onClick={() => setOpen(false)}
-            >
-            <X size={24} className="text-white drop-shadow-lg" />
-
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-blue-700"
+                onClick={deleteChat}
+              >
+                <X size={20} className="text-red-500 drop-shadow-lg" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-blue-700"
+                onClick={() => setOpen(false)}
+              >
+                <X size={24} className="text-white drop-shadow-lg" />
+              </Button>
+            </div>
           </CardHeader>
 
-      <CardContent className="flex flex-col h-96 bg-white/10 backdrop-blur-sm">
-
-            {/* Messages */}
-            <div
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto space-y-3 mb-2 p-2"
-            >
+          <CardContent className="flex flex-col h-96 bg-white/10 backdrop-blur-sm">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 mb-2 p-2">
               {messages.map((msg, idx) => {
-                const formattedTime = new Date(msg.timestamp).toLocaleString(
-                  "en-US",
-                  {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  }
-                );
+                const formattedTime = new Date(msg.timestamp).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                });
+
+                const isTyping = msg.content === "<TypingBubbles />";
 
                 return (
                   <div key={idx}>
-{msg.role === "user" ? (
-  <div className="flex flex-col items-end">
-    <div className="flex items-end gap-2">
-      {/* User profile icon */}
-      <div className="p-2 bg-blue-500 text-white rounded-full">
-        <MessageCircle size={24} className="text-white drop-shadow-xl" />
-      </div>
-
-      {/* User message bubble */}
-      <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-500 text-white">
-        {stripMarkdown(msg.content)}
-
-      </div>
-    </div>
-    <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
-      {formattedTime}
-    </span>
-  </div>
+                    {msg.role === "user" ? (
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-end gap-2">
+                          <div className="p-2 bg-blue-500 text-white rounded-full">
+                            <MessageCircle size={24} className="text-white drop-shadow-xl" />
+                          </div>
+                          <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-500 text-white">
+                            {stripMarkdown(msg.content)}
+                          </div>
+                        </div>
+                        <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
+                          {formattedTime}
+                        </span>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-start gap-1">
                         <div className="flex items-start gap-2">
                           <div className="p-2 bg-teal-600 text-white rounded-full">
-                           <Stethoscope size={24} className="text-white drop-shadow-xl" />
-
+                            <Stethoscope size={24} className="text-white drop-shadow-xl" />
                           </div>
                           <div className="p-2 rounded-xl max-w-[95%] shadow bg-teal-100 text-teal-900">
-                       {stripMarkdown(msg.content)}
-
+                            {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
                           </div>
                         </div>
-                    <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
+                        <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
                           {formattedTime}
                         </span>
                       </div>
@@ -232,21 +305,8 @@ setMessages([
                   </div>
                 );
               })}
-{loading && (
-  <div className="flex items-start gap-2">
-    <div className="p-2 bg-teal-600 text-white rounded-full">
-      <Stethoscope size={24} className="text-white drop-shadow-xl" />
-    </div>
-    <div className="p-2 rounded-xl bg-teal-200 text-teal-900 max-w-[75%] shadow flex items-center">
-      <FloatingTypingBubbles isDarkTheme={isDarkTheme} />
-    </div>
-  </div>
-)}
-
-
             </div>
 
-            {/* Input */}
             <div className="flex space-x-2">
               <Input
                 value={input}
@@ -260,8 +320,7 @@ setMessages([
                 disabled={loading}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-               <Send size={24} className="text-white drop-shadow-lg" />
-
+                <Send size={24} className="text-white drop-shadow-lg" />
               </Button>
             </div>
           </CardContent>

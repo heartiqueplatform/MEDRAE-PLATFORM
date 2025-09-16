@@ -49,19 +49,62 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   );
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Add pinned welcome AI message
+  // Supabase: Load chat history when overlay opens
   useEffect(() => {
-    if (messages.length === 0 && isOpen) {
-      setMessages([
-        {
-          id: "pinned",
-          content: "Hey, I noticed you needed me! Feel free to ask any question.",
-          sender: "ai",
-          timestamp: new Date(),
-          pinned: true,
-        },
-      ]);
-    }
+    if (!isOpen) return;
+
+    const fetchHistory = async () => {
+      try {
+        const userResponse = await supabase.auth.getUser();
+        const userId = userResponse.data.user?.id;
+
+        if (!userId) return;
+
+        const { data, error } = await supabase
+          .from("Aimessages")
+          .select("*")
+          .eq("user_id", userId)
+          .order("timestamp", { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setMessages(data.map(msg => ({
+            id: msg.id,
+            content: msg.content,
+            sender: msg.sender,
+            timestamp: new Date(msg.timestamp),
+          })));
+        } else {
+          // Add pinned welcome AI message if no history
+          const initialMessage = {
+            content: "Hey, I noticed you needed me! Feel free to ask any question.",
+            sender: "ai",
+            timestamp: new Date(),
+            pinned: true,
+            user_id: userId,
+          };
+          const { data: insertedData } = await supabase
+            .from("Aimessages")
+            .insert([initialMessage])
+            .select();
+
+          if (insertedData) {
+            setMessages(insertedData.map(msg => ({
+              id: msg.id,
+              content: msg.content,
+              sender: msg.sender,
+              timestamp: new Date(msg.timestamp),
+              pinned: true,
+            })));
+          }
+        }
+      } catch (err) {
+        console.error("Supabase fetch error:", err);
+      }
+    };
+
+    fetchHistory();
   }, [isOpen]);
 
   // Update input when prefill changes
@@ -99,6 +142,7 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
+    setIsLoading(true);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -106,10 +150,24 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       sender: "user",
       timestamp: new Date(),
     };
-
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setInputMessage("");
-    setIsLoading(true);
+
+    // Save user message to Supabase
+    try {
+      const userResponse = await supabase.auth.getUser();
+      const userId = userResponse.data.user?.id;
+      if (userId) {
+        await supabase.from("Aimessages").insert([{
+          content: userMessage.content,
+          sender: "user",
+          timestamp: userMessage.timestamp,
+          user_id: userId,
+        }]);
+      }
+    } catch (err) {
+      console.error("Supabase insert user message error:", err);
+    }
 
     const typingMessage: Message = {
       id: (Date.now() + 0.1).toString(),
@@ -117,7 +175,7 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       sender: "ai",
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, typingMessage]);
+    setMessages(prev => [...prev, typingMessage]);
 
     try {
       const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
@@ -125,18 +183,32 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       });
       if (error) throw error;
 
-      setTimeout(() => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === typingMessage.id
-              ? { ...msg, content: `${data?.reply || "Oops! Could not generate response."}` }
-              : msg
-          )
+      setTimeout(async () => {
+        const aiContent = data?.reply || "Oops! Could not generate response.";
+
+        setMessages(prev =>
+          prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
         );
+
+        // Save AI reply to Supabase
+        try {
+          const userResponse = await supabase.auth.getUser();
+          const userId = userResponse.data.user?.id;
+          if (userId) {
+            await supabase.from("Aimessages").insert([{
+              content: aiContent,
+              sender: "ai",
+              timestamp: new Date(),
+              user_id: userId,
+            }]);
+          }
+        } catch (err) {
+          console.error("Supabase insert AI message error:", err);
+        }
       }, 1200);
     } catch (error) {
       console.error(error);
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
         {
           id: (Date.now() + 2).toString(),
@@ -158,7 +230,9 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   const userBubbleClass = isDarkTheme ? "bg-blue-600 text-white" : "bg-blue-500 text-white";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div className="fixed top-0 right-0 bottom-0 z-50 flex items-center justify-center bg-black bg-opacity-50
+  lg:left-[250px] lg:w-[calc(100%-250px)]">
+
       <Card className="w-[95%] max-w-lg h-[80%] flex flex-col relative">
         <button
           onClick={handleClose}
@@ -208,18 +282,18 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
         </div>
 
         <div className="flex gap-2 p-2 border-t border-gray-300 dark:border-gray-600">
-     <textarea
-  placeholder="Type your question..."
-  value={inputMessage}
-  onChange={(e) => setInputMessage(e.target.value)}
-  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-  className={`flex-1 p-2 rounded resize-y break-words overflow-y-auto
-    ${isDarkTheme 
-      ? "border border-gray-600 bg-gray-800 text-white placeholder-gray-400" 
-      : "border border-gray-300 bg-white text-black placeholder-gray-700"}
-    focus:outline-none focus:ring-2 focus:ring-green-500`}
-  rows={4}
-/>
+          <textarea
+            placeholder="Type your question..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+            className={`flex-1 p-2 rounded resize-y break-words overflow-y-auto
+              ${isDarkTheme 
+                ? "border border-gray-600 bg-gray-800 text-white placeholder-gray-400" 
+                : "border border-gray-300 bg-white text-black placeholder-gray-700"}
+              focus:outline-none focus:ring-2 focus:ring-green-500`}
+            rows={4}
+          />
 
           <Button
             onClick={handleSendMessage}
@@ -229,7 +303,6 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
           </Button>
         </div>
 
-        {/* Tailwind modal for close confirmation */}
         {showCloseConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <Card className="p-4 max-w-sm w-full space-y-4">

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI"; // path where you saved OverlayAI.tsx
+import { ArrowUp } from "lucide-react";
 
 interface Question {
   id: string;
@@ -47,12 +48,22 @@ const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
   const [showUnansweredOnly, setShowUnansweredOnly] = useState(false);
 // Detect system dark mode
 const [isDarkMode, setIsDarkMode] = useState(false);
+const [showScrollTop, setShowScrollTop] = useState(false);
+
 useEffect(() => {
   const media = window.matchMedia("(prefers-color-scheme: dark)");
   setIsDarkMode(media.matches);
   const listener = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
   media.addEventListener("change", listener);
   return () => media.removeEventListener("change", listener);
+}, []);
+useEffect(() => {
+  const handleScroll = () => {
+    setShowScrollTop(window.scrollY > 300); // show after user scrolls 300px
+  };
+
+  window.addEventListener("scroll", handleScroll);
+  return () => window.removeEventListener("scroll", handleScroll);
 }, []);
 
   useEffect(() => {
@@ -436,7 +447,7 @@ setAIOverlayOpen(true);
          <button
   onClick={() => {
     alert(
-      `🎉 Amazing effort! You scored ${finalScore} out of ${questions.length} questions.\n\n` +
+      ` Amazing effort! You scored ${finalScore} out of ${questions.length} questions.\n\n` +
       (finalScore === questions.length
         ? " Perfect score! You’ve shown outstanding focus and knowledge. Keep this energy going — you’re clearly on the path to mastery!"
         : finalScore > questions.length / 2
@@ -471,6 +482,16 @@ setAIOverlayOpen(true);
   prefillQuestion={aiPrefillQuestion}
   isDarkTheme={isDarkMode} // Pass theme flag
 />
+{showScrollTop && (
+  <button
+    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+    className={`fixed bottom-6 right-6 p-3 rounded-full shadow-lg hover:scale-110 transition-transform 
+      ${isDarkMode ? "bg-white text-gray-900" : "bg-gray-900 text-white"}`}
+    aria-label="Scroll to top"
+  >
+    <ArrowUp size={20} strokeWidth={2} />
+  </button>
+)}
 
     </div>
   );
