@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
+import OverlayAI from "@/components/OverlayAI"; // path where you saved OverlayAI.tsx
 
 interface Question {
   id: string;
@@ -31,6 +32,8 @@ export default function QuizPage() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const unit = params.get("unit");
+const [isAIOverlayOpen, setAIOverlayOpen] = useState(false);
+const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,6 +123,67 @@ export default function QuizPage() {
     setFeedbackShown((prev) => ({ ...prev, [questionId]: true }));
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
   };
+const handleReportQuestion = async (question: Question) => {
+  // Single alert before opening overlay
+  alert(
+    "You are reporting this question. A new AI window is opening to discuss this question as Heartique team reviews it. You can send your input directly."
+  );
+
+  const reportPayload = {
+    question_id: question.id,
+    quiz_id: quizId,
+    question_text: question.question_text,
+    reported_at: new Date().toISOString(),
+    user_id: userId,
+    user_answer: answers[question.id] || "No answer selected",
+  };
+
+  // Flag question in Supabase
+  const { error } = await supabase
+    .from("quiz_questions")
+    .update({ is_flagged: true })
+    .eq("id", question.id);
+
+  if (error) {
+    console.error("Error flagging question:", error);
+    alert("Failed to flag question.");
+    return;
+  }
+
+  // Build string with question + options + user answer
+  const optionsText = ["A", "B", "C", "D"]
+    .map(
+      (letter) =>
+        `${letter}: ${question[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`
+    )
+    .join("\n");
+
+  // Prefill overlay input
+ // Function to split long text into blocks of max length
+const chunkText = (text: string, maxLength = 200) => {
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    chunks.push(text.slice(start, start + maxLength));
+    start += maxLength;
+  }
+  return chunks.join("\n\n"); // separate each block with double line breaks
+};
+
+const fullText = `Let's discuss this question in NCK format:
+Question: ${q.question_text}
+Options:
+${optionsText}
+User Answer: ${answers[q.id] || "No answer selected"}
+Please provide a detailed discussion and guidance.`;
+
+setAIPrefillQuestion(chunkText(fullText, 200)); // 200 chars per block
+setAIOverlayOpen(true);
+
+
+  // Open AI overlay
+  setAIOverlayOpen(true);
+};
 
   const handleSubmit = async (auto = false) => {
     if (quizFinished || !quizId || !userId) return;
@@ -253,7 +317,6 @@ export default function QuizPage() {
 
            <p className="font-bold text-black dark:text-white mb-2">Q{i + 1}: {q.question_text}</p>
 
-
             <div className="ml-4 space-y-2 text-sm">
               {["A", "B", "C", "D"].map((letter) => {
                 const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
@@ -280,6 +343,51 @@ export default function QuizPage() {
                 );
               })}
             </div>
+<div className="mt-2 flex gap-2">
+  <button
+    onClick={() => handleReportQuestion(q)} // optional: you can reuse same function
+    className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
+  >
+    Report Question
+  </button>
+
+  <button
+  onClick={() => {
+    const optionsText = ["A", "B", "C", "D"]
+      .map(
+        (letter) =>
+          `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`
+      )
+      .join("\n");
+
+  // Function to split long text into blocks of max length
+const chunkText = (text: string, maxLength = 200) => {
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    chunks.push(text.slice(start, start + maxLength));
+    start += maxLength;
+  }
+  return chunks.join("\n\n"); // separate each block with double line breaks
+};
+
+const fullText = `Let's discuss this question in NCK format:
+Question: ${q.question_text}
+Options:
+${optionsText}
+User Answer: ${answers[q.id] || "No answer selected"}
+Please provide a detailed discussion and guidance.`;
+
+setAIPrefillQuestion(chunkText(fullText, 200)); // 200 chars per block
+setAIOverlayOpen(true);
+
+    setAIOverlayOpen(true);
+  }}
+  className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+>
+  HX AI Assistance
+</button>
+</div>
 
             {showFeedback && (
               <div className="mt-3">
@@ -352,6 +460,12 @@ export default function QuizPage() {
           </ul>
         </div>
       )}
+      <OverlayAI
+  isOpen={isAIOverlayOpen}
+  onClose={() => setAIOverlayOpen(false)}
+  prefillQuestion={aiPrefillQuestion}
+/>
+
     </div>
   );
 }
