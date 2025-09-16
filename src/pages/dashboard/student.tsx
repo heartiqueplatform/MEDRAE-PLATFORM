@@ -311,6 +311,8 @@ useEffect(() => {
   const [unitCounts, setUnitCounts] = useState<any[]>([]);
   
   const [simulationPapers, setSimulationPapers] = useState<any[]>([]);
+  const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
+
 
 const fetchSimulationPapers = async () => {
   try {
@@ -325,6 +327,29 @@ const fetchSimulationPapers = async () => {
     if (!papers) return;
 
     const paperIds = papers.map((p) => p.id);
+
+    // Fetch results for current user
+const { data: results, error: resultsError } = await supabase
+  .from("results")       // Replace with your table storing question results
+  .select("paper_id, question_id, is_correct")  // adjust column names as needed
+  .eq("user_id", user.id);
+
+if (resultsError) {
+  console.error("Error fetching results:", resultsError.message);
+}
+
+// Calculate percentage completed per paper
+const progressMap: Record<string, number> = {};
+papers.forEach(paper => {
+  const paperResults = results?.filter(r => r.paper_id === paper.id) || [];
+  // Suppose each paper has a fixed total_questions field
+  const totalQuestions = paper.total_questions || 10; // default if missing
+  const completed = paperResults.length;
+  const percent = totalQuestions > 0 ? Math.round((completed / totalQuestions) * 100) : 0;
+  progressMap[paper.id] = percent;
+});
+
+setSimulationProgress(progressMap);
 
     // 2️⃣ Fetch visits for these papers
     const { data: visits, error: visitError } = await supabase
@@ -351,7 +376,6 @@ const fetchSimulationPapers = async () => {
     console.error("Error fetching simulation papers:", error.message);
   }
 };
-
 
   const fetchProfile = async () => {
     setLoading(true); // show spinner
@@ -1066,7 +1090,11 @@ Start your journey today: https://heartique-platform.vercel.app`;
 
                 {/* Progress bar */}
                 <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-2 bg-blue-500 w-[30%]" /> {/* Replace 30% with actual progress */}
+                <div
+  className="h-2 bg-blue-500"
+  style={{ width: `${simulationProgress[paper.id] || 0}%` }}
+/>
+
                 </div>
 
                 <div className="mt-3 flex items-center justify-between">

@@ -771,9 +771,19 @@ if (!currentQuestion) {
       Next
     </Button>
 
-    <Button variant="default" onClick={handleSubmit}>
-      Submit & Generate PDF
-    </Button>
+<Button
+  variant="default"
+  onClick={handleSubmit}
+  disabled={currentIndex !== questions.length - 1} // disable until last question
+  title={
+    currentIndex !== questions.length - 1
+      ? `You must reach the last question to submit`
+      : `Submit your answers`
+  }
+>
+  Submit & Generate PDF
+</Button>
+
   </div>
 
   {/* Skipped / Flagged question tabs */}
