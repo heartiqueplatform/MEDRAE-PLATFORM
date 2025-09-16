@@ -154,32 +154,31 @@ const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
 if (error) throw error;
 
 
-    setTimeout(() => {
-  setMessages((prev) =>
-    prev.map((msg) =>
-      msg.id === typingMessage.id
-        ? {
-            ...msg,
-            content: ` ${data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again"}`,
-          }
-        : msg
-    )
-  );
+   setMessages((prev) =>
+  prev.map((msg) =>
+    msg.id === typingMessage.id
+      ? {
+          ...msg,
+          content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again",
+        }
+      : msg
+  )
+);
 
-  // Save AI message to Supabase
-  (async () => {
-const currentUser = (await supabase.auth.getUser()).data.user;
+// Save AI message to Supabase
+(async () => {
+  const currentUser = (await supabase.auth.getUser()).data.user;
 
-await supabase.from('Aimessages').insert([
-  {
-    sender: 'ai',
-    content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again",
-    timestamp: new Date(),
-    user_id: currentUser?.id, // ← associate AI messages with current user
-  },
-]);
-  })();
-}, 1200);
+  await supabase.from('Aimessages').insert([
+    {
+      sender: 'ai',
+      content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again",
+      timestamp: new Date(),
+      user_id: currentUser?.id,
+    },
+  ]);
+})();
+
 
     } catch (error) {
       console.error(error);
@@ -196,7 +195,6 @@ await supabase.from('Aimessages').insert([
       setIsLoading(false);
     }
   };
-
   const handleQuickQuestion = (question: string) => {
     setInputMessage(question);
   };
@@ -303,7 +301,14 @@ return (
         {/* Chat */}
        <Card className="flex-1 flex flex-col h-full w-full overflow-hidden relative">
         {/* Quick Topics Dropdown (inside chat card, below heading) */}
-<div className="px-4 py-2 border-b bg-background shadow-sm mb-2 flex justify-start animate-bounce-slow">
+<div
+  className={`px-4 py-2 border-b bg-background shadow-sm mb-2 flex justify-start relative`}
+>
+  <div
+    className={`absolute inset-0 rounded-md border-2 border-blue-400 pointer-events-none
+      ${isLoading ? 'animate-pulse-outline' : 'opacity-0'}`}
+  ></div>
+
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-lg transform transition-transform duration-300 hover:scale-105">
@@ -332,22 +337,17 @@ return (
     >
       Delete
     </Button>
-  <style jsx>{`
-    .animate-bounce-slow {
-      animation: bounce 2s infinite;
-    }
-    .animate-spin-slow {
-      animation: spin 4s linear infinite;
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-4px); }
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  `}</style>
+<style jsx>{`
+  @keyframes pulseOutline {
+    0% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.05); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 0.3; }
+  }
+
+  .animate-pulse-outline {
+    animation: pulseOutline 1s infinite;
+  }
+`}</style>
 </div>
 
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4">
