@@ -527,12 +527,32 @@ export function Register() {
             </TabsList>
 
             <TabsContent value="student"><StudentForm /></TabsContent>
-            <TabsContent value="tutor"><TutorForm /></TabsContent>
-            <TabsContent value="staff">
-              <div className="p-8 text-center text-lg font-semibold text-gray-600">
-                Our Staff Registration Portal is launching soon. Please check back for updates.
-              </div>
-            </TabsContent>
+           <TabsContent value="tutor">
+  <div className="p-8 text-center text-lg font-semibold text-gray-700 space-y-4">
+    <p>
+      Our Tutor registration portal is currently under development as we work to provide a comprehensive and seamless experience for educators. 
+    </p>
+    <p>
+      While we finalize these features, you are welcome to register as a Student to explore our platform, participate in surveys, and gain insight into the learning journey your students will encounter.
+    </p>
+    <p>
+      We highly value your expertise and interest, and we look forward to supporting your teaching endeavors very soon.
+    </p>
+  </div>
+</TabsContent>
+<TabsContent value="staff">
+  <div className="p-8 text-center text-lg font-semibold text-gray-700 space-y-4">
+    <p>
+      Our Staff registration portal is currently under development as we work to create a seamless and robust experience for our administrative and support team.
+    </p>
+    <p>
+      In the meantime, you can explore the platform to familiarize yourself with its features, review content, and get an overview of the student experience. This will help you prepare for your role once staff access is available.
+    </p>
+    <p>
+      Your contribution is highly valued, and we look forward to providing you with full access to staff features very soon.
+    </p>
+  </div>
+</TabsContent>
           </Tabs>
 
           <div className="mt-6 text-center">
