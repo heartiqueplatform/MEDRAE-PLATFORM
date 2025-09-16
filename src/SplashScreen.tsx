@@ -15,22 +15,11 @@ export default function SplashScreen({
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    // If already shown once, skip
-    if (sessionStorage.getItem("splashShown")) {
+    if (sessionStorage.getItem("splashShown") || appReady) {
       setShowSplash(false);
       return;
     }
-
-    // If app is ready immediately → skip splash
-    if (appReady) {
-      setShowSplash(false);
-      return;
-    }
-
-    // Otherwise, show splash until appReady flips true
-    if (!appReady) {
-      sessionStorage.setItem("splashShown", "true");
-    }
+    sessionStorage.setItem("splashShown", "true");
   }, [appReady]);
 
   if (!showSplash) return null;
@@ -42,19 +31,14 @@ export default function SplashScreen({
       }`}
     >
       {/* Logo */}
-      <img src="/icon-512.jpg" alt="App Logo" className="w-32 h-32" />
+      <img src="/icon-512.jpg" alt="App Logo" className="w-32 h-32 mb-8" />
 
-      {/* Loader */}
+      {/* Bouncing Dots Loader (just below logo) */}
       {!appReady && (
-        <div className="flex flex-col items-center justify-center mt-6">
-          <div className="animate-spin rounded-full h-20 w-20 border-t-8 border-b-8 border-blue-500 dark:border-blue-400"></div>
-          <p
-            className={`mt-4 text-lg font-semibold ${
-              theme === "dark" ? "text-gray-300" : "text-black"
-            }`}
-          >
-            Heartique is loading...
-          </p>
+        <div className="flex space-x-3">
+          <span className="w-4 h-4 bg-blue-500 rounded-full animate-bounce delay-0"></span>
+          <span className="w-4 h-4 bg-blue-500 rounded-full animate-bounce delay-150"></span>
+          <span className="w-4 h-4 bg-blue-500 rounded-full animate-bounce delay-300"></span>
         </div>
       )}
     </div>
