@@ -48,12 +48,12 @@ export function Header({
       touchEndX = e.changedTouches[0].clientX;
       const swipeDistance = touchEndX - touchStartX;
 
-      // 👉 Swipe right from left edge = OPEN
+      // Swipe right from left edge = OPEN
       if (touchStartX < 30 && swipeDistance > 70) {
         toggleSidebar();
       }
 
-      // 👈 Swipe left starting inside screen = CLOSE
+      // Swipe left starting inside screen = CLOSE
       if (touchStartX > 200 && swipeDistance < -70) {
         toggleSidebar();
       }
@@ -148,7 +148,7 @@ const [rotating, setRotating] = useState(false);
     if (!error && data) {
     const newStreak = data.streak || 0;
 
-// 🎉 Trigger confetti on milestones
+//  Trigger confetti on milestones
 if (newStreak > streak && [1, 7, 30, 100].includes(newStreak)) {
   // 🎉 Confetti
   confetti({
@@ -158,7 +158,7 @@ if (newStreak > streak && [1, 7, 30, 100].includes(newStreak)) {
     colors: ["#e11d48", "#22c55e"],
   });
 
-  // 🔔 Toast message
+  //  Toast message
   toast({
     title: `🔥 ${newStreak}-day streak!`,
     description: "Keep up the great work ",
@@ -212,7 +212,7 @@ setStreak(newStreak);
 >
   {isOnline ? "Online" : "Offline"}
 </Badge>
-        {/* 🔄 Reload PWA */}
+        {/*  Reload PWA */}
      <Button
   variant="ghost"
   size="sm"
@@ -228,24 +228,24 @@ setStreak(newStreak);
 
 </Button>
 
-{/* 📤 Share App */}
+{/* Share App */}
 <Button
   variant="ghost"
   size="sm"
   onClick={() => {
-    const shareMessage = `Heartique Scholar – Your Nursing Learning Companion
+    const shareMessage = `Heartique Nursing Nexus Scholar – Your Nursing Learning Companion
 
 • Ordered questions by unit for structured study
 • High-quality media & videos chosen to simplify complex topics
 • Full course units Notes  arranged in blocks and sems for easy navigation
-• NCLEX simulation practice designed to train you like a pro
+• NCK simulation practice designed to train you like a pro
 
 Start your journey today: https://heartique-platform.vercel.app`;
 
     if (navigator.share) {
       navigator
         .share({
-          title: "Heartique Scholar",
+          title: "Heartique Nursing Nexus Scholar",
           text: shareMessage,
           url: "https://heartique-platform.vercel.app",
         })
@@ -259,7 +259,7 @@ Start your journey today: https://heartique-platform.vercel.app`;
   <Share2 className="h-5 w-5" />
 </Button>
 
-        {/* 🔔 Notifications */}
+        {/* Notifications */}
         <Button
           variant="ghost"
           size="sm"
@@ -274,12 +274,12 @@ Start your journey today: https://heartique-platform.vercel.app`;
           )}
         </Button>
 
-        {/* 🌙 Dark Mode Toggle */}
+        {/* Dark Mode Toggle */}
         <Button variant="ghost" size="sm" onClick={onToggleDarkMode}>
           {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        {/* 👤 User Info */}
+        {/*  User Info */}
         <div
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => navigate("/profile")}
@@ -310,8 +310,6 @@ Start your journey today: https://heartique-platform.vercel.app`;
       : <User className="h-4 w-4" />}
   </AvatarFallback>
 </Avatar>
-
-
         </div>
       </div>
     </header>

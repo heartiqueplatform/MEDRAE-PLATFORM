@@ -406,15 +406,15 @@ const filteredProfiles = profiles.filter((profile) =>
   <AlertDialogTrigger asChild>
     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
   <AlertDialogTrigger asChild>
-    <DropdownMenuItem
+ <DropdownMenuItem
       className="text-red-600"
       onSelect={(e) => e.preventDefault()} // prevent DropdownMenu from closing weirdly
-    >
-      <Trash2 className="h-4 w-4 mr-2" /> Delete Chat
-    </DropdownMenuItem>
-  </AlertDialogTrigger>
-  <AlertDialogContent>
-    <AlertDialogHeader>
+ >
+<Trash2 className="h-4 w-4 mr-2" /> Delete Chat
+</DropdownMenuItem>
+</AlertDialogTrigger>
+<AlertDialogContent>
+<AlertDialogHeader>
       <AlertDialogTitle>Delete Chat?</AlertDialogTitle>
     <AlertDialogDescription>
   This will permanently delete the entire chat history between you and{" "}
@@ -438,12 +438,11 @@ const filteredProfiles = profiles.filter((profile) =>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
-
-  </AlertDialogTrigger>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Delete Chat?</AlertDialogTitle>
-     <AlertDialogDescription>
+</AlertDialogTrigger>
+<AlertDialogContent>
+<AlertDialogHeader>
+<AlertDialogTitle>Delete Chat?</AlertDialogTitle>
+<AlertDialogDescription>
   This will permanently delete the entire chat history between you and{" "}
   <span className="font-semibold">{selectedUser?.name}</span>.  
   Once deleted, neither of you will be able to view these messages again.  
@@ -668,11 +667,10 @@ const filteredProfiles = profiles.filter((profile) =>
     </Button>
   </div>
 </div>
-
-            </CardContent>
-          </>
-      ) : (
-        <>
+</CardContent>
+</>
+) : (
+  <>
   <div
     className="relative flex flex-col items-center justify-center flex-1 text-center gap-6 text-white overflow-hidden"
     style={{
@@ -721,7 +719,7 @@ const filteredProfiles = profiles.filter((profile) =>
           className="w-[90vw] max-w-sm max-h-[60vh] overflow-y-auto"
           avoidCollisions={false}
         >
-          {/* 👥 Same people list */}
+          {/*Same people list */}
           <div className="p-3">
             <div className="flex items-center gap-2 mb-2">
               <MessageCircle className="h-5 w-5" />
@@ -772,8 +770,6 @@ const filteredProfiles = profiles.filter((profile) =>
     </div>
   </div>
 </>
-
-
         )}
       </Card>
     </div>

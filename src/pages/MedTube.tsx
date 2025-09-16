@@ -485,10 +485,8 @@ const recordView = async (videoId: string, updateUI = true) => {
          <p className="text-muted-foreground mt-2">
   Explore a rich library of educational videos designed specifically for nursing and medical students. Learn essential clinical skills, master pharmacology concepts, understand complex medical conditions, and stay prepared for emergencies. Our platform empowers you to grow confidently, practice with real-world scenarios, and advance your knowledge at your own pace. Dive in, stay curious, and let MedTube guide your journey to becoming a skilled healthcare professional!
 </p>
-
-        </div>
-       
-      </div>
+</div>
+</div>
 
       {showUploadForm && (
         <div className="space-y-4 border rounded-lg p-4">
@@ -515,7 +513,7 @@ const recordView = async (videoId: string, updateUI = true) => {
     onClick={() => {
       if (window.confirm("Are you sure you want to cancel this upload?")) {
         if (uploadXhrRef.current) {
-          uploadXhrRef.current.abort(); // ✅ cancel the request
+          uploadXhrRef.current.abort(); //  cancel the request
           setUploading(false);
           setUploadProgress(0);
           alert("Upload cancelled");
@@ -601,7 +599,7 @@ const recordView = async (videoId: string, updateUI = true) => {
   >
 
      {loading ? (
-  <GlobalLoader message="Be patient ❤️ Heartique is loading videos..." />
+  <GlobalLoader message="Be patient Heartique is loading videos..." />
 ) : (
 
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -800,7 +798,7 @@ if (vid.paused) {
     {video.likes_count}
   </div>
 
-  {/* ✅ Delete button visible only for owner */}
+  {/*  Delete button visible only for owner */}
   {user?.id === video.uploaded_by && (
     <Button
       variant="destructive"

@@ -435,8 +435,6 @@ useEffect(() => {
     </Avatar>
   )}
 </div>
-
-
     ))}
     <div ref={messagesEndRef} />
   </div>
@@ -543,9 +541,8 @@ useEffect(() => {
     </DropdownMenuContent>
   </DropdownMenu>
 </div>
-
-              </div>
-            </>
+</div>
+</>
           ) : (
             <div className="flex flex-1 items-center justify-center text-center text-muted-foreground">
                Join this unit to view and send messages. By joining, you’ll be able to 

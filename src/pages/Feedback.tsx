@@ -47,7 +47,7 @@ export function Feedback() {
     .from("feedback")
     .select("*")
     .eq("user_id", uid)
-    .order("submitted_at", { ascending: false }); // ✅ FIXED
+    .order("submitted_at", { ascending: false }); //FIXED
 
   if (!error && data) {
     setMyFeedback(data);
@@ -214,8 +214,6 @@ export function Feedback() {
           </form>
         </CardContent>
       </Card>
-
-      {/* Right: My Feedback History */}
       {/* Right: My Feedback History */}
 <Card>
   <CardHeader>
@@ -260,7 +258,6 @@ export function Feedback() {
     )}
   </CardContent>
 </Card>
-
     </div>
   );
 }
