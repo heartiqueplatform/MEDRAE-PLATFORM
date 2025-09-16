@@ -86,13 +86,24 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000); // 2 sec splash
+    const alreadyShown = sessionStorage.getItem("splashShown");
+
+    if (alreadyShown) {
+      // Splash already shown earlier in this session → skip it
+      setLoading(false);
+      return;
+    }
+
+    // Mark splash as shown and show it for 2s
+    sessionStorage.setItem("splashShown", "true");
+    const timer = setTimeout(() => setLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
   if (loading) {
     return <SplashScreen />;
   }
+
 
   return (
   <SessionContextProvider supabaseClient={supabase}>
