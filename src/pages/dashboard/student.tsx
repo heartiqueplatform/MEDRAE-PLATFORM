@@ -989,6 +989,30 @@ Start your journey today: https://heartique-platform.vercel.app`;
     </a>
   </CardContent>
 </Card>
+{/* WhatsApp Group Card */}
+<Card className="shadow-md">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <MessageCircle className="w-5 h-5 text-green-600" />
+      Join Our WhatsApp Group
+    </CardTitle>
+    <CardDescription>
+      Connect with fellow nursing and medical students.  
+      Share insights, ask questions, and stay updated with study materials.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <a
+      href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+        Open WhatsApp Group
+      </Button>
+    </a>
+  </CardContent>
+</Card>
 
  {/* Simulation Papers Section */} 
 <Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
