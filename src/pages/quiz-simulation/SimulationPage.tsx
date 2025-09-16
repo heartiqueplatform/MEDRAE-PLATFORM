@@ -374,7 +374,14 @@ await supabase.from("simulation_results").insert({
   });
 
   generatePDF();
-  alert(`Submitted! Your score: ${correctCount}/${questions.length} (${percentageScore}%)`);
+  alert(
+  `Congratulations! You’ve successfully completed the simulation.\n\n` +
+  `Your Score: ${correctCount}/${questions.length} (${percentageScore}%)\n\n` +
+  `Every question you tackled sharpened your knowledge and strengthened your skills. ` +
+  `Remember, mastery is built step by step  each challenge you face is an opportunity to grow. ` +
+  `Keep striving, stay curious, and trust in your dedication. Your persistence today shapes the exceptional professional you’re becoming!`
+);
+
 
   resetNow();
   setSelectedPaper(null);
