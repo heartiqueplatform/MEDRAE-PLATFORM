@@ -45,6 +45,15 @@ const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [showUnansweredOnly, setShowUnansweredOnly] = useState(false);
+// Detect system dark mode
+const [isDarkMode, setIsDarkMode] = useState(false);
+useEffect(() => {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  setIsDarkMode(media.matches);
+  const listener = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+  media.addEventListener("change", listener);
+  return () => media.removeEventListener("change", listener);
+}, []);
 
   useEffect(() => {
     const loadQuiz = async () => {
@@ -456,10 +465,11 @@ setAIOverlayOpen(true);
           </ul>
         </div>
       )}
-      <OverlayAI
+<OverlayAI
   isOpen={isAIOverlayOpen}
   onClose={() => setAIOverlayOpen(false)}
   prefillQuestion={aiPrefillQuestion}
+  isDarkTheme={isDarkMode} // Pass theme flag
 />
 
     </div>
