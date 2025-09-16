@@ -158,32 +158,28 @@ const handleReportQuestion = async (question: Question) => {
     )
     .join("\n");
 
-  // Prefill overlay input
- // Function to split long text into blocks of max length
-const chunkText = (text: string, maxLength = 200) => {
-  const chunks: string[] = [];
-  let start = 0;
-  while (start < text.length) {
-    chunks.push(text.slice(start, start + maxLength));
-    start += maxLength;
-  }
-  return chunks.join("\n\n"); // separate each block with double line breaks
-};
+  // Function to split long text into blocks of max length
+  const chunkText = (text: string, maxLength = 200) => {
+    const chunks: string[] = [];
+    let start = 0;
+    while (start < text.length) {
+      chunks.push(text.slice(start, start + maxLength));
+      start += maxLength;
+    }
+    return chunks.join("\n\n"); // separate each block with double line breaks
+  };
 
-const fullText = `Let's discuss this question in NCK format:
-Question: ${q.question_text}
+  const fullText = `Let's discuss this question in NCK format:
+Question: ${question.question_text}
 Options:
 ${optionsText}
-User Answer: ${answers[q.id] || "No answer selected"}
+User Answer: ${answers[question.id] || "No answer selected"}
 Please provide a detailed discussion and guidance.`;
 
-setAIPrefillQuestion(chunkText(fullText, 200)); // 200 chars per block
-setAIOverlayOpen(true);
-
-
-  // Open AI overlay
-  setAIOverlayOpen(true);
+  setAIPrefillQuestion(chunkText(fullText, 200)); // 200 chars per block
+  setAIOverlayOpen(true); // Open AI overlay
 };
+
 
   const handleSubmit = async (auto = false) => {
     if (quizFinished || !quizId || !userId) return;
