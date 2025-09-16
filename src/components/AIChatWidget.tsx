@@ -32,6 +32,40 @@ function FloatingTypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
     </div>
   );
 }
+function stripMarkdown(text: string): string {
+  return text
+    // Bold & italic (**text**, *text*, _text_, ***text***)
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+
+    // Headings (#, ##, ###, etc.)
+    .replace(/^#{1,6}\s*/gm, "")
+
+    // Blockquotes (>)
+    .replace(/^\s*>+\s?/gm, "")
+
+    // Inline code (`code`)
+    .replace(/`([^`]+)`/g, "$1")
+
+    // Fenced code blocks (```lang ... ```)
+    .replace(/```[\s\S]*?```/g, "")
+
+    // Links [text](url)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+
+    // Images ![alt](url)
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+
+    // Lists (-, *, +, 1.)
+    .replace(/^\s*([-*+]|\d+\.)\s+/gm, "")
+
+    // Horizontal rules (---, ***)
+    .replace(/^([-*]_?){3,}$/gm, "")
+
+    // Extra spaces
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 
 export default function AIChatWidget() {
@@ -170,7 +204,8 @@ setMessages([
 
       {/* User message bubble */}
       <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-500 text-white">
-        {msg.content}
+        {stripMarkdown(msg.content)}
+
       </div>
     </div>
     <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
@@ -185,7 +220,8 @@ setMessages([
 
                           </div>
                           <div className="p-2 rounded-xl max-w-[95%] shadow bg-teal-100 text-teal-900">
-                            {msg.content}
+                       {stripMarkdown(msg.content)}
+
                           </div>
                         </div>
                     <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">

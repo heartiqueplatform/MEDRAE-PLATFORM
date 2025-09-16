@@ -57,15 +57,18 @@ const loadDashboardData = async () => {
   try {
     // Run all fetches in parallel
     await Promise.all([
-      fetchProfile(),
-      fetchProgress(),
-      fetchQuizzes(),
-      handleLoginAndStreak(),
-      fetchCalendarEvents(),
-      fetchUnitCounts(),
-      fetchDailyPosts(),
-    ]);
-    // ✅ Save merged dashboard state to localStorage
+  fetchProfile(),
+  fetchProgress(),
+  fetchQuizzes(),
+  handleLoginAndStreak(),
+  fetchCalendarEvents(),
+  fetchUnitCounts(),
+  fetchDailyPosts(),
+  fetchSimulationPapers(), // 👈 add this
+]);
+
+
+    // Save merged dashboard state to localStorage
 localStorage.setItem(
   "dashboardData",
   JSON.stringify({
@@ -307,6 +310,49 @@ useEffect(() => {
   // New: unit question counts from view
   const [unitCounts, setUnitCounts] = useState<any[]>([]);
   
+  const [simulationPapers, setSimulationPapers] = useState<any[]>([]);
+
+const fetchSimulationPapers = async () => {
+  try {
+    // 1️⃣ Fetch active simulation papers
+    const { data: papers, error: paperError } = await supabase
+      .from("simulation_papers")
+      .select("id, title, description, course, block, is_free, created_at")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (paperError) throw paperError;
+    if (!papers) return;
+
+    const paperIds = papers.map((p) => p.id);
+
+    // 2️⃣ Fetch visits for these papers
+    const { data: visits, error: visitError } = await supabase
+      .from("simulation_visits")
+      .select("paper_id")
+      .in("paper_id", paperIds);
+
+    if (visitError) throw visitError;
+
+    // 3️⃣ Count visits per paper
+    const visitCounts = visits?.reduce((acc: Record<string, number>, visit) => {
+      acc[visit.paper_id] = (acc[visit.paper_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>) || {};
+
+    // 4️⃣ Merge visit counts into papers
+    const papersWithVisits = papers.map((paper) => ({
+      ...paper,
+      visit_count: visitCounts[paper.id] || 0,
+    }));
+
+    setSimulationPapers(papersWithVisits);
+  } catch (error: any) {
+    console.error("Error fetching simulation papers:", error.message);
+  }
+};
+
+
   const fetchProfile = async () => {
     setLoading(true); // show spinner
     const { data, error } = await supabase
@@ -919,6 +965,138 @@ Start your journey today: https://heartique-platform.vercel.app`;
     </a>
   </CardContent>
 </Card>
+
+ {/* Simulation Papers Section */} 
+<Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+  <CardHeader>
+    <CardTitle className="text-gray-900 dark:text-white">
+      Self Test Simulation Papers V1  
+      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+        ({simulationPapers.length} Papers)
+      </span>
+    </CardTitle>
+    <CardDescription className="text-gray-700 dark:text-gray-300">
+      Prepare smarter with simulation papers designed to mirror real exam conditions.  
+      Practicing here helps you build confidence, improve time management, reduce anxiety, and sharpen focus.  
+      Students who regularly use simulations perform better by identifying weak areas early and training their mind to stay calm under pressure.
+    </CardDescription>
+
+    {/* Show total available papers below description */}
+    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+      {simulationPapers.length} simulation papers available — start practicing today!
+    </p>
+
+    {/* Warning for users */}
+    <div className="mt-2 p-3 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm font-semibold">
+      Strictly desktop or laptop only. This feature will not work on mobile devices.
+    </div>
+
+    {/* Extra Tip Box */}
+    <div className="mt-2 p-3 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs italic">
+      Tip: Treat each simulation as if it’s the real exam — no distractions, no breaks.
+    </div>
+  </CardHeader>
+
+  <CardContent>
+    {loading ? (
+      <div className="flex items-center justify-center h-24">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        {simulationPapers.length > 0 ? (
+          simulationPapers.map((paper) => (
+            <Card
+              key={paper.id}
+              className="flex flex-col justify-between cursor-pointer hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+              onClick={async () => {
+                // Navigate to simulation page
+                navigate(`/simulation/${paper.id}`);
+                
+                // Track visit in Supabase
+                const { data: userData } = await supabase.auth.getUser();
+                await supabase.from("simulation_visits").insert({
+                  paper_id: paper.id,
+                  user_id: userData?.user?.id || null,
+                });
+              }}
+            >
+              <CardHeader>
+                <CardTitle className="text-gray-900 dark:text-white text-lg line-clamp-2">
+                  {paper.title}
+                  {/* Highlight new papers */}
+                  {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                    <Badge className="ml-2" variant="outline">New</Badge>
+                  )}
+                  {/* Difficulty level */}
+                  {paper.difficulty && (
+                    <Badge className="ml-2" variant="secondary">
+                      {paper.difficulty}
+                    </Badge>
+                  )}
+                </CardTitle>
+                {paper.course && (
+                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
+                    {paper.course} {paper.block ? ` - ${paper.block}` : ""}
+                  </CardDescription>
+                )}
+              </CardHeader>
+
+              <CardContent className="flex flex-col flex-1 justify-between">
+                <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                  {paper.description || "No description available."}
+                </p>
+
+                {/* Estimated duration */}
+                <p className="text-xs text-gray-500 mt-1">
+                  ⏱ Estimated time:{" "}
+                  {(() => {
+                    const duration = Number(paper.duration) || 30;
+                    if (duration < 60) return `${duration}m`;
+                    if (duration % 60 === 0) return `${duration / 60}h`;
+                    return `${Math.floor(duration / 60)}h ${duration % 60}m`;
+                  })()}
+                </p>
+
+               {/* Visits count */}
+<p className="text-xs text-gray-500 mt-1">
+  {paper.visit_count} visits
+</p>
+
+
+                {/* Progress bar */}
+                <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-2 bg-blue-500 w-[30%]" /> {/* Replace 30% with actual progress */}
+                </div>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <Badge variant={paper.is_free ? "default" : "secondary"}>
+                    {paper.is_free ? "Free" : "Premium"}
+                  </Badge>
+                  <span className="text-xs text-gray-500">
+                    {formatDistanceToNow(new Date(paper.created_at))} ago
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <p className="text-gray-600 dark:text-gray-400">
+            No simulation papers available yet.
+          </p>
+        )}
+      </div>
+    )}
+
+    {/* Motivational CTA */}
+    <p className="mt-6 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
+      Every simulation you complete brings you one step closer to exam success!
+    </p>
+  </CardContent>
+</Card>
+
+
+
 {/* Telegram Channel Card */}
 <Card className="shadow-md">
   <CardHeader>

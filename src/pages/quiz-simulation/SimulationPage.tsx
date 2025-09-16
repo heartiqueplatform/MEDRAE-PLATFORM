@@ -617,9 +617,22 @@ if (!selectedPaper) {
               className={`cursor-pointer hover:shadow-md transition ${
                 paper.is_done ? "opacity-60" : canAccess ? "" : "opacity-50 cursor-not-allowed"
               }`}
-              onClick={() => {
-                if (!paper.is_done && canAccess) setSelectedPaper(paper);
-              }}
+             onClick={async () => {
+  if (!paper.is_done && canAccess) {
+    setSelectedPaper(paper);
+
+    // ✅ Insert visit row
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData?.user?.id) {
+      await supabase.from("simulation_visits").insert({
+        paper_id: paper.id,
+        user_id: userData.user.id,
+        visited_at: new Date().toISOString(), // optional timestamp column
+      });
+    }
+  }
+}}
+
             >
           
      

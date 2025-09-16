@@ -56,6 +56,7 @@ interface Message {
 }
 
 export function Chat() {
+
  const [showRules, setShowRules] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -735,36 +736,48 @@ const filteredProfiles = profiles.filter((profile) =>
               />
             </div>
           </div>
-          <ScrollArea className="h-[300px] px-3">
-            <div className="space-y-1">
-              {filteredProfiles.map((profile) => (
-                <div
-                  key={profile.user_id}
-                  className="p-3 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-muted/50"
-                  onClick={() => {
-                    setSelectedUser(profile);
-                    document.body.click(); // close menu
-                  }}
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage
-                      src={getAvatarUrl(profile.avatar_url)}
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-sm">
-                      {profile.name ? profile.name[0].toUpperCase() : "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">{profile.name}</h4>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {profile.phone}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+      <ScrollArea className="h-[300px] px-3">
+  <div className="space-y-1">
+    {loadingProfiles ? (
+      <div className="flex items-center justify-center h-[200px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-primary border-solid"></div>
+      </div>
+    ) : filteredProfiles.length > 0 ? (
+      filteredProfiles.map((profile) => (
+        <div
+          key={profile.user_id}
+          className="p-3 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-muted/50"
+          onClick={() => {
+            setSelectedUser(profile);
+            document.body.click(); // close menu
+          }}
+        >
+          <Avatar className="h-10 w-10">
+            <AvatarImage
+              src={getAvatarUrl(profile.avatar_url)}
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-sm">
+              {profile.name ? profile.name[0].toUpperCase() : "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium truncate">{profile.name}</h4>
+            <p className="text-sm text-muted-foreground truncate">
+              {profile.phone}
+            </p>
+          </div>
+        </div>
+      ))
+    ) : (
+      <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+        No profiles found
+      </div>
+    )}
+  </div>
+</ScrollArea>
+
+
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
