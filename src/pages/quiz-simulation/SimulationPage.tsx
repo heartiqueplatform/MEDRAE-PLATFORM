@@ -614,7 +614,6 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
     </Button>
   </div>
 </div>
-
     );
   }
 
@@ -684,22 +683,39 @@ if (!selectedPaper) {
                       You’ve already submitted this paper.
                     </p>
                     <Badge variant="secondary">Completed</Badge>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        await supabase
-                          .from("simulation_results")
-                          .delete()
-                          .eq("paper_id", paper.id)
-                          .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
+                <Button
+  size="sm"
+  variant="destructive"
+  onClick={async (e) => {
+    e.stopPropagation();
 
-                        alert("Paper reset successfully. You can now retake it.");
-                      }}
-                    >
-                      Reset Paper
-                    </Button>
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user?.id) return;
+
+    // 1️⃣ Delete results from Supabase
+    await supabase
+      .from("simulation_results")
+      .delete()
+      .eq("paper_id", paper.id)
+      .eq("user_id", userData.user.id);
+
+    // 2️⃣ Remove saved answers in localStorage
+    const localKey = `sim-answers-${paper.id}`;
+    localStorage.removeItem(localKey);
+
+    // 3️⃣ Update paperList state to reflect UI immediately
+    setPaperList((prev) =>
+      prev.map((p) =>
+        p.id === paper.id ? { ...p, is_done: false } : p
+      )
+    );
+
+    alert("Paper reset successfully. You can now retake it.");
+  }}
+>
+  Reset Paper
+</Button>
+
                   </div>
                 )}
               </CardContent>
