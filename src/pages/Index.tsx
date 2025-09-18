@@ -10,28 +10,26 @@ import { supabase } from "@/lib/supabaseClient";
 const Index = () => {
 
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [showWelcome, setShowWelcome] = useState(false);
+ const [loading, setLoading] = useState(true); // ⬅️ prevent render until session check
+
 
     useEffect(() => {
-    const checkInternetAccess = async () => {
-      try {
-        // try fetching a small resource
-        const res = await fetch("https://www.gstatic.com/generate_204", {
-          method: "HEAD",
-          cache: "no-store",
-        });
-        return res.ok;
-      } catch {
-        return false;
-      }
+   const checkInternetAccess = async () => {
+  try {
+    const res = await fetch("https://www.gstatic.com/generate_204", {
+      method: "GET",   // ✅ use GET instead of HEAD
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
     };
 
     const handleConnectionChange = async () => {
       const hasInternet = await checkInternetAccess();
       if (navigator.onLine && hasInternet) {
         setIsOffline(false);
-        setShowWelcome(true);
-        setTimeout(() => setShowWelcome(false), 3000);
       } else {
         setIsOffline(true);
       }
@@ -54,29 +52,29 @@ const Index = () => {
   }, []);
 
   const navigate = useNavigate();
-    useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // 🔹 already logged in → send to redirect handler
-        navigate("/redirect");
+  useEffect(() => {
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      // 🔹 Logged in → redirect immediately
+      navigate("/redirect", { replace: true });
+    } else {
+      // 🔹 If offline but logged in before → go to role dashboard
+      const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
+      const userRole = localStorage.getItem("userRole");
+
+      if (isOffline && hasLoggedInBefore && userRole) {
+        navigate(`/dashboard/${userRole}`, { replace: true });
       }
-else {
-  // 🔹 If offline but user had logged in before → go to their role dashboard
-  const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
-  const userRole = localStorage.getItem("userRole");
+    }
 
-  if (hasLoggedInBefore && userRole) {
-    navigate(`/dashboard/${userRole}`);
-  }
-}
+    setLoading(false); // ✅ allow rendering only if not logged in
+  };
 
-    };
-    checkSession();
-  }, [navigate]);
-useEffect(() => {
-  document.documentElement.classList.remove("dark");
-}, []);
+  checkSession();
+}, [navigate, isOffline]);
+
 
 
   const features = [
@@ -101,20 +99,11 @@ useEffect(() => {
       description: "Access MedTube videos and short-form Reels for visual learning. Update your daily study status to make each day productive and ensure continuous learning without wasting time."
     }
   ];
+  if (loading) {
+  return null; // or return <div>Loading...</div> if you prefer a loader
+}
 return (
   <div className="min-h-screen relative">
-    {/* Welcome card (only shows if online) */}
-    {!isOffline && showWelcome && (
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
-        <div className="bg-white dark:bg-gray-900 border border-green-400 rounded-2xl shadow-lg px-6 py-4 flex items-center gap-3 animate-bounce">
-          <span className="text-2xl">😊</span>
-          <span className="font-semibold text-green-600 dark:text-green-400">
-            Welcome back!
-          </span>
-        </div>
-      </div>
-    )}
-
     {/* Offline card (only shows if offline) */}
     {isOffline && (
       <div className="absolute inset-0 bg-black/90 flex items-start justify-center pt-10 z-50">
