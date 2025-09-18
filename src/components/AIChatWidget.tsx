@@ -214,8 +214,12 @@ export default function AIChatWidget() {
       alert("Failed to delete messages.");
     }
   };
+{isHistoryLoading && (
+  <div className="absolute bottom-6 right-6">
+    <GlobalLoader message="Loading chat history..." />
+  </div>
+)}
 
-  if (isHistoryLoading) return <GlobalLoader message="Loading chat history..." />;
 
   return (
     <>
