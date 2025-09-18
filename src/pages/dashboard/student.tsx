@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
 import { Send } from "lucide-react";
-
+import { GlobalLoader } from "@/components/GlobalLoader";
 export default function StudentDashboard() {
    const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
@@ -314,20 +314,26 @@ useEffect(() => {
   
   const [simulationPapers, setSimulationPapers] = useState<any[]>([]);
   const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
-// 🏆 Top students state
+/// 🏆 Top students state
 const [topStudents, setTopStudents] = useState<any[]>([]);
+const [loadingTopStudents, setLoadingTopStudents] = useState(true); // ✅ new state
 
 const fetchTopStudents = async () => {
   try {
+    setLoadingTopStudents(true); // ✅ start loader
+
     // 1️⃣ Get all quiz results
     const { data: results, error: resultsError } = await supabase
       .from("quiz_results")
       .select("user_id, score, total_questions");
 
     if (resultsError) throw resultsError;
-    if (!results) return;
+    if (!results) {
+      setLoadingTopStudents(false);
+      return;
+    }
 
-    // 2️⃣ Calculate stars for each user (simple logic: 1–5 based on avg %)
+    // 2️⃣ Calculate stars + stats for each user
     const userMap: Record<string, { total: number; count: number }> = {};
     results.forEach((r) => {
       if (!userMap[r.user_id]) userMap[r.user_id] = { total: 0, count: 0 };
@@ -345,11 +351,15 @@ const fetchTopStudents = async () => {
       else if (avg >= 60) stars = 3;
       else if (avg >= 40) stars = 2;
       else if (avg > 0) stars = 1;
-      return { userId, stars };
+      return { userId, stars, avg, count: stats.count };
     });
 
-    // 3️⃣ Sort highest → lowest
-    userStars.sort((a, b) => b.stars - a.stars);
+    // 3️⃣ Sort: stars → avg → count
+    userStars.sort((a, b) => {
+      if (b.stars !== a.stars) return b.stars - a.stars; // stars first
+      if (b.avg !== a.avg) return b.avg - a.avg;         // then average %
+      return b.count - a.count;                          // finally quizzes count
+    });
 
     // 4️⃣ Fetch matching profiles
     const ids = userStars.map((u) => u.userId);
@@ -360,7 +370,7 @@ const fetchTopStudents = async () => {
 
     if (profilesError) throw profilesError;
 
-    // 5️⃣ Merge stars with profile
+    // 5️⃣ Merge stars + stats with profile
     const merged = userStars.map((u) => {
       const profile = profiles?.find((p) => p.user_id === u.userId);
       return { ...u, ...profile };
@@ -369,6 +379,8 @@ const fetchTopStudents = async () => {
     setTopStudents(merged);
   } catch (err) {
     console.error("Error fetching top students:", err);
+  } finally {
+    setLoadingTopStudents(false); // ✅ stop loader always
   }
 };
 
@@ -704,7 +716,6 @@ return (
     })()}
   </p>
 </div>
-
 {/* 🏆 Top Students Leaderboard */}
 <Card className="rounded-2xl shadow-lg">
   <CardHeader>
@@ -712,11 +723,71 @@ return (
       <Trophy className="h-5 w-5 text-yellow-500" />
       Top Students
     </CardTitle>
-    <CardDescription>Ranked by stars earned</CardDescription>
+    <CardDescription>
+      Ranked by stars earned across all submitted quizzes. The leaderboard highlights 
+      learners who consistently perform well, encouraging healthy competition.
+    </CardDescription>
+
+    {/* 🔽 Explanation Dropdown */}
+    <details className="mt-2 text-sm">
+      <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
+        How winners are chosen?
+      </summary>
+      <div className="mt-2 space-y-3 text-gray-600 dark:text-gray-300">
+
+        {/* ⭐ How stars are calculated */}
+        <div>
+          <h4 className="font-semibold">1. How stars are calculated</h4>
+          <ul className="list-disc ml-5 mt-1 space-y-1">
+            <li>90%+ average → ⭐⭐⭐⭐⭐</li>
+            <li>75–89% → ⭐⭐⭐⭐</li>
+            <li>60–74% → ⭐⭐⭐</li>
+            <li>40–59% → ⭐⭐</li>
+            <li>1–39% → ⭐</li>
+          </ul>
+          <p className="mt-1 text-xs italic">
+            Stars come from the average quiz performance across all attempts.
+          </p>
+        </div>
+
+        {/* Ranking rules */}
+        <div>
+          <h4 className="font-semibold">2. Ranking rules</h4>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Students are ranked by <strong>total stars earned</strong>.</li>
+            <li>If stars are equal → compare <strong>average quiz scores</strong>.</li>
+            <li>If still tied → the student with <strong>more quizzes attempted</strong> wins.</li>
+          </ul>
+          <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
+             This ensures there is always one clear winner at the top.
+          </p>
+        </div>
+
+        {/*  Tip + Button */}
+        <p className="text-sm">
+          Want to improve your ranking? Attempt more units and submit results on the quizzes page.
+        </p>
+
+        {/*  Go to Quizzes Button (React Router Link) */}
+        <Button
+          asChild
+          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
+        >
+          <Link to="/heartique-quizzes">🏆 Go to Heartique Quizzes</Link>
+        </Button>
+      </div>
+    </details>
   </CardHeader>
+
   <CardContent>
     <div className="flex gap-4 overflow-x-auto pb-2 h-56">
-      {topStudents.length > 0 ? (
+      {loadingTopStudents ? (
+        //  Show loader while data is loading
+        <div className="flex justify-center items-center w-full">
+          <GlobalLoader message="Loading top students..." />
+        </div>
+      ) : topStudents.length > 0 ? (
+        //  Render student cards
         topStudents.map((s, idx) => (
           <div
             key={s.userId}
@@ -747,7 +818,8 @@ return (
           </div>
         ))
       ) : (
-        <p>No top students yet</p>
+        // Empty state
+        <p className="text-sm text-gray-500">No top students yet</p>
       )}
     </div>
   </CardContent>
