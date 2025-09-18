@@ -65,6 +65,8 @@ const loadDashboardData = async () => {
   fetchUnitCounts(),
   fetchDailyPosts(),
   fetchSimulationPapers(), // 👈 add this
+ fetchTopStudents(), // 👈 fetch global leaderboard
+
 ]);
 
 
@@ -312,6 +314,63 @@ useEffect(() => {
   
   const [simulationPapers, setSimulationPapers] = useState<any[]>([]);
   const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
+// 🏆 Top students state
+const [topStudents, setTopStudents] = useState<any[]>([]);
+
+const fetchTopStudents = async () => {
+  try {
+    // 1️⃣ Get all quiz results
+    const { data: results, error: resultsError } = await supabase
+      .from("quiz_results")
+      .select("user_id, score, total_questions");
+
+    if (resultsError) throw resultsError;
+    if (!results) return;
+
+    // 2️⃣ Calculate stars for each user (simple logic: 1–5 based on avg %)
+    const userMap: Record<string, { total: number; count: number }> = {};
+    results.forEach((r) => {
+      if (!userMap[r.user_id]) userMap[r.user_id] = { total: 0, count: 0 };
+      if (r.total_questions > 0) {
+        userMap[r.user_id].total += (r.score / r.total_questions) * 100;
+        userMap[r.user_id].count += 1;
+      }
+    });
+
+    const userStars = Object.entries(userMap).map(([userId, stats]) => {
+      const avg = stats.count > 0 ? stats.total / stats.count : 0;
+      let stars = 0;
+      if (avg >= 90) stars = 5;
+      else if (avg >= 75) stars = 4;
+      else if (avg >= 60) stars = 3;
+      else if (avg >= 40) stars = 2;
+      else if (avg > 0) stars = 1;
+      return { userId, stars };
+    });
+
+    // 3️⃣ Sort highest → lowest
+    userStars.sort((a, b) => b.stars - a.stars);
+
+    // 4️⃣ Fetch matching profiles
+    const ids = userStars.map((u) => u.userId);
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("user_id, name, avatar_url, institution, county")
+      .in("user_id", ids);
+
+    if (profilesError) throw profilesError;
+
+    // 5️⃣ Merge stars with profile
+    const merged = userStars.map((u) => {
+      const profile = profiles?.find((p) => p.user_id === u.userId);
+      return { ...u, ...profile };
+    });
+
+    setTopStudents(merged);
+  } catch (err) {
+    console.error("Error fetching top students:", err);
+  }
+};
 
 
 const fetchSimulationPapers = async () => {
@@ -646,6 +705,53 @@ return (
   </p>
 </div>
 
+{/* 🏆 Top Students Leaderboard */}
+<Card className="rounded-2xl shadow-lg">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+      <Trophy className="h-5 w-5 text-yellow-500" />
+      Top Students
+    </CardTitle>
+    <CardDescription>Ranked by stars earned</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="flex gap-4 overflow-x-auto pb-2 h-56">
+      {topStudents.length > 0 ? (
+        topStudents.map((s, idx) => (
+          <div
+            key={s.userId}
+            className="flex-shrink-0 w-40 p-3 rounded-xl border bg-white dark:bg-gray-800 shadow"
+          >
+            <img
+              src={s.avatar_url || "/default-avatar.png"}
+              alt={s.name}
+              className="w-12 h-12 rounded-full mx-auto mb-2 object-cover"
+            />
+            <h3 className="text-center font-medium truncate">{s.name || "Unknown"}</h3>
+            <p className="text-xs text-center text-gray-500 truncate">
+              {s.institution || "Institution"}
+            </p>
+            <p className="text-xs text-center text-gray-400 truncate">
+              {s.county || ""}
+            </p>
+            <div className="flex justify-center mt-2 text-yellow-400">
+              {Array.from({ length: s.stars }).map((_, i) => (
+                <Star key={i} className="h-4 w-4 fill-yellow-400" />
+              ))}
+            </div>
+            {idx === 0 && (
+              <p className="text-xs text-center text-green-500 mt-1 font-semibold">
+                ⭐ Best Star
+              </p>
+            )}
+          </div>
+        ))
+      ) : (
+        <p>No top students yet</p>
+      )}
+    </div>
+  </CardContent>
+</Card>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
