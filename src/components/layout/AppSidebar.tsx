@@ -58,6 +58,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalSimulationPapers, setTotalSimulationPapers] = useState<number | null>(null);
 const [totalNotes, setTotalNotes] = useState<number | null>(null);
 const [totalVideos, setTotalVideos] = useState<number | null>(null);
+const [totalStars, setTotalStars] = useState<number>(0);
 
   const isCollapsed = state === 'collapsed';
   
@@ -91,7 +92,7 @@ const mainItems = [
 
   const learningItems = [
     { title: "Assessment Calendar", url: "/calendar", icon: Calendar },
-    { title: "Study Progress", url: "/progress", icon: TrendingUp },
+    {title: "Study Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★` },
     { title: "Heartique Quizzes Bank", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
     { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
 
@@ -194,6 +195,41 @@ useEffect(() => {
     if (!error) setTotalVideos(count || 0);
   };
   fetchTotalVideos();
+}, []);
+useEffect(() => {
+  const fetchTotalStars = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("quiz_results")
+      .select("unit, score, total_questions")
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error fetching stars:", error.message);
+      return;
+    }
+
+    // Group by unit: if user has attempted quiz → earn 5 stars
+    const grouped: Record<string, { count: number }> = {};
+    data?.forEach((res) => {
+      const key = res.unit || "Unknown";
+      if (!grouped[key]) grouped[key] = { count: 0 };
+      grouped[key].count += 1;
+    });
+
+    const starsEarned = Object.values(grouped).reduce(
+      (acc, u) => acc + (u.count > 0 ? 5 : 0),
+      0
+    );
+
+    setTotalStars(starsEarned);
+  };
+
+  fetchTotalStars();
 }, []);
 
   // Reset unread count when clicking Chat Room
