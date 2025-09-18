@@ -991,23 +991,55 @@ return (
       </select>
     </div>
 
-    <input
-      type="file"
-      accept="image/*"
-      onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
-      className="text-gray-900 dark:text-white"
-    />
+{/* Hidden file input */}
+<input
+  id="dailyImageUpload"
+  type="file"
+  accept="image/*"
+  onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
+  className="hidden"
+/>
 
-    <Button onClick={handlePostClick} className="w-full mt-2" disabled={uploading}>
-      {uploading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Uploading...
-        </>
-      ) : (
-        "Post"
-      )}
-    </Button>
+{/* Styled attach button */}
+<label
+  htmlFor="dailyImageUpload"
+  className="inline-flex items-center gap-2 cursor-pointer px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-4 h-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 15a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v8z"
+    />
+  </svg>
+  Attach Image
+</label>
+
+<Button 
+  onClick={handlePostClick} 
+  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg flex items-center gap-2 text-sm mt-2"
+  disabled={uploading}
+>
+  {uploading ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Uploading...
+    </>
+  ) : (
+    <>
+      <Send className="w-4 h-4" />
+      Post
+    </>
+  )}
+</Button>
+
 
     {/* Display recent daily posts */}
     <div className="space-y-3 mt-4">
@@ -1098,10 +1130,10 @@ return (
     </CardDescription>
   </CardHeader>
   <CardContent>
-    <Button
-      className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center gap-2"
-      onClick={() => {
-        const shareMessage =
+   <Button
+  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg flex items-center gap-2 text-sm"
+  onClick={() => {
+    const shareMessage =
 `Heartique Nursing Nexus Scholar – Your Nursing Learning Companion
 
 • Ordered questions by unit for structured study
@@ -1111,36 +1143,37 @@ return (
 
 Start your journey today: https://heartique-platform.vercel.app`;
 
-        if (navigator.share) {
-          navigator
-            .share({
-              title: "Heartique Scholar",
-              text: shareMessage,
-              url: "https://heartique-platform.vercel.app",
-            })
-            .catch(err => console.log("Share cancelled:", err));
-        } else {
-          navigator.clipboard.writeText(shareMessage);
-          alert("App link and description copied to clipboard!");
-        }
-      }}
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-5 h-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
-        />
-      </svg>
-      Share App
-    </Button>
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "Heartique Scholar",
+          text: shareMessage,
+          url: "https://heartique-platform.vercel.app",
+        })
+        .catch(err => console.log("Share cancelled:", err));
+    } else {
+      navigator.clipboard.writeText(shareMessage);
+      alert("App link and description copied to clipboard!");
+    }
+  }}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-4 h-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
+    />
+  </svg>
+  Share
+</Button>
+
   </CardContent>
 </Card>
 
@@ -1161,9 +1194,11 @@ Start your journey today: https://heartique-platform.vercel.app`;
       target="_blank"
       rel="noopener noreferrer"
     >
-      <Button className="w-full">
-        Open WhatsApp Channel
-      </Button>
+   <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg flex items-center gap-2 text-sm">
+  <MessageCircle className="w-4 h-4" />
+  WhatsApp Channel
+</Button>
+
     </a>
   </CardContent>
 </Card>
@@ -1185,9 +1220,11 @@ Start your journey today: https://heartique-platform.vercel.app`;
       target="_blank"
       rel="noopener noreferrer"
     >
-      <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-        Open WhatsApp Group
-      </Button>
+   <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg flex items-center gap-2 text-sm">
+  <MessageCircle className="w-4 h-4" />
+  WhatsApp Group
+</Button>
+
     </a>
   </CardContent>
 </Card>
@@ -1345,9 +1382,11 @@ Start your journey today: https://heartique-platform.vercel.app`;
       target="_blank"
       rel="noopener noreferrer"
     >
-      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-        Open Telegram Channel
-      </Button>
+      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg flex items-center gap-2 text-sm">
+  <Send className="w-4 h-4" />
+  Telegram Channel
+</Button>
+
     </a>
   </CardContent>
 </Card>
