@@ -74,11 +74,18 @@ export function Header({
   const isOnline = useOnlineStatus();
   const [notificationCount, setNotificationCount] = useState(0);
 const [rotating, setRotating] = useState(false);
+const [totalUsers, setTotalUsers] = useState<number | null>(() => {
+  const stored = localStorage.getItem("totalUsers");
+  return stored ? parseInt(stored) : null;
+});
+
 
   useEffect(() => {
     if (authUser?.id) {
       fetchStreak();
       fetchNotifications();
+      fetchTotalUsers();
+
     }
   }, [authUser]);
 
@@ -96,6 +103,16 @@ const [rotating, setRotating] = useState(false);
       setNotificationCount(count);
     }
   };
+const fetchTotalUsers = async () => {
+  const { count, error } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true });
+
+  if (!error && typeof count === "number") {
+    setTotalUsers(count);
+    localStorage.setItem("totalUsers", count.toString()); // cache it
+  }
+};
 
   // realtime notifications
   useEffect(() => {
@@ -224,9 +241,12 @@ setStreak(newStreak);
 <span className="ml-1 text-xs hidden sm:inline text-black dark:text-white">
   Refresh App for updates
 </span>
-
-
 </Button>
+<Badge
+  className="h-5 px-2 text-xs bg-blue-500 text-white"
+>
+  Users: {totalUsers ?? "-"}
+</Badge>
 
 {/* Share App */}
 <Button
