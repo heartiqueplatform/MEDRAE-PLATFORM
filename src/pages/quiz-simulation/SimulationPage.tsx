@@ -1,4 +1,5 @@
 "use client";
+import { Link } from "react-router-dom";
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -640,6 +641,20 @@ if (!selectedPaper) {
   return (
     <div className="min-h-screen bg-background text-foreground p-4">
       <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
+      {/* Dashboard Button */}
+<div className="mb-4">
+  <Button
+    size="sm"
+    asChild
+    variant="outline"
+    className="text-foreground hover:bg-green-500 hover:text-white dark:hover:text-white transition-colors"
+  >
+    <Link to="/dashboard">
+          Go Back to Main Dashboard
+    </Link>
+  </Button>
+</div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {paperList.map((paper) => {
           const canAccess = profile?.subscription_active ? true : paper.is_free;
