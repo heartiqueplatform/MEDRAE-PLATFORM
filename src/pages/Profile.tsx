@@ -224,7 +224,7 @@ if (!profileState) {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-       <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
+     <TabsList className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-4">
 
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="stats">Statistics</TabsTrigger>
@@ -237,7 +237,6 @@ if (!profileState) {
               <div className="flex flex-col md:flex-row items-start gap-6">
                 <div className="relative">
                <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-
   <AvatarImage
     src={profileState?.avatar_url || undefined}
     className="object-cover"
