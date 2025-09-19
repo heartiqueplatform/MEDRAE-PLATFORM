@@ -160,10 +160,21 @@ const getDaysMessage = () => {
     return "th";
   };
 
+// Wait until Supabase finishes loading the user
+const [checkingUser, setCheckingUser] = useState(true);
+
+useEffect(() => {
+  if (user === undefined) return; // still checking
   if (!user) {
-  navigate("/login", { replace: true }); // or your actual login route
-  return null;
+    navigate("/login", { replace: true });
+  }
+  setCheckingUser(false);
+}, [user, navigate]);
+
+if (checkingUser || (user === undefined && !profileState)) {
+  return <GlobalLoader message="Loading your profile..." />;
 }
+
 useEffect(() => {
   const fetchProfile = async () => {
     if (!user) return;
