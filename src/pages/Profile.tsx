@@ -204,7 +204,7 @@ useEffect(() => {
 
 // Only show loader if we have no cached profile yet
 if (!profileState) {
-  return <GlobalLoader message="Please be patient, Heartique is aligning your content..." />;
+  return <GlobalLoader message="Heartique is aligning your content..." />;
 }
 
 

@@ -26,7 +26,15 @@ const getStatusVariant = (status: string) => {
 
 
 export default function SimulationPage() {
-  const [paperList, setPaperList] = useState<any[]>([]);
+const [paperList, setPaperList] = useState<any[]>(() => {
+  // ✅ Load from localStorage first for instant display
+  if (typeof window !== "undefined") {
+    const cached = localStorage.getItem("sim-papers");
+    if (cached) return JSON.parse(cached);
+  }
+  return [];
+});
+
   const [selectedPaper, setSelectedPaper] = useState<any | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -189,8 +197,10 @@ const fetchProfile = async (userId: string) => {
     ...p,
     is_done: donePaperIds.includes(p.id),
   }));
+setPaperList(papersWithStatus);
+//  Cache in localStorage for next load
+localStorage.setItem("sim-papers", JSON.stringify(papersWithStatus));
 
-  setPaperList(papersWithStatus);
 
   setLoading(false); //  stop loading
 };
@@ -616,16 +626,16 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
 </div>
     );
   }
-
   // Render paper selection
 if (!selectedPaper) {
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <GlobalLoader message="Be patient Heartique is Loading papers..." />
-      </div>
-    );
-  }
+ if (loading && paperList.length === 0) {
+  // Only show loader if no cached papers
+  return (
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+      <GlobalLoader message="Heartique is Loading papers..." />
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4">
