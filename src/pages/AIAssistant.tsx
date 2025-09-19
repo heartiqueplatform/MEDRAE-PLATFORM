@@ -216,7 +216,7 @@ useEffect(() => {
   const cached = localStorage.getItem(localKey);
   if (cached) {
     setMessages(JSON.parse(cached));
-    setIsHistoryLoading(false); // Hide loader immediately
+    setIsHistoryLoading(false); // hide loader immediately if we have cached history
   }
 
   // 2️⃣ Fetch latest from Supabase silently
@@ -241,27 +241,25 @@ useEffect(() => {
       const pinnedMessage: Message = {
         id: "pinned",
         sender: "ai",
-        content: "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug info, study tips, and answer any questions you have about your coursework. How can I assist you today?",
-        timestamp: new Date(0), // very old date ensures it stays at top
+        content:
+          "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug info, study tips, and answer any questions you have about your coursework. How can I assist you today?",
+        timestamp: new Date(0),
       };
 
       if (finalMessages.length === 0) {
         finalMessages = [pinnedMessage];
-      } else {
-        // Ensure pinned message is not duplicated
-        if (!finalMessages.find(msg => msg.id === "pinned")) {
-          finalMessages = [pinnedMessage, ...finalMessages];
-        }
+      } else if (!finalMessages.find(msg => msg.id === "pinned")) {
+        finalMessages = [pinnedMessage, ...finalMessages];
       }
 
-      // Update state and localStorage
+      // Update state AND localStorage
       setMessages(finalMessages);
       localStorage.setItem(localKey, JSON.stringify(finalMessages));
     } catch (err) {
       console.error('Error fetching chat messages:', err);
-    } finally {
-      setIsHistoryLoading(false);
     }
+    // Don't set isHistoryLoading here if we already loaded from localStorage
+    if (!cached) setIsHistoryLoading(false);
   };
 
   fetchMessages();
