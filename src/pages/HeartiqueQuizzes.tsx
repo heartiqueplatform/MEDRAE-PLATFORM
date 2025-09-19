@@ -17,6 +17,7 @@ import { useEffect } from "react";
 import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
+import { useNavigate } from "react-router-dom";
 
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
@@ -100,6 +101,7 @@ export function HeartiqueQuizzes() {
     const user = useUser();
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);
+  const navigate = useNavigate();
 
   const [freeUnits, setFreeUnits] = useState<string[]>([]);
 
@@ -347,18 +349,57 @@ return (
           </Link>
         </div>
       </div>
-<div className="mt-4 relative w-full md:w-1/2">
+  <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
   <input
     type="text"
     placeholder="Search all papers..."
     value={searchTerm}
     onChange={(e) => setSearchTerm(e.target.value)}
-    className="w-full p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm 
+    className="flex-1 p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm 
                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
                dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
   />
-  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300"></span>
+
+  <Button
+    onClick={() => {
+      const allUnits = [...paperOneUnits, ...paperTwoUnits];
+      const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+      navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
+    }}
+    variant="outline"
+    className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
+  >
+    Surprise Me With a Random Unit
+  </Button>
+
+  <Button
+    onClick={() => {
+      const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
+      let recommendedUnit;
+
+      if (pastUnits.length > 0) {
+        const allUnits = [...paperOneUnits, ...paperTwoUnits];
+        recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
+      }
+
+      if (!recommendedUnit) {
+        const allUnits = [...paperOneUnits, ...paperTwoUnits];
+        recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+      }
+
+      if (recommendedUnit) {
+        navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
+      }
+    }}
+    variant="outline"
+    className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
+  >
+    Recommended Quiz
+  </Button>
+
 </div>
+
+
 
 
 <Button

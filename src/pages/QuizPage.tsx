@@ -35,6 +35,7 @@ export default function QuizPage() {
   const unit = params.get("unit");
 const [isAIOverlayOpen, setAIOverlayOpen] = useState(false);
 const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
+const [timerEnd, setTimerEnd] = useState<number | null>(null);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +93,15 @@ useEffect(() => {
       const enriched = (quizQuestions as Question[]).map(q => ({ ...q, quiz_id: quiz.id }));
       setQuestions(enriched);
       setLoading(false);
+// Load timer end from localStorage
+const savedEnd = localStorage.getItem(`quiz-${quiz.id}-end`);
+if (savedEnd) {
+  setTimerEnd(Number(savedEnd));
+} else {
+  const endTime = Date.now() + TIMER_DURATION;
+  setTimerEnd(endTime);
+  localStorage.setItem(`quiz-${quiz.id}-end`, endTime.toString());
+}
 
       // Load from localStorage
       const local = localStorage.getItem(`quiz-${quiz.id}-answers`);
@@ -232,10 +242,29 @@ Please provide a detailed discussion and guidance.`;
     }]);
 
     if (resultError) console.error("Error saving result:", resultError);
+// Save this unit as completed in localStorage for recommendations
+if (unit) {
+  const submittedUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
+  if (!submittedUnits.includes(unit)) {
+    submittedUnits.push(unit);
+    localStorage.setItem("submittedUnits", JSON.stringify(submittedUnits));
+  }
+}
 
     setFinalScore(correctCount);
     setQuizFinished(true);
+    // Remove saved timer when quiz ends
+localStorage.removeItem(`quiz-${quizId}-end`);
+
   };
+const handleResetTimer = () => {
+  if (!quizId) return;
+  if (!window.confirm("Are you sure you want to reset the timer?")) return;
+
+  const newEnd = Date.now() + TIMER_DURATION;
+  setTimerEnd(newEnd);
+  localStorage.setItem(`quiz-${quizId}-end`, newEnd.toString());
+};
 
  const handleReset = () => {
   if (!quizId) return;
@@ -249,7 +278,7 @@ Please provide a detailed discussion and guidance.`;
   setFinalScore(0);
 };
 
-  if (loading) return <GlobalLoader message="Be patient Heartique is Loading quiz..." />;
+  if (loading) return <GlobalLoader message="Heartique is Loading quiz..." />;
 
   if (questions.length === 0) return <p className="p-4">No questions found for: {unit}</p>;
 
@@ -259,63 +288,82 @@ Please provide a detailed discussion and guidance.`;
 
   return (
     <div className="min-h-screen w-full p-4 space-y-6 bg-gray-50 dark:bg-gray-900">
-
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-700">{unit}</h1>
-        {!quizFinished && (
-<Countdown
-  date={Date.now() + TIMER_DURATION}
-  onComplete={() => handleSubmit(true)}
-  renderer={({ hours, minutes, seconds }) => (
-    <div className="px-3 py-2 sm:px-4 sm:py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-md text-center">
-      <p className="text-sm sm:text-base font-bold text-red-600 dark:text-red-400 mb-1">
-        Time Remaining
-      </p>
-      <div className="flex items-center justify-center space-x-2 sm:space-x-3 text-lg sm:text-xl font-extrabold">
-        <div className="flex flex-col items-center">
-          <span>{hours}</span>
-          <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
-            Hours
-          </span>
-        </div>
-        <span>:</span>
-        <div className="flex flex-col items-center">
-          <span>{minutes}</span>
-          <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
-            Minutes
-          </span>
-        </div>
-        <span>:</span>
-        <div className="flex flex-col items-center">
-          <span>{seconds < 10 ? `0${seconds}` : seconds}</span>
-          <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
-            Seconds
-          </span>
+<div className="flex justify-between items-center">
+  <h1 className="text-2xl font-bold text-blue-700">{unit}</h1>
+          {!quizFinished && timerEnd && (
+  <Countdown
+    date={timerEnd}
+    onComplete={() => handleSubmit(true)}
+    renderer={({ hours, minutes, seconds }) => (
+      <div className="px-3 py-2 sm:px-4 sm:py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-md text-center">
+        <p className="text-sm sm:text-base font-bold text-red-600 dark:text-red-400 mb-1">
+          Time Remaining
+        </p>
+        <div className="flex items-center justify-center space-x-2 sm:space-x-3 text-lg sm:text-xl font-extrabold">
+          <div className="flex flex-col items-center">
+            <span>{hours}</span>
+            <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
+              Hours
+            </span>
+          </div>
+          <span>:</span>
+          <div className="flex flex-col items-center">
+            <span>{minutes}</span>
+            <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
+              Minutes
+            </span>
+          </div>
+          <span>:</span>
+          <div className="flex flex-col items-center">
+            <span>{seconds < 10 ? `0${seconds}` : seconds}</span>
+            <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400">
+              Seconds
+            </span>
+          </div>
         </div>
       </div>
-    </div>
-  )}
-/>
+    )}
+  />
+)}
 
-
-        )}
       </div>
+<div className="mt-2 flex justify-center sm:justify-end">
+  <button
+    onClick={handleResetTimer}
+    className="px-4 py-2 rounded border transition
+               border-black text-black
+               bg-transparent
+               hover:bg-green-500 hover:text-white
+               dark:border-white dark:text-white dark:bg-transparent dark:hover:bg-green-500 dark:hover:text-white"
+  >
+    Reset Timer
+  </button>
+</div>
 
-      <div className="flex justify-between items-center gap-4">
-        <button
-          onClick={() => setShowUnansweredOnly(!showUnansweredOnly)}
-          className="px-4 py-2 bg-yellow-500 text-black rounded hover:bg-yellow-600 transition"
-        >
-          {showUnansweredOnly ? "Show All Questions" : "Show Unanswered Only"}
-        </button>
+<div className="flex justify-between items-center gap-4">
+  <button
+    onClick={() => setShowUnansweredOnly(!showUnansweredOnly)}
+    className="px-4 py-2 rounded border transition
+               border-black text-black
+               bg-transparent
+               hover:bg-black hover:text-white
+               dark:border-white dark:text-white dark:bg-transparent dark:hover:bg-white dark:hover:text-black"
+  >
+    {showUnansweredOnly ? "Show All Questions" : "Show Unanswered Only"}
+  </button>
 
-        <button
-          onClick={handleReset}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-        >
-          Reset Quiz
-        </button>
-      </div>
+  <button
+    onClick={handleReset}
+    className="px-4 py-2 rounded border transition
+               border-black text-black
+               bg-transparent
+               hover:bg-black hover:text-white
+               dark:border-white dark:text-white dark:bg-transparent dark:hover:bg-white dark:hover:text-black"
+  >
+    Reset Quiz
+  </button>
+</div>
+
 
       {filteredQuestions.map((q, i) => {
         const selectedAnswer = answers[q.id];
