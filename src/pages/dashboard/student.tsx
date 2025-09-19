@@ -159,6 +159,16 @@ const { data: post, error: insertError } = await supabase
 };
 
 const handlePostClick = async () => {
+  // ✅ Prevent empty posts
+  if (!dailyContent.trim() && !dailyImage) {
+    toast({
+      title: "Cannot post empty content",
+      description: "Please write something or attach an image before posting.",
+      variant: "destructive",
+    });
+    return;
+  }
+
   try {
     setUploading(true);
     await handlePostDaily();
@@ -1039,10 +1049,10 @@ return (
 />
 
 {/* Styled attach button */}
-<div className="flex flex-col items-center md:flex-row md:justify-center md:space-x-4 gap-2 w-full">
+<div className="flex flex-col items-center w-full md:flex-row md:justify-center md:space-x-4 gap-2">
   <label
     htmlFor="dailyImageUpload"
-    className="inline-flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm hover:bg-gray-200 dark:hover:bg-gray-600 flex-1 md:flex-none md:w-64"
+    className="inline-flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition flex-1 md:flex-none md:w-64 h-12"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -1061,7 +1071,7 @@ return (
 
   <Button 
     onClick={handlePostClick} 
-    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm"
+    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm h-12"
     disabled={uploading}
   >
     {uploading ? (
