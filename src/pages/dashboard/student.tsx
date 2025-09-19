@@ -1052,7 +1052,7 @@ return (
 <div className="flex flex-col items-center w-full md:flex-row md:justify-center md:space-x-4 gap-2">
   <label
     htmlFor="dailyImageUpload"
-    className="inline-flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition flex-1 md:flex-none md:w-64 h-12"
+    className="flex items-center justify-center gap-2 cursor-pointer bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition w-full h-12 rounded-lg"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -1071,7 +1071,7 @@ return (
 
   <Button 
     onClick={handlePostClick} 
-    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm h-12"
+    className="bg-blue-600 hover:bg-blue-700 text-white text-sm w-full h-12 flex items-center justify-center gap-2 rounded-lg"
     disabled={uploading}
   >
     {uploading ? (
@@ -1087,6 +1087,7 @@ return (
     )}
   </Button>
 </div>
+
 
 
 
