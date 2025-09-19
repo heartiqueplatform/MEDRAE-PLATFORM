@@ -404,7 +404,13 @@ const fetchTopStudents = async () => {
 
 const fetchSimulationPapers = async () => {
   try {
-    // 1️⃣ Fetch active simulation papers
+    // 1️⃣ Fetch cached simulation papers first
+    const cachedPapers = localStorage.getItem("simulationPapers");
+    if (cachedPapers) {
+      setSimulationPapers(JSON.parse(cachedPapers));
+    }
+
+    // 2️⃣ Fetch active simulation papers from Supabase
     const { data: papers, error: paperError } = await supabase
       .from("simulation_papers")
       .select("id, title, description, course, block, is_free, created_at")
@@ -416,50 +422,45 @@ const fetchSimulationPapers = async () => {
 
     const paperIds = papers.map((p) => p.id);
 
-    // Fetch results for current user
-const { data: results, error: resultsError } = await supabase
-  .from("results")       // Replace with your table storing question results
-  .select("paper_id, question_id, is_correct")  // adjust column names as needed
-  .eq("user_id", user.id);
+    // 3️⃣ Fetch results for current user
+    const { data: results } = await supabase
+      .from("results")
+      .select("paper_id, question_id, is_correct")
+      .eq("user_id", user.id);
 
-if (resultsError) {
-  console.error("Error fetching results:", resultsError.message);
-}
+    // 4️⃣ Calculate percentage completed per paper
+    const progressMap: Record<string, number> = {};
+    papers.forEach((paper) => {
+      const paperResults = results?.filter((r) => r.paper_id === paper.id) || [];
+      const totalQuestions = paper.total_questions || 10; // fallback
+      const percent = totalQuestions > 0 ? Math.round((paperResults.length / totalQuestions) * 100) : 0;
+      progressMap[paper.id] = percent;
+    });
+    setSimulationProgress(progressMap);
 
-// Calculate percentage completed per paper
-const progressMap: Record<string, number> = {};
-papers.forEach(paper => {
-  const paperResults = results?.filter(r => r.paper_id === paper.id) || [];
-  // Suppose each paper has a fixed total_questions field
-  const totalQuestions = paper.total_questions || 10; // default if missing
-  const completed = paperResults.length;
-  const percent = totalQuestions > 0 ? Math.round((completed / totalQuestions) * 100) : 0;
-  progressMap[paper.id] = percent;
-});
-
-setSimulationProgress(progressMap);
-
-    // 2️⃣ Fetch visits for these papers
-    const { data: visits, error: visitError } = await supabase
+    // 5️⃣ Fetch visits for these papers
+    const { data: visits } = await supabase
       .from("simulation_visits")
       .select("paper_id")
       .in("paper_id", paperIds);
 
-    if (visitError) throw visitError;
-
-    // 3️⃣ Count visits per paper
     const visitCounts = visits?.reduce((acc: Record<string, number>, visit) => {
       acc[visit.paper_id] = (acc[visit.paper_id] || 0) + 1;
       return acc;
     }, {} as Record<string, number>) || {};
 
-    // 4️⃣ Merge visit counts into papers
     const papersWithVisits = papers.map((paper) => ({
       ...paper,
       visit_count: visitCounts[paper.id] || 0,
     }));
 
-    setSimulationPapers(papersWithVisits);
+    // 6️⃣ Only update state and cache if content has changed
+    const cachedIds = cachedPapers ? JSON.parse(cachedPapers).map((p: any) => p.id).join(",") : "";
+    const newIds = papersWithVisits.map((p) => p.id).join(",");
+    if (cachedIds !== newIds) {
+      setSimulationPapers(papersWithVisits);
+      localStorage.setItem("simulationPapers", JSON.stringify(papersWithVisits));
+    }
   } catch (error: any) {
     console.error("Error fetching simulation papers:", error.message);
   }
@@ -607,16 +608,29 @@ const fetchProgress = async () => {
     else console.error("Error fetching calendar events:", error);
   };
 
-  const fetchUnitCounts = async () => {
-    const { data, error } = await supabase
-      .from("quiz_question_counts")
-      .select("*");
-    if (!error && data) {
+ const fetchUnitCounts = async () => {
+  try {
+    // 1️⃣ Load cached unit counts first
+    const cachedUnits = localStorage.getItem("unitCounts");
+    if (cachedUnits) setUnitCounts(JSON.parse(cachedUnits));
+
+    // 2️⃣ Fetch from Supabase
+    const { data, error } = await supabase.from("quiz_question_counts").select("*");
+    if (error) throw error;
+    if (!data) return;
+
+    // 3️⃣ Only update state and cache if different
+    const cachedIds = cachedUnits ? JSON.parse(cachedUnits).map((u: any) => u.unit_id).join(",") : "";
+    const newIds = data.map((u) => u.unit_id).join(",");
+    if (cachedIds !== newIds) {
       setUnitCounts(data);
-    } else {
-      console.error("Error fetching unit counts:", error);
+      localStorage.setItem("unitCounts", JSON.stringify(data));
     }
-  };
+  } catch (err) {
+    console.error("Error fetching unit counts:", err);
+  }
+};
+
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
