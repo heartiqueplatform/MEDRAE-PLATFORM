@@ -164,21 +164,33 @@ const getDaysMessage = () => {
 const [checkingUser, setCheckingUser] = useState(true);
 
 useEffect(() => {
-  if (user === undefined) return; // still checking
+  // Only act after Supabase finishes loading
+  if (user === undefined) return; 
+
   if (!user) {
+    // Supabase confirmed no active user
     navigate("/login", { replace: true });
+  } else {
+    // User is logged in
+    const cached = JSON.parse(localStorage.getItem("userProfile") || "null");
+    if (cached) setProfileState(cached);
   }
+
   setCheckingUser(false);
 }, [user, navigate]);
 
-if (checkingUser || (user === undefined && !profileState)) {
-  return <GlobalLoader message="Loading your profile..." />;
-}
+
+
+
+// Show loader only if still checking user OR no profile data yet
 
 useEffect(() => {
   const fetchProfile = async () => {
     if (!user) return;
     try {
+      const cached = JSON.parse(localStorage.getItem("userProfile") || "null");
+      if (cached) setProfileState(cached);
+
       const { data } = await supabase
         .from("profiles")
         .select("*")
@@ -192,32 +204,10 @@ useEffect(() => {
       console.error("Failed to fetch profile:", err);
     }
   };
+
   fetchProfile();
 }, [user]);
 
-// Try loading cached profile first
-useEffect(() => {
-  // Only fetch if no cached profile
-  if (!cachedProfile) {
-    const fetchProfile = async () => {
-      try {
-        const { data } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user?.id)
-          .single();
-
-        if (data) {
-          setProfileState(data);
-          localStorage.setItem("userProfile", JSON.stringify(data));
-        }
-      } catch (err) {
-        console.error("Failed to fetch profile:", err);
-      }
-    };
-    fetchProfile();
-  }
-}, [user]);
 
 
 // Only show loader if we have no cached profile yet
