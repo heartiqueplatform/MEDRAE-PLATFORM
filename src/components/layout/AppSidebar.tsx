@@ -525,14 +525,23 @@ const handleCollapse = () => {
       <Link
         to={item.url}
         className={getNavClass(item.url)}
-      onClick={async () => {
-  handleCollapse();
+     onClick={() => {
+  handleCollapse(); // synchronous — collapses immediately on mobile
   if (item.title === "Announcements") {
-    setUnreadAnnouncements(0);
-    const { data } = await supabase.from("announcements").select("id").eq("is_published", true);
-    if (data) localStorage.setItem("readAnnouncements", JSON.stringify(data.map(d => d.id)));
+    (async () => {
+      setUnreadAnnouncements(0);
+      const { data } = await supabase
+        .from("announcements")
+        .select("id")
+        .eq("is_published", true);
+      if (data) localStorage.setItem(
+        "readAnnouncements",
+        JSON.stringify(data.map(d => d.id))
+      );
+    })();
   }
 }}
+
 
       >
         <item.icon className="h-4 w-4" />
