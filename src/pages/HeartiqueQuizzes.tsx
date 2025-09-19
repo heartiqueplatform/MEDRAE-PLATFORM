@@ -116,11 +116,14 @@ export function HeartiqueQuizzes() {
   .single();
 
     if (!error && data) {
-      if (data.is_active) {
-        setIsPremium(true);
-      } else {
-        setIsPremium(false);
-      }
+    if (data?.is_active) {
+  setIsPremium(true);
+  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
+} else {
+  setIsPremium(false);
+  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: false }));
+}
+
     }
 console.log("Subscription check:", data, "isPremium:", isPremium);
 
@@ -154,12 +157,14 @@ useEffect(() => {
             .order("created_at", { ascending: false })
             .limit(1)
             .single();
-
           if (data?.is_active) {
-            setIsPremium(true);
-          } else {
-            setIsPremium(false);
-          }
+  setIsPremium(true);
+  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
+} else {
+  setIsPremium(false);
+  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: false }));
+}
+
         })();
       }
     )
@@ -172,7 +177,12 @@ useEffect(() => {
 
 
   // Fetch free units
-  useEffect(() => {
+// Load free units from localStorage first
+useEffect(() => {
+  const cachedFreeUnits = localStorage.getItem("freeUnits");
+  if (cachedFreeUnits) {
+    setFreeUnits(JSON.parse(cachedFreeUnits));
+  } else {
     const fetchFreeUnits = async () => {
       const { data, error } = await supabase
         .from("quizzes")
@@ -180,13 +190,15 @@ useEffect(() => {
         .eq("is_active", true);
 
       if (!error && data) {
-      // Units where is_free = true are free (open)
-const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
+        const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
         setFreeUnits(free);
+        localStorage.setItem("freeUnits", JSON.stringify(free));
       }
     };
     fetchFreeUnits();
-  }, []);
+  }
+}, []);
+
 
   // 🔴 Realtime subscription for quiz changes (free/locked)
 useEffect(() => {
@@ -208,10 +220,12 @@ useEffect(() => {
             .select("unit_code, is_free")
             .eq("is_active", true);
 
-          if (data) {
-            const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
-            setFreeUnits(free);
-          }
+        if (data) {
+  const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
+  setFreeUnits(free);
+  localStorage.setItem("freeUnits", JSON.stringify(free));
+}
+
         })();
       }
     )
@@ -272,7 +286,28 @@ const [searchTerm, setSearchTerm] = useState("");
     }
     setRefreshing(false);
   };
-if (!subscriptionChecked) {
+// Check localStorage for cached subscription
+useEffect(() => {
+  const cachedSubscription = localStorage.getItem("subscriptionStatus");
+  if (cachedSubscription) {
+    const parsed = JSON.parse(cachedSubscription);
+    setIsPremium(parsed.isPremium);
+    setSubscriptionChecked(true);
+  }
+}, []);
+
+// After fetching subscription, save to localStorage
+useEffect(() => {
+  if (subscriptionChecked) {
+    localStorage.setItem(
+      "subscriptionStatus",
+      JSON.stringify({ isPremium })
+    );
+  }
+}, [isPremium, subscriptionChecked]);
+
+// Only show loader if new user and no cached subscription
+if (!subscriptionChecked && !localStorage.getItem("subscriptionStatus")) {
   return <GlobalLoader message="Checking subscription..." />;
 }
 

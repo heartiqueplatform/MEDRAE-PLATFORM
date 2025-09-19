@@ -27,15 +27,40 @@ import {
 
 import { allUnits } from "@/constants/units";
 
+// --- Local Storage Helpers ---
+const LOCAL_STORAGE_KEY = "study_progress_cache";
+
+function saveToLocalStorage(data: any) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("Error saving to localStorage:", e);
+  }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    console.error("Error reading from localStorage:", e);
+    return null;
+  }
+}
+
+// --- Deep comparison helper ---
+function isEqualData(a: any[], b: any[]) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 export function StudyProgress() {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
 
-    useEffect(() => {
-    const fetchProgress = async () => {
-      setLoading(true);
+  useEffect(() => {
+    const fetchProgress = async (showLoader = true) => {
+      if (showLoader) setLoading(true);
 
       const {
         data: { user },
@@ -44,7 +69,7 @@ export function StudyProgress() {
 
       if (userError || !user) {
         console.error("User not found or auth error");
-        setLoading(false);
+        if (showLoader) setLoading(false);
         return;
       }
 
@@ -55,7 +80,7 @@ export function StudyProgress() {
 
       if (error) {
         console.error("Error fetching quiz results:", error.message);
-        setLoading(false);
+        if (showLoader) setLoading(false);
         return;
       }
 
@@ -88,13 +113,28 @@ export function StudyProgress() {
           };
         });
 
-      setSubjects(unitsWithStats);
-      setTotalStarsEarned(unitsWithStats.reduce((acc, s) => acc + s.rating, 0));
-      setLoading(false);
+      const totalStars = unitsWithStats.reduce((acc, s) => acc + s.rating, 0);
+
+      // --- Only update if data changed ---
+      const cached = loadFromLocalStorage();
+      if (!cached || !isEqualData(cached.subjects, unitsWithStats)) {
+        setSubjects(unitsWithStats);
+        setTotalStarsEarned(totalStars);
+        saveToLocalStorage({ subjects: unitsWithStats, totalStarsEarned: totalStars });
+      }
+
+      if (showLoader) setLoading(false);
     };
 
-    // Run once on mount
-    fetchProgress();
+    // --- Initial load with loader ---
+    const cached = loadFromLocalStorage();
+    if (cached) {
+      setSubjects(cached.subjects);
+      setTotalStarsEarned(cached.totalStarsEarned);
+      setLoading(false);
+    } else {
+      fetchProgress(true);
+    }
 
     // ✅ Realtime subscription
     const channel = supabase
@@ -102,21 +142,17 @@ export function StudyProgress() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "quiz_results" },
-        (payload) => {
-          console.log("Realtime update:", payload);
-          setLoading(true); // show spinner while updating
-fetchProgress();
-
+        () => {
+          // Fetch fresh data silently (no loader)
+          fetchProgress(false);
         }
       )
       .subscribe();
 
-    // Cleanup on unmount
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
 
   const overallStats = {
     totalHours: subjects.reduce((acc, s) => acc + s.hoursStudied, 0),
@@ -132,9 +168,7 @@ fetchProgress();
     Array.from({ length: 5 }).map((_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${
-          i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
-        }`}
+        className={`h-4 w-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
       />
     ));
 
@@ -144,15 +178,14 @@ fetchProgress();
         <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
           Study Progress Tracker
         </h1>
-       <p className="text-muted-foreground mt-2">
-  This tracker measures your learning journey in three ways: 
-  <br />• <strong>Progress %</strong> is calculated as <em>completed topics ÷ total topics × 100</em>. 
-  <br />• <strong>Stars</strong> are awarded once you submit at least one quiz through the Heartique Quizzes App. 
-  <br />• <strong>Hours Studied</strong> are estimated at 1.5 hours per topic completed. 
-  <br /><br />
-  To earn scores and update your progress, you must complete and submit quizzes in the Heartique Quizzes App — your results will automatically update here.
-</p>
-
+        <p className="text-muted-foreground mt-2">
+          This tracker measures your learning journey in three ways: 
+          <br />• <strong>Progress %</strong> is calculated as <em>completed topics ÷ total topics × 100</em>. 
+          <br />• <strong>Stars</strong> are awarded once you submit at least one quiz through the Heartique Quizzes App. 
+          <br />• <strong>Hours Studied</strong> are estimated at 1.5 hours per topic completed. 
+          <br /><br />
+          To earn scores and update your progress, you must complete and submit quizzes in the Heartique Quizzes App — your results will automatically update here.
+        </p>
       </div>
 
       {/* Overall Stats */}
@@ -162,9 +195,7 @@ fetchProgress();
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-8 w-8 text-primary" />
               <div>
-                <p className="text-2xl font-bold">
-                  {Math.round(overallStats.totalProgress)}%
-                </p>
+                <p className="text-2xl font-bold">{Math.round(overallStats.totalProgress)}%</p>
                 <p className="text-sm text-muted-foreground">Overall Progress</p>
               </div>
             </div>
@@ -186,9 +217,7 @@ fetchProgress();
             <div className="flex items-center space-x-2">
               <BookOpen className="h-8 w-8 text-green-500" />
               <div>
-                <p className="text-2xl font-bold">
-                  {overallStats.completedTopics}/{overallStats.totalTopics}
-                </p>
+                <p className="text-2xl font-bold">{overallStats.completedTopics}/{overallStats.totalTopics}</p>
                 <p className="text-sm text-muted-foreground">Topics Done</p>
               </div>
             </div>
@@ -199,9 +228,7 @@ fetchProgress();
             <div className="flex items-center space-x-2">
               <Star className="h-8 w-8 text-yellow-500" />
               <div>
-                <p className="text-2xl font-bold">
-                  {overallStats.totalStars}★
-                </p>
+                <p className="text-2xl font-bold">{overallStats.totalStars}★</p>
                 <p className="text-sm text-muted-foreground">Total Stars Earned</p>
               </div>
             </div>
@@ -216,13 +243,12 @@ fetchProgress();
         </TabsList>
 
         <TabsContent value="subjects" className="space-y-4">
-        {loading ? (
-  <div className="flex justify-center items-center py-10">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
-    <p className="ml-4 text-muted-foreground">Updating progress...</p>
-  </div>
-) : (
-
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+              <p className="ml-4 text-muted-foreground">Updating progress...</p>
+            </div>
+          ) : (
             <div className="grid gap-4">
               {subjects.map((subject) => (
                 <Card key={subject.id} className="transition-all hover:shadow-lg">
@@ -248,7 +274,6 @@ fetchProgress();
                         <span>Progress</span>
                         <span>{subject.progress}%</span>
                       </div>
-                      {/* Full blue progress bar */}
                       <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-sm">

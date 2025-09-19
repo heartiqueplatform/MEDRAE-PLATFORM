@@ -9,33 +9,51 @@ import { Bell, Pin, Calendar, Users, AlertCircle, Info, CheckCircle, XCircle } f
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust the path if needed
 
 export function Announcements() {
-  const [readAnnouncements, setReadAnnouncements] = useState<string[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [readAnnouncements, setReadAnnouncements] = useState<string[]>(() => {
+    // Load read announcements from localStorage
+    const stored = localStorage.getItem("readAnnouncements");
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const [announcements, setAnnouncements] = useState<any[]>(() => {
+    // Load cached announcements from localStorage
+    const stored = localStorage.getItem("announcements");
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const [loading, setLoading] = useState(announcements.length === 0); // only show loader if no cached data
 
   useEffect(() => {
     fetchAnnouncements();
   }, []);
 
   const fetchAnnouncements = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("announcements")
-      .select("*")
-      .eq("is_published", true)
-      .order("pinned", { ascending: false })
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("*")
+        .eq("is_published", true)
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching announcements:", error);
-    } else {
-      setAnnouncements(data || []);
+      if (error) {
+        console.error("Error fetching announcements:", error);
+      } else if (data) {
+        setAnnouncements(data);
+        localStorage.setItem("announcements", JSON.stringify(data)); // update cache
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching announcements:", err);
     }
     setLoading(false);
   };
 
   const markAsRead = (id: string) => {
-    setReadAnnouncements((prev) => [...prev, id]);
+    setReadAnnouncements((prev) => {
+      const updated = [...prev, id];
+      localStorage.setItem("readAnnouncements", JSON.stringify(updated)); // save to localStorage
+      return updated;
+    });
   };
 
   const getTypeIcon = (type: string) => {
@@ -102,9 +120,8 @@ export function Announcements() {
   const regularAnnouncements = announcements.filter((a) => !a.pinned);
 
   if (loading) {
-  return <GlobalLoader message="Fetching announcements..." />;
-}
-
+    return <GlobalLoader message="Fetching announcements..." />;
+  }
 
   return (
     <div className="space-y-6">
@@ -262,18 +279,17 @@ function AnnouncementCard({
         </CardDescription>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-           <Avatar className="h-6 w-6">
-  <AvatarImage
-    src={announcement.author_avatar || "/placeholder.svg"}
-    className="object-cover"
-  />
-  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-[10px]">
-    {announcement.author
-      ? announcement.author.split(" ").map((n: string) => n[0]).join("")
-      : "??"}
-  </AvatarFallback>
-</Avatar>
-
+            <Avatar className="h-6 w-6">
+              <AvatarImage
+                src={announcement.author_avatar || "/placeholder.svg"}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-[10px]">
+                {announcement.author
+                  ? announcement.author.split(" ").map((n: string) => n[0]).join("")
+                  : "??"}
+              </AvatarFallback>
+            </Avatar>
             <span>{announcement.author || "Unknown"}</span>
           </div>
           <div className="flex items-center gap-4">

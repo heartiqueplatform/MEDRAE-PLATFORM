@@ -208,8 +208,18 @@ if (error) throw error;
   // AI bubble color (light/dark theme aware)
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   // Load chat history from Supabase
-// Load chat history from Supabase
+// Load chat history from Supabase with localStorage caching
 useEffect(() => {
+  const localKey = "aiChatHistory";
+
+  // 1️⃣ Load from localStorage first
+  const cached = localStorage.getItem(localKey);
+  if (cached) {
+    setMessages(JSON.parse(cached));
+    setIsHistoryLoading(false); // Hide loader immediately
+  }
+
+  // 2️⃣ Fetch latest from Supabase silently
   const fetchMessages = async () => {
     try {
       const { data, error } = await supabase
@@ -219,50 +229,43 @@ useEffect(() => {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        // Messages exist, load them
-        setMessages(data.map(msg => ({
+      let finalMessages =
+        data?.map(msg => ({
           id: msg.id,
           content: msg.content,
           sender: msg.sender,
           timestamp: new Date(msg.timestamp),
-        })));
+        })) || [];
+
+      // Only add pinned message if no messages exist
+      const pinnedMessage: Message = {
+        id: "pinned",
+        sender: "ai",
+        content: "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug info, study tips, and answer any questions you have about your coursework. How can I assist you today?",
+        timestamp: new Date(0), // very old date ensures it stays at top
+      };
+
+      if (finalMessages.length === 0) {
+        finalMessages = [pinnedMessage];
       } else {
-        // No messages yet, insert first AI greeting
-        const initialMessage = {
-          sender: 'ai',
-          content: "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug information, study tips, and answer any questions you have about your coursework. How can I assist you today?",
-          timestamp: new Date(),
-        };
-
-        const { data: insertedData, error: insertError } = await supabase
-          .from('Aimessages')
-          .insert([initialMessage])
-          .select();
-
-        if (insertError) throw insertError;
-
-        // Update state with initial message
-        setMessages(insertedData.map(msg => ({
-          id: msg.id,
-          content: msg.content,
-          sender: msg.sender,
-          timestamp: new Date(msg.timestamp),
-        })));
+        // Ensure pinned message is not duplicated
+        if (!finalMessages.find(msg => msg.id === "pinned")) {
+          finalMessages = [pinnedMessage, ...finalMessages];
+        }
       }
+
+      // Update state and localStorage
+      setMessages(finalMessages);
+      localStorage.setItem(localKey, JSON.stringify(finalMessages));
     } catch (err) {
-      console.error('Error fetching or inserting chat history:', err);
-      // Optional: you can also show an error message here
+      console.error('Error fetching chat messages:', err);
     } finally {
-      // ✅ This ensures the loader always disappears
       setIsHistoryLoading(false);
     }
   };
 
   fetchMessages();
 }, []);
-
-
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -351,7 +354,9 @@ return (
 </div>
 
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4">
-          {[pinnedMessage, ...messages].map((msg, index) => (
+      
+{messages.map((msg, index) => (
+
 
               <div
                 key={index}

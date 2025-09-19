@@ -23,7 +23,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 export function Profile() {
-  const { profile, loading } = useUserProfile();
+ const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
+const [profileState, setProfileState] = useState(cachedProfile);
+
   const user = useUser();
   const navigate = useNavigate();
 
@@ -133,22 +135,21 @@ const handleDeleteAccount = async () => {
       setShowDialog(false);
     }
   };
+const getDaysMessage = () => {
+  if (!profileState?.joined_date) return "No join date available.";
+  const joinDate = new Date(profileState.joined_date);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - joinDate.getTime());
+  const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const years = Math.floor(days / 365);
 
-  const getDaysMessage = () => {
-    if (!profile?.joined_date) return "No join date available.";
-    const joinDate = new Date(profile.joined_date);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - joinDate.getTime());
-    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(days / 365);
+  if (years === 0) {
+    return `You are ${days} day${days !== 1 ? "s" : ""} old on the platform. Keep going strong!`;
+  }
 
-    if (years === 0) {
-      return `You are ${days} day${days !== 1 ? "s" : ""} old on the platform. Keep going strong!`;
-    }
-
-    const nextAnniversary = years + 1;
-    return `You are ${years} year${years > 1 ? "s" : ""} old on the platform. Waiting to celebrate your ${nextAnniversary}${getOrdinalSuffix(nextAnniversary)} anniversary!`;
-  };
+  const nextAnniversary = years + 1;
+  return `You are ${years} year${years > 1 ? "s" : ""} old on the platform. Waiting to celebrate your ${nextAnniversary}${getOrdinalSuffix(nextAnniversary)} anniversary!`;
+};
 
   const getOrdinalSuffix = (i: number) => {
     const j = i % 10,
@@ -163,8 +164,53 @@ const handleDeleteAccount = async () => {
   navigate("/login", { replace: true }); // or your actual login route
   return null;
 }
+useEffect(() => {
+  const fetchProfile = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      if (data) {
+        setProfileState(data);
+        localStorage.setItem("userProfile", JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile:", err);
+    }
+  };
+  fetchProfile();
+}, [user]);
 
-if (loading || !profile) {
+// Try loading cached profile first
+useEffect(() => {
+  // Only fetch if no cached profile
+  if (!cachedProfile) {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user?.id)
+          .single();
+
+        if (data) {
+          setProfileState(data);
+          localStorage.setItem("userProfile", JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      }
+    };
+    fetchProfile();
+  }
+}, [user]);
+
+
+// Only show loader if we have no cached profile yet
+if (!profileState) {
   return <GlobalLoader message="Please be patient, Heartique is aligning your content..." />;
 }
 
@@ -190,11 +236,11 @@ if (loading || !profile) {
                 <div className="relative">
                  <Avatar className="h-24 w-24">
   <AvatarImage
-    src={profile.avatar_url || undefined}
+    src={profileState?.avatar_url || undefined}
     className="object-cover"
   />
   <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-2xl">
-    {profile.name?.split(" ").map((n) => n[0]).join("") || "??"}
+    {profileState?.name?.split(" ").map((n) => n[0]).join("") || "??"}
   </AvatarFallback>
 </Avatar>
 
@@ -211,47 +257,47 @@ if (loading || !profile) {
                 <div className="flex-1 space-y-4">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                      <h2 className="text-2xl font-bold">{profile.name}</h2>
-                      <p className="text-muted-foreground">@{profile.username}</p>
+                      <h2 className="text-2xl font-bold">{profileState?.name}</h2>
+                      <p className="text-muted-foreground">@{profileState?.username}</p>
                     </div>
                     <div className="flex gap-2">
                       <Badge variant="secondary" className="capitalize">
-                        {profile.role}
+                        {profileState?.role}
                       </Badge>
                       <Badge variant="outline">
-                        {profile.subscription || "Free"}
+                        {profileState?.subscription || "Free"}
                       </Badge>
                     </div>
                   </div>
 
-                  <p className="text-muted-foreground">{profile.bio}</p>
+                  <p className="text-muted-foreground">{profileState?.bio}</p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{profile.email}</span>
+                        <span className="text-sm">{profileState?.email}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{profile.phone}</span>
+                        <span className="text-sm">{profileState?.phone}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{profile.county}</span>
+                        <span className="text-sm">{profileState?.county}</span>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <School className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{profile.institution}</span>
+                        <span className="text-sm">{profileState?.institution}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
                           Joined{" "}
-                          {profile.joined_date
-                            ? new Date(profile.joined_date).toLocaleDateString()
+                          {profileState?.joined_date
+                            ? new Date(profileState?.joined_date).toLocaleDateString()
                             : "N/A"}
                         </span>
                       </div>
@@ -275,16 +321,16 @@ if (loading || !profile) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Course</label>
-                  <p className="font-medium">{profile.course}</p>
+                  <p className="font-medium">{profileState?.course}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Block/Class</label>
-                  <p className="font-medium">{profile.block}</p>
+                  <p className="font-medium">{profileState?.block}</p>
                 </div>
-                {profile.nckNumber && (
+                {profileState?.nckNumber && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">NCK Number</label>
-                    <p className="font-medium">{profile.nckNumber}</p>
+                    <p className="font-medium">{profileState?.nckNumber}</p>
                   </div>
                 )}
               </div>

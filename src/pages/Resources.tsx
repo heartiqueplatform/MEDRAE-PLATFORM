@@ -37,7 +37,7 @@ import {
 import { saveFile, getFile } from "@/lib/offlineStorage";
 
 export function Resources() {
-  const [notes, setNotes] = useState<any[]>([]);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [bookmarkedItems, setBookmarkedItems] = useState<string[]>([]);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -186,7 +186,10 @@ useEffect(() => {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [fullscreenNote, setFullscreenNote] = useState<any>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
-const [loadingNotes, setLoadingNotes] = useState(true);
+  const cachedNotes = localStorage.getItem("cachedNotes");
+const [notes, setNotes] = useState<any[]>(cachedNotes ? JSON.parse(cachedNotes) : []);
+const [loadingNotes, setLoadingNotes] = useState(!cachedNotes); // ✅ only true if no cache
+
 
 const loadOfflineFile = async (fileId: string, fileUrl: string) => {
   // Try getting the file from offline storage first
@@ -230,9 +233,17 @@ const handleDownload = async (fileId: string, url: string) => {
   ];
 useEffect(() => {
   const fetchNotes = async () => {
-    setLoadingNotes(true);
+    // ✅ Try loading from localStorage first
+    const cachedNotes = localStorage.getItem("cachedNotes");
+    if (cachedNotes) {
+      setNotes(JSON.parse(cachedNotes));
+      setLoadingNotes(false); // skip loader if cached
+      return;
+    }
 
-    // Fetch all approved public notes/videos
+    setLoadingNotes(true); // only show loader if no cached notes
+
+    // Fetch all approved public notes/videos from Supabase
     const { data, error } = await supabase
       .from("notes")
       .select("*")
@@ -245,6 +256,8 @@ useEffect(() => {
       setNotes([]);
     } else {
       setNotes(data || []);
+      // ✅ Save to localStorage
+      localStorage.setItem("cachedNotes", JSON.stringify(data || []));
     }
 
     setLoadingNotes(false);
@@ -252,27 +265,37 @@ useEffect(() => {
 
   fetchNotes();
 
-  // ✅ Subscribe to realtime changes for new video uploads
+  // ✅ Subscribe to realtime changes for notes/videos
   const channel = supabase
     .channel("notes-videos")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "notes" },
       (payload) => {
-        console.log("Realtime notes change:", payload);
-
         if (payload.eventType === "INSERT" && payload.new.is_public && payload.new.approved) {
-          setNotes((prev) => [payload.new, ...prev]);
+          setNotes((prev) => {
+            const updated = [payload.new, ...prev];
+            localStorage.setItem("cachedNotes", JSON.stringify(updated)); // update cache
+            return updated;
+          });
         }
 
         if (payload.eventType === "UPDATE") {
-          setNotes((prev) =>
-            prev.map((n) => (n.id === payload.new.id ? payload.new : n))
-          );
+          setNotes((prev) => {
+            const updated = prev.map((n) =>
+              n.id === payload.new.id ? payload.new : n
+            );
+            localStorage.setItem("cachedNotes", JSON.stringify(updated)); // update cache
+            return updated;
+          });
         }
 
         if (payload.eventType === "DELETE") {
-          setNotes((prev) => prev.filter((n) => n.id !== payload.old.id));
+          setNotes((prev) => {
+            const updated = prev.filter((n) => n.id !== payload.old.id);
+            localStorage.setItem("cachedNotes", JSON.stringify(updated)); // update cache
+            return updated;
+          });
         }
       }
     )
@@ -282,6 +305,7 @@ useEffect(() => {
     supabase.removeChannel(channel);
   };
 }, []);
+
 
 
   // ✅ Realtime subscription for notes table
@@ -316,81 +340,108 @@ useEffect(() => {
   };
 }, []);
 
+useEffect(() => {
+  const fetchStats = async () => {
+    if (!notes.length) return;
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!notes.length) return;
+    // ✅ Try loading from localStorage first
+    const cachedLikes = localStorage.getItem("likeCounts");
+    const cachedViews = localStorage.getItem("viewCounts");
+    const cachedUserLikes = localStorage.getItem("bookmarkedItems");
 
-      const [likesRes, viewsRes, userLikesRes] = await Promise.all([
-        supabase.from("note_likes").select("note_id"),
-        supabase.from("note_views").select("note_id"),
-        session?.user
-          ? supabase
-              .from("note_likes")
-              .select("note_id")
-              .eq("user_id", session.user.id)
-          : { data: [] },
-      ]);
+    if (cachedLikes && cachedViews && cachedUserLikes) {
+      setLikeCounts(JSON.parse(cachedLikes));
+      setViewCounts(JSON.parse(cachedViews));
+      setBookmarkedItems(JSON.parse(cachedUserLikes));
+      return;
+    }
 
-      const likesMap: Record<string, number> = {};
-      const viewsMap: Record<string, number> = {};
-      const userLiked: string[] = [];
+    const [likesRes, viewsRes, userLikesRes] = await Promise.all([
+      supabase.from("note_likes").select("note_id"),
+      supabase.from("note_views").select("note_id"),
+      session?.user
+        ? supabase
+            .from("note_likes")
+            .select("note_id")
+            .eq("user_id", session.user.id)
+        : { data: [] },
+    ]);
 
-      likesRes.data?.forEach((l: any) => {
-        likesMap[l.note_id] = (likesMap[l.note_id] || 0) + 1;
-      });
+    const likesMap: Record<string, number> = {};
+    const viewsMap: Record<string, number> = {};
+    const userLiked: string[] = [];
 
-      viewsRes.data?.forEach((v: any) => {
-        viewsMap[v.note_id] = (viewsMap[v.note_id] || 0) + 1;
-      });
+    likesRes.data?.forEach((l: any) => {
+      likesMap[l.note_id] = (likesMap[l.note_id] || 0) + 1;
+    });
 
-      userLikesRes?.data?.forEach((ul: any) => {
-        userLiked.push(ul.note_id);
-      });
+    viewsRes.data?.forEach((v: any) => {
+      viewsMap[v.note_id] = (viewsMap[v.note_id] || 0) + 1;
+    });
 
-      setLikeCounts(likesMap);
-      setViewCounts(viewsMap);
-      setBookmarkedItems(userLiked);
-    };
+    userLikesRes?.data?.forEach((ul: any) => {
+      userLiked.push(ul.note_id);
+    });
 
-    fetchStats();
-  }, [notes, session]);
+    setLikeCounts(likesMap);
+    setViewCounts(viewsMap);
+    setBookmarkedItems(userLiked);
+
+    // ✅ Save to localStorage
+    localStorage.setItem("likeCounts", JSON.stringify(likesMap));
+    localStorage.setItem("viewCounts", JSON.stringify(viewsMap));
+    localStorage.setItem("bookmarkedItems", JSON.stringify(userLiked));
+  };
+
+  fetchStats();
+}, [notes, session]);
+
   // ✅ Realtime subscription for likes & views
 useEffect(() => {
-    const likeChannel = supabase
+  const likeChannel = supabase
     .channel("likes-changes")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "note_likes" },
       (payload) => {
         if (payload.eventType === "INSERT") {
-          // update like counts
-          setLikeCounts((prev) => ({
-            ...prev,
-            [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
-          }));
+          setLikeCounts((prev) => {
+            const updated = {
+              ...prev,
+              [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
+            };
+            localStorage.setItem("likeCounts", JSON.stringify(updated)); // ✅ update cache
+            return updated;
+          });
 
-          // if it's THIS USER → update bookmarkedItems too
           if (payload.new.user_id === session?.user?.id) {
-            setBookmarkedItems((prev) => [...prev, payload.new.note_id]);
+            setBookmarkedItems((prev) => {
+              const updated = [...prev, payload.new.note_id];
+              localStorage.setItem("bookmarkedItems", JSON.stringify(updated)); // ✅ update cache
+              return updated;
+            });
           }
         }
 
         if (payload.eventType === "DELETE") {
-          // update like counts
-          setLikeCounts((prev) => ({
-            ...prev,
-            [payload.old.note_id]: Math.max(
-              (prev[payload.old.note_id] || 1) - 1,
-              0
-            ),
-          }));
+          setLikeCounts((prev) => {
+            const updated = {
+              ...prev,
+              [payload.old.note_id]: Math.max(
+                (prev[payload.old.note_id] || 1) - 1,
+                0
+              ),
+            };
+            localStorage.setItem("likeCounts", JSON.stringify(updated)); // ✅ update cache
+            return updated;
+          });
 
-          // if it's THIS USER → remove from bookmarkedItems
           if (payload.old.user_id === session?.user?.id) {
-            setBookmarkedItems((prev) =>
-              prev.filter((id) => id !== payload.old.note_id)
-            );
+            setBookmarkedItems((prev) => {
+              const updated = prev.filter((id) => id !== payload.old.note_id);
+              localStorage.setItem("bookmarkedItems", JSON.stringify(updated)); // ✅ update cache
+              return updated;
+            });
           }
         }
       }
@@ -403,10 +454,14 @@ useEffect(() => {
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "note_views" },
       (payload) => {
-        setViewCounts((prev) => ({
-          ...prev,
-          [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
-        }));
+        setViewCounts((prev) => {
+          const updated = {
+            ...prev,
+            [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
+          };
+          localStorage.setItem("viewCounts", JSON.stringify(updated)); // ✅ update cache
+          return updated;
+        });
       }
     )
     .subscribe();
@@ -415,7 +470,8 @@ useEffect(() => {
     supabase.removeChannel(likeChannel);
     supabase.removeChannel(viewChannel);
   };
-}, []);
+}, [session?.user?.id]);
+
 
 
   useEffect(() => {

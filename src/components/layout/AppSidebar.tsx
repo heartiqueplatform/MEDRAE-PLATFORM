@@ -54,6 +54,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(0);
+
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
   const [totalSimulationPapers, setTotalSimulationPapers] = useState<number | null>(null);
 const [totalNotes, setTotalNotes] = useState<number | null>(null);
@@ -128,34 +130,64 @@ const mainItems = [
   ] : [];
 
   // Fetch unread messages and listen for live updates
-  useEffect(() => {
-    async function fetchUnread() {
-      const user = supabase.auth.user();
-      if (!user) return;
+ useEffect(() => {
+  const fetchUnread = async () => {
+    const user = supabase.auth.user();
+    if (!user) return;
 
-      const { count, error } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact' })
-        .eq('receiver_id', user.id)
-        .eq('is_read', false);
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact' })
+      .eq('receiver_id', user.id)
+      .eq('is_read', false);
 
-      if (!error) setUnreadCount(count || 0);
-    }
-    fetchUnread();
+    if (!error) setUnreadCount(count || 0);
+  };
 
-    const subscription = supabase
-      .channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        if (payload.new.receiver_id === supabase.auth.user()?.id && !payload.new.is_read) {
-          setUnreadCount(prev => prev + 1);
-        }
-      })
-      .subscribe();
+  const fetchUnreadAnnouncements = async () => {
+    const stored = localStorage.getItem("readAnnouncements");
+    const readIds: string[] = stored ? JSON.parse(stored) : [];
 
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, []);
+    let query = supabase
+      .from("announcements")
+      .select("*", { count: "exact" })
+      .eq("is_published", true);
+
+    if (readIds.length) query = query.not("id", "in", `(${readIds.join(",")})`);
+
+    const { count, error } = await query;
+    if (!error) setUnreadAnnouncements(count || 0);
+  };
+
+  fetchUnread();
+  fetchUnreadAnnouncements();
+
+  const messageSub = supabase
+    .channel('public:messages')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+      if (payload.new.receiver_id === supabase.auth.user()?.id && !payload.new.is_read) {
+        setUnreadCount(prev => prev + 1);
+      }
+    })
+    .subscribe();
+
+  const announcementSub = supabase
+    .channel('public:announcements')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcements' }, payload => {
+      const stored = localStorage.getItem("readAnnouncements");
+      const readIds: string[] = stored ? JSON.parse(stored) : [];
+      if (!readIds.includes(payload.new.id)) {
+        setUnreadAnnouncements(prev => prev + 1);
+      }
+    })
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(messageSub);
+    supabase.removeChannel(announcementSub);
+  };
+}, []);
+
 
 // ---- HERE add your totalQuestions hook ----
   
@@ -487,20 +519,38 @@ const handleCollapse = () => {
 <SidebarGroup>
   <SidebarGroupContent>
     <SidebarMenu>
-      {otherItems.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton asChild>
-            <Link
-              to={item.url}
-              className={getNavClass(item.url)}
-              onClick={handleCollapse}
-            >
-              <item.icon className="h-4 w-4" />
-              {!isCollapsed && <span>{item.title}</span>}
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+{otherItems.map((item) => (
+  <SidebarMenuItem key={item.title}>
+    <SidebarMenuButton asChild>
+      <Link
+        to={item.url}
+        className={getNavClass(item.url)}
+      onClick={async () => {
+  handleCollapse();
+  if (item.title === "Announcements") {
+    setUnreadAnnouncements(0);
+    const { data } = await supabase.from("announcements").select("id").eq("is_published", true);
+    if (data) localStorage.setItem("readAnnouncements", JSON.stringify(data.map(d => d.id)));
+  }
+}}
+
+      >
+        <item.icon className="h-4 w-4" />
+        {!isCollapsed && (
+          <>
+            <span>{item.title}</span>
+            {item.title === "Announcements" && unreadAnnouncements > 0 && (
+              <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                {unreadAnnouncements}
+              </Badge>
+            )}
+          </>
+        )}
+      </Link>
+    </SidebarMenuButton>
+  </SidebarMenuItem>
+))}
+
     </SidebarMenu>
   </SidebarGroupContent>
 </SidebarGroup>

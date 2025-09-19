@@ -1,4 +1,3 @@
-// src/pages/quiz-simulation/CandidateInfo.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,14 +14,18 @@ export default function CandidateInfo() {
   const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
+    const localKey = "candidateInfo";
+
+    // 1. Load from localStorage first
+    const cached = localStorage.getItem(localKey);
+    if (cached) {
+      setUserData(JSON.parse(cached));
+      setLoading(false); // show immediately
+    }
+
+    // 2. Fetch latest from Supabase silently
     const fetchUserData = async () => {
-      setLoading(true);
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         console.error("No auth user found");
         return;
@@ -38,9 +41,8 @@ export default function CandidateInfo() {
         console.error("Error fetching user:", error.message);
       } else {
         setUserData(data);
+        localStorage.setItem(localKey, JSON.stringify(data)); // cache latest
       }
-
-      setLoading(false);
     };
 
     fetchUserData();
@@ -50,7 +52,7 @@ export default function CandidateInfo() {
     navigate("/quiz-simulation/instructions");
   };
 
-  if (loading) {
+  if (loading && !userData) {
     return (
       <div className="max-w-xl mx-auto mt-10 space-y-4">
         <Skeleton className="h-6 w-full" />

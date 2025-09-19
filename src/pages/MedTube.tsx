@@ -20,7 +20,15 @@ import { useRef } from "react";
 export function MedTube() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [videos, setVideos] = useState<any[]>([]);
+ const [videos, setVideos] = useState<any[]>(() => {
+  if (typeof window !== "undefined") {
+    // Load cached videos first
+    const cached = localStorage.getItem("cachedVideos");
+    if (cached) return JSON.parse(cached);
+  }
+  return [];
+});
+
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
@@ -151,6 +159,7 @@ return {
 
   })
 );
+localStorage.setItem("cachedVideos", JSON.stringify(enrichedVideos));
 
     setVideos(enrichedVideos);
     setLoading(false);
@@ -598,11 +607,11 @@ const recordView = async (videoId: string, updateUI = true) => {
     value={cat.id}
   >
 
-     {loading ? (
+    {videos.length === 0 && loading ? (
   <GlobalLoader message="Be patient Heartique is loading videos..." />
 ) : (
+  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredVideos
                   .filter((video) => {
                     if (cat.id === "mine") return video.uploaded_by === user?.id;

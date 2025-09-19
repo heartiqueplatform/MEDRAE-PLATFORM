@@ -45,14 +45,21 @@ const [latestPostId, setLatestPostId] = useState<string | null>(null);
 // Global loading state for spinner
 // ✅ Smarter loading: skip spinner if we already have cached data
 const cachedDashboard = localStorage.getItem("dashboardData");
-const [loading, setLoading] = useState(() => !cachedDashboard);
+const [loading, setLoading] = useState(!cachedDashboard); // Only show spinner if no cached data
+const [dashboardLoaded, setDashboardLoaded] = useState(false); // track first load
+
+
 
 
 const loadDashboardData = async () => {
   
   if (!user?.id) return;
 
-  setLoading(true); // Show spinner at the very start
+// Only show spinner if no cached data or first time loading
+if (!cachedDashboard) setLoading(true); // Only show spinner if no cached data
+
+
+
 
   try {
     // Run all fetches in parallel
@@ -85,6 +92,10 @@ localStorage.setItem(
     unitCounts,
   })
 );
+// ✅ Mark dashboard as loaded
+localStorage.setItem("dashboardDataLoaded", "true");
+setDashboardLoaded(true);
+setLoading(false); // hide spinner only after first full load
 
   } catch (err) {
     console.error("Error loading dashboard data:", err);
@@ -225,12 +236,9 @@ const { data: posts, error: postsError } = await supabase
 
   if (!posts || posts.length === 0) {
     setDailyPosts([]);
-    toast({
-      title: "Daily Status",
-      description: "No posts yet!",
-    });
+    // 🚫 No toast for empty posts
     return;
-  }
+}
 
   // Fetch profiles for all user_ids in posts
   const userIds = posts.map((p) => p.user_id);
@@ -253,7 +261,8 @@ const { data: posts, error: postsError } = await supabase
   setDailyPosts(mergedPosts);
 
   // Notifications
-  if (latestPostId && mergedPosts[0].id !== latestPostId) {
+if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
+
     toast({
       title: "New Daily Status!",
       description: "A new daily post is available. Scroll down to view it.",
@@ -271,35 +280,31 @@ const { data: posts, error: postsError } = await supabase
 // Initial fetch
 // Load all dashboard data on page open
 useEffect(() => {
-  if (user?.id) {
-    // ✅ Try cached first
-    const cached = localStorage.getItem("dashboardData");
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.name) setName(parsed.name);
-        if (parsed.studyProgress) setStudyProgress(parsed.studyProgress);
-        if (parsed.quizCount) setQuizCount(parsed.quizCount);
-        if (parsed.avgScore) setAvgScore(parsed.avgScore);
-        if (parsed.studyStreak) setStudyStreak(parsed.studyStreak);
-        if (parsed.bestStreak) setBestStreak(parsed.bestStreak);
-        if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
-        if (parsed.dailyPosts) setDailyPosts(parsed.dailyPosts);
-        if (parsed.unitCounts) setUnitCounts(parsed.unitCounts);
+  if (!user?.id) return;
 
-        // 🚀 Instantly show cached dashboard, no spinner
-        setLoading(false);
-      } catch (e) {
-        console.error("Error parsing cached dashboard:", e);
-      }
+  // ✅ Show cached dashboard first (no spinner)
+  if (cachedDashboard) {
+    try {
+      const parsed = JSON.parse(cachedDashboard);
+      if (parsed.name) setName(parsed.name);
+      if (parsed.studyProgress) setStudyProgress(parsed.studyProgress);
+      if (parsed.quizCount) setQuizCount(parsed.quizCount);
+      if (parsed.avgScore) setAvgScore(parsed.avgScore);
+      if (parsed.studyStreak) setStudyStreak(parsed.studyStreak);
+      if (parsed.bestStreak) setBestStreak(parsed.bestStreak);
+      if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
+      if (parsed.dailyPosts) setDailyPosts(parsed.dailyPosts);
+      if (parsed.unitCounts) setUnitCounts(parsed.unitCounts);
+    } catch (e) {
+      console.error("Error parsing cached dashboard:", e);
     }
-
-    // 🔄 Then refresh in background
-    loadDashboardData();
   }
+
+  // 🔄 Refresh in background silently
+  loadDashboardData();
+  setDashboardLoaded(true); // we now have something to render instantly
+
 }, [user]);
-
-
 
 // Auto-refresh every 60s
 useEffect(() => {
@@ -315,12 +320,22 @@ useEffect(() => {
   const [simulationPapers, setSimulationPapers] = useState<any[]>([]);
   const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
 /// 🏆 Top students state
-const [topStudents, setTopStudents] = useState<any[]>([]);
-const [loadingTopStudents, setLoadingTopStudents] = useState(true); // ✅ new state
+const [topStudents, setTopStudents] = useState<any[]>(() => {
+  // ✅ initialize from localStorage to avoid initial loader flash
+  const cached = localStorage.getItem("topStudents");
+  return cached ? JSON.parse(cached) : [];
+});
+
+const [loadingTopStudents, setLoadingTopStudents] = useState(() => {
+  // ✅ show loader only if no cached data
+  const cached = localStorage.getItem("topStudents");
+  return cached ? false : true;
+});
 
 const fetchTopStudents = async () => {
   try {
-    setLoadingTopStudents(true); // ✅ start loader
+    // ✅ show loader only if we have no cached leaderboard
+    setLoadingTopStudents(!topStudents.length);
 
     // 1️⃣ Get all quiz results
     const { data: results, error: resultsError } = await supabase
@@ -328,10 +343,7 @@ const fetchTopStudents = async () => {
       .select("user_id, score, total_questions");
 
     if (resultsError) throw resultsError;
-    if (!results) {
-      setLoadingTopStudents(false);
-      return;
-    }
+    if (!results) return;
 
     // 2️⃣ Calculate stars + stats for each user
     const userMap: Record<string, { total: number; count: number }> = {};
@@ -376,14 +388,19 @@ const fetchTopStudents = async () => {
       return { ...u, ...profile };
     });
 
-    setTopStudents(merged);
+    // ✅ Only update state if there is a difference to prevent unnecessary re-renders
+    const currentIds = topStudents.map((s) => s.userId).join(",");
+    const newIds = merged.map((s) => s.userId).join(",");
+    if (currentIds !== newIds) {
+      setTopStudents(merged);
+      localStorage.setItem("topStudents", JSON.stringify(merged)); // ✅ cache for future visits
+    }
   } catch (err) {
     console.error("Error fetching top students:", err);
   } finally {
     setLoadingTopStudents(false); // ✅ stop loader always
   }
 };
-
 
 const fetchSimulationPapers = async () => {
   try {
@@ -449,7 +466,7 @@ setSimulationProgress(progressMap);
 };
 
   const fetchProfile = async () => {
-    setLoading(true); // show spinner
+   if (!name) setLoading(true); // show spinner only if name not yet loaded
     const { data, error } = await supabase
       .from("profiles")
       .select("name")
@@ -617,88 +634,89 @@ const fetchProgress = async () => {
 return (
 <div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900">
 
-      {/* Welcome Section */}
+    {/* Welcome Section */}
 <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-xl p-6 text-white">
+  <h1 className="text-2xl md:text-3xl font-bold mb-2">
+    {name ? (() => {
+      const now = new Date();
+      const hour = now.getHours();
 
- <h1 className="text-2xl md:text-3xl font-bold mb-2">
-  {name ? (() => {
-    const now = new Date();
-    const hour = now.getHours();
+      // ✅ Determine time of day correctly around midnight
+      let timeGreeting: string;
+      if (hour >= 5 && hour < 12) timeGreeting = "Good morning";
+      else if (hour >= 12 && hour < 17) timeGreeting = "Good afternoon";
+      else if (hour >= 17 && hour < 21) timeGreeting = "Good evening";
+      else timeGreeting = "Good night";
 
-    // Determine time of day
-    let timeGreeting;
-    if (hour >= 5 && hour < 12) {
-      timeGreeting = "Good morning";
-    } else if (hour >= 12 && hour < 17) {
-      timeGreeting = "Good afternoon";
-    } else if (hour >= 17 && hour < 21) {
-      timeGreeting = "Good evening";
-    } else {
-      timeGreeting = "Hope your day is going well";
-    }
+      // Daily messages (preserve all guides)
+      const dailyMessage: { [key: string]: { morning: string; afternoon: string; evening: string; night: string } } = {
+        Sunday: {
+          morning: `Welcome to a new week of professional growth. Reflect on your achievements and prepare for a week full of learning and skill development.`,
+          afternoon: `Keep building momentum today. Take time to consolidate your learning and plan for the week ahead.`,
+          evening: `Wrap up your Sunday with reflection and preparation. Celebrate small wins and set goals for a productive week.`,
+          night: `Hope your Sunday winds down peacefully. Take a moment to rest and recharge for the week ahead.`
+        },
+        Monday: {
+          morning: `Welcome to the start of a productive week. Review your notes and practice essential skills with focus and confidence.`,
+          afternoon: `Keep pushing forward and apply what you've learned so far. Every effort counts towards mastery.`,
+          evening: `Reflect on what you accomplished today and plan your next steps. Your dedication sets the tone for a successful week.`,
+          night: `Hope your Monday winds down smoothly. Rest well and prepare for continued growth tomorrow.`
+        },
+        Tuesday: {
+          morning: `Welcome to another day of advancement. Stay curious and continue building your clinical expertise.`,
+          afternoon: `Keep progressing and challenging yourself. Every step brings you closer to mastery.`,
+          evening: `Review today's achievements and consider areas for improvement. Growth is built daily.`,
+          night: `Hope your Tuesday concludes positively. Rest and recharge to continue your learning journey.`
+        },
+        Wednesday: {
+          morning: `Welcome to midweek. Celebrate your progress so far and stay motivated for the remainder of the week.`,
+          afternoon: `Continue applying your skills and reflect on your learning. Midweek is perfect for focus and refinement.`,
+          evening: `Wrap up your Wednesday with reflection and planning. Your consistent effort is impressive.`,
+          night: `Hope your Wednesday evening is relaxing. Recharge and prepare for the rest of the week.`
+        },
+        Thursday: {
+          morning: `Welcome to a new day of professional growth. Embrace every learning opportunity and refine your skills.`,
+          afternoon: `Keep applying knowledge in practice. Small consistent steps lead to mastery.`,
+          evening: `Reflect on what you learned today and celebrate progress made.`,
+          night: `Hope your Thursday winds down well. Rest and get ready to finish the week strong.`
+        },
+        Friday: {
+          morning: `Welcome to the final stretch of the week. Focus on consolidating knowledge and practicing skills.`,
+          afternoon: `Keep moving forward and apply lessons learned this week.`,
+          evening: `Reflect on the week’s accomplishments and plan for next week’s growth.`,
+          night: `Hope your Friday evening is peaceful. Take time to rest and recharge for the weekend.`
+        },
+        Saturday: {
+          morning: `Welcome to a day for reflection and skill refinement. Review your progress and deepen your understanding.`,
+          afternoon: `Continue exploring new concepts and applying knowledge practically.`,
+          evening: `Wrap up Saturday with reflection and acknowledge your achievements.`,
+          night: `Hope your Saturday concludes positively. Rest well and prepare for the week ahead.`
+        }
+      };
 
-    // Daily messages with slight adjustments for time of day
-    const dailyMessage: { [key: string]: { morning: string; afternoon: string; evening: string; night: string } } = {
-      Sunday: {
-        morning: `Welcome to a new week of professional growth. Reflect on your achievements and prepare for a week full of learning and skill development.`,
-        afternoon: `Keep building momentum today. Take time to consolidate your learning and plan for the week ahead.`,
-        evening: `Wrap up your Sunday with reflection and preparation. Celebrate small wins and set goals for a productive week.`,
-        night: `Hope your Sunday winds down peacefully. Take a moment to rest and recharge for the week ahead.`
-      },
-      Monday: {
-        morning: `Welcome to the start of a productive week. Review your notes and practice essential skills with focus and confidence.`,
-        afternoon: `Keep pushing forward and apply what you've learned so far. Every effort counts towards mastery.`,
-        evening: `Reflect on what you accomplished today and plan your next steps. Your dedication sets the tone for a successful week.`,
-        night: `Hope your Monday winds down smoothly. Rest well and prepare for continued growth tomorrow.`
-      },
-      Tuesday: {
-        morning: `Welcome to another day of advancement. Stay curious and continue building your clinical expertise.`,
-        afternoon: `Keep progressing and challenging yourself. Every step brings you closer to mastery.`,
-        evening: `Review today's achievements and consider areas for improvement. Growth is built daily.`,
-        night: `Hope your Tuesday concludes positively. Rest and recharge to continue your learning journey.`
-      },
-      Wednesday: {
-        morning: `Welcome to midweek. Celebrate your progress so far and stay motivated for the remainder of the week.`,
-        afternoon: `Continue applying your skills and reflect on your learning. Midweek is perfect for focus and refinement.`,
-        evening: `Wrap up your Wednesday with reflection and planning. Your consistent effort is impressive.`,
-        night: `Hope your Wednesday evening is relaxing. Recharge and prepare for the rest of the week.`
-      },
-      Thursday: {
-        morning: `Welcome to a new day of professional growth. Embrace every learning opportunity and refine your skills.`,
-        afternoon: `Keep applying knowledge in practice. Small consistent steps lead to mastery.`,
-        evening: `Reflect on what you learned today and celebrate progress made.`,
-        night: `Hope your Thursday winds down well. Rest and get ready to finish the week strong.`
-      },
-      Friday: {
-        morning: `Welcome to the final stretch of the week. Focus on consolidating knowledge and practicing skills.`,
-        afternoon: `Keep moving forward and apply lessons learned this week.`,
-        evening: `Reflect on the week’s accomplishments and plan for next week’s growth.`,
-        night: `Hope your Friday evening is peaceful. Take time to rest and recharge for the weekend.`
-      },
-      Saturday: {
-        morning: `Welcome to a day for reflection and skill refinement. Review your progress and deepen your understanding.`,
-        afternoon: `Continue exploring new concepts and applying knowledge practically.`,
-        evening: `Wrap up Saturday with reflection and acknowledge your achievements.`,
-        night: `Hope your Saturday concludes positively. Rest well and prepare for the week ahead.`
-      }
-    };
+      const today = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const today = now.toLocaleDateString('en-US', { weekday: 'long' });
-    let timeOfDay: "morning" | "afternoon" | "evening" | "night";
+      // ✅ Determine time of day key
+      let timeOfDay: "morning" | "afternoon" | "evening" | "night";
+      if (hour >= 5 && hour < 12) timeOfDay = "morning";
+      else if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
+      else if (hour >= 17 && hour < 21) timeOfDay = "evening";
+      else timeOfDay = "night";
 
-    if (hour >= 5 && hour < 12) timeOfDay = "morning";
-    else if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
-    else if (hour >= 17 && hour < 21) timeOfDay = "evening";
-    else timeOfDay = "night";
+      // ✅ Build the welcome message
+      const welcomeMessage = `${timeGreeting}, ${name} 👋! ${dailyMessage[today][timeOfDay]}`;
 
-    return `${timeGreeting}, ${name} 👋! ${dailyMessage[today][timeOfDay]}`;
-  })() : "Loading..."}
-  {loading && (
-    <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
-      Updating…
-    </span>
-  )}
-</h1>
+      // ✅ Cache in localStorage for instant load next time
+      localStorage.setItem("welcomeMessage", welcomeMessage);
+
+      return welcomeMessage;
+    })() : localStorage.getItem("welcomeMessage") || "Loading..."}
+    {loading && (
+      <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
+        Updating…
+      </span>
+    )}
+  </h1>
 
   <p className="text-white/90">
     {(() => {
@@ -712,10 +730,16 @@ return (
         Saturday: " Study Saturday! Use today to review, practice, and deepen your understanding. Whether it’s theory or hands-on skills, every effort counts. Your future patients and colleagues will thank you for your commitment."
       };
       const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-      return nursingMessages[today] || "Keep pushing—you’re doing amazing! Every effort you make today brings you closer to your dream nursing career.";
+
+      // ✅ Cache nursing message too
+      const message = nursingMessages[today] || "Keep pushing—you’re doing amazing! Every effort you make today brings you closer to your dream nursing career.";
+      localStorage.setItem("nursingMessage", message);
+
+      return message;
     })()}
   </p>
 </div>
+
 {/* 🏆 Top Students Leaderboard */}
 <Card className="rounded-2xl shadow-lg">
   <CardHeader>
@@ -1101,9 +1125,7 @@ return (
             Expires on {new Date(post.expires_at).toLocaleString()}
           </p>
         </motion.div>
-      )) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
-      )}
+      )) : null}
     </div>
   </CardContent>
 

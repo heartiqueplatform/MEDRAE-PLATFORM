@@ -26,7 +26,16 @@ import { CalendarDays, Clock, MapPin, Bell, Share2, Info } from "lucide-react";
 
 export function Calendar() {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [events, setEvents] = useState<any[]>([]);
+const [events, setEvents] = useState<any[]>(() => {
+  if (typeof window !== "undefined") {
+    // Only use temp cache here, because userId is not yet known
+    const tempCache = localStorage.getItem("cachedEvents_temp");
+    return tempCache ? JSON.parse(tempCache) : [];
+  }
+  return [];
+});
+
+
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [showModal, setShowModal] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
@@ -41,54 +50,85 @@ export function Calendar() {
     priority: "high",
   });
 
-  useEffect(() => {
-    async function getUserAndEvents() {
-      const { data, error } = await supabase.auth.getUser();
-      if (error || !data?.user) return;
-      const id = data.user.id;
-      setUserId(id);
-      fetchEvents(id);
+useEffect(() => {
+  async function getUserAndEvents() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) return;
+
+    const id = data.user.id;
+    setUserId(id);
+
+    // Migrate temp cache to user-specific cache
+    const tempCache = localStorage.getItem("cachedEvents_temp");
+    if (tempCache) {
+      localStorage.setItem(`cachedEvents_${id}`, tempCache);
+      localStorage.removeItem("cachedEvents_temp");
+      setEvents(JSON.parse(tempCache)); // instantly show
     }
 
-    getUserAndEvents();
-  }, []);
+    // Fetch fresh data
+    fetchEvents(id);
+  }
+
+  getUserAndEvents();
+}, []);
+
 
   // 🔴 Realtime subscription
-  useEffect(() => {
-    if (!userId) return;
+ useEffect(() => {
+  if (!userId) return;
 
-    const channel = supabase
-      .channel("calendar_events_channel")
-      .on(
-        "postgres_changes",
-        {
-          event: "*", // listen to INSERT, UPDATE, DELETE
-          schema: "public",
-          table: "calendar_events",
-          filter: `user_id=eq.${userId}`,
-        },
-               () => {
-          if (userId) fetchEvents(userId);
-        }
-      )
-      .subscribe();
+  const channel = supabase
+    .channel("calendar_events_channel")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "calendar_events", filter: `user_id=eq.${userId}` },
+      (payload) => {
+        setEvents((prev) => {
+          let updated = [...prev];
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
+          if (payload.eventType === "INSERT") {
+            updated = [payload.new, ...prev];
+          }
+          if (payload.eventType === "UPDATE") {
+            updated = prev.map((e) => (e.id === payload.new.id ? payload.new : e));
+          }
+          if (payload.eventType === "DELETE") {
+            updated = prev.filter((e) => e.id !== payload.old.id);
+          }
 
-  
-  async function fetchEvents(user_id: string) {
-    const { data, error } = await supabase
-      .from("calendar_events")
-      .select("id, title, description, start_time, type, priority")
-      .eq("user_id", user_id)
-      .order("start_time", { ascending: true });
+          // ✅ Update cache
+          localStorage.setItem(`cachedEvents_${userId}`, JSON.stringify(updated));
+          return updated;
+        });
+      }
+    )
+    .subscribe();
 
-    if (!error) setEvents(data);
-    else console.error(error);
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [userId]);
+
+
+async function fetchEvents(user_id: string) {
+  const cachedKey = `cachedEvents_${user_id}`;
+  const cachedEvents = localStorage.getItem(cachedKey);
+  if (cachedEvents) setEvents(JSON.parse(cachedEvents)); // instant load
+
+  const { data, error } = await supabase
+    .from("calendar_events")
+    .select("id, title, description, start_time, type, priority")
+    .eq("user_id", user_id)
+    .order("start_time", { ascending: true });
+
+  if (!error && data) {
+    setEvents(data);
+    localStorage.setItem(cachedKey, JSON.stringify(data));
   }
+}
+
+
 
   function handleDateSelect(date: Date | undefined) {
     setSelectedDate(date);
@@ -236,9 +276,12 @@ export function Calendar() {
         <Card>
           <CardHeader>
             <CardTitle>Upcoming Assessments</CardTitle>
-            <CardDescription>
-              Next {events.length} assessments scheduled
-            </CardDescription>
+           <CardDescription>
+  {events.length > 0
+    ? `Next ${events.length} assessments scheduled`
+    : "No upcoming assessments"}
+</CardDescription>
+
           </CardHeader>
           <CardContent className="space-y-4">
             {events.map((event) => (

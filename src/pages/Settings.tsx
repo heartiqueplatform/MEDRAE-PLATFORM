@@ -37,7 +37,9 @@ import {
 
 export function Settings() {
   // State variables
-  const [profile, setProfile] = useState<any>(null);
+ const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
+const [profile, setProfile] = useState<any>(cachedProfile);
+
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -45,18 +47,20 @@ export function Settings() {
 
   // Fetch profile
   useEffect(() => {
-    const fetchProfile = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+  const fetchProfile = async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-      if (userError || !user) {
-        return toast({ title: "Error", description: "User not found" });
-      }
+    if (userError || !user) {
+      return toast({ title: "Error", description: "User not found" });
+    }
 
-      setUserId(user.id);
+    setUserId(user.id);
 
+    // Only fetch if no cached profile
+    if (!cachedProfile) {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -68,11 +72,17 @@ export function Settings() {
       } else {
         setProfile(data);
         setAvatarPreview(data.avatar_url || null);
+        localStorage.setItem("userProfile", JSON.stringify(data));
       }
-    };
+    } else {
+      // use cached avatar preview
+      setAvatarPreview(cachedProfile.avatar_url || null);
+    }
+  };
 
-    fetchProfile();
-  }, []);
+  fetchProfile();
+}, []);
+
 
   // Handle input changes
   const handleChange = (key: string, value: string) => {
@@ -173,39 +183,49 @@ const handleRemoveAvatar = async () => {
 
 
   // Save profile
-  const handleSaveProfile = async () => {
-    if (!userId) return;
+ const handleSaveProfile = async () => {
+  if (!userId) return;
 
-    setLoading(true);
+  setLoading(true);
 
-    let avatarUrl = profile.avatar_url;
-    if (avatarFile) {
-      const uploadedUrl = await uploadAvatar();
-      if (uploadedUrl) {
-        avatarUrl = uploadedUrl;
-      }
+  let avatarUrl = profile.avatar_url;
+  if (avatarFile) {
+    const uploadedUrl = await uploadAvatar();
+    if (uploadedUrl) {
+      avatarUrl = uploadedUrl;
     }
+  }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        ...profile,
-        avatar_url: avatarUrl,
-      })
-      .eq("user_id", userId);
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      ...profile,
+      avatar_url: avatarUrl,
+    })
+    .eq("user_id", userId);
 
-    setLoading(false);
+  setLoading(false);
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to save profile" });
-    } else {
-      toast({
-        title: "Profile Saved!",
-        description: "Your profile was updated successfully.",
-      });
-    }
-  };
-if (!profile) return <GlobalLoader message="Loading profile..." />;
+  if (error) {
+    toast({ title: "Error", description: "Failed to save profile" });
+  } else {
+    // ✅ Save to localStorage immediately
+    const updatedProfile = { ...profile, avatar_url: avatarUrl };
+    setProfile(updatedProfile);
+    localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
+
+    toast({
+      title: "Profile Saved!",
+      description: "Your profile was updated successfully.",
+    });
+  }
+};
+
+// Only show loader if profile is not in cache
+if (!profile && !cachedProfile) {
+  return <GlobalLoader message="Loading profile..." />;
+}
+
 
   return (
     <div className="space-y-6">
