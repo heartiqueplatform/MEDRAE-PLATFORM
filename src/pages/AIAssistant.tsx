@@ -96,11 +96,19 @@ await supabase
   }
 };
 
-const [messages, setMessages] = useState<Message[]>([]);
+
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+// Key for localStorage
+const localKey = "aiChatHistory";
+
+// Load cached messages if available (safe for browser)
+const cached = typeof window !== "undefined" ? localStorage.getItem(localKey) : null;
+
+// Initialize state using cache
+const [messages, setMessages] = useState<Message[]>(cached ? JSON.parse(cached) : []);
+const [isHistoryLoading, setIsHistoryLoading] = useState(!cached);
 
   const quickQuestions = [
     "Explain hypertension pathophysiology",
