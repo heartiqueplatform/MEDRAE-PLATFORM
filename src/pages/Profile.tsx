@@ -164,23 +164,15 @@ const getDaysMessage = () => {
 const [checkingUser, setCheckingUser] = useState(true);
 
 useEffect(() => {
-  // Only act after Supabase finishes loading
-  if (user === undefined) return; 
+  if (checkingUser) return; // wait until user check is complete
 
   if (!user) {
-    // Supabase confirmed no active user
     navigate("/login", { replace: true });
   } else {
-    // User is logged in
     const cached = JSON.parse(localStorage.getItem("userProfile") || "null");
     if (cached) setProfileState(cached);
   }
-
-  setCheckingUser(false);
-}, [user, navigate]);
-
-
-
+}, [user, checkingUser, navigate]);
 
 // Show loader only if still checking user OR no profile data yet
 
