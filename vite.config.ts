@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate", // auto update service worker
       includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.pneg", "pwa-512x512.pneg"], 
       manifest: {
-        name: "HEARTIQUE NURSING NEXUS SCHOLAR",
+        name: "Heatique Nursing Nexus Scholar",
         short_name: "Heartique X",
-        description: "App for NCK/FQE exam revision ",
+        description: "Comprehensive app for NCK/FQE exam revision, featuring practice questions, study guides, progress tracking, and interactive learning tools to help healthcare professionals prepare efficiently and confidently. ",
         theme_color: "#4ade80",
         background_color: "#ffffff",
         display: "standalone", // looks like native app
