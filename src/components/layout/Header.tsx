@@ -229,6 +229,14 @@ setStreak(newStreak);
 >
   {isOnline ? "Online" : "Offline"}
 </Badge>
+<div className="hidden md:block">
+  <Badge
+    className="h-5 px-2 text-xs bg-blue-500 text-white"
+  >
+    Users: {totalUsers ?? "-"}
+  </Badge>
+</div>
+
         {/*  Reload PWA */}
      <Button
   variant="ghost"
@@ -242,11 +250,6 @@ setStreak(newStreak);
   Refresh App for updates
 </span>
 </Button>
-<Badge
-  className="h-5 px-2 text-xs bg-blue-500 text-white"
->
-  Users: {totalUsers ?? "-"}
-</Badge>
 
 {/* Share App */}
 <Button
