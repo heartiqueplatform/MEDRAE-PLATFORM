@@ -608,7 +608,7 @@ const recordView = async (videoId: string, updateUI = true) => {
   >
 
     {videos.length === 0 && loading ? (
-  <GlobalLoader message="Be patient Heartique is loading videos..." />
+  <GlobalLoader message="Heartique is loading videos..." />
 ) : (
   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 

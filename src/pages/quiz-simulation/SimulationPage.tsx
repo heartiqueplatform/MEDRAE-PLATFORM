@@ -637,7 +637,6 @@ if (!selectedPaper) {
     </div>
   );
 }
-
   return (
     <div className="min-h-screen bg-background text-foreground p-4">
       <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
@@ -654,7 +653,6 @@ if (!selectedPaper) {
     </Link>
   </Button>
 </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {paperList.map((paper) => {
           const canAccess = profile?.subscription_active ? true : paper.is_free;
@@ -668,8 +666,7 @@ if (!selectedPaper) {
              onClick={async () => {
   if (!paper.is_done && canAccess) {
     setSelectedPaper(paper);
-
-    // ✅ Insert visit row
+    // Insert visit row
     const { data: userData } = await supabase.auth.getUser();
     if (userData?.user?.id) {
       await supabase.from("simulation_visits").insert({
@@ -680,10 +677,7 @@ if (!selectedPaper) {
     }
   }
 }}
-
-            >
-          
-     
+>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   {paper.title}
@@ -740,7 +734,6 @@ if (!selectedPaper) {
 >
   Reset Paper
 </Button>
-
                   </div>
                 )}
               </CardContent>
@@ -757,7 +750,7 @@ if (!currentQuestion) {
     // Use global spinner instead
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <GlobalLoader message="Be patient Heartique is Loading questions..." />
+        <GlobalLoader message="Heartique is Loading questions..." />
       </div>
     );
   }
@@ -772,7 +765,6 @@ if (!currentQuestion) {
     </div>
   );
 }
-
   // Main question view
   return (
     <div className="min-h-screen bg-background text-foreground grid grid-cols-1 md:grid-cols-3 gap-6 p-4 md:p-8">

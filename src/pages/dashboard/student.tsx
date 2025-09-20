@@ -1087,11 +1087,6 @@ return (
     )}
   </Button>
 </div>
-
-
-
-
-
     {/* Display recent daily posts */}
     <div className="space-y-3 mt-4">
       {dailyPosts.length > 0 ? dailyPosts.map((post) => (

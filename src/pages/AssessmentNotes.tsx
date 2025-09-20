@@ -575,7 +575,7 @@ const file_url = urlData.publicUrl;
         fileUrl={fullscreenNote.file_url}
         plugins={[defaultLayoutPluginInstance]}
         theme={isDarkMode ? "dark" : "light"}
-        renderLoader={() => <GlobalLoader message="Be Patient Heartique is Loading PDF..." />}
+        renderLoader={() => <GlobalLoader message="Heartique is Loading PDF..." />}
     />
 </Worker>
     ) : (

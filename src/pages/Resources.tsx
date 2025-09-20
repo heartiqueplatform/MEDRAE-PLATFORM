@@ -661,7 +661,7 @@ const uploadResource = async () => {
     }
   };
 if (loadingNotes) {
-  return <GlobalLoader message="Please be patient, Heartique is preparing your notes..." />;
+  return <GlobalLoader message="Heartique is preparing your notes..." />;
 }
 
 return (
@@ -862,7 +862,7 @@ return (
             <div className="flex flex-col items-center justify-center py-20 col-span-full">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
               <p className="text-muted-foreground text-center">
-                Please be patient, Heartique is preparing your notes...
+             Heartique is preparing your notes...
               </p>
             </div>
           ) : filteredResources.filter((note) =>
@@ -1078,7 +1078,7 @@ return (
         fileUrl={fullscreenNote.file_url}
         plugins={[defaultLayoutPluginInstance]}
         theme={isDarkMode ? "dark" : "light"}
-        renderLoader={() => <GlobalLoader message="Be Patient Heartique is Loading PDF..." />}
+        renderLoader={() => <GlobalLoader message="sHeartique is Loading PDF..." />}
     />
 </Worker>
 
