@@ -488,61 +488,83 @@ const fetchSimulationPapers = async () => {
     }
     setLoading(false); // hide spinner
   };
+const handleLoginAndStreak = async () => {
+  const today = new Date().toISOString().split("T")[0];
 
-  const handleLoginAndStreak = async () => {
-    const today = new Date().toISOString().split("T")[0];
-    const { data: existing } = await supabase
-      .from("login_activity")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("login_date", today)
-      .single();
-    if (!existing) {
-      const { data: lastLogin } = await supabase
-        .from("login_activity")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("login_date", { ascending: false })
-        .limit(1);
-      let newStreak = 1;
-      if (lastLogin && lastLogin.length > 0) {
-        const lastDate = new Date(lastLogin[0].login_date);
-        const diffDays = Math.floor(
-          (new Date(today).getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        if (diffDays === 1) {
-          newStreak = (lastLogin[0].streak || 0) + 1;
-        }
-      }
-      await supabase.from("login_activity").insert({
-        user_id: user.id,
-        login_date: today,
-        streak: newStreak,
-      });
-      setStudyStreak(newStreak);
-      updateBestStreakIfNeeded(newStreak);
-    } else {
-      setStudyStreak(existing.streak);
-      updateBestStreakIfNeeded(existing.streak);
-    }
-  };
+  // ✅ First load from localStorage (instant UI)
+  const cached = JSON.parse(localStorage.getItem("streakData") || "{}");
+  if (cached?.currentStreak !== undefined) {
+    setStudyStreak(cached.currentStreak);
+    setBestStreak(cached.bestStreak || 0);
+  }
 
-  const updateBestStreakIfNeeded = async (current: number) => {
-    const { data, error } = await supabase
-      .from("login_activity")
-      .select("streak")
-      .eq("user_id", user.id);
-    if (!error && data.length > 0) {
-      const maxStreak = Math.max(...data.map((row) => row.streak || 0));
-      if (current > maxStreak) {
-        setBestStreak(current);
-      } else {
-        setBestStreak(maxStreak);
-      }
-    } else {
-      setBestStreak(current);
-    }
-  };
+  // ✅ Check if today's login exists in DB
+  const { data: existing, error: existingError } = await supabase
+    .from("login_activity")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("login_date", today)
+    .maybeSingle();
+
+  if (!existing && !existingError) {
+    await supabase.from("login_activity").insert({
+      user_id: user.id,
+      login_date: today,
+    });
+  }
+
+  // ✅ Always fetch the latest streak from DB
+  const { data, error } = await supabase
+    .from("login_activity")
+    .select("streak")
+    .eq("user_id", user.id)
+    .order("login_date", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!error && data) {
+    const newStreak = data.streak || 0;
+    setStudyStreak(newStreak);
+    updateBestStreakIfNeeded(newStreak);
+
+    // ✅ Save to localStorage for instant access next time
+    localStorage.setItem(
+      "streakData",
+      JSON.stringify({
+        currentStreak: newStreak,
+        bestStreak: Math.max(newStreak, cached.bestStreak || 0),
+      })
+    );
+  }
+};
+
+const updateBestStreakIfNeeded = async (current: number) => {
+  const { data, error } = await supabase
+    .from("login_activity")
+    .select("streak")
+    .eq("user_id", user.id)
+    .order("streak", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!error && data) {
+    const maxStreak = data.streak || 0;
+    const best = current > maxStreak ? current : maxStreak;
+    setBestStreak(best);
+
+    // ✅ Update cached best streak silently
+    const cached = JSON.parse(localStorage.getItem("streakData") || "{}");
+    localStorage.setItem(
+      "streakData",
+      JSON.stringify({
+        currentStreak: cached.currentStreak || current,
+        bestStreak: best,
+      })
+    );
+  } else {
+    setBestStreak(current);
+  }
+};
 
 const fetchProgress = async () => {
   const { data, error } = await supabase
