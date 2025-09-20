@@ -1078,7 +1078,7 @@ return (
         fileUrl={fullscreenNote.file_url}
         plugins={[defaultLayoutPluginInstance]}
         theme={isDarkMode ? "dark" : "light"}
-        renderLoader={() => <GlobalLoader message="sHeartique is Loading PDF..." />}
+        renderLoader={() => <GlobalLoader message="Heartique is Downloading PDF..." />}
     />
 </Worker>
 
