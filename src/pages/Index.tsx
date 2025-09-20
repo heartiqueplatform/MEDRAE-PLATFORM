@@ -104,22 +104,6 @@ const Index = () => {
 }
 return (
   <div className="min-h-screen relative">
-    {/* Offline card (only shows if offline) */}
-    {isOffline && (
-      <div className="absolute inset-0 bg-black/90 flex items-start justify-center pt-10 z-50">
-        <div className="bg-white dark:bg-gray-900 text-center p-6 rounded-2xl shadow-xl max-w-sm mx-auto">
-          <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">
-            No internet connection
-          </p>
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-            Check your internet connection and try again.
-          </p>
-          <Button onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </div>
-      </div>
-    )}
       {/* Hero Section */}
       <section className="bg-gradient-hero text-white py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
