@@ -12,13 +12,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion } from "framer-motion";
 const totalDuration = 30 * 60;
-// Warn user before closing/refreshing if they are mid-simulation
-if (typeof window !== "undefined") {
-  window.onbeforeunload = (event) => {
-    event.preventDefault();
-    event.returnValue = "Are you sure you want to leave? Your progress may be lost.";
-  };
-}
 
 const getStatusVariant = (status: string) => {
   switch (status.toLowerCase()) {
