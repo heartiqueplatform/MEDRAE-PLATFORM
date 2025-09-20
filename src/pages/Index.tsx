@@ -8,48 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 
 const Index = () => {
-
-    const [isOffline, setIsOffline] = useState(!navigator.onLine);
  const [loading, setLoading] = useState(true); // ⬅️ prevent render until session check
-
-
-    useEffect(() => {
-   const checkInternetAccess = async () => {
-  try {
-    const res = await fetch("https://www.gstatic.com/generate_204", {
-      method: "GET",   // ✅ use GET instead of HEAD
-      cache: "no-store",
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-    };
-
-    const handleConnectionChange = async () => {
-      const hasInternet = await checkInternetAccess();
-      if (navigator.onLine && hasInternet) {
-        setIsOffline(false);
-      } else {
-        setIsOffline(true);
-      }
-    };
-
-    // run immediately when app starts
-    handleConnectionChange();
-
-    window.addEventListener("online", handleConnectionChange);
-    window.addEventListener("offline", handleConnectionChange);
-
-    // keep checking every 10s (in case wifi is on but no net)
-    const interval = setInterval(handleConnectionChange, 10000);
-
-    return () => {
-      window.removeEventListener("online", handleConnectionChange);
-      window.removeEventListener("offline", handleConnectionChange);
-      clearInterval(interval);
-    };
-  }, []);
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -63,17 +22,13 @@ const Index = () => {
       // 🔹 If offline but logged in before → go to role dashboard
       const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
       const userRole = localStorage.getItem("userRole");
-
-      if (isOffline && hasLoggedInBefore && userRole) {
-        navigate(`/dashboard/${userRole}`, { replace: true });
-      }
     }
 
     setLoading(false); // ✅ allow rendering only if not logged in
   };
 
   checkSession();
-}, [navigate, isOffline]);
+}, [navigate]);
 
 
 
