@@ -12,6 +12,14 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion } from "framer-motion";
 const totalDuration = 30 * 60;
+// Warn user before closing/refreshing if they are mid-simulation
+if (typeof window !== "undefined") {
+  window.onbeforeunload = (event) => {
+    event.preventDefault();
+    event.returnValue = "Are you sure you want to leave? Your progress may be lost.";
+  };
+}
+
 const getStatusVariant = (status: string) => {
   switch (status.toLowerCase()) {
     case "done":
@@ -209,6 +217,22 @@ localStorage.setItem("sim-papers", JSON.stringify(papersWithStatus));
 useEffect(() => {
   fetchPapers();
 }, []);
+// Confirm before leaving if user is in the middle of a simulation
+useEffect(() => {
+  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    if (selectedPaper) {
+      event.preventDefault();
+      event.returnValue = "Are you sure you want to leave? Your progress may be lost.";
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+}, [selectedPaper]);
+
+
 //  Realtime subscription for simulation (papers, results, subscription)
 useEffect(() => {
   let channel = supabase.channel("simulation_realtime");
