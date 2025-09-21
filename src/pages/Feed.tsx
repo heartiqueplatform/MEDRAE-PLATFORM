@@ -664,17 +664,19 @@ const loadLeaderboard = async () => {
       <Button
         key={opt}
         variant="outline"
-        className={`justify-start w-full text-left px-4 py-4 break-words whitespace-normal transition-colors rounded-lg ${
-          chosen && correct
-            ? "bg-green-500 text-white hover:bg-green-600"
-            : chosen && !correct
-            ? "bg-red-500 text-white hover:bg-red-600"
-            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-        }`}
         onClick={() => handleAnswer(q, opt)}
         disabled={!!selected}
+        className={`w-full text-left px-5 py-4 break-words whitespace-pre-wrap flex-none rounded-lg transition-colors
+          ${
+            chosen && correct
+              ? "bg-green-500 text-white hover:bg-green-600"
+              : chosen && !correct
+              ? "bg-red-500 text-white hover:bg-red-600"
+              : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+          }
+        `}
       >
-        <span className="font-medium">{opt}.</span> {text}
+        <span className="font-medium mr-2">{opt}.</span> {text}
       </Button>
     );
   })}
