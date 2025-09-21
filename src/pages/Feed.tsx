@@ -655,35 +655,35 @@ const loadLeaderboard = async () => {
                 <p className="font-medium text-gray-900 dark:text-gray-100">
                   {q.question_text}
                 </p>
+<div className="flex flex-col gap-3 mt-3 w-full">
+  {["A", "B", "C", "D"].map((opt) => {
+    const text = q[`option_${opt.toLowerCase()}`];
+    if (!text) return null;
+    const chosen = selected === opt;
+    const correct = q.correct_answer === opt;
 
+    return (
+   <Button
+  key={opt}
+  onClick={() => handleAnswer(q, opt)}
+  disabled={!!selected}
+  variant="outline"
+  className={`w-full text-left px-4 py-3 rounded-lg break-words whitespace-normal transition-colors ${
+    chosen && correct
+      ? "bg-green-500 text-white hover:bg-green-600"
+      : chosen && !correct
+      ? "bg-red-500 text-white hover:bg-red-600"
+      : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+  }`}
+>
+  <span className="font-medium mr-2">{opt}.</span>
+  <span>{text}</span>
+</Button>
 
-               <div className="flex flex-col gap-4 mt-3 w-full">
-{["A", "B", "C", "D"].map((letter) => {
-  const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
-  const isSelected = selectedAnswer === letter;
-  const correct = q.correct_answer === letter;
-
-  return (
-    <button
-      key={letter}
-      disabled={!!selectedAnswer || quizFinished}
-      onClick={() => handleAnswer(q.id, letter)}
-      className={`w-full text-left px-4 py-3 rounded-lg font-semibold border transition-all duration-150 break-words whitespace-normal flex flex-col items-start
-        ${isSelected
-          ? correct
-            ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
-            : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
-          : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white hover:bg-yellow-500 dark:hover:bg-amber-800"}
-        ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}
-      `}
-    >
-      <span className="font-medium">{letter}.</span>
-      <span className="mt-1">{optionText}</span>
-    </button>
-  );
-})}
-
+    );
+  })}
 </div>
+
 
               {selected && (
   <div className="mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
