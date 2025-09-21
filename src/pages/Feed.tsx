@@ -643,9 +643,9 @@ const loadLeaderboard = async () => {
             savedComments[q.id]?.length || q.comments_count || 0;
 
           return (
-            <Card
+<Card
   key={q.id}
-  className="p-4 shadow-md rounded-xl w-full max-w-screen-lg mx-auto"
+  className="p-4 shadow-md rounded-xl w-full max-w-screen-lg mx-auto flex flex-col"
 >
 
               <CardContent>
@@ -666,22 +666,22 @@ const loadLeaderboard = async () => {
 
     return (
       <Button
-        key={opt}
-        onClick={() => handleAnswer(q, opt)}
-        disabled={!!selected}
-        variant="outline"
-        className={`w-full flex-none text-left px-6 py-4 rounded-lg break-words whitespace-normal transition-colors justify-start items-start ${
-          chosen && correct
-            ? "bg-green-500 text-white hover:bg-green-600"
-            : chosen && !correct
-            ? "bg-red-500 text-white hover:bg-red-600"
-            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-        }`}
-        style={{ minHeight: "auto" }}
-      >
-        <span className="font-medium mr-3">{opt}.</span>
-        <span className="flex-1">{text}</span>
-      </Button>
+  key={opt}
+  onClick={() => handleAnswer(q, opt)}
+  disabled={!!selected}
+  variant="outline"
+  className={`w-full text-left px-6 py-4 rounded-lg break-words whitespace-normal transition-colors justify-start items-start ${
+    chosen && correct
+      ? "bg-green-500 text-white hover:bg-green-600"
+      : chosen && !correct
+      ? "bg-red-500 text-white hover:bg-red-600"
+      : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+  }`}
+>
+  <span className="font-medium mr-3">{opt}.</span>
+  <span className="flex-1">{text}</span>
+</Button>
+
     );
   })}
 </div>
