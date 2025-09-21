@@ -669,7 +669,7 @@ const loadLeaderboard = async () => {
       onClick={() => handleAnswer(q, opt)}
       disabled={!!selected}
       variant="outline"
-      className={`w-full text-left px-4 py-3 rounded-lg break-words whitespace-normal transition-colors ${
+      className={`w-full px-4 py-3 rounded-lg text-left break-words whitespace-normal transition-colors ${
         chosen && correct
           ? "bg-green-500 text-white hover:bg-green-600"
           : chosen && !correct
@@ -677,8 +677,10 @@ const loadLeaderboard = async () => {
           : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
       }`}
     >
-      <span className="font-medium mr-2">{opt}.</span>
-      <span className="break-words">{text}</span>
+      <div className="flex gap-2 items-start">
+        <span className="font-medium">{opt}.</span>
+        <span className="break-words">{text}</span>
+      </div>
     </Button>
   );
 })}
