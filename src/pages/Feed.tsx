@@ -665,12 +665,12 @@ const loadLeaderboard = async () => {
     const correct = q.correct_answer === opt;
 
     return (
-      <Button
+    <Button
   key={opt}
   onClick={() => handleAnswer(q, opt)}
   disabled={!!selected}
   variant="outline"
-  className={`w-full text-left px-6 py-4 rounded-lg break-words whitespace-normal transition-colors justify-start items-start ${
+  className={`w-full text-left px-4 py-3 rounded-lg break-words whitespace-normal flex flex-col items-start ${
     chosen && correct
       ? "bg-green-500 text-white hover:bg-green-600"
       : chosen && !correct
@@ -678,9 +678,10 @@ const loadLeaderboard = async () => {
       : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
   }`}
 >
-  <span className="font-medium mr-3">{opt}.</span>
-  <span className="flex-1">{text}</span>
+  <span className="font-medium">{opt}.</span>
+  <span className="mt-1">{text}</span>
 </Button>
+
 
     );
   })}
