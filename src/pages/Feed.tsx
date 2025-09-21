@@ -658,33 +658,31 @@ const loadLeaderboard = async () => {
 
 
                <div className="flex flex-col gap-4 mt-3 w-full">
-  {["A", "B", "C", "D"].map((opt) => {
-    const text = q[`option_${opt.toLowerCase()}`];
-    if (!text) return null;
-    const chosen = selected === opt;
-    const correct = q.correct_answer === opt;
+{["A", "B", "C", "D"].map((letter) => {
+  const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
+  const isSelected = selectedAnswer === letter;
+  const correct = q.correct_answer === letter;
 
-    return (
-    <Button
-  key={opt}
-  onClick={() => handleAnswer(q, opt)}
-  disabled={!!selected}
-  variant="outline"
-  className={`w-full text-left px-4 py-3 rounded-lg break-words whitespace-normal flex flex-col items-start ${
-    chosen && correct
-      ? "bg-green-500 text-white hover:bg-green-600"
-      : chosen && !correct
-      ? "bg-red-500 text-white hover:bg-red-600"
-      : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-  }`}
->
-  <span className="font-medium">{opt}.</span>
-  <span className="mt-1">{text}</span>
-</Button>
+  return (
+    <button
+      key={letter}
+      disabled={!!selectedAnswer || quizFinished}
+      onClick={() => handleAnswer(q.id, letter)}
+      className={`w-full text-left px-4 py-3 rounded-lg font-semibold border transition-all duration-150 break-words whitespace-normal flex flex-col items-start
+        ${isSelected
+          ? correct
+            ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
+            : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
+          : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white hover:bg-yellow-500 dark:hover:bg-amber-800"}
+        ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}
+      `}
+    >
+      <span className="font-medium">{letter}.</span>
+      <span className="mt-1">{optionText}</span>
+    </button>
+  );
+})}
 
-
-    );
-  })}
 </div>
 
               {selected && (
