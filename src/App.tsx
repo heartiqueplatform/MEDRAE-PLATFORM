@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate} from "react-router
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { HeartiqueQuizzes } from "@/pages/HeartiqueQuizzes";
+import Feed from "./pages/Feed";
 
 
 // Pages
@@ -161,6 +162,7 @@ const App = () => {
               <Route path="/forum" element={<DashboardLayout userRole={getRole()}><Forum /></DashboardLayout>} />
               <Route path="/simulation/:paper_id" element={<SimulationPage />} />
               <Route path="/heartique-quizzes" element={<DashboardLayout userRole={localStorage.getItem('userRole') as 'student' | 'tutor' | 'staff' || 'student'}><HeartiqueQuizzes /></DashboardLayout>} />
+             <Route path="/feed"element={<DashboardLayout userRole={getRole()}><Feed /></DashboardLayout>}/>
 
               {/* Catch-all 404 */}
               <Route path="*" element={<NotFound />} />

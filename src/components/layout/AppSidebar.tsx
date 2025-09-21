@@ -26,7 +26,9 @@ import {
   Briefcase,
   CalendarDays,
   PenTool,
-  Network
+  Network,
+  Newspaper
+
 } from "lucide-react";
 import {
   Sidebar,
@@ -85,7 +87,8 @@ const formatNumber = (num: number | null) => {
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
   };
 const mainItems = [
-  { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home },
+    { title: "Feed", url: "/feed", icon: Newspaper },
+  { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home },
   { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
   { title: "Chat Room", url: "/chat", icon: MessageCircle },
   { title: "Forum", url: "/forum", icon: MessageSquare },
