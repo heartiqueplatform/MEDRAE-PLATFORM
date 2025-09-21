@@ -566,16 +566,6 @@ const loadLeaderboard = async () => {
 
  return (
   <>
-    {showConfetti && (
-  <Confetti
-    width={width}
-    height={height}
-    recycle={false} // confetti won't loop forever
-    numberOfPieces={300} // more confetti 🎉
-  />
-)}
-
-
     <PullToRefresh
       onRefresh={() => {
         setPage(0);
@@ -645,76 +635,70 @@ const loadLeaderboard = async () => {
           return (
 <Card
   key={q.id}
-  className="p-4 shadow-md rounded-xl w-full max-w-screen-lg mx-auto flex flex-col"
+  className="relative p-4 shadow-md rounded-xl w-full max-w-screen-lg mx-auto flex flex-col"
+  ref={loaderRef} // make sure this ref points to the card
 >
+  {/* ✅ Confetti overlay */}
+  {selected === q.correct_answer && (
+    <Confetti
+      width={loaderRef.current?.offsetWidth || 350}
+      height={loaderRef.current?.offsetHeight || 200}
+      recycle={false}
+      numberOfPieces={200}
+      gravity={0.3}
+      className="absolute top-0 left-0 pointer-events-none z-50"
+    />
+  )}
 
-           <CardContent className="flex flex-col gap-3 w-full">
+  <CardContent className="flex flex-col gap-3 w-full">
+    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+      {q.quiz_title}
+    </p>
+    <p className="font-medium text-gray-900 dark:text-gray-100">
+      {q.question_text}
+    </p>
 
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                  {q.quiz_title}
-                </p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {q.question_text}
-                </p>
-<div className="flex flex-col gap-3 mt-3 w-full">
-{["A", "B", "C", "D"].map((opt) => {
-  const text = q[`option_${opt.toLowerCase()}`];
-  if (!text) return null;
-  const chosen = selected === opt;
-  const correct = q.correct_answer === opt;
+    <div className="flex flex-col gap-3 mt-3 w-full">
+      {["A", "B", "C", "D"].map((opt) => {
+        const text = q[`option_${opt.toLowerCase()}`];
+        if (!text) return null;
+        const chosen = selected === opt;
+        const correct = q.correct_answer === opt;
 
-  // Determine circle color
-  let circleColor = "bg-gray-400";
-  if (selected) {
-    if (correct && chosen) circleColor = "bg-green-500";
-    else if (!correct && chosen) circleColor = "bg-red-500";
-  }
+        let circleColor = "bg-gray-400";
+        if (selected) {
+          if (correct && chosen) circleColor = "bg-green-500";
+          else if (!correct && chosen) circleColor = "bg-red-500";
+        }
 
-  return (
-    <button
-      key={opt}
-      onClick={() => handleAnswer(q, opt)}
-      disabled={!!selected}
-      className="w-full flex items-start gap-3 px-2 py-2 text-left rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-    >
-      {/* Colored circle */}
-      <span
-        className={`w-4 h-4 rounded-full mt-1 flex-shrink-0 ${circleColor}`}
-      ></span>
+        return (
+          <button
+            key={opt}
+            onClick={() => handleAnswer(q, opt)}
+            disabled={!!selected}
+            className="w-full flex items-start gap-3 px-2 py-2 text-left rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <span
+              className={`w-4 h-4 rounded-full mt-1 flex-shrink-0 ${circleColor}`}
+            ></span>
+            <div className="flex gap-2 break-words">
+              <span className="font-medium">{opt}.</span>
+              <span className="break-words">{text}</span>
+            </div>
+          </button>
+        );
+      })}
+    </div>
 
-      {/* Option letter + text */}
-      <div className="flex gap-2 break-words">
-        <span className="font-medium">{opt}.</span>
-        <span className="break-words">{text}</span>
+    {selected && (
+      <div className="mt-3 space-y-1">
+        <p className="font-semibold">
+          Correct Answer: {q.correct_answer}
+        </p>
+        <p className="text-gray-700 dark:text-gray-300">{q.explanation}</p>
       </div>
-    </button>
-  );
-})}
-
-</div>
-
-
-              {selected && (
-  <div className="mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
-    {q.correct_answer === selected && (
-      <Confetti
-        width={350}             // wider burst inside the card
-        height={220}
-        recycle={false}          // only fires once
-        numberOfPieces={400}     // 🌟 way more pieces
-        tweenDuration={5000}     // pieces fall slower, feels fuller
-        gravity={0.3}            // less gravity = floaty confetti
-        className="absolute top-0 left-0 w-full h-full pointer-events-none"
-      />
     )}
-    <p className="font-semibold">
-      Correct Answer: {q.correct_answer}
-    </p>
-    <p className="text-gray-700 dark:text-gray-300">
-      {q.explanation}
-    </p>
-  </div>
-)}
+
 
 
                 {/* ✅ Buttons (only once) */}
@@ -839,12 +823,20 @@ const loadLeaderboard = async () => {
         </Dialog>
 {/* 🏆 Leaderboard Modal */}
 <Dialog open={leaderboardOpen} onOpenChange={setLeaderboardOpen}>
-  <DialogContent className="max-w-md" aria-describedby="leaderboard-desc">
+  <DialogContent
+    className="max-w-full sm:max-w-md p-4"
+    aria-describedby="leaderboard-desc"
+  >
     <DialogHeader>
-      <DialogTitle className="text-lg font-semibold">Leaderboard</DialogTitle>
+      <DialogTitle className="text-lg font-semibold text-center">
+        Leaderboard
+      </DialogTitle>
     </DialogHeader>
 
-    <div id="leaderboard-desc" className="space-y-4">
+    <div
+      id="leaderboard-desc"
+      className="space-y-4 max-h-[70vh] overflow-y-auto"
+    >
       <AnimatePresence>
         {Object.values(
           leaderboard.reduce((acc: Record<number, typeof leaderboard>, entry) => {
@@ -853,13 +845,12 @@ const loadLeaderboard = async () => {
             return acc;
           }, {})
         )
-          .sort((a, b) => b[0].total - a[0].total) // highest total first
+          .sort((a, b) => b[0].total - a[0].total)
           .map((batch, batchIndex) => (
             <div key={batchIndex} className="space-y-2">
               {batch.map((entry) => {
                 const position = leaderboard.indexOf(entry) + 1;
 
-                // ⭐ Stars + textual badge for top users
                 let badge = null;
                 if (position === 1) badge = { stars: 5, label: "Gold" };
                 else if (position === 2) badge = { stars: 4, label: "Diamond" };
@@ -874,41 +865,50 @@ const loadLeaderboard = async () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 20, scale: 0.95 }}
                     transition={{ duration: 0.5 }}
-                    className="flex items-center gap-3 p-2 rounded bg-gray-50 dark:bg-gray-800"
+                    className="flex flex-wrap sm:flex-nowrap sm:items-center gap-2 sm:gap-3 p-2 rounded bg-gray-50 dark:bg-gray-800"
                   >
-                    <span className="text-lg font-bold w-6">{position}</span>
-                    <motion.img
-                      src={entry.avatar || "/default-avatar.png"}
-                      alt={entry.name}
-                      className="w-8 h-8 rounded-full"
-                      layout
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    />
-                    <span className="flex-1 font-medium text-gray-900 dark:text-gray-100">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-lg font-bold">{position}</span>
+                      <motion.img
+                        src={entry.avatar || "/default-avatar.png"}
+                        alt={entry.name}
+                        className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex-shrink-0"
+                        layout
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      />
+                    </div>
+
+                    <span className="flex-1 font-medium text-gray-900 dark:text-gray-100 break-words min-w-0">
                       {entry.name || "Unknown"}
                     </span>
-                    <span className="text-sm text-gray-500">{entry.total} Qs</span>
 
-                    {badge && (
-                      <span className="ml-2 flex items-center gap-1 text-xs font-semibold">
-                        {Array.from({ length: badge.stars }).map((_, i) => (
-                          <motion.svg
-                            key={i}
-                            className="w-3 h-3 text-yellow-400"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: i * 0.1, type: "spring", stiffness: 300 }}
-                          >
-                            <path d="M10 1l2.39 4.85L18 6.5l-3.9 3.8.92 5.38L10 13.77 5.98 15.68l.92-5.38L3 6.5l5.61-.65L10 1z" />
-                          </motion.svg>
-                        ))}
-                        {badge.label}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-gray-500">{entry.total} Qs</span>
+                      {badge && (
+                        <span className="flex items-center gap-1 text-xs font-semibold flex-wrap">
+                          {Array.from({ length: badge.stars }).map((_, i) => (
+                            <motion.svg
+                              key={i}
+                              className="w-3 h-3 text-yellow-400"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{
+                                delay: i * 0.05,
+                                type: "spring",
+                                stiffness: 300,
+                              }}
+                            >
+                              <path d="M10 1l2.39 4.85L18 6.5l-3.9 3.8.92 5.38L10 13.77 5.98 15.68l.92-5.38L3 6.5l5.61-.65L10 1z" />
+                            </motion.svg>
+                          ))}
+                          {badge.label}
+                        </span>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -918,6 +918,7 @@ const loadLeaderboard = async () => {
     </div>
   </DialogContent>
 </Dialog>
+
       </div>
       {/* 🔝 Back to Top Button */}
 <button
