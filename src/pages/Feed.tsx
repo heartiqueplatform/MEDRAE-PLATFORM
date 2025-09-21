@@ -661,10 +661,10 @@ const loadLeaderboard = async () => {
     const correct = q.correct_answer === opt;
 
     return (
-   <Button
+  <Button
   key={opt}
   variant="outline"
-  className={`justify-start w-full text-left break-words whitespace-normal transition-colors ${
+  className={`justify-start w-full text-left px-4 py-3 min-h-[3rem] transition-colors ${
     chosen && correct
       ? "bg-green-500 text-white hover:bg-green-600"
       : chosen && !correct
@@ -673,9 +673,11 @@ const loadLeaderboard = async () => {
   }`}
   onClick={() => handleAnswer(q, opt)}
   disabled={!!selected}
+  style={{ whiteSpace: 'normal' }}
 >
   {opt}. {text}
 </Button>
+
 
     );
   })}
