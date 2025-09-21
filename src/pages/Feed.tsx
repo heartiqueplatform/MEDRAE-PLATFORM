@@ -653,7 +653,7 @@ const loadLeaderboard = async () => {
                 <p className="font-medium text-gray-900 dark:text-gray-100">
                   {q.question_text}
                 </p>
-<div className="flex flex-col gap-2 mt-3">
+<div className="flex flex-col gap-4 mt-3 w-full">
   {["A", "B", "C", "D"].map((opt) => {
     const text = q[`option_${opt.toLowerCase()}`];
     if (!text) return null;
@@ -661,27 +661,25 @@ const loadLeaderboard = async () => {
     const correct = q.correct_answer === opt;
 
     return (
-  <Button
-  key={opt}
-  variant="outline"
-  className={`justify-start w-full text-left px-4 py-3 min-h-[3rem] transition-colors ${
-    chosen && correct
-      ? "bg-green-500 text-white hover:bg-green-600"
-      : chosen && !correct
-      ? "bg-red-500 text-white hover:bg-red-600"
-      : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-  }`}
-  onClick={() => handleAnswer(q, opt)}
-  disabled={!!selected}
-  style={{ whiteSpace: 'normal' }}
->
-  {opt}. {text}
-</Button>
-
-
+      <Button
+        key={opt}
+        variant="outline"
+        className={`justify-start w-full text-left px-4 py-4 break-words whitespace-normal transition-colors rounded-lg ${
+          chosen && correct
+            ? "bg-green-500 text-white hover:bg-green-600"
+            : chosen && !correct
+            ? "bg-red-500 text-white hover:bg-red-600"
+            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+        }`}
+        onClick={() => handleAnswer(q, opt)}
+        disabled={!!selected}
+      >
+        <span className="font-medium">{opt}.</span> {text}
+      </Button>
     );
   })}
 </div>
+
 
               {selected && (
   <div className="mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
