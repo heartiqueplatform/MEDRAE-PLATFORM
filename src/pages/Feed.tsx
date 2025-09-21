@@ -639,16 +639,60 @@ const loadLeaderboard = async () => {
   ref={loaderRef} // make sure this ref points to the card
 >
   {/* ✅ Confetti overlay */}
-  {selected === q.correct_answer && (
+{selected === q.correct_answer && (
+  <>
+    {/* 🎊 Confetti */}
     <Confetti
-      width={loaderRef.current?.offsetWidth || 350}
-      height={loaderRef.current?.offsetHeight || 200}
+      width={loaderRef.current?.offsetWidth || 350}    
+      height={loaderRef.current?.offsetHeight || 200}  
       recycle={false}
-      numberOfPieces={200}
-      gravity={0.3}
+      numberOfPieces={800}      
+      gravity={0.6}             
+      initialVelocityX={10}     
+      initialVelocityY={20}     
       className="absolute top-0 left-0 pointer-events-none z-50"
     />
-  )}
+
+    {/* 🌈 Card Glow + Pulse */}
+    <motion.div
+      initial={{ scale: 1, boxShadow: "0 0 0px rgba(0,0,0,0)" }}
+      animate={{
+        scale: [1, 1.05, 1, 1.05, 1], // pulsating
+        boxShadow: [
+          "0 0 0px rgba(0,0,0,0)",
+          "0 0 20px #f43f5e",
+          "0 0 20px #3b82f6",
+          "0 0 20px #facc15",
+          "0 0 0px rgba(0,0,0,0)"
+        ],
+      }}
+      transition={{ duration: 1.5, repeat: 2 }}
+      className="absolute inset-0 rounded-xl pointer-events-none z-40"
+      style={{
+        // Adapt to dark/light theme automatically
+        background: "transparent",
+      }}
+    />
+
+    {/* 😎 Emoji Burst */}
+    {["🎉", "🏆", "💯", "✨", "🔥"].map((emoji, i) => (
+      <motion.span
+        key={i}
+        initial={{ y: 0, opacity: 0, scale: 0 }}
+        animate={{
+          y: -100 - Math.random() * 80,
+          x: (Math.random() - 0.5) * 100,
+          opacity: 1,
+          scale: 1.2
+        }}
+        transition={{ delay: i * 0.1, type: "spring", stiffness: 300, damping: 10 }}
+        className="absolute left-1/2 top-1/2 transform -translate-x-1/2 text-2xl z-50"
+      >
+        {emoji}
+      </motion.span>
+    ))}
+  </>
+)}
 
   <CardContent className="flex flex-col gap-3 w-full">
     <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
