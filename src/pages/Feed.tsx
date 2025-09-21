@@ -648,7 +648,8 @@ const loadLeaderboard = async () => {
   className="p-4 shadow-md rounded-xl w-full max-w-screen-lg mx-auto flex flex-col"
 >
 
-              <CardContent>
+           <CardContent className="flex flex-col gap-3 w-full">
+
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                   {q.quiz_title}
                 </p>
@@ -668,16 +669,17 @@ const loadLeaderboard = async () => {
   onClick={() => handleAnswer(q, opt)}
   disabled={!!selected}
   variant="outline"
-  className={`w-full text-left px-4 py-3 rounded-lg break-words whitespace-normal transition-colors ${
+  className={`w-full text-left px-4 py-3 rounded-lg break-words whitespace-pre-wrap transition-colors flex justify-start items-start ${
     chosen && correct
       ? "bg-green-500 text-white hover:bg-green-600"
       : chosen && !correct
       ? "bg-red-500 text-white hover:bg-red-600"
       : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
   }`}
+  style={{ minHeight: "auto" }}
 >
   <span className="font-medium mr-2">{opt}.</span>
-  <span>{text}</span>
+  <span className="flex-1">{text}</span>
 </Button>
 
     );
