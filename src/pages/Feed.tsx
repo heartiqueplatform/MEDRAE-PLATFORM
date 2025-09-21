@@ -643,11 +643,9 @@ const loadLeaderboard = async () => {
             savedComments[q.id]?.length || q.comments_count || 0;
 
           return (
-            <Card
-        
-  key={q.id}
-  className="p-4 shadow-md rounded-xl w-full max-w-2xl mx-auto sm:w-11/12"
->
+           <Card className="p-4 shadow-md rounded-xl w-full max-w-3xl lg:max-w-4xl mx-auto">
+
+
               <CardContent>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                   {q.quiz_title}
@@ -655,33 +653,32 @@ const loadLeaderboard = async () => {
                 <p className="font-medium text-gray-900 dark:text-gray-100">
                   {q.question_text}
                 </p>
+<div className="flex flex-col gap-2 mt-3">
+  {["A", "B", "C", "D"].map((opt) => {
+    const text = q[`option_${opt.toLowerCase()}`];
+    if (!text) return null;
+    const chosen = selected === opt;
+    const correct = q.correct_answer === opt;
 
-                <div className="flex flex-col gap-2 mt-3 w-full">
-                  {["A", "B", "C", "D"].map((opt) => {
-                    const text = q[`option_${opt.toLowerCase()}`];
-                    if (!text) return null;
-                    const chosen = selected === opt;
-                    const correct = q.correct_answer === opt;
-
-                    return (
-                      <Button
-                        key={opt}
-                        variant="outline"
-                        className={`justify-start w-full transition-colors ${
-                          chosen && correct
-                            ? "bg-green-500 text-white hover:bg-green-600"
-                            : chosen && !correct
-                            ? "bg-red-500 text-white hover:bg-red-600"
-                            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        }`}
-                        onClick={() => handleAnswer(q, opt)}
-                        disabled={!!selected}
-                      >
-                        {opt}. {text}
-                      </Button>
-                    );
-                  })}
-                </div>
+    return (
+      <Button
+        key={opt}
+        variant="outline"
+        className={`justify-start w-auto max-w-full text-left px-3 py-2 break-words transition-colors ${
+          chosen && correct
+            ? "bg-green-500 text-white hover:bg-green-600"
+            : chosen && !correct
+            ? "bg-red-500 text-white hover:bg-red-600"
+            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+        }`}
+        onClick={() => handleAnswer(q, opt)}
+        disabled={!!selected}
+      >
+        {opt}. {text}
+      </Button>
+    );
+  })}
+</div>
 
               {selected && (
   <div className="mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
@@ -699,9 +696,10 @@ const loadLeaderboard = async () => {
     <p className="font-semibold">
       Correct Answer: {q.correct_answer}
     </p>
-    <p className="text-gray-700 dark:text-gray-300">
-      {q.explanation}
-    </p>
+  <div className="text-gray-700 dark:text-gray-300 max-h-40 overflow-y-auto p-2 bg-gray-100 dark:bg-gray-900 rounded">
+  {q.explanation}
+</div>
+
   </div>
 )}
 
@@ -908,6 +906,14 @@ const loadLeaderboard = async () => {
   </DialogContent>
 </Dialog>
       </div>
+      {/* 🔝 Back to Top Button */}
+<button
+  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+  className="fixed bottom-4 right-4 z-50 p-3 rounded-full bg-blue-500 dark:bg-blue-600 text-white shadow-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition"
+>
+  ↑ Top
+</button>
+
     </PullToRefresh>
   </>
 );
