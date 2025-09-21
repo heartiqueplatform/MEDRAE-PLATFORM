@@ -661,21 +661,22 @@ const loadLeaderboard = async () => {
     const correct = q.correct_answer === opt;
 
     return (
-      <Button
-        key={opt}
-        variant="outline"
-        className={`justify-start w-auto max-w-full text-left px-3 py-2 break-words transition-colors ${
-          chosen && correct
-            ? "bg-green-500 text-white hover:bg-green-600"
-            : chosen && !correct
-            ? "bg-red-500 text-white hover:bg-red-600"
-            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-        }`}
-        onClick={() => handleAnswer(q, opt)}
-        disabled={!!selected}
-      >
-        {opt}. {text}
-      </Button>
+   <Button
+  key={opt}
+  variant="outline"
+  className={`justify-start w-full text-left break-words whitespace-normal transition-colors ${
+    chosen && correct
+      ? "bg-green-500 text-white hover:bg-green-600"
+      : chosen && !correct
+      ? "bg-red-500 text-white hover:bg-red-600"
+      : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+  }`}
+  onClick={() => handleAnswer(q, opt)}
+  disabled={!!selected}
+>
+  {opt}. {text}
+</Button>
+
     );
   })}
 </div>
