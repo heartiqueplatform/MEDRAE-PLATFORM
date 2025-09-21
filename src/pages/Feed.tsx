@@ -657,7 +657,7 @@ const loadLeaderboard = async () => {
     <motion.div
       initial={{ scale: 1, boxShadow: "0 0 0px rgba(0,0,0,0)" }}
       animate={{
-        scale: [1, 1.05, 1, 1.05, 1], // pulsating
+        scale: [1, 1.05, 1, 1.05, 1], 
         boxShadow: [
           "0 0 0px rgba(0,0,0,0)",
           "0 0 20px #f43f5e",
@@ -668,25 +668,24 @@ const loadLeaderboard = async () => {
       }}
       transition={{ duration: 1.5, repeat: 2 }}
       className="absolute inset-0 rounded-xl pointer-events-none z-40"
-      style={{
-        // Adapt to dark/light theme automatically
-        background: "transparent",
-      }}
+      style={{ background: "transparent" }}
     />
 
-    {/* 😎 Emoji Burst */}
+    {/* 😎 Emoji Burst Top Corners */}
     {["🎉", "🏆", "💯", "✨", "🔥"].map((emoji, i) => (
       <motion.span
         key={i}
         initial={{ y: 0, opacity: 0, scale: 0 }}
         animate={{
-          y: -100 - Math.random() * 80,
-          x: (Math.random() - 0.5) * 100,
+          y: -50 - Math.random() * 30, // goes up
+          x: i % 2 === 0 ? -50 - Math.random() * 30 : 50 + Math.random() * 30, // left or right
           opacity: 1,
           scale: 1.2
         }}
         transition={{ delay: i * 0.1, type: "spring", stiffness: 300, damping: 10 }}
-        className="absolute left-1/2 top-1/2 transform -translate-x-1/2 text-2xl z-50"
+        className={`absolute top-2 ${
+          i % 2 === 0 ? "left-2" : "right-2"
+        } text-2xl z-50 pointer-events-none`}
       >
         {emoji}
       </motion.span>
