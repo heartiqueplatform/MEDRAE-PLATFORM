@@ -656,35 +656,33 @@ const loadLeaderboard = async () => {
                   {q.question_text}
                 </p>
 
-                <div className="flex flex-col gap-2 mt-3 w-full">
-                  {["A", "B", "C", "D"].map((opt) => {
-                    const text = q[`option_${opt.toLowerCase()}`];
-                    if (!text) return null;
-                    const chosen = selected === opt;
-                    const correct = q.correct_answer === opt;
+               <div className="flex flex-col gap-3 mt-3 w-full">
+  {["A", "B", "C", "D"].map((opt) => {
+    const text = q[`option_${opt.toLowerCase()}`];
+    if (!text) return null;
+    const chosen = selected === opt;
+    const correct = q.correct_answer === opt;
 
-                    return (
-                   <div key={opt} className="mb-2 last:mb-0">
-  <Button
-    variant="outline"
-    className={`justify-start w-full text-left break-words whitespace-normal px-4 py-3 transition-colors rounded-lg ${
-      chosen && correct
-        ? "bg-green-500 text-white hover:bg-green-600"
-        : chosen && !correct
-        ? "bg-red-500 text-white hover:bg-red-600"
-        : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-    }`}
-    onClick={() => handleAnswer(q, opt)}
-    disabled={!!selected}
-    style={{ minHeight: "auto" }}
-  >
-    {opt}. {text}
-  </Button>
+    return (
+      <Button
+        key={opt}
+        onClick={() => handleAnswer(q, opt)}
+        disabled={!!selected}
+        variant="outline"
+        className={`w-full text-left px-5 py-4 flex-none break-words whitespace-normal rounded-lg transition-colors justify-start ${
+          chosen && correct
+            ? "bg-green-500 text-white hover:bg-green-600"
+            : chosen && !correct
+            ? "bg-red-500 text-white hover:bg-red-600"
+            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+        }`}
+        style={{ minHeight: "auto" }}
+      >
+        <span className="font-medium mr-2">{opt}.</span> {text}
+      </Button>
+    );
+  })}
 </div>
-
-                    );
-                  })}
-                </div>
 
               {selected && (
   <div className="mt-3 p-3 rounded bg-gray-50 dark:bg-gray-800 relative overflow-hidden">
