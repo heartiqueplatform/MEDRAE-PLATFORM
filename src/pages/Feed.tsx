@@ -663,25 +663,31 @@ const loadLeaderboard = async () => {
   const chosen = selected === opt;
   const correct = q.correct_answer === opt;
 
+  // Determine circle color
+  let circleColor = "bg-gray-400";
+  if (selected) {
+    if (correct && chosen) circleColor = "bg-green-500";
+    else if (!correct && chosen) circleColor = "bg-red-500";
+  }
+
   return (
-    <Button
+    <button
       key={opt}
       onClick={() => handleAnswer(q, opt)}
       disabled={!!selected}
-      variant="outline"
-      className={`w-full px-4 py-3 rounded-lg text-left break-words whitespace-normal transition-colors ${
-        chosen && correct
-          ? "bg-green-500 text-white hover:bg-green-600"
-          : chosen && !correct
-          ? "bg-red-500 text-white hover:bg-red-600"
-          : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
-      }`}
+      className="w-full flex items-start gap-3 px-2 py-2 text-left rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
     >
-      <div className="flex gap-2 items-start">
+      {/* Colored circle */}
+      <span
+        className={`w-4 h-4 rounded-full mt-1 flex-shrink-0 ${circleColor}`}
+      ></span>
+
+      {/* Option letter + text */}
+      <div className="flex gap-2 break-words">
         <span className="font-medium">{opt}.</span>
         <span className="break-words">{text}</span>
       </div>
-    </Button>
+    </button>
   );
 })}
 
