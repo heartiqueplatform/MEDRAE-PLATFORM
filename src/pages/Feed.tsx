@@ -657,26 +657,32 @@ const loadLeaderboard = async () => {
                   {q.question_text}
                 </p>
 <div className="flex flex-col gap-3 mt-3 w-full">
-  {["A", "B", "C", "D"].map((opt) => {
-    const text = q[`option_${opt.toLowerCase()}`];
-    if (!text) return null;
-    const chosen = selected === opt;
-    const correct = q.correct_answer === opt;
+{["A", "B", "C", "D"].map((opt) => {
+  const text = q[`option_${opt.toLowerCase()}`];
+  if (!text) return null;
+  const chosen = selected === opt;
+  const correct = q.correct_answer === opt;
 
-    return (
- <Button
-  key={opt}
-  onClick={() => handleAnswer(q, opt)}
-  disabled={!!selected}
-  variant="outline"
-  className={`w-full text-left px-4 py-3 rounded-lg break-words transition-colors`}
->
-  <span className="font-medium mr-2">{opt}.</span>
-  <span className="inline">{text}</span>
-</Button>
+  return (
+    <Button
+      key={opt}
+      onClick={() => handleAnswer(q, opt)}
+      disabled={!!selected}
+      variant="outline"
+      className={`w-full text-left px-4 py-3 rounded-lg break-words whitespace-normal transition-colors ${
+        chosen && correct
+          ? "bg-green-500 text-white hover:bg-green-600"
+          : chosen && !correct
+          ? "bg-red-500 text-white hover:bg-red-600"
+          : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+      }`}
+    >
+      <span className="font-medium mr-2">{opt}.</span>
+      <span className="break-words">{text}</span>
+    </Button>
+  );
+})}
 
-    );
-  })}
 </div>
 
 
