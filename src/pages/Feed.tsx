@@ -644,10 +644,10 @@ const loadLeaderboard = async () => {
 
           return (
             <Card
-        
   key={q.id}
-  className="p-4 shadow-md rounded-xl w-full max-w-2xl mx-auto sm:w-11/12"
+  className="p-4 shadow-md rounded-xl w-full max-w-screen-lg mx-auto"
 >
+
               <CardContent>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                   {q.quiz_title}
@@ -656,7 +656,8 @@ const loadLeaderboard = async () => {
                   {q.question_text}
                 </p>
 
-               <div className="flex flex-col gap-3 mt-3 w-full">
+
+               <div className="flex flex-col gap-4 mt-3 w-full">
   {["A", "B", "C", "D"].map((opt) => {
     const text = q[`option_${opt.toLowerCase()}`];
     if (!text) return null;
@@ -669,7 +670,7 @@ const loadLeaderboard = async () => {
         onClick={() => handleAnswer(q, opt)}
         disabled={!!selected}
         variant="outline"
-        className={`w-full text-left px-5 py-4 flex-none break-words whitespace-normal rounded-lg transition-colors justify-start ${
+        className={`w-full flex-none text-left px-6 py-4 rounded-lg break-words whitespace-normal transition-colors justify-start items-start ${
           chosen && correct
             ? "bg-green-500 text-white hover:bg-green-600"
             : chosen && !correct
@@ -678,7 +679,8 @@ const loadLeaderboard = async () => {
         }`}
         style={{ minHeight: "auto" }}
       >
-        <span className="font-medium mr-2">{opt}.</span> {text}
+        <span className="font-medium mr-3">{opt}.</span>
+        <span className="flex-1">{text}</span>
       </Button>
     );
   })}
