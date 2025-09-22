@@ -595,40 +595,45 @@ const loadLeaderboard = async () => {
   </span>
 <Button
   variant="outline"
+  onClick={async () => {
+    // Vibrate on tap
+    if (navigator.vibrate) navigator.vibrate(50);
+
+    // Load leaderboard data
+    if (user) {
+      await loadLeaderboard();
+      setLeaderboardOpen(true); // Open the leaderboard panel
+    }
+  }}
+>
+  Leaderboard
+</Button>
+
+</div>
+
+<Button
+  variant="outline"
   onClick={() => {
+    // ✅ Vibrate on button press
+    if (navigator.vibrate) navigator.vibrate(50); // vibrates for 50ms
+
+    // Existing logic
     setPage(0);
     setQuestions([]);
     fetchQuestions(0).then((fresh) => {
       setQuestions(fresh);
       if (user) {
-        localStorage.setItem(`feed_questions_${user.id}`, JSON.stringify(fresh));
+        localStorage.setItem(
+          `feed_questions_${user.id}`,
+          JSON.stringify(fresh)
+        );
       }
     });
   }}
 >
+  Reload Feed
+</Button>
 
-    Leaderboard
-  </Button>
-</div>
-
-  <Button
-    variant="outline"
-    onClick={() => {
-      setPage(0);
-      setQuestions([]);
-      fetchQuestions(0).then((fresh) => {
-        setQuestions(fresh);
-        if (user) {
-          localStorage.setItem(
-            `feed_questions_${user.id}`,
-            JSON.stringify(fresh)
-          );
-        }
-      });
-    }}
-  >
-    Reload Feed
-  </Button>
 </div>
 
         {questions.length === 0 &&

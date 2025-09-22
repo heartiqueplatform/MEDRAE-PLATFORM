@@ -30,7 +30,8 @@ export default function StudentDashboard() {
   const [bestStreak, setBestStreak] = useState(0);
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [dailyContent, setDailyContent] = useState("");
-  
+  const [feedsAttemptCount, setFeedsAttemptCount] = useState(0);
+
 
 // New state for daily post duration
 const [dailyDuration, setDailyDuration] = useState<"24h" | "1w" | "1m" | "3m">("24h");
@@ -50,6 +51,21 @@ const [dashboardLoaded, setDashboardLoaded] = useState(false); // track first lo
 
 
 
+const fetchFeedsAttemptCount = async () => {
+  if (!user?.id) return;
+
+  // ✅ Query the same table/view that Feeds page uses
+  const { count, error } = await supabase
+    .from("quiz_attempts") // Replace with the exact table Feeds uses if different
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  if (!error && count !== null) {
+    setFeedsAttemptCount(count);
+  } else {
+    console.error("Error fetching feeds attempt count:", error?.message);
+  }
+};
 
 const loadDashboardData = async () => {
   
@@ -78,6 +94,7 @@ if (!cachedDashboard) setLoading(true); // Only show spinner if no cached data
 
 
     // Save merged dashboard state to localStorage
+// Save merged dashboard state to localStorage
 localStorage.setItem(
   "dashboardData",
   JSON.stringify({
@@ -90,8 +107,11 @@ localStorage.setItem(
     calendarEvents,
     dailyPosts,
     unitCounts,
+    simulationPapers, // ✅ preserve simulation papers
+    topStudents,      // ✅ preserve leaderboard
   })
 );
+
 // ✅ Mark dashboard as loaded
 localStorage.setItem("dashboardDataLoaded", "true");
 setDashboardLoaded(true);
@@ -305,6 +325,7 @@ useEffect(() => {
       if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
       if (parsed.dailyPosts) setDailyPosts(parsed.dailyPosts);
       if (parsed.unitCounts) setUnitCounts(parsed.unitCounts);
+
     } catch (e) {
       console.error("Error parsing cached dashboard:", e);
     }
@@ -316,6 +337,26 @@ useEffect(() => {
 
 }, [user]);
 
+// Load initial count from localStorage
+useEffect(() => {
+const loadCount = () => {
+  if (!user?.id) return;
+  const count = parseInt(localStorage.getItem(`feed_count_${user.id}`)) || 0;
+  setFeedsAttemptCount(count);
+};
+
+  loadCount();
+
+  // ✅ Listen for updates if Feeds updates count in another tab
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key?.startsWith("feed_count_")) {
+      setFeedsAttemptCount(parseInt(e.newValue || "0"));
+    }
+  };
+  window.addEventListener("storage", handleStorage);
+
+  return () => window.removeEventListener("storage", handleStorage);
+}, []);
 // Auto-refresh every 60s
 useEffect(() => {
   const interval = setInterval(() => {
@@ -411,6 +452,7 @@ const fetchTopStudents = async () => {
     setLoadingTopStudents(false); // ✅ stop loader always
   }
 };
+
 
 const fetchSimulationPapers = async () => {
   try {
@@ -894,6 +936,81 @@ return (
     </div>
   </CardContent>
 </Card>
+<Card
+  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2"
+  onClick={() => {
+    if (navigator.vibrate) navigator.vibrate(50);
+    navigate("/feed");
+  }}
+  style={{
+    backgroundColor: "var(--card-bg)",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Overlay */}
+  <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
+
+  <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+    {/* Card Heading */}
+    <div className="mb-2">
+      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Feed & Leaderboard</h2>
+    </div>
+
+    <CardHeader className="flex items-center justify-between pb-2">
+      <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
+    </CardHeader>
+
+    <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
+      <p className="text-gray-700 dark:text-white/90">
+        Scroll through random questions endlessly. Use your free time productively by attempting questions continuously. The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
+      </p>
+
+      {/* Stats Row */}
+      <div className="flex flex-col md:flex-row justify-start items-center md:items-start gap-6">
+        {/* Questions Attempted */}
+        <div className="flex flex-col items-center md:items-start">
+          <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+        </div>
+
+        {/* Leader Student */}
+        {topStudents.length > 0 && (
+          <div
+            className="flex flex-col items-center cursor-pointer w-24 md:w-20 mt-2 md:mt-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (navigator.vibrate) navigator.vibrate(50);
+              navigate("/feed");
+            }}
+          >
+            <p className="text-xs text-gray-500 dark:text-white/70 text-center">Leader Student</p>
+            <img
+              src={topStudents[0].avatar_url || "/default-avatar.png"}
+              alt={topStudents[0].name}
+              className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30"
+            />
+            <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90">{topStudents[0].name}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Centered Button */}
+      <div className="flex justify-center mt-3">
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium w-full sm:w-3/4 md:w-1/2"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (navigator.vibrate) navigator.vibrate(50);
+            navigate("/feed");
+          }}
+        >
+          Go to Feeds
+        </Button>
+      </div>
+    </CardContent>
+  </div>
+</Card>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -1030,6 +1147,7 @@ return (
 </Card>
 
       </div>
+ 
 <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
   <CardHeader>
     <CardTitle className="text-gray-900 dark:text-white">Heartique Daily Status💖 </CardTitle>
