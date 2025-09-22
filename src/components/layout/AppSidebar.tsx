@@ -343,7 +343,8 @@ const handleCollapse = () => {
       </div>
 
       <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
-   {/* Main Navigation */}
+ 
+{/* Main Navigation */}
 <SidebarGroup>
   <Collapsible open={openGroups.includes('main')} onOpenChange={() => toggleGroup('main')}>
     <CollapsibleTrigger asChild>
@@ -364,6 +365,9 @@ const handleCollapse = () => {
                   to={item.url}
                   className={getNavClass(item.url)}
                   onClick={() => {
+                    // vibrate on navigation
+                    if (navigator.vibrate) navigator.vibrate(50);
+
                     if (item.title === "Chat Room") handleChatClick();
                     handleCollapse();
                   }}
@@ -393,6 +397,7 @@ const handleCollapse = () => {
     </CollapsibleContent>
   </Collapsible>
 </SidebarGroup>
+
 
 {/* Learning Section */}
 <SidebarGroup>
