@@ -133,7 +133,8 @@ const mainItems = [
   ] : [];
 
   // Fetch unread messages and listen for live updates
- useEffect(() => {
+// ----- UNREAD MESSAGES & ANNOUNCEMENTS -----
+useEffect(() => {
   const fetchUnread = async () => {
     const user = supabase.auth.user();
     if (!user) return;
@@ -191,48 +192,84 @@ const mainItems = [
   };
 }, []);
 
+// ----- TOTAL QUESTIONS -----
+useEffect(() => {
+  const fetchTotalQuestions = async () => {
+    const stored = localStorage.getItem("totalQuestions");
+    if (stored) setTotalQuestions(parseInt(stored));
 
-// ---- HERE add your totalQuestions hook ----
-  
+    const { count, error } = await supabase
+      .from("quiz_questions")
+      .select("*", { count: "exact", head: true });
 
-  useEffect(() => {
-    const fetchTotalQuestions = async () => {
-      const { count, error } = await supabase
-        .from("quiz_questions")
-        .select("*", { count: "exact", head: true });
-      if (!error) setTotalQuestions(count || 0);
-    };
-    fetchTotalQuestions();
-  }, []);
+    if (!error) {
+      setTotalQuestions(count || 0);
+      localStorage.setItem("totalQuestions", String(count || 0));
+    }
+  };
+  fetchTotalQuestions();
+}, []);
+
+// ----- TOTAL SIMULATION PAPERS -----
 useEffect(() => {
   const fetchTotalSimulationPapers = async () => {
+    const stored = localStorage.getItem("totalSimulationPapers");
+    if (stored) setTotalSimulationPapers(parseInt(stored));
+
     const { count, error } = await supabase
       .from("simulation_papers")
       .select("*", { count: "exact", head: true });
-    if (!error) setTotalSimulationPapers(count || 0);
+
+    if (!error) {
+      setTotalSimulationPapers(count || 0);
+      localStorage.setItem("totalSimulationPapers", String(count || 0));
+    }
   };
   fetchTotalSimulationPapers();
 }, []);
+
+// ----- TOTAL NOTES -----
 useEffect(() => {
   const fetchTotalNotes = async () => {
+    const stored = localStorage.getItem("totalNotes");
+    if (stored) setTotalNotes(parseInt(stored));
+
     const { count, error } = await supabase
       .from("notes")
       .select("*", { count: "exact", head: true });
-    if (!error) setTotalNotes(count || 0);
+
+    if (!error) {
+      setTotalNotes(count || 0);
+      localStorage.setItem("totalNotes", String(count || 0));
+    }
   };
   fetchTotalNotes();
 }, []);
+
+// ----- TOTAL VIDEOS -----
 useEffect(() => {
   const fetchTotalVideos = async () => {
+    const stored = localStorage.getItem("totalVideos");
+    if (stored) setTotalVideos(parseInt(stored));
+
     const { count, error } = await supabase
       .from("medtube_videos")
       .select("*", { count: "exact", head: true });
-    if (!error) setTotalVideos(count || 0);
+
+    if (!error) {
+      setTotalVideos(count || 0);
+      localStorage.setItem("totalVideos", String(count || 0));
+    }
   };
   fetchTotalVideos();
 }, []);
+
+// ----- TOTAL STARS -----
 useEffect(() => {
   const fetchTotalStars = async () => {
+    const stored = localStorage.getItem("totalStars");
+    if (stored) setTotalStars(parseInt(stored));
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -243,12 +280,8 @@ useEffect(() => {
       .select("unit, score, total_questions")
       .eq("user_id", user.id);
 
-    if (error) {
-      console.error("Error fetching stars:", error.message);
-      return;
-    }
+    if (error) return console.error("Error fetching stars:", error.message);
 
-    // Group by unit: if user has attempted quiz → earn 5 stars
     const grouped: Record<string, { count: number }> = {};
     data?.forEach((res) => {
       const key = res.unit || "Unknown";
@@ -262,6 +295,7 @@ useEffect(() => {
     );
 
     setTotalStars(starsEarned);
+    localStorage.setItem("totalStars", String(starsEarned));
   };
 
   fetchTotalStars();
@@ -380,7 +414,12 @@ const handleCollapse = () => {
                 <Link
                   to={item.url}
                   className={getNavClass(item.url)}
-                  onClick={handleCollapse}
+                 
+            onClick={() => {
+  if (navigator.vibrate) navigator.vibrate(50);
+  handleCollapse();
+}}
+
                 >
                   <item.icon className="h-4 w-4" />
                   {!isCollapsed && (
@@ -423,7 +462,11 @@ const handleCollapse = () => {
                 <Link
                   to={item.url}
                   className={getNavClass(item.url)}
-                  onClick={handleCollapse}
+                  onClick={() => {
+  if (navigator.vibrate) navigator.vibrate(50);
+  handleCollapse();
+}}
+
                 >
                   <item.icon className="h-4 w-4" />
                   {!isCollapsed && (
@@ -467,7 +510,11 @@ const handleCollapse = () => {
                   <Link
                     to={item.url}
                     className={getNavClass(item.url)}
-                    onClick={handleCollapse}
+                   onClick={() => {
+  if (navigator.vibrate) navigator.vibrate(50);
+  handleCollapse();
+}}
+
                   >
                     <item.icon className="h-4 w-4" />
                     {!isCollapsed && <span>{item.title}</span>}
@@ -503,7 +550,11 @@ const handleCollapse = () => {
                   <Link
                     to={item.url}
                     className={getNavClass(item.url)}
-                    onClick={handleCollapse}
+                    onClick={() => {
+  if (navigator.vibrate) navigator.vibrate(50);
+  handleCollapse();
+}}
+
                   >
                     <item.icon className="h-4 w-4" />
                     {!isCollapsed && <span>{item.title}</span>}
@@ -528,8 +579,13 @@ const handleCollapse = () => {
       <Link
         to={item.url}
         className={getNavClass(item.url)}
-     onClick={() => {
+  onClick={() => {
+  // Vibrate device for 50ms on navigation
+  if (navigator.vibrate) navigator.vibrate(50);
+
   handleCollapse(); // synchronous — collapses immediately on mobile
+
+  // Announcement specific handling
   if (item.title === "Announcements") {
     (async () => {
       setUnreadAnnouncements(0);

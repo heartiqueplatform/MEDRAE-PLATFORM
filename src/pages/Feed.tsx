@@ -37,6 +37,12 @@ const SkeletonCard = () => (
 );
 
 export default function Feed() {
+  // ✅ Helper to vibrate on button tap
+const vibrateTap = () => {
+  if (navigator.vibrate) navigator.vibrate(50); // 50ms vibration
+};
+
+  
     const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
 
@@ -587,14 +593,20 @@ const loadLeaderboard = async () => {
   <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
     Questions Tried: {questionCount}
   </span>
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => {
-      loadLeaderboard();
-      setLeaderboardOpen(true);
-    }}
-  >
+<Button
+  variant="outline"
+  onClick={() => {
+    setPage(0);
+    setQuestions([]);
+    fetchQuestions(0).then((fresh) => {
+      setQuestions(fresh);
+      if (user) {
+        localStorage.setItem(`feed_questions_${user.id}`, JSON.stringify(fresh));
+      }
+    });
+  }}
+>
+
     Leaderboard
   </Button>
 </div>
@@ -717,7 +729,11 @@ const loadLeaderboard = async () => {
         return (
           <button
             key={opt}
-            onClick={() => handleAnswer(q, opt)}
+       onClick={() => {
+  if (navigator.vibrate) navigator.vibrate(50); // vibrate 50ms
+  handleAnswer(q, opt);
+}}
+
             disabled={!!selected}
             className="w-full flex items-start gap-3 px-2 py-2 text-left rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
           >
@@ -965,7 +981,7 @@ const loadLeaderboard = async () => {
       </div>
       {/* 🔝 Back to Top Button */}
 <button
-  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+  onClick={() => { vibrateTap(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
   className="fixed bottom-4 right-4 z-50 p-3 rounded-full bg-blue-500 dark:bg-blue-600 text-white shadow-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition"
 >
   Top
