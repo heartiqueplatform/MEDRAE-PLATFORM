@@ -429,6 +429,10 @@ export function Register() {
   <SelectItem value="kmtc_trans_nzoia">KMTC Trans Nzoia</SelectItem>
   <SelectItem value="kmtc_ujiji">KMTC Ujiji</SelectItem>
   <SelectItem value="kmtc_uar">KMTC Uasin Gishu</SelectItem>
+  <SelectItem value="kmtc_Bungoma ">KMTC Bungoma </SelectItem>
+  <SelectItem value="kmtc_Webuye">KMTC Webuye</SelectItem>
+  <SelectItem value="Mp Shah Hospital Nursing School">Mp Shah Hospital Nursing School</SelectItem>
+
 
   {/* Fidenza School of Nursing Kyeni */}
   <SelectItem value="fidenza_kyeni">Fidenza School of Nursing Kyeni</SelectItem>
