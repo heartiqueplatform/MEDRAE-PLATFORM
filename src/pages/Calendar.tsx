@@ -237,9 +237,11 @@ async function fetchEvents(user_id: string) {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+   <div className="grid gap-6 md:grid-cols-2 w-full">
+
         {/* Calendar */}
-        <Card>
+        <Card className="w-full overflow-hidden">
+
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarDays className="h-5 w-5" />
@@ -273,7 +275,9 @@ async function fetchEvents(user_id: string) {
         </Card>
 
         {/* Upcoming Assessments */}
-        <Card>
+        
+      <Card className="w-full overflow-hidden">
+
           <CardHeader>
             <CardTitle>Upcoming Assessments</CardTitle>
            <CardDescription>
