@@ -286,7 +286,7 @@ async function fetchEvents(user_id: string) {
           <CardContent className="space-y-4">
             {events.map((event) => (
               <div key={event.id} className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="space-y-1">
                     <h3 className="font-medium">{event.title}</h3>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">

@@ -63,6 +63,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 const [totalNotes, setTotalNotes] = useState<number | null>(null);
 const [totalVideos, setTotalVideos] = useState<number | null>(null);
 const [totalStars, setTotalStars] = useState<number>(0);
+const [totalEvents, setTotalEvents] = useState<number>(0);
 
   const isCollapsed = state === 'collapsed';
   
@@ -96,7 +97,7 @@ const mainItems = [
 
 
   const learningItems = [
-    { title: "Assessment Calendar", url: "/calendar", icon: Calendar },
+   { title: "Assessment Calendar", url: "/calendar", icon: Calendar,  badge: `${totalEvents}E`},
     {title: "Study Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★` },
     { title: "Heartique Quizzes Bank", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
     { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
@@ -262,6 +263,24 @@ useEffect(() => {
     }
   };
   fetchTotalVideos();
+}, []);
+// ----- TOTAL EVENTS -----
+useEffect(() => {
+  const fetchTotalEvents = async () => {
+    const stored = localStorage.getItem("totalEvents");
+    if (stored) setTotalEvents(parseInt(stored));
+
+    const { count, error } = await supabase
+      .from("calendar_events") // 👈 replace with your actual table name
+      .select("*", { count: "exact", head: true });
+
+    if (!error) {
+      setTotalEvents(count || 0);
+      localStorage.setItem("totalEvents", String(count || 0));
+    }
+  };
+
+  fetchTotalEvents();
 }, []);
 
 // ----- TOTAL STARS -----
