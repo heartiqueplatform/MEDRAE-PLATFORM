@@ -316,40 +316,45 @@ async function fetchEvents(user_id: string) {
                     </Badge>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowReminder(true)}
-                    className="flex items-center gap-1"
-                  >
-                    <Bell className="h-3 w-3" />
-                    Remind Me
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() =>
-                      setShowDetailsId(showDetailsId === event.id ? null : event.id)
-                    }
-                  >
-                    <Info className="h-3 w-3" />
-                    View Details
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Share2 className="h-3 w-3" />
-                    Share
-                  </Button>
+               <div className="flex flex-col sm:flex-row gap-2">
+  {/* Left stack: Remind Me + Share */}
+  <div className="flex flex-col gap-2 sm:flex-row">
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={() => setShowReminder(true)}
+      className="flex items-center gap-1"
+    >
+      <Bell className="h-3 w-3" />
+      Remind Me
+    </Button>
+    <Button size="sm" variant="outline">
+      <Share2 className="h-3 w-3" />
+      Share
+    </Button>
+  </div>
 
-                  {/* Delete button */}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(event.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
+  {/* Right stack: View Details + Delete */}
+  <div className="flex flex-col gap-2 sm:flex-row sm:ml-auto">
+    <Button
+      size="sm"
+      variant="secondary"
+      onClick={() =>
+        setShowDetailsId(showDetailsId === event.id ? null : event.id)
+      }
+    >
+      <Info className="h-3 w-3" />
+      View Details
+    </Button>
+    <Button
+      size="sm"
+      variant="destructive"
+      onClick={() => handleDelete(event.id)}
+    >
+      Delete
+    </Button>
+  </div>
+</div>
 
                 {showDetailsId === event.id && (
                   <div className="text-sm mt-2 border-t pt-2 text-muted-foreground">
