@@ -284,41 +284,41 @@ useEffect(() => {
 }, []);
 
 // ----- TOTAL STARS -----
+// ----- TOTAL STARS -----
 useEffect(() => {
-  const fetchTotalStars = async () => {
-    const stored = localStorage.getItem("totalStars");
-    if (stored) setTotalStars(parseInt(stored));
+  // Just read the same cache Progress saves
+  const cached = localStorage.getItem("study_progress_cache");
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    if (parsed.totalStarsEarned !== undefined) {
+      setTotalStars(parsed.totalStarsEarned);
+    }
+  }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+  // ✅ Keep listening for realtime updates too
+  const channel = supabase
+    .channel("quiz_results_changes_sidebar")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "quiz_results" },
+      () => {
+        // When results change, Progress will refresh the cache → reload here
+        const updated = localStorage.getItem("study_progress_cache");
+        if (updated) {
+          const parsed = JSON.parse(updated);
+          if (parsed.totalStarsEarned !== undefined) {
+            setTotalStars(parsed.totalStarsEarned);
+          }
+        }
+      }
+    )
+    .subscribe();
 
-    const { data, error } = await supabase
-      .from("quiz_results")
-      .select("unit, score, total_questions")
-      .eq("user_id", user.id);
-
-    if (error) return console.error("Error fetching stars:", error.message);
-
-    const grouped: Record<string, { count: number }> = {};
-    data?.forEach((res) => {
-      const key = res.unit || "Unknown";
-      if (!grouped[key]) grouped[key] = { count: 0 };
-      grouped[key].count += 1;
-    });
-
-    const starsEarned = Object.values(grouped).reduce(
-      (acc, u) => acc + (u.count > 0 ? 5 : 0),
-      0
-    );
-
-    setTotalStars(starsEarned);
-    localStorage.setItem("totalStars", String(starsEarned));
+  return () => {
+    supabase.removeChannel(channel);
   };
-
-  fetchTotalStars();
 }, []);
+
 
   // Reset unread count when clicking Chat Room
   const handleChatClick = async () => {
