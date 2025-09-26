@@ -642,41 +642,48 @@ setUploadProgress(null);   // reset progress
           </AccordionItem>
         ))}
       </Accordion>
-
-    {fullscreenNote && (
+{fullscreenNote && (
   <div
     ref={fullscreenRef}
-    className="fixed inset-0 bg-black z-50 flex flex-col"
+    className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
   >
+    {/* Close button */}
     <div className="flex justify-end p-2">
       <Button
         onClick={() => setFullscreenNote(null)}
         variant="ghost"
-        className="text-white"
+        className="text-current hover:bg-muted/20"
       >
         <X className="h-6 w-6" />
       </Button>
     </div>
-{fullscreenNote.file_type === "pdf" ? (
-<Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-    <Viewer
-        fileUrl={fullscreenNote.file_url}
-        plugins={[defaultLayoutPluginInstance]}
-        theme={isDarkMode ? "dark" : "light"}
-        renderLoader={() => <GlobalLoader message="Heartique is Loading PDF..." />}
-    />
-</Worker>
+
+    {/* PDF viewer or iframe */}
+    {fullscreenNote.file_type === "pdf" ? (
+      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+       <Viewer
+  fileUrl={fullscreenNote.file_url}
+  plugins={[defaultLayoutPluginInstance]}
+  theme={isDarkMode ? "dark" : "light"}
+  renderLoader={() => (
+    <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
+      <GlobalLoader message="Heartique is Loading PDF..." />
+    </div>
+  )}
+/>
+
+      </Worker>
     ) : (
       <iframe
         src={fullscreenNote.file_url}
-        className="flex-1 w-full"
+        className="flex-1 w-full bg-background text-foreground"
         style={{ border: "none" }}
         title={fullscreenNote.title}
       />
     )}
+  </div>
+)}
 
-        </div>
-      )}
     </div>
   );
 }
