@@ -65,6 +65,8 @@ const SECTIONS = [
 ];
 
 export default function AssessmentNotes() {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const [notes, setNotes] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -127,6 +129,53 @@ const handleDownload = async (fileId: string, url: string) => {
   }
 };
 
+// Delete file from Supabase storage + database
+const handleDelete = async (note: any) => {
+  if (!session?.user?.id) return alert("Login required");
+
+if (note.uploaded_by !== session.user.id) {
+  return alert("You can only delete your own uploads");
+}
+
+
+  if (!confirm("Are you sure you want to delete this file?")) return;
+
+  // Extract file path from URL (after /object/public/notes/)
+  const urlParts = note.file_url.split("/object/public/notes/");
+  const filePath = urlParts[1];
+
+  if (!filePath) {
+    console.error("File path not found:", note.file_url);
+    return;
+  }
+
+  // Delete from storage
+  const { error: storageErr } = await supabase.storage
+    .from("notes")
+    .remove([filePath]);
+
+  if (storageErr) {
+    console.error("Error deleting from storage:", storageErr);
+    alert("Failed to delete file from storage");
+    return;
+  }
+
+  // Delete from table
+  const { error: dbErr } = await supabase
+    .from("notes")
+    .delete()
+    .eq("id", note.id);
+
+  if (dbErr) {
+    console.error("Error deleting from database:", dbErr);
+    alert("Failed to delete file record");
+    return;
+  }
+
+  // Remove from local state
+  setNotes((prev) => prev.filter((n) => n.id !== note.id));
+  alert("File deleted successfully!");
+};
 
   useEffect(() => {
   if (fullscreenNote?.file_type === "pdf") setPdfLoading(true);
@@ -255,27 +304,32 @@ if (uploadErr) {
 
 const { data: urlData } = supabase.storage.from("notes").getPublicUrl(path);
 const file_url = urlData.publicUrl;
+const payload = {
+  uploaded_by: session.user.id,   // ✅ use correct column name
+  title: formData.get("title"),
+  description: formData.get("description"),
+  course: formData.get("course"),
+  institution: formData.get("institution"),
+  unit: formData.get("unit"),
+  category: formData.get("category"),
+  sub_category: selectedSubcategory,
+  block: selectedBlock,
+  file_type: ext,
+  file_url,
+  is_public: true,
+  approved: true,
+};
 
-    const payload = {
-      title: formData.get("title"),
-      description: formData.get("description"),
-      course: formData.get("course"),
-      institution: formData.get("institution"),
-      unit: formData.get("unit"),
-      category: formData.get("category"),
-      sub_category: selectedSubcategory,
-      block: selectedBlock,
-      file_type: ext,
-      file_url,
-      is_public: true,
-      approved: true,
-    };
 
     const { error: insertErr } = await supabase.from("notes").insert(payload);
     if (insertErr) console.error("Insert error:", insertErr);
     else {
-      alert("Upload successful!");
-      location.reload();
+   alert("Upload successful!");
+setNotes((prev) => [{ id: Date.now(), ...payload }, ...prev]); // add new note to UI
+setShowUploadForm(false);  // close upload form
+setSelectedFile(null);     // reset file
+setUploadProgress(null);   // reset progress
+
     }
 
     setUploading(false);
@@ -367,16 +421,38 @@ const file_url = urlData.publicUrl;
                 </option>
               ))}
             </select>
-            <Input type="file" name="file" required />
+          <Input
+  type="file"
+  name="file"
+  required
+  onChange={(e) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+  }}
+/>
+
           </div>
-          {uploadProgress !== null && (
-  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-    <div
-      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-      style={{ width: `${uploadProgress}%` }}
-    />
+ {uploadProgress !== null && selectedFile && (
+  <div className="mt-2 space-y-1">
+    {/* Progress bar */}
+    <div className="w-full bg-gray-200 rounded-full h-2">
+      <div
+        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+        style={{ width: `${uploadProgress}%` }}
+      />
+    </div>
+
+    {/* Percentage + File size */}
+    <div className="flex justify-between text-xs text-muted-foreground">
+      <span>{uploadProgress}%</span>
+      <span>
+        {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
+        {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+      </span>
+    </div>
   </div>
 )}
+
 
           <Button type="submit" disabled={uploading}>
             <UploadCloud className="w-4 h-4 mr-1" />
@@ -512,6 +588,18 @@ const file_url = urlData.publicUrl;
     <Download className="h-3 w-3" />
     Cache
   </Button>
+  {/* Delete button for uploader only */}
+{session?.user?.id === note.uploaded_by && (
+  <Button
+    size="sm"
+    variant="destructive"
+    onClick={() => handleDelete(note)}
+    className="flex items-center gap-1 w-full justify-center"
+  >
+    Delete
+  </Button>
+)}
+
 
   {/* Show badge if file is saved offline */}
   {offlineFiles.includes(note.id) && (
