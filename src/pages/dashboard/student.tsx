@@ -828,8 +828,9 @@ return (
   </p>
 </div>
 
+
 {/* 🏆 Top Students Leaderboard */}
-<Card className="rounded-2xl shadow-lg">
+<Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
   <CardHeader>
     <CardTitle className="flex items-center gap-2 text-lg font-semibold">
       <Trophy className="h-5 w-5 text-yellow-500" />
@@ -840,13 +841,12 @@ return (
       learners who consistently perform well, encouraging healthy competition.
     </CardDescription>
 
-    {/* 🔽 Explanation Dropdown */}
+    {/* 🔽 Explanation Dropdown (scrolls internally) */}
     <details className="mt-2 text-sm">
       <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
         How winners are chosen?
       </summary>
-      <div className="mt-2 space-y-3 text-gray-600 dark:text-gray-300">
-
+      <div className="mt-2 max-h-44 overflow-y-auto pr-2 space-y-3 text-gray-600 dark:text-gray-300 custom-scrollbar">
         {/* ⭐ How stars are calculated */}
         <div>
           <h4 className="font-semibold">1. How stars are calculated</h4>
@@ -871,16 +871,15 @@ return (
             <li>If still tied → the student with <strong>more quizzes attempted</strong> wins.</li>
           </ul>
           <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
-             This ensures there is always one clear winner at the top.
+            This ensures there is always one clear winner at the top.
           </p>
         </div>
 
-        {/*  Tip + Button */}
+        {/* Tip + Button */}
         <p className="text-sm">
           Want to improve your ranking? Attempt more units and submit results on the quizzes page.
         </p>
 
-        {/*  Go to Quizzes Button (React Router Link) */}
         <Button
           asChild
           className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
@@ -891,51 +890,86 @@ return (
     </details>
   </CardHeader>
 
+  {/* 🧑‍🎓 Leaderboard Section (scrolls internally) */}
   <CardContent>
-    <div className="flex gap-4 overflow-x-auto pb-2 h-56">
-      {loadingTopStudents ? (
-        //  Show loader while data is loading
-        <div className="flex justify-center items-center w-full">
-          <GlobalLoader message="Loading top students..." />
-        </div>
-      ) : topStudents.length > 0 ? (
-        //  Render student cards
-        topStudents.map((s, idx) => (
-          <div
-            key={s.userId}
-            className="flex-shrink-0 w-40 p-3 rounded-xl border bg-white dark:bg-gray-800 shadow"
-          >
-            <img
-              src={s.avatar_url || "/default-avatar.png"}
-              alt={s.name}
-              className="w-12 h-12 rounded-full mx-auto mb-2 object-cover"
-            />
-            <h3 className="text-center font-medium truncate">{s.name || "Unknown"}</h3>
-            <p className="text-xs text-center text-gray-500 truncate">
-              {s.institution || "Institution"}
-            </p>
-            <p className="text-xs text-center text-gray-400 truncate">
-              {s.county || ""}
-            </p>
-            <div className="flex justify-center mt-2 text-yellow-400">
-              {Array.from({ length: s.stars }).map((_, i) => (
-                <Star key={i} className="h-4 w-4 fill-yellow-400" />
-              ))}
-            </div>
-            {idx === 0 && (
-              <p className="text-xs text-center text-green-500 mt-1 font-semibold">
-                ⭐ Best Star
-              </p>
-            )}
+    <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
+      <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-2 custom-scrollbar">
+        {loadingTopStudents ? (
+          <div className="flex justify-center items-center w-full">
+            <GlobalLoader message="Loading top students..." />
           </div>
-        ))
-      ) : (
-        // Empty state
-        <p className="text-sm text-gray-500">No top students yet</p>
-      )}
+        ) : topStudents.length > 0 ? (
+          topStudents.map((s, idx) => {
+            const rankColor =
+              idx === 0
+                ? "from-yellow-400 to-yellow-200"
+                : idx === 1
+                ? "from-gray-400 to-gray-200"
+                : idx === 2
+                ? "from-amber-600 to-amber-300"
+                : "from-gray-100 to-gray-50";
+
+            return (
+              <div
+                key={s.userId}
+                className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <img
+                    src={s.avatar_url || "/default-avatar.png"}
+                    alt={s.name}
+                    className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow"
+                  />
+
+                  {/* 🧠 Name (wraps to 2 lines max) */}
+                  <h3
+                    className="font-medium text-sm sm:text-base text-gray-900 dark:text-white max-w-[8rem] line-clamp-2"
+                    title={s.name}
+                  >
+                    {s.name || "Unknown"}
+                  </h3>
+
+                  {/* 🏫 Institution (also wraps to 2 lines) */}
+                  <p
+                    className="text-xs text-gray-700 dark:text-gray-300 max-w-[8rem] line-clamp-2"
+                    title={s.institution}
+                  >
+                    {s.institution || "Institution"}
+                  </p>
+
+                  {/* 🌍 County (1 line max, short anyway) */}
+                  <p
+                    className="text-xs text-gray-500 max-w-[8rem] truncate"
+                    title={s.county}
+                  >
+                    {s.county || ""}
+                  </p>
+
+                  {/* ⭐ Stars */}
+                  <div className="flex justify-center mt-2 text-yellow-500">
+                    {Array.from({ length: s.stars }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400" />
+                    ))}
+                  </div>
+
+                  {/* 🥇 Medal Label */}
+                  {idx < 3 && (
+                    <p className="text-xs mt-2 font-semibold text-white bg-black/50 px-2 py-1 rounded-full whitespace-nowrap">
+                      {idx === 0 ? "🥇 Gold" : idx === 1 ? "🥈 Silver" : "🥉 Bronze"}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-sm text-gray-500">No top students yet</p>
+        )}
+      </div>
     </div>
   </CardContent>
 </Card>
+
 <Card
   className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2"
   onClick={() => {
@@ -954,7 +988,9 @@ return (
   <div className="relative z-20 p-4 flex flex-col justify-between h-full">
     {/* Card Heading */}
     <div className="mb-2">
-      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Feed & Leaderboard</h2>
+      <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+        Feed & Leaderboard
+      </h2>
     </div>
 
     <CardHeader className="flex items-center justify-between pb-2">
@@ -963,34 +999,50 @@ return (
 
     <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
       <p className="text-gray-700 dark:text-white/90">
-        Scroll through random questions endlessly. Use your free time productively by attempting questions continuously. The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
+        Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
+        The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
       </p>
 
       {/* Stats Row */}
       <div className="flex flex-col md:flex-row justify-start items-center md:items-start gap-6">
         {/* Questions Attempted */}
         <div className="flex flex-col items-center md:items-start">
-          <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+          <p className="text-xs text-gray-500 dark:text-white/70">
+            Questions Attempted
+          </p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">
+            {feedsAttemptCount}
+          </p>
         </div>
 
         {/* Leader Student */}
         {topStudents.length > 0 && (
           <div
-            className="flex flex-col items-center cursor-pointer w-24 md:w-20 mt-2 md:mt-0"
+            className="flex flex-col items-center cursor-pointer w-24 md:w-24 mt-2 md:mt-0"
             onClick={(e) => {
               e.stopPropagation();
               if (navigator.vibrate) navigator.vibrate(50);
               navigate("/feed");
             }}
           >
-            <p className="text-xs text-gray-500 dark:text-white/70 text-center">Leader Student</p>
+            <p className="text-xs text-gray-500 dark:text-white/70 text-center">
+              Leader Student
+            </p>
             <img
               src={topStudents[0].avatar_url || "/default-avatar.png"}
               alt={topStudents[0].name}
-              className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30"
+              className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-sm"
             />
-            <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90">{topStudents[0].name}</p>
+            <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
+              {topStudents[0].name}
+            </p>
+
+            {/* 🧮 Questions Answered Count */}
+            {topStudents[0].answeredCount !== undefined && (
+              <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-sm text-center">
+                {topStudents[0].answeredCount} answered
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -1011,6 +1063,7 @@ return (
     </CardContent>
   </div>
 </Card>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card
