@@ -38,26 +38,27 @@ const SkeletonCard = () => (
 );
 
 export default function Feed() {
-    const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
+const [questions, setQuestions] = useState([]);
+const [answers, setAnswers] = useState({});
+const [page, setPage] = useState(0);
+const [loading, setLoading] = useState(false);
 const { width, height } = useWindowSize();
 
-  const [activeQuestion, setActiveQuestion] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState("");
-  const [replyTo, setReplyTo] = useState(null);
+const [activeQuestion, setActiveQuestion] = useState(null);
+const [comments, setComments] = useState([]);
+const [newComment, setNewComment] = useState("");
+const [replyTo, setReplyTo] = useState(null);
 const [showConfetti, setShowConfetti] = useState(false);
-  const loaderRef = useRef(null);
+const loaderRef = useRef(null);
 const [feedImages, setFeedImages] = useState([]);
 const [seenImages, setSeenImages] = useState([]);
 const [showUpload, setShowUpload] = useState(false); // updated
 
 const [imageIndex, setImageIndex] = useState(0);
 const [uploading, setUploading] = useState(false);
-const [uploadFile, setUploadFile] = useState(null);
-  const [viewerOpen, setViewerOpen] = useState(false);
+const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+
+const [viewerOpen, setViewerOpen] = useState(false);
 const [activeImage, setActiveImage] = useState(null);
   const openViewer = (img) => {
   setActiveImage(img);
@@ -69,56 +70,64 @@ const closeViewer = () => {
   setTimeout(() => setActiveImage(null), 300); // smooth exit
 };
 const handleImageUpload = async () => {
-  if (!uploadFile || !user) return alert("Select an image first.");
+  if (!uploadFiles || uploadFiles.length === 0 || !user)
+    return alert("Select one or more images first.");
   setUploading(true);
 
   try {
-    const fileExt = uploadFile.name.split(".").pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `${user.id}/${fileName}`; // ✅ store inside user folder
+    const uploadedImages = [];
 
-    // 1️⃣ Upload to storage with folder path
-    const { error: uploadError } = await supabase.storage
-      .from("qfeed-images")
-      .upload(filePath, uploadFile);
+    // Loop through all selected images
+    for (const file of uploadFiles) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`; // ✅ store inside user folder
 
-    if (uploadError) throw uploadError;
+      // 1️⃣ Upload to storage with folder path
+      const { error: uploadError } = await supabase.storage
+        .from("qfeed-images")
+        .upload(filePath, file);
 
-    // 2️⃣ Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from("qfeed-images")
-      .getPublicUrl(filePath);
+      if (uploadError) throw uploadError;
 
-    // 3️⃣ Insert record into database
-    const { error: insertError, data: insertedData } = await supabase
-      .from("qfeed_images")
-      .insert({
-        image_url: publicUrlData.publicUrl,
-        storage_path: filePath, // ✅ full path (user.id/filename)
-        added_by: user.id,
-      })
-      .select()
-      .single();
+      // 2️⃣ Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("qfeed-images")
+        .getPublicUrl(filePath);
 
-    if (insertError) throw insertError;
+      // 3️⃣ Insert record into database
+      const { error: insertError, data: insertedData } = await supabase
+        .from("qfeed_images")
+        .insert({
+          image_url: publicUrlData.publicUrl,
+          storage_path: filePath,
+          added_by: user.id,
+        })
+        .select()
+        .single();
 
-    // 4️⃣ Update UI
-    setFeedImages(prev => [insertedData, ...prev]);
-    setUploadFile(null);
-    alert("✅ Image uploaded!");
+      if (insertError) throw insertError;
+
+      uploadedImages.push(insertedData);
+    }
+
+    // 4️⃣ Update UI once after all uploads
+    setFeedImages((prev) => [...uploadedImages, ...prev]);
+    setUploadFiles([]);
+    alert("Images uploaded! Thank you for your contribution");
   } catch (err) {
-    console.error("❌ Upload failed:", err);
-    alert("Upload failed.");
+    console.error("Upload failed:", err);
+    alert("Some uploads may have failed. Please try again.");
+  } finally {
+    setUploading(false);
   }
-
-  setUploading(false);
 };
 
 
 const handleDeleteImage = async (img) => {
   if (!confirm("Are you sure you want to delete this image?")) return;
 
-  if (!img.storage_path) return alert("❌ Image path missing. Cannot delete.");
+  if (!img.storage_path) return alert("Image path missing. Cannot delete.");
 
   try {
     console.log("Deleting image from storage:", img.storage_path);
@@ -126,7 +135,7 @@ const handleDeleteImage = async (img) => {
     // 1️⃣ Delete from storage (full path)
     const { data, error: storageError } = await supabase.storage
       .from("qfeed-images")
-      .remove([img.storage_path]); // ✅ exact match to uploaded path
+      .remove([img.storage_path]); //  exact match to uploaded path
 
     console.log("Storage delete result:", { data, storageError });
 
@@ -142,10 +151,10 @@ const handleDeleteImage = async (img) => {
 
     // 3️⃣ Update UI
     setFeedImages(prev => prev.filter(i => i.id !== img.id));
-    alert("✅ Image deleted successfully!");
+    alert("Image deleted successfully!");
   } catch (error) {
     console.error("Failed to delete image:", error);
-    alert("❌ Failed to delete image. Check console.");
+    alert("Failed to delete image. Check console.");
   }
 };
 
@@ -158,11 +167,11 @@ const vibrateTap = () => {
 };
 
   
-    const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
 
   const [user, setUser] = useState(null);
-    const [questionCount, setQuestionCount] = useState(0);
+  const [questionCount, setQuestionCount] = useState(0);
 
   // Load total answered count from DB (and cache in localStorage)
   useEffect(() => {
@@ -276,7 +285,7 @@ useEffect(() => {
       });
     });
   }, []);
-  // ✅ Sync answered questions to qfeed_seen whenever answers change
+  //  Sync answered questions to qfeed_seen whenever answers change
 useEffect(() => {
   if (!user) return;
   const answeredIds = Object.keys(answers);
@@ -294,7 +303,7 @@ useEffect(() => {
           { onConflict: "question_id,user_id" }
         );
     } catch (err) {
-      console.error("❌ Failed syncing to qfeed_seen:", err);
+      console.error(" Failed syncing to qfeed_seen:", err);
     }
   };
 
@@ -1035,9 +1044,9 @@ if ((index + 1) % 2 === 0) {
               });
 
               if (error) {
-                console.error("❌ Failed to mark image as seen:", error);
+                console.error("Failed to mark image as seen:", error);
               } else {
-                console.log("✅ Marked image as seen:", img.id);
+                console.log("Marked image as seen:", img.id);
                 // Remove immediately from feed without reload
                 setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
               }
@@ -1110,51 +1119,62 @@ cards.push(
   >
     {showUpload ? "Hide Upload ▲" : "Upload Image ▼"}
   </button>
+{/* Dropdown upload card */}
+{showUpload && (
+  <div className="mt-3 flex flex-col items-center justify-center text-center w-full sm:w-auto border-2 border-dashed border-white/50 rounded-xl p-4 sm:p-5 bg-white/10 hover:bg-white/20 transition-all duration-300 overflow-hidden">
+    <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full">
+      {uploadFiles && uploadFiles.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
+          {uploadFiles.map((file, index) => (
+            <img
+              key={index}
+              src={URL.createObjectURL(file)}
+              alt={`Preview ${index + 1}`}
+              className="w-full h-40 sm:h-48 object-cover rounded-lg"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center">
+          <span className="text-white font-medium text-xs sm:text-sm">
+            Tap or click to choose images
+          </span>
+        </div>
+      )}
 
-  {/* Dropdown upload card */}
-  {showUpload && (
-    <div className="mt-3 flex flex-col items-center justify-center text-center w-full sm:w-auto border-2 border-dashed border-white/50 rounded-xl p-4 sm:p-5 bg-white/10 hover:bg-white/20 transition-all duration-300 overflow-hidden">
-      <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full">
-        {uploadFile ? (
-          <img
-            src={URL.createObjectURL(uploadFile)}
-            alt="Preview"
-            className="w-full h-40 sm:h-48 object-cover rounded-lg"
-          />
-        ) : (
-          <div className="flex flex-col items-center">
-            <span className="text-white font-medium text-xs sm:text-sm">
-              Tap or click to choose an image
-            </span>
-          </div>
-        )}
-        <input
-          id="image-upload"
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => setUploadFile(e.target.files[0])}
-        />
-      </label>
+      <input
+        id="image-upload"
+        type="file"
+        accept="image/*"
+        multiple // ✅ enable multiple file selection
+        className="hidden"
+        onChange={(e) => setUploadFiles(Array.from(e.target.files))}
+      />
+    </label>
 
-      {/* Upload button */}
-      <Button
-        onClick={handleImageUpload}
-        disabled={uploading || !uploadFile}
-        className="mt-3 px-4 py-1.5 rounded-md bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm sm:text-base font-semibold hover:opacity-90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {uploading ? "Uploading..." : uploadFile ? "Upload Now" : "Select Image"}
-      </Button>
+    {/* Upload button */}
+    <Button
+      onClick={handleImageUpload}
+      disabled={uploading || uploadFiles.length === 0}
+      className="mt-3 px-4 py-1.5 rounded-md bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm sm:text-base font-semibold hover:opacity-90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {uploading
+        ? "Uploading..."
+        : uploadFiles.length > 0
+        ? `Upload ${uploadFiles.length > 1 ? "All" : "Now"}`
+        : "Select Images"}
+    </Button>
 
-      {/* Subtitle */}
-      <p className="mt-2 text-white/80 text-xs sm:text-sm text-center">
-        Share your photo & inspire others
-      </p>
-    </div>
-  )}
+    {/* Subtitle */}
+    <p className="mt-2 text-white/80 text-xs sm:text-sm text-center">
+      Share your photos & inspire others
+    </p>
+  </div>
+)}
 </div>
 </motion.div>
 );
+
 
 
 }
