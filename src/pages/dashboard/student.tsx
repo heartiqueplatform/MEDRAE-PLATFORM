@@ -828,7 +828,6 @@ return (
   </p>
 </div>
 
-
 {/* 🏆 Top Students Leaderboard */}
 <Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
   <CardHeader>
@@ -1046,6 +1045,11 @@ return (
           </div>
         )}
       </div>
+{topStudents.length > 0 && topStudents[0].answeredCount && (
+  <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-lg font-semibold text-sm shadow-sm">
+    🏆 Top student has attempted {topStudents[0].answeredCount} questions!
+  </div>
+)}
 
       {/* Centered Button */}
       <div className="flex justify-center mt-3">
@@ -1063,6 +1067,7 @@ return (
     </CardContent>
   </div>
 </Card>
+
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
