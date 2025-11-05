@@ -1047,7 +1047,7 @@ return (
       </div>
 {topStudents.length > 0 && topStudents[0].answeredCount && (
   <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-lg font-semibold text-sm shadow-sm">
-    🏆 Top student has attempted {topStudents[0].answeredCount} questions!
+     Top student has attempted {topStudents[0].answeredCount} questions!
   </div>
 )}
 
