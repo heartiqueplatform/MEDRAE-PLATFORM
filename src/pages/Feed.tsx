@@ -776,7 +776,7 @@ avatar: profile?.avatar_url ?? "/default-avatar.png",
     alert("Reset complete! Images refreshed silently.");
   }}
 >
-  Reset My Images Preview
+  Reset Images Preview
 </Button>
 {/*  Reset My Seen Questions Button (mobile + desktop friendly) */}
 <Button
@@ -818,7 +818,7 @@ avatar: profile?.avatar_url ?? "/default-avatar.png",
     }
   }}
 >
-  Reset My Seen Questions
+  Reset Seen Questions
 </Button>
 
 

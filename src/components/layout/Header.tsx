@@ -216,7 +216,7 @@ setStreak(newStreak);
 
         <div className="hidden md:block">
           <h1 className="text-xl font-bold bg-gradient-medical bg-clip-text text-transparent">
-            Heartique Nursing Nexus Scholar
+            Medrae
           </h1>
         </div>
       </div>
@@ -256,31 +256,32 @@ setStreak(newStreak);
   variant="ghost"
   size="sm"
   onClick={() => {
-    const shareMessage = `Heartique Nursing Nexus Scholar – Your Nursing Learning Companion
+    const shareMessage = `Medrae – The Professional Medical Education & Career Network
 
-• Ordered questions by unit for structured study
-• High-quality media & videos chosen to simplify complex topics
-• Full course units Notes  arranged in blocks and sems for easy navigation
-• NCK simulation practice designed to train you like a pro
+• Structured learning modules across clinical disciplines  
+• Evidence-based resources and expert-led video lectures  
+• Comprehensive notes and case studies for clinical excellence  
+• Exam simulations and certification pathways for professional growth  
 
-Start your journey today: https://heartique-platform.vercel.app`;
+Advance your medical journey today: https://medrae.vercel.app`;
 
     if (navigator.share) {
       navigator
         .share({
-          title: "Heartique Nursing Nexus Scholar",
+          title: "Medrae – Medical Education & Career Network",
           text: shareMessage,
-          url: "https://heartique-platform.vercel.app",
+          url: "https://medrae.vercel.app",
         })
         .catch((err) => console.log("Share cancelled:", err));
     } else {
       navigator.clipboard.writeText(shareMessage);
-      alert("App link and description copied to clipboard!");
+      alert("Medrae link and overview copied to clipboard!");
     }
   }}
 >
   <Share2 className="h-5 w-5" />
 </Button>
+
 
         {/* Notifications */}
         <Button

@@ -1207,7 +1207,7 @@ return (
  
 <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
   <CardHeader>
-    <CardTitle className="text-gray-900 dark:text-white">Heartique Daily Status💖 </CardTitle>
+    <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status </CardTitle>
     <CardDescription className="text-gray-700 dark:text-gray-300">
   This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
 </CardDescription>
@@ -1366,58 +1366,58 @@ return (
 {/* Share App Card */}
 <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
   <CardHeader>
-    <CardTitle className="text-lg font-semibold">Share This App</CardTitle>
+    <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
     <CardDescription>
-      Help your friends and colleagues discover Heartique by sharing this app.
+      Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
     </CardDescription>
   </CardHeader>
-<CardContent>
-  <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-    <Button
-      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm"
-      onClick={() => {
-        const shareMessage =
-`Heartique Nursing Nexus Scholar – Your Nursing Learning Companion
+  <CardContent>
+    <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+      <Button
+        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm"
+        onClick={() => {
+          const shareMessage =
+`Medrae – The Professional Medical Education & Career Network
 
-• Ordered questions by unit for structured study
-• High-quality media & videos chosen to simplify complex topics
-• Full course units Notes arranged in blocks and sems for easy navigation
-• NCK simulation practice designed to train you like a pro
+• Structured modules across core clinical disciplines  
+• Expert-led lectures and verified medical resources  
+• Comprehensive study materials and case-based learning  
+• Certification pathways and professional development tools  
 
-Start your journey today: https://heartique-platform.vercel.app`;
+Join the Medrae community today: https://medrae.vercel.app`;
 
-        if (navigator.share) {
-          navigator
-            .share({
-              title: "Heartique Scholar",
-              text: shareMessage,
-              url: "https://heartique-platform.vercel.app",
-            })
-            .catch(err => console.log("Share cancelled:", err));
-        } else {
-          navigator.clipboard.writeText(shareMessage);
-          alert("App link and description copied to clipboard!");
-        }
-      }}
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-4 h-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
+          if (navigator.share) {
+            navigator
+              .share({
+                title: "Medrae – Medical Education & Career Network",
+                text: shareMessage,
+                url: "https://medrae.vercel.app",
+              })
+              .catch(err => console.log("Share cancelled:", err));
+          } else {
+            navigator.clipboard.writeText(shareMessage);
+            alert("Medrae link and overview copied to clipboard!");
+          }
+        }}
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
-        />
-      </svg>
-      Share
-    </Button>
-  </div>
-</CardContent>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
+          />
+        </svg>
+        Share
+      </Button>
+    </div>
+  </CardContent>
 </Card>
 
 {/* WhatsApp Channel Card */}

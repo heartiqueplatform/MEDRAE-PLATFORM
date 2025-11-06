@@ -99,7 +99,7 @@ const mainItems = [
   const learningItems = [
    { title: "Assessment Calendar", url: "/calendar", icon: Calendar,  badge: `${totalEvents}E`},
     {title: "Study Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★` },
-    { title: "Heartique Quizzes Bank", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
+    { title: "Medrae Quizzes Bank", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
     { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
 
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
@@ -353,9 +353,9 @@ const handleCollapse = () => {
           {!isCollapsed && (
             <div>
               <h2 className="font-bold text-lg bg-gradient-medical bg-clip-text text-transparent">
-                Heartique Nursing Nexus
+              MEDRAE MEDICAL 
               </h2>
-              <p className="text-xs text-muted-foreground">Scholar Platform</p>
+              <p className="text-xs text-muted-foreground">Network Platform</p>
             </div>
           )}
         </div>
