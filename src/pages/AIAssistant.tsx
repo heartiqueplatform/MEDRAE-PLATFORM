@@ -296,10 +296,10 @@ return (
           <Brain className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Heartique AI Study Assistant</h1>
+          <h1 className="text-2xl font-bold">Medrae AI Study Assistant</h1>
           <p className="text-muted-foreground">Your personal nursing education companion</p>
         </div>
-<Badge className="ml-auto">❤️ Heartique is Powered by AI</Badge>
+<Badge className="ml-auto">Powered by AI</Badge>
 
       </div>
 
