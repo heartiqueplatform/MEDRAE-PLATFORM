@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate", // auto update service worker
       includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.pneg", "pwa-512x512.pneg"], 
       manifest: {
-        name: "Heatique Nursing Nexus Scholar",
-        short_name: "Heartique X",
-        description: "Comprehensive app for NCK/FQE exam revision, featuring practice questions, study guides, progress tracking, and interactive learning tools to help healthcare professionals prepare efficiently and confidently. ",
+        name: "MEDRAE",
+        short_name: "MEDRAE",
+        description: "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools to enhance knowledge, skill, and exam readiness. ",
         theme_color: "#4ade80",
         background_color: "#ffffff",
         display: "standalone", // looks like native app
