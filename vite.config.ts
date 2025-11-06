@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react"; // standard plugin
+import react from "@vitejs/plugin-react"; 
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
@@ -10,19 +10,26 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+
+  // ✅ ADD THIS: Prevent chunk size warnings during build
+  build: {
+    chunkSizeWarningLimit: 1500, // Increase from default 500kb → 1500kb
+  },
+
   plugins: [
-    react(), //  use this instead of swc
+    react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate", // auto update service worker
-      includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.pneg", "pwa-512x512.pneg"], 
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.pneg", "pwa-512x512.pneg"],
       manifest: {
         name: "MEDRAE",
         short_name: "MEDRAE",
-        description: "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools to enhance knowledge, skill, and exam readiness. ",
+        description:
+          "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools to enhance knowledge, skill, and exam readiness.",
         theme_color: "#4ade80",
         background_color: "#ffffff",
-        display: "standalone", // looks like native app
+        display: "standalone",
         scope: "/",
         start_url: "/",
         icons: [
@@ -31,19 +38,17 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
-          // Only cache CSS & JSON (skip large JS bundles)
           {
             urlPattern: /\/.*\.(?:css|json)$/,
             handler: "NetworkFirst",
             options: {
               cacheName: "static-resources",
               networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 }, // 30 days
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
-          //  Cache images
           {
             urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif)$/,
             handler: "CacheFirst",
@@ -56,6 +61,7 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
