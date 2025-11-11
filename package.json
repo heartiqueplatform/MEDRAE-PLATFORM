@@ -112,9 +112,15 @@
     "vite": "^5.4.1",
     "vite-plugin-pwa": "^1.0.3"
   },
-  
   "engines": {
-  "node": "18.x"
+    "node": "22.x",
+    "npm": ">=10.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "packageManager": "npm@10.0.0",
+  "vercel": {
+    "buildCommand": "npm run build",
+    "installCommand": "npm install",
+    "outputDirectory": "dist"
+  }
 }
-}
-
