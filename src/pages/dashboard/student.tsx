@@ -970,105 +970,6 @@ return (
   </CardContent>
 </Card>
 
-<Card
-  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2"
-  onClick={() => {
-    if (navigator.vibrate) navigator.vibrate(50);
-    navigate("/feed");
-  }}
-  style={{
-    backgroundColor: "var(--card-bg)",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Overlay */}
-  <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
-
-  <div className="relative z-20 p-4 flex flex-col justify-between h-full">
-    {/* Card Heading */}
-    <div className="mb-2">
-      <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-        Feed & Leaderboard
-      </h2>
-    </div>
-
-    <CardHeader className="flex items-center justify-between pb-2">
-      <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
-    </CardHeader>
-
-    <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
-      <p className="text-gray-700 dark:text-white/90">
-        Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
-        The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
-      </p>
-
-      {/* Stats Row */}
-      <div className="flex flex-col md:flex-row justify-start items-center md:items-start gap-6">
-        {/* Questions Attempted */}
-        <div className="flex flex-col items-center md:items-start">
-          <p className="text-xs text-gray-500 dark:text-white/70">
-            Questions Attempted
-          </p>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">
-            {feedsAttemptCount}
-          </p>
-        </div>
-
-        {/* Leader Student */}
-        {topStudents.length > 0 && (
-          <div
-            className="flex flex-col items-center cursor-pointer w-24 md:w-24 mt-2 md:mt-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (navigator.vibrate) navigator.vibrate(50);
-              navigate("/feed");
-            }}
-          >
-            <p className="text-xs text-gray-500 dark:text-white/70 text-center">
-              Leader Student
-            </p>
-            <img
-              src={topStudents[0].avatar_url || "/default-avatar.png"}
-              alt={topStudents[0].name}
-              className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-sm"
-            />
-            <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
-              {topStudents[0].name}
-            </p>
-
-            {/* 🧮 Questions Answered Count */}
-            {topStudents[0].answeredCount !== undefined && (
-              <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-sm text-center">
-                {topStudents[0].answeredCount} answered
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-{topStudents.length > 0 && topStudents[0].answeredCount && (
-  <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-lg font-semibold text-sm shadow-sm">
-     Top student has attempted {topStudents[0].answeredCount} questions!
-  </div>
-)}
-
-      {/* Centered Button */}
-      <div className="flex justify-center mt-3">
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium w-full sm:w-3/4 md:w-1/2"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (navigator.vibrate) navigator.vibrate(50);
-            navigate("/feed");
-          }}
-        >
-          Go to Feeds
-        </Button>
-      </div>
-    </CardContent>
-  </div>
-</Card>
-
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -1206,6 +1107,105 @@ return (
 
       </div>
  
+<Card
+  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2"
+  onClick={() => {
+    if (navigator.vibrate) navigator.vibrate(50);
+    navigate("/feed");
+  }}
+  style={{
+    backgroundColor: "var(--card-bg)",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Overlay */}
+  <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
+
+  <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+    {/* Card Heading */}
+    <div className="mb-2">
+      <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+        Feed & Leaderboard
+      </h2>
+    </div>
+
+    <CardHeader className="flex items-center justify-between pb-2">
+      <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
+    </CardHeader>
+
+    <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
+      <p className="text-gray-700 dark:text-white/90">
+        Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
+        The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
+      </p>
+
+      {/* Stats Row */}
+      <div className="flex flex-col md:flex-row justify-start items-center md:items-start gap-6">
+        {/* Questions Attempted */}
+        <div className="flex flex-col items-center md:items-start">
+          <p className="text-xs text-gray-500 dark:text-white/70">
+            Questions Attempted
+          </p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">
+            {feedsAttemptCount}
+          </p>
+        </div>
+
+        {/* Leader Student */}
+        {topStudents.length > 0 && (
+          <div
+            className="flex flex-col items-center cursor-pointer w-24 md:w-24 mt-2 md:mt-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (navigator.vibrate) navigator.vibrate(50);
+              navigate("/feed");
+            }}
+          >
+            <p className="text-xs text-gray-500 dark:text-white/70 text-center">
+              Leader Student
+            </p>
+            <img
+              src={topStudents[0].avatar_url || "/default-avatar.png"}
+              alt={topStudents[0].name}
+              className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-sm"
+            />
+            <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
+              {topStudents[0].name}
+            </p>
+
+            {/* 🧮 Questions Answered Count */}
+            {topStudents[0].answeredCount !== undefined && (
+              <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-sm text-center">
+                {topStudents[0].answeredCount} answered
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+{topStudents.length > 0 && topStudents[0].answeredCount && (
+  <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-lg font-semibold text-sm shadow-sm">
+     Top student has attempted {topStudents[0].answeredCount} questions!
+  </div>
+)}
+
+      {/* Centered Button */}
+      <div className="flex justify-center mt-3">
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium w-full sm:w-3/4 md:w-1/2"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (navigator.vibrate) navigator.vibrate(50);
+            navigate("/feed");
+          }}
+        >
+          Go to Feeds
+        </Button>
+      </div>
+    </CardContent>
+  </div>
+</Card>
+
 <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
   <CardHeader>
     <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status </CardTitle>
