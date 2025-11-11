@@ -10,6 +10,7 @@ import {
   CardHeader, CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "date-fns";
@@ -883,7 +884,7 @@ return (
           asChild
           className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
         >
-          <Link to="/heartique-quizzes">Go to Heartique Quizzes</Link>
+          <Link to="/heartique-quizzes">Go to Quizzes</Link>
         </Button>
       </div>
     </details>
@@ -1363,120 +1364,6 @@ return (
   )}
 </Card>
 
-{/* Share App Card */}
-<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
-  <CardHeader>
-    <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
-    <CardDescription>
-      Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-      <Button
-        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm"
-        onClick={() => {
-          const shareMessage =
-`Medrae – The Professional Medical Education & Career Network
-
-• Structured modules across core clinical disciplines  
-• Expert-led lectures and verified medical resources  
-• Comprehensive study materials and case-based learning  
-• Certification pathways and professional development tools  
-
-Join the Medrae community today: https://medrae.vercel.app`;
-
-          if (navigator.share) {
-            navigator
-              .share({
-                title: "Medrae – Medical Education & Career Network",
-                text: shareMessage,
-                url: "https://medrae.vercel.app",
-              })
-              .catch(err => console.log("Share cancelled:", err));
-          } else {
-            navigator.clipboard.writeText(shareMessage);
-            alert("Medrae link and overview copied to clipboard!");
-          }
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
-          />
-        </svg>
-        Share
-      </Button>
-    </div>
-  </CardContent>
-</Card>
-
-{/* WhatsApp Channel Card */}
-<Card className="shadow-md">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <MessageCircle className="w-5 h-5 text-primary" />
-      Join Our WhatsApp Channel
-    </CardTitle>
-    <CardDescription>
-      Stay updated with important announcements and new study content.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    <a
-      href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-<div className="flex justify-center">
-  <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
-    <MessageCircle className="w-4 h-4" />
-    WhatsApp Channel
-  </Button>
-</div>
-
-
-    </a>
-  </CardContent>
-</Card>
-{/* WhatsApp Group Card */}
-<Card className="shadow-md">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <MessageCircle className="w-5 h-5 text-green-600" />
-      Join Our WhatsApp Group
-    </CardTitle>
-    <CardDescription>
-      Connect with fellow nursing and medical students.  
-      Share insights, ask questions, and stay updated with study materials.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    <a
-      href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-   <div className="flex justify-center">
-  <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
-    <MessageCircle className="w-4 h-4" />
-    WhatsApp Group
-  </Button>
-</div>
-
-
-    </a>
-  </CardContent>
-</Card>
 
  {/* Simulation Papers Section */} 
 <Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
@@ -1612,42 +1499,11 @@ Join the Medrae community today: https://medrae.vercel.app`;
 </Card>
 
 
-
-{/* Telegram Channel Card */}
-<Card className="shadow-md">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <Send className="w-5 h-5 text-blue-600" />
-      Join Our Telegram Channel
-    </CardTitle>
-    <CardDescription>
-       Stay updated with the latest resources, study tips, and announcements.  
-      Be part of our growing community of nursing and medical scholars.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    <a
-      href="https://t.me/heartiquenursingnexusscholar"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-   <div className="flex justify-center">
-  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
-    <Send className="w-4 h-4" />
-    Telegram Channel
-  </Button>
-</div>
-
-
-    </a>
-  </CardContent>
-</Card>
-
       {/* New Unit Question Counts Section */}
       <Card>
   <CardHeader className="flex flex-row items-center justify-between">
     <div>
-      <CardTitle>HEARTIQUE QUIZZES APP UNIT BREAKDOWN</CardTitle>
+      <CardTitle>QUIZZES UNIT BREAKDOWN</CardTitle>
       <CardDescription>
         All units and their available question counts. Click the tab to start practicing instantly.
       </CardDescription>
@@ -1681,18 +1537,158 @@ Join the Medrae community today: https://medrae.vercel.app`;
     )}
   </CardContent>
 </Card>
+{/* Main Grid */}
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-       
-        {/* Right - Actions & Assessments */}
-        <div className="flex flex-col md:flex-row w-full h-auto gap-6">
+{/* Share App Card */}
+<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+  <CardHeader>
+    <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
+    <CardDescription>
+      Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+      <Button
+        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm"
+        onClick={() => {
+          const shareMessage =
+`Medrae – The Professional Medical Education & Career Network
+
+• Structured modules across core clinical disciplines  
+• Expert-led lectures and verified medical resources  
+• Comprehensive study materials and case-based learning  
+• Certification pathways and professional development tools  
+
+Join the Medrae community today: https://medrae.vercel.app`;
+
+          if (navigator.share) {
+            navigator
+              .share({
+                title: "Medrae – Medical Education & Career Network",
+                text: shareMessage,
+                url: "https://medrae.vercel.app",
+              })
+              .catch(err => console.log("Share cancelled:", err));
+          } else {
+            navigator.clipboard.writeText(shareMessage);
+            alert("Medrae link and overview copied to clipboard!");
+          }
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
+          />
+        </svg>
+        Share
+      </Button>
+    </div>
+  </CardContent>
+</Card>
+
+{/* WhatsApp Channel Card */}
+<Card className="shadow-md">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <MessageCircle className="w-5 h-5 text-primary" />
+      Join Our WhatsApp Channel
+    </CardTitle>
+    <CardDescription>
+      Stay updated with important announcements and new study content.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <a
+      href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+<div className="flex justify-center">
+  <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
+    <MessageCircle className="w-4 h-4" />
+    WhatsApp Channel
+  </Button>
+</div>
 
 
+    </a>
+  </CardContent>
+</Card>
+{/* WhatsApp Group Card */}
+<Card className="shadow-md">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <MessageCircle className="w-5 h-5 text-green-600" />
+      Join Our WhatsApp Group
+    </CardTitle>
+    <CardDescription>
+      Connect with fellow nursing and medical students.  
+      Share insights, ask questions, and stay updated with study materials.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <a
+      href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+   <div className="flex justify-center">
+  <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
+    <MessageCircle className="w-4 h-4" />
+    WhatsApp Group
+  </Button>
+</div>
 
+
+    </a>
+  </CardContent>
+</Card>
+
+
+{/* Telegram Channel Card */}
+<Card className="shadow-md">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Send className="w-5 h-5 text-blue-600" />
+      Join Our Telegram Channel
+    </CardTitle>
+    <CardDescription>
+       Stay updated with the latest resources, study tips, and announcements.  
+      Be part of our growing community of nursing and medical scholars.
+    </CardDescription>
+  </CardHeader>
+  <CardContent>
+    <a
+      href="https://t.me/heartiquenursingnexusscholar"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+   <div className="flex justify-center">
+  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
+    <Send className="w-4 h-4" />
+    Telegram Channel
+  </Button>
+</div>
+
+
+    </a>
+  </CardContent>
+</Card>
 <Card
-  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
+
   style={{
     backgroundImage: "url('/background04.jpg')",
     backgroundSize: "cover",
@@ -1718,7 +1714,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
 </Card>
 
 <Card
-  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
+
 
   style={{
     backgroundImage: "url('/background05.jpg')",
@@ -1750,9 +1747,9 @@ Join the Medrae community today: https://medrae.vercel.app`;
     )}
   </CardContent>
 </Card>
-
 <Card
-  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
+
 
   style={{
     backgroundImage: "url('/background03.jpg')",
@@ -1778,7 +1775,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
 </Card>
 
 <Card
-className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
+
 
   style={{
     backgroundImage: "url('/background02.jpg')",
@@ -1802,9 +1800,9 @@ className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shad
 
   </CardContent>
 </Card>
-
 <Card
-  className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shadow"
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
+
   style={{
     backgroundImage: "url('/background1.jpeg')",
     backgroundSize: "cover",
@@ -1824,13 +1822,9 @@ className="w-full md:w-1/2 h-full cursor-pointer hover:shadow-lg transition-shad
     Access Resources
   </Link>
 </Button>
-
-  </CardContent>
+</CardContent>
 </Card>
-
-        </div>
-
-      </div>
-    </div>
+</div>
+</div>
   );
 }
