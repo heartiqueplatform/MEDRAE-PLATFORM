@@ -505,7 +505,7 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
 
   //  Footer + page numbers AFTER all content
   const pageCount = doc.internal.getNumberOfPages();
-  const footerLine1 = "HEARTIQUE NURSING NEXUS SCHOLAR ";
+  const footerLine1 = "MEDRAE";
   const footerLine2 = "Keep pushing, your dedication shapes the future of care!";
 
   for (let i = 1; i <= pageCount; i++) {
@@ -528,7 +528,7 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
   }
 
 
-  doc.save("HEARTIQUE NURSING NEXUS SIMULATION.pdf");
+  doc.save("MEDRAE.pdf");
 };
 
 

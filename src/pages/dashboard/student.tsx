@@ -829,6 +829,143 @@ return (
   </p>
 </div>
 
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background06.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
+
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Study Progress
+      </CardTitle>
+      <TrendingUp className="h-4 w-4 text-white" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{studyProgress}%</div>
+      <Progress value={studyProgress} className="mt-2" />
+    </CardContent>
+  </div>
+</Card>
+
+    <Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background07.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
+
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Quizzes Completed
+      </CardTitle>
+      <Target className="h-4 w-4 text-white" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{quizCount}</div>
+      <p className="text-xs text-white/80">+3 this week</p>
+    </CardContent>
+  </div>
+</Card>
+
+
+      <Card className="relative cursor-pointer hover:shadow-lg transition-shadow">
+  {/* Background Image */}
+  <div
+    className="absolute inset-0"
+    style={{
+      backgroundImage: "url('/background05.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      zIndex: 0,
+    }}
+  />
+  {/* Dark Overlay */}
+  <div className="absolute inset-0 bg-black/50 z-10 rounded-lg"></div>
+
+  {/* Card Content */}
+  <div className="relative z-20 p-4">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">Average Score</CardTitle>
+      <Star className="h-4 w-4 text-white/80" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{avgScore}%</div>
+      <p className="text-xs text-white/80">+5% from last month</p>
+    </CardContent>
+  </div>
+</Card>
+
+<Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background08.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
+
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Current Streak
+      </CardTitle>
+      <Clock className="h-4 w-4 text-white" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{studyStreak} days</div>
+      <p className="text-xs text-white/80">Keep it up!</p>
+    </CardContent>
+  </div>
+</Card>
+
+<Card
+  className="relative overflow-hidden rounded-2xl shadow-lg"
+  style={{
+    backgroundImage: "url('/background09.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  {/* Dark overlay for readability */}
+  <div className="absolute inset-0 bg-black/50" />
+
+  {/* Content above overlay */}
+  <div className="relative z-10">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-white">
+        Best Streak
+      </CardTitle>
+      <Trophy className="h-4 w-4 text-yellow-500" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-white">{bestStreak} days</div>
+      <p className="text-xs text-white/80">All-time record</p>
+    </CardContent>
+  </div>
+</Card>
+</div>
+ 
+ 
 {/* 🏆 Top Students Leaderboard */}
 <Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
   <CardHeader>
@@ -970,143 +1107,6 @@ return (
   </CardContent>
 </Card>
 
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background06.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
-
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Study Progress
-      </CardTitle>
-      <TrendingUp className="h-4 w-4 text-white" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{studyProgress}%</div>
-      <Progress value={studyProgress} className="mt-2" />
-    </CardContent>
-  </div>
-</Card>
-
-    <Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background07.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
-
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Quizzes Completed
-      </CardTitle>
-      <Target className="h-4 w-4 text-white" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{quizCount}</div>
-      <p className="text-xs text-white/80">+3 this week</p>
-    </CardContent>
-  </div>
-</Card>
-
-
-      <Card className="relative cursor-pointer hover:shadow-lg transition-shadow">
-  {/* Background Image */}
-  <div
-    className="absolute inset-0"
-    style={{
-      backgroundImage: "url('/background05.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      zIndex: 0,
-    }}
-  />
-  {/* Dark Overlay */}
-  <div className="absolute inset-0 bg-black/50 z-10 rounded-lg"></div>
-
-  {/* Card Content */}
-  <div className="relative z-20 p-4">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">Average Score</CardTitle>
-      <Star className="h-4 w-4 text-white/80" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{avgScore}%</div>
-      <p className="text-xs text-white/80">+5% from last month</p>
-    </CardContent>
-  </div>
-</Card>
-
-<Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background08.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
-
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Current Streak
-      </CardTitle>
-      <Clock className="h-4 w-4 text-white" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{studyStreak} days</div>
-      <p className="text-xs text-white/80">Keep it up!</p>
-    </CardContent>
-  </div>
-</Card>
-
-<Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background09.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
-
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Best Streak
-      </CardTitle>
-      <Trophy className="h-4 w-4 text-yellow-500" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{bestStreak} days</div>
-      <p className="text-xs text-white/80">All-time record</p>
-    </CardContent>
-  </div>
-</Card>
-
-      </div>
- 
 <Card
   className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2"
   onClick={() => {
