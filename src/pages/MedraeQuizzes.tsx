@@ -97,7 +97,7 @@ const getLevelVariant = (level: string) => {
   }
 };
 
-export function HeartiqueQuizzes() {
+export function MedraeQuizzes() {
     const user = useUser();
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);

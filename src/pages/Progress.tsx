@@ -181,10 +181,10 @@ export function StudyProgress() {
         <p className="text-muted-foreground mt-2">
           This tracker measures your learning journey in three ways: 
           <br />• <strong>Progress %</strong> is calculated as <em>completed topics ÷ total topics × 100</em>. 
-          <br />• <strong>Stars</strong> are awarded once you submit at least one quiz through the Heartique Quizzes App. 
+          <br />• <strong>Stars</strong> are awarded once you submit at least one quiz through the Medrae Quizzes App. 
           <br />• <strong>Hours Studied</strong> are estimated at 1.5 hours per topic completed. 
           <br /><br />
-          To earn scores and update your progress, you must complete and submit quizzes in the Heartique Quizzes App — your results will automatically update here.
+          To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App — your results will automatically update here.
         </p>
       </div>
 

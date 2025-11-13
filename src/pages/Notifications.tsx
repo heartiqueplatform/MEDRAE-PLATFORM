@@ -127,7 +127,7 @@ const [loading, setLoading] = useState(true);
   <div className="flex justify-center items-center py-20">
     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
     <p className="ml-4 text-muted-foreground font-medium">
-      Please wait, Heartique is fetching your notifications...
+      Please wait, Medrae is fetching your notifications...
     </p>
   </div>
 ) : notifications.length > 0 ? (

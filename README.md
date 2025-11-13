@@ -1,8 +1,8 @@
-# Welcome to the Heartique Platform
+# Welcome to the Medrae Platform
 
 ## Project Overview
 
-**Project URL:** [https://heartique-platform.vercel.app/](https://heartique-platform.vercel.app/)
+**Project URL:** [https://Medrae-platform.vercel.app/](https://Medrae-platform.vercel.app/)
 
 This is a private web application built with React, TypeScript, Tailwind CSS, Vite, and shadcn-ui, designed for managing and enhancing nursing education.
 
@@ -19,10 +19,10 @@ Clone the private repository to your local machine to make changes. Updates can 
 
 ```bash
 # Clone the private repository
-git clone https://github.com/heartiqueplatform/HEARTIQUE-PLATFORM
+git clone https://github.com/Medraeplatform/Medrae-PLATFORM
 
 # Navigate to the project directory
-cd HEARTIQUE-NURSING-NEXUS-SCHOLAR
+cd Medrae-NURSING-NEXUS-SCHOLAR
 
 # Install dependencies
 npm install

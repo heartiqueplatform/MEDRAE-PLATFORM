@@ -348,7 +348,7 @@ useEffect(() => {
                px-4 py-2 rounded-t-lg cursor-pointer"
     onClick={() => setShowRules(!showRules)}
   >
-    <span className="font-semibold">Heartique Brief Group Rules & Purpose</span>
+    <span className="font-semibold">Medrae Brief Group Rules & Purpose</span>
     <span className="text-sm">{showRules ? "Hide ▲" : "Show ▼"}</span>
   </div>
 
@@ -568,7 +568,7 @@ useEffect(() => {
     {/* Encouragement & purpose text */}
     <div className="relative z-10 max-w-xl px-4">
       <h1 className="text-3xl font-extrabold drop-shadow-md">
-        Welcome to Heartique Forums
+        Welcome to Medrae Forums
       </h1>
       <p className="mt-3 text-lg leading-relaxed font-medium drop-shadow">
         This space is designed to uplift, guide, and connect you with peers

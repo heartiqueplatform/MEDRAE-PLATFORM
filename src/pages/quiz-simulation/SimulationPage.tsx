@@ -461,7 +461,7 @@ let yPos = y; // continue after candidate + paper info
 
 // Add advisory paragraph
 doc.setFontSize(11);
-const advisoryText = `Dear Student, these results are for your personal review and learning. Always cross-check answers with your study notes and seek clarification for any doubts. Remember, consistent practice improves retention and exam performance. For more detailed resources, practice questions, and interactive learning, visit HEARTIQUE NURSING NEXUS at https://heartique-nurses.com.`;
+const advisoryText = `Dear Student, these results are for your personal review and learning. Always cross-check answers with your study notes and seek clarification for any doubts. Remember, consistent practice improves retention and exam performance. For more detailed resources, practice questions, and interactive learning, visit Medrae NURSING NEXUS at https://Medrae-nurses.com.`;
 
 // Wrap text to fit PDF width
 doc.setFont(undefined, "normal");
@@ -650,7 +650,7 @@ if (!selectedPaper) {
   // Only show loader if no cached papers
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-      <GlobalLoader message="Heartique is Loading papers..." />
+      <GlobalLoader message="Medrae is Loading papers..." />
     </div>
   );
 }
@@ -767,7 +767,7 @@ if (!currentQuestion) {
     // Use global spinner instead
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <GlobalLoader message="Heartique is Loading questions..." />
+        <GlobalLoader message="Medrae is Loading questions..." />
       </div>
     );
   }

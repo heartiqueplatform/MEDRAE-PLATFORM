@@ -10,6 +10,8 @@ import {
   CardHeader, CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast as sonnerToast } from "sonner"; // ✅ renamed
+
 
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -50,10 +52,13 @@ const cachedDashboard = localStorage.getItem("dashboardData");
 const [loading, setLoading] = useState(!cachedDashboard); // Only show spinner if no cached data
 const [dashboardLoaded, setDashboardLoaded] = useState(false); // track first load
 
+const [previousRank, setPreviousRank] = useState(null); // updated
 
 
 const fetchFeedsAttemptCount = async () => {
   if (!user?.id) return;
+
+
 
   // ✅ Query the same table/view that Feeds page uses
   const { count, error } = await supabase
@@ -447,6 +452,54 @@ const fetchTopStudents = async () => {
       setTopStudents(merged);
       localStorage.setItem("topStudents", JSON.stringify(merged)); // ✅ cache for future visits
     }
+
+    
+
+// ✅ Check and toast user's top rank once on first login
+if (user && topStudents.length > 0) {
+  const currentIndex = topStudents.findIndex(s => s.userId === user.id);
+  if (currentIndex !== -1) {
+    const newRank = currentIndex + 1;
+
+    // 🔹 Read last notified rank from localStorage
+    const lastNotifiedRank = parseInt(localStorage.getItem(`lastRank_${user.id}`) || "0");
+
+    // 🔹 Only show toast if user hasn't been notified for this rank yet
+    if (newRank <= 3 && newRank !== lastNotifiedRank) {
+      let title = "";
+      let message = "";
+
+      if (newRank === 1) {
+        title = "🏆 Top Student!";
+        message = `Wow ${user.user_metadata?.full_name || "Learner"}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
+      } else if (newRank === 2) {
+        title = "🥈 Silver Star!";
+        message = `Great job ${user.user_metadata?.full_name || "Learner"}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
+      } else if (newRank === 3) {
+        title = "🥉 Bronze Achiever!";
+        message = `Nice work ${user.user_metadata?.full_name || "Learner"}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
+      }
+
+      // gentle vibration
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      // toast message
+      sonnerToast.success(message, {
+        title,
+        duration: 6000,
+        dismissible: true,
+      });
+
+      // 🔹 Save this rank to localStorage so we don't toast again
+      localStorage.setItem(`lastRank_${user.id}`, String(newRank));
+    }
+
+    // always update previousRank for future changes
+    setPreviousRank(newRank);
+  }
+}
+
+
   } catch (err) {
     console.error("Error fetching top students:", err);
   } finally {
@@ -1021,7 +1074,7 @@ return (
           asChild
           className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
         >
-          <Link to="/heartique-quizzes">Go to Quizzes</Link>
+          <Link to="/Medrae-quizzes">Go to Quizzes</Link>
         </Button>
       </div>
     </details>
@@ -1512,7 +1565,7 @@ return (
   asChild
   className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
 >
-  <Link to="/heartique-quizzes">Go to Quizzes</Link>
+  <Link to="/Medrae-quizzes">Go to Quizzes</Link>
 </Button>
 
   </CardHeader>
@@ -1522,7 +1575,7 @@ return (
        <div
   key={unit.unit_code}
   className="p-4 border rounded-lg flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
-  onClick={() => navigate('/heartique-quizzes')}
+  onClick={() => navigate('/Medrae-quizzes')}
 >
 
           <div>
@@ -1671,7 +1724,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
   </CardHeader>
   <CardContent>
     <a
-      href="https://t.me/heartiquenursingnexusscholar"
+      href="https://t.me/Medraenursingnexusscholar"
       target="_blank"
       rel="noopener noreferrer"
     >

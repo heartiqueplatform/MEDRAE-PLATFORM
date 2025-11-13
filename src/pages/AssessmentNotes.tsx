@@ -667,7 +667,7 @@ setUploadProgress(null);   // reset progress
   theme={isDarkMode ? "dark" : "light"}
   renderLoader={() => (
     <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
-      <GlobalLoader message="Heartique is Loading PDF..." />
+      <GlobalLoader message="Medrae is Loading PDF..." />
     </div>
   )}
 />

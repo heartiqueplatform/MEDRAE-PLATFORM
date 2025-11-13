@@ -100,7 +100,7 @@ export function RedirectToRoleDashboard() {
         style={{ backgroundImage: "url('/background07.jpg')" }}
       >
         <div className="bg-white/70 dark:bg-black/60 px-6 py-4 rounded-2xl shadow-lg animate-fade-in">
-          Heartique redirecting you...
+          Medrae redirecting you...
         </div>
       </div>
     );

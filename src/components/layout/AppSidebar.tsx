@@ -99,7 +99,7 @@ const mainItems = [
   const learningItems = [
    { title: "Assessment Calendar", url: "/calendar", icon: Calendar,  badge: `${totalEvents}E`},
     {title: "Study Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★` },
-    { title: "Medrae Quizzes Bank", url: "/heartique-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
+    { title: "Medrae Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
     { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
 
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },

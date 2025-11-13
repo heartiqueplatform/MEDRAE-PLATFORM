@@ -178,7 +178,7 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
     setMessages(prev => [...prev, typingMessage]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
+      const { data, error } = await supabase.functions.invoke("Medrae-ai-chat", {
         body: { message: userMessage.content },
       });
       if (error) throw error;
@@ -242,7 +242,7 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
         </button>
         <div className="flex items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-600">
           <Brain className="h-5 w-5 text-green-600" />
-          <h2 className="text-lg font-bold text-black dark:text-white">Heartique AI Assistant</h2>
+          <h2 className="text-lg font-bold text-black dark:text-white">Medrae AI Assistant</h2>
         </div>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 flex flex-col space-y-3">

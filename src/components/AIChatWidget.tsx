@@ -151,7 +151,7 @@ export default function AIChatWidget() {
     ]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
+      const { data, error } = await supabase.functions.invoke("Medrae-ai-chat", {
         body: { message: input },
       });
 
@@ -240,7 +240,7 @@ export default function AIChatWidget() {
           <CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
             <div className="flex items-center gap-2">
               <Stethoscope size={20} />
-              <h3 className="font-semibold">Heartique AI Assistance</h3>
+              <h3 className="font-semibold">Medrae AI Assistance</h3>
             </div>
             <div className="flex gap-2">
               <Button

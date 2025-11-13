@@ -156,7 +156,7 @@ if (savedEnd) {
 const handleReportQuestion = async (question: Question) => {
   // Single alert before opening overlay
   alert(
-    "You are reporting this question. A new AI window is opening to discuss this question as Heartique team reviews it. You can send your input directly."
+    "You are reporting this question. A new AI window is opening to discuss this question as Medrae team reviews it. You can send your input directly."
   );
 
   const reportPayload = {
@@ -278,7 +278,7 @@ const handleResetTimer = () => {
   setFinalScore(0);
 };
 
-  if (loading) return <GlobalLoader message="Heartique is Loading quiz..." />;
+  if (loading) return <GlobalLoader message="Medrae is Loading quiz..." />;
 
   if (questions.length === 0) return <p className="p-4">No questions found for: {unit}</p>;
 

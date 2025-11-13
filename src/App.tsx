@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate} from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
-import { HeartiqueQuizzes } from "@/pages/HeartiqueQuizzes";
+import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
 import Feed from "./pages/Feed";
 
 
@@ -161,7 +161,7 @@ const App = () => {
               <Route path="/quiz-simulation/instructions" element={<DashboardLayout userRole={getRole()}><InstructionPage /></DashboardLayout>} />
               <Route path="/forum" element={<DashboardLayout userRole={getRole()}><Forum /></DashboardLayout>} />
               <Route path="/simulation/:paper_id" element={<SimulationPage />} />
-              <Route path="/heartique-quizzes" element={<DashboardLayout userRole={localStorage.getItem('userRole') as 'student' | 'tutor' | 'staff' || 'student'}><HeartiqueQuizzes /></DashboardLayout>} />
+              <Route path="/Medrae-quizzes" element={<DashboardLayout userRole={localStorage.getItem('userRole') as 'student' | 'tutor' | 'staff' || 'student'}><MedraeQuizzes /></DashboardLayout>} />
              <Route path="/feed"element={<DashboardLayout userRole={getRole()}><Feed /></DashboardLayout>}/>
 
               {/* Catch-all 404 */}

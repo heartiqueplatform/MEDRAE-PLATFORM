@@ -204,7 +204,7 @@ useEffect(() => {
 
 // Only show loader if we have no cached profile yet
 if (!profileState) {
-  return <GlobalLoader message="Heartique is aligning your content..." />;
+  return <GlobalLoader message="Medrae is aligning your content..." />;
 }
 
 

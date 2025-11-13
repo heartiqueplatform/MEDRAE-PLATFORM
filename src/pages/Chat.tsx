@@ -475,7 +475,7 @@ const filteredProfiles = profiles.filter((profile) =>
                px-4 py-2 rounded-t-lg cursor-pointer"
     onClick={() => setShowRules(!showRules)}
   >
-    <span className="font-semibold">Heartique Brief Chat Rules & Purpose</span>
+    <span className="font-semibold">Medrae Brief Chat Rules & Purpose</span>
     <span className="text-sm">{showRules ? "Hide ▲" : "Show ▼"}</span>
   </div>
 
@@ -686,7 +686,7 @@ const filteredProfiles = profiles.filter((profile) =>
     {/* Encouragement & purpose text */}
     <div className="relative z-10 max-w-xl px-4">
       <h1 className="text-3xl font-extrabold drop-shadow-md">
-        Welcome to Heartique Chat
+        Welcome to Medrae Chat
       </h1>
       <p className="mt-3 text-lg leading-relaxed font-medium drop-shadow">
         This space is designed to uplift, guide, and connect you with peers
