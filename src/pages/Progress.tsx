@@ -249,51 +249,52 @@ export function StudyProgress() {
               <p className="ml-4 text-muted-foreground">Updating progress...</p>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {subjects.map((subject) => (
-                <Card key={subject.id} className="transition-all hover:shadow-lg">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{subject.name}</CardTitle>
-                        <CardDescription>
-                          {subject.topicsCompleted} of {subject.totalTopics} topics completed
-                        </CardDescription>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 mb-1">
-                          {renderStars(subject.rating)}
-                        </div>
-                        <Badge variant="secondary">{subject.progress}% Complete</Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{subject.progress}%</span>
-                      </div>
-                      <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="text-center">
-                        <p className="font-semibold text-lg">{subject.hoursStudied}</p>
-                        <p className="text-muted-foreground">Hours</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
-                        <p className="text-muted-foreground">Topics</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-lg">{subject.rating}/5</p>
-                        <p className="text-muted-foreground">Rating</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+  {subjects.map((subject) => (
+    <Card key={subject.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">{subject.name}</CardTitle>
+            <CardDescription>
+              {subject.topicsCompleted} of {subject.totalTopics} topics completed
+            </CardDescription>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center gap-1 mb-1">
+              {renderStars(subject.rating)}
             </div>
+            <Badge variant="secondary">{subject.progress}% Complete</Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span>Progress</span>
+            <span>{subject.progress}%</span>
+          </div>
+          <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
+        </div>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="text-center">
+            <p className="font-semibold text-lg">{subject.hoursStudied}</p>
+            <p className="text-muted-foreground">Hours</p>
+          </div>
+          <div className="text-center">
+            <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
+            <p className="text-muted-foreground">Topics</p>
+          </div>
+          <div className="text-center">
+            <p className="font-semibold text-lg">{subject.rating}/5</p>
+            <p className="text-muted-foreground">Rating</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  ))}
+</div>
+
           )}
         </TabsContent>
 

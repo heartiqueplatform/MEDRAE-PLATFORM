@@ -857,58 +857,60 @@ return (
     .filter((cat) => cat.id === selectedBlock)
     .map((cat) => (
       <div key={cat.id}>
-        <div className="grid gap-4">
-          {loadingNotes ? (
-            <div className="flex flex-col items-center justify-center py-20 col-span-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-              <p className="text-muted-foreground text-center">
-             Medrae is preparing your notes...
-              </p>
-            </div>
-          ) : filteredResources.filter((note) =>
-              cat.id === "OTHER"
-                ? !blockCategories
-                    .slice(0, 7)
-                    .some((b) => (note.block || "").toUpperCase() === b.id)
-                : (note.block || "").toUpperCase() === cat.id
-            ).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 col-span-full">
-              <p className="text-muted-foreground text-center">
-                No notes available for this category yet. Check back soon for updates!
-              </p>
-            </div>
-          ) : (
-            filteredResources
-              .filter((note) =>
-                cat.id === "OTHER"
-                  ? !blockCategories
-                      .slice(0, 7)
-                      .some((b) => (note.block || "").toUpperCase() === b.id)
-                  : (note.block || "").toUpperCase() === cat.id
-              )
-              .map((note) => (
-                <Card key={note.id} className="transition-all hover:shadow-lg">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          {getTypeIcon(note.file_type)}
-                          <CardTitle className="text-lg">{note.title}</CardTitle>
-                          <Badge className={getTypeColor(note.file_type)}>
-                            {note.file_type.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <CardDescription>{note.description}</CardDescription>
-                        <div className="text-sm text-muted-foreground">
-                          {note.course && <span>{note.course}</span>}
-                          <span>
-                            {" "}
-                            · Uploaded {new Date(note.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    
-                      {session?.user?.id === note.uploaded_by && (
+     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+  {loadingNotes ? (
+    <div className="flex flex-col items-center justify-center py-20 col-span-full">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+      <p className="text-muted-foreground text-center">
+        Medrae is preparing your notes...
+      </p>
+    </div>
+  ) : filteredResources.filter((note) =>
+        cat.id === "OTHER"
+          ? !blockCategories
+              .slice(0, 7)
+              .some((b) => (note.block || "").toUpperCase() === b.id)
+          : (note.block || "").toUpperCase() === cat.id
+      ).length === 0 ? (
+    <div className="flex flex-col items-center justify-center py-20 col-span-full">
+      <p className="text-muted-foreground text-center">
+        No notes available for this category yet. Check back soon for updates!
+      </p>
+    </div>
+  ) : (
+    filteredResources
+      .filter((note) =>
+        cat.id === "OTHER"
+          ? !blockCategories
+              .slice(0, 7)
+              .some((b) => (note.block || "").toUpperCase() === b.id)
+          : (note.block || "").toUpperCase() === cat.id
+      )
+      .map((note) => (
+        <Card key={note.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {getTypeIcon(note.file_type)}
+                  <CardTitle className="text-lg">{note.title}</CardTitle>
+                  <Badge className={getTypeColor(note.file_type)}>
+                    {note.file_type.toUpperCase()}
+                  </Badge>
+                </div>
+                <CardDescription>{note.description}</CardDescription>
+                <div className="text-sm text-muted-foreground">
+                  {note.course && <span>{note.course}</span>}
+                  <span>
+                    {" "}
+                    · Uploaded {new Date(note.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              {session?.user?.id === note.uploaded_by && (
+        
+
 <Button
   variant="destructive"
   size="sm"
