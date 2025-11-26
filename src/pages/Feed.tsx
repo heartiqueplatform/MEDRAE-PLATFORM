@@ -742,102 +742,102 @@ avatar: profile?.avatar_url ?? "/default-avatar.png",
         });
       }}
     >
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
- {/*  Reload Feed + Leaderboard + Reset Section */}
-<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 gap-3">
+     <div
+  className="p-4 max-w-2xl mx-auto space-y-4 
+             h-[80vh] overflow-y-auto overflow-x-hidden
+             scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent"
+>
+{/*  Reload Feed + Leaderboard + Reset Section */}
+<div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center mt-4 gap-3">
+
   {/* Left side: Question count + two buttons */}
-  <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+  <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full sm:w-auto">
     <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
       Questions Tried: {questionCount}
     </span>
-
-<Button
-  className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-gray-100 active:scale-95 transition"
-  variant="outline"
-  onClick={async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("seen_images").delete().eq("user_id", user.id);
-
-    // Silent reload of images (no full app reload)
-    const { data: newImages, error } = await supabase
-      .from("qfeed_images")
-      .select("*")
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error(" Failed to reload images:", error);
-      alert(" Failed to reload images.");
-      return;
-    }
-
-    setFeedImages(newImages);
-    alert("Reset complete! Images refreshed silently.");
-  }}
->
-  Reset Images Preview
-</Button>
-{/*  Reset My Seen Questions Button (mobile + desktop friendly) */}
-<Button
-  className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-red-100 active:scale-95 transition text-red-600"
-  variant="outline"
-  onClick={async () => {
-    console.log(" Starting reset..."); // updated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.warn(" No user found!");
-      alert("Please log in first!");
-      return;
-    }
-
-    try {
-      // 1️⃣ Delete all seen questions for this user
-      const { error } = await supabase
-        .from("qfeed_seen")
-        .delete()
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-      console.log(" qfeed_seen cleared for user:", user.id);
-
-      // 2️⃣ Reset local storage cache
-      localStorage.removeItem(`feed_questions_${user.id}`);
-      localStorage.removeItem(`feed_answers_${user.id}`);
-      localStorage.removeItem(`feed_count_${user.id}`);
-      console.log("🧹 Local cache cleared.");
-
-      // 3️⃣ Reset UI instantly
-      setQuestions([]);
-      setAnswers({});
-      setQuestionCount(0);
-      alert("All seen questions have been reset!");
-    } catch (err) {
-      console.error(" Reset failed:", err);
-      alert("Failed to reset. Check console for details.");
-    }
-  }}
->
-  Reset Seen Questions
-</Button>
-
 
     <Button
       className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-gray-100 active:scale-95 transition"
       variant="outline"
       onClick={async () => {
-        // Vibrate on tap
-        if (navigator.vibrate) navigator.vibrate(50);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        // Load leaderboard data
-        if (user) {
-          await loadLeaderboard();
-          setLeaderboardOpen(true); // Open the leaderboard panel
+        await supabase.from("seen_images").delete().eq("user_id", user.id);
+
+        const { data: newImages, error } = await supabase
+          .from("qfeed_images")
+          .select("*")
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          console.error(" Failed to reload images:", error);
+          alert(" Failed to reload images.");
+          return;
+        }
+
+        setFeedImages(newImages);
+        alert("Reset complete! Images refreshed silently.");
+      }}
+    >
+      Reset Images
+    </Button>
+
+    {/*  Reset My Seen Questions Button (mobile + desktop friendly) */}
+    <Button
+      className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-red-100 active:scale-95 transition text-red-600"
+      variant="outline"
+      onClick={async () => {
+        console.log(" Starting reset...");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.warn(" No user found!");
+          alert("Please log in first!");
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from("qfeed_seen")
+            .delete()
+            .eq("user_id", user.id);
+
+          if (error) throw error;
+          console.log(" qfeed_seen cleared for user:", user.id);
+
+          localStorage.removeItem(`feed_questions_${user.id}`);
+          localStorage.removeItem(`feed_answers_${user.id}`);
+          localStorage.removeItem(`feed_count_${user.id}`);
+          console.log("🧹 Local cache cleared.");
+
+          setQuestions([]);
+          setAnswers({});
+          setQuestionCount(0);
+          alert("All seen questions have been reset!");
+        } catch (err) {
+          console.error(" Reset failed:", err);
+          alert("Failed to reset. Check console for details.");
         }
       }}
     >
-       Leaderboard
+      Reset Questions
     </Button>
+
+    <Button
+      className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-gray-100 active:scale-95 transition"
+      variant="outline"
+      onClick={async () => {
+        if (navigator.vibrate) navigator.vibrate(50);
+
+        if (user) {
+          await loadLeaderboard();
+          setLeaderboardOpen(true);
+        }
+      }}
+    >
+      Leaderboard
+    </Button>
+
   </div>
 
   {/* Right side: Reload Feed button */}
@@ -845,10 +845,8 @@ avatar: profile?.avatar_url ?? "/default-avatar.png",
     className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-gray-100 active:scale-95 transition"
     variant="outline"
     onClick={() => {
-      // Vibrate on press
       if (navigator.vibrate) navigator.vibrate(50);
 
-      // Existing reload logic
       setPage(0);
       setQuestions([]);
       fetchQuestions(0).then((fresh) => {
@@ -866,6 +864,7 @@ avatar: profile?.avatar_url ?? "/default-avatar.png",
   </Button>
 
 </div>
+
 
         {questions.length === 0 &&
           loading &&
@@ -1272,7 +1271,8 @@ cards.push(
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="overflow-y-auto scrollbar scrollbar-thumb-blue-500/60 dark:scrollbar-thumb-blue-400/50 scrollbar-track-transparent">
+
               {comments.map((c) => {
                 const isReply = !!c.parent_id;
                 const liked = c.comment_likes?.some(
@@ -1343,8 +1343,9 @@ cards.push(
 
     <div
       id="leaderboard-desc"
-      className="space-y-4 max-h-[70vh] overflow-y-auto"
-    >
+   className="overflow-y-auto scrollbar scrollbar-thumb-blue-500/60 dark:scrollbar-thumb-blue-400/50 scrollbar-track-transparent">
+
+  
       <AnimatePresence>
         {Object.values(
           leaderboard.reduce((acc: Record<number, typeof leaderboard>, entry) => {

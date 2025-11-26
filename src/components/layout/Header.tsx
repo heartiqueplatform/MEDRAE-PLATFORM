@@ -201,27 +201,30 @@ setStreak(newStreak);
 
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95">
+    <header className="h-14 sm:h-16 bg-card border-b border-border flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 text-sm sm:text-base">
       <OnlineStatusToast />
 
-      <div className="flex items-center gap-4">
-   <Button
-  variant="ghost"
-  size="sm"
-  onClick={toggleSidebar}
-  className="md:hidden mobile-menu-toggle"
->
-  <Menu className="h-5 w-5" />
-</Button>
+<div className="flex items-center flex-1 justify-between">
+  {/* Left toggle */}
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={toggleSidebar}
+    className="block order-1"
+  >
+    <Menu className="h-5 w-5" />
+  </Button>
 
-        <div className="hidden md:block">
-          <h1 className="text-xl font-bold bg-gradient-medical bg-clip-text text-transparent">
-            Medrae
-          </h1>
-        </div>
+{/* Center scrolling text */}
+<div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">
+  <div className="whitespace-nowrap animate-marquee text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
+    🌟 Welcome to Medrae...Learn. Practice. Advance.🌟
+  </div>
+</div>
+
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 xl:gap-6">
         <Badge
   className={`h-5 px-2 text-xs ${
     isOnline ? "bg-green-500 text-white" : "bg-red-500 text-white"
@@ -232,8 +235,7 @@ setStreak(newStreak);
 <div className="hidden md:block">
   <Badge
     className="h-5 px-2 text-xs bg-blue-500 text-white"
-  >
-    Users: {totalUsers ?? "-"}
+  > {totalUsers ?? "-"}
   </Badge>
 </div>
 
@@ -245,9 +247,9 @@ setStreak(newStreak);
   className="relative mobile-reload-button group"
 >
 
-  <RefreshCcw className={`h-5 w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
+  <RefreshCcw className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
 <span className="ml-1 text-xs hidden sm:inline text-black dark:text-white">
-  Refresh App for updates
+  Refresh
 </span>
 </Button>
 
@@ -309,21 +311,22 @@ Advance your medical journey today: https://medrae.vercel.app`;
           onClick={() => navigate("/profile")}
         >
         <div className="hidden sm:block text-right">
-  <p className="text-sm font-medium flex items-center gap-2">
-    {user.name || (!isOnline ? "Offline" : "")}
+<p className="text-sm font-medium flex items-center gap-2 truncate max-w-[150px]">
+  {user.name ? user.name.split(" ")[0] : (!isOnline ? "Offline" : "")}
+  {streak > 0 && isOnline && (
+    <Badge variant="secondary" className="text-xs">
+      🔥 {streak} day{streak !== 1 ? "s" : ""}
+    </Badge>
+  )}
+</p>
 
-    {streak > 0 && isOnline && (
-      <Badge variant="secondary" className="text-xs">
-        🔥 {streak} day{streak !== 1 ? "s" : ""}
-      </Badge>
-    )}
-  </p>
+
   <p className="text-xs text-muted-foreground">
   {user.role || (!isOnline ? "Offline" : "")}
 
   </p>
 </div>
-<Avatar className="h-8 w-8 mobile-profile-avatar">
+<Avatar className="h-6 w-6 sm:h-8 sm:w-8 mobile-profile-avatar">
   <AvatarImage
     src={user.avatar && isOnline ? user.avatar : undefined}
     className="object-cover"

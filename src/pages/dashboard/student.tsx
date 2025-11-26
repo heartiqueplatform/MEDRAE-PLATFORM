@@ -1244,16 +1244,46 @@ return (
 
       {/* Centered Button */}
       <div className="flex justify-center mt-3">
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium w-full sm:w-3/4 md:w-1/2"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (navigator.vibrate) navigator.vibrate(50);
-            navigate("/feed");
-          }}
-        >
-          Go to Feeds
-        </Button>
+      <Button
+  className="
+    w-10 h-10
+    flex items-center justify-center
+    rounded-full
+    bg-blue-600 hover:bg-blue-700
+    dark:bg-blue-500 dark:hover:bg-blue-600
+    text-white
+    shadow-md
+    transition-all
+    transform hover:scale-105 hover:shadow-lg
+  "
+  onClick={(e) => {
+    e.stopPropagation();
+    if (navigator.vibrate) navigator.vibrate(50);
+    navigate("/feed");
+  }}
+>
+  {/* Newspaper / Feed Icon */}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-5 h-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M17 13H7m10-4H7m5 8H7"
+    />
+  </svg>
+</Button>
+
       </div>
     </CardContent>
   </div>
@@ -1301,42 +1331,52 @@ return (
 
 {/* Styled attach button */}
 <div className="flex flex-col items-center w-full md:flex-row md:justify-center md:space-x-4 gap-2">
-  <label
-    htmlFor="dailyImageUpload"
-    className="flex items-center justify-center gap-2 cursor-pointer bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition w-full h-12 rounded-lg"
+ <label
+  htmlFor="dailyImageUpload"
+  className="
+    w-10 h-10 
+    flex items-center justify-center 
+    cursor-pointer
+    rounded-full
+    bg-gray-100 dark:bg-gray-700
+    hover:bg-gray-200 dark:hover:bg-gray-600
+    transition
+    shadow-md
+  "
+>
+  {/* Image Photo Icon */}
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    className="w-5 h-5 text-green-600"
+    fill="none" 
+    viewBox="0 0 24 24" 
+    stroke="currentColor" 
+    strokeWidth="2"
   >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-4 h-4 text-red-500"
-      fill="currentColor"
-      viewBox="0 0 24 24"
-      stroke="none"
-    >
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
-               4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 
-               14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 
-               6.86-8.55 11.54L12 21.35z" />
-    </svg>
-    Attach Image
-  </label>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z" />
+  </svg>
+</label>
 
-  <Button 
-    onClick={handlePostClick} 
-    className="bg-blue-600 hover:bg-blue-700 text-white text-sm w-full h-12 flex items-center justify-center gap-2 rounded-lg"
-    disabled={uploading}
-  >
-    {uploading ? (
-      <>
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Uploading...
-      </>
-    ) : (
-      <>
-        <Send className="w-4 h-4" />
-        Post
-      </>
-    )}
-  </Button>
+<Button 
+  onClick={handlePostClick} 
+  className="
+    bg-blue-600 hover:bg-blue-700 
+    text-white 
+    w-10 h-10 
+    flex items-center justify-center 
+    rounded-full 
+    shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+  "
+  disabled={uploading}
+>
+  {uploading ? (
+    <Loader2 className="h-4 w-4 animate-spin" />
+  ) : (
+    <Send className="w-4 h-4" />
+  )}
+</Button>
+
 </div>
     {/* Display recent daily posts */}
     <div className="space-y-3 mt-4">
@@ -1605,7 +1645,7 @@ return (
   <CardContent>
     <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
       <Button
-        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm"
+        className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
         onClick={() => {
           const shareMessage =
 `Medrae – The Professional Medical Education & Career Network
@@ -1669,7 +1709,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
       rel="noopener noreferrer"
     >
 <div className="flex justify-center">
-  <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
+  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
     <MessageCircle className="w-4 h-4" />
     WhatsApp Channel
   </Button>
@@ -1698,7 +1738,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
       rel="noopener noreferrer"
     >
    <div className="flex justify-center">
-  <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
+  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
     <MessageCircle className="w-4 h-4" />
     WhatsApp Group
   </Button>
@@ -1729,7 +1769,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
       rel="noopener noreferrer"
     >
    <div className="flex justify-center">
-  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex-1 md:flex-none md:w-64 flex items-center justify-center gap-2 text-sm">
+  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
     <Send className="w-4 h-4" />
     Telegram Channel
   </Button>

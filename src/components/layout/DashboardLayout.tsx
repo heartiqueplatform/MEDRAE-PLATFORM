@@ -18,17 +18,21 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, userRole = "student" }: DashboardLayoutProps) {
   const { profile, loading } = useUserProfile();
   const authUser = useUser();
-const navigate = useNavigate();
+  const navigate = useNavigate();
+  const { isLoading } = useSessionContext();
 
-const { isLoading } = useSessionContext();
+  // ------------------------------
+  // Auth redirect
+  // ------------------------------
+  useEffect(() => {
+    if (!isLoading && !authUser) {
+      navigate("/login", { replace: true });
+    }
+  }, [authUser, isLoading, navigate]);
 
-useEffect(() => {
-  if (!isLoading && !authUser) {
-    navigate("/login", { replace: true });
-  }
-}, [authUser, isLoading, navigate]);
-
-  // ✅ Instant cached profile (if exists)
+  // ------------------------------
+  // Local storage profile cache
+  // ------------------------------
   const [cachedProfile, setCachedProfile] = useState<any>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("userProfile");
@@ -51,7 +55,9 @@ useEffect(() => {
     return false;
   });
 
-  // ✅ Sync profile into cache when fresh data arrives
+  // ------------------------------
+  // Sync profile to localStorage
+  // ------------------------------
   useEffect(() => {
     if (profile) {
       localStorage.setItem("userProfile", JSON.stringify(profile));
@@ -59,16 +65,25 @@ useEffect(() => {
     }
   }, [profile]);
 
-  // ✅ Dark mode apply
+  // ------------------------------
+  // Theme toggle handler
+  // ------------------------------
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDarkMode);
   }, [isDarkMode]);
 
-  // ✅ Fetch + cache streak
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    document.documentElement.classList.toggle("dark", newMode);
+    localStorage.setItem("theme", newMode ? "dark" : "light");
+  };
+
+  // ------------------------------
+  // Streak Fetch
+  // ------------------------------
   useEffect(() => {
-    if (authUser?.id) {
-      fetchStreak();
-    }
+    if (authUser?.id) fetchStreak();
   }, [authUser]);
 
   const fetchStreak = async () => {
@@ -82,9 +97,7 @@ useEffect(() => {
       .maybeSingle();
 
     if (!existing) {
-      await supabase.from("login_activity").insert([
-        { user_id: authUser.id, login_date: today },
-      ]);
+      await supabase.from("login_activity").insert([{ user_id: authUser.id, login_date: today }]);
     }
 
     const { data, error } = await supabase
@@ -101,20 +114,11 @@ useEffect(() => {
     }
   };
 
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    document.documentElement.classList.toggle("dark", newMode);
-    localStorage.setItem("theme", newMode ? "dark" : "light");
-  };
-
-  // 🚀 Smooth loader logic
   if (!cachedProfile && loading) {
-    // Only show loader if no cache exists at all
     return <GlobalLoader message="Loading profile..." />;
   }
 
-  // ✅ Prefer cached first, then profile
+  // Fallback user data
   const userData = cachedProfile || profile;
   const user = userData
     ? {
@@ -139,31 +143,58 @@ useEffect(() => {
             : "Staff Nurse",
         avatar: "/avatars/default.jpg",
       }
-    : {
-        name: "Offline",
-        role: "Offline",
-        avatar: "/avatars/default.jpg",
-      };
+    : { name: "Offline", role: "Offline", avatar: "/avatars/default.jpg" };
 
+  // ------------------------------
+  // FIX: Wrap content in inner component
+  // so useSidebar() is inside provider
+  // ------------------------------
   return (
     <SidebarProvider>
-     <div className="flex flex-col md:flex-row min-h-screen w-full bg-background">
-  <AppSidebar userRole={userRole} />
-
-  <div className="flex-1 flex flex-col min-h-screen">
-    <Header
-      user={user}
-      isDarkMode={isDarkMode}
-      onToggleDarkMode={toggleDarkMode}
-      streak={streak}
-    />
-
-    <main className="flex-1 p-4 md:p-6 overflow-auto">
-      {children}
-    </main>
-  </div>
-</div>
-
+      <DashboardContent
+        user={user}
+        userRole={userRole}
+        isDarkMode={isDarkMode}
+        toggleDarkMode={toggleDarkMode}
+        streak={streak}
+      >
+        {children}
+      </DashboardContent>
     </SidebarProvider>
+  );
+}
+
+// -------------------------------------------------------------
+// THIS COMPONENT CAN NOW SAFELY USE useSidebar()
+// -------------------------------------------------------------
+import { useSidebar } from "@/components/ui/sidebar";
+
+function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, children }: any) {
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-background">
+
+      <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
+
+      <div className="flex flex-col flex-1 overflow-hidden">
+
+        <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
+
+        <main
+          className="
+            flex-1 overflow-auto p-4 md:p-6 box-border
+            scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
+            dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
+          "
+          onClick={() => {
+            // DESKTOP + MOBILE — close when tapping inside dashboard
+            if (isSidebarOpen) toggleSidebar();
+          }}
+        >
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }

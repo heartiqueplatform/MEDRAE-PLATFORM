@@ -236,8 +236,8 @@ async function fetchEvents(user_id: string) {
           Track your upcoming assessments and important dates
         </p>
       </div>
+<div className="grid gap-6 grid-cols-1 lg:grid-cols-2 w-full">
 
-   <div className="grid gap-6 md:grid-cols-2 w-full">
 
         {/* Calendar */}
         <Card className="w-full overflow-hidden">

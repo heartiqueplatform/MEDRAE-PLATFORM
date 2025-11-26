@@ -236,7 +236,10 @@ if (!profileState) {
     {profileState?.name?.split(" ").map((n) => n[0]).join("") || "??"}
   </AvatarFallback>
 </Avatar>
-
+  <Button variant="outline" onClick={handleProfileUpdate}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit My Profile
+                </Button>
                   <Button
                     size="icon"
                     variant="outline"
@@ -298,10 +301,7 @@ if (!profileState) {
                   </div>
                 </div>
 
-                <Button variant="outline" onClick={handleProfileUpdate}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit My Profile
-                </Button>
+              
               </div>
             </CardContent>
           </Card>

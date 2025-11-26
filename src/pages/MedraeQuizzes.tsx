@@ -451,17 +451,23 @@ return (
 
 {isPremium ? (
   <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-    <Button className="w-full mt-4">
-      <Play className="h-4 w-4 mr-2" />
-      Start Quiz
-    </Button>
+   <Button 
+  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
+>
+  <Play className="h-4 w-4 mr-1" />
+  Start
+</Button>
+
   </Link>
 ) : freeUnits.includes(unit.code.trim()) ? (
   <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-    <Button className="w-full mt-4">
-      <Play className="h-4 w-4 mr-2" />
-      Start Quiz
-    </Button>
+   <Button 
+  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
+>
+  <Play className="h-4 w-4 mr-1" />
+  Start
+</Button>
+
   </Link>
 ) : (
   <Button className="w-full mt-4" variant="outline" disabled>
@@ -517,17 +523,23 @@ return (
 </div>
 {isPremium ? (
   <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-    <Button className="w-full mt-4">
-      <Play className="h-4 w-4 mr-2" />
-      Start Quiz
-    </Button>
+   <Button 
+  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
+>
+  <Play className="h-4 w-4 mr-1" />
+  Start
+</Button>
+
   </Link>
 ) : freeUnits.includes(unit.code.trim()) ? (
   <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-    <Button className="w-full mt-4">
-      <Play className="h-4 w-4 mr-2" />
-      Start Quiz
-    </Button>
+    <Button 
+  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
+>
+  <Play className="h-4 w-4 mr-1" />
+  Start
+</Button>
+
   </Link>
 ) : (
   <Button className="w-full mt-4" variant="outline" disabled>

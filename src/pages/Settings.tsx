@@ -403,13 +403,15 @@ if (!profile && !cachedProfile) {
               </div>
 
               {/* Save Button */}
-              <Button
+<Button
   onClick={handleSaveProfile}
   className="flex items-center gap-2"
   disabled={loading}
 >
-  {loading ? <GlobalLoader message="Saving profile..." /> : <><Save className="h-4 w-4" />Save Changes</>}
+  <Save className="h-4 w-4" />
+  {loading ? "Saving..." : "Save Changes"}
 </Button>
+
             </CardContent>
           </Card>
         </TabsContent>

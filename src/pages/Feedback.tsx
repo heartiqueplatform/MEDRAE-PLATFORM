@@ -120,7 +120,8 @@ export function Feedback() {
     ));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 w-full">
+
       {/* Left: Submit Feedback */}
       <Card>
         <CardHeader>
@@ -220,7 +221,8 @@ export function Feedback() {
     <CardTitle>My Feedback</CardTitle>
     <CardDescription>See what you sent and admin replies.</CardDescription>
   </CardHeader>
-  <CardContent className="space-y-4 max-h-[500px] overflow-y-auto">
+<CardContent className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
+
     {myFeedback.length === 0 ? (
       <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
     ) : (

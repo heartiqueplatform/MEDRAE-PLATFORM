@@ -39,7 +39,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar
+  useSidebar,
+  toggleSidebar
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
@@ -50,9 +51,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ userRole }: AppSidebarProps) {
-  const { state, setState } = useSidebar();
-
-
+  const { state, setState, toggleSidebar } = useSidebar();
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -64,8 +63,15 @@ const [totalNotes, setTotalNotes] = useState<number | null>(null);
 const [totalVideos, setTotalVideos] = useState<number | null>(null);
 const [totalStars, setTotalStars] = useState<number>(0);
 const [totalEvents, setTotalEvents] = useState<number>(0);
+const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+useEffect(() => {
+  const handleResize = () => setWindowWidth(window.innerWidth);
+  window.addEventListener("resize", handleResize);
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
 
-  const isCollapsed = state === 'collapsed';
+const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
+
   
   const toggleGroup = (group: string) => {
     setOpenGroups(prev => 
@@ -336,15 +342,16 @@ useEffect(() => {
 
   // Helper: collapse sidebar on mobile and close all groups
 const handleCollapse = () => {
-  if (window.innerWidth < 1024) {
-    setState("collapsed");
-    setOpenGroups([]); // closes all collapsible groups on mobile
-  }
+  toggleSidebar(); // 🔥 triggers the correct global collapse
+
 };
 
-
   return (
-    <Sidebar className={`${isCollapsed ? "w-16" : "w-64"} transition-all duration-300`}>
+<Sidebar
+  className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300
+    ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
+>
+
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 bg-gradient-medical rounded-lg flex items-center justify-center">
