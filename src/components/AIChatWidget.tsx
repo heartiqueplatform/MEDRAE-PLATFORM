@@ -238,35 +238,33 @@ const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
               ${isDarkTheme ? "bg-gray-900 border-gray-800" : "bg-white border-gray-300"}`}
 >
 
+<CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
+  <div className="flex items-center gap-2">
+    <Stethoscope size={20} />
+    <h3 className="font-semibold">Medrae AI Assistance</h3>
+  </div>
 
-          <CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
-            <div className="flex items-center gap-2">
-              <Stethoscope size={20} />
-              <h3 className="font-semibold">Medrae AI Assistance</h3>
-            </div>
-          
-        <div className="absolute top-2 left-2">
-  <Button
-    variant="ghost"
-    size="icon"
-    className="text-red-600 hover:bg-red-100"
-    onClick={deleteChat}
-  >
-    <Trash2 size={20} />
-  </Button>
-</div>
+  <div className="flex gap-2">
+    <Button
+      variant="ghost"
+      size="icon"
+      className="text-red-600 hover:bg-red-100"
+      onClick={deleteChat}
+    >
+      <Trash2 size={20} />
+    </Button>
 
-<div className="absolute top-2 right-2">
-  <Button
-    variant="ghost"
-    size="icon"
-    className="text-gray-600 hover:bg-gray-200"
-    onClick={() => setOpen(false)}
-  >
-    <X size={20} />
-  </Button>
-            </div>
-          </CardHeader>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="text-white hover:bg-gray-200"
+      onClick={() => setOpen(false)}
+    >
+      <X size={20} />
+    </Button>
+  </div>
+</CardHeader>
+
 <CardContent
   className={`flex flex-col h-96 p-2 overflow-hidden rounded-xl ${
     isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"
