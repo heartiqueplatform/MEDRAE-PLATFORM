@@ -155,8 +155,8 @@ await supabase.from('Aimessages').insert([
     setMessages((prev) => [...prev, typingMessage]);
 
     try {
-const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
-  body: { message: userMessage.content },
+const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+  body: { message: inputMessage, user_id: currentUser?.id },
 });
 
 if (error) throw error;

@@ -176,52 +176,53 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, typingMessage]);
+try {
+  const userResponse = await supabase.auth.getUser();
+  const currentUser = userResponse.data.user;
 
+  const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+    body: { message: inputMessage, user_id: currentUser?.id }, // updated
+  });
+
+  if (error) throw error;
+
+  setTimeout(async () => {
+    const aiContent = data?.reply || "Oops! Could not generate response.";
+
+    setMessages(prev =>
+      prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
+    );
+
+    // Save AI reply to Supabase
     try {
-      const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
-        body: { message: userMessage.content },
-      });
-      if (error) throw error;
-
-      setTimeout(async () => {
-        const aiContent = data?.reply || "Oops! Could not generate response.";
-
-        setMessages(prev =>
-          prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
-        );
-
-        // Save AI reply to Supabase
-        try {
-          const userResponse = await supabase.auth.getUser();
-          const userId = userResponse.data.user?.id;
-          if (userId) {
-            await supabase.from("Aimessages").insert([{
-              content: aiContent,
-              sender: "ai",
-              timestamp: new Date(),
-              user_id: userId,
-            }]);
-          }
-        } catch (err) {
-          console.error("Supabase insert AI message error:", err);
-        }
-      }, 1200);
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: (Date.now() + 2).toString(),
-          content: "Error: Unable to connect to server.",
+      if (currentUser?.id) {
+        await supabase.from("Aimessages").insert([{
+          content: aiContent,
           sender: "ai",
           timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
+          user_id: currentUser.id, // updated
+        }]);
+      }
+    } catch (err) {
+      console.error("Supabase insert AI message error:", err);
     }
-  };
+  }, 1200);
 
+} catch (error) {
+  console.error(error);
+  setMessages(prev => [
+    ...prev,
+    {
+      id: (Date.now() + 2).toString(),
+      content: "Error: Unable to connect to server.",
+      sender: "ai",
+      timestamp: new Date(),
+    },
+  ]);
+} finally {
+  setIsLoading(false);
+}
+  };
   if (!isOpen) return null;
 
   const aiBubbleClass = isDarkTheme

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Send, X, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader"; // loader for history
+import { MessageCircle, Send, X, Stethoscope, Trash2 } from "lucide-react";
 
 type Message = {
   role: string;
@@ -151,25 +151,24 @@ export default function AIChatWidget() {
     ]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("heartique-ai-chat", {
-        body: { message: input },
-      });
+const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+  body: { message: input, user_id: currentUser?.id },
+});
 
       if (error) throw error;
 
       // Replace typing with AI response
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.content === "<TypingBubbles />"
-            ? {
-                ...msg,
-                content:
-                  data?.reply ||
-                  "Oops! Could not generate a response. Check your connection.",
-              }
-            : msg
-        )
-      );
+  setMessages((prev) =>
+  prev.map((msg) =>
+    msg.content === "<TypingBubbles />"
+      ? {
+          ...msg,
+          content: data?.reply || "Oops! Could not generate a response. Check your connection.",
+        }
+      : msg
+  )
+);
+
 
       // Save AI response to Supabase
       await supabase.from("Aimessages").insert([
@@ -192,6 +191,7 @@ export default function AIChatWidget() {
             : msg
         )
       );
+
     } finally {
       setLoading(false);
     }
@@ -233,36 +233,46 @@ export default function AIChatWidget() {
       )}
 
       {open && (
-        <Card
-          className="fixed bottom-6 right-6 w-80 shadow-2xl border border-blue-300 rounded-2xl
-                     bg-[url('/background1.jpeg')] bg-cover bg-center"
-        >
+<Card
+  className={`fixed bottom-6 right-6 w-80 shadow-2xl border rounded-2xl
+              ${isDarkTheme ? "bg-gray-900 border-gray-800" : "bg-white border-gray-300"}`}
+>
+
+
           <CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
             <div className="flex items-center gap-2">
               <Stethoscope size={20} />
               <h3 className="font-semibold">Medrae AI Assistance</h3>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-blue-700"
-                onClick={deleteChat}
-              >
-                <X size={20} className="text-red-500 drop-shadow-lg" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-blue-700"
-                onClick={() => setOpen(false)}
-              >
-                <X size={24} className="text-white drop-shadow-lg" />
-              </Button>
+          
+        <div className="absolute top-2 left-2">
+  <Button
+    variant="ghost"
+    size="icon"
+    className="text-red-600 hover:bg-red-100"
+    onClick={deleteChat}
+  >
+    <Trash2 size={20} />
+  </Button>
+</div>
+
+<div className="absolute top-2 right-2">
+  <Button
+    variant="ghost"
+    size="icon"
+    className="text-gray-600 hover:bg-gray-200"
+    onClick={() => setOpen(false)}
+  >
+    <X size={20} />
+  </Button>
             </div>
           </CardHeader>
+<CardContent
+  className={`flex flex-col h-96 p-2 overflow-hidden rounded-xl ${
+    isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"
+  }`}
+>
 
-          <CardContent className="flex flex-col h-96 bg-white/10 backdrop-blur-sm">
             <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 mb-2 p-2">
               {messages.map((msg, idx) => {
                 const formattedTime = new Date(msg.timestamp).toLocaleString("en-US", {
