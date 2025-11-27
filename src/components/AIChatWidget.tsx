@@ -232,11 +232,15 @@ const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
         </Button>
       )}
 
-      {open && (
-<Card
-  className={`fixed bottom-6 right-6 w-80 shadow-2xl border rounded-2xl
-              ${isDarkTheme ? "bg-gray-900 border-gray-800" : "bg-white border-gray-300"}`}
->
+{open && (
+  <div
+    className="fixed inset-0 z-50 bg-black/50 flex items-end justify-end p-6"
+  >
+    <Card
+      className={`w-80 shadow-2xl border rounded-2xl pointer-events-auto
+        ${isDarkTheme ? "bg-gray-900 border-gray-800" : "bg-white border-gray-300"}`}
+    >
+
 
 <CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
   <div className="flex items-center gap-2">
@@ -336,8 +340,11 @@ const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
               </Button>
             </div>
           </CardContent>
-        </Card>
-      )}
+          </Card>
+  </div>
+)}
+
+      
     </>
   );
 }
