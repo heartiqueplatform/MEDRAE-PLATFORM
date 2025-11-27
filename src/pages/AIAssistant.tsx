@@ -358,8 +358,12 @@ return (
   }
 `}</style>
 </div>
+<div
+  ref={scrollRef}
+  className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
+             scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+>
 
-          <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto flex flex-col space-y-4">
       
 {messages.map((msg, index) => (
 

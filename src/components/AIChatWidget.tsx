@@ -275,7 +275,12 @@ const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
   }`}
 >
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 mb-2 p-2">
+          <div
+  ref={scrollRef}
+  className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
+             scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+>
+
               {messages.map((msg, idx) => {
                 const formattedTime = new Date(msg.timestamp).toLocaleString("en-US", {
                   month: "short",
