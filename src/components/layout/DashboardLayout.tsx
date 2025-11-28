@@ -181,19 +181,17 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
 
         <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
 
-        <main
-          className="
-            flex-1 overflow-auto p-4 md:p-6 box-border
-            scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
-            dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
-          "
-          onClick={() => {
-            // DESKTOP + MOBILE — close when tapping inside dashboard
-            if (isSidebarOpen) toggleSidebar();
-          }}
-        >
-          {children}
-        </main>
+  <main
+  className={`
+    flex-1 box-border p-4 md:p-6
+    ${children?.type?.name === "Reels" ? "overflow-hidden" : "overflow-auto"}
+    scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
+    dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
+  `}
+>
+  {children}
+</main>
+
       </div>
     </div>
   );
