@@ -787,13 +787,13 @@ Please provide a detailed discussion and guidance.`;
       {/* GUIDE / INSTRUCTION SECTION */}
       {/* ============================ */}
       <div className="mb-4 p-3 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
-        <p className="font-semibold mb-1">📝 How to Use This Panel:</p>
+        <p className="font-semibold mb-1">How to Use This Panel:</p>
         <ul className="list-disc ml-5 space-y-1">
           <li><strong>Take deeper notes</strong> about why you got it wrong/right.</li>
           <li>Mark the question as <strong>Understood</strong> or <strong>Not Understood</strong>.</li>
           <li>Track how many times you have <strong>Attempted</strong> it.</li>
           <li>You can even <strong>Offer Help</strong> to others or request help using <strong>Help Me</strong>.</li>
-          <li>Everything is auto-synced with your Supabase <strong>question_notes</strong> table.</li>
+          <li>Everything is auto-synced online.</li>
         </ul>
       </div>
 
