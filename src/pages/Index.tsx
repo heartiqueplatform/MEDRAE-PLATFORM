@@ -3,14 +3,76 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-
+import { useDrag } from '@use-gesture/react';
+import { useSpring, animated } from '@react-spring/web';
 import { supabase } from "@/lib/supabaseClient";
 
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
+const [activeHeroStory, setActiveHeroStory] = useState(0);
+
+
 
   const navigate = useNavigate();
+
+
+  const heroStorySlides = [
+  {
+    bg: "/indexbackground1.jpg",
+    text: "Medrae Medical Network Platform V1.0",
+  },
+  {
+    bg: "/indexbackground2.jpg",
+    text: "MEDRAE MEDICAL\nNETWORK\nPlatform",
+  },
+  {
+    bg: "/indexbackground3.jpg",
+    text: "Medrae is a professional platform for medical education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence.",
+  },
+  {
+    bg: "/indexbackground4.jpg",
+    text: "Strengthen your skills through simulations, certification modules, and structured progression tracking.\n\nFor the best experience, access Medrae via desktop for enhanced clarity and performance, or use mobile for flexible learning anywhere.",
+  },
+  {
+    bg: "/indexbackground5.jpg",
+    text: "All plans include full feature access—choose Pro at KSh 99/month or Premium at KSh 450/year. The first 1,000 users receive a free 6-month professional trial to experience Medrae’s complete suite of educational and career tools.",
+  },
+  {
+    bg: "/indexbackground6.jpg",
+    text: (
+      <div className="flex flex-col gap-4">
+        <Button 
+          size="lg" 
+          className="bg-white text-primary hover:bg-white/90"
+          onClick={() => navigate('/register')}
+        >
+          Join Medrae
+        </Button>
+        <Button 
+          size="lg" 
+          variant="outline" 
+          className="border-white text-primary hover:bg-white/10"
+          onClick={() => navigate('/login')}
+        >
+          Sign In to Continue
+        </Button>
+      </div>
+    ),
+  },
+];
+
+
+  // inside your component
+const [spring, api] = useSpring(() => ({ x: 0 }));
+
+const bind = useDrag(({ down, movement: [mx], direction: [xDir] }) => {
+  if (!down && Math.abs(mx) > 50) {
+    if (xDir < 0) setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
+    else setActiveHeroStory(prev => Math.max(prev - 1, 0));
+  }
+  api.start({ x: down ? mx : 0 });
+});
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -51,58 +113,82 @@ const Index = () => {
     }
   ];
 
+
   if (loading) {
     return null;
   }
 
   return (
     <div className="min-h-screen relative">
-      {/* Hero Section */}
-      <section className="bg-gradient-hero text-white py-20 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="mb-8">
-            <div className="inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-2 mb-6">
-              <Heart className="h-5 w-5" />
-              <span className="text-sm font-medium">Medrae Medical Network Platform V1.0</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              MEDRAE MEDICAL 
-              <br />
-              <span className="bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                NETWORK
-              </span>
-              <br />
-              Platform
-            </h1>
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Medrae is a professional platform for medical education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence. Strengthen your skills through simulations, certification modules, and structured progression tracking.  
-              <br /><br />
-              For the best experience, access Medrae via desktop for enhanced clarity and performance, or use mobile for flexible learning anywhere.  
-              <br /><br />
-              All plans include full feature access—choose <strong>Pro</strong> at KSh 99/month or <strong>Premium</strong> at KSh 450/year. The first 1,000 users receive a <strong>free 6-month professional trial</strong> to experience Medrae’s complete suite of educational and career tools.
-            </p>
-          </div>
+{/* Hero Section */}
+{/* Hero Section */}
+<div
+  className="relative w-full overflow-hidden"
+  style={{
+    minHeight: '80vh',
+background: 'linear-gradient(135deg, hsl(220, 60%, 35%) 0%, hsl(220, 60%, 25%) 100%)'
+ // blue gradient
+  }}
+>
+  <div className="relative w-full h-[50vh] md:h-[70vh] lg:h-[80vh] flex justify-center items-center">
+    {heroStorySlides.map((slide, idx) => {
+      const offset = idx - activeHeroStory;
+      const absOffset = Math.abs(offset);
+      const scale = offset === 0 ? 1 : 0.85 ** absOffset;
+      const spacing = 15;
+      const translateX = offset * spacing;
+      const rotate = offset === 0 ? 0 : offset * 3;
+      const zIndex = 100 - absOffset;
+      const opacity = offset === 0 ? 1 : 0.6;
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button 
-              size="lg" 
-              className="bg-white text-primary hover:bg-white/90"
-              onClick={() => navigate('/register')}
-            >
-              Join Medrae
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-white text-primary hover:bg-white/10"
-              onClick={() => navigate('/login')}
-            >
-              Sign In to Continue
-            </Button>
-          </div>
+      return (
+        <div
+          key={idx}
+          className="absolute top-0 left-1/2 rounded-xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer"
+          style={{
+            transform: `translateX(calc(-50% + ${translateX}vw)) scale(${scale}) rotate(${rotate}deg)`,
+            zIndex,
+            opacity,
+            width: `${scale * 90}%`,
+            maxWidth: "400px",
+          }}
+        >
+          <img
+            src={slide.bg}
+            alt={`Slide ${idx + 1}`}
+            className="w-full h-[50vh] md:h-[70vh] lg:h-[80vh] object-cover rounded-xl"
+          />
+         <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
+  {slide.text}
+</div>
+
+          {idx === activeHeroStory && (
+            <>
+              <button
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
+                onClick={() => setActiveHeroStory((prev) => Math.max(prev - 1, 0))}
+              >
+                &#60;
+              </button>
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
+                onClick={() =>
+                  setActiveHeroStory((prev) =>
+                    Math.min(prev + 1, heroStorySlides.length - 1)
+                  )
+                }
+              >
+                &#62;
+              </button>
+            </>
+          )}
         </div>
-      </section>
+      );
+    })}
+  </div>
+</div>
+
+
 
       {/* Features Section */}
       <section className="py-20 px-4 bg-white text-gray-900">
@@ -118,10 +204,12 @@ const Index = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <Card 
-                key={index} 
-                className="border border-blue-400 hover:border-blue-600 transition-all duration-300 shadow-sm hover:shadow-md rounded-lg"
-              >
+         <Card 
+  key={index} 
+  className="border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md rounded-lg hover:scale-105 cursor-pointer"
+  onClick={() => navigate('/register')}
+>
+
                 <CardHeader>
                   <div className="h-12 w-12 bg-gradient-medical rounded-lg flex items-center justify-center mb-4">
                     <feature.icon className="h-6 w-6 text-white" />
