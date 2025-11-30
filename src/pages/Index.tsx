@@ -79,7 +79,7 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
 const [spring, api] = useSpring(() => ({ x: 0 }));
 
 const bind = useDrag(({ down, movement: [mx], direction: [xDir] }) => {
-  if (!down && Math.abs(mx) > 50) {
+  if (!down && Math.abs(mx) > 25) {
     if (xDir < 0) setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
     else setActiveHeroStory(prev => Math.max(prev - 1, 0));
   }
@@ -134,16 +134,29 @@ const bind = useDrag(({ down, movement: [mx], direction: [xDir] }) => {
     <div className="min-h-screen relative">
 {/* Hero Section */}
 {/* Hero Section */}
+{/* Hero Section */}
 <div
   className="relative w-full overflow-hidden"
   style={{
     minHeight: '80vh',
-background: 'linear-gradient(135deg, hsl(220, 60%, 35%) 0%, hsl(220, 60%, 25%) 100%)'
- // blue gradient
+    background: 'linear-gradient(135deg, #1e3a8a 0%, #051f58ff 100%)', // darker blue gradient
   }}
 >
-<div className="relative w-full min-h-screen md:h-[70vh] lg:h-[80vh] flex justify-center items-center">
+  {/* Marquee background */}
+  <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute whitespace-nowrap animate-marquee text-[100px] md:text-[60px] lg:text-[80px] font-extrabold text-white/10 select-none pointer-events-none">
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    </div>
+  </div>
 
+  {/* Hero slides container */}
+  <animated.div
+    {...bind()}
+    className="relative w-full min-h-screen md:h-[70vh] lg:h-[80vh] flex justify-center items-center overflow-hidden touch-pan-y select-none z-10"
+  >
     {heroStorySlides.map((slide, idx) => {
       const offset = idx - activeHeroStory;
       const absOffset = Math.abs(offset);
@@ -157,9 +170,9 @@ background: 'linear-gradient(135deg, hsl(220, 60%, 35%) 0%, hsl(220, 60%, 25%) 1
       return (
         <div
           key={idx}
-          className="absolute top-0 left-1/2 rounded-xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer"
+          className="absolute top-0 left-1/2 rounded-xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer select-none"
           style={{
-            transform: `translateX(calc(-50% + ${translateX}vw)) scale(${scale}) rotate(${rotate}deg)`,
+            transform: `translateX(calc(-50% + ${translateX}vw + ${spring.x.get()}px)) scale(${scale}) rotate(${rotate}deg)`,
             zIndex,
             opacity,
             width: `${scale * 90}%`,
@@ -169,12 +182,11 @@ background: 'linear-gradient(135deg, hsl(220, 60%, 35%) 0%, hsl(220, 60%, 25%) 1
           <img
             src={slide.bg}
             alt={`Slide ${idx + 1}`}
-className="w-full h-full max-h-screen object-cover rounded-xl"
-
+            className="w-full h-full max-h-screen object-cover rounded-xl"
           />
-         <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
-  {slide.text}
-</div>
+          <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
+            {slide.text}
+          </div>
 
           {idx === activeHeroStory && (
             <>
@@ -199,8 +211,20 @@ className="w-full h-full max-h-screen object-cover rounded-xl"
         </div>
       );
     })}
+  </animated.div>
+
+  {/* Bottom Marquee just below hero cards */}
+<div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
+  <div className="whitespace-nowrap animate-marquee-reverse text-[40px] md:text-[60px] lg:text-[80px] font-extrabold text-white/10 select-none">
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
   </div>
 </div>
+
+</div>
+
 
 
 
