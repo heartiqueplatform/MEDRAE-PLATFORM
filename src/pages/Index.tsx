@@ -136,7 +136,7 @@ useEffect(() => {
       // Reset after short delay to allow next swipe
       setTimeout(() => {
         scrolling = false;
-      }, 100);
+      }, 250);
     }
   };
 
