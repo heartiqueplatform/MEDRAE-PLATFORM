@@ -17,6 +17,20 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
   const navigate = useNavigate();
 
 
+  useEffect(() => {
+  const handleKey = (e: KeyboardEvent) => {
+    if (e.key === "ArrowRight") {
+      setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
+    } else if (e.key === "ArrowLeft") {
+      setActiveHeroStory(prev => Math.max(prev - 1, 0));
+    }
+  };
+
+  window.addEventListener("keydown", handleKey);
+  return () => window.removeEventListener("keydown", handleKey);
+}, []);
+
+
   const heroStorySlides = [
   {
     bg: "/indexbackground1.jpg",
@@ -78,13 +92,50 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
   // inside your component
 const [spring, api] = useSpring(() => ({ x: 0 }));
 
-const bind = useDrag(({ down, movement: [mx], direction: [xDir] }) => {
-  if (!down && Math.abs(mx) > 25) {
-    if (xDir < 0) setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
-    else setActiveHeroStory(prev => Math.max(prev - 1, 0));
+const bind = useDrag(
+  ({ down, movement: [mx], direction: [xDir], velocity, cancel, event }) => {
+    event.preventDefault(); // prevents touchpad default scroll
+
+    // Only horizontal swipes
+    if (!down && velocity > 0.1) { 
+      if (xDir < 0) setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
+      else setActiveHeroStory(prev => Math.max(prev - 1, 0));
+    }
+
+    api.start({ x: down ? mx : 0 });
+  },
+  {
+    axis: "x",        // track horizontal only
+    filterTaps: true, // ignore accidental taps
+    pointer: { touch: true }, // ensure touch/trackpad works
   }
-  api.start({ x: down ? mx : 0 });
-});
+);
+useEffect(() => {
+  let scrolling = false; // prevent multiple triggers per swipe
+
+  const handleWheel = (e: WheelEvent) => {
+    if (scrolling) return; // already triggered for this swipe
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 30) {
+      // horizontal swipe threshold
+      if (e.deltaX > 0) {
+        setActiveHeroStory(prev => Math.max(prev - 1, 0));
+      } else {
+        setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
+      }
+      scrolling = true;
+
+      // Reset after short delay to allow next swipe
+      setTimeout(() => {
+        scrolling = false;
+      }, 300);
+    }
+  };
+
+  window.addEventListener("wheel", handleWheel, { passive: false });
+  return () => window.removeEventListener("wheel", handleWheel);
+}, []);
+
+
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -155,6 +206,8 @@ const bind = useDrag(({ down, movement: [mx], direction: [xDir] }) => {
   {/* Hero slides container */}
   <animated.div
     {...bind()}
+    style={{ touchAction: "pan-y pinch-zoom" }}
+
     className="relative w-full min-h-screen md:h-[70vh] lg:h-[80vh] flex justify-center items-center overflow-hidden touch-pan-y select-none z-10"
   >
     {heroStorySlides.map((slide, idx) => {
