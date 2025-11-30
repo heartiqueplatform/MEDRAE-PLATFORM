@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
 import { useUser, useSessionContext } from "@supabase/auth-helpers-react";
+import { BottomBar } from "@/components/ui/BottomBar";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -181,16 +182,24 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
 
         <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
 
-  <main
+<main
   className={`
-    flex-1 box-border p-4 md:p-6
+    flex-1 box-border p-4 md:p-6 pb-14
     ${children?.type?.name === "Reels" ? "overflow-hidden" : "overflow-auto"}
     scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
     dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
   `}
 >
+
   {children}
 </main>
+{!isSidebarOpen && (
+  <BottomBar
+    userRole={userRole}
+    unreadCount={0}
+    unreadAnnouncements={0}
+  />
+)}
 
       </div>
     </div>

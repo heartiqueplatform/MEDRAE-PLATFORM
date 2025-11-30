@@ -9,6 +9,8 @@ import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
 import Feed from "./pages/Feed";
+import { BottomBar } from "@/components/ui/BottomBar";
+import { SidebarProvider } from "@/components/ui/sidebar"; // adjust the path if needed
 
 
 // Pages
@@ -105,20 +107,20 @@ const App = () => {
     return <SplashScreen />;
   }
 
-
-  return (
+return (
   <SessionContextProvider supabaseClient={supabase}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <AIWrapper>
-            <FirstTimeGuide />
+        <SidebarProvider>
+          <BrowserRouter>
+            <AIWrapper>
+              <FirstTimeGuide />
 
-            <Routes>
-              
-              {/* Public Routes */}
+              <Routes>
+                {/* Public Routes */}
+
             <Route path="/" element={<Index />} />
 <Route path="/redirect" element={<RedirectToRoleDashboard />} />
 
@@ -163,17 +165,23 @@ const App = () => {
               <Route path="/simulation/:paper_id" element={<SimulationPage />} />
               <Route path="/Medrae-quizzes" element={<DashboardLayout userRole={localStorage.getItem('userRole') as 'student' | 'tutor' | 'staff' || 'student'}><MedraeQuizzes /></DashboardLayout>} />
              <Route path="/feed"element={<DashboardLayout userRole={getRole()}><Feed /></DashboardLayout>}/>
-
               {/* Catch-all 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+
+            {/* BottomBar appears across all pages */}
+            <BottomBar
+              userRole={getRole()}
+              unreadCount={0} // you can pass the state from AppSidebar if needed
+              unreadAnnouncements={0} // same for announcements
+            />
           </AIWrapper>
         </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </SessionContextProvider>
-  );
+      </SidebarProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+</SessionContextProvider>
+);
 };
-
 
 export default App;

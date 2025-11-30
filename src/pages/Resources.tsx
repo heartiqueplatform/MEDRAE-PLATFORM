@@ -27,6 +27,7 @@ import {
 import {
   FileText,
   Video,
+  Trash2,
   Link,
   Heart,
   Search,
@@ -844,211 +845,183 @@ return (
   )}
 </div>
 
+
 {/* Tabs content controlled by selectedBlock */}
 <div className="space-y-4 mt-2">
-    {/* Dynamic Heading for Selected Block */}
+  {/* Dynamic Heading for Selected Block */}
   <h2 className="text-2xl font-bold mb-4">
-    {
-      blockCategories.find((cat) => cat.id === selectedBlock)?.name.split("/").pop()
-    }
+    {blockCategories.find((cat) => cat.id === selectedBlock)?.name.split("/").pop()}
   </h2>
 
   {blockCategories
     .filter((cat) => cat.id === selectedBlock)
     .map((cat) => (
       <div key={cat.id}>
-     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-  {loadingNotes ? (
-    <div className="flex flex-col items-center justify-center py-20 col-span-full">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-      <p className="text-muted-foreground text-center">
-        Medrae is preparing your notes...
-      </p>
-    </div>
-  ) : filteredResources.filter((note) =>
-        cat.id === "OTHER"
-          ? !blockCategories
-              .slice(0, 7)
-              .some((b) => (note.block || "").toUpperCase() === b.id)
-          : (note.block || "").toUpperCase() === cat.id
-      ).length === 0 ? (
-    <div className="flex flex-col items-center justify-center py-20 col-span-full">
-      <p className="text-muted-foreground text-center">
-        No notes available for this category yet. Check back soon for updates!
-      </p>
-    </div>
-  ) : (
-    filteredResources
-      .filter((note) =>
-        cat.id === "OTHER"
-          ? !blockCategories
-              .slice(0, 7)
-              .some((b) => (note.block || "").toUpperCase() === b.id)
-          : (note.block || "").toUpperCase() === cat.id
-      )
-      .map((note) => (
-        <Card key={note.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {getTypeIcon(note.file_type)}
-                  <CardTitle className="text-lg">{note.title}</CardTitle>
-                  <Badge className={getTypeColor(note.file_type)}>
-                    {note.file_type.toUpperCase()}
-                  </Badge>
-                </div>
-                <CardDescription>{note.description}</CardDescription>
-                <div className="text-sm text-muted-foreground">
-                  {note.course && <span>{note.course}</span>}
-                  <span>
-                    {" "}
-                    · Uploaded {new Date(note.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+          {loadingNotes ? (
+            <div className="flex flex-col items-center justify-center py-20 col-span-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-muted-foreground text-center">
+                Medrae is preparing your notes...
+              </p>
+            </div>
+          ) : filteredResources.filter((note) =>
+              cat.id === "OTHER"
+                ? !blockCategories
+                    .slice(0, 7)
+                    .some((b) => (note.block || "").toUpperCase() === b.id)
+                : (note.block || "").toUpperCase() === cat.id
+            ).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 col-span-full">
+              <p className="text-muted-foreground text-center">
+                No notes available for this category yet. Check back soon for updates!
+              </p>
+            </div>
+          ) : (
+            filteredResources
+              .filter((note) =>
+                cat.id === "OTHER"
+                  ? !blockCategories
+                      .slice(0, 7)
+                      .some((b) => (note.block || "").toUpperCase() === b.id)
+                  : (note.block || "").toUpperCase() === cat.id
+              )
+              .map((note) => (
+                <Card
+                  key={note.id}
+                  className="transition-all hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full"
+                >
+                  <CardHeader>
+                    <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {getTypeIcon(note.file_type)}
+                          <CardTitle className="text-lg">{note.title}</CardTitle>
+                          <Badge className={getTypeColor(note.file_type)}>
+                            {note.file_type.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <CardDescription>{note.description}</CardDescription>
+                        <div className="text-sm text-muted-foreground flex flex-wrap gap-2">
+                          {note.course && <span>{note.course}</span>}
+                          <span>· Uploaded {new Date(note.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
 
-              {session?.user?.id === note.uploaded_by && (
-        
+                      {session?.user?.id === note.uploaded_by && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          onClick={async () => {
+                            if (!confirm("Are you sure you want to delete this note?")) return;
 
-<Button
-  variant="destructive"
-  size="sm"
-  onClick={async () => {
-    if (!confirm("Are you sure you want to delete this note?")) return;
+                            try {
+                              const url = note.file_url;
+                              const parts = url.split("/notes/");
+                              const storagePath = parts[1];
 
-    try {
-      // 1️⃣ Delete file from Supabase Storage
-      const url = note.file_url;
-      const parts = url.split("/notes/");
-      const storagePath = parts[1]; // path inside the bucket
+                              if (storagePath) {
+                                const { error: storageError } = await supabase.storage
+                                  .from("notes")
+                                  .remove([storagePath]);
+                                if (storageError) console.error("Storage deletion error:", storageError);
+                              }
 
-      if (storagePath) {
-        const { error: storageError } = await supabase.storage
-          .from("notes")
-          .remove([storagePath]);
+                              const { error: dbError } = await supabase
+                                .from("notes")
+                                .delete()
+                                .eq("id", note.id);
+                              if (dbError) {
+                                console.error("DB deletion error:", dbError);
+                                alert("Failed to delete note");
+                                return;
+                              }
 
-        if (storageError) {
-          console.error("Storage deletion error:", storageError);
-        }
-      }
-
-      // 2️⃣ Delete row from database
-      const { error: dbError } = await supabase
-        .from("notes")
-        .delete()
-        .eq("id", note.id);
-
-      if (dbError) {
-        console.error("DB deletion error:", dbError);
-        alert("Failed to delete note");
-        return;
-      }
-
-      // 3️⃣ Update UI
-      setNotes((prev) => prev.filter((n) => n.id !== note.id));
-      alert("Note deleted successfully!");
-    } catch (err) {
-      console.error("Unexpected deletion error:", err);
-      alert("Something went wrong while deleting the note");
-    }
-  }}
->
-  Delete
-</Button>
-
-)}
-
+                              setNotes((prev) => prev.filter((n) => n.id !== note.id));
+                              alert("Note deleted successfully!");
+                            } catch (err) {
+                              console.error("Unexpected deletion error:", err);
+                              alert("Something went wrong while deleting the note");
+                            }
+                          }}
+                        >
+                          {/* ✅ Updated trash icon */}
+                          <Trash2 className="h-4 w-4 mr-1" /> 
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
+
                   <CardContent className="space-y-2">
-                    
-                   {note.file_type === "pdf" && (
-  <div className="flex gap-2">
-   <Button
-  size="sm"
-  variant="secondary"
-  className="flex gap-1 items-center"
-  onClick={async () => {
-    try {
-      // 1️⃣ Try offline first
-      const file = await getFile(note.id);
-      if (file) {
-        const url = URL.createObjectURL(file);
-        setFullscreenNote({ ...note, file_url: url });
-      } else {
-        setFullscreenNote(note);
-      }
+                    {note.file_type === "pdf" && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="flex gap-1 items-center w-full sm:w-auto"
+                          onClick={async () => {
+                            try {
+                              const file = await getFile(note.id);
+                              if (file) {
+                                const url = URL.createObjectURL(file);
+                                setFullscreenNote({ ...note, file_url: url });
+                              } else {
+                                setFullscreenNote(note);
+                              }
 
-      // 2️⃣ Record view in Supabase
-      const { error } = await supabase
-        .from("note_views")
-        .insert({
-          note_id: note.id,
-          user_id: session?.user?.id || null, // allow anonymous views
-        });
+                              const { error } = await supabase.from("note_views").insert({
+                                note_id: note.id,
+                                user_id: session?.user?.id || null,
+                              });
 
-      if (error) {
-        console.error("Error recording view:", error);
-      } else {
-        // 3️⃣ Update UI immediately
-        setViewCounts((prev) => ({
-          ...prev,
-          [note.id]: (prev[note.id] || 0) + 1,
-        }));
-      }
-    } catch (err) {
-      console.error("Unexpected error recording view:", err);
-    }
-  }}
->
-  <Eye className="h-4 w-4" /> Fullscreen View
-</Button>
+                              if (!error) {
+                                setViewCounts((prev) => ({
+                                  ...prev,
+                                  [note.id]: (prev[note.id] || 0) + 1,
+                                }));
+                              }
+                            } catch (err) {
+                              console.error("Unexpected error recording view:", err);
+                            }
+                          }}
+                        >
+                          <Eye className="h-4 w-4" /> Fullscreen View
+                        </Button>
 
+                        <Button
+                          size="sm"
+                          onClick={async () => await handleDownload(note.id, note.file_url)}
+                          className="flex items-center gap-1 w-full sm:w-auto"
+                        >
+                          {/* ✅ Updated download icon */}
+                          <Download className="h-3 w-3" /> Cache
+                        </Button>
 
-  <Button
-  size="sm"
-  onClick={async () => {
-    await handleDownload(note.id, note.file_url);
-  }}
-  className="flex items-center gap-1"
->
-  <Download className="h-3 w-3" />
-  Cache
-</Button>
-{/* ✅ Show badge if file is saved offline */}
-{offlineFiles.includes(note.id) && (
-  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-    Preserved
-  </Badge>
-)}
+                        {offlineFiles.includes(note.id) && (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 w-full sm:w-auto">
+                            Preserved
+                          </Badge>
+                        )}
+                      </div>
+                    )}
 
-  </div>
-)}
+                    <div className="text-sm text-muted-foreground flex flex-wrap gap-3 items-center">
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        <span>{viewCounts[note.id] || 0}</span>
+                      </div>
 
-  <div className="text-sm text-muted-foreground flex items-center gap-3">
-  {/* 👁️ Views */}
-  <div className="flex items-center gap-1">
-    <Eye className="h-3 w-3" />
-    <span>{viewCounts[note.id] || 0}</span>
-  </div>
-
-  {/* ❤️ Likes */}
-  <button
-    onClick={() => toggleLike(note.id)}
-    className={`flex items-center gap-1 ${
-      bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
-    }`}
-  >
-    <Heart
-      className={`h-3 w-3 ${
-        bookmarkedItems.includes(note.id) ? "fill-current" : ""
-      }`}
-    />
-    <span>{likeCounts[note.id] || 0}</span>
-  </button>
-</div>
-            
+                      <button
+                        onClick={() => toggleLike(note.id)}
+                        className={`flex items-center gap-1 ${
+                          bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
+                        }`}
+                      >
+                        <Heart className={`h-3 w-3 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
+                        <span>{likeCounts[note.id] || 0}</span>
+                      </button>
+                    </div>
                   </CardContent>
                 </Card>
               ))
@@ -1057,6 +1030,7 @@ return (
       </div>
     ))}
 </div>
+
 
 
       
