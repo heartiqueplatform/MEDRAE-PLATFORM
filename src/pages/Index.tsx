@@ -20,7 +20,18 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
   const heroStorySlides = [
   {
     bg: "/indexbackground1.jpg",
-    text: "Medrae Medical Network Platform V1.0",
+   text: (
+  <div className="w-full h-full flex items-center justify-center text-center">
+<div className="px-6 py-4 rounded-xl bg-white/40 backdrop-blur-sm shadow-2xl">
+
+  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-wide text-blue-700">
+    Medrae Medical Network Platform V1.0
+  </h1>
+</div>
+
+  </div>
+),
+
   },
   {
     bg: "/indexbackground2.jpg",
@@ -44,7 +55,8 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
       <div className="flex flex-col gap-4">
         <Button 
           size="lg" 
-          className="bg-white text-primary hover:bg-white/90"
+       className="bg-white text-primary transition-all duration-300 hover:bg-blue-600 hover:text-white"
+
           onClick={() => navigate('/register')}
         >
           Join Medrae
@@ -130,7 +142,8 @@ background: 'linear-gradient(135deg, hsl(220, 60%, 35%) 0%, hsl(220, 60%, 25%) 1
  // blue gradient
   }}
 >
-  <div className="relative w-full h-[50vh] md:h-[70vh] lg:h-[80vh] flex justify-center items-center">
+<div className="relative w-full min-h-screen md:h-[70vh] lg:h-[80vh] flex justify-center items-center">
+
     {heroStorySlides.map((slide, idx) => {
       const offset = idx - activeHeroStory;
       const absOffset = Math.abs(offset);
@@ -156,7 +169,8 @@ background: 'linear-gradient(135deg, hsl(220, 60%, 35%) 0%, hsl(220, 60%, 25%) 1
           <img
             src={slide.bg}
             alt={`Slide ${idx + 1}`}
-            className="w-full h-[50vh] md:h-[70vh] lg:h-[80vh] object-cover rounded-xl"
+className="w-full h-full max-h-screen object-cover rounded-xl"
+
           />
          <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
   {slide.text}
