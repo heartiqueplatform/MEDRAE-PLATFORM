@@ -352,21 +352,38 @@ const handleCollapse = () => {
     ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
 >
 
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-gradient-medical rounded-lg flex items-center justify-center">
-            <GraduationCap className="h-5 w-5 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div>
-              <h2 className="font-bold text-lg bg-gradient-medical bg-clip-text text-transparent">
-              MEDRAE MEDICAL 
-              </h2>
-              <p className="text-xs text-muted-foreground">Network Platform</p>
-            </div>
-          )}
-        </div>
-      </div>
+     <div className="p-4 border-b border-border">
+  <div className="flex items-center gap-3">
+    {/* Icon with gradient */}
+   <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
+  <img
+    src="/pwa-192x192.jpeg"
+    alt="Logo"
+    className="h-full w-full object-cover"
+  />
+</div>
+
+
+    {/* Text info */}
+    {!isCollapsed && (
+     <div>
+  <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 relative inline-block">
+    MEDRAE NURSIN
+    <span className="relative">
+      G
+      <GraduationCap 
+        className="absolute -top-2 -right-2 h-5 w-5 text-blue-600 dark:text-blue-400" 
+      />
+    </span>
+  </h2>
+  <p className="text-xs text-gray-500 dark:text-gray-400">
+    Network Platform
+  </p>
+</div>
+
+    )}
+  </div>
+</div>
 
       <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
  

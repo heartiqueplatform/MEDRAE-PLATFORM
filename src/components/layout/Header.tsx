@@ -258,19 +258,19 @@ setStreak(newStreak);
   variant="ghost"
   size="sm"
   onClick={() => {
-    const shareMessage = `Medrae – The Professional Medical Education & Career Network
+    const shareMessage = `Medrae – The Professional Nursing Education & Career Network
 
 • Structured learning modules across clinical disciplines  
 • Evidence-based resources and expert-led video lectures  
 • Comprehensive notes and case studies for clinical excellence  
 • Exam simulations and certification pathways for professional growth  
 
-Advance your medical journey today: https://medrae.vercel.app`;
+Advance your Nursing journey today: https://medrae.vercel.app`;
 
     if (navigator.share) {
       navigator
         .share({
-          title: "Medrae – Medical Education & Career Network",
+          title: "Medrae – Nursing Education & Career Network",
           text: shareMessage,
           url: "https://medrae.vercel.app",
         })

@@ -1,6 +1,6 @@
 export const allUnits = [
   { code: "HNX-01", title: "Anatomy and Physiology" },
-  { code: "HNX-02", title: "Medical-Surgical Nursing" },
+  { code: "HNX-02", title: "Nursing-Surgical Nursing" },
   { code: "HNX-03", title: "Fundamentals of Nursing & Patient Care" },
   { code: "HNX-04", title: "Pharmacology" },
   { code: "HNX-05", title: "Pediatrics & Neonatal Care (MCH)" },

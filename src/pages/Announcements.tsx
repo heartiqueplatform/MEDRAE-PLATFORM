@@ -127,7 +127,7 @@ export function Announcements() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
+          <h1 className="text-3xl font-bold bg-gradient-Nursing bg-clip-text text-transparent flex items-center gap-2">
             <Bell className="h-8 w-8" />
             Announcements
           </h1>

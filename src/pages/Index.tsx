@@ -39,7 +39,7 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
 <div className="px-6 py-4 rounded-xl bg-white/40 backdrop-blur-sm shadow-2xl">
 
   <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-wide text-blue-700">
-    Medrae Medical Network Platform V1.0
+    Medrae Nursing Network Platform V1.0
   </h1>
 </div>
 
@@ -49,11 +49,11 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
   },
   {
     bg: "/indexbackground2.jpg",
-    text: "MEDRAE MEDICAL\nNETWORK\nPlatform",
+    text: "MEDRAE NURSING\nNETWORK\ PLATFORM",
   },
   {
     bg: "/indexbackground3.jpg",
-    text: "Medrae is a professional platform for medical education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence.",
+    text: "Medrae is a professional platform for Nursing education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence.",
   },
   {
     bg: "/indexbackground4.jpg",
@@ -91,25 +91,34 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
 
   // inside your component
 const [spring, api] = useSpring(() => ({ x: 0 }));
-
 const bind = useDrag(
-  ({ down, movement: [mx], direction: [xDir], velocity, cancel, event }) => {
-    event.preventDefault(); // prevents touchpad default scroll
+  ({ down, movement: [mx], direction: [xDir], cancel, event }) => {
+    event.preventDefault(); // prevent scroll/selection
 
-    // Only horizontal swipes
-    if (!down && velocity > 0.1) { 
-      if (xDir < 0) setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
-      else setActiveHeroStory(prev => Math.max(prev - 1, 0));
+    // Move slide while dragging
+    api.start({ x: mx });
+
+    // On release, decide if we change slide
+    if (!down) {
+      if (mx < -100) {
+        // dragged left → next slide
+        setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
+      } else if (mx > 100) {
+        // dragged right → previous slide
+        setActiveHeroStory(prev => Math.max(prev - 1, 0));
+      }
+
+      // reset spring position
+      api.start({ x: 0 });
     }
-
-    api.start({ x: down ? mx : 0 });
   },
   {
-    axis: "x",        // track horizontal only
-    filterTaps: true, // ignore accidental taps
-    pointer: { touch: true }, // ensure touch/trackpad works
+    axis: "x",
+    filterTaps: true,
+    pointer: { touch: true, mouse: true }, // enable both
   }
 );
+
 useEffect(() => {
   let scrolling = false; // prevent multiple triggers per swipe
 
@@ -127,7 +136,7 @@ useEffect(() => {
       // Reset after short delay to allow next swipe
       setTimeout(() => {
         scrolling = false;
-      }, 300);
+      }, 100);
     }
   };
 
@@ -157,12 +166,12 @@ useEffect(() => {
     {
       icon: Brain,
       title: "AI Clinical Assistant",
-      description: "Receive precise guidance on medical concepts, drug information, and evidence-based practices. Medrae AI enhances your understanding and supports critical decision-making in real time."
+      description: "Receive precise guidance on Nursing concepts, drug information, and evidence-based practices. Medrae AI enhances your understanding and supports critical decision-making in real time."
     },
     {
       icon: Users,
       title: "Professional Collaboration",
-      description: "Engage with healthcare professionals and students, join specialty discussions, and share clinical insights to expand your medical expertise and professional network."
+      description: "Engage with healthcare professionals and students, join specialty discussions, and share clinical insights to expand your Nursing expertise and professional network."
     },
     {
       icon: Star,
@@ -172,7 +181,7 @@ useEffect(() => {
     {
       icon: Play,
       title: "Video Learning & Continuous Updates",
-      description: "Access expert-led videos, clinical demonstrations, and updated educational content. Stay current with medical trends and maintain consistent professional growth."
+      description: "Access expert-led videos, clinical demonstrations, and updated educational content. Stay current with Nursing trends and maintain consistent professional growth."
     }
   ];
 
@@ -196,10 +205,10 @@ useEffect(() => {
   {/* Marquee background */}
   <div className="absolute inset-0 overflow-hidden">
     <div className="absolute whitespace-nowrap animate-marquee text-[100px] md:text-[60px] lg:text-[80px] font-extrabold text-white/10 select-none pointer-events-none">
-      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
-      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
-      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
-      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+      <span className="mx-16">MEDRAE Nursing NETWORK</span>
+      <span className="mx-16">MEDRAE Nursing NETWORK</span>
+      <span className="mx-16">MEDRAE Nursing NETWORK</span>
+      <span className="mx-16">MEDRAE Nursing NETWORK</span>
     </div>
   </div>
 
@@ -265,14 +274,25 @@ useEffect(() => {
       );
     })}
   </animated.div>
+{/* Pagination Dots */}
+<div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+  {heroStorySlides.map((_, idx) => (
+    <div
+      key={idx}
+      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+        idx === activeHeroStory ? 'bg-white' : 'bg-white/40'
+      }`}
+    />
+  ))}
+</div>
 
   {/* Bottom Marquee just below hero cards */}
 <div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
   <div className="whitespace-nowrap animate-marquee-reverse text-[40px] md:text-[60px] lg:text-[80px] font-extrabold text-white/10 select-none">
-    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
-    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
-    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
-    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    <span className="mx-16">MEDRAE Nursing NETWORK</span>
+    <span className="mx-16">MEDRAE Nursing NETWORK</span>
+    <span className="mx-16">MEDRAE Nursing NETWORK</span>
+    <span className="mx-16">MEDRAE Nursing NETWORK</span>
   </div>
 </div>
 
@@ -286,10 +306,10 @@ useEffect(() => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Innovative Tools for Medical Excellence
+              Innovative Tools for Nursing Excellence
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Medrae integrates modern technology with evidence-based education. Access structured medical content, detailed progress analytics, and interactive video lessons—all designed to support continuous professional growth and mastery in healthcare practice.
+              Medrae integrates modern technology with evidence-based education. Access structured Nursing content, detailed progress analytics, and interactive video lessons—all designed to support continuous professional growth and mastery in healthcare practice.
             </p>
           </div>
 
@@ -302,7 +322,7 @@ useEffect(() => {
 >
 
                 <CardHeader>
-                  <div className="h-12 w-12 bg-gradient-medical rounded-lg flex items-center justify-center mb-4">
+                  <div className="h-12 w-12 bg-gradient-Nursing rounded-lg flex items-center justify-center mb-4">
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-lg">{feature.title}</CardTitle>
@@ -320,15 +340,15 @@ useEffect(() => {
       <section className="py-20 px-4 bg-gradient-to-tr from-blue-500 to-blue-200 text-gray-900">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Elevate Your Medical Career with Medrae
+            Elevate Your Nursing Career with Medrae
           </h2>
           <p className="text-xl text-white mb-8">
-            Medrae unites learners and professionals in one advanced medical ecosystem. Harness AI-driven insights, structured clinical learning, and collaborative tools to transform how you study, train, and grow in healthcare.
+            Medrae unites learners and professionals in one advanced Nursing ecosystem. Harness AI-driven insights, structured clinical learning, and collaborative tools to transform how you study, train, and grow in healthcare.
           </p>
 
           <Button 
             size="lg" 
-            className="bg-gradient-medical"
+            className="bg-gradient-Nursing"
             onClick={() => navigate('/register')}
           >
             Get Started
@@ -345,7 +365,7 @@ useEffect(() => {
             <span className="text-xl font-bold">Medrae</span>
           </div>
           <p className="text-muted-foreground mb-6">
-            Advancing medical education, clinical excellence, and professional growth through innovation and collaboration.
+            Advancing Nursing education, clinical excellence, and professional growth through innovation and collaboration.
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
             <a href="#" className="hover:text-primary">About</a>

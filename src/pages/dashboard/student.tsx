@@ -1293,7 +1293,7 @@ return (
   <CardHeader>
     <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status </CardTitle>
     <CardDescription className="text-gray-700 dark:text-gray-300">
-  This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
+  This section is a space for nursing and Nursing professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
 </CardDescription>
 
   </CardHeader>
@@ -1639,7 +1639,7 @@ return (
   <CardHeader>
     <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
     <CardDescription>
-      Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
+      Invite your colleagues and peers to join Medrae — the professional network for Nursing education, skills, and career growth.
     </CardDescription>
   </CardHeader>
   <CardContent>
@@ -1648,10 +1648,10 @@ return (
         className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
         onClick={() => {
           const shareMessage =
-`Medrae – The Professional Medical Education & Career Network
+`Medrae – The Professional Nursing Education & Career Network
 
 • Structured modules across core clinical disciplines  
-• Expert-led lectures and verified medical resources  
+• Expert-led lectures and verified Nursing resources  
 • Comprehensive study materials and case-based learning  
 • Certification pathways and professional development tools  
 
@@ -1660,7 +1660,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
           if (navigator.share) {
             navigator
               .share({
-                title: "Medrae – Medical Education & Career Network",
+                title: "Medrae – Nursing Education & Career Network",
                 text: shareMessage,
                 url: "https://medrae.vercel.app",
               })
@@ -1727,7 +1727,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
       Join Our WhatsApp Group
     </CardTitle>
     <CardDescription>
-      Connect with fellow nursing and medical students.  
+      Connect with fellow nursing and Nursing students.  
       Share insights, ask questions, and stay updated with study materials.
     </CardDescription>
   </CardHeader>
@@ -1759,7 +1759,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
     </CardTitle>
     <CardDescription>
        Stay updated with the latest resources, study tips, and announcements.  
-      Be part of our growing community of nursing and medical scholars.
+      Be part of our growing community of nursing and Nursing scholars.
     </CardDescription>
   </CardHeader>
   <CardContent>

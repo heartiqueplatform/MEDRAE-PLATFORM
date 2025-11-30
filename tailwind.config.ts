@@ -65,13 +65,13 @@ export default {
         }
       },
       backgroundImage: {
-        'gradient-medical': 'var(--gradient-medical)',
+        'gradient-Nursing': 'var(--gradient-Nursing)',
         'gradient-healing': 'var(--gradient-healing)',
         'gradient-warm': 'var(--gradient-warm)',
         'gradient-hero': 'var(--gradient-hero)'
       },
       boxShadow: {
-        'medical': 'var(--shadow-medical)',
+        'Nursing': 'var(--shadow-Nursing)',
         'soft': 'var(--shadow-soft)',
         'glow': 'var(--shadow-glow)'
       },
