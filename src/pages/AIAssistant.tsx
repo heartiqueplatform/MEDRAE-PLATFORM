@@ -292,7 +292,7 @@ return (
 
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="h-10 w-10 bg-gradient-Nursing rounded-full flex items-center justify-center">
+        <div className="h-10 w-10 bg-gradient-medical rounded-full flex items-center justify-center">
           <Brain className="h-5 w-5 text-white" />
         </div>
         <div>

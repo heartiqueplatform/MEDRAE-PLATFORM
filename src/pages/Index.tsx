@@ -166,12 +166,12 @@ useEffect(() => {
     {
       icon: Brain,
       title: "AI Clinical Assistant",
-      description: "Receive precise guidance on Nursing concepts, drug information, and evidence-based practices. Medrae AI enhances your understanding and supports critical decision-making in real time."
+      description: "Receive precise guidance on medical concepts, drug information, and evidence-based practices. Medrae AI enhances your understanding and supports critical decision-making in real time."
     },
     {
       icon: Users,
       title: "Professional Collaboration",
-      description: "Engage with healthcare professionals and students, join specialty discussions, and share clinical insights to expand your Nursing expertise and professional network."
+      description: "Engage with healthcare professionals and students, join specialty discussions, and share clinical insights to expand your medical expertise and professional network."
     },
     {
       icon: Star,
@@ -181,7 +181,7 @@ useEffect(() => {
     {
       icon: Play,
       title: "Video Learning & Continuous Updates",
-      description: "Access expert-led videos, clinical demonstrations, and updated educational content. Stay current with Nursing trends and maintain consistent professional growth."
+      description: "Access expert-led videos, clinical demonstrations, and updated educational content. Stay current with medical trends and maintain consistent professional growth."
     }
   ];
 
@@ -205,10 +205,10 @@ useEffect(() => {
   {/* Marquee background */}
   <div className="absolute inset-0 overflow-hidden">
     <div className="absolute whitespace-nowrap animate-marquee text-[100px] md:text-[60px] lg:text-[80px] font-extrabold text-white/10 select-none pointer-events-none">
-      <span className="mx-16">MEDRAE Nursing NETWORK</span>
-      <span className="mx-16">MEDRAE Nursing NETWORK</span>
-      <span className="mx-16">MEDRAE Nursing NETWORK</span>
-      <span className="mx-16">MEDRAE Nursing NETWORK</span>
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+      <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
     </div>
   </div>
 
@@ -289,10 +289,10 @@ useEffect(() => {
   {/* Bottom Marquee just below hero cards */}
 <div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
   <div className="whitespace-nowrap animate-marquee-reverse text-[40px] md:text-[60px] lg:text-[80px] font-extrabold text-white/10 select-none">
-    <span className="mx-16">MEDRAE Nursing NETWORK</span>
-    <span className="mx-16">MEDRAE Nursing NETWORK</span>
-    <span className="mx-16">MEDRAE Nursing NETWORK</span>
-    <span className="mx-16">MEDRAE Nursing NETWORK</span>
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
+    <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
   </div>
 </div>
 
@@ -309,7 +309,7 @@ useEffect(() => {
               Innovative Tools for Nursing Excellence
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Medrae integrates modern technology with evidence-based education. Access structured Nursing content, detailed progress analytics, and interactive video lessons—all designed to support continuous professional growth and mastery in healthcare practice.
+              Medrae integrates modern technology with evidence-based education. Access structured medical content, detailed progress analytics, and interactive video lessons—all designed to support continuous professional growth and mastery in healthcare practice.
             </p>
           </div>
 
@@ -322,7 +322,7 @@ useEffect(() => {
 >
 
                 <CardHeader>
-                  <div className="h-12 w-12 bg-gradient-Nursing rounded-lg flex items-center justify-center mb-4">
+                  <div className="h-12 w-12 bg-gradient-medical rounded-lg flex items-center justify-center mb-4">
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
                   <CardTitle className="text-lg">{feature.title}</CardTitle>
@@ -343,12 +343,12 @@ useEffect(() => {
             Elevate Your Nursing Career with Medrae
           </h2>
           <p className="text-xl text-white mb-8">
-            Medrae unites learners and professionals in one advanced Nursing ecosystem. Harness AI-driven insights, structured clinical learning, and collaborative tools to transform how you study, train, and grow in healthcare.
+            Medrae unites learners and professionals in one advanced medical ecosystem. Harness AI-driven insights, structured clinical learning, and collaborative tools to transform how you study, train, and grow in healthcare.
           </p>
 
           <Button 
             size="lg" 
-            className="bg-gradient-Nursing"
+            className="bg-gradient-medical"
             onClick={() => navigate('/register')}
           >
             Get Started

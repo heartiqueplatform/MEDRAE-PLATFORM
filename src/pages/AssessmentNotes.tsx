@@ -39,7 +39,7 @@ const SECTIONS = [
   {
     title: "Case Studies",
     subcategories: [
-      "Nursing Case Study",
+      "Medical Case Study",
       "Surgical Case Study",
       "Paediatric Case Study",
       "Obstetric Case Study",

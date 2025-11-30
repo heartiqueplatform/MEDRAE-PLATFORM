@@ -2,11 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Medrae Scholar Platform Design System - Nursing/Healthcare Theme */
+/* Medrae Scholar Platform Design System - Medical/Healthcare Theme */
 
 @layer base {
   :root {
-    /* Nursing Blue & Healthcare Theme */
+    /* Medical Blue & Healthcare Theme */
     --background: 210 20% 98%;
     --foreground: 215 25% 27%;
 
@@ -16,17 +16,17 @@
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 27%;
 
-    /* Nursing Trust Blue */
+    /* Medical Trust Blue */
     --primary: 200 95% 40%;
     --primary-foreground: 0 0% 100%;
     --primary-light: 200 95% 85%;
     --primary-glow: 200 95% 75%;
 
-    /* Warm Nursing Secondary */
+    /* Warm Medical Secondary */
     --secondary: 210 40% 96%;
     --secondary-foreground: 215 25% 27%;
 
-    /* Soft Nursing Muted */
+    /* Soft Medical Muted */
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
@@ -34,27 +34,27 @@
     --accent: 150 60% 50%;
     --accent-foreground: 0 0% 100%;
 
-    /* Nursing Emergency Red */
+    /* Medical Emergency Red */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Soft Nursing Borders */
+    /* Soft Medical Borders */
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 200 95% 40%;
 
     /* Professional Gradients */
-    --gradient-Nursing: linear-gradient(135deg, hsl(200 95% 40%), hsl(200 95% 55%));
+    --gradient-medical: linear-gradient(135deg, hsl(200 95% 40%), hsl(200 95% 55%));
     --gradient-healing: linear-gradient(135deg, hsl(150 60% 50%), hsl(180 55% 45%));
     --gradient-warm: linear-gradient(135deg, hsl(25 85% 85%), hsl(35 90% 90%));
     --gradient-hero: linear-gradient(135deg, hsl(200 95% 40%) 0%, hsl(200 95% 55%) 50%, hsl(150 60% 50%) 100%);
 
     /* Professional Shadows */
-    --shadow-Nursing: 0 10px 30px -10px hsl(200 95% 40% / 0.3);
+    --shadow-medical: 0 10px 30px -10px hsl(200 95% 40% / 0.3);
     --shadow-soft: 0 4px 20px -4px hsl(215 25% 27% / 0.1);
     --shadow-glow: 0 0 40px hsl(200 95% 75% / 0.4);
 
-    /* Smooth Nursing Transitions */
+    /* Smooth Medical Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.75rem;
@@ -77,7 +77,7 @@
   }
 
   .dark {
-    /* Dark Nursing Theme */
+    /* Dark Medical Theme */
     --background: 215 28% 8%;
     --foreground: 210 40% 95%;
 
@@ -87,7 +87,7 @@
     --popover: 215 25% 12%;
     --popover-foreground: 210 40% 95%;
 
-    /* Bright Nursing Blue for Dark */
+    /* Bright Medical Blue for Dark */
     --primary: 200 95% 60%;
     --primary-foreground: 215 28% 8%;
     --primary-light: 200 95% 25%;
@@ -110,13 +110,13 @@
     --ring: 200 95% 60%;
 
     /* Dark Mode Gradients */
-    --gradient-Nursing: linear-gradient(135deg, hsl(200 95% 60%), hsl(200 95% 75%));
+    --gradient-medical: linear-gradient(135deg, hsl(200 95% 60%), hsl(200 95% 75%));
     --gradient-healing: linear-gradient(135deg, hsl(150 60% 55%), hsl(180 55% 50%));
     --gradient-warm: linear-gradient(135deg, hsl(25 70% 25%), hsl(35 75% 30%));
     --gradient-hero: linear-gradient(135deg, hsl(200 95% 60%) 0%, hsl(200 95% 75%) 50%, hsl(150 60% 55%) 100%);
 
     /* Dark Shadows */
-    --shadow-Nursing: 0 10px 30px -10px hsl(200 95% 60% / 0.4);
+    --shadow-medical: 0 10px 30px -10px hsl(200 95% 60% / 0.4);
     --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
     --shadow-glow: 0 0 40px hsl(200 95% 60% / 0.3);
     --sidebar-background: 240 5.9% 10%;

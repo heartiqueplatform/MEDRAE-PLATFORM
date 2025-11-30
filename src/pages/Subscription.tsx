@@ -103,7 +103,7 @@ const studentPlans = [
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-Nursing bg-clip-text text-transparent flex items-center gap-2">
+        <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
           <CreditCard className="h-8 w-8" />
           Subscription & Billing
         </h1>
