@@ -85,9 +85,16 @@ export default {
       },
 
       /* ----------------------------- */
-      /* ⭐ ADDED MARQUEE KEYFRAMES     */
+      /* ⭐ COMBINED KEYFRAMES         */
       /* ----------------------------- */
       keyframes: {
+        spinMotor: {
+          '0%': { transform: 'rotate(0deg)' },
+          '25%': { transform: 'rotate(20deg)' },
+          '50%': { transform: 'rotate(0deg)' },
+          '75%': { transform: 'rotate(-20deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
         'accordion-down': {
           from: { height: '0' },
           to: { height: 'var(--radix-accordion-content-height)' }
@@ -96,14 +103,10 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' }
         },
-
-        /* ⭐ marquee scrolling left */
         marquee: {
           "0%": { transform: "translateX(0%)" },
           "100%": { transform: "translateX(-100%)" }
         },
-
-        /* ⭐ marquee reverse scrolling right */
         "marquee-reverse": {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(0%)" }
@@ -111,13 +114,12 @@ export default {
       },
 
       /* ----------------------------- */
-      /* ⭐ ADDED MARQUEE ANIMATIONS   */
+      /* ⭐ COMBINED ANIMATIONS         */
       /* ----------------------------- */
       animation: {
+        spinMotor: 'spinMotor 0.5s linear infinite',
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-
-        /* ⭐ marquee animations */
         marquee: "marquee 20s linear infinite",
         "marquee-fast": "marquee 10s linear infinite",
         "marquee-slow": "marquee 40s linear infinite",

@@ -256,11 +256,12 @@ if (lastPlayed !== today) {
   onClick={handleReload}
   className="relative mobile-reload-button group"
 >
+<RefreshCcw className="h-4 w-4 sm:h-5 sm:w-5 animate-spinMotor" />
 
-  <RefreshCcw className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-200 ${rotating ? "rotate-180" : ""}`} />
 <span className="ml-1 text-xs hidden sm:inline text-black dark:text-white">
-  Refresh
+  {rotating ? "Refreshing..." : "Refresh"}
 </span>
+
 </Button>
 
 {/* Share App */}
