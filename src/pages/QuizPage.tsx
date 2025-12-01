@@ -350,7 +350,8 @@ const handleResetTimer = () => {
     : questions;
 
   return (
-    <div className="min-h-screen w-full p-4 space-y-6 bg-gray-50 dark:bg-gray-900">
+ <div className="min-h-screen w-full p-4 space-y-6 bg-gray-50 dark:bg-gray-900 select-none">
+
 <div className="flex justify-between items-center">
   <h1 className="text-2xl font-bold text-blue-700">{unit}</h1>
           {!quizFinished && timerEnd && (
@@ -436,13 +437,17 @@ const handleResetTimer = () => {
     <div key={q.id} className="flex flex-col lg:flex-row gap-4 w-full">
 
       {/* Question Card */}
-      <div
-        className={`flex-1 p-4 border rounded shadow-sm border-gray-200 dark:border-gray-700 text-black dark:text-white transition-colors
-${understood[q.id] ? "bg-green-300 dark:bg-green-800" : ""}
+<div
+  className={`flex-1 p-4 border rounded shadow-sm border-gray-200 dark:border-gray-700 text-black dark:text-white transition-colors
+  ${
+    understood[q.id]
+      ? "bg-green-300 dark:bg-green-800"
+      : notUnderstood[q.id]
+      ? "bg-[#FF4C4C] dark:bg-[#800000]"
+      : "bg-white dark:bg-gray-800"
+  }`}
+>
 
-
-      ${notUnderstood[q.id] ? "bg-[#FF4C4C] dark:bg-[#800000]" : "bg-white dark:bg-gray-800"}`}
-      >
         <p className="font-bold mb-2">Q{i + 1}: {q.question_text}</p>
 
         <div className="ml-4 space-y-2 text-sm">

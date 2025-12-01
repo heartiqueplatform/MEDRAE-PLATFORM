@@ -9,6 +9,14 @@ export default {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
+safelist: [
+  "bg-green-300",
+  "dark:bg-green-800",
+  "bg-[#FF4C4C]",
+  "dark:bg-[#800000]"
+],
+
+  
   prefix: "",
   theme: {
     container: {
