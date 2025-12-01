@@ -399,17 +399,6 @@ return (
 
 </div>
 
-
-
-
-<Button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className={`flex items-center gap-2 transition-transform ${refreshing ? "animate-spin" : ""}`}
-        >
-          <RefreshCw className="h-4 w-4" />
-          {refreshing ? "Refreshing..." : "Refresh Counts"}
-        </Button>
       {/* PAPER ONE */}
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold text-yellow-500">

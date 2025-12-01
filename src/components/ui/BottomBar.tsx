@@ -62,28 +62,32 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
 
 
 return (
-  <div className={`${isSidebarOpen ? 'hidden' : ''} fixed bottom-0 left-0 right-0 h-12 bg-background shadow-t flex justify-around items-center z-50 border-t border-border overflow-visible`}>
-    {allItems.map((item) => (
-      <div key={item.title} className="group relative flex flex-col items-center justify-center w-10 h-10">
-        <Link
-          to={item.url}
-          className={`flex items-center justify-center w-full h-full ${getNavClass(item.url)}`}
-        >
-          <item.icon className="h-5 w-5 transition-transform duration-200 group-hover:scale-110" />
-          {(item.title === "Chat Room" && unreadCount > 0) && (
-            <Badge variant="secondary" className="absolute -top-1 -right-1 h-4 text-xs">{unreadCount}</Badge>
-          )}
-          {(item.title === "Announcements" && unreadAnnouncements > 0) && (
-            <Badge variant="secondary" className="absolute -top-1 -right-1 h-4 text-xs">{unreadAnnouncements}</Badge>
-          )}
-        </Link>
+  <div className={`${isSidebarOpen ? 'hidden' : ''} fixed bottom-0 left-0 right-0 z-50`}>
+  {/* Hover-sensitive area */}
+  <div className="h-24 w-full relative group">
+    <div className="absolute bottom-0 left-0 right-0 h-12 bg-background shadow-t flex justify-around items-center border-t border-border transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+      {allItems.map((item) => (
+        <div key={item.title} className="relative flex flex-col items-center justify-center w-8 h-8">
+          <Link
+            to={item.url}
+            className={`flex items-center justify-center w-full h-full ${getNavClass(item.url)}`}
+          >
+            <item.icon className="h-6 w-6 transition-transform duration-200 group-hover:scale-110" />
+            {(item.title === "Chat Room" && unreadCount > 0) && (
+              <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadCount}</Badge>
+            )}
+            {(item.title === "Announcements" && unreadAnnouncements > 0) && (
+              <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadAnnouncements}</Badge>
+            )}
+          </Link>
 
-        {/* Brain-map popup label */}
-        <span className="absolute bottom-full mb-2 px-2 py-1 rounded bg-black text-white text-xs opacity-0 translate-y-1 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
-          {item.title}
-        </span>
-      </div>
-    ))}
+          <span className="absolute bottom-full mb-2 px-2 py-1 rounded bg-black text-white text-[10px] opacity-0 translate-y-1 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+            {item.title}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
   </div>
 );
 

@@ -30,18 +30,25 @@ const getStatusVariant = (status: string) => {
 
 export default function SimulationPage() {
 
-  // 🚫 Block mobile screens completely
+// 🚫 Block mobile screens completely
 if (typeof window !== "undefined") {
   const isLaptop = window.innerWidth >= 1000; // adjust size if needed
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!isLaptop) {
+  if (!isLaptop && !dismissed) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-black text-white p-6 text-center">
         <h1 className="text-3xl font-bold mb-4">Laptop Required</h1>
-        <p className="text-lg">
+        <p className="text-lg mb-6">
           This simulation is only available on laptops or desktops for 
           proctoring (camera + mic + full interface).
         </p>
+        <button
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
+          onClick={() => setDismissed(true)}
+        >
+          OK
+        </button>
       </div>
     );
   }
@@ -629,7 +636,8 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
       <h3 className="font-bold text-lg mb-2 text-red-600 dark:text-red-400">
         Unanswered Questions ({unanswered.length})
       </h3>
-      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+     <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+
         {unanswered.map((q, i) => (
           <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
         ))}
@@ -662,15 +670,15 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
   </div>
 
   <div className="flex flex-col sm:flex-row gap-4 mt-6">
-    <Button
-      className="flex-1"
-      onClick={() => {
-        if (pendingAction === "submit") confirmSubmit();
-        if (pendingAction === "reset") resetNow();
-      }}
-    >
-      Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
-    </Button>
+   <Button
+  className="flex-1 bg-blue-600 text-white hover:bg-green-600 dark:bg-blue-500 dark:hover:bg-green-500 transition-colors"
+  onClick={() => {
+    if (pendingAction === "submit") confirmSubmit();
+    if (pendingAction === "reset") resetNow();
+  }}
+>
+  Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
+</Button>
 
     <Button
       variant="ghost"
@@ -683,6 +691,14 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
       Cancel Request
     </Button>
   </div>
+
+  {/* Thank You Marquee — centered */}
+<div className="w-full h-16 flex items-center justify-center overflow-hidden border-t border-border">
+  <div className="whitespace-nowrap animate-marquee-slow text-lg md:text-xl font-semibold tracking-wide text-foreground">
+    🌟 Thank you for choosing our website! We appreciate your trust and commitment to learning! 🌟
+  </div>
+</div>
+
 </div>
     );
   }
@@ -953,7 +969,7 @@ if (!currentQuestion) {
   variant="outline"
   onClick={() => initMedia(true)}  // pass flag to force reload
 >
-  Reload Camera & Mic
+  Reset Cam & Mic
 </Button>
 
 </div>
@@ -990,7 +1006,8 @@ if (!currentQuestion) {
   </CardContent>
 </Card>
 
-       <Card className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent">
+      <Card className="max-h-[400px] overflow-y-auto pr-2 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+
 
           <CardHeader className="flex justify-between items-center sticky top-0 bg-background z-10">
             <CardTitle>Questions</CardTitle>
@@ -1019,132 +1036,158 @@ if (!currentQuestion) {
             ))}
           </CardContent>
         </Card>
+
+{/* Encouragement Marquee — Endless Loop */}
+<div className="w-full overflow-hidden border-t border-border pt-4">
+  <div className="flex w-max animate-marquee-slow">
+    <div
+      dir="rtl"
+      className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
+    >
+      🌟 Keep going — every question makes you stronger • Believe in yourself • Progress over perfection • You’ve got this • Stay focused and finish strong 🌟
+    </div>
+
+    <div
+      dir="rtl"
+      className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
+    >
+      🌟 Keep going — every question makes you stronger • Believe in yourself • Progress over perfection • You’ve got this • Stay focused and finish strong 🌟
+    </div>
+  </div>
+</div>
+
       </div>
+
+      
 {!mediaAllowed && (
   <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center">
     <div className="text-center space-y-6">
       <h2 className="text-white text-2xl font-bold">Camera & Mic Disabled</h2>
       <p className="text-gray-300">
-        Double Click below to enable camera and microphone.
+        Double Click below to enable camera and microphone to start your simulation
       </p>
 
       <div className="flex flex-col gap-4">
-        {/* Camera Button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          animate={{ opacity: [0.8, 1, 0.8] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          onClick={async () => {
-            try {
-              const cam = await navigator.mediaDevices.getUserMedia({
-                video: true,
-              });
-              setCameraStream(cam);
-              if (videoRef.current) {
-                videoRef.current.srcObject = cam;
-              }
-            } catch (err) {
-              console.error("Camera blocked", err);
-            }
-          }}
-         className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+      {/* Camera Button */}
+<motion.button
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  animate={
+    cameraStream
+      ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
+      : { opacity: [0.8, 1, 0.8] }
+  }
+  transition={{ repeat: Infinity, duration: 2 }}
+  onClick={async () => {
+    try {
+      const cam = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraStream(cam);
+      if (videoRef.current) videoRef.current.srcObject = cam;
+    } catch (err) {
+      console.error("Camera blocked", err);
+    }
+  }}
+  className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
+    ${cameraStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+>
+  Double Click to Enable camera
+</motion.button>
+{/* Mic Button */}
+<motion.button
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  animate={
+    audioStream
+      ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
+      : { opacity: [0.8, 1, 0.8] }
+  }
+  transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
+  onClick={async () => {
+    try {
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioStream(mic);
 
-        >
-         Double click to enable camera
-        </motion.button>
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(mic);
+      const analyser = audioCtx.createAnalyser();
+      source.connect(analyser);
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
 
-        {/* Mic Button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          animate={{ opacity: [0.8, 1, 0.8] }}
-          transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
-          onClick={async () => {
-            try {
-              const mic = await navigator.mediaDevices.getUserMedia({
-                audio: true,
-              });
-              setAudioStream(mic);
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const canvasCtx = canvas.getContext("2d");
+      if (!canvasCtx) return;
 
-              // ---- Setup analyser + soundwave ----
-              const audioCtx = new (window.AudioContext ||
-                (window as any).webkitAudioContext)();
-              const source = audioCtx.createMediaStreamSource(mic);
-              const analyser = audioCtx.createAnalyser();
-              source.connect(analyser);
-              analyser.fftSize = 256;
-              const bufferLength = analyser.frequencyBinCount;
-              const dataArray = new Uint8Array(bufferLength);
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
 
-              const canvas = canvasRef.current;
-              if (!canvas) return;
-              const canvasCtx = canvas.getContext("2d");
-              if (!canvasCtx) return;
+      const draw = () => {
+        requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
 
-              canvas.width = canvas.clientWidth;
-              canvas.height = canvas.clientHeight;
+        canvasCtx.fillStyle = "#f3f4f6";
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-              const draw = () => {
-                requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
+        let maxVolume = 0;
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let x = 0;
 
-                canvasCtx.fillStyle = "#f3f4f6";
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = dataArray[i] / 2;
+          maxVolume = Math.max(maxVolume, dataArray[i]);
 
-                let maxVolume = 0;
-                const barWidth = (canvas.width / bufferLength) * 2.5;
-                let x = 0;
+          let color = "#10b981"; // Tailwind green-500
+          if (barHeight > 40 && barHeight <= 80) color = "#3b82f6"; // blue-500
+          if (barHeight > 80) color = "#ef4444"; // red-500
 
-                for (let i = 0; i < bufferLength; i++) {
-                  const barHeight = dataArray[i] / 2;
-                  maxVolume = Math.max(maxVolume, dataArray[i]);
+          canvasCtx.fillStyle = color;
+          canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          x += barWidth + 1;
+        }
 
-                  let color = "#10b981"; // Tailwind green-500
-                  if (barHeight > 40 && barHeight <= 80) color = "#3b82f6"; // blue-500
-                  if (barHeight > 80) color = "#ef4444"; // red-500
+        setLoudWarning(maxVolume > 150);
+      };
 
-                  canvasCtx.fillStyle = color;
-                  canvasCtx.fillRect(
-                    x,
-                    canvas.height - barHeight,
-                    barWidth,
-                    barHeight
-                  );
-                  x += barWidth + 1;
-                }
+      draw();
+    } catch (err) {
+      console.error("Mic blocked", err);
+    }
+  }}
+  className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
+    ${audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+>
+  Enable mic
+</motion.button>
 
-                setLoudWarning(maxVolume > 150);
-              };
-
-              draw();
-            } catch (err) {
-              console.error("Mic blocked", err);
-            }
-          }}
-         className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
-
-        >
-          Enable mic
-        </motion.button>
 
         {/* Final Start Button */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          animate={
-            cameraStream && audioStream
-              ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #fff", "0 0 20px #a78bfa", "0 0 0px #fff"] }
-              : {}
-          }
-          transition={{ repeat: Infinity, duration: 2 }}
-          disabled={!cameraStream || !audioStream}
-          onClick={() => setMediaAllowed(true)}
-        className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-background text-foreground hover:bg-accent hover:text-accent-foreground"
+  <motion.button
+  whileHover={{ scale: 1.1 }}
+  whileTap={{ scale: 0.95 }}
+  animate={
+    cameraStream && audioStream
+      ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #fff", "0 0 20px #10b981", "0 0 0px #fff"] }
+      : {}
+  }
+  transition={{ repeat: Infinity, duration: 2 }}
+  disabled={!cameraStream || !audioStream}
+  onClick={() => {
+    // Play sound
+   const audio = new Audio("/sounds/medrae.mp3");
+audio.play().catch(err => console.log("Audio play blocked", err));
 
-        >
-          Hey, I'm ready to start!
-        </motion.button>
+
+    // Proceed with allowing media
+    setMediaAllowed(true);
+  }}
+  className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
+    ${cameraStream && audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+>
+  Hey, I'm ready to start!
+</motion.button>
+
       </div>
     </div>
   </div>
