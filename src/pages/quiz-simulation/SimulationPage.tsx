@@ -1,6 +1,7 @@
 "use client";
 import { Link } from "react-router-dom";
 import { Sun, Moon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -29,7 +30,7 @@ const getStatusVariant = (status: string) => {
 
 
 export default function SimulationPage() {
-
+const navigate = useNavigate();
 // 🚫 Block mobile screens completely
 if (typeof window !== "undefined") {
   const isLaptop = window.innerWidth >= 1000; // adjust size if needed
@@ -43,12 +44,13 @@ if (typeof window !== "undefined") {
           This simulation is only available on laptops or desktops for 
           proctoring (camera + mic + full interface).
         </p>
-        <button
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
-          onClick={() => setDismissed(true)}
-        >
-          OK
-        </button>
+      <button
+  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
+  onClick={() => navigate("/dashboard")}
+>
+  OK
+</button>
+
       </div>
     );
   }
@@ -64,6 +66,7 @@ const [paperList, setPaperList] = useState<any[]>(() => {
   }
   return [];
 });
+
 
   const [selectedPaper, setSelectedPaper] = useState<any | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
