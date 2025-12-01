@@ -440,6 +440,7 @@ const handleResetTimer = () => {
         className={`flex-1 p-4 border rounded shadow-sm border-gray-200 dark:border-gray-700 text-black dark:text-white transition-colors
 ${understood[q.id] ? "bg-green-300 dark:bg-green-800" : ""}
 
+
       ${notUnderstood[q.id] ? "bg-[#FF4C4C] dark:bg-[#800000]" : "bg-white dark:bg-gray-800"}`}
       >
         <p className="font-bold mb-2">Q{i + 1}: {q.question_text}</p>
