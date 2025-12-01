@@ -64,7 +64,7 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
 return (
   <div className={`${isSidebarOpen ? 'hidden' : ''} fixed bottom-0 left-0 right-0 z-50`}>
   {/* Hover-sensitive area */}
-  <div className="h-24 w-full relative group">
+  <div className="h-8 w-full relative group">
     <div className="absolute bottom-0 left-0 right-0 h-12 bg-background shadow-t flex justify-around items-center border-t border-border transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
       {allItems.map((item) => (
         <div key={item.title} className="relative flex flex-col items-center justify-center w-8 h-8">
