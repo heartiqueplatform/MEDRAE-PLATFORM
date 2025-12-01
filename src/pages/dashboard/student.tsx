@@ -1158,10 +1158,11 @@ return (
       </div>
     </div>
   </CardContent>
-</Card>
+
 
 <Card
-  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2"
+  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2 max-w-xl mx-auto"
+
   onClick={() => {
     if (navigator.vibrate) navigator.vibrate(50);
     navigate("/feed");
@@ -1176,6 +1177,7 @@ return (
   <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
 
   <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+   
     {/* Card Heading */}
     <div className="mb-2">
       <h2 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -1288,7 +1290,7 @@ return (
     </CardContent>
   </div>
 </Card>
-
+</Card>
 <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
   <CardHeader>
     <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status </CardTitle>

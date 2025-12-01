@@ -67,6 +67,7 @@ export function Header({
       window.removeEventListener("touchend", handleTouchEnd);
     };
   }, [toggleSidebar]);
+const streakSound = typeof Audio !== "undefined" ? new Audio("/sounds/medrae.mp3") : null;
 
   const navigate = useNavigate();
   const authUser = useUser();
@@ -184,6 +185,15 @@ if (newStreak > streak && [1, 7, 30, 100].includes(newStreak)) {
 
 
 setStreak(newStreak);
+const today = new Date().toISOString().split("T")[0];
+const lastPlayed = localStorage.getItem("streakSoundDate");
+
+if (lastPlayed !== today) {
+  if (streakSound) streakSound.play().catch(() => {});
+  localStorage.setItem("streakSoundDate", today);
+}
+
+
     }
   };
 
@@ -313,11 +323,22 @@ Advance your medical journey today: https://medrae.vercel.app`;
         <div className="hidden sm:block text-right">
 <p className="text-sm font-medium flex items-center gap-2 truncate max-w-[150px]">
   {user.name ? user.name.split(" ")[0] : (!isOnline ? "Offline" : "")}
-  {streak > 0 && isOnline && (
-    <Badge variant="secondary" className="text-xs">
-      🔥 {streak} day{streak !== 1 ? "s" : ""}
-    </Badge>
-  )}
+{streak > 0 && isOnline && (
+  <Badge
+    variant="secondary"
+    className={`text-xs ${
+      streak <= 7
+        ? "bg-red-700 text-white"
+        : streak <= 30
+        ? "bg-purple-800 text-white"
+        : "bg-gray-900 text-white"
+    }`}
+  >
+    🔥 {streak} day{streak !== 1 ? "s" : ""}
+  </Badge>
+)}
+
+
 </p>
 
 
