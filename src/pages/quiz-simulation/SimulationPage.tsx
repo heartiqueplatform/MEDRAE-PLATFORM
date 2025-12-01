@@ -1,5 +1,6 @@
 "use client";
 import { Link } from "react-router-dom";
+import { Sun, Moon } from "lucide-react";
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -28,6 +29,26 @@ const getStatusVariant = (status: string) => {
 
 
 export default function SimulationPage() {
+
+  // 🚫 Block mobile screens completely
+if (typeof window !== "undefined") {
+  const isLaptop = window.innerWidth >= 1000; // adjust size if needed
+
+  if (!isLaptop) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black text-white p-6 text-center">
+        <h1 className="text-3xl font-bold mb-4">Laptop Required</h1>
+        <p className="text-lg">
+          This simulation is only available on laptops or desktops for 
+          proctoring (camera + mic + full interface).
+        </p>
+      </div>
+    );
+  }
+}
+
+// will hold paper id being reset
+
 const [paperList, setPaperList] = useState<any[]>(() => {
   // ✅ Load from localStorage first for instant display
   if (typeof window !== "undefined") {
@@ -57,6 +78,14 @@ const [mediaAllowed, setMediaAllowed] = useState(false);
 const [profile, setProfile] = useState<any>(null);
 const [loading, setLoading] = useState(true); // new
 
+// 1️⃣ Add this state at the top of your component
+const [resettingPaper, setResettingPaper] = useState<string | null>(null);
+const [isDark, setIsDark] = useState(() => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("theme") === "dark";
+  }
+  return false;
+});
 const initMedia = useCallback(async (force = false) => {
   try {
     if (force) {
@@ -206,6 +235,19 @@ localStorage.setItem("sim-papers", JSON.stringify(papersWithStatus));
 
   setLoading(false); //  stop loading
 };
+
+useEffect(() => {
+  if (isDark) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+
+  // Save the preference so next visit remembers it
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+}, [isDark]);
+
+
 
 useEffect(() => {
   fetchPapers();
@@ -666,7 +708,7 @@ if (!selectedPaper) {
     className="text-foreground hover:bg-green-500 hover:text-white dark:hover:text-white transition-colors"
   >
     <Link to="/dashboard">
-          Go Back to Main Dashboard
+          Home
     </Link>
   </Button>
 </div>
@@ -719,14 +761,19 @@ if (!selectedPaper) {
                       You’ve already submitted this paper.
                     </p>
                     <Badge variant="secondary">Completed</Badge>
-                <Button
+<Button
   size="sm"
   variant="destructive"
   onClick={async (e) => {
     e.stopPropagation();
 
+    setResettingPaper(paper.id); // ← start showing "Reseting..."
+
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user?.id) return;
+    if (!userData?.user?.id) {
+      setResettingPaper(null);
+      return;
+    }
 
     // 1️⃣ Delete results from Supabase
     await supabase
@@ -747,10 +794,14 @@ if (!selectedPaper) {
     );
 
     alert("Paper reset successfully. You can now retake it.");
+
+    setResettingPaper(null); // ← done resetting
   }}
+  disabled={resettingPaper === paper.id} // optional: prevent double clicks
 >
-  Reset Paper
+  {resettingPaper === paper.id ? "Reseting..." : "Reset Paper"}
 </Button>
+
                   </div>
                 )}
               </CardContent>
@@ -761,16 +812,17 @@ if (!selectedPaper) {
     </div>
   );
 }
+
   // No questions found / Loading questions
 if (!currentQuestion) {
   if (questions.length === 0 && timeLeft > 0) {
-    // Use global spinner instead
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">
         <GlobalLoader message="Medrae is Loading questions..." />
       </div>
     );
   }
+
 
   // No questions exist
   return (
@@ -784,9 +836,9 @@ if (!currentQuestion) {
 }
   // Main question view
   return (
-    <div className="min-h-screen bg-background text-foreground grid grid-cols-1 md:grid-cols-3 gap-6 p-4 md:p-8">
-
+  <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
      <div className="md:col-span-2 space-y-4">
+
   <Card>
     <CardHeader>
       <CardTitle>
@@ -909,22 +961,37 @@ if (!currentQuestion) {
       </div>
 
       <div className="space-y-4">
-       <Card>
-  <CardHeader>
+  <Card className="bg-white text-black dark:bg-gray-800 dark:text-white">
+  <CardHeader className="flex justify-between items-center">
     <CardTitle>Time Left</CardTitle>
+    {/* Light/Dark toggle */}
+    <button
+      onClick={() => setIsDark(!isDark)}
+      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+    >
+      {isDark ? (
+        <Sun className="w-5 h-5 text-yellow-400" />
+      ) : (
+        <Moon className="w-5 h-5 text-gray-700" />
+      )}
+    </button>
   </CardHeader>
   <CardContent className="text-center space-y-2">
-    {/* Display current date */}
     <p className="text-sm text-muted-foreground">
-      {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+      {new Date().toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })}
     </p>
 
-    {/* Display countdown */}
     <p className="text-2xl font-bold">{formatTime(timeLeft)}</p>
   </CardContent>
 </Card>
 
-        <Card className="max-h-[400px] overflow-y-auto">
+       <Card className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent">
+
           <CardHeader className="flex justify-between items-center sticky top-0 bg-background z-10">
             <CardTitle>Questions</CardTitle>
             <Button size="sm" variant="ghost" onClick={resetAnswers}>
