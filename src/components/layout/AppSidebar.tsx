@@ -368,13 +368,7 @@ const handleCollapse = () => {
     {!isCollapsed && (
      <div>
   <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 relative inline-block">
-    MEDRAE NURSIN
-    <span className="relative">
-      G
-      <GraduationCap 
-        className="absolute -top-2 -right-2 h-5 w-5 text-blue-600 dark:text-blue-400" 
-      />
-    </span>
+    MEDRAE NURSING
   </h2>
   <p className="text-xs text-gray-500 dark:text-gray-400">
     Network Platform
