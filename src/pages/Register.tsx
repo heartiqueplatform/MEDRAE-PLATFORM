@@ -126,6 +126,8 @@ export function Register() {
               institution: formData.institution,
               course: courseFinal,
               block: formData.block,
+               reset_question: formData.resetQuestion,
+              reset_answer: formData.resetAnswer,
               bio: formData.bio,
               role,
               subscription: "Free",
@@ -193,6 +195,28 @@ export function Register() {
 
         <PasswordField label="Password *" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
         <PasswordField label="Confirm Password *" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
+<Label>Security Question *</Label>
+<Select
+  value={formData.resetQuestion}
+  onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select a security question" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="mother_maiden">What is your mother’s maiden name?</SelectItem>
+    <SelectItem value="first_pet">What was the name of your first pet?</SelectItem>
+    <SelectItem value="birth_city">In which city were you born?</SelectItem>
+    <SelectItem value="favorite_teacher">Who was your favorite teacher?</SelectItem>
+  </SelectContent>
+</Select>
+
+<Label>Answer *</Label>
+<Input
+  placeholder="Enter answer"
+  value={formData.resetAnswer}
+  onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
+/>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -367,6 +391,8 @@ export function Register() {
       bio: "",
       password: "",
       confirmPassword: "",
+        resetQuestion: "",  // <-- new
+  resetAnswer: "",    // <-- new
     });
 
     return (
@@ -384,6 +410,29 @@ export function Register() {
 
         <PasswordField label="Password *" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
         <PasswordField label="Confirm Password *" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
+
+<Label>Security Question *</Label>
+<Select
+  value={formData.resetQuestion}
+  onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select a security question" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="mother_maiden">What is your mother’s maiden name?</SelectItem>
+    <SelectItem value="first_pet">What was the name of your first pet?</SelectItem>
+    <SelectItem value="birth_city">In which city were you born?</SelectItem>
+    <SelectItem value="favorite_teacher">Who was your favorite teacher?</SelectItem>
+  </SelectContent>
+</Select>
+
+<Label>Answer *</Label>
+<Input
+  placeholder="Enter answer"
+  value={formData.resetAnswer}
+  onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
+/>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -508,10 +557,14 @@ export function Register() {
         <Label>Short Bio</Label>
         <Textarea placeholder="Your professional background..." value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} />
 
+
         <Button className="w-full" disabled={isLoading} onClick={() => handleRegister("tutor", formData)}>
           {isLoading ? "Registering..." : "Register as tutor"}
         </Button>
+
       </div>
+
+      
     );
   }
 
