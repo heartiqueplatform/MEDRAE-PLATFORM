@@ -4,14 +4,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate} from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
 import Feed from "./pages/Feed";
 import { BottomBar } from "@/components/ui/BottomBar";
-import { SidebarProvider } from "@/components/ui/sidebar"; // adjust the path if needed
-
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 // Pages
 import { Forum } from "./pages/Forum"; 
@@ -39,12 +38,12 @@ import { QuizTaking } from "./pages/QuizTaking";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
 import { useEffect, useState } from "react";
 import SplashScreen from "./SplashScreen";
-
 import CandidateInfo from "@/pages/quiz-simulation/CandidateInfo";
 import InstructionPage from "@/pages/quiz-simulation/InstructionPage";
 import SimulationPage from "@/pages/quiz-simulation/SimulationPage";
 import AIChatWidget from "@/components/AIChatWidget";
 import FirstTimeGuide from "@/components/FirstTimeGuide";
+import ResetPassword from "./pages/ResetPassword";
 
 // Layout
 import { DashboardLayout } from "./components/layout/DashboardLayout";
@@ -63,7 +62,6 @@ const getRole = (): "student" | "tutor" | "staff" => {
 // ✅ Wrapper to show AI widget only on specific pages
 const AIWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-
   const allowedPaths = [
     "/dashboard/student",
     "/dashboard/tutor",
@@ -73,11 +71,7 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     "/resources",
     "/calendar",
   ];
-
-  const showChatWidget = allowedPaths.some((path) =>
-    location.pathname.startsWith(path)
-  );
-
+  const showChatWidget = allowedPaths.some((path) => location.pathname.startsWith(path));
   return (
     <>
       {children}
@@ -85,103 +79,96 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
+
+// ✅ BottomBar Wrapper
+const BottomBarWrapper = () => {
+  const location = useLocation();
+  const publicPaths = ["/", "/login", "/register"];
+  const showBottomBar = !publicPaths.includes(location.pathname);
+  if (!showBottomBar) return null;
+  return <BottomBar userRole={getRole()} unreadCount={0} unreadAnnouncements={0} />;
+};
+
 const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const alreadyShown = sessionStorage.getItem("splashShown");
-
     if (alreadyShown) {
-      // Splash already shown earlier in this session → skip it
       setLoading(false);
       return;
     }
-
-    // Mark splash as shown and show it for 2s
     sessionStorage.setItem("splashShown", "true");
     const timer = setTimeout(() => setLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  if (loading) {
-    return <SplashScreen />;
-  }
+  if (loading) return <SplashScreen />;
 
-return (
-  <SessionContextProvider supabaseClient={supabase}>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <SidebarProvider>
-          <BrowserRouter>
-            <AIWrapper>
-              <FirstTimeGuide />
+  return (
+    <SessionContextProvider supabaseClient={supabase}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <SidebarProvider>
+            <BrowserRouter>
+              <AIWrapper>
+                <FirstTimeGuide />
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/redirect" element={<RedirectToRoleDashboard />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
-              <Routes>
-                {/* Public Routes */}
+                  {/* Redirect to role dashboard */}
+                  <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
 
-            <Route path="/" element={<Index />} />
-<Route path="/redirect" element={<RedirectToRoleDashboard />} />
+                  {/* Role Dashboards */}
+                  <Route path="/dashboard/student" element={<DashboardLayout userRole="student"><StudentDashboard /></DashboardLayout>} />
+                  <Route path="/dashboard/tutor" element={<DashboardLayout userRole="tutor"><TutorDashboard /></DashboardLayout>} />
+                  <Route path="/dashboard/staff" element={<DashboardLayout userRole="staff"><StaffDashboard /></DashboardLayout>} />
 
+                  {/* Authenticated Pages */}
+                  <Route path="/ai-assistant" element={<DashboardLayout userRole={getRole()}><AIAssistant /></DashboardLayout>} />
+                  <Route path="/chat" element={<DashboardLayout userRole={getRole()}><Chat /></DashboardLayout>} />
+                  <Route path="/calendar" element={<DashboardLayout userRole={getRole()}><Calendar /></DashboardLayout>} />
+                  <Route path="/progress" element={<DashboardLayout userRole={getRole()}><StudyProgress /></DashboardLayout>} />
+                  <Route path="/resources" element={<DashboardLayout userRole={getRole()}><Resources /></DashboardLayout>} />
+                  <Route path="/medtube" element={<DashboardLayout userRole={getRole()}><MedTube /></DashboardLayout>} />
+                  <Route path="/reels" element={<DashboardLayout userRole={getRole()}><Reels /></DashboardLayout>} />
+                  <Route path="/announcements" element={<DashboardLayout userRole={getRole()}><Announcements /></DashboardLayout>} />
+                  <Route path="/feedback" element={<DashboardLayout userRole={getRole()}><Feedback /></DashboardLayout>} />
+                  <Route path="/settings" element={<DashboardLayout userRole={getRole()}><Settings /></DashboardLayout>} />
+                  <Route path="/subscription" element={<DashboardLayout userRole={getRole()}><Subscription /></DashboardLayout>} />
+                  <Route path="/notifications" element={<DashboardLayout userRole={getRole()}><Notifications /></DashboardLayout>} />
+                  <Route path="/profile" element={<DashboardLayout userRole={getRole()}><Profile /></DashboardLayout>} />
+                  <Route path="/quiz-units/:subject" element={<DashboardLayout userRole={getRole()}><QuizUnits /></DashboardLayout>} />
+                  <Route path="/quiz/:subject/:unitId/:paperId" element={<DashboardLayout userRole={getRole()}><QuizTaking /></DashboardLayout>} />
+                  <Route path="/quiz" element={<DashboardLayout userRole={getRole()}><QuizPage /></DashboardLayout>} />
+                  <Route path="/assessment-notes" element={<DashboardLayout userRole={getRole()}><AssessmentNotes /></DashboardLayout>} />
+                  <Route path="/simulation/candidate" element={<DashboardLayout userRole={getRole()}><CandidateInfo /></DashboardLayout>} />
+                  <Route path="/quiz-simulation/instructions" element={<DashboardLayout userRole={getRole()}><InstructionPage /></DashboardLayout>} />
+                  <Route path="/forum" element={<DashboardLayout userRole={getRole()}><Forum /></DashboardLayout>} />
+                  <Route path="/simulation/:paper_id" element={<SimulationPage />} />
+                  <Route path="/Medrae-quizzes" element={<DashboardLayout userRole={getRole()}><MedraeQuizzes /></DashboardLayout>} />
+                  <Route path="/feed" element={<DashboardLayout userRole={getRole()}><Feed /></DashboardLayout>} />
 
+                  {/* Catch-all 404 */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
 
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-
-              {/* Optional: Redirect to role dashboard */}
-             <Route
-  path="/dashboard"
-  element={<Navigate to={`/dashboard/${getRole()}`} replace />}
-/>
-
-
-              {/* Role-specific Dashboards */}
-              <Route path="/dashboard/student" element={<DashboardLayout userRole="student"><StudentDashboard /></DashboardLayout>} />
-              <Route path="/dashboard/tutor" element={<DashboardLayout userRole="tutor"><TutorDashboard /></DashboardLayout>} />
-              <Route path="/dashboard/staff" element={<DashboardLayout userRole="staff"><StaffDashboard /></DashboardLayout>} />
-
-              {/* Authenticated Pages */}
-              <Route path="/ai-assistant" element={<DashboardLayout userRole={getRole()}><AIAssistant /></DashboardLayout>} />
-              <Route path="/chat" element={<DashboardLayout userRole={getRole()}><Chat /></DashboardLayout>} />
-              <Route path="/calendar" element={<DashboardLayout userRole={getRole()}><Calendar /></DashboardLayout>} />
-              <Route path="/progress" element={<DashboardLayout userRole={getRole()}><StudyProgress /></DashboardLayout>} />
-              <Route path="/resources" element={<DashboardLayout userRole={getRole()}><Resources /></DashboardLayout>} />
-              <Route path="/medtube" element={<DashboardLayout userRole={getRole()}><MedTube /></DashboardLayout>} />
-              <Route path="/reels" element={<DashboardLayout userRole={getRole()}><Reels /></DashboardLayout>} />
-              <Route path="/announcements" element={<DashboardLayout userRole={getRole()}><Announcements /></DashboardLayout>} />
-              <Route path="/feedback" element={<DashboardLayout userRole={getRole()}><Feedback /></DashboardLayout>} />
-              <Route path="/settings" element={<DashboardLayout userRole={getRole()}><Settings /></DashboardLayout>} />
-              <Route path="/subscription" element={<DashboardLayout userRole={getRole()}><Subscription /></DashboardLayout>} />
-              <Route path="/notifications" element={<DashboardLayout userRole={getRole()}><Notifications /></DashboardLayout>} />
-              <Route path="/profile" element={<DashboardLayout userRole={getRole()}><Profile /></DashboardLayout>} />
-              <Route path="/quiz-units/:subject" element={<DashboardLayout userRole={getRole()}><QuizUnits /></DashboardLayout>} />
-              <Route path="/quiz/:subject/:unitId/:paperId" element={<DashboardLayout userRole={getRole()}><QuizTaking /></DashboardLayout>} />
-              <Route path="/quiz" element={<DashboardLayout userRole={getRole()}><QuizPage /></DashboardLayout>} />
-              <Route path="/assessment-notes" element={<DashboardLayout userRole={localStorage.getItem('userRole') as 'student' | 'tutor' | 'staff' || 'student'}><AssessmentNotes /></DashboardLayout>} />
-              <Route path="/simulation/candidate" element={<DashboardLayout userRole={getRole()}><CandidateInfo /></DashboardLayout>} />
-              <Route path="/quiz-simulation/instructions" element={<DashboardLayout userRole={getRole()}><InstructionPage /></DashboardLayout>} />
-              <Route path="/forum" element={<DashboardLayout userRole={getRole()}><Forum /></DashboardLayout>} />
-              <Route path="/simulation/:paper_id" element={<SimulationPage />} />
-              <Route path="/Medrae-quizzes" element={<DashboardLayout userRole={localStorage.getItem('userRole') as 'student' | 'tutor' | 'staff' || 'student'}><MedraeQuizzes /></DashboardLayout>} />
-             <Route path="/feed"element={<DashboardLayout userRole={getRole()}><Feed /></DashboardLayout>}/>
-              {/* Catch-all 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-
-            {/* BottomBar appears across all pages */}
-            <BottomBar
-              userRole={getRole()}
-              unreadCount={0} // you can pass the state from AppSidebar if needed
-              unreadAnnouncements={0} // same for announcements
-            />
-          </AIWrapper>
-        </BrowserRouter>
-      </SidebarProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-</SessionContextProvider>
-);
+                {/* BottomBar */}
+                <BottomBarWrapper />
+              </AIWrapper>
+            </BrowserRouter>
+          </SidebarProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </SessionContextProvider>
+  );
 };
 
 export default App;

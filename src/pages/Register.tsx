@@ -516,7 +516,8 @@ export function Register() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen px-4 bg-blue-500 font-sans">
+    <div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden">
+
       <Card className="w-full max-w-4xl bg-white rounded-2xl shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>

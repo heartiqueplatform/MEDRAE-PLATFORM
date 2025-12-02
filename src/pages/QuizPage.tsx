@@ -6,6 +6,7 @@ import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI"; // path where you saved OverlayAI.tsx
 import { ArrowUp } from "lucide-react";
+import FloatingChat from "@/components/FloatingChat"; // adjust path if needed
 
 interface Question {
   id: string;
@@ -44,6 +45,9 @@ const [helpOthersDisabled, setHelpOthersDisabled] = useState<{ [key: string]: bo
 const [notesOverlay, setNotesOverlay] = useState<string | null>(null); // updated
 
 const [understood, setUnderstood] = useState<Record<string, boolean>>({});
+const [unitId, setUnitId] = useState<string>("");
+// Then somewhere, assign it from your route or API
+// e.g., setUnitId(currentUnitId);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,6 +116,14 @@ const loadSavedData = async () => {
   loadSavedData();
 }, [questions, userId]);
 
+
+useEffect(() => {
+  const fetchSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    setSession(data.session);
+  };
+  fetchSession();
+}, []);
 
 useEffect(() => {
   const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -359,7 +371,7 @@ const handleResetTimer = () => {
     date={timerEnd}
     onComplete={() => handleSubmit(true)}
     renderer={({ hours, minutes, seconds }) => (
-      <div className="px-3 py-2 sm:px-4 sm:py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-md text-center">
+      <div className="px-3 py-2 sm:px-4 sm:py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg-xl shadow-md text-center">
         <p className="text-sm sm:text-base font-bold text-red-600 dark:text-red-400 mb-1">
           Time Remaining
         </p>
@@ -394,7 +406,7 @@ const handleResetTimer = () => {
 <div className="mt-2 flex justify-center sm:justify-end">
   <button
     onClick={handleResetTimer}
-    className="px-4 py-2 rounded border transition
+    className="px-4 py-2 rounded-lg border transition
                border-black text-black
                bg-transparent
                hover:bg-green-500 hover:text-white
@@ -407,7 +419,7 @@ const handleResetTimer = () => {
 <div className="flex justify-between items-center gap-4">
   <button
     onClick={() => setShowUnansweredOnly(!showUnansweredOnly)}
-    className="px-4 py-2 rounded border transition
+    className="px-4 py-2 rounded-lg border transition
                border-black text-black
                bg-transparent
                hover:bg-black hover:text-white
@@ -418,7 +430,7 @@ const handleResetTimer = () => {
 
   <button
     onClick={handleReset}
-    className="px-4 py-2 rounded border transition
+    className="px-4 py-2 rounded-lg border transition
                border-black text-black
                bg-transparent
                hover:bg-black hover:text-white
@@ -438,7 +450,7 @@ const handleResetTimer = () => {
 
       {/* Question Card */}
 <div
-  className={`flex-1 p-4 border rounded shadow-sm border-gray-200 dark:border-gray-700 text-black dark:text-white transition-colors
+  className={`flex-1 p-4 border rounded-lg shadow-sm border-gray-200 dark:border-gray-700 text-black dark:text-white transition-colors
   ${
     understood[q.id]
       ? "bg-green-300 dark:bg-green-800"
@@ -461,12 +473,12 @@ const handleResetTimer = () => {
                 key={letter}
                 disabled={!!selectedAnswer || quizFinished}
                 onClick={() => handleAnswer(q.id, letter)}
-                className={`w-full text-left px-3 py-2 rounded font-semibold border transition-all duration-150
+                className={`w-full text-left px-3 py-2 rounded-lg font-semibold border transition-all duration-150
                   ${isSelected
                     ? correct
                       ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
                       : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
-                    : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-yellow-500 dark:hover:bg-amber-800"}
+                    : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"}
                   ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
               >
                 {letter}. {optionText}
@@ -478,7 +490,13 @@ const handleResetTimer = () => {
         <div className="mt-2 flex gap-2">
           <button
             onClick={() => handleReportQuestion(q)}
-            className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
+           className="px-3 py-1 text-sm rounded-lg border transition
+  border-red-500 text-red-600
+  bg-transparent
+  hover:bg-red-500 hover:text-white
+  dark:border-red-400 dark:text-red-400
+  dark:hover:bg-red-500 dark:hover:text-white"
+
           >
             Report Question
           </button>
@@ -509,9 +527,15 @@ Please provide a detailed discussion and guidance.`;
               setAIPrefillQuestion(chunkText(fullText, 200));
               setAIOverlayOpen(true);
             }}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            className="px-3 py-1 text-sm rounded-lg border transition
+  border-blue-500 text-blue-600
+  bg-transparent
+  hover:bg-blue-500 hover:text-white
+  dark:border-blue-400 dark:text-blue-400
+  dark:hover:bg-blue-500 dark:hover:text-white"
+
           >
-            HX AI Assistance
+            AI Assistance
           </button>
         </div>
 
@@ -529,14 +553,15 @@ Please provide a detailed discussion and guidance.`;
       </div>
 
       {/* Small Note Card */}
-      <div className="w-full lg:w-1/3 p-4 border rounded shadow-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-black dark:text-white flex flex-col">
+      <div className="w-full lg:w-1/3 p-4 border rounded-lg shadow-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-black dark:text-white flex flex-col">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-bold">Your Notes evaluation panel</h2>
-        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+       <div className="flex flex-wrap gap-2 max-w-full">
+
 
            <button
   onClick={() => setNotesOverlay(q.id)}
-  className="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-700 rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition"
+  className="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition"
 >
   Expand
 </button>
@@ -571,7 +596,14 @@ Please provide a detailed discussion and guidance.`;
       console.error("Error updating Understood:", err);
     }
   }}
-  className={`px-2 py-1 text-xs rounded text-white transition ${understood[q.id] ? "bg-blue-600" : "bg-green-500 hover:bg-green-600"}`}
+className={`px-2 py-1 text-xs rounded-lg border transition
+  border-green-500 text-green-600
+  hover:bg-green-500 hover:text-white
+  dark:border-green-400 dark:text-green-400
+  dark:hover:bg-green-500 dark:hover:text-white
+  ${understood[q.id] ? "bg-green-500 text-white" : "bg-transparent"}
+`}
+
 >
   Understood
 </button>
@@ -608,7 +640,14 @@ Please provide a detailed discussion and guidance.`;
       console.error("Error updating Not Understood:", err);
     }
   }}
-  className={`px-2 py-1 text-xs rounded text-white transition ${notUnderstood[q.id] ? "bg-red-500" : "bg-gray-500 hover:bg-red-600"}`}
+ className={`px-2 py-1 text-xs rounded-lg border transition
+  border-red-500 text-red-600
+  hover:bg-red-500 hover:text-white
+  dark:border-red-400 dark:text-red-400
+  dark:hover:bg-red-500 dark:hover:text-white
+  ${notUnderstood[q.id] ? "bg-red-500 text-white" : "bg-transparent"}
+`}
+
 >
   Not Understood
 </button>
@@ -643,7 +682,13 @@ Please provide a detailed discussion and guidance.`;
       console.error("Error updating Attempts:", err);
     }
   }}
-  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+  className="px-2 py-1 text-xs rounded-lg border transition
+  border-blue-500 text-blue-600
+  bg-transparent
+  hover:bg-blue-500 hover:text-white
+  dark:border-blue-400 dark:text-blue-400
+  dark:hover:bg-blue-500 dark:hover:text-white"
+
 >
   Attempted {attempts[q.id] || 0}
 </button>
@@ -654,7 +699,7 @@ Please provide a detailed discussion and guidance.`;
         <textarea
           value={notes[q.id] || ""}
           onChange={(e) => setNotes(prev => ({ ...prev, [q.id]: e.target.value }))}
-          className="w-full flex-1 p-2 border rounded resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-2 h-32"
+          className="w-full flex-1 p-2 border rounded-lg resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-2 h-32"
           placeholder="Take notes here..."
         />
 
@@ -678,7 +723,13 @@ Please provide a detailed discussion and guidance.`;
               }
               alert("Note saved!");
             }}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            className="px-3 py-1 text-sm rounded-lg border transition
+  border-indigo-500 text-indigo-600
+  bg-transparent
+  hover:bg-indigo-500 hover:text-white
+  dark:border-indigo-400 dark:text-indigo-400
+  dark:hover:bg-indigo-500 dark:hover:text-white"
+
           >
             Save notes
           </button>
@@ -714,7 +765,15 @@ Please provide a detailed discussion and guidance.`;
       console.error("Error saving Help Others:", err);
     }
   }}
-  className={`px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}`}
+className={`px-2 py-1 text-xs rounded-lg border transition
+  border-purple-500 text-purple-600
+  bg-transparent
+  hover:bg-purple-500 hover:text-white
+  dark:border-purple-400 dark:text-purple-400
+  dark:hover:bg-purple-500 dark:hover:text-white
+  ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}
+`}
+
   disabled={helpOthersDisabled[q.id]}
 >
   Help Others
@@ -758,7 +817,13 @@ Please provide a detailed discussion and guidance.`;
     setCurrentQuestionText(q.question_text);
     setHelpMeOverlayOpen(true);
   }}
-  className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition"
+className="px-3 py-1 text-sm rounded-lg border transition
+  border-emerald-500 text-emerald-600
+  bg-transparent
+  hover:bg-emerald-500 hover:text-white
+  dark:border-emerald-400 dark:text-emerald-400
+  dark:hover:bg-emerald-500 dark:hover:text-white"
+
 >
   Help Me
 </button>
@@ -770,7 +835,7 @@ Please provide a detailed discussion and guidance.`;
 >
 
 <div
-  className="bg-gray-50 dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded shadow-lg flex flex-col p-4 overflow-auto"
+  className="bg-gray-50 dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded-lg shadow-lg flex flex-col p-4 overflow-auto"
   onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
 >
 
@@ -784,7 +849,7 @@ Please provide a detailed discussion and guidance.`;
         </h2>
         <button
           onClick={() => setNotesOverlay(null)}
-          className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-700 rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition"
+          className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition"
         >
           Close
         </button>
@@ -793,7 +858,7 @@ Please provide a detailed discussion and guidance.`;
       {/* ============================ */}
       {/* GUIDE / INSTRUCTION SECTION */}
       {/* ============================ */}
-      <div className="mb-4 p-3 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+      <div className="mb-4 p-3 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
         <p className="font-semibold mb-1">How to Use This Panel:</p>
         <ul className="list-disc ml-5 space-y-1">
           <li><strong>Take deeper notes</strong> about why you got it wrong/right.</li>
@@ -834,11 +899,15 @@ Please provide a detailed discussion and guidance.`;
               console.error("Error updating Understood:", err);
             }
           }}
-          className={`px-3 py-1 text-sm rounded text-white transition ${
-            understood[q.id]
-              ? "bg-blue-600"
-              : "bg-green-500 hover:bg-green-600"
-          }`}
+       className={`px-3 py-1 text-sm rounded-lg border transition
+  border-green-500 text-green-600
+  bg-transparent
+  hover:bg-green-500 hover:text-white
+  dark:border-green-400 dark:text-green-400
+  dark:hover:bg-green-500 dark:hover:text-white
+  ${understood[q.id] ? "bg-green-500 text-white" : ""}
+`}
+
         >
           Understood
         </button>
@@ -868,11 +937,15 @@ Please provide a detailed discussion and guidance.`;
               console.error("Error updating Not Understood:", err);
             }
           }}
-          className={`px-3 py-1 text-sm rounded text-white transition ${
-            notUnderstood[q.id]
-              ? "bg-red-500"
-              : "bg-gray-500 hover:bg-red-600"
-          }`}
+       className={`px-3 py-1 text-sm rounded-lg border transition
+  border-red-500 text-red-600
+  bg-transparent
+  hover:bg-red-500 hover:text-white
+  dark:border-red-400 dark:text-red-400
+  dark:hover:bg-red-500 dark:hover:text-white
+  ${notUnderstood[q.id] ? "bg-red-500 text-white" : ""}
+`}
+
         >
           Not Understood
         </button>
@@ -902,7 +975,13 @@ Please provide a detailed discussion and guidance.`;
               console.error("Error updating Attempts:", err);
             }
           }}
-          className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+         className="px-3 py-1 text-sm rounded-lg border transition
+  border-blue-500 text-blue-600
+  bg-transparent
+  hover:bg-blue-500 hover:text-white
+  dark:border-blue-400 dark:text-blue-400
+  dark:hover:bg-blue-500 dark:hovertext-white"
+
         >
           Attempted {attempts[q.id] || 0}
         </button>
@@ -916,7 +995,7 @@ Please provide a detailed discussion and guidance.`;
         value={notes[q.id] || ""}
         onChange={(e) => setNotes(prev => ({ ...prev, [q.id]: e.target.value }))}
         placeholder="Take notes here..."
-        className="w-full flex-1 p-3 border rounded resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-4"
+        className="w-full flex-1 p-3 border rounded-lg resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-4"
       />
 
       {/* ============================ */}
@@ -948,7 +1027,13 @@ Please provide a detailed discussion and guidance.`;
               console.error("Error saving note:", err);
             }
           }}
-          className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          className="px-4 py-2 text-sm rounded-lg border transition
+  border-indigo-500 text-indigo-600
+  bg-transparent
+  hover:bg-indigo-500 hover:text-white
+  dark:border-indigo-400 dark:text-indigo-400
+  dark:hover:bg-indigo-500 dark:hover:text-white"
+
         >
           Save
         </button>
@@ -980,9 +1065,15 @@ Please provide a detailed discussion and guidance.`;
             }
           }}
           disabled={helpOthersDisabled[q.id]}
-          className={`px-3 py-1 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition ${
-            helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+     className={`px-3 py-1 text-sm rounded-lg border transition
+  border-purple-500 text-purple-600
+  bg-transparent
+  hover:bg-purple-500 hover:text-white
+  dark:border-purple-400 dark:text-purple-400
+  dark:hover:bg-purple-500 dark:hover:text-white
+  ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}
+`}
+
         >
           Help Others
         </button>
@@ -1027,7 +1118,13 @@ Please provide a detailed discussion and guidance.`;
               alert("Failed to fetch helpers.");
             }
           }}
-          className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition"
+className="px-3 py-1 text-sm rounded-lg border transition
+  border-emerald-500 text-emerald-600
+  bg-transparent
+  hover:bg-emerald-500 hover:text-white
+  dark:border-emerald-400 dark:text-emerald-400
+  dark:hover:bg-emerald-500 dark:hover:text-white"
+
         >
           Help Me
         </button>
@@ -1043,14 +1140,14 @@ Please provide a detailed discussion and guidance.`;
 {/* Help Me Overlay */}
 {helpMeOverlayOpen && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2">
-    <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded shadow-lg p-4 flex flex-col space-y-3 h-[90vh] overflow-auto">
+    <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-lg shadow-lg p-4 flex flex-col space-y-3 h-[90vh] overflow-auto">
       
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-bold text-blue-700 dark:text-blue-300">Helpers Available</h2>
         <button
           onClick={() => setHelpMeOverlayOpen(false)}
-          className="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-700 rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition"
+          className="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition"
         >
           Close
         </button>
@@ -1061,13 +1158,13 @@ Please provide a detailed discussion and guidance.`;
         {helpMeHelpers.map((helper) => (
           <div
             key={helper.id}
-            className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
           >
             {/* Avatar */}
             <img
               src={helper.profiles.avatar_url || "/default-avatar.png"}
               alt={helper.profiles.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-10 h-10 rounded-lg-full object-cover"
             />
 
             {/* Name and number */}
@@ -1084,7 +1181,7 @@ Please provide a detailed discussion and guidance.`;
                 );
                 window.open(`https://wa.me/${helper.whatsapp}?text=${message}`, "_blank");
               }}
-              className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition"
+              className="px-2 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
             >
               Message
             </button>
@@ -1107,7 +1204,7 @@ Please provide a detailed discussion and guidance.`;
       {!quizFinished && Object.keys(answers).length === questions.length && (
         <button
           onClick={() => handleSubmit(false)}
-          className="px-6 py-3 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 transition mt-4"
+          className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition mt-4"
         >
           Submit Quiz
         </button>
@@ -1115,7 +1212,7 @@ Please provide a detailed discussion and guidance.`;
 
       {quizFinished && (
         <>
-        <div className="mt-6 p-4 bg-green-100 dark:bg-green-900 rounded text-green-800 dark:text-green-200 font-semibold">
+        <div className="mt-6 p-4 bg-green-100 dark:bg-green-900 rounded-lg text-green-800 dark:text-green-200 font-semibold">
             You got {finalScore} out of {questions.length} correct!
           </div>
 
@@ -1131,7 +1228,7 @@ Please provide a detailed discussion and guidance.`;
         + "\n\n Remember: progress is about growth, not perfection. The fact that you showed up and tried already puts you ahead. Keep pushing — your future self will thank you! "
     );
   }}
-  className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-md hover:bg-indigo-700 transition"
+  className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg-lg shadow-md hover:bg-indigo-700 transition"
 >
   View Your Result
 </button>
@@ -1144,7 +1241,7 @@ Please provide a detailed discussion and guidance.`;
           <h2 className="text-lg font-bold mb-2">Past Attempts</h2>
           <ul className="space-y-2 text-sm text-gray-800">
             {attempts.map((attempt) => (
-             <li key={attempt.id} className="p-2 border rounded bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white">
+             <li key={attempt.id} className="p-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white">
                 🗓 {new Date(attempt.submitted_at).toLocaleString()} — Score: {attempt.score}
               </li>
             ))}
@@ -1160,13 +1257,17 @@ Please provide a detailed discussion and guidance.`;
 {showScrollTop && (
   <button
     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-    className={`fixed bottom-6 right-6 p-3 rounded-full shadow-lg hover:scale-110 transition-transform 
+    className={`fixed bottom-6 right-6 p-3 rounded-lg-full shadow-lg hover:scale-110 transition-transform 
       ${isDarkMode ? "bg-white text-gray-900" : "bg-gray-900 text-white"}`}
     aria-label="Scroll to top"
   >
     <ArrowUp size={20} strokeWidth={2} />
   </button>
 )}
+{userId && (
+  <FloatingChat currentUserId={userId} isOpen={false} />
+)}
+
 
     </div>
   );

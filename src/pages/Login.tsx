@@ -29,6 +29,38 @@ export function Login() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleForgotPassword = async (email: string) => {
+  if (!email) {
+    toast({
+      title: "Email required",
+      description: "Please enter your email to reset your password.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) throw error;
+
+    toast({
+      title: "Check your email",
+      description: "A password reset link has been sent to your email address.",
+    });
+  } catch (err: any) {
+    console.error("Password reset error:", err); // for developer logs only
+    toast({
+      title: "Reset failed",
+      description: "Unable to send reset email. Please try again later.",
+      variant: "destructive",
+    });
+  }
+};
+
+
   const handleLogin = async (
     role: "student" | "tutor" | "staff",
     email: string,
@@ -65,6 +97,8 @@ export function Login() {
         title: "Login successful!",
         description: `Welcome back, ${userData.role}`,
       });
+
+
 
       // Save role in localStorage (Supabase saves session automatically)
 localStorage.setItem("userRole", userData.role);
@@ -111,12 +145,25 @@ navigate(`/dashboard/${userData.role}`, { replace: true });
         <Button disabled={isLoading} onClick={() => handleLogin(role, email, password)}>
           {isLoading ? "Logging in..." : `Login as ${role}`}
         </Button>
+
+        {/*Forgot Password link*/}
+{email && (
+  <p
+    className="text-sm text-blue-600 hover:underline cursor-pointer mt-2"
+    onClick={() => handleForgotPassword(email)}
+  >
+    Forgot Password?
+  </p>
+)}
+
       </div>
+      
     );
   };
 
 return (
-  <div className="flex justify-center items-center min-h-screen px-4 bg-blue-500">
+<div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden">
+
     <Card className="w-full max-w-xl bg-white shadow-lg rounded-2xl">
 
         <CardHeader>

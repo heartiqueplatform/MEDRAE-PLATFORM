@@ -1,3 +1,9 @@
+body {
+  overflow-x: hidden; /* prevents horizontal scroll */
+  margin: 0;          /* remove default margin */
+}
+
+
 #root {
   max-width: 1280px;
   margin: 0 auto;

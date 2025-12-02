@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -147,8 +147,7 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
     : { name: "Offline", role: "Offline", avatar: "/avatars/default.jpg" };
 
   // ------------------------------
-  // FIX: Wrap content in inner component
-  // so useSidebar() is inside provider
+  // Wrap content in SidebarProvider
   // ------------------------------
   return (
     <SidebarProvider>
@@ -166,41 +165,48 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
 }
 
 // -------------------------------------------------------------
-// THIS COMPONENT CAN NOW SAFELY USE useSidebar()
+// DashboardContent with robust conditional padding
 // -------------------------------------------------------------
-import { useSidebar } from "@/components/ui/sidebar";
-
 function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, children }: any) {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
+  const { isSidebarOpen } = useSidebar();
+
+  // ------------------------------
+  // Define public pages by route path
+  // This is more reliable than using component name
+  // ------------------------------
+  const publicPaths = ["/", "/login", "/register"];
+  const locationPath = typeof window !== "undefined" ? window.location.pathname : "";
+  const isPublicPage = publicPaths.some((path) => locationPath.startsWith(path));
+
+  // Determine main container classes
+  const mainClasses = `
+    flex-1 box-border
+    ${
+      isPublicPage
+        ? "p-0 overflow-visible"
+        : `p-4 md:p-6 pb-14 ${children?.type?.name === "Reels" ? "overflow-hidden" : "overflow-auto"}`
+    }
+    scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
+    dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
+  `;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
-
       <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
 
       <div className="flex flex-col flex-1 overflow-hidden">
+        <Header
+          user={user}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
+          streak={streak}
+        />
 
-        <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
+        <main className={mainClasses}>{children}</main>
 
-<main
-  className={`
-    flex-1 box-border p-4 md:p-6 pb-14
-    ${children?.type?.name === "Reels" ? "overflow-hidden" : "overflow-auto"}
-    scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
-    dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
-  `}
->
-
-  {children}
-</main>
-{!isSidebarOpen && (
-  <BottomBar
-    userRole={userRole}
-    unreadCount={0}
-    unreadAnnouncements={0}
-  />
-)}
-
+        {!isSidebarOpen && (
+          <BottomBar userRole={userRole} unreadCount={0} unreadAnnouncements={0} />
+        )}
       </div>
     </div>
   );

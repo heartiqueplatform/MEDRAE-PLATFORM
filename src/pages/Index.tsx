@@ -32,21 +32,18 @@ const [activeHeroStory, setActiveHeroStory] = useState(0);
 
 
   const heroStorySlides = [
-  {
-    bg: "/indexbackground1.jpg",
-   text: (
-  <div className="w-full h-full flex items-center justify-center text-center">
-<div className="px-6 py-4 rounded-xl bg-white/40 backdrop-blur-sm shadow-2xl">
-
-  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-wide text-blue-700">
-    Medrae Nursing Network Platform V1.0
-  </h1>
-</div>
-
-  </div>
-),
-
-  },
+{
+  bg: "/indexbackground1.jpg",
+  text: (
+    <div className="w-full h-full flex items-end justify-center text-center pb-6 md:pb-12 lg:pb-16">
+      <div className="px-3 py-1 rounded-lg bg-white/40 backdrop-blur-sm shadow-sm">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-wide text-blue-700">
+          Medrae Nursing Network Platform V1.0
+        </h1>
+      </div>
+    </div>
+  ),
+},
   {
     bg: "/indexbackground2.jpg",
     text: "MEDRAE NURSING\nNETWORK\ PLATFORM",
@@ -191,7 +188,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen relative">
+      <div className="min-h-screen w-full overflow-x-hidden relative">
 {/* Hero Section */}
 {/* Hero Section */}
 {/* Hero Section */}
@@ -288,6 +285,7 @@ useEffect(() => {
 
   {/* Bottom Marquee just below hero cards */}
 <div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
+
   <div className="whitespace-nowrap animate-marquee-reverse text-[40px] md:text-[60px] lg:text-[80px] font-extrabold text-white/10 select-none">
     <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
     <span className="mx-16">MEDRAE MEDICAL NETWORK</span>
