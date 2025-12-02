@@ -327,25 +327,23 @@ Advance your medical journey today: https://medrae.vercel.app`;
           onClick={() => navigate("/profile")}
         >
         <div className="hidden sm:block text-right">
-<p className="text-sm font-medium flex items-center gap-2 truncate max-w-[150px]">
+<div className="text-sm font-medium flex items-center gap-2 truncate max-w-[150px]">
   {user.name ? user.name.split(" ")[0] : (!isOnline ? "Offline" : "")}
-{streak > 0 && isOnline && (
-  <Badge
-    variant="secondary"
-    className={`text-xs ${
-      streak <= 7
-        ? "bg-red-700 text-white"
-        : streak <= 30
-        ? "bg-purple-800 text-white"
-        : "bg-gray-900 text-white"
-    }`}
-  >
-    🔥 {streak} day{streak !== 1 ? "s" : ""}
-  </Badge>
-)}
-
-
-</p>
+  {streak > 0 && isOnline && (
+    <Badge
+      variant="secondary"
+      className={`text-xs ${
+        streak <= 7
+          ? "bg-red-700 text-white"
+          : streak <= 30
+          ? "bg-purple-800 text-white"
+          : "bg-gray-900 text-white"
+      }`}
+    >
+      🔥 {streak} day{streak !== 1 ? "s" : ""}
+    </Badge>
+  )}
+</div>
 
 
   <p className="text-xs text-muted-foreground">

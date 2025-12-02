@@ -112,7 +112,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <SidebarProvider>
-            <BrowserRouter>
+            <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
               <AIWrapper>
                 <FirstTimeGuide />
                 <Routes>

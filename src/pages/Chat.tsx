@@ -1,5 +1,6 @@
 "use client";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
+import { supabase, sql } from '@/lib/supabaseClient'; // if your client exports sql
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -10,7 +11,7 @@ import {
   MoreVertical,
   Trash2,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,6 +206,14 @@ const filteredProfiles = profiles.filter((profile) =>
         )
         .eq("chat_id", chat.id)
         .order("created_at", { ascending: true });
+// Mark messages as read for current user
+await supabase
+  .from("messages")
+  .update({
+    read_by: supabase.raw('array_append(read_by, ?)', [currentUserId])
+  })
+  .contains("delivered_to", [currentUserId])
+  .not("read_by", "cs", [currentUserId]);
 
       const mapped = (msgs || []).map((m) => ({
         id: m.id,

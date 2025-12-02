@@ -54,8 +54,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const { state, setState, toggleSidebar } = useSidebar();
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(0);
+const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
   const [totalSimulationPapers, setTotalSimulationPapers] = useState<number | null>(null);
@@ -141,63 +142,8 @@ const mainItems = [
 
   // Fetch unread messages and listen for live updates
 // ----- UNREAD MESSAGES & ANNOUNCEMENTS -----
-useEffect(() => {
-  const fetchUnread = async () => {
-    const user = supabase.auth.user();
-    if (!user) return;
 
-    const { count, error } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact' })
-      .eq('receiver_id', user.id)
-      .eq('is_read', false);
 
-    if (!error) setUnreadCount(count || 0);
-  };
-
-  const fetchUnreadAnnouncements = async () => {
-    const stored = localStorage.getItem("readAnnouncements");
-    const readIds: string[] = stored ? JSON.parse(stored) : [];
-
-    let query = supabase
-      .from("announcements")
-      .select("*", { count: "exact" })
-      .eq("is_published", true);
-
-    if (readIds.length) query = query.not("id", "in", `(${readIds.join(",")})`);
-
-    const { count, error } = await query;
-    if (!error) setUnreadAnnouncements(count || 0);
-  };
-
-  fetchUnread();
-  fetchUnreadAnnouncements();
-
-  const messageSub = supabase
-    .channel('public:messages')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-      if (payload.new.receiver_id === supabase.auth.user()?.id && !payload.new.is_read) {
-        setUnreadCount(prev => prev + 1);
-      }
-    })
-    .subscribe();
-
-  const announcementSub = supabase
-    .channel('public:announcements')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcements' }, payload => {
-      const stored = localStorage.getItem("readAnnouncements");
-      const readIds: string[] = stored ? JSON.parse(stored) : [];
-      if (!readIds.includes(payload.new.id)) {
-        setUnreadAnnouncements(prev => prev + 1);
-      }
-    })
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(messageSub);
-    supabase.removeChannel(announcementSub);
-  };
-}, []);
 
 // ----- TOTAL QUESTIONS -----
 useEffect(() => {
@@ -327,18 +273,23 @@ useEffect(() => {
 
 
   // Reset unread count when clicking Chat Room
-  const handleChatClick = async () => {
-    const user = supabase.auth.user();
-    if (!user) return;
+const handleChatClick = async () => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user) return;
 
-    await supabase
-      .from('messages')
-      .update({ is_read: true })
-      .eq('receiver_id', user.id)
-      .eq('is_read', false);
+  await supabase
+    .from('messages')
+    .update({
+      read_by: supabase.raw('array_append(read_by, ?)', [user.id])
+    })
+    .contains('delivered_to', [user.id])
+    .not('read_by', 'cs', [user.id]); // ✅ properly formatted array check
 
-    setUnreadCount(0);
-  };
+  setUnreadCount(0);
+
+};
+
+
 
   // Helper: collapse sidebar on mobile and close all groups
 const handleCollapse = () => {

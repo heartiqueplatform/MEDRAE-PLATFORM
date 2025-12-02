@@ -219,7 +219,7 @@ const fetchProfile = async (userId: string) => {
       .select("plan_type, is_active")
       .eq("user_id", userData.user.id)
       .eq("is_active", true)
-      .single();
+      
 
     if (subData) {
       setProfile((prev: any) => ({
@@ -868,14 +868,15 @@ if (!currentQuestion) {
       <p className="text-base">{currentQuestion.question_text}</p>
       <div className="space-y-2">
         {["A", "B", "C", "D"].map((opt) => (
-          <Button
-            key={opt}
-            variant={answers[currentQuestion.id] === opt ? "default" : "outline"}
-            className="w-full justify-start"
-            onClick={() => handleSelect(opt)}
-          >
-            {currentQuestion[`option_${opt.toLowerCase()}`]}
-          </Button>
+         <Button
+  key={opt}
+  variant={answers[currentQuestion.id] === opt ? "default" : "outline"}
+  className="w-full justify-start whitespace-normal"
+  onClick={() => handleSelect(opt)}
+>
+  {currentQuestion[`option_${opt.toLowerCase()}`]}
+</Button>
+
         ))}
       </div>
     </CardContent>

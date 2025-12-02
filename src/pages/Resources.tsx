@@ -970,10 +970,19 @@ return (
                                 setFullscreenNote(note);
                               }
 
-                              const { error } = await supabase.from("note_views").insert({
-                                note_id: note.id,
-                                user_id: session?.user?.id || null,
-                              });
+                           const { error } = await supabase
+  .from("note_views")
+  .upsert(
+    { note_id: note.id, user_id: session?.user?.id || null },
+    { onConflict: ['note_id', 'user_id'] }
+  );
+
+if (error) console.error("Error recording view:", error);
+else
+  setViewCounts((prev) => ({
+    ...prev,
+    [note.id]: (prev[note.id] || 0) + 1,
+  }));
 
                               if (!error) {
                                 setViewCounts((prev) => ({

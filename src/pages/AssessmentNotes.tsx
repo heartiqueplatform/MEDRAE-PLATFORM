@@ -558,18 +558,22 @@ setUploadProgress(null);   // reset progress
     variant="secondary"
     onClick={async () => {
       setFullscreenNote(note);
-      if (session?.user?.id) {
-        const { error } = await supabase.from("note_views").insert({
-          note_id: note.id,
-          user_id: session.user.id,
-        });
-        if (!error) {
-          setViewCounts((prev) => ({
-            ...prev,
-            [note.id]: (prev[note.id] || 0) + 1,
-          }));
-        }
-      }
+   if (session?.user?.id) {
+  const { error } = await supabase
+    .from("note_views")
+    .upsert(
+      { note_id: note.id, user_id: session.user.id },
+      { onConflict: ["note_id", "user_id"] }
+    );
+
+  if (!error) {
+    setViewCounts((prev) => ({
+      ...prev,
+      [note.id]: (prev[note.id] || 0) + 1,
+    }));
+  }
+}
+
     }}
   >
     <Eye className="h-4 w-4" />

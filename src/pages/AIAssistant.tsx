@@ -40,24 +40,20 @@ function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay200`}></span>
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay400`}></span>
-      <style jsx>{`
-        .animate-bounceDelay {
-          display: inline-block;
-          animation: bounce 1.2s infinite;
-        }
-        .animate-bounceDelay200 {
-          display: inline-block;
-          animation: bounce 1.2s infinite 0.2s;
-        }
-        .animate-bounceDelay400 {
-          display: inline-block;
-          animation: bounce 1.2s infinite 0.4s;
-        }
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1); }
-        }
-      `}</style>
+    <style>
+  {`
+  @keyframes pulseOutline {
+    0% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.05); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 0.3; }
+  }
+
+  .animate-pulse-outline {
+    animation: pulseOutline 1s infinite;
+  }
+  `}
+</style>
+
     </div>
   );
 }
@@ -346,17 +342,6 @@ return (
     >
       Delete
     </Button>
-<style jsx>{`
-  @keyframes pulseOutline {
-    0% { transform: scale(1); opacity: 0.3; }
-    50% { transform: scale(1.05); opacity: 0.6; }
-    100% { transform: scale(1); opacity: 0.3; }
-  }
-
-  .animate-pulse-outline {
-    animation: pulseOutline 1s infinite;
-  }
-`}</style>
 </div>
 <div
   ref={scrollRef}
@@ -409,8 +394,7 @@ return (
     })}
   </span>
 </div>
-
-              </div>
+    </div>
             ))}
           </div>
 

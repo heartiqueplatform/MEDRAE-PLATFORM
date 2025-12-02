@@ -49,6 +49,12 @@
     }
     </script>
 
+  </head>
+
+  <body class="bg-white dark:bg-black" style="margin:0;">
+    <div id="root" style="height:100%;"></div>
+
+    
     <!-- JS solid fallback & theme-based gradient -->
     <script>
       const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -77,10 +83,6 @@
       `;
       document.head.appendChild(styleEl);
     </script>
-  </head>
-
-  <body class="bg-white dark:bg-black" style="margin:0;">
-    <div id="root" style="height:100%;"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

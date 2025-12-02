@@ -121,16 +121,20 @@ useEffect(() => {
 
 
   // Auto-scroll messages
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    const isAtBottom =
-      container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+useEffect(() => {
+  const container = messagesContainerRef.current;
+  const end = messagesEndRef.current;
 
-    if (isAtBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
+  if (!container || !end) return; // ✅ prevents null crash
+
+  const isAtBottom =
+    container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+
+  if (isAtBottom) {
+    end.scrollIntoView({ behavior: "smooth" });
+  }
+}, [messages]);
+
   // Load unit messages
   const loadUnitMessages = async (unit: Unit) => {
     if (!joinedUnits.includes(unit.id)) {

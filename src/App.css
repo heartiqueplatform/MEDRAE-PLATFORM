@@ -96,3 +96,22 @@ html, body, #root, #__next {
   animation: spin-fast 0.5s linear infinite; /* 0.5s per full rotation */
 }
 
+/* styles.css or globals.css */
+@keyframes pulseOutline {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 0.3; }
+}
+
+.animate-pulse-outline {
+  animation: pulseOutline 1s infinite;
+}
+
+.animate-bounceDelay { display: inline-block; animation: bounce 1.2s infinite; }
+.animate-bounceDelay200 { display: inline-block; animation: bounce 1.2s infinite 0.2s; }
+.animate-bounceDelay400 { display: inline-block; animation: bounce 1.2s infinite 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}

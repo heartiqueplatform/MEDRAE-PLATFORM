@@ -184,7 +184,10 @@ if (data && data.length > 0) {
     const unitMessages = prev[unit_code] || [];
     return { ...prev, [unit_code]: [...unitMessages, message] };
   });
-
+// Scroll to newest message after sending
+setTimeout(() => {
+  messagesEndRefs.current[unit_code]?.scrollIntoView({ behavior: "smooth" });
+}, 50);
   // Play notification sound
   const audio = new Audio("/sounds/notification.mp3");
   audio.play().catch((err) => console.warn("Sound play failed:", err));
@@ -193,10 +196,7 @@ if (data && data.length > 0) {
 
     setInputMap((prev) => ({ ...prev, [unit_code]: "" }));
   };
-// Scroll to newest message after sending
-setTimeout(() => {
-  messagesEndRefs.current[unit_code]?.scrollIntoView({ behavior: "smooth" });
-}, 50);
+
 
   return (
     <div className="fixed bottom-4 right-4 flex flex-col gap-2 items-end z-50">

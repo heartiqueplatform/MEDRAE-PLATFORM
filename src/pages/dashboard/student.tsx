@@ -527,22 +527,34 @@ const fetchSimulationPapers = async () => {
     if (!papers) return;
 
     const paperIds = papers.map((p) => p.id);
+// 3️⃣ Fetch simulation results for current user
+const { data: results, error } = await supabase
+  .from("simulation_results")
+  .select("paper_id, score, total_questions")
+  .eq("user_id", user.id);
 
-    // 3️⃣ Fetch results for current user
-    const { data: results } = await supabase
-      .from("results")
-      .select("paper_id, question_id, is_correct")
-      .eq("user_id", user.id);
+if (error) {
+  console.error("Error fetching simulation results:", error);
+  return;
+}
 
-    // 4️⃣ Calculate percentage completed per paper
-    const progressMap: Record<string, number> = {};
-    papers.forEach((paper) => {
-      const paperResults = results?.filter((r) => r.paper_id === paper.id) || [];
-      const totalQuestions = paper.total_questions || 10; // fallback
-      const percent = totalQuestions > 0 ? Math.round((paperResults.length / totalQuestions) * 100) : 0;
-      progressMap[paper.id] = percent;
-    });
-    setSimulationProgress(progressMap);
+// 4️⃣ Calculate percentage completed per paper
+const progressMap: Record<string, number> = {};
+
+papers.forEach((paper) => {
+  // Filter results for this paper
+  const paperResults = results?.filter((r) => r.paper_id === paper.id) || [];
+
+  // If there are results, sum the scores and calculate percentage
+  const totalScore = paperResults.reduce((acc, r) => acc + r.score, 0);
+  const totalQuestions = paperResults.reduce((acc, r) => acc + r.total_questions, paper.total_questions || 10);
+
+  const percent = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+  progressMap[paper.id] = percent;
+});
+
+// 5️⃣ Update state
+setSimulationProgress(progressMap);
 
     // 5️⃣ Fetch visits for these papers
     const { data: visits } = await supabase

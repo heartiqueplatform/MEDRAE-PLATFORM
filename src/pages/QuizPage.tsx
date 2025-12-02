@@ -32,8 +32,11 @@ const TIMER_DURATION = 10_800_000; // 3 hours
 
 export default function QuizPage() {
   const location = useLocation();
+  
   const params = new URLSearchParams(location.search);
   const unit = params.get("unit");
+  const [session, setSession] = useState<any>(null); // Add this line
+
 const [isAIOverlayOpen, setAIOverlayOpen] = useState(false);
 const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
 const [timerEnd, setTimerEnd] = useState<number | null>(null);
@@ -124,6 +127,23 @@ useEffect(() => {
   };
   fetchSession();
 }, []);
+
+useEffect(() => {
+  // Get initial session
+  const currentSession = supabase.auth.getSession().then(({ data }) => {
+    setSession(data.session);
+  });
+
+  // Listen for auth changes
+  const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    setSession(session);
+  });
+
+  return () => {
+    authListener.subscription.unsubscribe();
+  };
+}, []);
+
 
 useEffect(() => {
   const media = window.matchMedia("(prefers-color-scheme: dark)");

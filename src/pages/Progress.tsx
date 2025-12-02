@@ -249,7 +249,8 @@ export function StudyProgress() {
               <p className="ml-4 text-muted-foreground">Updating progress...</p>
             </div>
           ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+       <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
+
   {subjects.map((subject) => (
     <Card key={subject.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
       <CardHeader>

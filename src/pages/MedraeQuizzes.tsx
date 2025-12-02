@@ -115,7 +115,7 @@ export function MedraeQuizzes() {
   .eq("user_id", user.id)
   .order("created_at", { ascending: false })
   .limit(1)
-  .single();
+   .maybeSingle(); // Use maybeSingle() if you expect 0 or 1 result
 
     if (!error && data) {
     if (data?.is_active) {
@@ -158,7 +158,7 @@ useEffect(() => {
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle(); // Use maybeSingle() if you expect 0 or 1 result
           if (data?.is_active) {
   setIsPremium(true);
   localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
