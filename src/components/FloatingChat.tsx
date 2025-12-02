@@ -34,6 +34,7 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
   const [inputMap, setInputMap] = useState<Record<string, string>>({});
   const messagesEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
+const [collapsedChats, setCollapsedChats] = useState<string[]>([]);
 
   // Load all units
   const loadUserUnits = async () => {

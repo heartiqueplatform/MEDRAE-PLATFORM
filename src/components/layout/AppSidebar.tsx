@@ -342,9 +342,12 @@ useEffect(() => {
 
   // Helper: collapse sidebar on mobile and close all groups
 const handleCollapse = () => {
-  toggleSidebar(); // 🔥 triggers the correct global collapse
-
+  // ✅ collapse ONLY on mobile
+  if (window.innerWidth < 1024) {
+    toggleSidebar();
+  }
 };
+
 
   return (
 <Sidebar

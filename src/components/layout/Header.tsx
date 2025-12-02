@@ -167,7 +167,7 @@ const fetchTotalUsers = async () => {
     const newStreak = data.streak || 0;
 
 //  Trigger confetti on milestones
-if (newStreak > streak && [1, 7, 30, 100].includes(newStreak)) {
+if (newStreak > streak && [1, 7, 15, 30, 50, 100, 150, 200].includes(newStreak)) {
   // 🎉 Confetti
   confetti({
     particleCount: 120,
@@ -176,12 +176,17 @@ if (newStreak > streak && [1, 7, 30, 100].includes(newStreak)) {
     colors: ["#e11d48", "#22c55e"],
   });
 
-  //  Toast message
+  // 🔊 Play the celebration sound
+  const audio = new Audio("/sounds/medrae.mp3");
+  audio.play();
+
+  //  Toast message with more detailed description
   toast({
     title: `🔥 ${newStreak}-day streak!`,
-    description: "Keep up the great work ",
+    description: `Amazing! You've kept your streak going for ${newStreak} days. Keep up the dedication and momentum! 🎉`,
   });
 }
+
 
 
 setStreak(newStreak);
