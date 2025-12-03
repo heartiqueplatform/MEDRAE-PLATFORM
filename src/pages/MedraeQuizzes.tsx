@@ -399,160 +399,160 @@ return (
 
 </div>
 
-      {/* PAPER ONE */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-yellow-500">
-          PAPER ONE UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
-        </h2>
-        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-         {paperOneUnits
-  .filter((unit) =>
-    unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-  .map((unit, index) => (
-    <Card key={index} className="border-yellow-300 shadow-md hover:shadow-lg transition-all">
-
-              <CardHeader>
-                <CardTitle className="text-md flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-yellow-500" />
-                  {unit.title}
-                </CardTitle>
-                <CardDescription>{unit.code}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2">
-  <Badge variant="secondary">
-    {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
-  </Badge>
-  <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-{isPremium ? (
-  <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
-) : freeUnits.includes(unit.code.trim()) ? (
-  <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
-) : (
-  <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
-)}
 
 
+        {/* PAPER ONE */}
+<div className="space-y-4">
+  <h2 className="text-2xl font-semibold text-yellow-500">
+    PAPER ONE UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
+  </h2>
+  <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+    {(loading ? paperOneUnits : paperOneUnits.filter((unit) =>
+      unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+    )).map((unit, index) => (
+      loading ? (
+        <div
+          key={index}
+          className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+        ></div>
+      ) : (
+        <Card
+          key={index}
+          className="border-yellow-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+        >
+          <CardHeader>
+            <CardTitle className="text-md flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-yellow-500" />
+              {unit.title}
+            </CardTitle>
+            <CardDescription>{unit.code}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">
+                  {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
+                </Badge>
+                <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
+                {isPremium ? (
+                  <Badge variant="default" className="bg-green-600 text-white">
+                    Unlocked
+                  </Badge>
+                ) : freeUnits.includes(unit.code.trim()) ? (
+                  <Badge variant="default" className="bg-green-600 text-white">
+                    Free
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-red-600 border-red-600">
+                    Premium/Pro
+                  </Badge>
+                )}
+              </div>
+
+              {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+                  <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                    <Play className="h-4 w-4 mr-1" />
+                    Start
+                  </Button>
+                </Link>
+              ) : (
+                <Button className="w-full mt-4" variant="outline" disabled>
+                  Premium/Pro Only
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )
+    ))}
+  </div>
 </div>
 
-{isPremium ? (
-  <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-   <Button 
-  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
->
-  <Play className="h-4 w-4 mr-1" />
-  Start
-</Button>
 
-  </Link>
-) : freeUnits.includes(unit.code.trim()) ? (
-  <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-   <Button 
-  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
->
-  <Play className="h-4 w-4 mr-1" />
-  Start
-</Button>
+    {/* PAPER TWO */}
+<div className="space-y-4">
+  <h2 className="text-2xl font-semibold text-blue-600">
+    PAPER TWO UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
+  </h2>
+  <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+    {(loading ? paperTwoUnits : paperTwoUnits.filter((unit) =>
+      unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+    )).map((unit, index) => (
+      loading ? (
+        <div
+          key={index}
+          className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+        ></div>
+      ) : (
+        <Card
+          key={index}
+          className="border-blue-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+        >
+          <CardHeader>
+            <CardTitle className="text-md flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-blue-600" />
+              {unit.title}
+            </CardTitle>
+            <CardDescription>{unit.code}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">
+                  {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
+                </Badge>
+                <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
+                {isPremium ? (
+                  <Badge variant="default" className="bg-green-600 text-white">
+                    Unlocked
+                  </Badge>
+                ) : freeUnits.includes(unit.code.trim()) ? (
+                  <Badge variant="default" className="bg-green-600 text-white">
+                    Free
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-red-600 border-red-600">
+                    Premium/Pro
+                  </Badge>
+                )}
+              </div>
 
-  </Link>
-) : (
-  <Button className="w-full mt-4" variant="outline" disabled>
-    Premium/Pro Only
-  </Button>
-)}
-
-
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* PAPER TWO */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-blue-600">
-          PAPER TWO UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
-        </h2>
-        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-        {paperTwoUnits
-  .filter((unit) =>
-    unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-  .map((unit, index) => (
-    <Card key={index} className="border-blue-300 shadow-md hover:shadow-lg transition-all">
-
-              <CardHeader>
-                <CardTitle className="text-md flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-blue-600" />
-                  {unit.title}
-                </CardTitle>
-                <CardDescription>{unit.code}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-  <Badge variant="secondary">
-    {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
-  </Badge>
-  <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-{isPremium ? (
-  <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
-) : freeUnits.includes(unit.code.trim()) ? (
-  <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
-) : (
-  <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
-)}
-
-
+              {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+                  <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                    <Play className="h-4 w-4 mr-1" />
+                    Start
+                  </Button>
+                </Link>
+              ) : (
+                <Button className="w-full mt-4" variant="outline" disabled>
+                  Premium/Pro Only
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )
+    ))}
+  </div>
 </div>
-{isPremium ? (
-  <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-   <Button 
-  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
->
-  <Play className="h-4 w-4 mr-1" />
-  Start
-</Button>
 
-  </Link>
-) : freeUnits.includes(unit.code.trim()) ? (
-  <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-    <Button 
-  className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm"
->
-  <Play className="h-4 w-4 mr-1" />
-  Start
-</Button>
-
-  </Link>
-) : (
-  <Button className="w-full mt-4" variant="outline" disabled>
-    Premium/Pro Only
-  </Button>
-)}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
 
       {/* Progress */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
-          </p>
-        </CardContent>
-      </Card>
+     <Card>
+  <CardHeader>
+    <CardTitle>Your Progress</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p className="text-muted-foreground">
+      You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
+    </p>
+  </CardContent>
+</Card>
+
     </div>
   );
 }

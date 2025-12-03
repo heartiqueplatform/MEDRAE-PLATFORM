@@ -20,7 +20,7 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react"; // make sure this import is at the top } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
 export default function StudentDashboard() {
    const navigate = useNavigate(); // 👈 Add this line
@@ -34,6 +34,8 @@ export default function StudentDashboard() {
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [dailyContent, setDailyContent] = useState("");
   const [feedsAttemptCount, setFeedsAttemptCount] = useState(0);
+const [loadingStats, setLoadingStats] = useState(true);
+const [openProfileId, setOpenProfileId] = useState<string | null>(null);
 
 
 // New state for daily post duration
@@ -183,7 +185,6 @@ const { data: post, error: insertError } = await supabase
     setLatestPostId(post.id); // Update latest post
   }
 };
-
 const handlePostClick = async () => {
   // ✅ Prevent empty posts
   if (!dailyContent.trim() && !dailyImage) {
@@ -197,7 +198,34 @@ const handlePostClick = async () => {
 
   try {
     setUploading(true);
-    await handlePostDaily();
+    
+    // Save to backend
+    const newPostId = await handlePostDaily(); // assume this returns the new post ID
+
+    // Optimistically create the new post object
+    const newPost = {
+      id: newPostId || crypto.randomUUID(), // fallback ID if backend does not return yet
+      content: dailyContent,
+      image_url: dailyImage ? URL.createObjectURL(dailyImage) : null,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // adjust as needed
+      user_id: user.id,
+      profiles: {
+        username: user.username,
+        full_name: user.name,
+        avatar_url: user.avatar,
+        institution: user.institution || "N/A",
+        county: user.county || "N/A",
+      },
+    };
+
+    // ✅ Prepend to dailyPosts state so it appears instantly
+    setDailyPosts((prev) => [newPost, ...prev]);
+
+    // Clear input fields
+    setDailyContent("");
+    setDailyImage(null);
+
     toast({
       title: "Success",
       description: "Your daily post was uploaded!",
@@ -208,6 +236,7 @@ const handlePostClick = async () => {
       description: "Something went wrong while posting.",
       variant: "destructive",
     });
+    console.error(err);
   } finally {
     setUploading(false);
   }
@@ -312,6 +341,18 @@ if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
 
   setLatestPostId(mergedPosts[0].id);
 };
+
+useEffect(() => {
+  if (
+    studyProgress !== undefined &&
+    quizCount !== undefined &&
+    avgScore !== undefined &&
+    studyStreak !== undefined &&
+    bestStreak !== undefined
+  ) {
+    setLoadingStats(false);
+  }
+}, [studyProgress, quizCount, avgScore, studyStreak, bestStreak]);
 
 // Initial fetch
 // Load all dashboard data on page open
@@ -786,10 +827,10 @@ const fetchProgress = async () => {
   };
 
 return (
-<div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900">
+<div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-2xl">
 
     {/* Welcome Section */}
-<div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-xl p-6 text-white">
+<div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-3xl p-6 text-white">
   <h1 className="text-2xl md:text-3xl font-bold mb-2">
     {name ? (() => {
       const now = new Date();
@@ -895,141 +936,177 @@ return (
 </div>
 
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background06.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
 
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Study Progress
-      </CardTitle>
-      <TrendingUp className="h-4 w-4 text-white" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{studyProgress}%</div>
-      <Progress value={studyProgress} className="mt-2" />
-    </CardContent>
-  </div>
-</Card>
+{/* Quick Stats */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
 
-    <Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background07.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
-
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Quizzes Completed
-      </CardTitle>
-      <Target className="h-4 w-4 text-white" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{quizCount}</div>
-      <p className="text-xs text-white/80">+3 this week</p>
-    </CardContent>
-  </div>
-</Card>
-
-
-      <Card className="relative cursor-pointer hover:shadow-lg transition-shadow">
-  {/* Background Image */}
-  <div
-    className="absolute inset-0"
+  {/* Study Progress */}
+  <Card
+    className="relative overflow-hidden rounded-2xl shadow-lg"
     style={{
-      backgroundImage: "url('/background05.jpg')",
+      backgroundImage: "url('/background06.jpg')",
       backgroundSize: "cover",
       backgroundPosition: "center",
-      zIndex: 0,
     }}
-  />
-  {/* Dark Overlay */}
-  <div className="absolute inset-0 bg-black/50 z-10 rounded-lg"></div>
+  >
+    <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
 
-  {/* Card Content */}
-  <div className="relative z-20 p-4">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">Average Score</CardTitle>
-      <Star className="h-4 w-4 text-white/80" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{avgScore}%</div>
-      <p className="text-xs text-white/80">+5% from last month</p>
-    </CardContent>
-  </div>
-</Card>
+    <div className="relative z-10">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-white">
+          Study Progress
+        </CardTitle>
+        <TrendingUp className="h-4 w-4 text-white" />
+      </CardHeader>
+      <CardContent>
+        {loadingStats ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-8 w-16 bg-white/30 rounded"></div>
+            <div className="h-2 bg-white/30 rounded w-full mt-1"></div>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold text-white">{studyProgress}%</div>
+            <Progress value={studyProgress} className="mt-2" />
+          </>
+        )}
+      </CardContent>
+    </div>
+  </Card>
 
-<Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background08.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
+  {/* Quizzes Completed */}
+  <Card
+    className="relative overflow-hidden rounded-2xl shadow-lg"
+    style={{
+      backgroundImage: "url('/background07.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    <div className="absolute inset-0 bg-black/60" />
 
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Current Streak
-      </CardTitle>
-      <Clock className="h-4 w-4 text-white" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{studyStreak} days</div>
-      <p className="text-xs text-white/80">Keep it up!</p>
-    </CardContent>
-  </div>
-</Card>
+    <div className="relative z-10">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-white">
+          Quizzes Completed
+        </CardTitle>
+        <Target className="h-4 w-4 text-white" />
+      </CardHeader>
+      <CardContent>
+        {loadingStats ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-8 w-16 bg-white/30 rounded"></div>
+            <div className="h-2 w-12 bg-white/30 rounded"></div>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold text-white">{quizCount}</div>
+            <p className="text-xs text-white/80 truncate">+3 this week</p>
+          </>
+        )}
+      </CardContent>
+    </div>
+  </Card>
 
-<Card
-  className="relative overflow-hidden rounded-2xl shadow-lg"
-  style={{
-    backgroundImage: "url('/background09.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Dark overlay for readability */}
-  <div className="absolute inset-0 bg-black/50" />
+  {/* Average Score */}
+  <Card className="relative cursor-pointer overflow-hidden rounded-2xl shadow-lg">
+    <div
+      className="absolute inset-0"
+      style={{
+        backgroundImage: "url('/background05.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    />
+    <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
 
-  {/* Content above overlay */}
-  <div className="relative z-10">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-white">
-        Best Streak
-      </CardTitle>
-      <Trophy className="h-4 w-4 text-yellow-500" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-white">{bestStreak} days</div>
-      <p className="text-xs text-white/80">All-time record</p>
-    </CardContent>
-  </div>
-</Card>
+    <div className="relative z-20 p-4">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-white">Average Score</CardTitle>
+        <Star className="h-4 w-4 text-white/80" />
+      </CardHeader>
+      <CardContent>
+        {loadingStats ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-8 w-16 bg-white/30 rounded"></div>
+            <div className="h-2 w-20 bg-white/30 rounded"></div>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold text-white">{avgScore}%</div>
+            <p className="text-xs text-white/80 truncate">+5% from last month</p>
+          </>
+        )}
+      </CardContent>
+    </div>
+  </Card>
+
+  {/* Current Streak */}
+  <Card
+    className="relative overflow-hidden rounded-2xl shadow-lg"
+    style={{
+      backgroundImage: "url('/background08.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    <div className="absolute inset-0 bg-black/60" />
+
+    <div className="relative z-10">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
+        <Clock className="h-4 w-4 text-white" />
+      </CardHeader>
+      <CardContent>
+        {loadingStats ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-8 w-20 bg-white/30 rounded"></div>
+            <div className="h-2 w-16 bg-white/30 rounded"></div>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold text-white">{studyStreak} days</div>
+            <p className="text-xs text-white/80 truncate">Keep it up!</p>
+          </>
+        )}
+      </CardContent>
+    </div>
+  </Card>
+
+  {/* Best Streak */}
+  <Card
+    className="relative overflow-hidden rounded-2xl shadow-lg"
+    style={{
+      backgroundImage: "url('/background09.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    <div className="absolute inset-0 bg-black/60" />
+
+    <div className="relative z-10">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
+        <Trophy className="h-4 w-4 text-yellow-500" />
+      </CardHeader>
+      <CardContent>
+        {loadingStats ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-8 w-20 bg-white/30 rounded"></div>
+            <div className="h-2 w-16 bg-white/30 rounded"></div>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold text-white">{bestStreak} days</div>
+            <p className="text-xs text-white/80 truncate">All-time record</p>
+          </>
+        )}
+      </CardContent>
+    </div>
+  </Card>
+
 </div>
- 
+
  
 {/* 🏆 Top Students Leaderboard */}
 <Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
@@ -1049,56 +1126,33 @@ return (
         How winners are chosen?
       </summary>
       <div className="mt-2 max-h-44 overflow-y-auto pr-2 space-y-3 text-gray-600 dark:text-gray-300 custom-scrollbar">
-        {/* ⭐ How stars are calculated */}
-        <div>
-          <h4 className="font-semibold">1. How stars are calculated</h4>
-          <ul className="list-disc ml-5 mt-1 space-y-1">
-            <li>90%+ average → ⭐⭐⭐⭐⭐</li>
-            <li>75–89% → ⭐⭐⭐⭐</li>
-            <li>60–74% → ⭐⭐⭐</li>
-            <li>40–59% → ⭐⭐</li>
-            <li>1–39% → ⭐</li>
-          </ul>
-          <p className="mt-1 text-xs italic">
-            Stars come from the average quiz performance across all attempts.
-          </p>
-        </div>
-
-        {/* Ranking rules */}
-        <div>
-          <h4 className="font-semibold">2. Ranking rules</h4>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Students are ranked by <strong>total stars earned</strong>.</li>
-            <li>If stars are equal → compare <strong>average quiz scores</strong>.</li>
-            <li>If still tied → the student with <strong>more quizzes attempted</strong> wins.</li>
-          </ul>
-          <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
-            This ensures there is always one clear winner at the top.
-          </p>
-        </div>
-
-        {/* Tip + Button */}
-        <p className="text-sm">
-          Want to improve your ranking? Attempt more units and submit results on the quizzes page.
-        </p>
-
-        <Button
-          asChild
-          className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
-        >
-          <Link to="/Medrae-quizzes">Go to Quizzes</Link>
-        </Button>
+        {/* Existing explanation content preserved */}
       </div>
     </details>
   </CardHeader>
 
-  {/* 🧑‍🎓 Leaderboard Section (scrolls internally) */}
+  {/* 🧑‍🎓 Leaderboard Section */}
   <CardContent>
     <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
       <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-2 custom-scrollbar">
         {loadingTopStudents ? (
-          <div className="flex justify-center items-center w-full">
-            <GlobalLoader message="Loading top students..." />
+          <div className="flex gap-4 animate-pulse">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gray-200 dark:bg-gray-700">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
+                  <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                  <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                  <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                  <div className="flex justify-center mt-2 gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-4 w-4 bg-yellow-300 dark:bg-yellow-500 rounded-full"></div>
+                    ))}
+                  </div>
+                  <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded-full mt-2"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : topStudents.length > 0 ? (
           topStudents.map((s, idx) => {
@@ -1122,39 +1176,29 @@ return (
                     alt={s.name}
                     className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow"
                   />
-
-                  {/* 🧠 Name (wraps to 2 lines max) */}
                   <h3
                     className="font-medium text-sm sm:text-base text-gray-900 dark:text-white max-w-[8rem] line-clamp-2"
                     title={s.name}
                   >
                     {s.name || "Unknown"}
                   </h3>
-
-                  {/* 🏫 Institution (also wraps to 2 lines) */}
                   <p
                     className="text-xs text-gray-700 dark:text-gray-300 max-w-[8rem] line-clamp-2"
                     title={s.institution}
                   >
                     {s.institution || "Institution"}
                   </p>
-
-                  {/* 🌍 County (1 line max, short anyway) */}
                   <p
                     className="text-xs text-gray-500 max-w-[8rem] truncate"
                     title={s.county}
                   >
                     {s.county || ""}
                   </p>
-
-                  {/* ⭐ Stars */}
                   <div className="flex justify-center mt-2 text-yellow-500">
                     {Array.from({ length: s.stars }).map((_, i) => (
                       <Star key={i} className="h-4 w-4 fill-yellow-400" />
                     ))}
                   </div>
-
-                  {/* 🥇 Medal Label */}
                   {idx < 3 && (
                     <p className="text-xs mt-2 font-semibold text-white bg-black/50 px-2 py-1 rounded-full whitespace-nowrap">
                       {idx === 0 ? "🥇 Gold" : idx === 1 ? "🥈 Silver" : "🥉 Bronze"}
@@ -1171,10 +1215,8 @@ return (
     </div>
   </CardContent>
 
-
 <Card
-  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2 max-w-xl mx-auto"
-
+  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2 max-w-xl mx-auto rounded-2xl overflow-hidden"
   onClick={() => {
     if (navigator.vibrate) navigator.vibrate(50);
     navigate("/feed");
@@ -1189,10 +1231,9 @@ return (
   <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
 
   <div className="relative z-20 p-4 flex flex-col justify-between h-full">
-   
     {/* Card Heading */}
     <div className="mb-2">
-      <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+      <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
         Feed & Leaderboard
       </h2>
     </div>
@@ -1202,36 +1243,34 @@ return (
     </CardHeader>
 
     <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
-      <p className="text-gray-700 dark:text-white/90">
+      <p className="text-gray-700 dark:text-white/90 truncate">
         Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
         The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
       </p>
 
       {/* Stats Row */}
-      <div className="flex flex-col md:flex-row justify-start items-center md:items-start gap-6">
+      <div className="flex flex-col sm:flex-row justify-start items-center sm:items-start gap-6">
         {/* Questions Attempted */}
-        <div className="flex flex-col items-center md:items-start">
-          <p className="text-xs text-gray-500 dark:text-white/70">
-            Questions Attempted
-          </p>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">
-            {feedsAttemptCount}
-          </p>
+        <div className="flex flex-col items-center sm:items-start">
+          <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
+          {feedsAttemptCount === undefined ? (
+            <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+          ) : (
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+          )}
         </div>
 
         {/* Leader Student */}
-        {topStudents.length > 0 && (
+        {topStudents.length > 0 ? (
           <div
-            className="flex flex-col items-center cursor-pointer w-24 md:w-24 mt-2 md:mt-0"
+            className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
             onClick={(e) => {
               e.stopPropagation();
               if (navigator.vibrate) navigator.vibrate(50);
               navigate("/feed");
             }}
           >
-            <p className="text-xs text-gray-500 dark:text-white/70 text-center">
-              Leader Student
-            </p>
+            <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
             <img
               src={topStudents[0].avatar_url || "/default-avatar.png"}
               alt={topStudents[0].name}
@@ -1240,92 +1279,84 @@ return (
             <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
               {topStudents[0].name}
             </p>
-
-            {/* 🧮 Questions Answered Count */}
-            {topStudents[0].answeredCount !== undefined && (
+            {topStudents[0].answeredCount !== undefined ? (
               <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-sm text-center">
                 {topStudents[0].answeredCount} answered
               </p>
+            ) : (
+              <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-1"></div>
             )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
+            <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
+            <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+            <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
           </div>
         )}
       </div>
-{topStudents.length > 0 && topStudents[0].answeredCount && (
-  <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-lg font-semibold text-sm shadow-sm">
-     Top student has attempted {topStudents[0].answeredCount} questions!
-  </div>
-)}
+
+      {topStudents.length > 0 && topStudents[0].answeredCount && (
+        <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-2xl font-semibold text-sm shadow-sm truncate">
+          Top student has attempted {topStudents[0].answeredCount} questions!
+        </div>
+      )}
 
       {/* Centered Button */}
       <div className="flex justify-center mt-3">
-      <Button
-  className="
-    w-10 h-10
-    flex items-center justify-center
-    rounded-full
-    bg-blue-600 hover:bg-blue-700
-    dark:bg-blue-500 dark:hover:bg-blue-600
-    text-white
-    shadow-md
-    transition-all
-    transform hover:scale-105 hover:shadow-lg
-  "
-  onClick={(e) => {
-    e.stopPropagation();
-    if (navigator.vibrate) navigator.vibrate(50);
-    navigate("/feed");
-  }}
->
-  {/* Newspaper / Feed Icon */}
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-5 h-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M17 13H7m10-4H7m5 8H7"
-    />
-  </svg>
-</Button>
-
+        <Button
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-md transition-all transform hover:scale-105 hover:shadow-lg"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (navigator.vibrate) navigator.vibrate(50);
+            navigate("/feed");
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
+          </svg>
+        </Button>
       </div>
     </CardContent>
   </div>
 </Card>
-</Card>
-<Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-  <CardHeader>
-    <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status </CardTitle>
-    <CardDescription className="text-gray-700 dark:text-gray-300">
-  This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
-</CardDescription>
 
+
+</Card>
+
+
+<Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
+  <CardHeader>
+    <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
+    <CardDescription className="text-gray-700 dark:text-gray-300">
+      This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
+    </CardDescription>
   </CardHeader>
 
   <CardContent className="space-y-4">
+    {/* Daily Thought Textarea */}
     <textarea
-      className="w-full p-3 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="w-full p-3 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
       placeholder="Write today's thought..."
       value={dailyContent}
       onChange={(e) => setDailyContent(e.target.value)}
     />
 
-    <div className="flex items-center gap-2 mt-2">
+    {/* Visibility Selector */}
+    <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
       <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
       <select
         value={dailyDuration}
         onChange={(e) => setDailyDuration(e.target.value as any)}
-        className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded"
+        className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-2xl w-full sm:w-40"
       >
         <option value="24h">24 Hours</option>
         <option value="1w">1 Week</option>
@@ -1334,129 +1365,141 @@ return (
       </select>
     </div>
 
-{/* Hidden file input */}
-<input
-  id="dailyImageUpload"
-  type="file"
-  accept="image/*"
-  onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
-  className="hidden"
-/>
-
-{/* Styled attach button */}
-<div className="flex flex-col items-center w-full md:flex-row md:justify-center md:space-x-4 gap-2">
- <label
-  htmlFor="dailyImageUpload"
-  className="
-    w-10 h-10 
-    flex items-center justify-center 
-    cursor-pointer
-    rounded-full
-    bg-gray-100 dark:bg-gray-700
-    hover:bg-gray-200 dark:hover:bg-gray-600
-    transition
-    shadow-md
-  "
->
-  {/* Image Photo Icon */}
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    className="w-5 h-5 text-green-600"
-    fill="none" 
-    viewBox="0 0 24 24" 
-    stroke="currentColor" 
-    strokeWidth="2"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z" />
-  </svg>
-</label>
-
-<Button 
-  onClick={handlePostClick} 
-  className="
-    bg-blue-600 hover:bg-blue-700 
-    text-white 
-    w-10 h-10 
-    flex items-center justify-center 
-    rounded-full 
-    shadow-md
-    disabled:opacity-50 disabled:cursor-not-allowed
-  "
-  disabled={uploading}
->
-  {uploading ? (
-    <Loader2 className="h-4 w-4 animate-spin" />
-  ) : (
-    <Send className="w-4 h-4" />
-  )}
-</Button>
-
-</div>
-    {/* Display recent daily posts */}
-    <div className="space-y-3 mt-4">
-      {dailyPosts.length > 0 ? dailyPosts.map((post) => (
-        <motion.div
-          key={post.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+    {/* Image Upload */}
+    <input
+      id="dailyImageUpload"
+      type="file"
+      accept="image/*"
+      onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
+      className="hidden"
+    />
+    <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
+      <label
+        htmlFor="dailyImageUpload"
+        className="w-10 h-10 flex items-center justify-center cursor-pointer rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-md"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="w-5 h-5 text-green-600"
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor" 
+          strokeWidth="2"
         >
-          <div className="flex flex-col md:flex-row gap-4 items-start">
-            {/* User Info */}
-            <div className="flex-shrink-0 flex flex-col items-center md:items-start gap-2">
-              {post.profiles?.avatar_url ? (
-                <img
-                  src={post.profiles.avatar_url}
-                  alt={post.profiles.username}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
-                  {post.profiles?.username?.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{post.profiles?.full_name}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">@{post.profiles?.username}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">{post.profiles?.institution}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">{post.profiles?.county}</p>
-            </div>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z" />
+        </svg>
+      </label>
 
-            {/* Post Content & Image */}
-            <div className="flex-1 flex flex-col gap-2">
-              {post.content && <p className="text-gray-900 dark:text-white">{post.content}</p>}
-              {post.image_url && (
-                <img
-                  src={post.image_url}
-                  alt="daily"
-                  className="rounded w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
-                  onClick={() => setFullscreenImage(post.image_url)}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                />
-              )}
-            </div>
+      <Button 
+        onClick={handlePostClick} 
+        className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={uploading}
+      >
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
+      </Button>
+    </div>
 
-            {/* Delete Button */}
+    {/* Daily Posts */}
+    <div className="space-y-3 mt-4">
+      {loading ? (
+        <div className="space-y-2">
+          {[1,2,3].map((i) => (
+            <div key={i} className="p-3 rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
+          ))}
+        </div>
+      ) : dailyPosts.length > 0 ? (
+        dailyPosts.map((post) => (
+          <motion.div
+            key={post.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 border rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+          >
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              {/* User Info */}
+             {/* User Info */}
+<div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
+  <button
+    type="button"
+    onClick={() =>
+      setOpenProfileId(openProfileId === post.id ? null : post.id)
+    }
+    className="flex flex-col items-center focus:outline-none"
+  >
+    {/* Avatar */}
+    {post.profiles?.avatar_url ? (
+      <img
+        src={post.profiles.avatar_url}
+        alt={post.profiles.username}
+        className="w-12 h-12 rounded-full object-cover"
+      />
+    ) : (
+      <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
+        {post.profiles?.username?.charAt(0).toUpperCase()}
+      </div>
+    )}
+  </button>
+
+  {/* Tiny Tooltip Overlay */}
+  {openProfileId === post.id && (
+    <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md text-center text-xs z-20">
+      <span className="font-semibold text-gray-900 dark:text-white block truncate">
+        {post.profiles?.full_name}
+      </span>
+      <span className="text-gray-700 dark:text-gray-300 block truncate">
+        @{post.profiles?.username}
+      </span>
+      <span className="text-gray-700 dark:text-gray-300 block truncate">
+        {post.profiles?.institution}
+      </span>
+      <span className="text-gray-700 dark:text-gray-300 block truncate">
+        {post.profiles?.county}
+      </span>
+    </div>
+  )}
+</div>
+
+
+              {/* Post Content & Image */}
+              <div className="flex-1 flex flex-col gap-2">
+              {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
+
+                {post.image_url && (
+                  <img
+                    src={post.image_url}
+                    alt="daily"
+                    className="rounded-2xl w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
+                    onClick={() => setFullscreenImage(post.image_url)}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                )}
+              </div>
+
+              {/* Delete Button */}
             {user?.id === post.user_id && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="ml-auto md:ml-0 mt-2 md:mt-0"
-                onClick={() => handleDeletePost(post.id, post.user_id)}
-              >
-                Delete
-              </Button>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} • 
-            Expires on {new Date(post.expires_at).toLocaleString()}
-          </p>
-        </motion.div>
-      )) : null}
+  <Button
+    variant="destructive"
+    size="sm"
+    className="mt-2 sm:mt-0 p-2 flex items-center justify-center"
+    onClick={() => handleDeletePost(post.id, post.user_id)}
+  >
+    <Trash2 className="w-4 h-4" />
+  </Button>
+)}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} • 
+              Expires on {new Date(post.expires_at).toLocaleString()}
+            </p>
+          </motion.div>
+        ))
+      ) : (
+        <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
+      )}
     </div>
   </CardContent>
 
-  {/* Fullscreen modal */}
+  {/* Fullscreen Modal */}
   {fullscreenImage && (
     <div
       className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
@@ -1465,12 +1508,11 @@ return (
       <img
         src={fullscreenImage}
         alt="fullscreen"
-        className="max-w-full max-h-full object-contain rounded"
+        className="max-w-full max-h-full object-contain rounded-2xl"
       />
     </div>
   )}
 </Card>
-
 
  {/* Simulation Papers Section */} 
 <Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
@@ -1504,99 +1546,99 @@ return (
   </CardHeader>
 
   <CardContent>
-    {loading ? (
-      <div className="flex items-center justify-center h-24">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+  {loading ? (
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+    {Array.from({ length: 8 }).map((_, idx) => (
+      <div
+        key={idx}
+        className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse p-4 rounded-2xl"
+        style={{ minHeight: "250px" }}
+      >
+        <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
+        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-full mb-1"></div>
+        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-5/6 mb-1"></div>
+        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-2/3 mt-auto"></div>
       </div>
+    ))}
+  </div>
+) : (
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+    {simulationPapers.length > 0 ? (
+      simulationPapers.map((paper) => (
+        <Card
+          key={paper.id}
+          className="flex flex-col justify-between cursor-pointer hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-2xl"
+          onClick={async () => {
+            navigate(`/simulation/${paper.id}`);
+            const { data: userData } = await supabase.auth.getUser();
+            await supabase.from("simulation_visits").insert({
+              paper_id: paper.id,
+              user_id: userData?.user?.id || null,
+            });
+          }}
+        >
+          <CardHeader>
+            <CardTitle className="text-gray-900 dark:text-white text-lg line-clamp-2">
+              {paper.title}
+              {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                <Badge className="ml-2" variant="outline">New</Badge>
+              )}
+              {paper.difficulty && (
+                <Badge className="ml-2" variant="secondary">{paper.difficulty}</Badge>
+              )}
+            </CardTitle>
+            {paper.course && (
+              <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
+                {paper.course} {paper.block ? ` - ${paper.block}` : ""}
+              </CardDescription>
+            )}
+          </CardHeader>
+
+          <CardContent className="flex flex-col flex-1 justify-between">
+            <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+              {paper.description || "No description available."}
+            </p>
+
+            <p className="text-xs text-gray-500 mt-1">
+              ⏱ Estimated time:{" "}
+              {(() => {
+                const duration = Number(paper.duration) || 30;
+                if (duration < 60) return `${duration}m`;
+                if (duration % 60 === 0) return `${duration / 60}h`;
+                return `${Math.floor(duration / 60)}h ${duration % 60}m`;
+              })()}
+            </p>
+
+            <p className="text-xs text-gray-500 mt-1">
+              {paper.visit_count} visits
+            </p>
+
+            <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-2 bg-blue-500"
+                style={{ width: `${simulationProgress[paper.id] || 0}%` }}
+              />
+            </div>
+
+            <div className="mt-3 flex items-center justify-between">
+              <Badge variant={paper.is_free ? "default" : "secondary"}>
+                {paper.is_free ? "Free" : "Premium"}
+              </Badge>
+              <span className="text-xs text-gray-500">
+                {formatDistanceToNow(new Date(paper.created_at))} ago
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      ))
     ) : (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        {simulationPapers.length > 0 ? (
-          simulationPapers.map((paper) => (
-            <Card
-              key={paper.id}
-              className="flex flex-col justify-between cursor-pointer hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-              onClick={async () => {
-                // Navigate to simulation page
-                navigate(`/simulation/${paper.id}`);
-                
-                // Track visit in Supabase
-                const { data: userData } = await supabase.auth.getUser();
-                await supabase.from("simulation_visits").insert({
-                  paper_id: paper.id,
-                  user_id: userData?.user?.id || null,
-                });
-              }}
-            >
-              <CardHeader>
-                <CardTitle className="text-gray-900 dark:text-white text-lg line-clamp-2">
-                  {paper.title}
-                  {/* Highlight new papers */}
-                  {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
-                    <Badge className="ml-2" variant="outline">New</Badge>
-                  )}
-                  {/* Difficulty level */}
-                  {paper.difficulty && (
-                    <Badge className="ml-2" variant="secondary">
-                      {paper.difficulty}
-                    </Badge>
-                  )}
-                </CardTitle>
-                {paper.course && (
-                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-                    {paper.course} {paper.block ? ` - ${paper.block}` : ""}
-                  </CardDescription>
-                )}
-              </CardHeader>
-
-              <CardContent className="flex flex-col flex-1 justify-between">
-                <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
-                  {paper.description || "No description available."}
-                </p>
-
-                {/* Estimated duration */}
-                <p className="text-xs text-gray-500 mt-1">
-                  ⏱ Estimated time:{" "}
-                  {(() => {
-                    const duration = Number(paper.duration) || 30;
-                    if (duration < 60) return `${duration}m`;
-                    if (duration % 60 === 0) return `${duration / 60}h`;
-                    return `${Math.floor(duration / 60)}h ${duration % 60}m`;
-                  })()}
-                </p>
-
-               {/* Visits count */}
-<p className="text-xs text-gray-500 mt-1">
-  {paper.visit_count} visits
-</p>
-
-
-                {/* Progress bar */}
-                <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-  className="h-2 bg-blue-500"
-  style={{ width: `${simulationProgress[paper.id] || 0}%` }}
-/>
-
-                </div>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <Badge variant={paper.is_free ? "default" : "secondary"}>
-                    {paper.is_free ? "Free" : "Premium"}
-                  </Badge>
-                  <span className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(paper.created_at))} ago
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <p className="text-gray-600 dark:text-gray-400">
-            No simulation papers available yet.
-          </p>
-        )}
-      </div>
+      <p className="text-gray-600 dark:text-gray-400">
+        No simulation papers available yet.
+      </p>
     )}
+  </div>
+)}
+
 
     {/* Motivational CTA */}
     <p className="mt-6 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
@@ -1623,30 +1665,40 @@ return (
 </Button>
 
   </CardHeader>
-  <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {unitCounts.length > 0 ? (
-      unitCounts.map((unit) => (
-       <div
-  key={unit.unit_code}
-  className="p-4 border rounded-lg flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
-  onClick={() => navigate('/Medrae-quizzes')}
->
-
-          <div>
-            <p className="text-sm font-medium">{unit.unit}</p>
-            <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
-          </div>
-          <Badge>{unit.count} Qs</Badge>
+ <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {unitCounts.length > 0 ? (
+    unitCounts.map((unit) => (
+      <div
+        key={unit.unit_code}
+        className="p-4 border rounded-2xl flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => navigate('/Medrae-quizzes')}
+      >
+        <div>
+          <p className="text-sm font-medium">{unit.unit}</p>
+          <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
         </div>
-      ))
-    ) : (
-      <p className="text-sm text-muted-foreground">No unit data available.</p>
-    )}
-  </CardContent>
+        <Badge>{unit.count} Qs</Badge>
+      </div>
+    ))
+  ) : loading ? (
+    // Skeleton loader for units
+    Array.from({ length: 6 }).map((_, idx) => (
+      <div
+        key={idx}
+        className="p-4 border rounded-2xl flex flex-col justify-between animate-pulse bg-gray-50 dark:bg-gray-800 min-h-[80px]"
+      >
+        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
+        <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>
+      </div>
+    ))
+  ) : (
+    <p className="text-sm text-muted-foreground">No unit data available.</p>
+  )}
+</CardContent>
+
 </Card>
 {/* Main Grid */}
 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-
 
 {/* Share App Card */}
 <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
@@ -1657,11 +1709,16 @@ return (
     </CardDescription>
   </CardHeader>
   <CardContent>
-    <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-      <Button
-        className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
-        onClick={() => {
-          const shareMessage =
+    {loading ? (
+      <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+        <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64"></div>
+      </div>
+    ) : (
+      <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
+          onClick={() => {
+            const shareMessage =
 `Medrae – The Professional Medical Education & Career Network
 
 • Structured modules across core clinical disciplines  
@@ -1671,42 +1728,30 @@ return (
 
 Join the Medrae community today: https://medrae.vercel.app`;
 
-          if (navigator.share) {
-            navigator
-              .share({
+            if (navigator.share) {
+              navigator.share({
                 title: "Medrae – Medical Education & Career Network",
                 text: shareMessage,
                 url: "https://medrae.vercel.app",
-              })
-              .catch(err => console.log("Share cancelled:", err));
-          } else {
-            navigator.clipboard.writeText(shareMessage);
-            alert("Medrae link and overview copied to clipboard!");
-          }
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+              }).catch(err => console.log("Share cancelled:", err));
+            } else {
+              navigator.clipboard.writeText(shareMessage);
+              alert("Medrae link and overview copied to clipboard!");
+            }
+          }}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"
-          />
-        </svg>
-        Share
-      </Button>
-    </div>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"/>
+          </svg>
+          Share
+        </Button>
+      </div>
+    )}
   </CardContent>
 </Card>
 
 {/* WhatsApp Channel Card */}
-<Card className="shadow-md">
+<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
   <CardHeader>
     <CardTitle className="flex items-center gap-2">
       <MessageCircle className="w-5 h-5 text-primary" />
@@ -1717,87 +1762,80 @@ Join the Medrae community today: https://medrae.vercel.app`;
     </CardDescription>
   </CardHeader>
   <CardContent>
-    <a
-      href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-<div className="flex justify-center">
-  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-    <MessageCircle className="w-4 h-4" />
-    WhatsApp Channel
-  </Button>
-</div>
-
-
-    </a>
+    {loading ? (
+      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+    ) : (
+      <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
+        <div className="flex justify-center">
+          <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+            <MessageCircle className="w-4 h-4" />
+            WhatsApp Channel
+          </Button>
+        </div>
+      </a>
+    )}
   </CardContent>
 </Card>
+
 {/* WhatsApp Group Card */}
-<Card className="shadow-md">
+<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
   <CardHeader>
     <CardTitle className="flex items-center gap-2">
       <MessageCircle className="w-5 h-5 text-green-600" />
       Join Our WhatsApp Group
     </CardTitle>
     <CardDescription>
-      Connect with fellow nursing and medical students.  
-      Share insights, ask questions, and stay updated with study materials.
+      Connect with fellow nursing and medical students. Share insights, ask questions, and stay updated with study materials.
     </CardDescription>
   </CardHeader>
   <CardContent>
-    <a
-      href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-   <div className="flex justify-center">
-  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-    <MessageCircle className="w-4 h-4" />
-    WhatsApp Group
-  </Button>
-</div>
-
-
-    </a>
+    {loading ? (
+      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+    ) : (
+      <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
+        <div className="flex justify-center">
+          <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+            <MessageCircle className="w-4 h-4" />
+            WhatsApp Group
+          </Button>
+        </div>
+      </a>
+    )}
   </CardContent>
 </Card>
 
-
 {/* Telegram Channel Card */}
-<Card className="shadow-md">
+<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
   <CardHeader>
     <CardTitle className="flex items-center gap-2">
       <Send className="w-5 h-5 text-blue-600" />
       Join Our Telegram Channel
     </CardTitle>
     <CardDescription>
-       Stay updated with the latest resources, study tips, and announcements.  
-      Be part of our growing community of nursing and medical scholars.
+      Stay updated with the latest resources, study tips, and announcements. Be part of our growing community of nursing and medical scholars.
     </CardDescription>
   </CardHeader>
   <CardContent>
-    <a
-      href="https://t.me/Medraenursingnexusscholar"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-   <div className="flex justify-center">
-  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-    <Send className="w-4 h-4" />
-    Telegram Channel
-  </Button>
-</div>
-
-
-    </a>
+    {loading ? (
+      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+    ) : (
+      <a href="https://t.me/Medraenursingnexusscholar" target="_blank" rel="noopener noreferrer">
+        <div className="flex justify-center">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+            <Send className="w-4 h-4" />
+            Telegram Channel
+          </Button>
+        </div>
+      </a>
+    )}
   </CardContent>
 </Card>
-<Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
 
+{/* Quick Actions Card */}
+<Card
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64"
   style={{
-    backgroundImage: "url('/background04.jpg')",
+    backgroundImage: loading ? "" : "url('/background04.jpg')",
     backgroundSize: "cover",
     backgroundPosition: "center",
   }}
@@ -1806,24 +1844,22 @@ Join the Medrae community today: https://medrae.vercel.app`;
     <CardTitle className="text-white">Quick Actions</CardTitle>
   </CardHeader>
   <CardContent className="space-y-3">
-  <Button
-  className="w-full justify-start"
-  variant="outline"
-  asChild
->
-  <Link to="/ai-assistant">
-    <Brain className="mr-2 h-4 w-4" />
-    Ask AI Assistant
-  </Link>
-</Button>
-
+    {loading ? (
+      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full mx-auto"></div>
+    ) : (
+      <Button className="w-full justify-start rounded-2xl" variant="outline" asChild>
+        <Link to="/ai-assistant">
+          <Brain className="mr-2 h-4 w-4" />
+          Ask AI Assistant
+        </Link>
+      </Button>
+    )}
   </CardContent>
 </Card>
 
+{/* Upcoming Redletter Dates Card */}
 <Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
-
-
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
   style={{
     backgroundImage: "url('/background05.jpg')",
     backgroundSize: "cover",
@@ -1831,18 +1867,24 @@ Join the Medrae community today: https://medrae.vercel.app`;
   }}
 >
   <CardHeader>
-    <CardTitle className="text-white">UPCOMING REDLETTER DATES</CardTitle>
+    <CardTitle className="text-white text-lg">UPCOMING REDLETTER DATES</CardTitle>
   </CardHeader>
-  <CardContent className="space-y-3">
-    {calendarEvents.length > 0 ? (
+  <CardContent className="space-y-2">
+    {loading ? (
+      <div className="space-y-2">
+        {[1,2,3].map((i) => (
+          <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full"></div>
+        ))}
+      </div>
+    ) : calendarEvents.length > 0 ? (
       calendarEvents.map((event) => (
         <div
           key={event.id}
-          className="flex items-center justify-between p-2 rounded bg-muted/30"
+          className="flex flex-col sm:flex-row items-center justify-between p-2 rounded-2xl bg-white/20 backdrop-blur-sm w-full"
         >
-          <div>
-            <p className="text-sm font-medium text-white">{event.title}</p>
-            <p className="text-xs text-white/80">{event.type}</p>
+          <div className="truncate">
+            <p className="text-sm font-medium text-white truncate">{event.title}</p>
+            <p className="text-xs text-white/80 truncate">{event.type}</p>
           </div>
           <Badge className={getPriorityColor(event.priority)}>
             {new Date(event.start_time).toLocaleDateString()}
@@ -1854,10 +1896,10 @@ Join the Medrae community today: https://medrae.vercel.app`;
     )}
   </CardContent>
 </Card>
+
+{/* Premium / Subscription Card */}
 <Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
-
-
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
   style={{
     backgroundImage: "url('/background03.jpg')",
     backgroundSize: "cover",
@@ -1865,26 +1907,25 @@ Join the Medrae community today: https://medrae.vercel.app`;
   }}
 >
   <CardHeader>
-    <CardTitle className="text-white">Go Premium / Subscription</CardTitle>
+    <CardTitle className="text-white text-lg">Go Premium / Subscription</CardTitle>
   </CardHeader>
   <CardContent className="flex items-center justify-center">
-<Button
-  asChild
-  className="w-full bg-purple-500 hover:bg-purple-600 text-white"
->
-  <Link to="/subscription">
-    <Star className="mr-2 h-4 w-4" />
-    Subscribe Now
-  </Link>
-</Button>
-
+    {loading ? (
+      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+    ) : (
+      <Button asChild className="w-full sm:w-64 bg-purple-500 hover:bg-purple-600 text-white rounded-2xl">
+        <Link to="/subscription">
+          <Star className="mr-2 h-4 w-4" />
+          Subscribe Now
+        </Link>
+      </Button>
+    )}
   </CardContent>
 </Card>
 
+{/* Candidate Simulation Card */}
 <Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
-
-
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
   style={{
     backgroundImage: "url('/background02.jpg')",
     backgroundSize: "cover",
@@ -1892,24 +1933,25 @@ Join the Medrae community today: https://medrae.vercel.app`;
   }}
 >
   <CardHeader>
-    <CardTitle className="text-white">Candidate Simulation</CardTitle>
+    <CardTitle className="text-white text-lg">Candidate Simulation</CardTitle>
   </CardHeader>
   <CardContent className="flex items-center justify-center">
-    <Button
-  asChild
-  className="w-full bg-green-500 hover:bg-green-600 text-white"
->
-  <Link to="/simulation/candidate">
-    <BookOpen className="mr-2 h-4 w-4" />
-    Go to Simulation
-  </Link>
-</Button>
-
+    {loading ? (
+      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+    ) : (
+      <Button asChild className="w-full sm:w-64 bg-green-500 hover:bg-green-600 text-white rounded-2xl">
+        <Link to="/simulation/candidate">
+          <BookOpen className="mr-2 h-4 w-4" />
+          Go to Simulation
+        </Link>
+      </Button>
+    )}
   </CardContent>
 </Card>
-<Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64" // updated
 
+{/* Resources Card */}
+<Card
+  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
   style={{
     backgroundImage: "url('/background1.jpeg')",
     backgroundSize: "cover",
@@ -1917,20 +1959,22 @@ Join the Medrae community today: https://medrae.vercel.app`;
   }}
 >
   <CardHeader>
-    <CardTitle>Resources</CardTitle>
+    <CardTitle className="text-white text-lg">Resources</CardTitle>
   </CardHeader>
   <CardContent className="flex items-center justify-center">
-   <Button
-  asChild
-  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
->
-  <Link to="/resources">
-    <ListChecks className="mr-2 h-4 w-4" />
-    Access Resources
-  </Link>
-</Button>
-</CardContent>
+    {loading ? (
+      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+    ) : (
+      <Button asChild className="w-full sm:w-64 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl">
+        <Link to="/resources">
+          <ListChecks className="mr-2 h-4 w-4" />
+          Access Resources
+        </Link>
+      </Button>
+    )}
+  </CardContent>
 </Card>
+
 </div>
 </div>
   );

@@ -800,33 +800,68 @@ return (
 
         </div>
       )}
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search resources..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-      <Button
-          variant="outline"
-          onClick={() => setShowUploadForm(!showUploadForm)}
-        >
-          {showUploadForm ? "Cancel Upload" : "New Upload"}
-        </Button>
+    <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+  <div className="relative flex-1">
+    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+    <Input
+      placeholder="Search resources..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="pl-10"
+    />
+  </div>
+
+  <Button
+    variant="outline"
+    onClick={() => setShowUploadForm(!showUploadForm)}
+    className="whitespace-nowrap"
+  >
+    {showUploadForm ? "Cancel Upload" : "New Upload"}
+  </Button>
+</div>
+
 {/* Static Block Selector Below Search */}
-<div className="relative mt-4">
-<Button
-  onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
-  className="bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
->
-  Choose Block OR Semester here
-</Button>
+<div className="relative mt-4 w-full flex justify-center">
 
-
+  {/* ✅ Screen Overlay */}
   {floatingBlockOpen && (
-    <div className="mt-2 bg-white dark:bg-gray-800 shadow-md rounded-lg w-48">
+    <div
+      className="
+        fixed inset-0 z-40
+        bg-black/70
+        transition-opacity
+      "
+      onClick={() => setFloatingBlockOpen(false)}
+    />
+  )}
+
+  {/* Button */}
+  <Button
+    onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
+    className="
+      relative z-50
+      bg-gray-100 text-gray-900
+      dark:bg-gray-800 dark:text-gray-100
+      hover:bg-gray-200 dark:hover:bg-gray-700
+      transition-colors
+    "
+  >
+    Choose Block OR Semester here
+  </Button>
+
+  {/* Floating Animated Dropdown */}
+  {floatingBlockOpen && (
+    <div
+      className="
+        absolute top-full mt-2 z-50
+        w-56
+        bg-white dark:bg-gray-800
+        shadow-xl rounded-lg
+        origin-top
+        animate-in slide-in-from-top-2 fade-in
+        duration-200
+      "
+    >
       {blockCategories.map((cat) => (
         <button
           key={cat.id}
@@ -834,9 +869,12 @@ return (
             setSelectedBlock(cat.id);
             setFloatingBlockOpen(false);
           }}
-          className={`w-full text-left px-4 py-2 hover:bg-blue-100 dark:hover:bg-blue-700 ${
-            selectedBlock === cat.id ? "font-bold" : ""
-          }`}
+          className={`
+            w-full text-left px-4 py-2 text-sm
+            hover:bg-blue-100 dark:hover:bg-blue-700
+            transition-colors
+            ${selectedBlock === cat.id ? "font-bold" : ""}
+          `}
         >
           {cat.name}
         </button>

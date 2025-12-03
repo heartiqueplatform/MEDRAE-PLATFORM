@@ -277,27 +277,33 @@ const handleChatClick = async () => {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase
+  // You need to know which message(s) to mark as read
+  // For example, fetch the first unread message delivered to this user
+  const { data: messagesData, error: fetchError } = await supabase
     .from('messages')
-    .update({
-      read_by: supabase.raw('array_append(read_by, ?)', [user.id])
-    })
+    .select('id')
     .contains('delivered_to', [user.id])
-    .not('read_by', 'cs', [user.id]); // ✅ properly formatted array check
+    .not('read_by', 'cs', [user.id])
+    .limit(1);
+
+  if (fetchError || !messagesData || messagesData.length === 0) {
+    setUnreadCount(0);
+    return;
+  }
+
+  const messageId = messagesData[0].id;
+
+  // Call the RPC function to safely append the user ID
+  const { error: rpcError } = await supabase.rpc('append_to_read_by', {
+    message_id: messageId,
+    user_id: user.id
+  });
+
+  if (rpcError) console.error('Error updating read_by via RPC:', rpcError);
 
   setUnreadCount(0);
-
 };
 
-
-
-  // Helper: collapse sidebar on mobile and close all groups
-const handleCollapse = () => {
-  // ✅ collapse ONLY on mobile
-  if (window.innerWidth < 1024) {
-    toggleSidebar();
-  }
-};
 
 
   return (

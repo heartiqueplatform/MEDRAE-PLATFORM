@@ -178,7 +178,8 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
 
       <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
 
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden rounded-2xl">
+
 
         <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
 
