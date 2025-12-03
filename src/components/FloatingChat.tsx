@@ -96,36 +96,51 @@ const [collapsedChats, setCollapsedChats] = useState<string[]>([]);
   const subscribeToUnit = (unit_code: string) => {
     const channel = supabase
       .channel(`messages-${unit_code}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "unit_messages", filter: `unit_code=eq.${unit_code}` },
-        async (payload) => {
-          const newMsg = payload.new as any;
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("name, avatar_url")
-            .eq("user_id", newMsg.user_id)
-            .single();
+    .on(
+  "postgres_changes",
+  {
+    event: "INSERT",
+    schema: "public",
+    table: "unit_messages",
+    filter: `unit_code=eq.${unit_code}`,
+  },
+  async (payload) => {
+    console.log("[REALTIME] INSERT RECEIVED", {
+      unit_code,
+      payload,
+    });
 
-          const message = {
-            id: newMsg.id,
-            unit_code: newMsg.unit_code,
-            user_id: newMsg.user_id,
-            content: newMsg.content,
-            created_at: newMsg.created_at,
-            sender_name: profile?.name || "Unknown",
-            avatar_url: profile?.avatar_url || null,
-          };
+    const newMsg = payload.new as any;
 
-          setMessagesMap((prev) => {
-            const unitMessages = prev[unit_code] || [];
-            return { ...prev, [unit_code]: [...unitMessages, message] };
-          });
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("name, avatar_url")
+      .eq("user_id", newMsg.user_id)
+      .maybeSingle();
 
-          // Scroll to newest message
-          messagesEndRefs.current[unit_code]?.scrollIntoView({ behavior: "smooth" });
-        }
-      )
+    if (error) {
+      console.warn("[REALTIME] profile lookup failed", error);
+    }
+
+    const message = {
+      id: newMsg.id,
+      unit_code: newMsg.unit_code,
+      user_id: newMsg.user_id,
+      content: newMsg.content,
+      created_at: newMsg.created_at,
+      sender_name: profile?.name || "Unknown",
+      avatar_url: profile?.avatar_url || null,
+    };
+
+    setMessagesMap((prev) => ({
+      ...prev,
+      [unit_code]: [...(prev[unit_code] || []), message],
+    }));
+
+    messagesEndRefs.current[unit_code]?.scrollIntoView({ behavior: "smooth" });
+  }
+)
+
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -163,35 +178,11 @@ const [collapsedChats, setCollapsedChats] = useState<string[]>([]);
       return;
     }
 if (data && data.length > 0) {
-  const newMsg = data[0];
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("name, avatar_url")
-    .eq("user_id", currentUserId)
-    .single();
-
-  const message = {
-    id: newMsg.id,
-    unit_code: newMsg.unit_code,
-    user_id: newMsg.user_id,
-    content: newMsg.content,
-    created_at: newMsg.created_at,
-    sender_name: profile?.name || "You",
-    avatar_url: profile?.avatar_url || null,
-  };
-
-  setMessagesMap((prev) => {
-    const unitMessages = prev[unit_code] || [];
-    return { ...prev, [unit_code]: [...unitMessages, message] };
-  });
-// Scroll to newest message after sending
-setTimeout(() => {
-  messagesEndRefs.current[unit_code]?.scrollIntoView({ behavior: "smooth" });
-}, 50);
-  // Play notification sound
+  // Realtime will handle inserting the message into state
   const audio = new Audio("/sounds/notification.mp3");
-  audio.play().catch((err) => console.warn("Sound play failed:", err));
+  audio.play().catch(err => console.warn("Sound play failed:", err));
 }
+
 
 
     setInputMap((prev) => ({ ...prev, [unit_code]: "" }));
@@ -248,74 +239,79 @@ setTimeout(() => {
     {messages.map((msg, idx) => {
       const prevMsg = messages[idx - 1];
       const isSameSender = prevMsg && prevMsg.user_id === msg.user_id;
-
-      return (
+    return (
         <li
-          key={msg.id}
-          className={`flex items-start gap-2 ${
-            msg.user_id === currentUserId ? "justify-end" : "justify-start"
-          } ${isSameSender ? "mt-1" : "mt-3"}`}
-        >
-          {/* Avatar only for other users and first message in block */}
-          {msg.user_id !== currentUserId && !isSameSender && (
-            <Avatar className="h-8 w-8">
-              {msg.avatar_url ? (
-                <img src={msg.avatar_url} alt={msg.sender_name} />
-              ) : (
-                <AvatarFallback>{msg.sender_name?.[0]}</AvatarFallback>
-              )}
-            </Avatar>
-          )}
+  key={msg.id}
+  className={`flex flex-col ${msg.user_id === currentUserId ? "items-end" : "items-start"} ${
+    isSameSender ? "mt-1" : "mt-3"
+  }`}
+>
+  {/* Avatar + Name */}
+  <div
+  className={`flex items-center gap-2 mb-1 min-h-[32px] ${
+    msg.user_id === currentUserId ? "flex-row-reverse" : "flex-row"
+  }`}
+>
+  <div className="flex-shrink-0">
+    <Avatar className="h-8 w-8 overflow-visible">
+      {msg.avatar_url ? (
+        <img
+          src={msg.avatar_url}
+          alt={msg.sender_name}
+          className="h-full w-full object-cover rounded-full"
+        />
+      ) : (
+        <AvatarFallback className="h-8 w-8">
+          {msg.sender_name?.[0]}
+        </AvatarFallback>
+      )}
+    </Avatar>
+  </div>
 
-          <div
-            className={`px-3 py-2 rounded-lg break-words ${
-              msg.user_id === currentUserId
-                ? "bg-blue-600 text-white rounded-tr-none max-w-[75%]"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-tl-none max-w-[75%]"
-            }`}
-          >
-            <p
-              className={`text-xs font-semibold ${
-                msg.user_id === currentUserId ? "text-white" : "text-blue-500"
-              }`}
-            >
-              {msg.sender_name} says
-            </p>
+  <span className="text-xs font-medium text-muted-foreground leading-none">
+    {msg.sender_name}
+  </span>
+</div>
 
-            <p className="text-sm">{msg.content}</p>
 
-            {/* Metadata */}
-            <div
-              className={`mt-1 flex justify-end items-center gap-1 text-[10px] ${
-                msg.user_id === currentUserId ? "text-green-400" : "text-green-200"
-              }`}
-            >
-              {msg.user_id === currentUserId && (
-                <span className="flex gap-[1px]">
-                  <Check className="h-3 w-3 text-green-400" />
-                  <Check className="h-3 w-3 text-green-400" />
-                </span>
-              )}
-              <span>
-                {new Date(msg.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-              <span className="ml-1">
-                {new Date(msg.created_at).toLocaleDateString([], {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          </div>
-        </li>
+  {/* Message Bubble */}
+  <div
+    className={`px-3 py-2 rounded-lg break-words max-w-[75%] ${
+      msg.user_id === currentUserId
+        ? "bg-blue-600 text-white rounded-tr-none"
+        : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-tl-none"
+    }`}
+  >
+    <p className="text-sm">{msg.content}</p>
+
+    {/* Metadata */}
+    <div
+      className={`mt-1 flex justify-end items-center gap-1 text-[10px] ${
+        msg.user_id === currentUserId ? "text-green-400" : "text-green-200"
+      }`}
+    >
+      {msg.user_id === currentUserId && (
+        <span className="flex gap-[1px]">
+          <Check className="h-3 w-3 text-green-400" />
+          <Check className="h-3 w-3 text-green-400" />
+        </span>
+      )}
+      <span>
+        {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </span>
+      <span className="ml-1">
+        {new Date(msg.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
+      </span>
+    </div>
+  </div>
+</li>
+
       );
     })}
     <li ref={(el) => (messagesEndRefs.current[unit_code] = el)} />
   </ul>
 </ScrollArea>
+
 
 
               {/* Input */}
