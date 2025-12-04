@@ -18,12 +18,11 @@ export default defineConfig(({ mode }) => {
       port: 8080,
     },
 
-    // ✅ Build optimization and compatibility for Vercel
     build: {
       chunkSizeWarningLimit: 1500,
-      target: "esnext", // for modern browser support
-      outDir: "dist", // default Vercel expects
-      sourcemap: mode === "development", // helpful during debugging
+      target: "esnext",
+      outDir: "dist",
+      sourcemap: mode === "development",
     },
 
     plugins: [
@@ -35,7 +34,7 @@ export default defineConfig(({ mode }) => {
           "favicon.svg",
           "robots.txt",
           "pwa-192x192.jpeg",
-          "pwa-512x512.jpeg", // ✅ fixed “pneg” typo
+          "pwa-512x512.jpeg",
         ],
         manifest: {
           name: "MEDRAE",
@@ -54,9 +53,14 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+
+          // ✅ Make all SPA routes work offline
+          navigateFallback: "/index.html",
+
           runtimeCaching: [
+            // CSS/JS/JSON caching
             {
-              urlPattern: /\/.*\.(?:css|json)$/,
+              urlPattern: /\/.*\.(?:css|js|json)$/,
               handler: "NetworkFirst",
               options: {
                 cacheName: "static-resources",
@@ -64,12 +68,23 @@ export default defineConfig(({ mode }) => {
                 expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
               },
             },
+            // Images caching
             {
-              urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/, // ✅ added webp
+              urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/,
               handler: "CacheFirst",
               options: {
                 cacheName: "image-cache",
                 expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              },
+            },
+            // Optional: cache API responses for offline use
+            {
+              urlPattern: /\/api\/.*\.json$/,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "api-cache",
+                networkTimeoutSeconds: 5,
+                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
               },
             },
           ],
@@ -83,12 +98,10 @@ export default defineConfig(({ mode }) => {
       },
     },
 
-    // ✅ Define global environment vars to prevent undefined errors
     define: {
       "process.env": env,
     },
 
-    // ✅ Added this for compatibility on Vercel
     optimizeDeps: {
       include: ["react", "react-dom"],
     },
