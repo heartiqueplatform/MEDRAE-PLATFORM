@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI"; // path where you saved OverlayAI.tsx
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, RotateCcw, Save, Users,MessageCircle, X, Cpu, AlertTriangle, Volume, VolumeX  } from "lucide-react";
 import FloatingChat from "@/components/FloatingChat"; // adjust path if needed
 
 interface Question {
@@ -36,7 +36,7 @@ export default function QuizPage() {
   const params = new URLSearchParams(location.search);
   const unit = params.get("unit");
   const [session, setSession] = useState<any>(null); // Add this line
-
+const [saving, setSaving] = useState(false);
 const [isAIOverlayOpen, setAIOverlayOpen] = useState(false);
 const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
 const [timerEnd, setTimerEnd] = useState<number | null>(null);
@@ -44,7 +44,7 @@ const [notes, setNotes] = useState<Record<string, string>>({});
 const [notUnderstood, setNotUnderstood] = useState<Record<string, boolean>>({});
 const [attemptsCount, setAttemptsCount] = useState<Record<string, number>>({});
 const [helpOthersDisabled, setHelpOthersDisabled] = useState<{ [key: string]: boolean }>({});
-
+const [saved, setSaved] = useState(false);
 const [notesOverlay, setNotesOverlay] = useState<string | null>(null); // updated
 
 const [understood, setUnderstood] = useState<Record<string, boolean>>({});
@@ -74,6 +74,16 @@ const [helpMeHelpers, setHelpMeHelpers] = useState<
 const [currentQuestionText, setCurrentQuestionText] = useState("");
 // Step 1: Add state for overlay
 const [helpMeOverlay, setHelpMeOverlay] = useState<{ helpers: any[], questionText: string } | null>(null);
+const [isMuted, setIsMuted] = useState(
+  localStorage.getItem("quizMuted") === "true" ? true : false
+);
+
+const toggleMute = () => {
+  setIsMuted(prev => {
+    localStorage.setItem("quizMuted", (!prev).toString());
+    return !prev;
+  });
+};
 
 useEffect(() => {
   if (!userId || !questions.length) return;
@@ -489,74 +499,157 @@ const handleResetTimer = () => {
             const correct = q.correct_answer === letter;
 
             return (
-              <button
-                key={letter}
-                disabled={!!selectedAnswer || quizFinished}
-                onClick={() => handleAnswer(q.id, letter)}
-                className={`w-full text-left px-3 py-2 rounded-lg font-semibold border transition-all duration-150
-                  ${isSelected
-                    ? correct
-                      ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
-                      : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
-                    : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"}
-                  ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
-              >
-                {letter}. {optionText}
-              </button>
+<button
+  key={letter}
+  disabled={!!selectedAnswer || quizFinished}
+  onClick={() => {
+    handleAnswer(q.id, letter);
+
+    if (!isMuted) {
+      const audio = new Audio(correct ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
+      audio.play().catch(err => console.error("Audio play error:", err));
+    }
+  }}
+  className={`w-full text-left px-3 py-2 rounded-lg font-semibold border transition-all duration-150
+    ${isSelected
+      ? correct
+        ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
+        : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
+      : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"}
+    ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
+>
+  <div className="flex justify-between items-center relative">
+    <span>{letter}. {optionText}</span>
+
+    {/* Emoji reaction */}
+  {isSelected && correct && (
+  <span className="ml-2 text-4xl animate-emoji-zoom">😊</span>
+)}
+{isSelected && !correct && (
+  <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>
+    )}
+  </div>
+</button>
+
+
+
             );
           })}
         </div>
 
         <div className="mt-2 flex gap-2">
+ 
+
+<button
+  onClick={() => handleReportQuestion(q)}
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-transparent
+    text-red-600
+    hover:bg-red-500 hover:text-white
+    dark:border-red-400 dark:text-red-400
+    dark:hover:bg-red-500 dark:hover:text-white
+    transition
+  "
+>
+  <AlertTriangle className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Report Question
+  </span>
+</button>
+
+
           <button
-            onClick={() => handleReportQuestion(q)}
-           className="px-3 py-1 text-sm rounded-lg border transition
-  border-red-500 text-red-600
-  bg-transparent
-  hover:bg-red-500 hover:text-white
-  dark:border-red-400 dark:text-red-400
-  dark:hover:bg-red-500 dark:hover:text-white"
+  onClick={() => {
+    const optionsText = ["A", "B", "C", "D"]
+      .map(letter => `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`)
+      .join("\n");
 
-          >
-            Report Question
-          </button>
+    const chunkText = (text: string, maxLength = 200) => {
+      const chunks: string[] = [];
+      let start = 0;
+      while (start < text.length) {
+        chunks.push(text.slice(start, start + maxLength));
+        start += maxLength;
+      }
+      return chunks.join("\n\n");
+    };
 
-          <button
-            onClick={() => {
-              const optionsText = ["A", "B", "C", "D"]
-                .map(letter => `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`)
-                .join("\n");
-
-              const chunkText = (text: string, maxLength = 200) => {
-                const chunks: string[] = [];
-                let start = 0;
-                while (start < text.length) {
-                  chunks.push(text.slice(start, start + maxLength));
-                  start += maxLength;
-                }
-                return chunks.join("\n\n");
-              };
-
-              const fullText = `Let's discuss this question in NCK format:
+    const fullText = `Let's discuss this question in NCK format:
 Question: ${q.question_text}
 Options:
 ${optionsText}
 User Answer: ${answers[q.id] || "No answer selected"}
 Please provide a detailed discussion and guidance.`;
 
-              setAIPrefillQuestion(chunkText(fullText, 200));
-              setAIOverlayOpen(true);
-            }}
-            className="px-3 py-1 text-sm rounded-lg border transition
-  border-blue-500 text-blue-600
-  bg-transparent
-  hover:bg-blue-500 hover:text-white
-  dark:border-blue-400 dark:text-blue-400
-  dark:hover:bg-blue-500 dark:hover:text-white"
+    setAIPrefillQuestion(chunkText(fullText, 200));
+    setAIOverlayOpen(true);
+  }}
+className="
+  relative group
+  w-8 h-8 flex items-center justify-center
+  rounded-md
+  bg-gray-200 dark:bg-gray-800
+  text-gray-700 dark:text-gray-300
+  transition
+  hover:bg-gray-300 dark:hover:bg-gray-700
+"
 
-          >
-            AI Assistance
-          </button>
+>
+  <Cpu className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    AI Assistance
+  </span>
+</button>
+<button
+  onClick={toggleMute}
+  className="relative group w-8 h-8 flex items-center justify-center rounded-md
+             bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
+>
+  {isMuted ? (
+    <VolumeX className="w-5 h-5" />
+  ) : (
+    <Volume className="w-5 h-5" />
+  )}
+
+  {/* Tooltip */}
+  <span
+    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+               opacity-0 group-hover:opacity-100
+               pointer-events-none
+               bg-gray-900 text-white text-[10px]
+               px-2 py-1 rounded-md whitespace-nowrap
+               transition shadow-lg z-50"
+  >
+    {isMuted ? "Unmute sounds" : "Mute sounds"}
+  </span>
+</button>
         </div>
 
         {showFeedback && (
@@ -576,27 +669,64 @@ Please provide a detailed discussion and guidance.`;
       <div className="w-full lg:w-1/3 p-4 border rounded-lg shadow-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-black dark:text-white flex flex-col">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-bold">Your Notes evaluation panel</h2>
-       <div className="flex flex-wrap gap-2 max-w-full">
+     
 
 
-           <button
+       
+        </div>
+
+        <textarea
+          value={notes[q.id] || ""}
+          onChange={(e) => setNotes(prev => ({ ...prev, [q.id]: e.target.value }))}
+          className="w-full flex-1 p-2 border rounded-lg resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-2 h-32"
+          placeholder="Take notes here..."
+        />
+
+        <div className="flex gap-2 justify-end">
+          {/* Save */}
+   
+
+
+  <button
   onClick={() => setNotesOverlay(q.id)}
-  className="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition"
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+  "
 >
-  Expand
+  <PanelRightOpen className="w-4 h-4" />
+
+  {/* Hover text above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Expand Notes
+  </span>
 </button>
 
+{/* Understood */}
+{/* Understood */}
 <button
   onClick={async () => {
     if (!userId) return;
 
     const newState = !understood[q.id];
 
-    // Toggle states locally
     setUnderstood(prev => ({ ...prev, [q.id]: newState }));
     setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
 
-    // Upsert full row
     const row = {
       user_id: userId,
       question_id: q.id,
@@ -610,37 +740,53 @@ Please provide a detailed discussion and guidance.`;
     try {
       await supabase
         .from("question_notes")
-        .upsert([row], { onConflict: "question_id, user_id"
- });
+        .upsert([row], { onConflict: "question_id, user_id" });
     } catch (err) {
       console.error("Error updating Understood:", err);
     }
   }}
-className={`px-2 py-1 text-xs rounded-lg border transition
-  border-green-500 text-green-600
-  hover:bg-green-500 hover:text-white
-  dark:border-green-400 dark:text-green-400
-  dark:hover:bg-green-500 dark:hover:text-white
-  ${understood[q.id] ? "bg-green-500 text-white" : "bg-transparent"}
-`}
-
+  className={`
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+    ${understood[q.id] ? "ring-2 ring-green-500" : ""}
+  `}
 >
-  Understood
+
+  <CheckCircle2 className="w-4 h-4" />
+
+  {/* Hover text above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Understood
+  </span>
 </button>
 
 
+
     {/* Not Understood */}
+{/* Not Understood */}
 <button
   onClick={async () => {
     if (!userId) return;
 
     const newState = !notUnderstood[q.id];
 
-    // Toggle states locally
     setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
     setUnderstood(prev => ({ ...prev, [q.id]: false }));
 
-    // Upsert full row
     const row = {
       user_id: userId,
       question_id: q.id,
@@ -654,23 +800,40 @@ className={`px-2 py-1 text-xs rounded-lg border transition
     try {
       await supabase
         .from("question_notes")
-        .upsert([row], { onConflict: "question_id, user_id"
- });
+        .upsert([row], { onConflict: "question_id, user_id" });
     } catch (err) {
       console.error("Error updating Not Understood:", err);
     }
   }}
- className={`px-2 py-1 text-xs rounded-lg border transition
-  border-red-500 text-red-600
-  hover:bg-red-500 hover:text-white
-  dark:border-red-400 dark:text-red-400
-  dark:hover:bg-red-500 dark:hover:text-white
-  ${notUnderstood[q.id] ? "bg-red-500 text-white" : "bg-transparent"}
-`}
-
+  className={`
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+    ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}
+  `}
 >
-  Not Understood
+
+  <HelpCircle className="w-4 h-4" />
+
+  {/* Hover text above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Not Understood
+  </span>
 </button>
+
 
 
       {/* Attempts */}
@@ -682,7 +845,6 @@ className={`px-2 py-1 text-xs rounded-lg border transition
     const newCount = current + 1;
     setAttempts(prev => ({ ...prev, [q.id]: newCount }));
 
-    // Upsert full row with updated attempts
     const row = {
       user_id: userId,
       question_id: q.id,
@@ -696,66 +858,108 @@ className={`px-2 py-1 text-xs rounded-lg border transition
     try {
       await supabase
         .from("question_notes")
-        .upsert([row], { onConflict: "question_id, user_id"
- });
+        .upsert([row], { onConflict: "question_id, user_id" });
     } catch (err) {
       console.error("Error updating Attempts:", err);
     }
   }}
-  className="px-2 py-1 text-xs rounded-lg border transition
-  border-blue-500 text-blue-600
-  bg-transparent
-  hover:bg-blue-500 hover:text-white
-  dark:border-blue-400 dark:text-blue-400
-  dark:hover:bg-blue-500 dark:hover:text-white"
-
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+  "
 >
-  Attempted {attempts[q.id] || 0}
+  <RotateCcw className="w-4 h-4" />
+
+  {/* Hover text above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Attempted: {attempts[q.id] || 0}
+  </span>
+</button> 
+<button
+  onClick={async () => {
+    if (!userId) return;
+    setSaving(true);
+    setSaved(false);
+
+    const text = notes[q.id] || "";
+
+    const { data: existing } = await supabase
+      .from("question_notes")
+      .select("id")
+      .eq("question_id", q.id)
+      .eq("user_id", userId)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from("question_notes")
+        .update({ note_text: text })
+        .eq("id", existing.id);
+    } else {
+      await supabase
+        .from("question_notes")
+        .insert([{ question_id: q.id, user_id: userId, note_text: text }]);
+    }
+
+    setSaving(false);
+    setSaved(true);
+
+    // Hide the "Saved" message after 1 second
+    setTimeout(() => setSaved(false), 1000);
+  }}
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+  "
+>
+  {/* Icon / animation */}
+  {saving ? (
+    <div className="flex space-x-1">
+      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
+      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
+      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
+    </div>
+  ) : (
+    <Save className="w-4 h-4" />
+  )}
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
+  </span>
 </button>
 
-          </div>
-        </div>
-
-        <textarea
-          value={notes[q.id] || ""}
-          onChange={(e) => setNotes(prev => ({ ...prev, [q.id]: e.target.value }))}
-          className="w-full flex-1 p-2 border rounded-lg resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-2 h-32"
-          placeholder="Take notes here..."
-        />
-
-        <div className="flex gap-2 justify-end">
-          {/* Save */}
-          <button
-            onClick={async () => {
-              if (!userId) return;
-              const text = notes[q.id] || "";
-              const { data: existing } = await supabase
-                .from("question_notes")
-                .select("id")
-                .eq("question_id", q.id)
-                .eq("user_id", userId)
-                .single();
-
-              if (existing) {
-                await supabase.from("question_notes").update({ note_text: text }).eq("id", existing.id);
-              } else {
-                await supabase.from("question_notes").insert([{ question_id: q.id, user_id: userId, note_text: text }]);
-              }
-              alert("Note saved!");
-            }}
-            className="px-3 py-1 text-sm rounded-lg border transition
-  border-indigo-500 text-indigo-600
-  bg-transparent
-  hover:bg-indigo-500 hover:text-white
-  dark:border-indigo-400 dark:text-indigo-400
-  dark:hover:bg-indigo-500 dark:hover:text-white"
-
-          >
-            Save notes
-          </button>
 
           {/* Help Others */}
-   {/* Help Others */}
+{/* Help Others */}
 <button
   onClick={async () => {
     if (!userId || helpOthersDisabled[q.id]) return;
@@ -776,31 +980,46 @@ className={`px-2 py-1 text-xs rounded-lg border transition
     try {
       await supabase
         .from("question_notes")
-        .upsert([row], { onConflict: "question_id, user_id"
- });
+        .upsert([row], { onConflict: "question_id, user_id" });
 
       setHelpOthersDisabled(prev => ({ ...prev, [q.id]: true }));
-      alert("Your number is now available for other students!");
+      // Optional: small visual feedback instead of alert
     } catch (err) {
       console.error("Error saving Help Others:", err);
     }
   }}
-className={`px-2 py-1 text-xs rounded-lg border transition
-  border-purple-500 text-purple-600
-  bg-transparent
-  hover:bg-purple-500 hover:text-white
-  dark:border-purple-400 dark:text-purple-400
-  dark:hover:bg-purple-500 dark:hover:text-white
-  ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}
-`}
-
   disabled={helpOthersDisabled[q.id]}
+  className={`
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+    ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}
+  `}
 >
-  Help Others
+  <Users className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    {helpOthersDisabled[q.id] ? "Already shared" : "Help Others"}
+  </span>
 </button>
 
           {/* Help Me */}
 
+{/* Help Me */}
 <button
   onClick={async () => {
     if (!userId) return;
@@ -826,10 +1045,9 @@ className={`px-2 py-1 text-xs rounded-lg border transition
       return;
     }
 
-    // Map to expected structure for overlay
     const helpers = data.map((d: any) => ({
       id: d.id,
-      whatsapp: d.help_others,   // <-- this is the phone column
+      whatsapp: d.help_others,
       profiles: d.profiles
     }));
 
@@ -837,16 +1055,33 @@ className={`px-2 py-1 text-xs rounded-lg border transition
     setCurrentQuestionText(q.question_text);
     setHelpMeOverlayOpen(true);
   }}
-className="px-3 py-1 text-sm rounded-lg border transition
-  border-emerald-500 text-emerald-600
-  bg-transparent
-  hover:bg-emerald-500 hover:text-white
-  dark:border-emerald-400 dark:text-emerald-400
-  dark:hover:bg-emerald-500 dark:hover:text-white"
-
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+  "
 >
-  Help Me
+  <MessageCircle className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Help Me
+  </span>
 </button>
+
 
 {notesOverlay === q.id && (
 <div
@@ -865,14 +1100,38 @@ className="px-3 py-1 text-sm rounded-lg border transition
       {/* ============================ */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-bold text-xl text-blue-700 dark:text-blue-300">
-          📘 Expanded Notes Panel — Deep Thinking Mode
+        Expanded Notes Panel 
         </h2>
-        <button
-          onClick={() => setNotesOverlay(null)}
-          className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition"
-        >
-          Close
-        </button>
+      <button
+  onClick={() => setNotesOverlay(null)}
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-300 dark:bg-gray-700
+    text-gray-700 dark:text-gray-300
+    transition
+    hover:bg-gray-400 dark:hover:bg-gray-600
+  "
+>
+  <X className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Close
+  </span>
+</button>
+
       </div>
 
       {/* ============================ */}
@@ -892,121 +1151,9 @@ className="px-3 py-1 text-sm rounded-lg border transition
       {/* ============================ */}
       {/* BUTTONS SECTION */}
       {/* ============================ */}
-      <div className="flex flex-wrap gap-2 mb-4">
+    
 
-        {/* UNDERSTOOD */}
-        <button
-          onClick={async () => {
-            if (!userId) return;
-
-            const newState = !understood[q.id];
-            setUnderstood(prev => ({ ...prev, [q.id]: newState }));
-            setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-            const row = {
-              user_id: userId,
-              question_id: q.id,
-              note_text: notes[q.id] || "",
-              understood: newState,
-              is_not_understood: false,
-              attempts: attempts[q.id] || 0,
-              help_others: helpOthersDisabled[q.id] ? "saved" : null
-            };
-
-            try {
-              await supabase.from("question_notes").upsert([row], { onConflict: ["user_id","question_id"] });
-            } catch (err) {
-              console.error("Error updating Understood:", err);
-            }
-          }}
-       className={`px-3 py-1 text-sm rounded-lg border transition
-  border-green-500 text-green-600
-  bg-transparent
-  hover:bg-green-500 hover:text-white
-  dark:border-green-400 dark:text-green-400
-  dark:hover:bg-green-500 dark:hover:text-white
-  ${understood[q.id] ? "bg-green-500 text-white" : ""}
-`}
-
-        >
-          Understood
-        </button>
-
-        {/* NOT UNDERSTOOD */}
-        <button
-          onClick={async () => {
-            if (!userId) return;
-
-            const newState = !notUnderstood[q.id];
-            setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
-            setUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-            const row = {
-              user_id: userId,
-              question_id: q.id,
-              note_text: notes[q.id] || "",
-              understood: false,
-              is_not_understood: newState,
-              attempts: attempts[q.id] || 0,
-              help_others: helpOthersDisabled[q.id] ? "saved" : null
-            };
-
-            try {
-              await supabase.from("question_notes").upsert([row], { onConflict: ["user_id","question_id"] });
-            } catch (err) {
-              console.error("Error updating Not Understood:", err);
-            }
-          }}
-       className={`px-3 py-1 text-sm rounded-lg border transition
-  border-red-500 text-red-600
-  bg-transparent
-  hover:bg-red-500 hover:text-white
-  dark:border-red-400 dark:text-red-400
-  dark:hover:bg-red-500 dark:hover:text-white
-  ${notUnderstood[q.id] ? "bg-red-500 text-white" : ""}
-`}
-
-        >
-          Not Understood
-        </button>
-
-        {/* ATTEMPTED */}
-        <button
-          onClick={async () => {
-            if (!userId) return;
-
-            const current = attempts[q.id] || 0;
-            const newCount = current + 1;
-            setAttempts(prev => ({ ...prev, [q.id]: newCount }));
-
-            const row = {
-              user_id: userId,
-              question_id: q.id,
-              note_text: notes[q.id] || "",
-              understood: understood[q.id] || false,
-              is_not_understood: notUnderstood[q.id] || false,
-              attempts: newCount,
-              help_others: helpOthersDisabled[q.id] ? "saved" : null
-            };
-
-            try {
-              await supabase.from("question_notes").upsert([row], { onConflict: ["user_id","question_id"] });
-            } catch (err) {
-              console.error("Error updating Attempts:", err);
-            }
-          }}
-         className="px-3 py-1 text-sm rounded-lg border transition
-  border-blue-500 text-blue-600
-  bg-transparent
-  hover:bg-blue-500 hover:text-white
-  dark:border-blue-400 dark:text-blue-400
-  dark:hover:bg-blue-500 dark:hovertext-white"
-
-        >
-          Attempted {attempts[q.id] || 0}
-        </button>
-
-      </div>
+   
 
       {/* ============================ */}
       {/* NOTES TEXTAREA */}
@@ -1024,130 +1171,372 @@ className="px-3 py-1 text-sm rounded-lg border transition
       <div className="flex flex-wrap gap-2 mt-2">
 
         {/* SAVE NOTE */}
-        <button
-          onClick={async () => {
-            if (!userId) return;
+   {/* Understood */}
+<button
+  onClick={async () => {
+    if (!userId) return;
 
-            const text = notes[q.id] || "";
+    const newState = !understood[q.id];
 
-            const row = {
-              user_id: userId,
-              question_id: q.id,
-              note_text: text,
-              understood: understood[q.id] || false,
-              is_not_understood: notUnderstood[q.id] || false,
-              attempts: attempts[q.id] || 0,
-              help_others: helpOthersDisabled[q.id] ? "saved" : null
-            };
+    setUnderstood(prev => ({ ...prev, [q.id]: newState }));
+    setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
 
-            try {
-              await supabase.from("question_notes").upsert([row], { onConflict: ["user_id","question_id"] });
-              alert("Note saved!");
-            } catch (err) {
-              console.error("Error saving note:", err);
-            }
-          }}
-          className="px-4 py-2 text-sm rounded-lg border transition
-  border-indigo-500 text-indigo-600
-  bg-transparent
-  hover:bg-indigo-500 hover:text-white
-  dark:border-indigo-400 dark:text-indigo-400
-  dark:hover:bg-indigo-500 dark:hover:text-white"
+    const row = {
+      user_id: userId,
+      question_id: q.id,
+      note_text: notes[q.id] || "",
+      understood: newState,
+      is_not_understood: false,
+      attempts: attempts[q.id] || 0,
+      help_others: helpOthersDisabled[q.id] ? "saved" : null
+    };
 
-        >
-          Save
-        </button>
+    try {
+      await supabase
+        .from("question_notes")
+        .upsert([row], { onConflict: "question_id, user_id" });
+    } catch (err) {
+      console.error("Error updating Understood:", err);
+    }
+  }}
+  className={`
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+    ${understood[q.id] ? "ring-2 ring-green-500" : ""}
+  `}
+>
 
-        {/* HELP OTHERS */}
-        <button
-          onClick={async () => {
-            if (!userId || helpOthersDisabled[q.id]) return;
+  <CheckCircle2 className="w-4 h-4" />
 
-            const phone = prompt("Enter your WhatsApp number (e.g., +254712345678):");
-            if (!phone) return;
+  {/* Hover text above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Understood
+  </span>
+</button>
 
-            const row = {
-              user_id: userId,
-              question_id: q.id,
-              note_text: notes[q.id] || "",
-              understood: understood[q.id] || false,
-              is_not_understood: notUnderstood[q.id] || false,
-              attempts: attempts[q.id] || 0,
-              help_others: phone
-            };
 
-            try {
-              await supabase.from("question_notes").upsert([row], { onConflict: ["user_id","question_id"] });
-              setHelpOthersDisabled(prev => ({ ...prev, [q.id]: true }));
-              alert("Your number is now available to help others!");
-            } catch (err) {
-              console.error("Error saving Help Others:", err);
-            }
-          }}
-          disabled={helpOthersDisabled[q.id]}
-     className={`px-3 py-1 text-sm rounded-lg border transition
-  border-purple-500 text-purple-600
-  bg-transparent
-  hover:bg-purple-500 hover:text-white
-  dark:border-purple-400 dark:text-purple-400
-  dark:hover:bg-purple-500 dark:hover:text-white
-  ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}
-`}
 
-        >
-          Help Others
-        </button>
+    {/* Not Understood */}
+{/* Not Understood */}
+<button
+  onClick={async () => {
+    if (!userId) return;
 
-        {/* HELP ME */}
-        <button
-          onClick={async () => {
-            if (!userId) return;
+    const newState = !notUnderstood[q.id];
 
-            try {
-              const { data, error } = await supabase
-                .from("question_notes")
-                .select("user_id, help_others")
-                .eq("question_id", q.id)
-                .not("help_others", "is", null);
+    setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
+    setUnderstood(prev => ({ ...prev, [q.id]: false }));
 
-              if (error || !data || data.length === 0) {
-                alert("No one has offered help yet.");
-                return;
-              }
+    const row = {
+      user_id: userId,
+      question_id: q.id,
+      note_text: notes[q.id] || "",
+      understood: false,
+      is_not_understood: newState,
+      attempts: attempts[q.id] || 0,
+      help_others: helpOthersDisabled[q.id] ? "saved" : null
+    };
 
-              const options = data
-                .map((d, idx) => `${idx + 1}. ${d.help_others}`)
-                .join("\n");
+    try {
+      await supabase
+        .from("question_notes")
+        .upsert([row], { onConflict: "question_id, user_id" });
+    } catch (err) {
+      console.error("Error updating Not Understood:", err);
+    }
+  }}
+  className={`
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+    ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}
+  `}
+>
 
-              const choice = prompt(
-                `Choose someone to WhatsApp:\n${options}\nEnter number:`
-              );
+  <HelpCircle className="w-4 h-4" />
 
-              if (!choice) return;
+  {/* Hover text above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Not Understood
+  </span>
+</button>
 
-              const selected = data[Number(choice) - 1];
-              if (!selected) return;
 
-              const message = encodeURIComponent(
-                `Hi! Can you help me with this question?\n\n${q.question_text}\n\nThanks!`
-              );
 
-              window.open(`https://wa.me/${selected.help_others}?text=${message}`, "_blank");
-            } catch (err) {
-              console.error("Error fetching Help Me contacts:", err);
-              alert("Failed to fetch helpers.");
-            }
-          }}
-className="px-3 py-1 text-sm rounded-lg border transition
-  border-emerald-500 text-emerald-600
-  bg-transparent
-  hover:bg-emerald-500 hover:text-white
-  dark:border-emerald-400 dark:text-emerald-400
-  dark:hover:bg-emerald-500 dark:hover:text-white"
+      {/* Attempts */}
+<button
+  onClick={async () => {
+    if (!userId) return;
 
-        >
-          Help Me
-        </button>
+    const current = attempts[q.id] || 0;
+    const newCount = current + 1;
+    setAttempts(prev => ({ ...prev, [q.id]: newCount }));
+
+    const row = {
+      user_id: userId,
+      question_id: q.id,
+      note_text: notes[q.id] || "",
+      understood: understood[q.id] || false,
+      is_not_understood: notUnderstood[q.id] || false,
+      attempts: newCount,
+      help_others: helpOthersDisabled[q.id] ? "saved" : null
+    };
+
+    try {
+      await supabase
+        .from("question_notes")
+        .upsert([row], { onConflict: "question_id, user_id" });
+    } catch (err) {
+      console.error("Error updating Attempts:", err);
+    }
+  }}
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+  "
+>
+  <RotateCcw className="w-4 h-4" />
+
+  {/* Hover text above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Attempted: {attempts[q.id] || 0}
+  </span>
+</button>
+        
+<button
+  onClick={async () => {
+    if (!userId) return;
+    setSaving(true);
+    setSaved(false);
+
+    const text = notes[q.id] || "";
+
+    const { data: existing } = await supabase
+      .from("question_notes")
+      .select("id")
+      .eq("question_id", q.id)
+      .eq("user_id", userId)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from("question_notes")
+        .update({ note_text: text })
+        .eq("id", existing.id);
+    } else {
+      await supabase
+        .from("question_notes")
+        .insert([{ question_id: q.id, user_id: userId, note_text: text }]);
+    }
+
+    setSaving(false);
+    setSaved(true);
+
+    // Hide the "Saved" message after 1 second
+    setTimeout(() => setSaved(false), 1000);
+  }}
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+  "
+>
+  {/* Icon / animation */}
+  {saving ? (
+    <div className="flex space-x-1">
+      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
+      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
+      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
+    </div>
+  ) : (
+    <Save className="w-4 h-4" />
+  )}
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
+  </span>
+</button>
+
+
+          {/* Help Others */}
+{/* Help Others */}
+<button
+  onClick={async () => {
+    if (!userId || helpOthersDisabled[q.id]) return;
+
+    const phone = prompt("Enter your WhatsApp number (with country code, e.g., +254712345678):");
+    if (!phone) return;
+
+    const row = {
+      user_id: userId,
+      question_id: q.id,
+      note_text: notes[q.id] || "",
+      understood: understood[q.id] || false,
+      is_not_understood: notUnderstood[q.id] || false,
+      attempts: attempts[q.id] || 0,
+      help_others: phone
+    };
+
+    try {
+      await supabase
+        .from("question_notes")
+        .upsert([row], { onConflict: "question_id, user_id" });
+
+      setHelpOthersDisabled(prev => ({ ...prev, [q.id]: true }));
+      // Optional: small visual feedback instead of alert
+    } catch (err) {
+      console.error("Error saving Help Others:", err);
+    }
+  }}
+  disabled={helpOthersDisabled[q.id]}
+  className={`
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+    ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}
+  `}
+>
+  <Users className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    {helpOthersDisabled[q.id] ? "Already shared" : "Help Others"}
+  </span>
+</button>
+
+          {/* Help Me */}
+
+{/* Help Me */}
+<button
+  onClick={async () => {
+    if (!userId) return;
+
+    const { data, error } = await supabase
+      .from("question_notes")
+      .select(`
+        id,
+        help_others,
+        profiles:user_id(name, avatar_url)
+      `)
+      .eq("question_id", q.id)
+      .not("help_others", "eq", "none"); // Only fetch rows where help_others has a phone
+
+    if (error) {
+      console.error("Error fetching helpers:", error);
+      alert("Failed to fetch helpers.");
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      alert("No one has offered help yet for this question.");
+      return;
+    }
+
+    const helpers = data.map((d: any) => ({
+      id: d.id,
+      whatsapp: d.help_others,
+      profiles: d.profiles
+    }));
+
+    setHelpMeHelpers(helpers);
+    setCurrentQuestionText(q.question_text);
+    setHelpMeOverlayOpen(true);
+  }}
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+  "
+>
+  <MessageCircle className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Help Me
+  </span>
+</button>
+
 
       </div>
 
@@ -1165,12 +1554,36 @@ className="px-3 py-1 text-sm rounded-lg border transition
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-bold text-blue-700 dark:text-blue-300">Helpers Available</h2>
-        <button
-          onClick={() => setHelpMeOverlayOpen(false)}
-          className="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 transition"
-        >
-          Close
-        </button>
+       <button
+  onClick={() => setHelpMeOverlayOpen(false)}
+  className="
+    relative group
+    w-8 h-8 flex items-center justify-center
+    rounded-md
+    bg-gray-300 dark:bg-gray-700
+    text-gray-700 dark:text-gray-300
+    transition
+    hover:bg-gray-400 dark:hover:bg-gray-600
+  "
+>
+  <X className="w-4 h-4" />
+
+  {/* Tooltip above */}
+  <span
+    className="
+      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition
+      shadow-lg z-50
+    "
+  >
+    Close
+  </span>
+</button>
+
       </div>
 
       {/* List of Helpers */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Send, User, Stethoscope, Brain } from "lucide-react";
+import { Send, User, Stethoscope, Brain, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
@@ -43,10 +43,7 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   const [inputMessage, setInputMessage] = useState(prefillQuestion || "");
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  const [dontAskAgain, setDontAskAgain] = useState<boolean>(
-    localStorage.getItem("aiOverlayDontAskAgain") === "true"
-  );
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Supabase: Load chat history when overlay opens
@@ -126,12 +123,9 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   }, []);
 
   const handleClose = () => {
-    if (!dontAskAgain) {
-      setShowCloseConfirm(true);
-      return;
-    }
-    onClose();
-  };
+  onClose();
+};
+
 
   const confirmClose = () => {
     onClose();
@@ -235,12 +229,13 @@ try {
   lg:left-[250px] lg:w-[calc(100%-250px)]">
 
       <Card className="w-[95%] max-w-lg h-[80%] flex flex-col relative">
-        <button
-          onClick={handleClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"
-        >
-          ✕ Cancel
-        </button>
+      <button
+  onClick={handleClose}
+  className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"
+>
+  <X className="w-5 h-5" />
+</button>
+
         <div className="flex items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-600">
           <Brain className="h-5 w-5 text-green-600" />
           <h2 className="text-lg font-bold text-black dark:text-white">Medrae AI Assistant</h2>
@@ -308,22 +303,6 @@ try {
             <Send className="h-4 w-4" />
           </Button>
         </div>
-
-        {showCloseConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <Card className="p-4 max-w-sm w-full space-y-4">
-              <p className="text-black dark:text-white">
-                Are you sure you want to close the AI overlay? You have unsent text.
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button onClick={confirmClose}>Yes</Button>
-                <Button variant="outline" onClick={cancelClose}>
-                  No
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
       </Card>
     </div>
   );
