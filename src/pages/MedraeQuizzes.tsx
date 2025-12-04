@@ -84,6 +84,18 @@ const paperTwoUnits = [
   { code: "HNX2-021", title: "Teaching Methodology", level: "Beginner" },
 ];
 
+const paperThreeUnits = [
+  { code: "HNX3-001", title: "Management of Care (NCLEX)", level: "Professional" },
+  { code: "HNX3-002", title: "Safety and Infection Control  (NCLEX)", level: "Professional" },
+  { code: "HNX3-003", title: "Health Promotion and Maintenance  (NCLEX)", level: "Foundation" },
+  { code: "HNX3-004", title: "Psychosocial Integrity  (NCLEX)", level: "Professional" },
+  { code: "HNX3-005", title: "Basic Care and Comfort  (NCLEX)", level: "Foundation" },
+  { code: "HNX3-006", title: "Pharmacological and Parenteral Therapies  (NCLEX)", level: "Professional" },
+  { code: "HNX3-007", title: "Reduction of Risk Potential  (NCLEX)", level: "Professional" },
+  { code: "HNX3-008", title: "Physiological Adaptation  (NCLEX)", level: "Expert" },
+];
+
+
 const getLevelVariant = (level: string) => {
   switch (level.toLowerCase()) {
     case "beginner":
@@ -97,8 +109,10 @@ const getLevelVariant = (level: string) => {
   }
 };
 
+
+
 export function MedraeQuizzes() {
-    const user = useUser();
+  const user = useUser();
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   const navigate = useNavigate();
@@ -109,161 +123,161 @@ export function MedraeQuizzes() {
   useEffect(() => {
     if (!user) return;
     const checkSubscription = async () => {
-     const { data, error } = await supabase
-  .from("subscriptions")
-  .select("plan_type, expires_at, is_active")
-  .eq("user_id", user.id)
-  .order("created_at", { ascending: false })
-  .limit(1)
-   .maybeSingle(); // Use maybeSingle() if you expect 0 or 1 result
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("plan_type, expires_at, is_active")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(); // Use maybeSingle() if you expect 0 or 1 result
 
-    if (!error && data) {
-    if (data?.is_active) {
-  setIsPremium(true);
-  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
-} else {
-  setIsPremium(false);
-  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: false }));
-}
+      if (!error && data) {
+        if (data?.is_active) {
+          setIsPremium(true);
+          localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
+        } else {
+          setIsPremium(false);
+          localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: false }));
+        }
 
-    }
-console.log("Subscription check:", data, "isPremium:", isPremium);
+      }
+      console.log("Subscription check:", data, "isPremium:", isPremium);
 
-setSubscriptionChecked(true);
+      setSubscriptionChecked(true);
     };
     checkSubscription();
   }, [user]);
 
   // 🔴 Realtime subscription for subscription changes
-useEffect(() => {
-  if (!user) return;
+  useEffect(() => {
+    if (!user) return;
 
-  const channel = supabase
-    .channel("subscription_changes_channel")
-    .on(
-      "postgres_changes",
-      {
-        event: "*", // INSERT, UPDATE, DELETE
-        schema: "public",
-        table: "subscriptions",
-        filter: `user_id=eq.${user.id}`,
-      },
-      (payload) => {
-        console.log("Realtime subscription update:", payload);
-        // re-check subscription immediately
-        (async () => {
-          const { data } = await supabase
-            .from("subscriptions")
-            .select("plan_type, expires_at, is_active")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(); // Use maybeSingle() if you expect 0 or 1 result
-          if (data?.is_active) {
-  setIsPremium(true);
-  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
-} else {
-  setIsPremium(false);
-  localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: false }));
-}
+    const channel = supabase
+      .channel("subscription_changes_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // INSERT, UPDATE, DELETE
+          schema: "public",
+          table: "subscriptions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Realtime subscription update:", payload);
+          // re-check subscription immediately
+          (async () => {
+            const { data } = await supabase
+              .from("subscriptions")
+              .select("plan_type, expires_at, is_active")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(); // Use maybeSingle() if you expect 0 or 1 result
+            if (data?.is_active) {
+              setIsPremium(true);
+              localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
+            } else {
+              setIsPremium(false);
+              localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: false }));
+            }
 
-        })();
-      }
-    )
-    .subscribe();
+          })();
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [user]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
 
   // Fetch free units
-// Load free units from localStorage first
-useEffect(() => {
-  const cachedFreeUnits = localStorage.getItem("freeUnits");
-  if (cachedFreeUnits) {
-    setFreeUnits(JSON.parse(cachedFreeUnits));
-  } else {
-    const fetchFreeUnits = async () => {
-      const { data, error } = await supabase
-        .from("quizzes")
-        .select("unit_code, is_free")
-        .eq("is_active", true);
+  // Load free units from localStorage first
+  useEffect(() => {
+    const cachedFreeUnits = localStorage.getItem("freeUnits");
+    if (cachedFreeUnits) {
+      setFreeUnits(JSON.parse(cachedFreeUnits));
+    } else {
+      const fetchFreeUnits = async () => {
+        const { data, error } = await supabase
+          .from("quizzes")
+          .select("unit_code, is_free")
+          .eq("is_active", true);
 
-      if (!error && data) {
-        const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
-        setFreeUnits(free);
-        localStorage.setItem("freeUnits", JSON.stringify(free));
-      }
-    };
-    fetchFreeUnits();
-  }
-}, []);
+        if (!error && data) {
+          const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
+          setFreeUnits(free);
+          localStorage.setItem("freeUnits", JSON.stringify(free));
+        }
+      };
+      fetchFreeUnits();
+    }
+  }, []);
 
 
   // 🔴 Realtime subscription for quiz changes (free/locked)
-useEffect(() => {
-  const channel = supabase
-    .channel("quiz_changes_channel")
-    .on(
-      "postgres_changes",
-      {
-        event: "*", // listen to INSERT, UPDATE, DELETE
-        schema: "public",
-        table: "quizzes",
-      },
-      (payload) => {
-        console.log("Realtime quiz update:", payload);
-        // re-fetch free units immediately
-        (async () => {
-          const { data } = await supabase
-            .from("quizzes")
-            .select("unit_code, is_free")
-            .eq("is_active", true);
+  useEffect(() => {
+    const channel = supabase
+      .channel("quiz_changes_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // listen to INSERT, UPDATE, DELETE
+          schema: "public",
+          table: "quizzes",
+        },
+        (payload) => {
+          console.log("Realtime quiz update:", payload);
+          // re-fetch free units immediately
+          (async () => {
+            const { data } = await supabase
+              .from("quizzes")
+              .select("unit_code, is_free")
+              .eq("is_active", true);
 
-        if (data) {
-  const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
-  setFreeUnits(free);
-  localStorage.setItem("freeUnits", JSON.stringify(free));
-}
+            if (data) {
+              const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
+              setFreeUnits(free);
+              localStorage.setItem("freeUnits", JSON.stringify(free));
+            }
 
-        })();
-      }
-    )
-    .subscribe();
+          })();
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, []);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const { data: unitCounts, loading, incrementCount } = useUnitQuestionCount();
   // 🔴 Realtime subscription for question count updates
-useEffect(() => {
-  const channel = supabase
-    .channel("question_changes_channel")
-    .on(
-      "postgres_changes",
-      {
-        event: "*", 
-        schema: "public",
-        table: "questions",
-      },
-      () => {
-        incrementCount(""); // refresh all counts live
-      }
-    )
-    .subscribe();
+  useEffect(() => {
+    const channel = supabase
+      .channel("question_changes_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "questions",
+        },
+        () => {
+          incrementCount(""); // refresh all counts live
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [incrementCount]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [incrementCount]);
 
   const [refreshing, setRefreshing] = useState(false);
   const [popup, setPopup] = useState<string | null>(null);
-const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const getQuestionCount = (code: string) => {
     if (!unitCounts || unitCounts.length === 0) return 0;
@@ -276,6 +290,10 @@ const [searchTerm, setSearchTerm] = useState("");
 
   const totalPaperOne = paperOneUnits.reduce((sum, unit) => sum + getQuestionCount(unit.code), 0);
   const totalPaperTwo = paperTwoUnits.reduce((sum, unit) => sum + getQuestionCount(unit.code), 0);
+  const totalPaperThree = paperThreeUnits.reduce(
+    (sum, unit) => sum + getQuestionCount(unit.code),
+    0
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -288,33 +306,33 @@ const [searchTerm, setSearchTerm] = useState("");
     }
     setRefreshing(false);
   };
-// Check localStorage for cached subscription
-useEffect(() => {
-  const cachedSubscription = localStorage.getItem("subscriptionStatus");
-  if (cachedSubscription) {
-    const parsed = JSON.parse(cachedSubscription);
-    setIsPremium(parsed.isPremium);
-    setSubscriptionChecked(true);
+  // Check localStorage for cached subscription
+  useEffect(() => {
+    const cachedSubscription = localStorage.getItem("subscriptionStatus");
+    if (cachedSubscription) {
+      const parsed = JSON.parse(cachedSubscription);
+      setIsPremium(parsed.isPremium);
+      setSubscriptionChecked(true);
+    }
+  }, []);
+
+  // After fetching subscription, save to localStorage
+  useEffect(() => {
+    if (subscriptionChecked) {
+      localStorage.setItem(
+        "subscriptionStatus",
+        JSON.stringify({ isPremium })
+      );
+    }
+  }, [isPremium, subscriptionChecked]);
+
+  // Only show loader if new user and no cached subscription
+  if (!subscriptionChecked && !localStorage.getItem("subscriptionStatus")) {
+    return <GlobalLoader message="Checking subscription..." />;
   }
-}, []);
-
-// After fetching subscription, save to localStorage
-useEffect(() => {
-  if (subscriptionChecked) {
-    localStorage.setItem(
-      "subscriptionStatus",
-      JSON.stringify({ isPremium })
-    );
-  }
-}, [isPremium, subscriptionChecked]);
-
-// Only show loader if new user and no cached subscription
-if (!subscriptionChecked && !localStorage.getItem("subscriptionStatus")) {
-  return <GlobalLoader message="Checking subscription..." />;
-}
 
 
-return (
+  return (
     <div className="space-y-10">
       {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
 
@@ -325,233 +343,317 @@ return (
             Medrae Quizzes Bank
           </h1>
           <p className="text-muted-foreground mt-3 text-base leading-relaxed">
-            Explore NCK-aligned quizzes for all core nursing units. Each quiz has been 
-            carefully curated to reflect the Nursing Council of Kenya (NCK) syllabus, with 
-            questions thoughtfully selected to avoid unnecessary repetition. This ensures 
-            broad topic coverage and mirrors the structure of actual NCK assessments. 
-            Remember  these quizzes are not just for memorizing; they are designed to help 
-            you understand concepts deeply. Read each question carefully, and pay attention 
-            to additional points beyond the direct answer.  
-           
-  <span className="font-semibold text-primary">
-  Note: You must finish the quiz to unlock the submit button.
-  </span>
-  <br />
-  <span className="font-semibold text-primary">
-  Your quiz progress is saved locally, so you can resume later anytime without losing your work.
-  </span>
+            Explore NCK-aligned quizzes for all core nursing units. Each quiz has been
+            carefully curated to reflect the Nursing Council of Kenya (NCK) syllabus, with
+            questions thoughtfully selected to avoid unnecessary repetition. This ensures
+            broad topic coverage and mirrors the structure of actual NCK assessments.
+            Remember  these quizzes are not just for memorizing; they are designed to help
+            you understand concepts deeply. Read each question carefully, and pay attention
+            to additional points beyond the direct answer.
+
+            <span className="font-semibold text-primary">
+              Note: You must finish the quiz to unlock the submit button.
+            </span>
+            <br />
+            <span className="font-semibold text-primary">
+              Your quiz progress is saved locally, so you can resume later anytime without losing your work.
+            </span>
             <br />For engaging explanations, visuals, and deeper understanding, visit our Medtube Learning Sections.
           </p>
           <Link to="/medtube" className="inline-block mt-4">
             <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-50">
-               Visit Medtube Learning Sections
+              Visit Medtube Learning Sections
             </Button>
           </Link>
         </div>
       </div>
-  <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
-  <input
-    type="text"
-    placeholder="Search all papers..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    className="flex-1 p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm 
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
+        <input
+          type="text"
+          placeholder="Search all papers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm 
                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
                dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-  />
+        />
 
-  <Button
-    onClick={() => {
-      const allUnits = [...paperOneUnits, ...paperTwoUnits];
-      const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
-      navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
-    }}
-    variant="outline"
-    className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
-  >
-    Surprise Me With a Random Unit
-  </Button>
-
-  <Button
-    onClick={() => {
-      const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
-      let recommendedUnit;
-
-      if (pastUnits.length > 0) {
-        const allUnits = [...paperOneUnits, ...paperTwoUnits];
-        recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
-      }
-
-      if (!recommendedUnit) {
-        const allUnits = [...paperOneUnits, ...paperTwoUnits];
-        recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
-      }
-
-      if (recommendedUnit) {
-        navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
-      }
-    }}
-    variant="outline"
-    className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
-  >
-    Recommended Quiz
-  </Button>
-
-</div>
-
-
-
-        {/* PAPER ONE */}
-<div className="space-y-4">
-  <h2 className="text-2xl font-semibold text-yellow-500">
-    PAPER ONE UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
-  </h2>
-  <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-    {(loading ? paperOneUnits : paperOneUnits.filter((unit) =>
-      unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-    )).map((unit, index) => (
-      loading ? (
-        <div
-          key={index}
-          className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-        ></div>
-      ) : (
-        <Card
-          key={index}
-          className="border-yellow-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+        <Button
+          onClick={() => {
+            const allUnits = [...paperOneUnits, ...paperTwoUnits];
+            const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+            navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
+          }}
+          variant="outline"
+          className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
         >
-          <CardHeader>
-            <CardTitle className="text-md flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-yellow-500" />
-              {unit.title}
-            </CardTitle>
-            <CardDescription>{unit.code}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">
-                  {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
-                </Badge>
-                <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-                {isPremium ? (
-                  <Badge variant="default" className="bg-green-600 text-white">
-                    Unlocked
-                  </Badge>
-                ) : freeUnits.includes(unit.code.trim()) ? (
-                  <Badge variant="default" className="bg-green-600 text-white">
-                    Free
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-red-600 border-red-600">
-                    Premium/Pro
-                  </Badge>
-                )}
-              </div>
+          Surprise Me With a Random Unit
+        </Button>
 
-              {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-                  <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
-                    <Play className="h-4 w-4 mr-1" />
-                    Start
-                  </Button>
-                </Link>
-              ) : (
-                <Button className="w-full mt-4" variant="outline" disabled>
-                  Premium/Pro Only
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )
-    ))}
-  </div>
-</div>
+        <Button
+          onClick={() => {
+            const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
+            let recommendedUnit;
 
+            if (pastUnits.length > 0) {
+              const allUnits = [...paperOneUnits, ...paperTwoUnits];
+              recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
+            }
 
-    {/* PAPER TWO */}
-<div className="space-y-4">
-  <h2 className="text-2xl font-semibold text-blue-600">
-    PAPER TWO UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
-  </h2>
-  <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-    {(loading ? paperTwoUnits : paperTwoUnits.filter((unit) =>
-      unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-    )).map((unit, index) => (
-      loading ? (
-        <div
-          key={index}
-          className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-        ></div>
-      ) : (
-        <Card
-          key={index}
-          className="border-blue-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+            if (!recommendedUnit) {
+              const allUnits = [...paperOneUnits, ...paperTwoUnits];
+              recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+            }
+
+            if (recommendedUnit) {
+              navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
+            }
+          }}
+          variant="outline"
+          className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
         >
-          <CardHeader>
-            <CardTitle className="text-md flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-              {unit.title}
-            </CardTitle>
-            <CardDescription>{unit.code}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">
-                  {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
-                </Badge>
-                <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-                {isPremium ? (
-                  <Badge variant="default" className="bg-green-600 text-white">
-                    Unlocked
-                  </Badge>
-                ) : freeUnits.includes(unit.code.trim()) ? (
-                  <Badge variant="default" className="bg-green-600 text-white">
-                    Free
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-red-600 border-red-600">
-                    Premium/Pro
-                  </Badge>
-                )}
-              </div>
+          Recommended Quiz
+        </Button>
 
-              {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-                  <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
-                    <Play className="h-4 w-4 mr-1" />
-                    Start
-                  </Button>
-                </Link>
-              ) : (
-                <Button className="w-full mt-4" variant="outline" disabled>
-                  Premium/Pro Only
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )
-    ))}
-  </div>
-</div>
+      </div>
 
+
+
+      {/* PAPER ONE */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-yellow-500">
+          NCK PP1 UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
+        </h2>
+        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+          {(loading ? paperOneUnits : paperOneUnits.filter((unit) =>
+            unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+          )).map((unit, index) => (
+            loading ? (
+              <div
+                key={index}
+                className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+              ></div>
+            ) : (
+              <Card
+                key={index}
+                className="border-yellow-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+              >
+                <CardHeader>
+                  <CardTitle className="text-md flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-yellow-500" />
+                    {unit.title}
+                  </CardTitle>
+                  <CardDescription>{unit.code}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary">
+                        {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
+                      </Badge>
+                      <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
+                      {isPremium ? (
+                        <Badge variant="default" className="bg-green-600 text-white">
+                          Unlocked
+                        </Badge>
+                      ) : freeUnits.includes(unit.code.trim()) ? (
+                        <Badge variant="default" className="bg-green-600 text-white">
+                          Free
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-red-600 border-red-600">
+                          Premium/Pro
+                        </Badge>
+                      )}
+                    </div>
+
+                    {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                      <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+                        <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                          <Play className="h-4 w-4 mr-1" />
+                          Start
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button className="w-full mt-4" variant="outline" disabled>
+                        Premium/Pro Only
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          ))}
+        </div>
+      </div>
+
+
+      {/* PAPER TWO */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-blue-600">
+          NCK PP2 UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
+        </h2>
+        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+          {(loading ? paperTwoUnits : paperTwoUnits.filter((unit) =>
+            unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+          )).map((unit, index) => (
+            loading ? (
+              <div
+                key={index}
+                className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+              ></div>
+            ) : (
+              <Card
+                key={index}
+                className="border-blue-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+              >
+                <CardHeader>
+                  <CardTitle className="text-md flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                    {unit.title}
+                  </CardTitle>
+                  <CardDescription>{unit.code}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary">
+                        {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
+                      </Badge>
+                      <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
+                      {isPremium ? (
+                        <Badge variant="default" className="bg-green-600 text-white">
+                          Unlocked
+                        </Badge>
+                      ) : freeUnits.includes(unit.code.trim()) ? (
+                        <Badge variant="default" className="bg-green-600 text-white">
+                          Free
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-red-600 border-red-600">
+                          Premium/Pro
+                        </Badge>
+                      )}
+                    </div>
+
+                    {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                      <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+                        <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                          <Play className="h-4 w-4 mr-1" />
+                          Start
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button className="w-full mt-4" variant="outline" disabled>
+                        Premium/Pro Only
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          ))}
+        </div>
+      </div>
+
+      {/* PAPER THREE */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold text-purple-600">
+          NCLEX Mastery Units <span className="text-sm text-gray-500">({totalPaperThree} Questions)</span>
+        </h2>
+        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+          {(loading ? paperThreeUnits : paperThreeUnits.filter((unit) =>
+            unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+          )).map((unit, index) => (
+            loading ? (
+              <div
+                key={index}
+                className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+              ></div>
+            ) : (
+              <Card
+                key={index}
+                className="border-purple-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+              >
+                <CardHeader>
+                  <CardTitle className="text-md flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-purple-600" />
+                    {unit.title}
+                  </CardTitle>
+                  <CardDescription>{unit.code}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary">
+                        {loading ? "..." : `${getQuestionCount(unit.code)} Questions`}
+                      </Badge>
+                      <Badge
+                        variant={
+                          unit.level.toLowerCase() === "foundation" ? "default" :
+                            unit.level.toLowerCase() === "professional" ? "secondary" :
+                              unit.level.toLowerCase() === "expert" ? "destructive" :
+                                "outline"
+                        }
+                        className={
+                          unit.level.toLowerCase() === "foundation" ? "bg-yellow-400 text-black" :
+                            unit.level.toLowerCase() === "professional" ? "bg-teal-500 text-white" :
+                              unit.level.toLowerCase() === "expert" ? "bg-purple-600 text-white" :
+                                ""
+                        }
+                      >
+                        {unit.level}
+                      </Badge>
+
+                      {isPremium ? (
+                        <Badge variant="default" className="bg-green-600 text-white">
+                          Unlocked
+                        </Badge>
+                      ) : freeUnits.includes(unit.code.trim()) ? (
+                        <Badge variant="default" className="bg-green-600 text-white">
+                          Free
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-red-600 border-red-600">
+                          Premium/Pro
+                        </Badge>
+                      )}
+                    </div>
+
+                    {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                      <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+                        <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                          <Play className="h-4 w-4 mr-1" />
+                          Start
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button className="w-full mt-4" variant="outline" disabled>
+                        Premium/Pro Only
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          ))}
+        </div>
+      </div>
 
       {/* Progress */}
-     <Card>
-  <CardHeader>
-    <CardTitle>Your Progress</CardTitle>
-  </CardHeader>
-  <CardContent>
-    <p className="text-muted-foreground">
-      You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
-    </p>
-  </CardContent>
-</Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Progress</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
+          </p>
+        </CardContent>
+      </Card>
 
     </div>
   );

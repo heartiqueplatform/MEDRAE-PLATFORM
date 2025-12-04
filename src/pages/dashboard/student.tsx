@@ -23,7 +23,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Send, Trash2 } from "lucide-react"; // make sure this import is at the top } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
 export default function StudentDashboard() {
-   const navigate = useNavigate(); // 👈 Add this line
+  const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
   const [name, setName] = useState<string | null>(null);
   const [studyProgress, setStudyProgress] = useState(0);
@@ -34,599 +34,599 @@ export default function StudentDashboard() {
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [dailyContent, setDailyContent] = useState("");
   const [feedsAttemptCount, setFeedsAttemptCount] = useState(0);
-const [loadingStats, setLoadingStats] = useState(true);
-const [openProfileId, setOpenProfileId] = useState<string | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [openProfileId, setOpenProfileId] = useState<string | null>(null);
 
 
-// New state for daily post duration
-const [dailyDuration, setDailyDuration] = useState<"24h" | "1w" | "1m" | "3m">("24h");
-const [dailyImage, setDailyImage] = useState<File | null>(null);
+  // New state for daily post duration
+  const [dailyDuration, setDailyDuration] = useState<"24h" | "1w" | "1m" | "3m">("24h");
+  const [dailyImage, setDailyImage] = useState<File | null>(null);
 
-const [dailyPosts, setDailyPosts] = useState<any[]>([]);
-const [uploading, setUploading] = useState(false);
-const { toast } = useToast();
-const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-// Track the latest post ID
-const [latestPostId, setLatestPostId] = useState<string | null>(null);
-// Global loading state for spinner
-// ✅ Smarter loading: skip spinner if we already have cached data
-const cachedDashboard = localStorage.getItem("dashboardData");
-const [loading, setLoading] = useState(!cachedDashboard); // Only show spinner if no cached data
-const [dashboardLoaded, setDashboardLoaded] = useState(false); // track first load
+  const [dailyPosts, setDailyPosts] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+  // Track the latest post ID
+  const [latestPostId, setLatestPostId] = useState<string | null>(null);
+  // Global loading state for spinner
+  // ✅ Smarter loading: skip spinner if we already have cached data
+  const cachedDashboard = localStorage.getItem("dashboardData");
+  const [loading, setLoading] = useState(!cachedDashboard); // Only show spinner if no cached data
+  const [dashboardLoaded, setDashboardLoaded] = useState(false); // track first load
 
-const [previousRank, setPreviousRank] = useState(null); // updated
-
-
-const fetchFeedsAttemptCount = async () => {
-  if (!user?.id) return;
+  const [previousRank, setPreviousRank] = useState(null); // updated
 
 
-
-  // ✅ Query the same table/view that Feeds page uses
-  const { count, error } = await supabase
-    .from("quiz_attempts") // Replace with the exact table Feeds uses if different
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id);
-
-  if (!error && count !== null) {
-    setFeedsAttemptCount(count);
-  } else {
-    console.error("Error fetching feeds attempt count:", error?.message);
-  }
-};
-
-const loadDashboardData = async () => {
-  
-  if (!user?.id) return;
-
-// Only show spinner if no cached data or first time loading
-if (!cachedDashboard) setLoading(true); // Only show spinner if no cached data
+  const fetchFeedsAttemptCount = async () => {
+    if (!user?.id) return;
 
 
 
+    // ✅ Query the same table/view that Feeds page uses
+    const { count, error } = await supabase
+      .from("quiz_attempts") // Replace with the exact table Feeds uses if different
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
 
-  try {
-    // Run all fetches in parallel
-    await Promise.all([
-  fetchProfile(),
-  fetchProgress(),
-  fetchQuizzes(),
-  handleLoginAndStreak(),
-  fetchCalendarEvents(),
-  fetchUnitCounts(),
-  fetchDailyPosts(),
-  fetchSimulationPapers(), // 👈 add this
- fetchTopStudents(), // 👈 fetch global leaderboard
-
-]);
-
-
-    // Save merged dashboard state to localStorage
-// Save merged dashboard state to localStorage
-localStorage.setItem(
-  "dashboardData",
-  JSON.stringify({
-    name,
-    studyProgress,
-    quizCount,
-    avgScore,
-    studyStreak,
-    bestStreak,
-    calendarEvents,
-    dailyPosts,
-    unitCounts,
-    simulationPapers, // ✅ preserve simulation papers
-    topStudents,      // ✅ preserve leaderboard
-  })
-);
-
-// ✅ Mark dashboard as loaded
-localStorage.setItem("dashboardDataLoaded", "true");
-setDashboardLoaded(true);
-setLoading(false); // hide spinner only after first full load
-
-  } catch (err) {
-    console.error("Error loading dashboard data:", err);
-  } finally {
-    setLoading(false); // Hide spinner when all data is loaded
-  }
-};
-
-// Handle posting daily thought
-const handlePostDaily = async () => {
-  if (!user?.id) return; // Only logged-in users can post
-
-  let image_url = null;
-  if (dailyImage) {
-    const { data, error } = await supabase
-      .storage
-      .from("statuspics")
-      .upload(`${user.id}/${Date.now()}_${dailyImage.name}`, dailyImage);
-
-    if (error) {
-      console.error("Error uploading image:", error.message);
-    }
-
-    if (data) {
-      const { data: urlData, error: urlError } = await supabase
-        .storage
-        .from("statuspics")
-        .getPublicUrl(data.path);
-
-      if (urlError) {
-        console.error("Error getting public URL:", urlError.message);
-      } else {
-        image_url = urlData.publicUrl;
-      }
-    }
-  }
-
-const { data: post, error: insertError } = await supabase
-  .from("daily_posts")
-  .insert({
-    user_id: user.id,      // Keep track of who posted
-    content: dailyContent,
-    image_url,
-    duration: dailyDuration, // NEW: Save duration
-  })
-  .select()
-  .single();
-
-
-  if (insertError) {
-    console.error("Error posting daily content:", insertError.message);
-    return;
-  }
-
-  if (post) {
-    setDailyPosts([post, ...dailyPosts]);
-    setDailyContent("");
-    setDailyImage(null);
-    setLatestPostId(post.id); // Update latest post
-  }
-};
-const handlePostClick = async () => {
-  // ✅ Prevent empty posts
-  if (!dailyContent.trim() && !dailyImage) {
-    toast({
-      title: "Cannot post empty content",
-      description: "Please write something or attach an image before posting.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  try {
-    setUploading(true);
-    
-    // Save to backend
-    const newPostId = await handlePostDaily(); // assume this returns the new post ID
-
-    // Optimistically create the new post object
-    const newPost = {
-      id: newPostId || crypto.randomUUID(), // fallback ID if backend does not return yet
-      content: dailyContent,
-      image_url: dailyImage ? URL.createObjectURL(dailyImage) : null,
-      created_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // adjust as needed
-      user_id: user.id,
-      profiles: {
-        username: user.username,
-        full_name: user.name,
-        avatar_url: user.avatar,
-        institution: user.institution || "N/A",
-        county: user.county || "N/A",
-      },
-    };
-
-    // ✅ Prepend to dailyPosts state so it appears instantly
-    setDailyPosts((prev) => [newPost, ...prev]);
-
-    // Clear input fields
-    setDailyContent("");
-    setDailyImage(null);
-
-    toast({
-      title: "Success",
-      description: "Your daily post was uploaded!",
-    });
-  } catch (err) {
-    toast({
-      title: "Error",
-      description: "Something went wrong while posting.",
-      variant: "destructive",
-    });
-    console.error(err);
-  } finally {
-    setUploading(false);
-  }
-};
-
-// Handle deleting a daily post (only owner)
-const handleDeletePost = async (postId: string, postUserId: string) => {
-  if (user?.id !== postUserId) {
-    toast({
-      title: "Permission denied",
-      description: "You can only delete your own posts",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  if (!confirm("Are you sure you want to delete this post?")) return;
-
-  const { error } = await supabase
-    .from("daily_posts")
-    .delete()
-    .eq("id", postId);
-
-  if (error) {
-    console.error("Error deleting post:", error.message);
-    toast({
-      title: "Error",
-      description: "Could not delete the post.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setDailyPosts((prev) => prev.filter((post) => post.id !== postId));
-
-  toast({
-    title: "Deleted",
-    description: "Your post was successfully deleted.",
-  });
-};
-
-// Fetch daily posts (last 24 hours) - public for all users
-const fetchDailyPosts = async () => {
- let durationMs = 24 * 60 * 60 * 1000; // default 24h
-if (dailyDuration === "1w") durationMs = 7 * 24 * 60 * 60 * 1000;
-if (dailyDuration === "1m") durationMs = 30 * 24 * 60 * 60 * 1000;
-if (dailyDuration === "3m") durationMs = 90 * 24 * 60 * 60 * 1000;
-
-const since = new Date(Date.now() - durationMs).toISOString();
-
-  // Fetch all posts regardless of user
-const { data: posts, error: postsError } = await supabase
-  .from("valid_daily_posts") // 👈 query the view instead of the table
-  .select("*")
-  .order("created_at", { ascending: false });
-
-
-  if (postsError) {
-    console.error("Error fetching daily posts:", postsError.message);
-    return;
-  }
-
-  if (!posts || posts.length === 0) {
-    setDailyPosts([]);
-    // 🚫 No toast for empty posts
-    return;
-}
-
-  // Fetch profiles for all user_ids in posts
-  const userIds = posts.map((p) => p.user_id);
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("user_id, username, name, institution, county, avatar_url")
-    .in("user_id", userIds);
-
-  if (profilesError) {
-    console.error("Error fetching profiles:", profilesError.message);
-    return;
-  }
-
-  // Merge posts with their profile
-  const mergedPosts = posts.map((p) => ({
-    ...p,
-    profiles: profiles?.find((pr) => pr.user_id === p.user_id) || null,
-  }));
-
-  setDailyPosts(mergedPosts);
-
-  // Notifications
-if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
-
-    toast({
-      title: "New Daily Status!",
-      description: "A new daily post is available. Scroll down to view it.",
-    });
-  } else if (!latestPostId) {
-    toast({
-      title: "Daily Status",
-      description: "You're caught up today, nothing new!",
-    });
-  }
-
-  setLatestPostId(mergedPosts[0].id);
-};
-
-useEffect(() => {
-  if (
-    studyProgress !== undefined &&
-    quizCount !== undefined &&
-    avgScore !== undefined &&
-    studyStreak !== undefined &&
-    bestStreak !== undefined
-  ) {
-    setLoadingStats(false);
-  }
-}, [studyProgress, quizCount, avgScore, studyStreak, bestStreak]);
-
-// Initial fetch
-// Load all dashboard data on page open
-useEffect(() => {
-  if (!user?.id) return;
-
-  // ✅ Show cached dashboard first (no spinner)
-  if (cachedDashboard) {
-    try {
-      const parsed = JSON.parse(cachedDashboard);
-      if (parsed.name) setName(parsed.name);
-      if (parsed.studyProgress) setStudyProgress(parsed.studyProgress);
-      if (parsed.quizCount) setQuizCount(parsed.quizCount);
-      if (parsed.avgScore) setAvgScore(parsed.avgScore);
-      if (parsed.studyStreak) setStudyStreak(parsed.studyStreak);
-      if (parsed.bestStreak) setBestStreak(parsed.bestStreak);
-      if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
-      if (parsed.dailyPosts) setDailyPosts(parsed.dailyPosts);
-      if (parsed.unitCounts) setUnitCounts(parsed.unitCounts);
-
-    } catch (e) {
-      console.error("Error parsing cached dashboard:", e);
-    }
-  }
-
-  // 🔄 Refresh in background silently
-  loadDashboardData();
-  setDashboardLoaded(true); // we now have something to render instantly
-
-}, [user]);
-
-// Load initial count from localStorage
-useEffect(() => {
-const loadCount = () => {
-  if (!user?.id) return;
-  const count = parseInt(localStorage.getItem(`feed_count_${user.id}`)) || 0;
-  setFeedsAttemptCount(count);
-};
-
-  loadCount();
-
-  // ✅ Listen for updates if Feeds updates count in another tab
-  const handleStorage = (e: StorageEvent) => {
-    if (e.key?.startsWith("feed_count_")) {
-      setFeedsAttemptCount(parseInt(e.newValue || "0"));
+    if (!error && count !== null) {
+      setFeedsAttemptCount(count);
+    } else {
+      console.error("Error fetching feeds attempt count:", error?.message);
     }
   };
-  window.addEventListener("storage", handleStorage);
 
-  return () => window.removeEventListener("storage", handleStorage);
-}, []);
-// Auto-refresh every 60s
-useEffect(() => {
-  const interval = setInterval(() => {
-    fetchDailyPosts();
-  }, 60000);
-  return () => clearInterval(interval);
-}, [latestPostId]);
+  const loadDashboardData = async () => {
+
+    if (!user?.id) return;
+
+    // Only show spinner if no cached data or first time loading
+    if (!cachedDashboard) setLoading(true); // Only show spinner if no cached data
+
+
+
+
+    try {
+      // Run all fetches in parallel
+      await Promise.all([
+        fetchProfile(),
+        fetchProgress(),
+        fetchQuizzes(),
+        handleLoginAndStreak(),
+        fetchCalendarEvents(),
+        fetchUnitCounts(),
+        fetchDailyPosts(),
+        fetchSimulationPapers(), // 👈 add this
+        fetchTopStudents(), // 👈 fetch global leaderboard
+
+      ]);
+
+
+      // Save merged dashboard state to localStorage
+      // Save merged dashboard state to localStorage
+      localStorage.setItem(
+        "dashboardData",
+        JSON.stringify({
+          name,
+          studyProgress,
+          quizCount,
+          avgScore,
+          studyStreak,
+          bestStreak,
+          calendarEvents,
+          dailyPosts,
+          unitCounts,
+          simulationPapers, // ✅ preserve simulation papers
+          topStudents,      // ✅ preserve leaderboard
+        })
+      );
+
+      // ✅ Mark dashboard as loaded
+      localStorage.setItem("dashboardDataLoaded", "true");
+      setDashboardLoaded(true);
+      setLoading(false); // hide spinner only after first full load
+
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+    } finally {
+      setLoading(false); // Hide spinner when all data is loaded
+    }
+  };
+
+  // Handle posting daily thought
+  const handlePostDaily = async () => {
+    if (!user?.id) return; // Only logged-in users can post
+
+    let image_url = null;
+    if (dailyImage) {
+      const { data, error } = await supabase
+        .storage
+        .from("statuspics")
+        .upload(`${user.id}/${Date.now()}_${dailyImage.name}`, dailyImage);
+
+      if (error) {
+        console.error("Error uploading image:", error.message);
+      }
+
+      if (data) {
+        const { data: urlData, error: urlError } = await supabase
+          .storage
+          .from("statuspics")
+          .getPublicUrl(data.path);
+
+        if (urlError) {
+          console.error("Error getting public URL:", urlError.message);
+        } else {
+          image_url = urlData.publicUrl;
+        }
+      }
+    }
+
+    const { data: post, error: insertError } = await supabase
+      .from("daily_posts")
+      .insert({
+        user_id: user.id,      // Keep track of who posted
+        content: dailyContent,
+        image_url,
+        duration: dailyDuration, // NEW: Save duration
+      })
+      .select()
+      .single();
+
+
+    if (insertError) {
+      console.error("Error posting daily content:", insertError.message);
+      return;
+    }
+
+    if (post) {
+      setDailyPosts([post, ...dailyPosts]);
+      setDailyContent("");
+      setDailyImage(null);
+      setLatestPostId(post.id); // Update latest post
+    }
+  };
+  const handlePostClick = async () => {
+    // ✅ Prevent empty posts
+    if (!dailyContent.trim() && !dailyImage) {
+      toast({
+        title: "Cannot post empty content",
+        description: "Please write something or attach an image before posting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Save to backend
+      const newPostId = await handlePostDaily(); // assume this returns the new post ID
+
+      // Optimistically create the new post object
+      const newPost = {
+        id: newPostId || crypto.randomUUID(), // fallback ID if backend does not return yet
+        content: dailyContent,
+        image_url: dailyImage ? URL.createObjectURL(dailyImage) : null,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // adjust as needed
+        user_id: user.id,
+        profiles: {
+          username: user.username,
+          full_name: user.name,
+          avatar_url: user.avatar,
+          institution: user.institution || "N/A",
+          county: user.county || "N/A",
+        },
+      };
+
+      // ✅ Prepend to dailyPosts state so it appears instantly
+      setDailyPosts((prev) => [newPost, ...prev]);
+
+      // Clear input fields
+      setDailyContent("");
+      setDailyImage(null);
+
+      toast({
+        title: "Success",
+        description: "Your daily post was uploaded!",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Something went wrong while posting.",
+        variant: "destructive",
+      });
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle deleting a daily post (only owner)
+  const handleDeletePost = async (postId: string, postUserId: string) => {
+    if (user?.id !== postUserId) {
+      toast({
+        title: "Permission denied",
+        description: "You can only delete your own posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!confirm("Are you sure you want to delete this post?")) return;
+
+    const { error } = await supabase
+      .from("daily_posts")
+      .delete()
+      .eq("id", postId);
+
+    if (error) {
+      console.error("Error deleting post:", error.message);
+      toast({
+        title: "Error",
+        description: "Could not delete the post.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDailyPosts((prev) => prev.filter((post) => post.id !== postId));
+
+    toast({
+      title: "Deleted",
+      description: "Your post was successfully deleted.",
+    });
+  };
+
+  // Fetch daily posts (last 24 hours) - public for all users
+  const fetchDailyPosts = async () => {
+    let durationMs = 24 * 60 * 60 * 1000; // default 24h
+    if (dailyDuration === "1w") durationMs = 7 * 24 * 60 * 60 * 1000;
+    if (dailyDuration === "1m") durationMs = 30 * 24 * 60 * 60 * 1000;
+    if (dailyDuration === "3m") durationMs = 90 * 24 * 60 * 60 * 1000;
+
+    const since = new Date(Date.now() - durationMs).toISOString();
+
+    // Fetch all posts regardless of user
+    const { data: posts, error: postsError } = await supabase
+      .from("valid_daily_posts") // 👈 query the view instead of the table
+      .select("*")
+      .order("created_at", { ascending: false });
+
+
+    if (postsError) {
+      console.error("Error fetching daily posts:", postsError.message);
+      return;
+    }
+
+    if (!posts || posts.length === 0) {
+      setDailyPosts([]);
+      // 🚫 No toast for empty posts
+      return;
+    }
+
+    // Fetch profiles for all user_ids in posts
+    const userIds = posts.map((p) => p.user_id);
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("user_id, username, name, institution, county, avatar_url")
+      .in("user_id", userIds);
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError.message);
+      return;
+    }
+
+    // Merge posts with their profile
+    const mergedPosts = posts.map((p) => ({
+      ...p,
+      profiles: profiles?.find((pr) => pr.user_id === p.user_id) || null,
+    }));
+
+    setDailyPosts(mergedPosts);
+
+    // Notifications
+    if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
+
+      toast({
+        title: "New Daily Status!",
+        description: "A new daily post is available. Scroll down to view it.",
+      });
+    } else if (!latestPostId) {
+      toast({
+        title: "Daily Status",
+        description: "You're caught up today, nothing new!",
+      });
+    }
+
+    setLatestPostId(mergedPosts[0].id);
+  };
+
+  useEffect(() => {
+    if (
+      studyProgress !== undefined &&
+      quizCount !== undefined &&
+      avgScore !== undefined &&
+      studyStreak !== undefined &&
+      bestStreak !== undefined
+    ) {
+      setLoadingStats(false);
+    }
+  }, [studyProgress, quizCount, avgScore, studyStreak, bestStreak]);
+
+  // Initial fetch
+  // Load all dashboard data on page open
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // ✅ Show cached dashboard first (no spinner)
+    if (cachedDashboard) {
+      try {
+        const parsed = JSON.parse(cachedDashboard);
+        if (parsed.name) setName(parsed.name);
+        if (parsed.studyProgress) setStudyProgress(parsed.studyProgress);
+        if (parsed.quizCount) setQuizCount(parsed.quizCount);
+        if (parsed.avgScore) setAvgScore(parsed.avgScore);
+        if (parsed.studyStreak) setStudyStreak(parsed.studyStreak);
+        if (parsed.bestStreak) setBestStreak(parsed.bestStreak);
+        if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
+        if (parsed.dailyPosts) setDailyPosts(parsed.dailyPosts);
+        if (parsed.unitCounts) setUnitCounts(parsed.unitCounts);
+
+      } catch (e) {
+        console.error("Error parsing cached dashboard:", e);
+      }
+    }
+
+    // 🔄 Refresh in background silently
+    loadDashboardData();
+    setDashboardLoaded(true); // we now have something to render instantly
+
+  }, [user]);
+
+  // Load initial count from localStorage
+  useEffect(() => {
+    const loadCount = () => {
+      if (!user?.id) return;
+      const count = parseInt(localStorage.getItem(`feed_count_${user.id}`)) || 0;
+      setFeedsAttemptCount(count);
+    };
+
+    loadCount();
+
+    // ✅ Listen for updates if Feeds updates count in another tab
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key?.startsWith("feed_count_")) {
+        setFeedsAttemptCount(parseInt(e.newValue || "0"));
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+  // Auto-refresh every 60s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchDailyPosts();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [latestPostId]);
 
   // New: unit question counts from view
   const [unitCounts, setUnitCounts] = useState<any[]>([]);
-  
+
   const [simulationPapers, setSimulationPapers] = useState<any[]>([]);
   const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
-/// 🏆 Top students state
-const [topStudents, setTopStudents] = useState<any[]>(() => {
-  // ✅ initialize from localStorage to avoid initial loader flash
-  const cached = localStorage.getItem("topStudents");
-  return cached ? JSON.parse(cached) : [];
-});
+  /// 🏆 Top students state
+  const [topStudents, setTopStudents] = useState<any[]>(() => {
+    // ✅ initialize from localStorage to avoid initial loader flash
+    const cached = localStorage.getItem("topStudents");
+    return cached ? JSON.parse(cached) : [];
+  });
 
-const [loadingTopStudents, setLoadingTopStudents] = useState(() => {
-  // ✅ show loader only if no cached data
-  const cached = localStorage.getItem("topStudents");
-  return cached ? false : true;
-});
+  const [loadingTopStudents, setLoadingTopStudents] = useState(() => {
+    // ✅ show loader only if no cached data
+    const cached = localStorage.getItem("topStudents");
+    return cached ? false : true;
+  });
 
-const fetchTopStudents = async () => {
-  try {
-    // ✅ show loader only if we have no cached leaderboard
-    setLoadingTopStudents(!topStudents.length);
+  const fetchTopStudents = async () => {
+    try {
+      // ✅ show loader only if we have no cached leaderboard
+      setLoadingTopStudents(!topStudents.length);
 
-    // 1️⃣ Get all quiz results
-    const { data: results, error: resultsError } = await supabase
-      .from("quiz_results")
-      .select("user_id, score, total_questions");
+      // 1️⃣ Get all quiz results
+      const { data: results, error: resultsError } = await supabase
+        .from("quiz_results")
+        .select("user_id, score, total_questions");
 
-    if (resultsError) throw resultsError;
-    if (!results) return;
+      if (resultsError) throw resultsError;
+      if (!results) return;
 
-    // 2️⃣ Calculate stars + stats for each user
-    const userMap: Record<string, { total: number; count: number }> = {};
-    results.forEach((r) => {
-      if (!userMap[r.user_id]) userMap[r.user_id] = { total: 0, count: 0 };
-      if (r.total_questions > 0) {
-        userMap[r.user_id].total += (r.score / r.total_questions) * 100;
-        userMap[r.user_id].count += 1;
-      }
-    });
-
-    const userStars = Object.entries(userMap).map(([userId, stats]) => {
-      const avg = stats.count > 0 ? stats.total / stats.count : 0;
-      let stars = 0;
-      if (avg >= 90) stars = 5;
-      else if (avg >= 75) stars = 4;
-      else if (avg >= 60) stars = 3;
-      else if (avg >= 40) stars = 2;
-      else if (avg > 0) stars = 1;
-      return { userId, stars, avg, count: stats.count };
-    });
-
-    // 3️⃣ Sort: stars → avg → count
-    userStars.sort((a, b) => {
-      if (b.stars !== a.stars) return b.stars - a.stars; // stars first
-      if (b.avg !== a.avg) return b.avg - a.avg;         // then average %
-      return b.count - a.count;                          // finally quizzes count
-    });
-
-    // 4️⃣ Fetch matching profiles
-    const ids = userStars.map((u) => u.userId);
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("user_id, name, avatar_url, institution, county")
-      .in("user_id", ids);
-
-    if (profilesError) throw profilesError;
-
-    // 5️⃣ Merge stars + stats with profile
-    const merged = userStars.map((u) => {
-      const profile = profiles?.find((p) => p.user_id === u.userId);
-      return { ...u, ...profile };
-    });
-
-    // ✅ Only update state if there is a difference to prevent unnecessary re-renders
-    const currentIds = topStudents.map((s) => s.userId).join(",");
-    const newIds = merged.map((s) => s.userId).join(",");
-    if (currentIds !== newIds) {
-      setTopStudents(merged);
-      localStorage.setItem("topStudents", JSON.stringify(merged)); // ✅ cache for future visits
-    }
-
-    
-
-// ✅ Check and toast user's top rank once on first login
-if (user && topStudents.length > 0) {
-  const currentIndex = topStudents.findIndex(s => s.userId === user.id);
-  if (currentIndex !== -1) {
-    const newRank = currentIndex + 1;
-
-    // 🔹 Read last notified rank from localStorage
-    const lastNotifiedRank = parseInt(localStorage.getItem(`lastRank_${user.id}`) || "0");
-
-    // 🔹 Only show toast if user hasn't been notified for this rank yet
-    if (newRank <= 3 && newRank !== lastNotifiedRank) {
-      let title = "";
-      let message = "";
-
-      if (newRank === 1) {
-        title = "🏆 Top Student!";
-        message = `Wow ${user.user_metadata?.full_name || "Learner"}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
-      } else if (newRank === 2) {
-        title = "🥈 Silver Star!";
-        message = `Great job ${user.user_metadata?.full_name || "Learner"}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
-      } else if (newRank === 3) {
-        title = "🥉 Bronze Achiever!";
-        message = `Nice work ${user.user_metadata?.full_name || "Learner"}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
-      }
-
-      // gentle vibration
-      if (navigator.vibrate) navigator.vibrate(200);
-
-      // toast message
-      sonnerToast.success(message, {
-        title,
-        duration: 6000,
-        dismissible: true,
+      // 2️⃣ Calculate stars + stats for each user
+      const userMap: Record<string, { total: number; count: number }> = {};
+      results.forEach((r) => {
+        if (!userMap[r.user_id]) userMap[r.user_id] = { total: 0, count: 0 };
+        if (r.total_questions > 0) {
+          userMap[r.user_id].total += (r.score / r.total_questions) * 100;
+          userMap[r.user_id].count += 1;
+        }
       });
 
-      // 🔹 Save this rank to localStorage so we don't toast again
-      localStorage.setItem(`lastRank_${user.id}`, String(newRank));
+      const userStars = Object.entries(userMap).map(([userId, stats]) => {
+        const avg = stats.count > 0 ? stats.total / stats.count : 0;
+        let stars = 0;
+        if (avg >= 90) stars = 5;
+        else if (avg >= 75) stars = 4;
+        else if (avg >= 60) stars = 3;
+        else if (avg >= 40) stars = 2;
+        else if (avg > 0) stars = 1;
+        return { userId, stars, avg, count: stats.count };
+      });
+
+      // 3️⃣ Sort: stars → avg → count
+      userStars.sort((a, b) => {
+        if (b.stars !== a.stars) return b.stars - a.stars; // stars first
+        if (b.avg !== a.avg) return b.avg - a.avg;         // then average %
+        return b.count - a.count;                          // finally quizzes count
+      });
+
+      // 4️⃣ Fetch matching profiles
+      const ids = userStars.map((u) => u.userId);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, name, avatar_url, institution, county")
+        .in("user_id", ids);
+
+      if (profilesError) throw profilesError;
+
+      // 5️⃣ Merge stars + stats with profile
+      const merged = userStars.map((u) => {
+        const profile = profiles?.find((p) => p.user_id === u.userId);
+        return { ...u, ...profile };
+      });
+
+      // ✅ Only update state if there is a difference to prevent unnecessary re-renders
+      const currentIds = topStudents.map((s) => s.userId).join(",");
+      const newIds = merged.map((s) => s.userId).join(",");
+      if (currentIds !== newIds) {
+        setTopStudents(merged);
+        localStorage.setItem("topStudents", JSON.stringify(merged)); // ✅ cache for future visits
+      }
+
+
+
+      // ✅ Check and toast user's top rank once on first login
+      if (user && topStudents.length > 0) {
+        const currentIndex = topStudents.findIndex(s => s.userId === user.id);
+        if (currentIndex !== -1) {
+          const newRank = currentIndex + 1;
+
+          // 🔹 Read last notified rank from localStorage
+          const lastNotifiedRank = parseInt(localStorage.getItem(`lastRank_${user.id}`) || "0");
+
+          // 🔹 Only show toast if user hasn't been notified for this rank yet
+          if (newRank <= 3 && newRank !== lastNotifiedRank) {
+            let title = "";
+            let message = "";
+
+            if (newRank === 1) {
+              title = "🏆 Top Student!";
+              message = `Wow ${user.user_metadata?.full_name || "Learner"}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
+            } else if (newRank === 2) {
+              title = "🥈 Silver Star!";
+              message = `Great job ${user.user_metadata?.full_name || "Learner"}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
+            } else if (newRank === 3) {
+              title = "🥉 Bronze Achiever!";
+              message = `Nice work ${user.user_metadata?.full_name || "Learner"}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
+            }
+
+            // gentle vibration
+            if (navigator.vibrate) navigator.vibrate(200);
+
+            // toast message
+            sonnerToast.success(message, {
+              title,
+              duration: 6000,
+              dismissible: true,
+            });
+
+            // 🔹 Save this rank to localStorage so we don't toast again
+            localStorage.setItem(`lastRank_${user.id}`, String(newRank));
+          }
+
+          // always update previousRank for future changes
+          setPreviousRank(newRank);
+        }
+      }
+
+
+    } catch (err) {
+      console.error("Error fetching top students:", err);
+    } finally {
+      setLoadingTopStudents(false); // ✅ stop loader always
     }
-
-    // always update previousRank for future changes
-    setPreviousRank(newRank);
-  }
-}
+  };
 
 
-  } catch (err) {
-    console.error("Error fetching top students:", err);
-  } finally {
-    setLoadingTopStudents(false); // ✅ stop loader always
-  }
-};
+  const fetchSimulationPapers = async () => {
+    try {
+      // 1️⃣ Fetch cached simulation papers first
+      const cachedPapers = localStorage.getItem("simulationPapers");
+      if (cachedPapers) {
+        setSimulationPapers(JSON.parse(cachedPapers));
+      }
 
+      // 2️⃣ Fetch active simulation papers from Supabase
+      const { data: papers, error: paperError } = await supabase
+        .from("simulation_papers")
+        .select("id, title, description, course, block, is_free, created_at")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
 
-const fetchSimulationPapers = async () => {
-  try {
-    // 1️⃣ Fetch cached simulation papers first
-    const cachedPapers = localStorage.getItem("simulationPapers");
-    if (cachedPapers) {
-      setSimulationPapers(JSON.parse(cachedPapers));
+      if (paperError) throw paperError;
+      if (!papers) return;
+
+      const paperIds = papers.map((p) => p.id);
+      // 3️⃣ Fetch simulation results for current user
+      const { data: results, error } = await supabase
+        .from("simulation_results")
+        .select("paper_id, score, total_questions")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error fetching simulation results:", error);
+        return;
+      }
+
+      // 4️⃣ Calculate percentage completed per paper
+      const progressMap: Record<string, number> = {};
+
+      papers.forEach((paper) => {
+        // Filter results for this paper
+        const paperResults = results?.filter((r) => r.paper_id === paper.id) || [];
+
+        // If there are results, sum the scores and calculate percentage
+        const totalScore = paperResults.reduce((acc, r) => acc + r.score, 0);
+        const totalQuestions = paperResults.reduce((acc, r) => acc + r.total_questions, paper.total_questions || 10);
+
+        const percent = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+        progressMap[paper.id] = percent;
+      });
+
+      // 5️⃣ Update state
+      setSimulationProgress(progressMap);
+
+      // 5️⃣ Fetch visits for these papers
+      const { data: visits } = await supabase
+        .from("simulation_visits")
+        .select("paper_id")
+        .in("paper_id", paperIds);
+
+      const visitCounts = visits?.reduce((acc: Record<string, number>, visit) => {
+        acc[visit.paper_id] = (acc[visit.paper_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      const papersWithVisits = papers.map((paper) => ({
+        ...paper,
+        visit_count: visitCounts[paper.id] || 0,
+      }));
+
+      // 6️⃣ Only update state and cache if content has changed
+      const cachedIds = cachedPapers ? JSON.parse(cachedPapers).map((p: any) => p.id).join(",") : "";
+      const newIds = papersWithVisits.map((p) => p.id).join(",");
+      if (cachedIds !== newIds) {
+        setSimulationPapers(papersWithVisits);
+        localStorage.setItem("simulationPapers", JSON.stringify(papersWithVisits));
+      }
+    } catch (error: any) {
+      console.error("Error fetching simulation papers:", error.message);
     }
-
-    // 2️⃣ Fetch active simulation papers from Supabase
-    const { data: papers, error: paperError } = await supabase
-      .from("simulation_papers")
-      .select("id, title, description, course, block, is_free, created_at")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
-
-    if (paperError) throw paperError;
-    if (!papers) return;
-
-    const paperIds = papers.map((p) => p.id);
-// 3️⃣ Fetch simulation results for current user
-const { data: results, error } = await supabase
-  .from("simulation_results")
-  .select("paper_id, score, total_questions")
-  .eq("user_id", user.id);
-
-if (error) {
-  console.error("Error fetching simulation results:", error);
-  return;
-}
-
-// 4️⃣ Calculate percentage completed per paper
-const progressMap: Record<string, number> = {};
-
-papers.forEach((paper) => {
-  // Filter results for this paper
-  const paperResults = results?.filter((r) => r.paper_id === paper.id) || [];
-
-  // If there are results, sum the scores and calculate percentage
-  const totalScore = paperResults.reduce((acc, r) => acc + r.score, 0);
-  const totalQuestions = paperResults.reduce((acc, r) => acc + r.total_questions, paper.total_questions || 10);
-
-  const percent = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-  progressMap[paper.id] = percent;
-});
-
-// 5️⃣ Update state
-setSimulationProgress(progressMap);
-
-    // 5️⃣ Fetch visits for these papers
-    const { data: visits } = await supabase
-      .from("simulation_visits")
-      .select("paper_id")
-      .in("paper_id", paperIds);
-
-    const visitCounts = visits?.reduce((acc: Record<string, number>, visit) => {
-      acc[visit.paper_id] = (acc[visit.paper_id] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>) || {};
-
-    const papersWithVisits = papers.map((paper) => ({
-      ...paper,
-      visit_count: visitCounts[paper.id] || 0,
-    }));
-
-    // 6️⃣ Only update state and cache if content has changed
-    const cachedIds = cachedPapers ? JSON.parse(cachedPapers).map((p: any) => p.id).join(",") : "";
-    const newIds = papersWithVisits.map((p) => p.id).join(",");
-    if (cachedIds !== newIds) {
-      setSimulationPapers(papersWithVisits);
-      localStorage.setItem("simulationPapers", JSON.stringify(papersWithVisits));
-    }
-  } catch (error: any) {
-    console.error("Error fetching simulation papers:", error.message);
-  }
-};
+  };
 
   const fetchProfile = async () => {
-   if (!name) setLoading(true); // show spinner only if name not yet loaded
+    if (!name) setLoading(true); // show spinner only if name not yet loaded
     const { data, error } = await supabase
       .from("profiles")
       .select("name")
@@ -637,116 +637,116 @@ setSimulationProgress(progressMap);
     }
     setLoading(false); // hide spinner
   };
-const handleLoginAndStreak = async () => {
-  const today = new Date().toISOString().split("T")[0];
+  const handleLoginAndStreak = async () => {
+    const today = new Date().toISOString().split("T")[0];
 
-  // ✅ First load from localStorage (instant UI)
-  const cached = JSON.parse(localStorage.getItem("streakData") || "{}");
-  if (cached?.currentStreak !== undefined) {
-    setStudyStreak(cached.currentStreak);
-    setBestStreak(cached.bestStreak || 0);
-  }
-
-  // ✅ Check if today's login exists in DB
-  const { data: existing, error: existingError } = await supabase
-    .from("login_activity")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("login_date", today)
-    .maybeSingle();
-
-  if (!existing && !existingError) {
-    await supabase.from("login_activity").insert({
-      user_id: user.id,
-      login_date: today,
-    });
-  }
-
-  // ✅ Always fetch the latest streak from DB
-  const { data, error } = await supabase
-    .from("login_activity")
-    .select("streak")
-    .eq("user_id", user.id)
-    .order("login_date", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (!error && data) {
-    const newStreak = data.streak || 0;
-    setStudyStreak(newStreak);
-    updateBestStreakIfNeeded(newStreak);
-
-    // ✅ Save to localStorage for instant access next time
-    localStorage.setItem(
-      "streakData",
-      JSON.stringify({
-        currentStreak: newStreak,
-        bestStreak: Math.max(newStreak, cached.bestStreak || 0),
-      })
-    );
-  }
-};
-
-const updateBestStreakIfNeeded = async (current: number) => {
-  const { data, error } = await supabase
-    .from("login_activity")
-    .select("streak")
-    .eq("user_id", user.id)
-    .order("streak", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (!error && data) {
-    const maxStreak = data.streak || 0;
-    const best = current > maxStreak ? current : maxStreak;
-    setBestStreak(best);
-
-    // ✅ Update cached best streak silently
+    // ✅ First load from localStorage (instant UI)
     const cached = JSON.parse(localStorage.getItem("streakData") || "{}");
-    localStorage.setItem(
-      "streakData",
-      JSON.stringify({
-        currentStreak: cached.currentStreak || current,
-        bestStreak: best,
-      })
-    );
-  } else {
-    setBestStreak(current);
-  }
-};
+    if (cached?.currentStreak !== undefined) {
+      setStudyStreak(cached.currentStreak);
+      setBestStreak(cached.bestStreak || 0);
+    }
 
-const fetchProgress = async () => {
-  const { data, error } = await supabase
-    .from("progress")
-    .select("percentage_complete")
-    .eq("user_id", user.id);
+    // ✅ Check if today's login exists in DB
+    const { data: existing, error: existingError } = await supabase
+      .from("login_activity")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("login_date", today)
+      .maybeSingle();
 
-  if (!error && data && data.length > 0) {
-    const avg =
-      data.reduce((sum, item) => sum + (item.percentage_complete || 0), 0) /
-      data.length;
-    setStudyProgress(Math.round(avg));
-  } else {
-    // fallback: calculate from quiz_results
-    const { data: quizData, error: quizError } = await supabase
-      .from("quiz_results")
-      .select("score, total_questions")
+    if (!existing && !existingError) {
+      await supabase.from("login_activity").insert({
+        user_id: user.id,
+        login_date: today,
+      });
+    }
+
+    // ✅ Always fetch the latest streak from DB
+    const { data, error } = await supabase
+      .from("login_activity")
+      .select("streak")
+      .eq("user_id", user.id)
+      .order("login_date", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!error && data) {
+      const newStreak = data.streak || 0;
+      setStudyStreak(newStreak);
+      updateBestStreakIfNeeded(newStreak);
+
+      // ✅ Save to localStorage for instant access next time
+      localStorage.setItem(
+        "streakData",
+        JSON.stringify({
+          currentStreak: newStreak,
+          bestStreak: Math.max(newStreak, cached.bestStreak || 0),
+        })
+      );
+    }
+  };
+
+  const updateBestStreakIfNeeded = async (current: number) => {
+    const { data, error } = await supabase
+      .from("login_activity")
+      .select("streak")
+      .eq("user_id", user.id)
+      .order("streak", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!error && data) {
+      const maxStreak = data.streak || 0;
+      const best = current > maxStreak ? current : maxStreak;
+      setBestStreak(best);
+
+      // ✅ Update cached best streak silently
+      const cached = JSON.parse(localStorage.getItem("streakData") || "{}");
+      localStorage.setItem(
+        "streakData",
+        JSON.stringify({
+          currentStreak: cached.currentStreak || current,
+          bestStreak: best,
+        })
+      );
+    } else {
+      setBestStreak(current);
+    }
+  };
+
+  const fetchProgress = async () => {
+    const { data, error } = await supabase
+      .from("progress")
+      .select("percentage_complete")
       .eq("user_id", user.id);
 
-    if (!quizError && quizData && quizData.length > 0) {
-      const overall =
-        quizData.reduce(
-          (sum, item) =>
-            sum + (item.total_questions > 0 ? (item.score / item.total_questions) * 100 : 0),
-          0
-        ) / quizData.length;
-
-      setStudyProgress(Math.round(overall));
+    if (!error && data && data.length > 0) {
+      const avg =
+        data.reduce((sum, item) => sum + (item.percentage_complete || 0), 0) /
+        data.length;
+      setStudyProgress(Math.round(avg));
     } else {
-      setStudyProgress(0);
+      // fallback: calculate from quiz_results
+      const { data: quizData, error: quizError } = await supabase
+        .from("quiz_results")
+        .select("score, total_questions")
+        .eq("user_id", user.id);
+
+      if (!quizError && quizData && quizData.length > 0) {
+        const overall =
+          quizData.reduce(
+            (sum, item) =>
+              sum + (item.total_questions > 0 ? (item.score / item.total_questions) * 100 : 0),
+            0
+          ) / quizData.length;
+
+        setStudyProgress(Math.round(overall));
+      } else {
+        setStudyProgress(0);
+      }
     }
-  }
-};
+  };
 
 
   const fetchQuizzes = async () => {
@@ -789,28 +789,28 @@ const fetchProgress = async () => {
     else console.error("Error fetching calendar events:", error);
   };
 
- const fetchUnitCounts = async () => {
-  try {
-    // 1️⃣ Load cached unit counts first
-    const cachedUnits = localStorage.getItem("unitCounts");
-    if (cachedUnits) setUnitCounts(JSON.parse(cachedUnits));
+  const fetchUnitCounts = async () => {
+    try {
+      // 1️⃣ Load cached unit counts first
+      const cachedUnits = localStorage.getItem("unitCounts");
+      if (cachedUnits) setUnitCounts(JSON.parse(cachedUnits));
 
-    // 2️⃣ Fetch from Supabase
-    const { data, error } = await supabase.from("quiz_question_counts").select("*");
-    if (error) throw error;
-    if (!data) return;
+      // 2️⃣ Fetch from Supabase
+      const { data, error } = await supabase.from("quiz_question_counts").select("*");
+      if (error) throw error;
+      if (!data) return;
 
-    // 3️⃣ Only update state and cache if different
-    const cachedIds = cachedUnits ? JSON.parse(cachedUnits).map((u: any) => u.unit_id).join(",") : "";
-    const newIds = data.map((u) => u.unit_id).join(",");
-    if (cachedIds !== newIds) {
-      setUnitCounts(data);
-      localStorage.setItem("unitCounts", JSON.stringify(data));
+      // 3️⃣ Only update state and cache if different
+      const cachedIds = cachedUnits ? JSON.parse(cachedUnits).map((u: any) => u.unit_id).join(",") : "";
+      const newIds = data.map((u) => u.unit_id).join(",");
+      if (cachedIds !== newIds) {
+        setUnitCounts(data);
+        localStorage.setItem("unitCounts", JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error("Error fetching unit counts:", err);
     }
-  } catch (err) {
-    console.error("Error fetching unit counts:", err);
-  }
-};
+  };
 
 
   const getPriorityColor = (priority: string) => {
@@ -826,900 +826,1041 @@ const fetchProgress = async () => {
     }
   };
 
-return (
-<div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-2xl">
+  return (
+    <div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-2xl">
 
-    {/* Welcome Section */}
-<div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-3xl p-6 text-white">
-  <h1 className="text-2xl md:text-3xl font-bold mb-2">
-    {name ? (() => {
-      const now = new Date();
-      const hour = now.getHours();
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-3xl p-6 text-white">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">
+          {name ? (() => {
+            const now = new Date();
+            const hour = now.getHours();
 
-      // ✅ Determine time of day correctly around midnight
-      let timeGreeting: string;
-      if (hour >= 5 && hour < 12) timeGreeting = "Good morning";
-      else if (hour >= 12 && hour < 17) timeGreeting = "Good afternoon";
-      else if (hour >= 17 && hour < 21) timeGreeting = "Good evening";
-      else timeGreeting = "Good night";
+            // ✅ Determine time of day correctly around midnight
+            let timeGreeting: string;
+            if (hour >= 5 && hour < 12) timeGreeting = "Good morning";
+            else if (hour >= 12 && hour < 17) timeGreeting = "Good afternoon";
+            else if (hour >= 17 && hour < 21) timeGreeting = "Good evening";
+            else timeGreeting = "Good night";
 
-      // Daily messages (preserve all guides)
-      const dailyMessage: { [key: string]: { morning: string; afternoon: string; evening: string; night: string } } = {
-        Sunday: {
-          morning: `Welcome to a new week of professional growth. Reflect on your achievements and prepare for a week full of learning and skill development.`,
-          afternoon: `Keep building momentum today. Take time to consolidate your learning and plan for the week ahead.`,
-          evening: `Wrap up your Sunday with reflection and preparation. Celebrate small wins and set goals for a productive week.`,
-          night: `Hope your Sunday winds down peacefully. Take a moment to rest and recharge for the week ahead.`
-        },
-        Monday: {
-          morning: `Welcome to the start of a productive week. Review your notes and practice essential skills with focus and confidence.`,
-          afternoon: `Keep pushing forward and apply what you've learned so far. Every effort counts towards mastery.`,
-          evening: `Reflect on what you accomplished today and plan your next steps. Your dedication sets the tone for a successful week.`,
-          night: `Hope your Monday winds down smoothly. Rest well and prepare for continued growth tomorrow.`
-        },
-        Tuesday: {
-          morning: `Welcome to another day of advancement. Stay curious and continue building your clinical expertise.`,
-          afternoon: `Keep progressing and challenging yourself. Every step brings you closer to mastery.`,
-          evening: `Review today's achievements and consider areas for improvement. Growth is built daily.`,
-          night: `Hope your Tuesday concludes positively. Rest and recharge to continue your learning journey.`
-        },
-        Wednesday: {
-          morning: `Welcome to midweek. Celebrate your progress so far and stay motivated for the remainder of the week.`,
-          afternoon: `Continue applying your skills and reflect on your learning. Midweek is perfect for focus and refinement.`,
-          evening: `Wrap up your Wednesday with reflection and planning. Your consistent effort is impressive.`,
-          night: `Hope your Wednesday evening is relaxing. Recharge and prepare for the rest of the week.`
-        },
-        Thursday: {
-          morning: `Welcome to a new day of professional growth. Embrace every learning opportunity and refine your skills.`,
-          afternoon: `Keep applying knowledge in practice. Small consistent steps lead to mastery.`,
-          evening: `Reflect on what you learned today and celebrate progress made.`,
-          night: `Hope your Thursday winds down well. Rest and get ready to finish the week strong.`
-        },
-        Friday: {
-          morning: `Welcome to the final stretch of the week. Focus on consolidating knowledge and practicing skills.`,
-          afternoon: `Keep moving forward and apply lessons learned this week.`,
-          evening: `Reflect on the week’s accomplishments and plan for next week’s growth.`,
-          night: `Hope your Friday evening is peaceful. Take time to rest and recharge for the weekend.`
-        },
-        Saturday: {
-          morning: `Welcome to a day for reflection and skill refinement. Review your progress and deepen your understanding.`,
-          afternoon: `Continue exploring new concepts and applying knowledge practically.`,
-          evening: `Wrap up Saturday with reflection and acknowledge your achievements.`,
-          night: `Hope your Saturday concludes positively. Rest well and prepare for the week ahead.`
-        }
-      };
+            // Daily messages (preserve all guides)
+            const dailyMessage: { [key: string]: { morning: string; afternoon: string; evening: string; night: string } } = {
+              Sunday: {
+                morning: `Welcome to a new week of professional growth. Reflect on your achievements and prepare for a week full of learning and skill development.`,
+                afternoon: `Keep building momentum today. Take time to consolidate your learning and plan for the week ahead.`,
+                evening: `Wrap up your Sunday with reflection and preparation. Celebrate small wins and set goals for a productive week.`,
+                night: `Hope your Sunday winds down peacefully. Take a moment to rest and recharge for the week ahead.`
+              },
+              Monday: {
+                morning: `Welcome to the start of a productive week. Review your notes and practice essential skills with focus and confidence.`,
+                afternoon: `Keep pushing forward and apply what you've learned so far. Every effort counts towards mastery.`,
+                evening: `Reflect on what you accomplished today and plan your next steps. Your dedication sets the tone for a successful week.`,
+                night: `Hope your Monday winds down smoothly. Rest well and prepare for continued growth tomorrow.`
+              },
+              Tuesday: {
+                morning: `Welcome to another day of advancement. Stay curious and continue building your clinical expertise.`,
+                afternoon: `Keep progressing and challenging yourself. Every step brings you closer to mastery.`,
+                evening: `Review today's achievements and consider areas for improvement. Growth is built daily.`,
+                night: `Hope your Tuesday concludes positively. Rest and recharge to continue your learning journey.`
+              },
+              Wednesday: {
+                morning: `Welcome to midweek. Celebrate your progress so far and stay motivated for the remainder of the week.`,
+                afternoon: `Continue applying your skills and reflect on your learning. Midweek is perfect for focus and refinement.`,
+                evening: `Wrap up your Wednesday with reflection and planning. Your consistent effort is impressive.`,
+                night: `Hope your Wednesday evening is relaxing. Recharge and prepare for the rest of the week.`
+              },
+              Thursday: {
+                morning: `Welcome to a new day of professional growth. Embrace every learning opportunity and refine your skills.`,
+                afternoon: `Keep applying knowledge in practice. Small consistent steps lead to mastery.`,
+                evening: `Reflect on what you learned today and celebrate progress made.`,
+                night: `Hope your Thursday winds down well. Rest and get ready to finish the week strong.`
+              },
+              Friday: {
+                morning: `Welcome to the final stretch of the week. Focus on consolidating knowledge and practicing skills.`,
+                afternoon: `Keep moving forward and apply lessons learned this week.`,
+                evening: `Reflect on the week’s accomplishments and plan for next week’s growth.`,
+                night: `Hope your Friday evening is peaceful. Take time to rest and recharge for the weekend.`
+              },
+              Saturday: {
+                morning: `Welcome to a day for reflection and skill refinement. Review your progress and deepen your understanding.`,
+                afternoon: `Continue exploring new concepts and applying knowledge practically.`,
+                evening: `Wrap up Saturday with reflection and acknowledge your achievements.`,
+                night: `Hope your Saturday concludes positively. Rest well and prepare for the week ahead.`
+              }
+            };
 
-      const today = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const today = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-      // ✅ Determine time of day key
-      let timeOfDay: "morning" | "afternoon" | "evening" | "night";
-      if (hour >= 5 && hour < 12) timeOfDay = "morning";
-      else if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
-      else if (hour >= 17 && hour < 21) timeOfDay = "evening";
-      else timeOfDay = "night";
+            // ✅ Determine time of day key
+            let timeOfDay: "morning" | "afternoon" | "evening" | "night";
+            if (hour >= 5 && hour < 12) timeOfDay = "morning";
+            else if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
+            else if (hour >= 17 && hour < 21) timeOfDay = "evening";
+            else timeOfDay = "night";
 
-      // ✅ Build the welcome message
-      const welcomeMessage = `${timeGreeting}, ${name} 👋! ${dailyMessage[today][timeOfDay]}`;
+            // ✅ Build the welcome message
+            const welcomeMessage = `${timeGreeting}, ${name} 👋! ${dailyMessage[today][timeOfDay]}`;
 
-      // ✅ Cache in localStorage for instant load next time
-      localStorage.setItem("welcomeMessage", welcomeMessage);
+            // ✅ Cache in localStorage for instant load next time
+            localStorage.setItem("welcomeMessage", welcomeMessage);
 
-      return welcomeMessage;
-    })() : localStorage.getItem("welcomeMessage") || "Loading..."}
-    {loading && (
-      <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
-        Updating…
-      </span>
-    )}
-  </h1>
-
-  <p className="text-white/90">
-    {(() => {
-      const nursingMessages = {
-        Sunday: " Sunday reset: Rest up, future nurse! Take today to recharge, reflect on your progress, and plan for the week ahead. Your patients will appreciate your energy and dedication tomorrow!",
-        Monday: " Motivated Monday! A fresh week to sharpen your nursing skills, tackle challenging concepts, and set new goals. Remember, every step today brings you closer to becoming the nurse you aspire to be.",
-        Tuesday: "Triage Tuesday! Keep organizing your notes, practicing procedures, and building your knowledge. Focus on consistency and small victories—they add up to big success in your nursing journey.",
-        Wednesday: " Wellness Wednesday! Halfway through the week—keep your energy high and your mind sharp. Take a moment to celebrate your wins so far, and remember that persistence is key to mastery.",
-        Thursday: " Thriving Thursday! Your dedication to learning and improving as a nurse is inspiring. Push through, review what you’ve learned, and keep challenging yourself—you’re making amazing progress!",
-        Friday: "Fantastic Friday! End the week strong by consolidating your knowledge, practicing skills, and reflecting on your achievements. Celebrate your growth and get ready to recharge for an even better week ahead.",
-        Saturday: " Study Saturday! Use today to review, practice, and deepen your understanding. Whether it’s theory or hands-on skills, every effort counts. Your future patients and colleagues will thank you for your commitment."
-      };
-      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-
-      // ✅ Cache nursing message too
-      const message = nursingMessages[today] || "Keep pushing—you’re doing amazing! Every effort you make today brings you closer to your dream nursing career.";
-      localStorage.setItem("nursingMessage", message);
-
-      return message;
-    })()}
-  </p>
-</div>
-
-
-
-{/* Quick Stats */}
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-
-  {/* Study Progress */}
-  <Card
-    className="relative overflow-hidden rounded-2xl shadow-lg"
-    style={{
-      backgroundImage: "url('/background06.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    }}
-  >
-    <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
-
-    <div className="relative z-10">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-white">
-          Study Progress
-        </CardTitle>
-        <TrendingUp className="h-4 w-4 text-white" />
-      </CardHeader>
-      <CardContent>
-        {loadingStats ? (
-          <div className="animate-pulse space-y-2">
-            <div className="h-8 w-16 bg-white/30 rounded"></div>
-            <div className="h-2 bg-white/30 rounded w-full mt-1"></div>
-          </div>
-        ) : (
-          <>
-            <div className="text-2xl font-bold text-white">{studyProgress}%</div>
-            <Progress value={studyProgress} className="mt-2" />
-          </>
-        )}
-      </CardContent>
-    </div>
-  </Card>
-
-  {/* Quizzes Completed */}
-  <Card
-    className="relative overflow-hidden rounded-2xl shadow-lg"
-    style={{
-      backgroundImage: "url('/background07.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    }}
-  >
-    <div className="absolute inset-0 bg-black/60" />
-
-    <div className="relative z-10">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-white">
-          Quizzes Completed
-        </CardTitle>
-        <Target className="h-4 w-4 text-white" />
-      </CardHeader>
-      <CardContent>
-        {loadingStats ? (
-          <div className="animate-pulse space-y-2">
-            <div className="h-8 w-16 bg-white/30 rounded"></div>
-            <div className="h-2 w-12 bg-white/30 rounded"></div>
-          </div>
-        ) : (
-          <>
-            <div className="text-2xl font-bold text-white">{quizCount}</div>
-            <p className="text-xs text-white/80 truncate">+3 this week</p>
-          </>
-        )}
-      </CardContent>
-    </div>
-  </Card>
-
-  {/* Average Score */}
-  <Card className="relative cursor-pointer overflow-hidden rounded-2xl shadow-lg">
-    <div
-      className="absolute inset-0"
-      style={{
-        backgroundImage: "url('/background05.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    />
-    <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
-
-    <div className="relative z-20 p-4">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-white">Average Score</CardTitle>
-        <Star className="h-4 w-4 text-white/80" />
-      </CardHeader>
-      <CardContent>
-        {loadingStats ? (
-          <div className="animate-pulse space-y-2">
-            <div className="h-8 w-16 bg-white/30 rounded"></div>
-            <div className="h-2 w-20 bg-white/30 rounded"></div>
-          </div>
-        ) : (
-          <>
-            <div className="text-2xl font-bold text-white">{avgScore}%</div>
-            <p className="text-xs text-white/80 truncate">+5% from last month</p>
-          </>
-        )}
-      </CardContent>
-    </div>
-  </Card>
-
-  {/* Current Streak */}
-  <Card
-    className="relative overflow-hidden rounded-2xl shadow-lg"
-    style={{
-      backgroundImage: "url('/background08.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    }}
-  >
-    <div className="absolute inset-0 bg-black/60" />
-
-    <div className="relative z-10">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
-        <Clock className="h-4 w-4 text-white" />
-      </CardHeader>
-      <CardContent>
-        {loadingStats ? (
-          <div className="animate-pulse space-y-2">
-            <div className="h-8 w-20 bg-white/30 rounded"></div>
-            <div className="h-2 w-16 bg-white/30 rounded"></div>
-          </div>
-        ) : (
-          <>
-            <div className="text-2xl font-bold text-white">{studyStreak} days</div>
-            <p className="text-xs text-white/80 truncate">Keep it up!</p>
-          </>
-        )}
-      </CardContent>
-    </div>
-  </Card>
-
-  {/* Best Streak */}
-  <Card
-    className="relative overflow-hidden rounded-2xl shadow-lg"
-    style={{
-      backgroundImage: "url('/background09.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    }}
-  >
-    <div className="absolute inset-0 bg-black/60" />
-
-    <div className="relative z-10">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
-        <Trophy className="h-4 w-4 text-yellow-500" />
-      </CardHeader>
-      <CardContent>
-        {loadingStats ? (
-          <div className="animate-pulse space-y-2">
-            <div className="h-8 w-20 bg-white/30 rounded"></div>
-            <div className="h-2 w-16 bg-white/30 rounded"></div>
-          </div>
-        ) : (
-          <>
-            <div className="text-2xl font-bold text-white">{bestStreak} days</div>
-            <p className="text-xs text-white/80 truncate">All-time record</p>
-          </>
-        )}
-      </CardContent>
-    </div>
-  </Card>
-
-</div>
-
- 
-{/* 🏆 Top Students Leaderboard */}
-<Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-      <Trophy className="h-5 w-5 text-yellow-500" />
-      Top Students
-    </CardTitle>
-    <CardDescription>
-      Ranked by stars earned across all submitted quizzes. The leaderboard highlights 
-      learners who consistently perform well, encouraging healthy competition.
-    </CardDescription>
-
-    {/* 🔽 Explanation Dropdown (scrolls internally) */}
-    <details className="mt-2 text-sm">
-      <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
-        How winners are chosen?
-      </summary>
-      <div className="mt-2 max-h-44 overflow-y-auto pr-2 space-y-3 text-gray-600 dark:text-gray-300 custom-scrollbar">
-        {/* Existing explanation content preserved */}
-      </div>
-    </details>
-  </CardHeader>
-
-  {/* 🧑‍🎓 Leaderboard Section */}
-  <CardContent>
-    <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
-      <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-2 custom-scrollbar">
-        {loadingTopStudents ? (
-          <div className="flex gap-4 animate-pulse">
-            {Array.from({ length: 4 }).map((_, idx) => (
-              <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gray-200 dark:bg-gray-700">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
-                  <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                  <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                  <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                  <div className="flex justify-center mt-2 gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="h-4 w-4 bg-yellow-300 dark:bg-yellow-500 rounded-full"></div>
-                    ))}
-                  </div>
-                  <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded-full mt-2"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : topStudents.length > 0 ? (
-          topStudents.map((s, idx) => {
-            const rankColor =
-              idx === 0
-                ? "from-yellow-400 to-yellow-200"
-                : idx === 1
-                ? "from-gray-400 to-gray-200"
-                : idx === 2
-                ? "from-amber-600 to-amber-300"
-                : "from-gray-100 to-gray-50";
-
-            return (
-              <div
-                key={s.userId}
-                className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
-              >
-                <div className="flex flex-col items-center text-center">
-                  <img
-                    src={s.avatar_url || "/default-avatar.png"}
-                    alt={s.name}
-                    className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow"
-                  />
-                  <h3
-                    className="font-medium text-sm sm:text-base text-gray-900 dark:text-white max-w-[8rem] line-clamp-2"
-                    title={s.name}
-                  >
-                    {s.name || "Unknown"}
-                  </h3>
-                  <p
-                    className="text-xs text-gray-700 dark:text-gray-300 max-w-[8rem] line-clamp-2"
-                    title={s.institution}
-                  >
-                    {s.institution || "Institution"}
-                  </p>
-                  <p
-                    className="text-xs text-gray-500 max-w-[8rem] truncate"
-                    title={s.county}
-                  >
-                    {s.county || ""}
-                  </p>
-                  <div className="flex justify-center mt-2 text-yellow-500">
-                    {Array.from({ length: s.stars }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400" />
-                    ))}
-                  </div>
-                  {idx < 3 && (
-                    <p className="text-xs mt-2 font-semibold text-white bg-black/50 px-2 py-1 rounded-full whitespace-nowrap">
-                      {idx === 0 ? "🥇 Gold" : idx === 1 ? "🥈 Silver" : "🥉 Bronze"}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-sm text-gray-500">No top students yet</p>
-        )}
-      </div>
-    </div>
-  </CardContent>
-
-<Card
-  className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2 max-w-xl mx-auto rounded-2xl overflow-hidden"
-  onClick={() => {
-    if (navigator.vibrate) navigator.vibrate(50);
-    navigate("/feed");
-  }}
-  style={{
-    backgroundColor: "var(--card-bg)",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  {/* Overlay */}
-  <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
-
-  <div className="relative z-20 p-4 flex flex-col justify-between h-full">
-    {/* Card Heading */}
-    <div className="mb-2">
-      <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-        Feed & Leaderboard
-      </h2>
-    </div>
-
-    <CardHeader className="flex items-center justify-between pb-2">
-      <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
-    </CardHeader>
-
-    <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
-      <p className="text-gray-700 dark:text-white/90 truncate">
-        Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
-        The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
-      </p>
-
-      {/* Stats Row */}
-      <div className="flex flex-col sm:flex-row justify-start items-center sm:items-start gap-6">
-        {/* Questions Attempted */}
-        <div className="flex flex-col items-center sm:items-start">
-          <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
-          {feedsAttemptCount === undefined ? (
-            <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
-          ) : (
-            <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+            return welcomeMessage;
+          })() : localStorage.getItem("welcomeMessage") || "Loading..."}
+          {loading && (
+            <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
+              Updating…
+            </span>
           )}
-        </div>
+        </h1>
 
-        {/* Leader Student */}
-        {topStudents.length > 0 ? (
-          <div
-            className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (navigator.vibrate) navigator.vibrate(50);
-              navigate("/feed");
-            }}
-          >
-            <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
-            <img
-              src={topStudents[0].avatar_url || "/default-avatar.png"}
-              alt={topStudents[0].name}
-              className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-sm"
-            />
-            <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
-              {topStudents[0].name}
-            </p>
-            {topStudents[0].answeredCount !== undefined ? (
-              <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-sm text-center">
-                {topStudents[0].answeredCount} answered
-              </p>
-            ) : (
-              <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-1"></div>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
-            <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
-            <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-            <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
-        )}
+        <p className="text-white/90">
+          {(() => {
+            const nursingMessages = {
+              Sunday: " Sunday reset: Rest up, future nurse! Take today to recharge, reflect on your progress, and plan for the week ahead. Your patients will appreciate your energy and dedication tomorrow!",
+              Monday: " Motivated Monday! A fresh week to sharpen your nursing skills, tackle challenging concepts, and set new goals. Remember, every step today brings you closer to becoming the nurse you aspire to be.",
+              Tuesday: "Triage Tuesday! Keep organizing your notes, practicing procedures, and building your knowledge. Focus on consistency and small victories—they add up to big success in your nursing journey.",
+              Wednesday: " Wellness Wednesday! Halfway through the week—keep your energy high and your mind sharp. Take a moment to celebrate your wins so far, and remember that persistence is key to mastery.",
+              Thursday: " Thriving Thursday! Your dedication to learning and improving as a nurse is inspiring. Push through, review what you’ve learned, and keep challenging yourself—you’re making amazing progress!",
+              Friday: "Fantastic Friday! End the week strong by consolidating your knowledge, practicing skills, and reflecting on your achievements. Celebrate your growth and get ready to recharge for an even better week ahead.",
+              Saturday: " Study Saturday! Use today to review, practice, and deepen your understanding. Whether it’s theory or hands-on skills, every effort counts. Your future patients and colleagues will thank you for your commitment."
+            };
+            const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+            // ✅ Cache nursing message too
+            const message = nursingMessages[today] || "Keep pushing—you’re doing amazing! Every effort you make today brings you closer to your dream nursing career.";
+            localStorage.setItem("nursingMessage", message);
+
+            return message;
+          })()}
+        </p>
       </div>
 
-      {topStudents.length > 0 && topStudents[0].answeredCount && (
-        <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-2xl font-semibold text-sm shadow-sm truncate">
-          Top student has attempted {topStudents[0].answeredCount} questions!
-        </div>
-      )}
 
-      {/* Centered Button */}
-      <div className="flex justify-center mt-3">
-        <Button
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-md transition-all transform hover:scale-105 hover:shadow-lg"
-          onClick={(e) => {
-            e.stopPropagation();
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+
+        {/* Study Progress */}
+        <Card
+          className="relative overflow-hidden rounded-2xl shadow-lg"
+          style={{
+            backgroundImage: "url('/background06.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
+
+          <div className="relative z-10">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-white">
+                Study Progress
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-white" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 w-16 bg-white/30 rounded"></div>
+                  <div className="h-2 bg-white/30 rounded w-full mt-1"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-white">{studyProgress}%</div>
+                  <Progress value={studyProgress} className="mt-2" />
+                </>
+              )}
+            </CardContent>
+          </div>
+        </Card>
+
+        {/* Quizzes Completed */}
+        <Card
+          className="relative overflow-hidden rounded-2xl shadow-lg"
+          style={{
+            backgroundImage: "url('/background07.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+
+          <div className="relative z-10">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-white">
+                Quizzes Completed
+              </CardTitle>
+              <Target className="h-4 w-4 text-white" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 w-16 bg-white/30 rounded"></div>
+                  <div className="h-2 w-12 bg-white/30 rounded"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-white">{quizCount}</div>
+                  <p className="text-xs text-white/80 truncate">+3 this week</p>
+                </>
+              )}
+            </CardContent>
+          </div>
+        </Card>
+
+        {/* Average Score */}
+        <Card className="relative cursor-pointer overflow-hidden rounded-2xl shadow-lg">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: "url('/background05.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+          <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
+
+          <div className="relative z-20 p-4">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-white">Average Score</CardTitle>
+              <Star className="h-4 w-4 text-white/80" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 w-16 bg-white/30 rounded"></div>
+                  <div className="h-2 w-20 bg-white/30 rounded"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-white">{avgScore}%</div>
+                  <p className="text-xs text-white/80 truncate">+5% from last month</p>
+                </>
+              )}
+            </CardContent>
+          </div>
+        </Card>
+
+        {/* Current Streak */}
+        <Card
+          className="relative overflow-hidden rounded-2xl shadow-lg"
+          style={{
+            backgroundImage: "url('/background08.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+
+          <div className="relative z-10">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
+              <Clock className="h-4 w-4 text-white" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 w-20 bg-white/30 rounded"></div>
+                  <div className="h-2 w-16 bg-white/30 rounded"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-white">{studyStreak} days</div>
+                  <p className="text-xs text-white/80 truncate">Keep it up!</p>
+                </>
+              )}
+            </CardContent>
+          </div>
+        </Card>
+
+        {/* Best Streak */}
+        <Card
+          className="relative overflow-hidden rounded-2xl shadow-lg"
+          style={{
+            backgroundImage: "url('/background09.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+
+          <div className="relative z-10">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
+              <Trophy className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              {loadingStats ? (
+                <div className="animate-pulse space-y-2">
+                  <div className="h-8 w-20 bg-white/30 rounded"></div>
+                  <div className="h-2 w-16 bg-white/30 rounded"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-white">{bestStreak} days</div>
+                  <p className="text-xs text-white/80 truncate">All-time record</p>
+                </>
+              )}
+            </CardContent>
+          </div>
+        </Card>
+
+      </div>
+
+
+      {/* 🏆 Top Students Leaderboard */}
+      <Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Top Students
+          </CardTitle>
+          <CardDescription>
+            Ranked by stars earned across all submitted quizzes. The leaderboard highlights
+            learners who consistently perform well, encouraging healthy competition.
+          </CardDescription>
+
+          {/* 🔽 Explanation Dropdown (scrolls internally) */}
+          <details className="mt-2 text-sm">
+            <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
+              How winners are chosen?
+            </summary>
+            <div className="mt-2 max-h-44 overflow-y-auto pr-2 space-y-3 text-gray-600 dark:text-gray-300 custom-scrollbar">
+              {/* Existing explanation content preserved */}
+            </div>
+          </details>
+        </CardHeader>
+
+        {/* 🧑‍🎓 Leaderboard Section */}
+        <CardContent>
+          <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
+            <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-2 custom-scrollbar">
+              {loadingTopStudents ? (
+                <div className="flex gap-4 animate-pulse">
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gray-200 dark:bg-gray-700">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
+                        <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                        <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                        <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                        <div className="flex justify-center mt-2 gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i} className="h-4 w-4 bg-yellow-300 dark:bg-yellow-500 rounded-full"></div>
+                          ))}
+                        </div>
+                        <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded-full mt-2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : topStudents.length > 0 ? (
+                topStudents.map((s, idx) => {
+                  const rankColor =
+                    idx === 0
+                      ? "from-yellow-400 to-yellow-200"
+                      : idx === 1
+                        ? "from-gray-400 to-gray-200"
+                        : idx === 2
+                          ? "from-amber-600 to-amber-300"
+                          : "from-gray-100 to-gray-50";
+
+                  return (
+                    <div
+                      key={s.userId}
+                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                        <img
+                          src={s.avatar_url || "/default-avatar.png"}
+                          alt={s.name}
+                          className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow"
+                        />
+                        <h3
+                          className="font-medium text-sm sm:text-base text-gray-900 dark:text-white max-w-[8rem] line-clamp-2"
+                          title={s.name}
+                        >
+                          {s.name || "Unknown"}
+                        </h3>
+                        <p
+                          className="text-xs text-gray-700 dark:text-gray-300 max-w-[8rem] line-clamp-2"
+                          title={s.institution}
+                        >
+                          {s.institution || "Institution"}
+                        </p>
+                        <p
+                          className="text-xs text-gray-500 max-w-[8rem] truncate"
+                          title={s.county}
+                        >
+                          {s.county || ""}
+                        </p>
+                        <div className="flex justify-center mt-2 text-yellow-500">
+                          {Array.from({ length: s.stars }).map((_, i) => (
+                            <Star key={i} className="h-4 w-4 fill-yellow-400" />
+                          ))}
+                        </div>
+                        {idx < 3 && (
+                          <p className="text-xs mt-2 font-semibold text-white bg-black/50 px-2 py-1 rounded-full whitespace-nowrap">
+                            {idx === 0 ? "🥇 Gold" : idx === 1 ? "🥈 Silver" : "🥉 Bronze"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-gray-500">No top students yet</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+
+        <Card
+          className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2 max-w-xl mx-auto rounded-2xl overflow-hidden"
+          onClick={() => {
             if (navigator.vibrate) navigator.vibrate(50);
             navigate("/feed");
           }}
+          style={{
+            backgroundColor: "var(--card-bg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
-          </svg>
-        </Button>
-      </div>
-    </CardContent>
-  </div>
-</Card>
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
 
+          <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+            {/* Card Heading */}
+            <div className="mb-2">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                Feed & Leaderboard
+              </h2>
+            </div>
 
-</Card>
+            <CardHeader className="flex items-center justify-between pb-2">
+              <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
+            </CardHeader>
 
+            <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
+              <p className="text-gray-700 dark:text-white/90 truncate">
+                Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
+                The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
+              </p>
 
-<Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
-  <CardHeader>
-    <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
-    <CardDescription className="text-gray-700 dark:text-gray-300">
-      This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
-    </CardDescription>
-  </CardHeader>
+              {/* Stats Row */}
+              <div className="flex flex-col sm:flex-row justify-start items-center sm:items-start gap-6">
+                {/* Questions Attempted */}
+                <div className="flex flex-col items-center sm:items-start">
+                  <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
+                  {feedsAttemptCount === undefined ? (
+                    <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                  ) : (
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+                  )}
+                </div>
 
-  <CardContent className="space-y-4">
-    {/* Daily Thought Textarea */}
-    <textarea
-      className="w-full p-3 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      placeholder="Write today's thought..."
-      value={dailyContent}
-      onChange={(e) => setDailyContent(e.target.value)}
-    />
-
-    {/* Visibility Selector */}
-    <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
-      <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
-      <select
-        value={dailyDuration}
-        onChange={(e) => setDailyDuration(e.target.value as any)}
-        className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-2xl w-full sm:w-40"
-      >
-        <option value="24h">24 Hours</option>
-        <option value="1w">1 Week</option>
-        <option value="1m">1 Month</option>
-        <option value="3m">3 Months</option>
-      </select>
-    </div>
-
-    {/* Image Upload */}
-    <input
-      id="dailyImageUpload"
-      type="file"
-      accept="image/*"
-      onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
-      className="hidden"
-    />
-    <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
-      <label
-        htmlFor="dailyImageUpload"
-        className="w-10 h-10 flex items-center justify-center cursor-pointer rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-md"
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          className="w-5 h-5 text-green-600"
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
-          strokeWidth="2"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z" />
-        </svg>
-      </label>
-
-      <Button 
-        onClick={handlePostClick} 
-        className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={uploading}
-      >
-        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
-      </Button>
-    </div>
-
-    {/* Daily Posts */}
-    <div className="space-y-3 mt-4">
-      {loading ? (
-        <div className="space-y-2">
-          {[1,2,3].map((i) => (
-            <div key={i} className="p-3 rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
-          ))}
-        </div>
-      ) : dailyPosts.length > 0 ? (
-        dailyPosts.map((post) => (
-          <motion.div
-            key={post.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-3 border rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
-          >
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
-              {/* User Info */}
-             {/* User Info */}
-<div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
-  <button
-    type="button"
-    onClick={() =>
-      setOpenProfileId(openProfileId === post.id ? null : post.id)
-    }
-    className="flex flex-col items-center focus:outline-none"
-  >
-    {/* Avatar */}
-    {post.profiles?.avatar_url ? (
-      <img
-        src={post.profiles.avatar_url}
-        alt={post.profiles.username}
-        className="w-12 h-12 rounded-full object-cover"
-      />
-    ) : (
-      <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
-        {post.profiles?.username?.charAt(0).toUpperCase()}
-      </div>
-    )}
-  </button>
-
-  {/* Tiny Tooltip Overlay */}
-  {openProfileId === post.id && (
-    <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md text-center text-xs z-20">
-      <span className="font-semibold text-gray-900 dark:text-white block truncate">
-        {post.profiles?.full_name}
-      </span>
-      <span className="text-gray-700 dark:text-gray-300 block truncate">
-        @{post.profiles?.username}
-      </span>
-      <span className="text-gray-700 dark:text-gray-300 block truncate">
-        {post.profiles?.institution}
-      </span>
-      <span className="text-gray-700 dark:text-gray-300 block truncate">
-        {post.profiles?.county}
-      </span>
-    </div>
-  )}
-</div>
-
-
-              {/* Post Content & Image */}
-              <div className="flex-1 flex flex-col gap-2">
-              {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
-
-                {post.image_url && (
-                  <img
-                    src={post.image_url}
-                    alt="daily"
-                    className="rounded-2xl w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
-                    onClick={() => setFullscreenImage(post.image_url)}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
+                {/* Leader Student */}
+                {topStudents.length > 0 ? (
+                  <div
+                    className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (navigator.vibrate) navigator.vibrate(50);
+                      navigate("/feed");
+                    }}
+                  >
+                    <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
+                    <img
+                      src={topStudents[0].avatar_url || "/default-avatar.png"}
+                      alt={topStudents[0].name}
+                      className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-sm"
+                    />
+                    <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
+                      {topStudents[0].name}
+                    </p>
+                    {topStudents[0].answeredCount !== undefined ? (
+                      <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-sm text-center">
+                        {topStudents[0].answeredCount} answered
+                      </p>
+                    ) : (
+                      <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-1"></div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
+                    <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                    <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </div>
                 )}
               </div>
 
-              {/* Delete Button */}
-            {user?.id === post.user_id && (
-  <Button
-    variant="destructive"
-    size="sm"
-    className="mt-2 sm:mt-0 p-2 flex items-center justify-center"
-    onClick={() => handleDeletePost(post.id, post.user_id)}
-  >
-    <Trash2 className="w-4 h-4" />
-  </Button>
-)}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} • 
-              Expires on {new Date(post.expires_at).toLocaleString()}
-            </p>
-          </motion.div>
-        ))
-      ) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
-      )}
-    </div>
-  </CardContent>
-
-  {/* Fullscreen Modal */}
-  {fullscreenImage && (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
-      onClick={() => setFullscreenImage(null)}
-    >
-      <img
-        src={fullscreenImage}
-        alt="fullscreen"
-        className="max-w-full max-h-full object-contain rounded-2xl"
-      />
-    </div>
-  )}
-</Card>
-
- {/* Simulation Papers Section */} 
-<Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-  <CardHeader>
-    <CardTitle className="text-gray-900 dark:text-white">
-      Self Test Simulation Papers V1  
-      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-        ({simulationPapers.length} Papers)
-      </span>
-    </CardTitle>
-    <CardDescription className="text-gray-700 dark:text-gray-300">
-      Prepare smarter with simulation papers designed to mirror real exam conditions.  
-      Practicing here helps you build confidence, improve time management, reduce anxiety, and sharpen focus.  
-      Students who regularly use simulations perform better by identifying weak areas early and training their mind to stay calm under pressure.
-    </CardDescription>
-
-    {/* Show total available papers below description */}
-    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-      {simulationPapers.length} simulation papers available — start practicing today!
-    </p>
-
-    {/* Warning for users */}
-    <div className="mt-2 p-3 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm font-semibold">
-     For the best experience and smoothest interaction, we recommend using a desktop or laptop. While some phones can run the simulation, using a larger device ensures optimal comfort and engagement.
-    </div>
-
-    {/* Extra Tip Box */}
-    <div className="mt-2 p-3 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs italic">
-      Tip: Treat each simulation as if it’s the real exam  no distractions, no breaks.
-    </div>
-  </CardHeader>
-
-  <CardContent>
-  {loading ? (
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-    {Array.from({ length: 8 }).map((_, idx) => (
-      <div
-        key={idx}
-        className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse p-4 rounded-2xl"
-        style={{ minHeight: "250px" }}
-      >
-        <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
-        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-full mb-1"></div>
-        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-5/6 mb-1"></div>
-        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-2/3 mt-auto"></div>
-      </div>
-    ))}
-  </div>
-) : (
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-    {simulationPapers.length > 0 ? (
-      simulationPapers.map((paper) => (
-        <Card
-          key={paper.id}
-          className="flex flex-col justify-between cursor-pointer hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-2xl"
-          onClick={async () => {
-            navigate(`/simulation/${paper.id}`);
-            const { data: userData } = await supabase.auth.getUser();
-            await supabase.from("simulation_visits").insert({
-              paper_id: paper.id,
-              user_id: userData?.user?.id || null,
-            });
-          }}
-        >
-          <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-white text-lg line-clamp-2">
-              {paper.title}
-              {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
-                <Badge className="ml-2" variant="outline">New</Badge>
+              {topStudents.length > 0 && topStudents[0].answeredCount && (
+                <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-2xl font-semibold text-sm shadow-sm truncate">
+                  Top student has attempted {topStudents[0].answeredCount} questions!
+                </div>
               )}
-              {paper.difficulty && (
-                <Badge className="ml-2" variant="secondary">{paper.difficulty}</Badge>
-              )}
-            </CardTitle>
-            {paper.course && (
-              <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-                {paper.course} {paper.block ? ` - ${paper.block}` : ""}
-              </CardDescription>
-            )}
-          </CardHeader>
 
-          <CardContent className="flex flex-col flex-1 justify-between">
-            <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
-              {paper.description || "No description available."}
-            </p>
-
-            <p className="text-xs text-gray-500 mt-1">
-              ⏱ Estimated time:{" "}
-              {(() => {
-                const duration = Number(paper.duration) || 30;
-                if (duration < 60) return `${duration}m`;
-                if (duration % 60 === 0) return `${duration / 60}h`;
-                return `${Math.floor(duration / 60)}h ${duration % 60}m`;
-              })()}
-            </p>
-
-            <p className="text-xs text-gray-500 mt-1">
-              {paper.visit_count} visits
-            </p>
-
-            <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-2 bg-blue-500"
-                style={{ width: `${simulationProgress[paper.id] || 0}%` }}
-              />
-            </div>
-
-            <div className="mt-3 flex items-center justify-between">
-              <Badge variant={paper.is_free ? "default" : "secondary"}>
-                {paper.is_free ? "Free" : "Premium"}
-              </Badge>
-              <span className="text-xs text-gray-500">
-                {formatDistanceToNow(new Date(paper.created_at))} ago
-              </span>
-            </div>
-          </CardContent>
+              {/* Centered Button */}
+              <div className="flex justify-center mt-3">
+                <Button
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-md transition-all transform hover:scale-105 hover:shadow-lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    navigate("/feed");
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
+                  </svg>
+                </Button>
+              </div>
+            </CardContent>
+          </div>
         </Card>
-      ))
-    ) : (
-      <p className="text-gray-600 dark:text-gray-400">
-        No simulation papers available yet.
-      </p>
-    )}
-  </div>
-)}
 
 
-    {/* Motivational CTA */}
-    <p className="mt-6 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
-      Every simulation you complete brings you one step closer to exam success!
-    </p>
-  </CardContent>
-</Card>
+      </Card>
 
 
+      <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
+        <CardHeader>
+          <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
+          <CardDescription className="text-gray-700 dark:text-gray-300">
+            This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Daily Thought Textarea */}
+          <textarea
+            className="w-full p-3 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Write today's thought..."
+            value={dailyContent}
+            onChange={(e) => setDailyContent(e.target.value)}
+          />
+
+          {/* Visibility Selector */}
+          <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
+            <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
+            <select
+              value={dailyDuration}
+              onChange={(e) => setDailyDuration(e.target.value as any)}
+              className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-2xl w-full sm:w-40"
+            >
+              <option value="24h">24 Hours</option>
+              <option value="1w">1 Week</option>
+              <option value="1m">1 Month</option>
+              <option value="3m">3 Months</option>
+            </select>
+          </div>
+
+          {/* Image Upload */}
+          <input
+            id="dailyImageUpload"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
+            className="hidden"
+          />
+          <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
+            <label
+              htmlFor="dailyImageUpload"
+              className="w-10 h-10 flex items-center justify-center cursor-pointer rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-md"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z" />
+              </svg>
+            </label>
+
+            <Button
+              onClick={handlePostClick}
+              className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </div>
+
+          {/* Daily Posts */}
+          <div className="space-y-3 mt-4">
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-3 rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
+                ))}
+              </div>
+            ) : dailyPosts.length > 0 ? (
+              dailyPosts.map((post) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 border rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+                >
+                  <div className="flex flex-col sm:flex-row gap-4 items-start">
+                    {/* User Info */}
+                    {/* User Info */}
+                    <div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenProfileId(openProfileId === post.id ? null : post.id)
+                        }
+                        className="flex flex-col items-center focus:outline-none"
+                      >
+                        {/* Avatar */}
+                        {post.profiles?.avatar_url ? (
+                          <img
+                            src={post.profiles.avatar_url}
+                            alt={post.profiles.username}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
+                            {post.profiles?.username?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Tiny Tooltip Overlay */}
+                      {openProfileId === post.id && (
+                        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md text-center text-xs z-20">
+                          <span className="font-semibold text-gray-900 dark:text-white block truncate">
+                            {post.profiles?.full_name}
+                          </span>
+                          <span className="text-gray-700 dark:text-gray-300 block truncate">
+                            @{post.profiles?.username}
+                          </span>
+                          <span className="text-gray-700 dark:text-gray-300 block truncate">
+                            {post.profiles?.institution}
+                          </span>
+                          <span className="text-gray-700 dark:text-gray-300 block truncate">
+                            {post.profiles?.county}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+
+                    {/* Post Content & Image */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
+
+                      {post.image_url && (
+                        <img
+                          src={post.image_url}
+                          alt="daily"
+                          className="rounded-2xl w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
+                          onClick={() => setFullscreenImage(post.image_url)}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Delete Button */}
+                    {user?.id === post.user_id && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="mt-2 sm:mt-0 p-2 flex items-center justify-center"
+                        onClick={() => handleDeletePost(post.id, post.user_id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} •
+                    Expires on {new Date(post.expires_at).toLocaleString()}
+                  </p>
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
+            )}
+          </div>
+        </CardContent>
+
+        {/* Fullscreen Modal */}
+        {fullscreenImage && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <img
+              src={fullscreenImage}
+              alt="fullscreen"
+              className="max-w-full max-h-full object-contain rounded-2xl"
+            />
+          </div>
+        )}
+      </Card>
+
+      {/* Simulation Papers Section */}
+      <Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-gray-900 dark:text-white">
+            Self Test Simulation Papers V1
+            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+              ({simulationPapers.length} Papers)
+            </span>
+          </CardTitle>
+          <CardDescription className="text-gray-700 dark:text-gray-300">
+            Prepare smarter with simulation papers designed to mirror real exam conditions.
+            Practicing here helps you build confidence, improve time management, reduce anxiety, and sharpen focus.
+            Students who regularly use simulations perform better by identifying weak areas early and training their mind to stay calm under pressure.
+          </CardDescription>
+
+          {/* Show total available papers below description */}
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {simulationPapers.length} simulation papers available — start practicing today!
+          </p>
+
+          {/* Warning for users */}
+          <div className="mt-2 p-3 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm font-semibold">
+            For the best experience and smoothest interaction, we recommend using a desktop or laptop. While some phones can run the simulation, using a larger device ensures optimal comfort and engagement.
+          </div>
+
+          {/* Extra Tip Box */}
+          <div className="mt-2 p-3 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs italic">
+            Tip: Treat each simulation as if it’s the real exam  no distractions, no breaks.
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse p-4 rounded-2xl"
+                  style={{ minHeight: "250px" }}
+                >
+                  <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-full mb-1"></div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-5/6 mb-1"></div>
+                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-2/3 mt-auto"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {simulationPapers.length > 0 ? (
+                simulationPapers.map((paper) => (
+                  <Card
+                    key={paper.id}
+                    className="flex flex-col justify-between cursor-pointer hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-2xl"
+                    onClick={async () => {
+                      navigate(`/simulation/${paper.id}`);
+                      const { data: userData } = await supabase.auth.getUser();
+                      await supabase.from("simulation_visits").insert({
+                        paper_id: paper.id,
+                        user_id: userData?.user?.id || null,
+                      });
+                    }}
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-gray-900 dark:text-white text-lg line-clamp-2">
+                        {paper.title}
+                        {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                          <Badge className="ml-2" variant="outline">New</Badge>
+                        )}
+                        {paper.difficulty && (
+                          <Badge className="ml-2" variant="secondary">{paper.difficulty}</Badge>
+                        )}
+                      </CardTitle>
+                      {paper.course && (
+                        <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
+                          {paper.course} {paper.block ? ` - ${paper.block}` : ""}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+
+                    <CardContent className="flex flex-col flex-1 justify-between">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                        {paper.description || "No description available."}
+                      </p>
+
+                      <p className="text-xs text-gray-500 mt-1">
+                        ⏱ Estimated time:{" "}
+                        {(() => {
+                          const duration = Number(paper.duration) || 30;
+                          if (duration < 60) return `${duration}m`;
+                          if (duration % 60 === 0) return `${duration / 60}h`;
+                          return `${Math.floor(duration / 60)}h ${duration % 60}m`;
+                        })()}
+                      </p>
+
+                      <p className="text-xs text-gray-500 mt-1">
+                        {paper.visit_count} visits
+                      </p>
+
+                      <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-2 bg-blue-500"
+                          style={{ width: `${simulationProgress[paper.id] || 0}%` }}
+                        />
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <Badge variant={paper.is_free ? "default" : "secondary"}>
+                          {paper.is_free ? "Free" : "Premium"}
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          {formatDistanceToNow(new Date(paper.created_at))} ago
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-gray-600 dark:text-gray-400">
+                  No simulation papers available yet.
+                </p>
+              )}
+            </div>
+          )}
+
+
+          {/* Motivational CTA */}
+          <p className="mt-6 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
+            Every simulation you complete brings you one step closer to exam success!
+          </p>
+        </CardContent>
+      </Card>
       {/* New Unit Question Counts Section */}
       <Card>
-  <CardHeader className="flex flex-row items-center justify-between">
-    <div>
-      <CardTitle>QUIZZES UNIT BREAKDOWN</CardTitle>
-      <CardDescription>
-        All units and their available question counts. Click the tab to start practicing instantly.
-      </CardDescription>
-    </div>
-    <Button
-  asChild
-  className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
->
-  <Link to="/Medrae-quizzes">Go to Quizzes</Link>
-</Button>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>QUIZZES UNIT BREAKDOWN</CardTitle>
+            <CardDescription>
+              All units and their available question counts. Click the tab to start practicing instantly.
+            </CardDescription>
+          </div>
+          <Button
+            asChild
+            className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+          >
+            <Link to="/Medrae-quizzes">Go to Quizzes</Link>
+          </Button>
+        </CardHeader>
 
-  </CardHeader>
- <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  {unitCounts.length > 0 ? (
-    unitCounts.map((unit) => (
-      <div
-        key={unit.unit_code}
-        className="p-4 border rounded-2xl flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
-        onClick={() => navigate('/Medrae-quizzes')}
-      >
-        <div>
-          <p className="text-sm font-medium">{unit.unit}</p>
-          <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
-        </div>
-        <Badge>{unit.count} Qs</Badge>
-      </div>
-    ))
-  ) : loading ? (
-    // Skeleton loader for units
-    Array.from({ length: 6 }).map((_, idx) => (
-      <div
-        key={idx}
-        className="p-4 border rounded-2xl flex flex-col justify-between animate-pulse bg-gray-50 dark:bg-gray-800 min-h-[80px]"
-      >
-        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
-        <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>
-      </div>
-    ))
-  ) : (
-    <p className="text-sm text-muted-foreground">No unit data available.</p>
-  )}
-</CardContent>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {unitCounts.length > 0 ? (
+            <>
+              {/* NCLEX Units */}
+              {unitCounts
+                .filter(u =>
+                  [
+                    "HNX3-001",
+                    "HNX3-002",
+                    "HNX3-003",
+                    "HNX3-004",
+                    "HNX3-005",
+                    "HNX3-006",
+                    "HNX3-007",
+                    "HNX3-008"
+                  ].includes(u.unit_code?.trim() || "")
+                )
+                .map((unit) => (
+                  <div
+                    key={unit.unit_code}
+                    className="p-4 border-2 border-purple-500 rounded-2xl flex items-center justify-between bg-white dark:bg-gray-900 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer"
+                    onClick={() => navigate('/Medrae-quizzes')}
+                  >
+                    <div>
+                      {/* Text neutral colors */}
+                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {unit.unit}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
+                    </div>
+                    {/* Badge neutral or subtle color */}
+                    <Badge className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                      {unit.count} Qs
+                    </Badge>
+                  </div>
 
-</Card>
-{/* Main Grid */}
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                ))}
 
-{/* Share App Card */}
-<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
-  <CardHeader>
-    <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
-    <CardDescription>
-      Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    {loading ? (
-      <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-        <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64"></div>
-      </div>
-    ) : (
-      <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
-          onClick={() => {
-            const shareMessage =
-`Medrae – The Professional Medical Education & Career Network
+              {/* Other Units */}
+              {unitCounts
+                .filter(u =>
+                  ![
+                    "HNX3-001",
+                    "HNX3-002",
+                    "HNX3-003",
+                    "HNX3-004",
+                    "HNX3-005",
+                    "HNX3-006",
+                    "HNX3-007",
+                    "HNX3-008"
+                  ].includes(u.unit_code?.trim() || "")
+                )
+                .map((unit) => (
+                  <div
+                    key={unit.unit_code}
+                    className="p-4 border rounded-2xl flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate('/Medrae-quizzes')}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{unit.unit}</p>
+                      <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
+                    </div>
+                    <Badge>{unit.count} Qs</Badge>
+                  </div>
+                ))}
+            </>
+          ) : loading ? (
+            // Skeleton loader for units
+            Array.from({ length: 6 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="p-4 border rounded-2xl flex flex-col justify-between animate-pulse bg-gray-50 dark:bg-gray-800 min-h-[80px]"
+              >
+                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No unit data available.</p>
+          )}
+        </CardContent>
+      </Card>
+      {/* New Unit Question Counts Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>QUIZZES UNIT BREAKDOWN</CardTitle>
+            <CardDescription>
+              All units and their available question counts. Click the tab to start practicing instantly.
+            </CardDescription>
+          </div>
+          <Button
+            asChild
+            className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+          >
+            <Link to="/Medrae-quizzes">Go to Quizzes</Link>
+          </Button>
+        </CardHeader>
+
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {unitCounts.length > 0 ? (
+            <>
+              {/* NCLEX Units */}
+              {unitCounts
+                .filter(u =>
+                  [
+                    "HNX3-001",
+                    "HNX3-002",
+                    "HNX3-003",
+                    "HNX3-004",
+                    "HNX3-005",
+                    "HNX3-006",
+                    "HNX3-007",
+                    "HNX3-008"
+                  ].includes(u.unit_code?.trim() || "")
+                )
+                .map((unit) => (
+                  <div
+                    key={unit.unit_code}
+                    className="p-4 border-2 border-purple-500 rounded-2xl flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate('/Medrae-quizzes')}
+                  >
+                    <div>
+                      <p className="text-sm font-bold text-purple-700">{unit.unit}</p>
+                      <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
+                    </div>
+                    <Badge className="bg-purple-600 text-white">{unit.count} Qs</Badge>
+                  </div>
+                ))}
+
+              {/* Other Units */}
+              {unitCounts
+                .filter(u =>
+                  ![
+                    "HNX3-001",
+                    "HNX3-002",
+                    "HNX3-003",
+                    "HNX3-004",
+                    "HNX3-005",
+                    "HNX3-006",
+                    "HNX3-007",
+                    "HNX3-008"
+                  ].includes(u.unit_code?.trim() || "")
+                )
+                .map((unit) => (
+                  <div
+                    key={unit.unit_code}
+                    className="p-4 border rounded-2xl flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => navigate('/Medrae-quizzes')}
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{unit.unit}</p>
+                      <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
+                    </div>
+                    <Badge>{unit.count} Qs</Badge>
+                  </div>
+                ))}
+            </>
+          ) : loading ? (
+            // Skeleton loader for units
+            Array.from({ length: 6 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="p-4 border rounded-2xl flex flex-col justify-between animate-pulse bg-gray-50 dark:bg-gray-800 min-h-[80px]"
+              >
+                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No unit data available.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+        {/* Share App Card */}
+        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
+            <CardDescription>
+              Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64"></div>
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
+                  onClick={() => {
+                    const shareMessage =
+                      `Medrae – The Professional Medical Education & Career Network
 
 • Structured modules across core clinical disciplines  
 • Expert-led lectures and verified medical resources  
@@ -1728,254 +1869,254 @@ return (
 
 Join the Medrae community today: https://medrae.vercel.app`;
 
-            if (navigator.share) {
-              navigator.share({
-                title: "Medrae – Medical Education & Career Network",
-                text: shareMessage,
-                url: "https://medrae.vercel.app",
-              }).catch(err => console.log("Share cancelled:", err));
-            } else {
-              navigator.clipboard.writeText(shareMessage);
-              alert("Medrae link and overview copied to clipboard!");
-            }
+                    if (navigator.share) {
+                      navigator.share({
+                        title: "Medrae – Medical Education & Career Network",
+                        text: shareMessage,
+                        url: "https://medrae.vercel.app",
+                      }).catch(err => console.log("Share cancelled:", err));
+                    } else {
+                      navigator.clipboard.writeText(shareMessage);
+                      alert("Medrae link and overview copied to clipboard!");
+                    }
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4" />
+                  </svg>
+                  Share
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* WhatsApp Channel Card */}
+        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-primary" />
+              Join Our WhatsApp Channel
+            </CardTitle>
+            <CardDescription>
+              Stay updated with important announcements and new study content.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+            ) : (
+              <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
+                <div className="flex justify-center">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                    <MessageCircle className="w-4 h-4" />
+                    WhatsApp Channel
+                  </Button>
+                </div>
+              </a>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* WhatsApp Group Card */}
+        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              Join Our WhatsApp Group
+            </CardTitle>
+            <CardDescription>
+              Connect with fellow nursing and medical students. Share insights, ask questions, and stay updated with study materials.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+            ) : (
+              <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
+                <div className="flex justify-center">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                    <MessageCircle className="w-4 h-4" />
+                    WhatsApp Group
+                  </Button>
+                </div>
+              </a>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Telegram Channel Card */}
+        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-blue-600" />
+              Join Our Telegram Channel
+            </CardTitle>
+            <CardDescription>
+              Stay updated with the latest resources, study tips, and announcements. Be part of our growing community of nursing and medical scholars.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+            ) : (
+              <a href="https://t.me/Medraenursingnexusscholar" target="_blank" rel="noopener noreferrer">
+                <div className="flex justify-center">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                    <Send className="w-4 h-4" />
+                    Telegram Channel
+                  </Button>
+                </div>
+              </a>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions Card */}
+        <Card
+          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64"
+          style={{
+            backgroundImage: loading ? "" : "url('/background04.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
           }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4"/>
-          </svg>
-          Share
-        </Button>
-      </div>
-    )}
-  </CardContent>
-</Card>
+          <CardHeader>
+            <CardTitle className="text-white">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full mx-auto"></div>
+            ) : (
+              <Button className="w-full justify-start rounded-2xl" variant="outline" asChild>
+                <Link to="/ai-assistant">
+                  <Brain className="mr-2 h-4 w-4" />
+                  Ask AI Assistant
+                </Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
 
-{/* WhatsApp Channel Card */}
-<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <MessageCircle className="w-5 h-5 text-primary" />
-      Join Our WhatsApp Channel
-    </CardTitle>
-    <CardDescription>
-      Stay updated with important announcements and new study content.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    {loading ? (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
-    ) : (
-      <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
-        <div className="flex justify-center">
-          <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-            <MessageCircle className="w-4 h-4" />
-            WhatsApp Channel
-          </Button>
-        </div>
-      </a>
-    )}
-  </CardContent>
-</Card>
-
-{/* WhatsApp Group Card */}
-<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <MessageCircle className="w-5 h-5 text-green-600" />
-      Join Our WhatsApp Group
-    </CardTitle>
-    <CardDescription>
-      Connect with fellow nursing and medical students. Share insights, ask questions, and stay updated with study materials.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    {loading ? (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
-    ) : (
-      <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
-        <div className="flex justify-center">
-          <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-            <MessageCircle className="w-4 h-4" />
-            WhatsApp Group
-          </Button>
-        </div>
-      </a>
-    )}
-  </CardContent>
-</Card>
-
-{/* Telegram Channel Card */}
-<Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
-  <CardHeader>
-    <CardTitle className="flex items-center gap-2">
-      <Send className="w-5 h-5 text-blue-600" />
-      Join Our Telegram Channel
-    </CardTitle>
-    <CardDescription>
-      Stay updated with the latest resources, study tips, and announcements. Be part of our growing community of nursing and medical scholars.
-    </CardDescription>
-  </CardHeader>
-  <CardContent>
-    {loading ? (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
-    ) : (
-      <a href="https://t.me/Medraenursingnexusscholar" target="_blank" rel="noopener noreferrer">
-        <div className="flex justify-center">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-            <Send className="w-4 h-4" />
-            Telegram Channel
-          </Button>
-        </div>
-      </a>
-    )}
-  </CardContent>
-</Card>
-
-{/* Quick Actions Card */}
-<Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64"
-  style={{
-    backgroundImage: loading ? "" : "url('/background04.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  <CardHeader>
-    <CardTitle className="text-white">Quick Actions</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-3">
-    {loading ? (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full mx-auto"></div>
-    ) : (
-      <Button className="w-full justify-start rounded-2xl" variant="outline" asChild>
-        <Link to="/ai-assistant">
-          <Brain className="mr-2 h-4 w-4" />
-          Ask AI Assistant
-        </Link>
-      </Button>
-    )}
-  </CardContent>
-</Card>
-
-{/* Upcoming Redletter Dates Card */}
-<Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
-  style={{
-    backgroundImage: "url('/background05.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  <CardHeader>
-    <CardTitle className="text-white text-lg">UPCOMING REDLETTER DATES</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-2">
-    {loading ? (
-      <div className="space-y-2">
-        {[1,2,3].map((i) => (
-          <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full"></div>
-        ))}
-      </div>
-    ) : calendarEvents.length > 0 ? (
-      calendarEvents.map((event) => (
-        <div
-          key={event.id}
-          className="flex flex-col sm:flex-row items-center justify-between p-2 rounded-2xl bg-white/20 backdrop-blur-sm w-full"
+        {/* Upcoming Redletter Dates Card */}
+        <Card
+          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          style={{
+            backgroundImage: "url('/background05.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         >
-          <div className="truncate">
-            <p className="text-sm font-medium text-white truncate">{event.title}</p>
-            <p className="text-xs text-white/80 truncate">{event.type}</p>
-          </div>
-          <Badge className={getPriorityColor(event.priority)}>
-            {new Date(event.start_time).toLocaleDateString()}
-          </Badge>
-        </div>
-      ))
-    ) : (
-      <p className="text-sm text-white/70">No upcoming assessments.</p>
-    )}
-  </CardContent>
-</Card>
+          <CardHeader>
+            <CardTitle className="text-white text-lg">UPCOMING REDLETTER DATES</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full"></div>
+                ))}
+              </div>
+            ) : calendarEvents.length > 0 ? (
+              calendarEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex flex-col sm:flex-row items-center justify-between p-2 rounded-2xl bg-white/20 backdrop-blur-sm w-full"
+                >
+                  <div className="truncate">
+                    <p className="text-sm font-medium text-white truncate">{event.title}</p>
+                    <p className="text-xs text-white/80 truncate">{event.type}</p>
+                  </div>
+                  <Badge className={getPriorityColor(event.priority)}>
+                    {new Date(event.start_time).toLocaleDateString()}
+                  </Badge>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-white/70">No upcoming assessments.</p>
+            )}
+          </CardContent>
+        </Card>
 
-{/* Premium / Subscription Card */}
-<Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
-  style={{
-    backgroundImage: "url('/background03.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  <CardHeader>
-    <CardTitle className="text-white text-lg">Go Premium / Subscription</CardTitle>
-  </CardHeader>
-  <CardContent className="flex items-center justify-center">
-    {loading ? (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
-    ) : (
-      <Button asChild className="w-full sm:w-64 bg-purple-500 hover:bg-purple-600 text-white rounded-2xl">
-        <Link to="/subscription">
-          <Star className="mr-2 h-4 w-4" />
-          Subscribe Now
-        </Link>
-      </Button>
-    )}
-  </CardContent>
-</Card>
+        {/* Premium / Subscription Card */}
+        <Card
+          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          style={{
+            backgroundImage: "url('/background03.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <CardHeader>
+            <CardTitle className="text-white text-lg">Go Premium / Subscription</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
+            {loading ? (
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+            ) : (
+              <Button asChild className="w-full sm:w-64 bg-purple-500 hover:bg-purple-600 text-white rounded-2xl">
+                <Link to="/subscription">
+                  <Star className="mr-2 h-4 w-4" />
+                  Subscribe Now
+                </Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
 
-{/* Candidate Simulation Card */}
-<Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
-  style={{
-    backgroundImage: "url('/background02.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  <CardHeader>
-    <CardTitle className="text-white text-lg">Candidate Simulation</CardTitle>
-  </CardHeader>
-  <CardContent className="flex items-center justify-center">
-    {loading ? (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
-    ) : (
-      <Button asChild className="w-full sm:w-64 bg-green-500 hover:bg-green-600 text-white rounded-2xl">
-        <Link to="/simulation/candidate">
-          <BookOpen className="mr-2 h-4 w-4" />
-          Go to Simulation
-        </Link>
-      </Button>
-    )}
-  </CardContent>
-</Card>
+        {/* Candidate Simulation Card */}
+        <Card
+          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          style={{
+            backgroundImage: "url('/background02.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <CardHeader>
+            <CardTitle className="text-white text-lg">Candidate Simulation</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
+            {loading ? (
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+            ) : (
+              <Button asChild className="w-full sm:w-64 bg-green-500 hover:bg-green-600 text-white rounded-2xl">
+                <Link to="/simulation/candidate">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Go to Simulation
+                </Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
 
-{/* Resources Card */}
-<Card
-  className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
-  style={{
-    backgroundImage: "url('/background1.jpeg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }}
->
-  <CardHeader>
-    <CardTitle className="text-white text-lg">Resources</CardTitle>
-  </CardHeader>
-  <CardContent className="flex items-center justify-center">
-    {loading ? (
-      <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
-    ) : (
-      <Button asChild className="w-full sm:w-64 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl">
-        <Link to="/resources">
-          <ListChecks className="mr-2 h-4 w-4" />
-          Access Resources
-        </Link>
-      </Button>
-    )}
-  </CardContent>
-</Card>
+        {/* Resources Card */}
+        <Card
+          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          style={{
+            backgroundImage: "url('/background1.jpeg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <CardHeader>
+            <CardTitle className="text-white text-lg">Resources</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
+            {loading ? (
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+            ) : (
+              <Button asChild className="w-full sm:w-64 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl">
+                <Link to="/resources">
+                  <ListChecks className="mr-2 h-4 w-4" />
+                  Access Resources
+                </Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
 
-</div>
-</div>
+      </div>
+    </div>
   );
 }
