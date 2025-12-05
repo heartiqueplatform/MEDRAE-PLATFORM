@@ -9,6 +9,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useDrag } from '@use-gesture/react';
 import { useSpring, animated } from '@react-spring/web';
 import { supabase } from "@/lib/supabaseClient";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
 // ✅ Skeleton loader for hero cards (image/video replacement)
 const HeroSkeleton = () => {
@@ -29,7 +32,7 @@ const HeroSkeleton = () => {
 const Index = () => {
   const [ready, setReady] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+
   // ✅ track loading state PER hero slide
   const [heroMediaLoaded, setHeroMediaLoaded] = useState<Record<number, boolean>>({});
 
@@ -72,14 +75,6 @@ const Index = () => {
     preloadMedia();
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768); // Tailwind's md breakpoint
-    };
-    handleResize(); // initial check
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -200,6 +195,7 @@ const Index = () => {
 
 
   const heroStorySlides = [
+
     {
       bg: "/indexbackground7.jpg",
       text: (
@@ -268,6 +264,17 @@ const Index = () => {
 
   ];
 
+  // Simple mobile slider settings
+  const mobileSliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 400,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: false,
+    autoplay: true,
+    autoplaySpeed: 3000,
+  };
 
   // inside your component
   const [spring, api] = useSpring(() => ({ x: 0 }));
@@ -386,177 +393,128 @@ const Index = () => {
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume className="h-5 w-5" />}
         </button>
-        {/* Mobile gallery for small screens */}
-        <div className="block md:hidden overflow-x-auto flex gap-4 px-4 py-6 snap-x snap-mandatory">
-          {heroStorySlides.map((slide, idx) => (
-            <div
-              key={idx}
-              className="flex-none w-[80%] max-w-[300px] snap-center relative rounded-2xl shadow-lg cursor-pointer overflow-hidden"
-              onClick={() => setActiveHeroStory(idx)} // optional tap to activate
-            >
-              {slide.video ? (
-                <video
-                  src={slide.video}
-                  className="w-full h-[400px] object-cover rounded-2xl"
-                  muted
-                  playsInline
-                  loop
-                  preload="auto"
-                />
-              ) : (
+
+        {/* If mobile, show simple slider */}
+        {window.innerWidth < 768 ? (
+          <Slider {...mobileSliderSettings}>
+            {heroStorySlides.map((slide, idx) => (
+              <div key={idx} className="relative w-full h-[70vh]">
                 <img
                   src={slide.bg}
-                  alt={`Slide ${idx + 1}`}
-                  className="w-full h-[400px] object-cover rounded-2xl"
+                  className="w-full h-full object-cover rounded-xl"
                 />
-              )}
-              <div className="absolute inset-0 bg-black/40 flex items-end p-4 text-white text-left">
-                {typeof slide.text === "string"
-                  ? slide.text
-                  : React.isValidElement(slide.text)
-                    ? slide.text
-                    : null}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Mobile gallery for small screens */}
-        {isMobile && (
-          <div className="relative z-20 overflow-x-auto flex gap-4 px-4 py-6 snap-x snap-mandatory">
-            {heroStorySlides.map((slide, idx) => (
-              <div
-                key={idx}
-                className="flex-none w-[80%] max-w-[300px] snap-center relative rounded-2xl shadow-lg cursor-pointer overflow-hidden"
-                onClick={() => setActiveHeroStory(idx)}
-              >
-                {slide.video ? (
-                  <video
-                    src={slide.video}
-                    className="w-full h-[400px] object-cover rounded-2xl"
-                    muted
-                    playsInline
-                    loop
-                    preload="auto"
-                  />
-                ) : (
-                  <img
-                    src={slide.bg}
-                    alt={`Slide ${idx + 1}`}
-                    className="w-full h-[400px] object-cover rounded-2xl"
-                  />
-                )}
-                <div className="absolute inset-0 bg-black/40 flex items-end p-4 text-white text-left">
-                  {typeof slide.text === "string"
-                    ? slide.text
-                    : React.isValidElement(slide.text)
-                      ? slide.text
-                      : null}
+                <div className="absolute inset-0 bg-black/40 flex items-end p-6 text-white">
+                  {slide.text}
                 </div>
               </div>
             ))}
-          </div>
+          </Slider>
+        ) : (
+          <>
+            {/* YOUR CURRENT DESKTOP/LAPTOP HERO SYSTEM BELOW HERE */}
+
+            {/* Hero slides container */}
+            <animated.div
+              {...bind()}
+              style={{ touchAction: "pan-y pinch-zoom" }}
+
+              className="relative w-full min-h-[70vh] flex justify-start items-center overflow-hidden touch-pan-y select-none z-10"
+
+            >
+              {heroStorySlides.map((slide, idx) => {
+                const offset = idx - activeHeroStory;
+                const absOffset = Math.abs(offset);
+                const scale = offset === 0 ? 1 : 0.85 ** absOffset;
+                const gap = 15;
+                const maxSlideWidth = 400; // max width in px
+                const slideWidth = Math.min(window.innerWidth * 0.9, maxSlideWidth); // 90% of viewport or max
+                const zIndex = 100 - absOffset;
+
+                return (
+                  <div
+                    key={idx}
+                    className="absolute top-0 left-1/2 rounded-2xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer select-none"
+                    style={{
+                      transform: `translate3d(${offset * (slideWidth + gap) + spring.x.get()}px, 0, 0) scale(${scale})`,
+                      zIndex,
+                      opacity: 1,
+                      width: `${slideWidth}px`,
+                      maxWidth: '100%',
+                      height: '100%', // maintain aspect ratio
+                    }}
+                  >
+                    <div className="relative w-full h-full">
+                      {!heroMediaLoaded[idx] && (
+                        <div className="absolute inset-0 z-10">
+                          <HeroSkeleton />
+                        </div>
+                      )}
+
+                      {slide.video ? (
+                        <video
+                          className="w-full h-full max-h-screen object-cover rounded-2xl transition-opacity duration-500"
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          preload="auto"
+                          onLoadedData={() =>
+                            setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
+                          }
+                          style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
+                        >
+                          <source src={slide.video} type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : (
+                        <img
+                          src={slide.bg}
+                          alt={`Slide ${idx + 1}`}
+                          onLoad={() =>
+                            setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
+                          }
+                          className="w-full h-full max-h-screen object-cover rounded-3xl transition-opacity duration-500"
+                          style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
+                      {typeof slide.text === "string"
+                        ? slide.text
+                        : React.isValidElement(slide.text)
+                          ? slide.text
+                          : null}
+                    </div>
+
+                    {idx === activeHeroStory && (
+                      <>
+                        <button
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
+                          onClick={() => setActiveHeroStory((prev) => Math.max(prev - 1, 0))}
+                        >
+                          &#60;
+                        </button>
+                        <button
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
+                          onClick={() =>
+                            setActiveHeroStory((prev) =>
+                              Math.min(prev + 1, heroStorySlides.length - 1)
+                            )
+                          }
+                        >
+                          &#62;
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+
+            </animated.div>
+          </>
         )}
 
-
-        {/* Hero slides container */}
-        <animated.div
-          {...bind()}
-          style={{ touchAction: "pan-y pinch-zoom" }}
-
-          className="relative w-full min-h-[70vh] flex justify-start items-center overflow-hidden touch-pan-y select-none z-10"
-
-        >
-          {heroStorySlides.map((slide, idx) => {
-            const offset = idx - activeHeroStory;
-            const absOffset = Math.abs(offset);
-            const scale = offset === 0 ? 1 : 0.85 ** absOffset;
-            const gap = 15;
-            const maxSlideWidth = 400; // max width in px
-            const slideWidth = Math.min(window.innerWidth * 0.9, maxSlideWidth); // 90% of viewport or max
-            const zIndex = 100 - absOffset;
-
-            return (
-              <div
-                key={idx}
-                className="absolute top-0 left-1/2 rounded-2xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer select-none"
-                style={{
-                  transform: `translate3d(${offset * (slideWidth + gap) + spring.x.get()}px, 0, 0) scale(${scale})`,
-                  zIndex,
-                  opacity: 1,
-                  width: `${slideWidth}px`,
-                  maxWidth: '100%',
-                  height: '100%', // maintain aspect ratio
-                }}
-              >
-                <div className="relative w-full h-full">
-                  {!heroMediaLoaded[idx] && (
-                    <div className="absolute inset-0 z-10">
-                      <HeroSkeleton />
-                    </div>
-                  )}
-
-                  {slide.video ? (
-                    <video
-                      className="w-full h-full max-h-screen object-cover rounded-2xl transition-opacity duration-500"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="auto"
-                      onLoadedData={() =>
-                        setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
-                      }
-                      style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
-                    >
-                      <source src={slide.video} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  ) : (
-                    <img
-                      src={slide.bg}
-                      alt={`Slide ${idx + 1}`}
-                      onLoad={() =>
-                        setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
-                      }
-                      className="w-full h-full max-h-screen object-cover rounded-3xl transition-opacity duration-500"
-                      style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
-                    />
-                  )}
-                </div>
-
-                <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
-                  {typeof slide.text === "string"
-                    ? slide.text
-                    : React.isValidElement(slide.text)
-                      ? slide.text
-                      : null}
-                </div>
-
-                {idx === activeHeroStory && (
-                  <>
-                    <button
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
-                      onClick={() => setActiveHeroStory((prev) => Math.max(prev - 1, 0))}
-                    >
-                      &#60;
-                    </button>
-                    <button
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
-                      onClick={() =>
-                        setActiveHeroStory((prev) =>
-                          Math.min(prev + 1, heroStorySlides.length - 1)
-                        )
-                      }
-                    >
-                      &#62;
-                    </button>
-                  </>
-                )}
-              </div>
-            );
-          })}
-
-        </animated.div>
         {/* Pagination Dots */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
           {heroStorySlides.map((_, idx) => (
