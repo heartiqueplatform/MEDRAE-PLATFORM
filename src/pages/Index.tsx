@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabaseClient";
 // ✅ Skeleton loader for hero cards (image/video replacement)
 const HeroSkeleton = () => {
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm animate-pulse">
+    <div className="w-full h-full rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm animate-pulse">
       {/* media placeholder */}
       <div className="w-full h-[70%] bg-white/20" />
 
@@ -385,46 +385,46 @@ const Index = () => {
           {...bind()}
           style={{ touchAction: "pan-y pinch-zoom" }}
 
-          className="relative w-full min-h-screen md:h-[70vh] lg:h-[80vh] flex justify-center items-center overflow-hidden touch-pan-y select-none z-10"
+          className="relative w-full min-h-[70vh] flex justify-start items-center overflow-hidden touch-pan-y select-none z-10"
+
         >
           {heroStorySlides.map((slide, idx) => {
             const offset = idx - activeHeroStory;
             const absOffset = Math.abs(offset);
             const scale = offset === 0 ? 1 : 0.85 ** absOffset;
-            const spacing = 15;
-            const translateX = offset * spacing;
+            const gap = 15;
+            const maxSlideWidth = 400; // max width in px
+            const slideWidth = Math.min(window.innerWidth * 0.9, maxSlideWidth); // 90% of viewport or max
             const zIndex = 100 - absOffset;
 
             return (
               <div
                 key={idx}
-                className="absolute top-0 left-1/2 rounded-xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer select-none"
+                className="absolute top-0 left-1/2 rounded-2xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer select-none"
                 style={{
-                  transform: `translateX(calc(-50% + ${translateX}vw + ${spring.x.get()}px)) scale(${scale})`,
+                  transform: `translate3d(${offset * (slideWidth + gap) + spring.x.get()}px, 0, 0) scale(${scale})`,
                   zIndex,
                   opacity: 1,
-                  width: `${scale * 90}%`,
-                  maxWidth: "400px",
+                  width: `${slideWidth}px`,
+                  maxWidth: '100%',
+                  height: '100%', // maintain aspect ratio
                 }}
-
               >
                 <div className="relative w-full h-full">
-                  {/* Skeleton while loading */}
                   {!heroMediaLoaded[idx] && (
                     <div className="absolute inset-0 z-10">
                       <HeroSkeleton />
                     </div>
                   )}
 
-                  {/* Media */}
                   {slide.video ? (
                     <video
-                      className="w-full h-full max-h-screen object-cover rounded-xl transition-opacity duration-500"
+                      className="w-full h-full max-h-screen object-cover rounded-2xl transition-opacity duration-500"
                       autoPlay
                       muted
                       loop
                       playsInline
-                      preload="auto"      // ✅ preloads the entire video
+                      preload="auto"
                       onLoadedData={() =>
                         setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
                       }
@@ -440,7 +440,7 @@ const Index = () => {
                       onLoad={() =>
                         setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
                       }
-                      className="w-full h-full max-h-screen object-cover rounded-xl transition-opacity duration-500"
+                      className="w-full h-full max-h-screen object-cover rounded-3xl transition-opacity duration-500"
                       style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
                     />
                   )}
@@ -453,7 +453,6 @@ const Index = () => {
                       ? slide.text
                       : null}
                 </div>
-
 
                 {idx === activeHeroStory && (
                   <>
@@ -520,7 +519,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Special Video Card */}
             <div className="w-full my-8 flex justify-center">
-              <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+              <div className="w-full max-w-md bg-gray-800  rounded-3xl shadow-lg overflow-hidden">
                 <video
                   className="w-full h-[200px] md:h-[250px] lg:h-[300px] object-cover"
                   autoPlay
@@ -538,11 +537,11 @@ const Index = () => {
 
             {/* First Feature Card */}
             <Card
-              className="border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md rounded-lg hover:scale-105 cursor-pointer"
+              className="border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md  rounded-3xl hover:scale-105 cursor-pointer"
               onClick={() => navigate('/register')}
             >
               <CardHeader>
-                <div className="h-12 w-12 bg-gradient-medical rounded-lg flex items-center justify-center mb-4">
+                <div className="h-12 w-12 bg-gradient-medical  rounded-3xl flex items-center justify-center mb-4">
                   <Brain className="h-6 w-6 text-white" />
                 </div>
                 <CardTitle className="text-lg">{features[0].title}</CardTitle>
@@ -562,7 +561,7 @@ const Index = () => {
                   onClick={() => navigate('/register')}
                 >
                   <CardHeader>
-                    <div className="h-12 w-12 bg-gradient-medical rounded-lg flex items-center justify-center mb-4">
+                    <div className="h-12 w-12 bg-gradient-medical  rounded-3xl flex items-center justify-center mb-4">
                       <IconComponent className="h-6 w-6 text-white" />
                     </div>
                     <CardTitle className="text-lg">{feature.title}</CardTitle>
@@ -631,7 +630,7 @@ const Index = () => {
           </div>
           {/* Video Side */}
           <div className="flex justify-center w-full">
-            <div className="relative w-[220px] sm:w-[250px] md:w-[300px] lg:w-[350px] aspect-[9/16] rounded-xl overflow-hidden shadow-lg">
+            <div className="relative w-[220px] sm:w-[250px] md:w-[300px] lg:w-[350px] aspect-[9/16] rounded-3xl overflow-hidden shadow-lg">
               {/* Skeleton while loading */}
               {!heroMediaLoaded[activeHeroStory] && (
                 <div className="absolute inset-0 z-10">
@@ -706,7 +705,7 @@ const Index = () => {
         </div>
         {/* Special Video Card 2 */}
         <div className="w-full my-8 flex justify-center">
-          <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <div className="w-full max-w-md bg-gray-800  rounded-3xl shadow-lg overflow-hidden">
             <video
               className="w-full h-[200px] md:h-[250px] lg:h-[300px] object-cover"
               autoPlay
@@ -730,7 +729,7 @@ const Index = () => {
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <img src="/pwa-192x192.jpeg" className="h-7 w-7 rounded-sm" alt="Medrae" />
+                <img src="/pwa-192x192.jpeg" className="h-7 w-7 rounded-3xl" alt="Medrae" />
                 <span className="text-xl font-bold">Medrae</span>
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -795,7 +794,7 @@ const Index = () => {
           <div className="max-w-7xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-10">
 
             {/* KMT / College Info */}
-            <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+            <div className="p-4 bg-white dark:bg-gray-900  rounded-3xl shadow-sm">
               <h4 className="font-semibold mb-2 text-lg text-gray-900 dark:text-gray-100">
                 KMT / College Info
               </h4>
