@@ -372,7 +372,8 @@ const Index = () => {
         }}
       >
         {/* Marquee background */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
+
           <div className="absolute whitespace-nowrap animate-marquee text-[60px] md:text-[40px] lg:text-[50px] font-extrabold text-white/10 select-none pointer-events-none">
             <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
             <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
@@ -393,17 +394,17 @@ const Index = () => {
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume className="h-5 w-5" />}
         </button>
+
+
         {window.innerWidth < 768 ? (
-          // Mobile view: simple cards with text only
-          <div className="flex flex-col gap-4 p-4">
+          <div className="flex flex-row gap-1 p-4 overflow-x-auto snap-x snap-mandatory">
             {heroStorySlides.map((slide, idx) => (
               <div
                 key={idx}
-                className="w-full bg-white rounded-xl p-4 shadow-md border border-gray-200"
-
+                className="flex-shrink-0 w-[250px] bg-white rounded-xl p-4 shadow-md border border-gray-200 snap-start"
               >
                 {typeof slide.text === "string"
-                  ? <p className="text-gray-800 dark:text-white text-base">{slide.text}</p>
+                  ? <p className="text-gray-900 text-sm">{slide.text}</p>
                   : React.isValidElement(slide.text)
                     ? slide.text
                     : null}
@@ -412,6 +413,7 @@ const Index = () => {
           </div>
         ) : (
           <>
+
             {/* Desktop / Laptop view: keep current hero slides */}
             <animated.div
               {...bind()}
@@ -522,7 +524,8 @@ const Index = () => {
         </div>
 
         {/* Bottom Marquee just below hero cards */}
-        <div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
+        <div className="hidden md:block absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
+
 
           <div className="whitespace-nowrap animate-marquee-reverse text-[60px] md:text-[40px] lg:text-[50px] font-extrabold text-white/10 select-none">
             <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
