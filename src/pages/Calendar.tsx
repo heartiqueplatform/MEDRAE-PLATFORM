@@ -22,18 +22,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
-import { CalendarDays, Clock, MapPin, Bell, Share2, Info } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Bell, Share2, Info, Trash2 } from "lucide-react";
 
 export function Calendar() {
   const [date, setDate] = useState<Date | undefined>(new Date());
-const [events, setEvents] = useState<any[]>(() => {
-  if (typeof window !== "undefined") {
-    // Only use temp cache here, because userId is not yet known
-    const tempCache = localStorage.getItem("cachedEvents_temp");
-    return tempCache ? JSON.parse(tempCache) : [];
-  }
-  return [];
-});
+  const [events, setEvents] = useState<any[]>(() => {
+    if (typeof window !== "undefined") {
+      // Only use temp cache here, because userId is not yet known
+      const tempCache = localStorage.getItem("cachedEvents_temp");
+      return tempCache ? JSON.parse(tempCache) : [];
+    }
+    return [];
+  });
 
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -50,83 +50,83 @@ const [events, setEvents] = useState<any[]>(() => {
     priority: "high",
   });
 
-useEffect(() => {
-  async function getUserAndEvents() {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data?.user) return;
+  useEffect(() => {
+    async function getUserAndEvents() {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data?.user) return;
 
-    const id = data.user.id;
-    setUserId(id);
+      const id = data.user.id;
+      setUserId(id);
 
-    // Migrate temp cache to user-specific cache
-    const tempCache = localStorage.getItem("cachedEvents_temp");
-    if (tempCache) {
-      localStorage.setItem(`cachedEvents_${id}`, tempCache);
-      localStorage.removeItem("cachedEvents_temp");
-      setEvents(JSON.parse(tempCache)); // instantly show
+      // Migrate temp cache to user-specific cache
+      const tempCache = localStorage.getItem("cachedEvents_temp");
+      if (tempCache) {
+        localStorage.setItem(`cachedEvents_${id}`, tempCache);
+        localStorage.removeItem("cachedEvents_temp");
+        setEvents(JSON.parse(tempCache)); // instantly show
+      }
+
+      // Fetch fresh data
+      fetchEvents(id);
     }
 
-    // Fetch fresh data
-    fetchEvents(id);
-  }
-
-  getUserAndEvents();
-}, []);
+    getUserAndEvents();
+  }, []);
 
 
   // 🔴 Realtime subscription
- useEffect(() => {
-  if (!userId) return;
+  useEffect(() => {
+    if (!userId) return;
 
-  const channel = supabase
-    .channel("calendar_events_channel")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "calendar_events", filter: `user_id=eq.${userId}` },
-      (payload) => {
-        setEvents((prev) => {
-          let updated = [...prev];
+    const channel = supabase
+      .channel("calendar_events_channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "calendar_events", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setEvents((prev) => {
+            let updated = [...prev];
 
-          if (payload.eventType === "INSERT") {
-            updated = [payload.new, ...prev];
-          }
-          if (payload.eventType === "UPDATE") {
-            updated = prev.map((e) => (e.id === payload.new.id ? payload.new : e));
-          }
-          if (payload.eventType === "DELETE") {
-            updated = prev.filter((e) => e.id !== payload.old.id);
-          }
+            if (payload.eventType === "INSERT") {
+              updated = [payload.new, ...prev];
+            }
+            if (payload.eventType === "UPDATE") {
+              updated = prev.map((e) => (e.id === payload.new.id ? payload.new : e));
+            }
+            if (payload.eventType === "DELETE") {
+              updated = prev.filter((e) => e.id !== payload.old.id);
+            }
 
-          // ✅ Update cache
-          localStorage.setItem(`cachedEvents_${userId}`, JSON.stringify(updated));
-          return updated;
-        });
-      }
-    )
-    .subscribe();
+            // ✅ Update cache
+            localStorage.setItem(`cachedEvents_${userId}`, JSON.stringify(updated));
+            return updated;
+          });
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [userId]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
 
-async function fetchEvents(user_id: string) {
-  const cachedKey = `cachedEvents_${user_id}`;
-  const cachedEvents = localStorage.getItem(cachedKey);
-  if (cachedEvents) setEvents(JSON.parse(cachedEvents)); // instant load
+  async function fetchEvents(user_id: string) {
+    const cachedKey = `cachedEvents_${user_id}`;
+    const cachedEvents = localStorage.getItem(cachedKey);
+    if (cachedEvents) setEvents(JSON.parse(cachedEvents)); // instant load
 
-  const { data, error } = await supabase
-    .from("calendar_events")
-    .select("id, title, description, start_time, type, priority")
-    .eq("user_id", user_id)
-    .order("start_time", { ascending: true });
+    const { data, error } = await supabase
+      .from("calendar_events")
+      .select("id, title, description, start_time, type, priority")
+      .eq("user_id", user_id)
+      .order("start_time", { ascending: true });
 
-  if (!error && data) {
-    setEvents(data);
-    localStorage.setItem(cachedKey, JSON.stringify(data));
+    if (!error && data) {
+      setEvents(data);
+      localStorage.setItem(cachedKey, JSON.stringify(data));
+    }
   }
-}
 
 
 
@@ -163,7 +163,7 @@ async function fetchEvents(user_id: string) {
       toast({ title: "Event added!" });
       setShowModal(false);
       setForm({ title: "", description: "", time: "", type: "exam", priority: "high" });
-            // realtime will refresh automatically
+      // realtime will refresh automatically
     } else {
       toast({ title: "Error saving event." });
       console.error(error);
@@ -185,7 +185,7 @@ async function fetchEvents(user_id: string) {
 
     if (!error) {
       toast({ title: "Event deleted!" });
-            // No manual fetch needed — realtime handles update
+      // No manual fetch needed — realtime handles update
     } else {
       toast({ title: "Error deleting event." });
       console.error(error);
@@ -236,7 +236,7 @@ async function fetchEvents(user_id: string) {
           Track your upcoming assessments and important dates
         </p>
       </div>
-<div className="grid gap-6 grid-cols-1 lg:grid-cols-2 w-full">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 w-full">
 
 
         {/* Calendar */}
@@ -275,16 +275,16 @@ async function fetchEvents(user_id: string) {
         </Card>
 
         {/* Upcoming Assessments */}
-        
-      <Card className="w-full overflow-hidden">
+
+        <Card className="w-full overflow-hidden">
 
           <CardHeader>
             <CardTitle>Upcoming Assessments</CardTitle>
-           <CardDescription>
-  {events.length > 0
-    ? `Next ${events.length} assessments scheduled`
-    : "No upcoming assessments"}
-</CardDescription>
+            <CardDescription>
+              {events.length > 0
+                ? `Next ${events.length} assessments scheduled`
+                : "No upcoming assessments"}
+            </CardDescription>
 
           </CardHeader>
           <CardContent className="space-y-4">
@@ -316,45 +316,45 @@ async function fetchEvents(user_id: string) {
                     </Badge>
                   </div>
                 </div>
-               <div className="flex flex-col sm:flex-row gap-2">
-  {/* Left stack: Remind Me + Share */}
-  <div className="flex flex-col gap-2 sm:flex-row">
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={() => setShowReminder(true)}
-      className="flex items-center gap-1"
-    >
-      <Bell className="h-3 w-3" />
-      Remind Me
-    </Button>
-    <Button size="sm" variant="outline">
-      <Share2 className="h-3 w-3" />
-      Share
-    </Button>
-  </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {/* Left stack: Remind Me + Share */}
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowReminder(true)}
+                      className="flex items-center gap-1"
+                    >
+                      <Bell className="h-3 w-3" />
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Share2 className="h-3 w-3" />
 
-  {/* Right stack: View Details + Delete */}
-  <div className="flex flex-col gap-2 sm:flex-row sm:ml-auto">
-    <Button
-      size="sm"
-      variant="secondary"
-      onClick={() =>
-        setShowDetailsId(showDetailsId === event.id ? null : event.id)
-      }
-    >
-      <Info className="h-3 w-3" />
-      View Details
-    </Button>
-    <Button
-      size="sm"
-      variant="destructive"
-      onClick={() => handleDelete(event.id)}
-    >
-      Delete
-    </Button>
-  </div>
-</div>
+                    </Button>
+                  </div>
+
+                  {/* Right stack: View Details + Delete */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:ml-auto">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() =>
+                        setShowDetailsId(showDetailsId === event.id ? null : event.id)
+                      }
+                    >
+                      <Info className="h-3 w-3" />
+                      info
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(event.id)}
+                      className="p-0 flex items-center justify-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
 
                 {showDetailsId === event.id && (
                   <div className="text-sm mt-2 border-t pt-2 text-muted-foreground">
