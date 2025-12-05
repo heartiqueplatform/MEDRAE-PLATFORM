@@ -10,10 +10,29 @@ import { useDrag } from '@use-gesture/react';
 import { useSpring, animated } from '@react-spring/web';
 import { supabase } from "@/lib/supabaseClient";
 
+// ✅ Skeleton loader for hero cards (image/video replacement)
+const HeroSkeleton = () => {
+  return (
+    <div className="w-full h-full rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm animate-pulse">
+      {/* media placeholder */}
+      <div className="w-full h-[70%] bg-white/20" />
+
+      {/* text lines */}
+      <div className="p-4 space-y-3">
+        <div className="h-4 w-3/4 bg-white/30 rounded" />
+        <div className="h-4 w-1/2 bg-white/20 rounded" />
+      </div>
+    </div>
+  );
+};
 
 const Index = () => {
   const [ready, setReady] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
+
+  // ✅ track loading state PER hero slide
+  const [heroMediaLoaded, setHeroMediaLoaded] = useState<Record<number, boolean>>({});
+
 
   const [activeHeroStory, setActiveHeroStory] = useState(0);
   const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -171,9 +190,9 @@ const Index = () => {
     },
 
     {
-      bg: "", // keep empty so the video replaces the background
+      bg: "/indexbackground3.jpg", // keep empty so the video replaces the background
       text: "Medrae is a professional platform for Nursing education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence.",
-      video: "/videos/Medrae2.mp4", // new property for the video
+
     },
 
     {
@@ -206,7 +225,7 @@ const Index = () => {
     },
 
     {
-      video: "/videos/Medrae6.mp4",
+      bg: "/background06.jpg",
       text: "All plans include full feature access—choose Pro at KSh 99/month or Premium at KSh 450/year. The first 1,000 users receive a free 6-month professional trial to experience Medrae’s complete suite of educational and career tools.",
     },
 
@@ -355,29 +374,49 @@ const Index = () => {
                 style={{
                   transform: `translateX(calc(-50% + ${translateX}vw + ${spring.x.get()}px)) scale(${scale})`,
                   zIndex,
-                  opacity: 1, // fully opaque
+                  opacity: 1,
                   width: `${scale * 90}%`,
                   maxWidth: "400px",
                 }}
+
               >
-                {slide.video ? (
-                  <video
-                    className="w-full h-full max-h-screen object-cover rounded-xl"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                  >
-                    <source src={slide.video} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                ) : (
-                  <img
-                    src={slide.bg}
-                    alt={`Slide ${idx + 1}`}
-                    className="w-full h-full max-h-screen object-cover rounded-xl"
-                  />
-                )}
+                <div className="relative w-full h-full">
+                  {/* Skeleton while loading */}
+                  {!heroMediaLoaded[idx] && (
+                    <div className="absolute inset-0 z-10">
+                      <HeroSkeleton />
+                    </div>
+                  )}
+
+                  {/* Media */}
+                  {slide.video ? (
+                    <video
+                      className="w-full h-full max-h-screen object-cover rounded-xl transition-opacity duration-500"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      onLoadedData={() =>
+                        setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
+                      }
+                      style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
+                    >
+                      <source src={slide.video} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <img
+                      src={slide.bg}
+                      alt={`Slide ${idx + 1}`}
+                      onLoad={() =>
+                        setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
+                      }
+                      className="w-full h-full max-h-screen object-cover rounded-xl transition-opacity duration-500"
+                      style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
+                    />
+                  )}
+                </div>
+
                 <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
                   {typeof slide.text === "string"
                     ? slide.text
@@ -561,11 +600,53 @@ const Index = () => {
 
           </div>
           {/* Video Side */}
-          <img
-            src="/indexbackground1.jpg"
-            alt="Medrae background"
-            className="w-full h-[250px] md:h-[300px] lg:h-[400px] object-cover rounded-lg"
-          />
+          <div className="flex justify-center w-full">
+            <div className="relative w-[220px] sm:w-[250px] md:w-[300px] lg:w-[350px] aspect-[9/16] rounded-xl overflow-hidden shadow-lg">
+              {/* Skeleton while loading */}
+              {!heroMediaLoaded[activeHeroStory] && (
+                <div className="absolute inset-0 z-10">
+                  <HeroSkeleton />
+                </div>
+              )}
+
+              {/* Video */}
+              <video
+                className="w-full h-full object-cover transition-opacity duration-500"
+                autoPlay
+                muted
+                loop
+                playsInline
+                onLoadedData={() =>
+                  setHeroMediaLoaded(prev => ({ ...prev, [activeHeroStory]: true }))
+                }
+                style={{ opacity: heroMediaLoaded[activeHeroStory] ? 1 : 0 }}
+              >
+                <source src="/videos/Medrae6.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+
+              {/* Top Watermark */}
+              <div className="absolute top-2 left-0 w-full overflow-hidden pointer-events-none z-20">
+                <div className="inline-block whitespace-nowrap animate-marquee text-white/30 font-bold text-lg">
+                  <span className="mx-8">MEDRAE</span>
+                  <span className="mx-8">MEDRAE</span>
+                  <span className="mx-8">MEDRAE</span>
+                  <span className="mx-8">MEDRAE</span>
+                </div>
+              </div>
+
+              {/* Bottom Watermark */}
+              <div className="absolute bottom-2 left-0 w-full overflow-hidden pointer-events-none z-20">
+                <div className="inline-block whitespace-nowrap animate-marquee text-white/30 font-bold text-sm">
+                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
+                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
+                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
+                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
 
 
         </div>
