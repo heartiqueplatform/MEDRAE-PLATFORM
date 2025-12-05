@@ -43,6 +43,34 @@ const Index = () => {
 
 
   const navigate = useNavigate();
+  useEffect(() => {
+    const preloadMedia = async () => {
+      const mediaUrls = heroStorySlides.flatMap(slide => (slide.video ? [slide.video] : [slide.bg]));
+
+      const loadPromises = mediaUrls.map(url => {
+        return new Promise<void>((resolve) => {
+          if (url.endsWith('.mp4')) {
+            const video = document.createElement('video');
+            video.src = url;
+            video.onloadeddata = () => resolve();
+            video.onerror = () => resolve(); // ignore errors to not block
+          } else {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          }
+        });
+      });
+
+      await Promise.all(loadPromises);
+
+      // mark all hero media as loaded
+      setHeroMediaLoaded(heroStorySlides.reduce((acc, _, idx) => ({ ...acc, [idx]: true }), {}));
+    };
+
+    preloadMedia();
+  }, []);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -396,6 +424,7 @@ const Index = () => {
                       muted
                       loop
                       playsInline
+                      preload="auto"      // ✅ preloads the entire video
                       onLoadedData={() =>
                         setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
                       }
@@ -498,6 +527,7 @@ const Index = () => {
                   muted
                   loop
                   playsInline
+                  preload="auto"      // ✅ preloads the entire video
                   controls
                 >
                   <source src="/videos/Medrae1.mp4" type="video/mp4" />
@@ -616,6 +646,7 @@ const Index = () => {
                 muted
                 loop
                 playsInline
+                preload="auto"      // ✅ preloads the entire video
                 onLoadedData={() =>
                   setHeroMediaLoaded(prev => ({ ...prev, [activeHeroStory]: true }))
                 }
@@ -682,6 +713,7 @@ const Index = () => {
               muted
               loop
               playsInline
+              preload="auto"      // ✅ preloads the entire video
               controls
             >
               <source src="/videos/Medrae2.mp4" type="video/mp4" />
