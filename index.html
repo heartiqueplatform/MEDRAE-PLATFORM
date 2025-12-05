@@ -51,22 +51,18 @@
   <div id="root" style="height:100%;"></div>
 
   <script>
-    // ✅ Check user preference first
+    // ✅ Respect saved theme or system preference
     let userTheme = localStorage.getItem('theme'); // 'light' | 'dark'
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
 
-    if (!userTheme) {
-      userTheme = systemPrefersDark ? 'dark' : 'light';
-    }
-
+    // Show gradient only for first-time visitors
     const firstVisit = !localStorage.getItem('hasVisited');
     if (firstVisit) {
       localStorage.setItem('hasVisited', 'true');
-
       const gradient = userTheme === 'dark'
         ? 'linear-gradient(135deg, #003366, #0059b3, #0a1f2e)'
         : 'linear-gradient(135deg, #1e90ff, #4dd2ff, #00aaff)';
-
       const styleEl = document.createElement('style');
       styleEl.innerHTML = `
         html, body, #root {
@@ -92,13 +88,13 @@
 
     // Offline fallback
     window.addEventListener("offline", () => {
-      console.warn("You are offline. App shell is still visible, but network data won't load.");
+      console.warn("You are offline. App shell is visible, network data won't load.");
     });
   </script>
 
   <script type="module">
     import("/src/main.tsx").catch((err) => {
-      console.error(" Failed to load app. You may be offline.", err);
+      console.error("Failed to load app. You may be offline.", err);
       const root = document.getElementById("root");
       if (root) root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
     });

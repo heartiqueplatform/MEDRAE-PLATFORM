@@ -337,10 +337,10 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
           {!isCollapsed && (
             <div>
               <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 relative inline-block">
-                MEDRAE NURSING
+                MEDRAE
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Network Platform
+                Kenya Nursing Network Platform (MKN)
               </p>
             </div>
 

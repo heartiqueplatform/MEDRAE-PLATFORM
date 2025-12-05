@@ -94,22 +94,38 @@ const App = () => {
   const RootRedirect = () => {
     const navigate = useNavigate();
     const [checking, setChecking] = useState(true);
+    const [session, setSession] = useState(null);
 
     useEffect(() => {
       const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          navigate("/redirect", { replace: true });
+        try {
+          const {
+            data: { session: currentSession },
+          } = await supabase.auth.getSession();
+
+          setSession(currentSession);
+
+          // Only redirect if logged in
+          if (currentSession) {
+            navigate("/redirect", { replace: true });
+          }
+        } catch (error) {
+          console.error("Error checking session:", error);
+        } finally {
+          setChecking(false);
         }
-        setChecking(false);
       };
+
       checkSession();
-    }, []);
+    }, [navigate]);
 
-    if (checking) return null; // prevent flash
+    // Show nothing while checking session
+    if (checking) return null;
 
+    // If logged out, show the Index page
     return <Index />;
   };
+
 
   const [loading, setLoading] = useState(true);
 
