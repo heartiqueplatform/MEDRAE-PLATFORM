@@ -424,7 +424,8 @@ export function MedraeQuizzes() {
         <h2 className="text-2xl font-semibold text-yellow-500">
           NCK PP1 UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
         </h2>
-        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+        <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+
           {(loading ? paperOneUnits : paperOneUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             unit.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -494,7 +495,8 @@ export function MedraeQuizzes() {
         <h2 className="text-2xl font-semibold text-blue-600">
           NCK PP2 UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
         </h2>
-        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+        <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+
           {(loading ? paperTwoUnits : paperTwoUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             unit.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -563,7 +565,8 @@ export function MedraeQuizzes() {
         <h2 className="text-2xl font-semibold text-purple-600">
           NCLEX Mastery Units <span className="text-sm text-gray-500">({totalPaperThree} Questions)</span>
         </h2>
-        <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+        <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+
           {(loading ? paperThreeUnits : paperThreeUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             unit.code.toLowerCase().includes(searchTerm.toLowerCase())

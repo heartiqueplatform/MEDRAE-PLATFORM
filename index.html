@@ -1,41 +1,46 @@
 <!DOCTYPE html>
 <html lang="en" class="bg-white dark:bg-black">
-  <head>
-    <link rel="icon" href="/icon-512.jpg" type="image/jpg" />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
-    <!-- Primary Meta -->
-    <title>Medrae | Medical Education, Clinical Skills, Careers, Certificates, Professional Growth</title>
-    <meta name="description" content="Medrae is a professional medical education and career network. Access clinical training, certifications, jobs, internships, and tools for continuous professional growth." />
-    <meta name="author" content="Medrae" />
-    <meta name="keywords" content="medical education, clinical skills, healthcare careers, medical jobs, internships, medical certificates, professional development, Medrae" />
+<head>
+  <link rel="icon" href="/icon-512.jpg" type="image/jpg" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://medrae.com/" />
+  <!-- Primary Meta -->
+  <title>Medrae Medical Education, Clinical Skills, Careers, Certificates, Professional Growth</title>
+  <meta name="description"
+    content="Medrae is a professional medical education and career network. Access clinical training, certifications, jobs, internships, and tools for continuous professional growth." />
+  <meta name="author" content="Medrae" />
+  <meta name="keywords"
+    content="medical education, clinical skills, healthcare careers, medical jobs, internships, medical certificates, professional development, Medrae" />
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:title" content="Medrae – Medical Education and Career Network" />
-    <meta property="og:description" content="Medrae connects medical professionals to education, clinical training, and career opportunities. Advance your skills and grow your professional profile." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://medrae.com/" />
-    <meta property="og:image" content="/assets/og-image.png" />
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://medrae.com/" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@medrae_network" />
-    <meta name="twitter:title" content="Medrae – Medical Education and Career Network" />
-    <meta name="twitter:description" content="Medrae empowers medical professionals through clinical education, certifications, and career growth opportunities." />
-    <meta name="twitter:image" content="/assets/og-image.png" />
+  <!-- Open Graph / Facebook -->
+  <meta property="og:title" content="Medrae – Medical Education and Career Network" />
+  <meta property="og:description"
+    content="Medrae connects medical professionals to education, clinical training, and career opportunities. Advance your skills and grow your professional profile." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://medrae.com/" />
+  <meta property="og:image" content="/assets/og-image.png" />
 
-    <!-- PWA / Mobile -->
-    <meta name="theme-color" content="#1e90ff" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@medrae_network" />
+  <meta name="twitter:title" content="Medrae – Medical Education and Career Network" />
+  <meta name="twitter:description"
+    content="Medrae empowers medical professionals through clinical education, certifications, and career growth opportunities." />
+  <meta name="twitter:image" content="/assets/og-image.png" />
 
-    <!-- Schema.org for Google -->
-    <script type="application/ld+json">
+  <!-- PWA / Mobile -->
+  <meta name="theme-color" content="#1e90ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Schema.org for Google -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "EducationalOrganization",
@@ -49,25 +54,24 @@
     }
     </script>
 
-  </head>
+</head>
 
-  <body class="bg-white dark:bg-black" style="margin:0;">
-    <div id="root" style="height:100%;"></div>
+<body class="bg-white dark:bg-black" style="margin:0;">
+  <div id="root" style="height:100%;"></div>
 
-    
-    <!-- JS solid fallback & theme-based gradient -->
-    <script>
-      const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  <!-- JS solid fallback & theme-based gradient -->
+  <script>
+    const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-      document.documentElement.style.backgroundColor = darkMode ? '#000' : '#fff';
-      document.body.style.backgroundColor = darkMode ? '#000' : '#fff';
+    document.documentElement.style.backgroundColor = darkMode ? '#000' : '#fff';
+    document.body.style.backgroundColor = darkMode ? '#000' : '#fff';
 
-      const gradient = darkMode 
-        ? 'linear-gradient(135deg, #003366, #0059b3, #0a1f2e)' 
-        : 'linear-gradient(135deg, #1e90ff, #4dd2ff, #00aaff)';
+    const gradient = darkMode
+      ? 'linear-gradient(135deg, #003366, #0059b3, #0a1f2e)'
+      : 'linear-gradient(135deg, #1e90ff, #4dd2ff, #00aaff)';
 
-      const styleEl = document.createElement('style');
-      styleEl.innerHTML = `
+    const styleEl = document.createElement('style');
+    styleEl.innerHTML = `
         html, body, #root {
           height: 100%;
           margin: 0;
@@ -81,9 +85,23 @@
           100% { background-position: 0% 50%; }
         }
       `;
-      document.head.appendChild(styleEl);
-    </script>
-    <script type="module" src="/src/main.tsx"></script>
+    document.head.appendChild(styleEl);
 
-  </body>
+    // Optional offline fallback message
+    window.addEventListener("offline", () => {
+      console.warn("You are offline. App shell is still visible, but network data won't load.");
+    });
+  </script>
+
+  <!-- Main TSX Entry -->
+  <script type="module">
+    import("/src/main.tsx")
+      .catch((err) => {
+        console.error("⚠️ Failed to load app module. You may be offline.", err);
+        const root = document.getElementById("root");
+        if (root) root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
+      });
+  </script>
+</body>
+
 </html>

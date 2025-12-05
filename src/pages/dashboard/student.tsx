@@ -1518,7 +1518,7 @@ export default function StudentDashboard() {
       <Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">
-            Self Test Simulation Papers V1
+            Self Test SimuProctor Papers V1
             <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
               ({simulationPapers.length} Papers)
             </span>
@@ -1650,7 +1650,7 @@ export default function StudentDashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>QUIZZES UNIT BREAKDOWN</CardTitle>
+            <CardTitle>QUIZZES NCK UNIT BREAKDOWN & NCLEX CLIENT NEEDS CATEGORY</CardTitle>
             <CardDescription>
               All units and their available question counts. Click the tab to start practicing instantly.
             </CardDescription>
@@ -1659,7 +1659,7 @@ export default function StudentDashboard() {
             asChild
             className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
           >
-            <Link to="/Medrae-quizzes">Go to Quizzes</Link>
+            <Link to="/Medrae-quizzes">Quizzes</Link>
           </Button>
         </CardHeader>
 

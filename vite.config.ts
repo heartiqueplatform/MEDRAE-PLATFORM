@@ -1,15 +1,12 @@
-import { defineConfig, loadEnv } from "vite"; // ✅ added loadEnv for environment variables
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
-// ✅ Added: Default export for Node version hint (for local builds)
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // ✅ Load environment variables for both dev and build
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
@@ -19,23 +16,35 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
-      chunkSizeWarningLimit: 1500,
       target: "esnext",
       outDir: "dist",
       sourcemap: mode === "development",
+      chunkSizeWarningLimit: 1500,
     },
 
     plugins: [
       react(),
       mode === "development" && componentTagger(),
+
       VitePWA({
         registerType: "autoUpdate",
+        devOptions: {
+          enabled: true,
+        },
+
+        /**
+         * ✅ Assets copied directly
+         */
         includeAssets: [
           "favicon.svg",
           "robots.txt",
           "pwa-192x192.jpeg",
           "pwa-512x512.jpeg",
         ],
+
+        /**
+         * ✅ Manifest
+         */
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
@@ -51,40 +60,71 @@ export default defineConfig(({ mode }) => {
             { src: "/pwa-512x512.jpeg", sizes: "512x512", type: "image/jpeg" },
           ],
         },
+
+        /**
+         * ✅ THIS fixes offline for ALL routes
+         */
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
 
-          // ✅ Make all SPA routes work offline
-          navigateFallback: "/index.html",
+          /**
+           * ✅ Force `index.html` + app shell into precache
+           */
+          globPatterns: [
+            "**/*.{html,js,css,ico,png,svg,jpg,jpeg,webp,json}",
+          ],
 
+          /**
+           * ✅ SPA offline routing
+           */
+          navigateFallback: "/index.html",
+          navigateFallbackDenylist: [/^\/api\//],
+
+          /**
+           * ✅ Runtime caching
+           */
           runtimeCaching: [
-            // CSS/JS/JSON caching
             {
-              urlPattern: /\/.*\.(?:css|js|json)$/,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "static-resources",
-                networkTimeoutSeconds: 5,
-                expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              },
-            },
-            // Images caching
-            {
-              urlPattern: /\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+              urlPattern: ({ request }) =>
+                request.destination === "script" ||
+                request.destination === "style",
               handler: "CacheFirst",
               options: {
-                cacheName: "image-cache",
-                expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                cacheName: "js-css-cache",
+                expiration: {
+                  maxEntries: 300,
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                },
               },
             },
-            // Optional: cache API responses for offline use
+
+
             {
-              urlPattern: /\/api\/.*\.json$/,
+              // Images
+              urlPattern: ({ request }) =>
+                request.destination === "image",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "images",
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                },
+              },
+            },
+
+            {
+              // API (future-safe)
+              urlPattern: ({ url }) =>
+                url.pathname.startsWith("/api"),
               handler: "NetworkFirst",
               options: {
                 cacheName: "api-cache",
                 networkTimeoutSeconds: 5,
-                expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+                expiration: {
+                  maxEntries: 60,
+                  maxAgeSeconds: 60 * 60 * 6,
+                },
               },
             },
           ],
