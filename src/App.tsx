@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
@@ -13,7 +13,7 @@ import { BottomBar } from "@/components/ui/BottomBar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 // Pages
-import { Forum } from "./pages/Forum"; 
+import { Forum } from "./pages/Forum";
 import AssessmentNotes from "./pages/AssessmentNotes";
 import QuizPage from "./pages/QuizPage";
 import Index from "./pages/Index";
@@ -90,6 +90,27 @@ const BottomBarWrapper = () => {
 };
 
 const App = () => {
+  // 🚀 Redirect wrapper so logged-in users never see Index page
+  const RootRedirect = () => {
+    const navigate = useNavigate();
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate("/redirect", { replace: true });
+        }
+        setChecking(false);
+      };
+      checkSession();
+    }, []);
+
+    if (checking) return null; // prevent flash
+
+    return <Index />;
+  };
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -117,7 +138,7 @@ const App = () => {
                 <FirstTimeGuide />
                 <Routes>
                   {/* Public Routes */}
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<RootRedirect />} />
                   <Route path="/redirect" element={<RedirectToRoleDashboard />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />

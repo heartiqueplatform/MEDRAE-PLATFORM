@@ -93,18 +93,8 @@ export function RedirectToRoleDashboard() {
     };
   }, [navigate, location, cachedRole, cachedSession]);
 
-  if (loading) {
-    return (
-      <div
-        className="flex items-center justify-center h-screen w-screen text-center text-blue-600 dark:text-blue-400 font-semibold bg-cover bg-center"
-        style={{ backgroundImage: "url('/background07.jpg')" }}
-      >
-        <div className="bg-white/70 dark:bg-black/60 px-6 py-4 rounded-2xl shadow-lg animate-fade-in">
-          Medrae redirecting you...
-        </div>
-      </div>
-    );
-  }
+  // ✅ Hide everything while loading; no flash at all
+  if (loading) return null;
 
   return null;
 }
