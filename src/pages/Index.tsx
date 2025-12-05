@@ -393,41 +393,38 @@ const Index = () => {
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume className="h-5 w-5" />}
         </button>
-
-        {/* If mobile, show simple slider */}
         {window.innerWidth < 768 ? (
-          <Slider {...mobileSliderSettings}>
+          // Mobile view: simple cards with text only
+          <div className="flex flex-col gap-4 p-4">
             {heroStorySlides.map((slide, idx) => (
-              <div key={idx} className="relative w-full h-[70vh]">
-                <img
-                  src={slide.bg}
-                  className="w-full h-full object-cover rounded-xl"
-                />
-                <div className="absolute inset-0 bg-black/40 flex items-end p-6 text-white">
-                  {slide.text}
-                </div>
+              <div
+                key={idx}
+                className="w-full bg-white rounded-xl p-4 shadow-md border border-gray-200"
+
+              >
+                {typeof slide.text === "string"
+                  ? <p className="text-gray-800 dark:text-white text-base">{slide.text}</p>
+                  : React.isValidElement(slide.text)
+                    ? slide.text
+                    : null}
               </div>
             ))}
-          </Slider>
+          </div>
         ) : (
           <>
-            {/* YOUR CURRENT DESKTOP/LAPTOP HERO SYSTEM BELOW HERE */}
-
-            {/* Hero slides container */}
+            {/* Desktop / Laptop view: keep current hero slides */}
             <animated.div
               {...bind()}
               style={{ touchAction: "pan-y pinch-zoom" }}
-
               className="relative w-full min-h-[70vh] flex justify-start items-center overflow-hidden touch-pan-y select-none z-10"
-
             >
               {heroStorySlides.map((slide, idx) => {
                 const offset = idx - activeHeroStory;
                 const absOffset = Math.abs(offset);
                 const scale = offset === 0 ? 1 : 0.85 ** absOffset;
                 const gap = 15;
-                const maxSlideWidth = 400; // max width in px
-                const slideWidth = Math.min(window.innerWidth * 0.9, maxSlideWidth); // 90% of viewport or max
+                const maxSlideWidth = 400;
+                const slideWidth = Math.min(window.innerWidth * 0.9, maxSlideWidth);
                 const zIndex = 100 - absOffset;
 
                 return (
@@ -440,7 +437,7 @@ const Index = () => {
                       opacity: 1,
                       width: `${slideWidth}px`,
                       maxWidth: '100%',
-                      height: '100%', // maintain aspect ratio
+                      height: '100%',
                     }}
                   >
                     <div className="relative w-full h-full">
@@ -510,11 +507,9 @@ const Index = () => {
                   </div>
                 );
               })}
-
             </animated.div>
           </>
         )}
-
         {/* Pagination Dots */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
           {heroStorySlides.map((_, idx) => (
