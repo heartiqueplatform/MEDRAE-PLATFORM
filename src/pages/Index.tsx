@@ -420,6 +420,42 @@ const Index = () => {
             </div>
           ))}
         </div>
+        {/* Mobile gallery for small screens */}
+        {isMobile && (
+          <div className="relative z-20 overflow-x-auto flex gap-4 px-4 py-6 snap-x snap-mandatory">
+            {heroStorySlides.map((slide, idx) => (
+              <div
+                key={idx}
+                className="flex-none w-[80%] max-w-[300px] snap-center relative rounded-2xl shadow-lg cursor-pointer overflow-hidden"
+                onClick={() => setActiveHeroStory(idx)}
+              >
+                {slide.video ? (
+                  <video
+                    src={slide.video}
+                    className="w-full h-[400px] object-cover rounded-2xl"
+                    muted
+                    playsInline
+                    loop
+                    preload="auto"
+                  />
+                ) : (
+                  <img
+                    src={slide.bg}
+                    alt={`Slide ${idx + 1}`}
+                    className="w-full h-[400px] object-cover rounded-2xl"
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-end p-4 text-white text-left">
+                  {typeof slide.text === "string"
+                    ? slide.text
+                    : React.isValidElement(slide.text)
+                      ? slide.text
+                      : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
 
         {/* Hero slides container */}
