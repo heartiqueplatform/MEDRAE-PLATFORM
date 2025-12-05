@@ -678,16 +678,12 @@ export function Chat() {
         </>
         ) : (
           <>
-            <div
-              className="relative flex flex-col items-center justify-center flex-1 text-center gap-6 text-white overflow-hidden"
-              style={{
-                backgroundImage: "url('/background05.jpg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              {/* Semi-transparent overlay for desktop readability */}
-              <div className="absolute inset-0 bg-black/30 md:bg-black/20 pointer-events-none" />
+            <div className="relative flex flex-col items-center justify-center flex-1 text-center gap-6 text-black dark:text-white overflow-hidden">
+
+
+              {/* Overlay for dark mode only */}
+              <div className="absolute inset-0 bg-black/0 dark:bg-black/20 pointer-events-none" />
+
 
               {/* Encouragement & purpose text */}
               <div className="relative z-10 max-w-xl px-4">

@@ -1045,7 +1045,7 @@ export default function StudentDashboard() {
         <Card
           className="relative overflow-hidden rounded-2xl shadow-lg"
           style={{
-            backgroundImage: "url('/background08.jpg')",
+            backgroundImage: "url('/indexbackground5.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
