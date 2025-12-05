@@ -321,13 +321,17 @@ export function Calendar() {
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       size="sm"
-                      variant="outline"
+
                       onClick={() => setShowReminder(true)}
-                      className="flex items-center gap-1"
+                      variant="ghost"
+                      className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Bell className="h-3 w-3" />
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm"
+                      variant="ghost"
+                      className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
                       <Share2 className="h-3 w-3" />
 
                     </Button>
@@ -337,7 +341,7 @@ export function Calendar() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:ml-auto">
                     <Button
                       size="sm"
-                      variant="secondary"
+                      variant="ghost"
                       onClick={() =>
                         setShowDetailsId(showDetailsId === event.id ? null : event.id)
                       }
@@ -347,9 +351,10 @@ export function Calendar() {
                     </Button>
                     <Button
                       size="sm"
-                      variant="destructive"
+
                       onClick={() => handleDelete(event.id)}
-                      className="p-0 flex items-center justify-center"
+                      variant="ghost"
+                      className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

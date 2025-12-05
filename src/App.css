@@ -265,3 +265,20 @@ body,
   -webkit-text-fill-color: transparent;
   animation: shine 2.5s linear infinite;
 }
+
+/* Smooth fade-in + slide-up for headings */
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animated-heading {
+  animation: fadeSlideUp 0.8s ease-out forwards;
+}

@@ -1172,10 +1172,11 @@ export default function StudentDashboard() {
                     >
                       <div className="flex flex-col items-center text-center">
                         <img
-                          src={s.avatar_url || "/default-avatar.png"}
+                          src={s.avatar_url || "/UsersAvatar.jpg"}
                           alt={s.name}
                           className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow"
                         />
+
                         <h3
                           className="font-medium text-sm sm:text-base text-gray-900 dark:text-white max-w-[8rem] line-clamp-2"
                           title={s.name}
@@ -1272,7 +1273,7 @@ export default function StudentDashboard() {
                   >
                     <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
                     <img
-                      src={topStudents[0].avatar_url || "/default-avatar.png"}
+                      src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
                       alt={topStudents[0].name}
                       className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-sm"
                     />

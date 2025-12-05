@@ -21,12 +21,11 @@ import NotFound from "./pages/NotFound";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { AIAssistant } from "./pages/AIAssistant";
-import { Chat } from "./pages/Chat";
 import { Calendar } from "./pages/Calendar";
 import { StudyProgress } from "./pages/Progress";
 import { Resources } from "./pages/Resources";
 import { MedTube } from "./pages/MedTube";
-import { Reels } from "./pages/Reels";
+
 import { Announcements } from "./pages/Announcements";
 import { Feedback } from "./pages/Feedback";
 import { Settings } from "./pages/Settings";
@@ -170,12 +169,12 @@ const App = () => {
 
                   {/* Authenticated Pages */}
                   <Route path="/ai-assistant" element={<DashboardLayout userRole={getRole()}><AIAssistant /></DashboardLayout>} />
-                  <Route path="/chat" element={<DashboardLayout userRole={getRole()}><Chat /></DashboardLayout>} />
+
                   <Route path="/calendar" element={<DashboardLayout userRole={getRole()}><Calendar /></DashboardLayout>} />
                   <Route path="/progress" element={<DashboardLayout userRole={getRole()}><StudyProgress /></DashboardLayout>} />
                   <Route path="/resources" element={<DashboardLayout userRole={getRole()}><Resources /></DashboardLayout>} />
                   <Route path="/medtube" element={<DashboardLayout userRole={getRole()}><MedTube /></DashboardLayout>} />
-                  <Route path="/reels" element={<DashboardLayout userRole={getRole()}><Reels /></DashboardLayout>} />
+
                   <Route path="/announcements" element={<DashboardLayout userRole={getRole()}><Announcements /></DashboardLayout>} />
                   <Route path="/feedback" element={<DashboardLayout userRole={getRole()}><Feedback /></DashboardLayout>} />
                   <Route path="/settings" element={<DashboardLayout userRole={getRole()}><Settings /></DashboardLayout>} />

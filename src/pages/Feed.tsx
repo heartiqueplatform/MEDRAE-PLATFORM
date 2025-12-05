@@ -2,7 +2,7 @@
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { useWindowSize } from "react-use";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp } from "lucide-react";
+import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -734,7 +734,7 @@ export default function Feed() {
           return {
             user_id: row.user_id,
             name: profile?.name ?? "Unknown",
-            avatar: profile?.avatar_url ?? "/default-avatar.png",
+            avatar: profile?.avatar_url ?? "/UsersAvatar.jpg",
 
             total: row.total,
           };
@@ -749,7 +749,7 @@ export default function Feed() {
         leaderboardData.push({
           user_id: user.id,
           name: myProfile?.name || "You",
-          avatar: myProfile?.avatar_url || "/default-avatar.png",
+          avatar: myProfile?.avatar_url || "/UsersAvatar.jpg",
           total: myCount,
         });
       }
@@ -783,18 +783,21 @@ export default function Feed() {
              scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent"
         >
           {/*  Reload Feed + Leaderboard + Reset Section */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center mt-4 gap-3">
+          <div className="flex flex-row flex-wrap justify-between items-center mt-4 gap-3">
+
 
             {/* Left side: Question count + two buttons */}
-            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-row flex-wrap items-center gap-3 w-full sm:w-auto">
+
               <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Questions Tried: {questionCount}
               </span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-gray-100 active:scale-95 transition"
-                    variant="outline"
+                    className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
+                    variant="ghost"
+
                     onClick={async () => {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) return;
@@ -830,8 +833,9 @@ export default function Feed() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-red-100 active:scale-95 transition text-red-600"
-                    variant="outline"
+                    className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
+                    variant="ghost"
+
                     onClick={async () => {
                       console.log(" Starting reset...");
                       const { data: { user } } = await supabase.auth.getUser();
@@ -876,10 +880,10 @@ export default function Feed() {
               <Tooltip>
                 <TooltipTrigger asChild>
 
-
                   <Button
-                    className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-gray-100 active:scale-95 transition"
-                    variant="outline"
+                    className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
+                    variant="ghost"
+
                     onClick={async () => {
                       if (navigator.vibrate) navigator.vibrate(50);
 
@@ -898,39 +902,40 @@ export default function Feed() {
                 </TooltipContent>
               </Tooltip>
 
+              {/* Right side: Reload Feed button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
+                    variant="ghost"
+
+                    onClick={() => {
+                      if (navigator.vibrate) navigator.vibrate(50);
+
+                      setPage(0);
+                      setQuestions([]);
+                      fetchQuestions(0).then((fresh) => {
+                        setQuestions(fresh);
+                        if (user) {
+                          localStorage.setItem(
+                            `feed_questions_${user.id}`,
+                            JSON.stringify(fresh)
+                          );
+                        }
+                      });
+                    }}
+                  >
+                    <RefreshCcw size={20} />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent>
+                  <p>Reload feed</p>
+                </TooltipContent>
+              </Tooltip>
 
             </div>
 
-            {/* Right side: Reload Feed button */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="w-full sm:w-auto text-sm sm:text-base py-2 px-4 rounded-xl shadow-sm border border-gray-300 hover:bg-gray-100 active:scale-95 transition"
-                  variant="outline"
-                  onClick={() => {
-                    if (navigator.vibrate) navigator.vibrate(50);
-
-                    setPage(0);
-                    setQuestions([]);
-                    fetchQuestions(0).then((fresh) => {
-                      setQuestions(fresh);
-                      if (user) {
-                        localStorage.setItem(
-                          `feed_questions_${user.id}`,
-                          JSON.stringify(fresh)
-                        );
-                      }
-                    });
-                  }}
-                >
-                  <RefreshCcw size={20} />
-                </Button>
-              </TooltipTrigger>
-
-              <TooltipContent>
-                <p>Reload feed</p>
-              </TooltipContent>
-            </Tooltip>
 
           </div>
 
@@ -1141,7 +1146,7 @@ export default function Feed() {
                       {/* uploader info */}
                       <div className="flex items-center gap-3 p-3">
                         <img
-                          src={img.profiles?.avatar_url || "/default-avatar.png"}
+                          src={img.profiles?.avatar_url || "/UsersAvatar.jpg"}
                           alt="avatar"
                           className="w-10 h-10 rounded-full object-cover border"
                         />
@@ -1207,14 +1212,15 @@ export default function Feed() {
               cards.push(
                 <motion.div
                   key="upload-card"
-                  className="relative flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl overflow-hidden shadow-lg w-full bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-800 mt-4 mx-auto max-w-md"
+                  className="relative flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl overflow-hidden shadow-lg w-full bg-white dark:bg-gray-900 mt-4 mx-auto max-w-md"
+
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.6, ease: 'easeOut' }}
                 >
                   {/* ✨ Subtle rotating glow */}
                   <motion.div
-                    className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.12)_0%,_transparent_70%)]"
+                    className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.04)_0%,_transparent_70%)] dark:bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.12)_0%,_transparent_70%)]"
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 50, ease: 'linear' }}
                   />
@@ -1223,7 +1229,7 @@ export default function Feed() {
                   {[...Array(12)].map((_, i) => (
                     <motion.span
                       key={i}
-                      className="absolute w-1 h-1 rounded-full bg-white opacity-70"
+                      className="absolute w-1 h-1 rounded-full bg-gray-400 dark:bg-white opacity-60"
                       style={{
                         top: `${Math.random() * 100}%`,
                         left: `${Math.random() * 100}%`,
@@ -1245,13 +1251,14 @@ export default function Feed() {
                     {/* Thin line button */}
                     <button
                       onClick={() => setShowUpload((prev) => !prev)} // updated
-                      className="text-white text-sm border-b border-white/40 hover:border-white transition-all duration-300 pb-1"
+                      className="text-gray-800 dark:text-gray-200 text-sm border-b border-gray-400 dark:border-gray-500 hover:border-gray-600 dark:hover:border-gray-300 transition-all duration-300 pb-1"
                     >
                       {showUpload ? "Hide Upload ▲" : "Upload Image ▼"}
                     </button>
                     {/* Dropdown upload card */}
                     {showUpload && (
-                      <div className="mt-3 flex flex-col items-center justify-center text-center w-full sm:w-auto border-2 border-dashed border-white/50 rounded-xl p-4 sm:p-5 bg-white/10 hover:bg-white/20 transition-all duration-300 overflow-hidden">
+                      <div className="mt-3 flex flex-col items-center justify-center text-center w-full sm:w-auto border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 sm:p-5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 overflow-hidden"
+                      >
                         <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full">
                           {uploadFiles && uploadFiles.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
@@ -1266,7 +1273,7 @@ export default function Feed() {
                             </div>
                           ) : (
                             <div className="flex flex-col items-center">
-                              <span className="text-white font-medium text-xs sm:text-sm">
+                              <span className="text-gray-700 dark:text-gray-300 font-medium text-xs sm:text-sm">
                                 Tap or click to choose images
                               </span>
                             </div>
@@ -1286,17 +1293,14 @@ export default function Feed() {
                         <Button
                           onClick={handleImageUpload}
                           disabled={uploading || uploadFiles.length === 0}
-                          className="mt-3 px-4 py-1.5 rounded-md bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm sm:text-base font-semibold hover:opacity-90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          variant="ghost"
+                          className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {uploading
-                            ? "Uploading..."
-                            : uploadFiles.length > 0
-                              ? `Upload ${uploadFiles.length > 1 ? "All" : "Now"}`
-                              : "Select Images"}
+                          <Upload className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                         </Button>
 
                         {/* Subtitle */}
-                        <p className="mt-2 text-white/80 text-xs sm:text-sm text-center">
+                        <p className="mt-2 text-gray-600 dark:text-gray-400 text-xs sm:text-sm text-center">
                           Share your photos & inspire others
                         </p>
                       </div>
@@ -1354,9 +1358,10 @@ export default function Feed() {
                     }}
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="mt-4 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 shadow-md transition-all"
+                    variant="ghost"
+                    className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Delete Image
+                    <Trash2 size={18} />
                   </motion.button>
                 )}
 
@@ -1437,7 +1442,7 @@ export default function Feed() {
                         }`}
                     >
                       <img
-                        src={c.profiles?.avatar_url || "/default-avatar.png"}
+                        src={c.profiles?.avatar_url || "/UsersAvatar.jpg"}
                         alt={c.profiles?.full_name || "User"}
                         className="w-8 h-8 rounded-full"
                       />
@@ -1530,7 +1535,7 @@ export default function Feed() {
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <span className="text-lg font-bold">{position}</span>
                                 <motion.img
-                                  src={entry.avatar || "/default-avatar.png"}
+                                  src={entry.avatar || "/UsersAvatar.jpg"}
                                   alt={entry.name}
                                   className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex-shrink-0"
                                   layout

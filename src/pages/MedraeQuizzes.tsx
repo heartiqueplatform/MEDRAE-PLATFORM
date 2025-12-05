@@ -122,31 +122,40 @@ export function MedraeQuizzes() {
   // Check user subscription
   useEffect(() => {
     if (!user) return;
-    const checkSubscription = async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("plan_type, expires_at, is_active")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(); // Use maybeSingle() if you expect 0 or 1 result
 
-      if (!error && data) {
+    const fetchSubscription = async () => {
+      try {
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("plan_type, expires_at, is_active")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
         if (data?.is_active) {
           setIsPremium(true);
           localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: true }));
         } else {
+          // only set false if we could actually fetch data
           setIsPremium(false);
           localStorage.setItem("subscriptionStatus", JSON.stringify({ isPremium: false }));
         }
-
+      } catch (err) {
+        console.log("Offline mode: using cached subscription", err);
+        // fallback to localStorage if offline
+        const cachedSubscription = localStorage.getItem("subscriptionStatus");
+        if (cachedSubscription) {
+          setIsPremium(JSON.parse(cachedSubscription).isPremium);
+        }
+      } finally {
+        setSubscriptionChecked(true);
       }
-      console.log("Subscription check:", data, "isPremium:", isPremium);
-
-      setSubscriptionChecked(true);
     };
-    checkSubscription();
+
+    fetchSubscription();
   }, [user]);
+
 
   // 🔴 Realtime subscription for subscription changes
   useEffect(() => {
@@ -196,23 +205,32 @@ export function MedraeQuizzes() {
   // Load free units from localStorage first
   useEffect(() => {
     const cachedFreeUnits = localStorage.getItem("freeUnits");
+
     if (cachedFreeUnits) {
+      // Use cached free units immediately (works offline)
       setFreeUnits(JSON.parse(cachedFreeUnits));
-    } else {
-      const fetchFreeUnits = async () => {
-        const { data, error } = await supabase
+    }
+
+    // Always attempt to fetch from Supabase, but fail gracefully if offline
+    const fetchFreeUnits = async () => {
+      try {
+        const { data } = await supabase
           .from("quizzes")
           .select("unit_code, is_free")
           .eq("is_active", true);
 
-        if (!error && data) {
+        if (data) {
           const free = data.filter((q) => q.is_free).map((q) => q.unit_code?.trim());
           setFreeUnits(free);
           localStorage.setItem("freeUnits", JSON.stringify(free));
         }
-      };
-      fetchFreeUnits();
-    }
+      } catch (err) {
+        console.log("Offline mode: using cached free units", err);
+        // Do nothing, cachedFreeUnits is already used above
+      }
+    };
+
+    fetchFreeUnits();
   }, []);
 
 

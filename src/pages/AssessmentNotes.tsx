@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  FileText, Video, Link, UploadCloud, Download, Eye, X, Search, Heart,
+  FileText, Video, Link, UploadCloud, Download, Eye, X, Search, Heart, Trash2
 } from "lucide-react";
 import { saveFile, getFile } from "@/lib/offlineStorage";
 
@@ -65,7 +65,7 @@ const SECTIONS = [
 ];
 
 export default function AssessmentNotes() {
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [notes, setNotes] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,10 +73,10 @@ export default function AssessmentNotes() {
   const [fullscreenNote, setFullscreenNote] = useState<any>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
   // Upload progress & offline caching
-const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-const [pdfLoading, setPdfLoading] = useState(false);
-const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
-const defaultLayoutPluginInstance = defaultLayoutPlugin();
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
   const [selectedBlock, setSelectedBlock] = useState<string>("");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
 
@@ -87,99 +87,99 @@ const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   const fullscreenRef = useRef<HTMLDivElement>(null);
 
-const [isDarkMode, setIsDarkMode] = useState<boolean>(
-  typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
-);
-
-useEffect(() => {
-  if (typeof window === 'undefined') return;
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  const listener = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
-  mediaQuery.addEventListener('change', listener);
-  return () => mediaQuery.removeEventListener('change', listener);
-}, []);
-
-
-// Load offline file or fallback to online
-const loadOfflineFile = async (fileId: string, fileUrl: string) => {
-  const file = await getFile(fileId);
-  if (file) {
-    const url = URL.createObjectURL(file);
-    window.open(url, "_blank");
-    return;
-  }
-  window.open(fileUrl, "_blank");
-};
-
-// Download and save file for offline use
-const handleDownload = async (fileId: string, url: string) => {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    await saveFile(fileId, blob);
-
-    console.log(`File ${fileId} saved for offline use`);
-
-    // Mark file as offline in UI
-    setOfflineFiles((prev) => [...prev, fileId]);
-
-    alert("Saved offline!");
-  } catch (err) {
-    console.error("Failed to save offline:", err);
-  }
-};
-
-// Delete file from Supabase storage + database
-const handleDelete = async (note: any) => {
-  if (!session?.user?.id) return alert("Login required");
-
-if (note.uploaded_by !== session.user.id) {
-  return alert("You can only delete your own uploads");
-}
-
-
-  if (!confirm("Are you sure you want to delete this file?")) return;
-
-  // Extract file path from URL (after /object/public/notes/)
-  const urlParts = note.file_url.split("/object/public/notes/");
-  const filePath = urlParts[1];
-
-  if (!filePath) {
-    console.error("File path not found:", note.file_url);
-    return;
-  }
-
-  // Delete from storage
-  const { error: storageErr } = await supabase.storage
-    .from("notes")
-    .remove([filePath]);
-
-  if (storageErr) {
-    console.error("Error deleting from storage:", storageErr);
-    alert("Failed to delete file from storage");
-    return;
-  }
-
-  // Delete from table
-  const { error: dbErr } = await supabase
-    .from("notes")
-    .delete()
-    .eq("id", note.id);
-
-  if (dbErr) {
-    console.error("Error deleting from database:", dbErr);
-    alert("Failed to delete file record");
-    return;
-  }
-
-  // Remove from local state
-  setNotes((prev) => prev.filter((n) => n.id !== note.id));
-  alert("File deleted successfully!");
-};
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(
+    typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
+  );
 
   useEffect(() => {
-  if (fullscreenNote?.file_type === "pdf") setPdfLoading(true);
-}, [fullscreenNote]);
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const listener = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, []);
+
+
+  // Load offline file or fallback to online
+  const loadOfflineFile = async (fileId: string, fileUrl: string) => {
+    const file = await getFile(fileId);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      window.open(url, "_blank");
+      return;
+    }
+    window.open(fileUrl, "_blank");
+  };
+
+  // Download and save file for offline use
+  const handleDownload = async (fileId: string, url: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      await saveFile(fileId, blob);
+
+      console.log(`File ${fileId} saved for offline use`);
+
+      // Mark file as offline in UI
+      setOfflineFiles((prev) => [...prev, fileId]);
+
+      alert("Saved offline!");
+    } catch (err) {
+      console.error("Failed to save offline:", err);
+    }
+  };
+
+  // Delete file from Supabase storage + database
+  const handleDelete = async (note: any) => {
+    if (!session?.user?.id) return alert("Login required");
+
+    if (note.uploaded_by !== session.user.id) {
+      return alert("You can only delete your own uploads");
+    }
+
+
+    if (!confirm("Are you sure you want to delete this file?")) return;
+
+    // Extract file path from URL (after /object/public/notes/)
+    const urlParts = note.file_url.split("/object/public/notes/");
+    const filePath = urlParts[1];
+
+    if (!filePath) {
+      console.error("File path not found:", note.file_url);
+      return;
+    }
+
+    // Delete from storage
+    const { error: storageErr } = await supabase.storage
+      .from("notes")
+      .remove([filePath]);
+
+    if (storageErr) {
+      console.error("Error deleting from storage:", storageErr);
+      alert("Failed to delete file from storage");
+      return;
+    }
+
+    // Delete from table
+    const { error: dbErr } = await supabase
+      .from("notes")
+      .delete()
+      .eq("id", note.id);
+
+    if (dbErr) {
+      console.error("Error deleting from database:", dbErr);
+      alert("Failed to delete file record");
+      return;
+    }
+
+    // Remove from local state
+    setNotes((prev) => prev.filter((n) => n.id !== note.id));
+    alert("File deleted successfully!");
+  };
+
+  useEffect(() => {
+    if (fullscreenNote?.file_type === "pdf") setPdfLoading(true);
+  }, [fullscreenNote]);
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -214,9 +214,9 @@ if (note.uploaded_by !== session.user.id) {
         supabase.from("note_views").select("note_id"),
         session?.user
           ? supabase
-              .from("note_likes")
-              .select("note_id")
-              .eq("user_id", session.user.id)
+            .from("note_likes")
+            .select("note_id")
+            .eq("user_id", session.user.id)
           : { data: [] },
       ]);
 
@@ -278,57 +278,57 @@ if (note.uploaded_by !== session.user.id) {
     const ext = file.name.split(".").pop();
     const path = `assessment/${Date.now()}-${file.name}`;
 
-   setUploading(true);
-setUploadProgress(0);
+    setUploading(true);
+    setUploadProgress(0);
 
-// Simulate progress while uploading
-const progressInterval = setInterval(() => {
-  setUploadProgress((prev) => {
-    if (prev === null) return 0;
-    if (prev >= 90) return prev;
-    return prev + 10;
-  });
-}, 300);
+    // Simulate progress while uploading
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev === null) return 0;
+        if (prev >= 90) return prev;
+        return prev + 10;
+      });
+    }, 300);
 
-const { error: uploadErr } = await supabase.storage.from("notes").upload(path, file);
+    const { error: uploadErr } = await supabase.storage.from("notes").upload(path, file);
 
-clearInterval(progressInterval);
-setUploadProgress(100);
+    clearInterval(progressInterval);
+    setUploadProgress(100);
 
-if (uploadErr) {
-  console.error("Storage error:", uploadErr);
-  setUploading(false);
-  setTimeout(() => setUploadProgress(null), 1000);
-  return;
-}
+    if (uploadErr) {
+      console.error("Storage error:", uploadErr);
+      setUploading(false);
+      setTimeout(() => setUploadProgress(null), 1000);
+      return;
+    }
 
-const { data: urlData } = supabase.storage.from("notes").getPublicUrl(path);
-const file_url = urlData.publicUrl;
-const payload = {
-  uploaded_by: session.user.id,   // ✅ use correct column name
-  title: formData.get("title"),
-  description: formData.get("description"),
-  course: formData.get("course"),
-  institution: formData.get("institution"),
-  unit: formData.get("unit"),
-  category: formData.get("category"),
-  sub_category: selectedSubcategory,
-  block: selectedBlock,
-  file_type: ext,
-  file_url,
-  is_public: true,
-  approved: true,
-};
+    const { data: urlData } = supabase.storage.from("notes").getPublicUrl(path);
+    const file_url = urlData.publicUrl;
+    const payload = {
+      uploaded_by: session.user.id,   // ✅ use correct column name
+      title: formData.get("title"),
+      description: formData.get("description"),
+      course: formData.get("course"),
+      institution: formData.get("institution"),
+      unit: formData.get("unit"),
+      category: formData.get("category"),
+      sub_category: selectedSubcategory,
+      block: selectedBlock,
+      file_type: ext,
+      file_url,
+      is_public: true,
+      approved: true,
+    };
 
 
     const { error: insertErr } = await supabase.from("notes").insert(payload);
     if (insertErr) console.error("Insert error:", insertErr);
     else {
-   alert("Upload successful!");
-setNotes((prev) => [{ id: Date.now(), ...payload }, ...prev]); // add new note to UI
-setShowUploadForm(false);  // close upload form
-setSelectedFile(null);     // reset file
-setUploadProgress(null);   // reset progress
+      alert("Upload successful!");
+      setNotes((prev) => [{ id: Date.now(), ...payload }, ...prev]); // add new note to UI
+      setShowUploadForm(false);  // close upload form
+      setSelectedFile(null);     // reset file
+      setUploadProgress(null);   // reset progress
 
     }
 
@@ -361,25 +361,25 @@ setUploadProgress(null);   // reset progress
 
   return (
     <div className="space-y-6">
-     <div className="flex flex-col">
-  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
-    Assessment Notes & Uploads
-  </h1>
-  <p className="text-muted-foreground mt-2">
-  This page is dedicated to assessment guides, case study guides, and research
-  resources. It brings together universal materials designed to support nursing
-  education across all colleges and training institutions. Here, you’ll find
-  practical guides, structured case studies, and project references curated to
-  help students prepare effectively, build confidence, and excel both in
-  classroom learning and clinical practice. And note, this does not give you the
-  right to copy-paste it only provides a picture to show you what to expect.
-</p>
+      <div className="flex flex-col">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
+          Assessment Notes & Uploads
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          This page is dedicated to assessment guides, case study guides, and research
+          resources. It brings together universal materials designed to support nursing
+          education across all colleges and training institutions. Here, you’ll find
+          practical guides, structured case studies, and project references curated to
+          help students prepare effectively, build confidence, and excel both in
+          classroom learning and clinical practice. And note, this does not give you the
+          right to copy-paste it only provides a picture to show you what to expect.
+        </p>
 
-  <p className="text-sm italic text-muted-foreground mt-1">
-  Universal nursing assessment resources for all colleges
-</p>
+        <p className="text-sm italic text-muted-foreground mt-1">
+          Universal nursing assessment resources for all colleges
+        </p>
 
-</div>
+      </div>
 
 
       {showUploadForm && (
@@ -421,37 +421,37 @@ setUploadProgress(null);   // reset progress
                 </option>
               ))}
             </select>
-          <Input
-  type="file"
-  name="file"
-  required
-  onChange={(e) => {
-    const file = e.target.files?.[0] || null;
-    setSelectedFile(file);
-  }}
-/>
+            <Input
+              type="file"
+              name="file"
+              required
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setSelectedFile(file);
+              }}
+            />
 
           </div>
- {uploadProgress !== null && selectedFile && (
-  <div className="mt-2 space-y-1">
-    {/* Progress bar */}
-    <div className="w-full bg-gray-200 rounded-full h-2">
-      <div
-        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-        style={{ width: `${uploadProgress}%` }}
-      />
-    </div>
+          {uploadProgress !== null && selectedFile && (
+            <div className="mt-2 space-y-1">
+              {/* Progress bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
 
-    {/* Percentage + File size */}
-    <div className="flex justify-between text-xs text-muted-foreground">
-      <span>{uploadProgress}%</span>
-      <span>
-        {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
-        {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-      </span>
-    </div>
-  </div>
-)}
+              {/* Percentage + File size */}
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{uploadProgress}%</span>
+                <span>
+                  {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
+                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                </span>
+              </div>
+            </div>
+          )}
 
 
           <Button type="submit" disabled={uploading}>
@@ -470,57 +470,57 @@ setUploadProgress(null);   // reset progress
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
-  <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
-          {showUploadForm ? "Cancel Upload" : "New Upload"}
-        </Button>
+      <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
+        {showUploadForm ? "Cancel Upload" : "New Upload"}
+      </Button>
       <Accordion type="multiple" className="space-y-6">
         {SECTIONS.map((section, i) => (
           <AccordionItem key={i} value={`section-${i}`}>
             <AccordionTrigger>{section.title}</AccordionTrigger>
             <AccordionContent>
               <Tabs defaultValue={section.subcategories[0]}>
-               {/* Only for Practical Assessments & Case Studies */}
-{["Practical Assessments", "Case Studies"].includes(section.title) ? (
-  <div className="space-y-2">
-    <Button
-      variant="outline"
-      className="w-full"
-      onClick={() =>
-        setSelectedSubcategory((prev) =>
-          prev && section.subcategories.includes(prev) ? "" : section.subcategories[0]
-        )
-      }
-    >
-      {selectedSubcategory || "Select Subcategory"}
-    </Button>
-    {selectedSubcategory === section.subcategories[0] && (
-    <div className="flex flex-wrap gap-2 mt-2">
+                {/* Only for Practical Assessments & Case Studies */}
+                {["Practical Assessments", "Case Studies"].includes(section.title) ? (
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() =>
+                        setSelectedSubcategory((prev) =>
+                          prev && section.subcategories.includes(prev) ? "" : section.subcategories[0]
+                        )
+                      }
+                    >
+                      {selectedSubcategory || "Select Subcategory"}
+                    </Button>
+                    {selectedSubcategory === section.subcategories[0] && (
+                      <div className="flex flex-wrap gap-2 mt-2">
 
-        {section.subcategories.map((sub) => (
-          <Button
-            key={sub}
-            size="sm"
-            variant="ghost"
-            className="justify-start"
-            onClick={() => setSelectedSubcategory(sub)}
-          >
-            {sub}
-          </Button>
-        ))}
-      </div>
-    )}
-  </div>
-) : (
-  // Keep original horizontal tabs for others
- <TabsList className="flex flex-wrap gap-2 w-full">
+                        {section.subcategories.map((sub) => (
+                          <Button
+                            key={sub}
+                            size="sm"
+                            variant="ghost"
+                            className="justify-start"
+                            onClick={() => setSelectedSubcategory(sub)}
+                          >
+                            {sub}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Keep original horizontal tabs for others
+                  <TabsList className="flex flex-wrap gap-2 w-full">
 
-    {section.subcategories.map((sub) => (
-      <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
-        {sub}
-      </TabsTrigger>
-    ))}
-  </TabsList>
-)}
+                    {section.subcategories.map((sub) => (
+                      <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
+                        {sub}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                )}
 
 
                 {section.subcategories.map((sub) => {
@@ -533,7 +533,7 @@ setUploadProgress(null);   // reset progress
                       {subNotes.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
                       ) : (
-                       <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
 
                           {subNotes.map((note) => (
                             <Card key={note.id} className="min-w-[300px] max-w-[300px]">
@@ -551,88 +551,89 @@ setUploadProgress(null);   // reset progress
                                   {new Date(note.created_at).toLocaleDateString()}
                                 </p>
                               </CardHeader>
-                            <CardContent>
-  <Button
-    size="sm"
-    className="w-full flex gap-1 justify-center"
-    variant="secondary"
-    onClick={async () => {
-      setFullscreenNote(note);
-   if (session?.user?.id) {
-  const { error } = await supabase
-    .from("note_views")
-    .upsert(
-      { note_id: note.id, user_id: session.user.id },
-      { onConflict: ["note_id", "user_id"] }
-    );
+                              <CardContent>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
 
-  if (!error) {
-    setViewCounts((prev) => ({
-      ...prev,
-      [note.id]: (prev[note.id] || 0) + 1,
-    }));
-  }
-}
+                                  onClick={async () => {
+                                    setFullscreenNote(note);
+                                    if (session?.user?.id) {
+                                      const { error } = await supabase
+                                        .from("note_views")
+                                        .upsert(
+                                          { note_id: note.id, user_id: session.user.id },
+                                          { onConflict: ["note_id", "user_id"] }
+                                        );
 
-    }}
-  >
-    <Eye className="h-4 w-4" />
-    View Document
-  </Button>
+                                      if (!error) {
+                                        setViewCounts((prev) => ({
+                                          ...prev,
+                                          [note.id]: (prev[note.id] || 0) + 1,
+                                        }));
+                                      }
+                                    }
 
-  {/* Offline download button */}
-<div className="flex gap-2 mt-2">
-  <Button
-    size="sm"
-    onClick={async () => {
-      await handleDownload(note.id, note.file_url);
-    }}
-    className="flex items-center gap-1 w-full justify-center"
-  >
-    <Download className="h-3 w-3" />
-    Cache
-  </Button>
-  {/* Delete button for uploader only */}
-{session?.user?.id === note.uploaded_by && (
-  <Button
-    size="sm"
-    variant="destructive"
-    onClick={() => handleDelete(note)}
-    className="flex items-center gap-1 w-full justify-center"
-  >
-    Delete
-  </Button>
-)}
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  View
+                                </Button>
+
+                                {/* Offline download button */}
+                                <div className="flex gap-2 mt-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      await handleDownload(note.id, note.file_url);
+                                    }}
+                                    variant="ghost"
+                                    className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                    Cache
+                                  </Button>
+                                  {/* Delete button for uploader only */}
+                                  {session?.user?.id === note.uploaded_by && (
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleDelete(note)}
+                                      variant="ghost"
+                                      className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
 
 
-  {/* Show badge if file is saved offline */}
-  {offlineFiles.includes(note.id) && (
-    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-      Preserved
-    </Badge>
-  )}
-</div>
+                                  {/* Show badge if file is saved offline */}
+                                  {offlineFiles.includes(note.id) && (
+                                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                      Preserved
+                                    </Badge>
+                                  )}
+                                </div>
 
-  <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
-    <div className="flex items-center gap-1">
-      <Eye className="h-3 w-3" />
-      {viewCounts[note.id] || 0}
-    </div>
-    <button
-      className={`flex items-center gap-1 ${
-        bookmarkedItems.includes(note.id) ? "text-red-500" : ""
-      }`}
-      onClick={() => toggleLike(note.id)}
-    >
-      <Heart
-        className={`h-4 w-4 ${
-          bookmarkedItems.includes(note.id) ? "fill-current" : ""
-        }`}
-      />
-      <span>{likeCounts[note.id] || 0}</span>
-    </button>
-  </div>
-</CardContent>
+                                <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
+                                  <div className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3" />
+                                    {viewCounts[note.id] || 0}
+                                  </div>
+                                  <button
+                                    className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : ""
+                                      }`}
+                                    onClick={() => toggleLike(note.id)}
+                                  >
+                                    <Heart
+                                      className={`h-4 w-4 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""
+                                        }`}
+                                    />
+                                    <span>{likeCounts[note.id] || 0}</span>
+                                  </button>
+                                </div>
+                              </CardContent>
 
                             </Card>
                           ))}
@@ -646,47 +647,47 @@ setUploadProgress(null);   // reset progress
           </AccordionItem>
         ))}
       </Accordion>
-{fullscreenNote && (
-  <div
-    ref={fullscreenRef}
-    className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
-  >
-    {/* Close button */}
-    <div className="flex justify-end p-2">
-      <Button
-        onClick={() => setFullscreenNote(null)}
-        variant="ghost"
-        className="text-current hover:bg-muted/20"
-      >
-        <X className="h-6 w-6" />
-      </Button>
-    </div>
+      {fullscreenNote && (
+        <div
+          ref={fullscreenRef}
+          className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
+        >
+          {/* Close button */}
+          <div className="flex justify-end p-2">
+            <Button
+              onClick={() => setFullscreenNote(null)}
+              variant="ghost"
+              className="text-current hover:bg-muted/20"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
 
-    {/* PDF viewer or iframe */}
-    {fullscreenNote.file_type === "pdf" ? (
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-       <Viewer
-  fileUrl={fullscreenNote.file_url}
-  plugins={[defaultLayoutPluginInstance]}
-  theme={isDarkMode ? "dark" : "light"}
-  renderLoader={() => (
-    <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
-      <GlobalLoader message="Medrae is Loading PDF..." />
-    </div>
-  )}
-/>
+          {/* PDF viewer or iframe */}
+          {fullscreenNote.file_type === "pdf" ? (
+            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+              <Viewer
+                fileUrl={fullscreenNote.file_url}
+                plugins={[defaultLayoutPluginInstance]}
+                theme={isDarkMode ? "dark" : "light"}
+                renderLoader={() => (
+                  <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
+                    <GlobalLoader message="Medrae is Loading PDF..." />
+                  </div>
+                )}
+              />
 
-      </Worker>
-    ) : (
-      <iframe
-        src={fullscreenNote.file_url}
-        className="flex-1 w-full bg-background text-foreground"
-        style={{ border: "none" }}
-        title={fullscreenNote.title}
-      />
-    )}
-  </div>
-)}
+            </Worker>
+          ) : (
+            <iframe
+              src={fullscreenNote.file_url}
+              className="flex-1 w-full bg-background text-foreground"
+              style={{ border: "none" }}
+              title={fullscreenNote.title}
+            />
+          )}
+        </div>
+      )}
 
     </div>
   );

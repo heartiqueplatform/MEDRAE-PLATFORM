@@ -123,28 +123,28 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
   const userData = cachedProfile || profile;
   const user = userData
     ? {
-        name: userData.name || "Unknown User",
-        role:
-          userData.role ||
-          (userRole === "student"
-            ? "Nursing Student"
-            : userRole === "tutor"
+      name: userData.name || "Unknown User",
+      role:
+        userData.role ||
+        (userRole === "student"
+          ? "Nursing Student"
+          : userRole === "tutor"
             ? "Clinical Tutor"
             : "Staff Nurse"),
-        avatar: userData.avatar_url || "/avatars/default.jpg",
-      }
+      avatar: userData.avatar_url || "/avatars/default.jpg",
+    }
     : authUser
-    ? {
+      ? {
         name: authUser.email || "Unknown User",
         role:
           userRole === "student"
             ? "Nursing Student"
             : userRole === "tutor"
-            ? "Clinical Tutor"
-            : "Staff Nurse",
+              ? "Clinical Tutor"
+              : "Staff Nurse",
         avatar: "/avatars/default.jpg",
       }
-    : { name: "Offline", role: "Offline", avatar: "/avatars/default.jpg" };
+      : { name: "Offline", role: "Offline", avatar: "/avatars/default.jpg" };
 
   // ------------------------------
   // FIX: Wrap content in inner component
@@ -183,24 +183,24 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
 
         <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
 
-<main
-  className={`
+        <main
+          className={`
     flex-1 box-border p-4 md:p-6 pb-14
-    ${children?.type?.name === "Reels" ? "overflow-hidden" : "overflow-auto"}
+    overflow-auto
     scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
     dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
   `}
->
+        >
+          {children}
+        </main>
 
-  {children}
-</main>
-{!isSidebarOpen && (
-  <BottomBar
-    userRole={userRole}
-    unreadCount={0}
-    unreadAnnouncements={0}
-  />
-)}
+        {!isSidebarOpen && (
+          <BottomBar
+            userRole={userRole}
+            unreadCount={0}
+            unreadAnnouncements={0}
+          />
+        )}
 
       </div>
     </div>

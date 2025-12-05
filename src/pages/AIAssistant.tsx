@@ -340,7 +340,8 @@ export function AIAssistant() {
             {/* Delete button floating at top-right */}
             <Button
               onClick={handleDeleteChat}
-              className="bg-red-600 hover:bg-red-700 text-white h-7 w-7 flex items-center justify-center text-sm rounded-md absolute top-2 right-2 shadow p-0"
+              variant="ghost"
+              className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -410,7 +411,8 @@ export function AIAssistant() {
             <Button
               onClick={handleSendMessage}
               disabled={isLoading || !inputMessage.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white h-10 w-12 flex items-center justify-center"
+              variant="ghost"
+              className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" />
             </Button>

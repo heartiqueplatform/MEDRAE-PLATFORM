@@ -35,7 +35,7 @@ export function Header({
   const { toggleSidebar } = useSidebar();
   const { toast } = useToast();
 
-    // Swipe gestures for mobile sidebar
+  // Swipe gestures for mobile sidebar
   useEffect(() => {
     let touchStartX = 0;
     let touchEndX = 0;
@@ -67,18 +67,18 @@ export function Header({
       window.removeEventListener("touchend", handleTouchEnd);
     };
   }, [toggleSidebar]);
-const streakSound = typeof Audio !== "undefined" ? new Audio("/sounds/medrae.mp3") : null;
+  const streakSound = typeof Audio !== "undefined" ? new Audio("/sounds/medrae.mp3") : null;
 
   const navigate = useNavigate();
   const authUser = useUser();
   const [streak, setStreak] = useState(propStreak);
   const isOnline = useOnlineStatus();
   const [notificationCount, setNotificationCount] = useState(0);
-const [rotating, setRotating] = useState(false);
-const [totalUsers, setTotalUsers] = useState<number | null>(() => {
-  const stored = localStorage.getItem("totalUsers");
-  return stored ? parseInt(stored) : null;
-});
+  const [rotating, setRotating] = useState(false);
+  const [totalUsers, setTotalUsers] = useState<number | null>(() => {
+    const stored = localStorage.getItem("totalUsers");
+    return stored ? parseInt(stored) : null;
+  });
 
 
   useEffect(() => {
@@ -104,16 +104,16 @@ const [totalUsers, setTotalUsers] = useState<number | null>(() => {
       setNotificationCount(count);
     }
   };
-const fetchTotalUsers = async () => {
-  const { count, error } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true });
+  const fetchTotalUsers = async () => {
+    const { count, error } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true });
 
-  if (!error && typeof count === "number") {
-    setTotalUsers(count);
-    localStorage.setItem("totalUsers", count.toString()); // cache it
-  }
-};
+    if (!error && typeof count === "number") {
+      setTotalUsers(count);
+      localStorage.setItem("totalUsers", count.toString()); // cache it
+    }
+  };
 
   // realtime notifications
   useEffect(() => {
@@ -164,117 +164,125 @@ const fetchTotalUsers = async () => {
       .single();
 
     if (!error && data) {
-    const newStreak = data.streak || 0;
+      const newStreak = data.streak || 0;
 
-//  Trigger confetti on milestones
-if (newStreak > streak && [1, 7, 15, 30, 50, 100, 150, 200].includes(newStreak)) {
-  // 🎉 Confetti
-  confetti({
-    particleCount: 120,
-    spread: 70,
-    origin: { y: 0.6 },
-    colors: ["#e11d48", "#22c55e"],
-  });
+      //  Trigger confetti on milestones
+      if (newStreak > streak && [1, 7, 15, 30, 50, 100, 150, 200].includes(newStreak)) {
+        // 🎉 Confetti
+        confetti({
+          particleCount: 120,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#e11d48", "#22c55e"],
+        });
 
-  // 🔊 Play the celebration sound
-  const audio = new Audio("/sounds/medrae.mp3");
-  audio.play();
+        // 🔊 Play the celebration sound
+        const audio = new Audio("/sounds/medrae.mp3");
+        audio.play();
 
-  //  Toast message with more detailed description
-  toast({
-    title: `🔥 ${newStreak}-day streak!`,
-    description: `Amazing! You've kept your streak going for ${newStreak} days. Keep up the dedication and momentum! 🎉`,
-  });
-}
+        //  Toast message with more detailed description
+        toast({
+          title: `🔥 ${newStreak}-day streak!`,
+          description: `Amazing! You've kept your streak going for ${newStreak} days. Keep up the dedication and momentum! 🎉`,
+        });
+      }
 
 
 
-setStreak(newStreak);
-const today = new Date().toISOString().split("T")[0];
-const lastPlayed = localStorage.getItem("streakSoundDate");
+      setStreak(newStreak);
+      const today = new Date().toISOString().split("T")[0];
+      const lastPlayed = localStorage.getItem("streakSoundDate");
 
-if (lastPlayed !== today) {
-  if (streakSound) streakSound.play().catch(() => {});
-  localStorage.setItem("streakSoundDate", today);
-}
+      if (lastPlayed !== today) {
+        if (streakSound) streakSound.play().catch(() => { });
+        localStorage.setItem("streakSoundDate", today);
+      }
 
 
     }
   };
 
   // smart reload function: clears cache and reloads
- const handleReload = async () => {
-  setRotating(true); // start rotation
-  if ("caches" in window) {
-    const cacheNames = await caches.keys();
-    await Promise.all(cacheNames.map((name) => caches.delete(name)));
-  }
-  setTimeout(() => {
-    window.location.reload();
-  }, 300); // small delay to see rotation
-};
+  const handleReload = async () => {
+    setRotating(true); // start rotation
+    if ("caches" in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+    }
+    setTimeout(() => {
+      window.location.reload();
+    }, 300); // small delay to see rotation
+  };
 
 
   return (
     <header className="h-14 sm:h-16 bg-card border-b border-border flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 text-sm sm:text-base">
       <OnlineStatusToast />
 
-<div className="flex items-center flex-1 justify-between">
-  {/* Left toggle */}
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={toggleSidebar}
-    className="block order-1"
-  >
-    <Menu className="h-5 w-5" />
-  </Button>
+      <div className="flex items-center flex-1 justify-between">
+        {/* Left toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleSidebar}
+          className="block order-1"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
 
-{/* Center scrolling text */}
-<div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">
-  <div className="whitespace-nowrap animate-marquee text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
-    🌟 Welcome to Medrae...Learn. Practice. Advance.🌟
-  </div>
-</div>
+        {/* Center scrolling text */}
+        <div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">
+          <div className="whitespace-nowrap animate-marquee text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
+            🌟 Welcome to Medrae...Organized Learning. Confident Exams.🌟
+          </div>
+        </div>
 
       </div>
 
       <div className="flex items-center gap-2 xl:gap-6">
-        <Badge
-  className={`h-5 px-2 text-xs ${
-    isOnline ? "bg-green-500 text-white" : "bg-red-500 text-white"
-  }`}
->
-  {isOnline ? "Online" : "Offline"}
-</Badge>
-<div className="hidden md:block">
-  <Badge
-    className="h-5 px-2 text-xs bg-blue-500 text-white"
-  > {totalUsers ?? "-"}
-  </Badge>
-</div>
+        <div className="flex flex-col items-center space-y-1">
+          {isOnline ? (
+            <>
+              <span className="inline-block h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-sm"></span>
+              <span className="text-xs font-semibold text-green-600 dark:text-green-400">Online</span>
+            </>
+          ) : (
+            <>
+              <span className="inline-block h-3 w-3 rounded-full bg-red-500 shadow-sm"></span>
+              <span className="text-xs font-semibold text-red-600 dark:text-red-400">Offline</span>
+            </>
+          )}
+        </div>
+
+        <div className="hidden md:block">
+          <Badge
+            className="h-5 px-2 text-xs bg-blue-500 text-white"
+          > {totalUsers ?? "-"}
+          </Badge>
+        </div>
 
         {/*  Reload PWA */}
-     <Button
-  variant="ghost"
-  size="sm"
-  onClick={handleReload}
-  className="relative mobile-reload-button group"
->
-<RefreshCcw className="h-4 w-4 sm:h-5 sm:w-5 animate-spinMotor" />
+        <button
+          onClick={handleReload}
+          className="flex flex-col items-center space-y-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
+        >
+          {/* Icon on top */}
+          <RefreshCcw className="h-5 w-5 text-gray-800 dark:text-white" />
 
-<span className="ml-1 text-xs hidden sm:inline text-black dark:text-white">
-  {rotating ? "Refreshing..." : "Refresh"}
-</span>
+          {/* Label below */}
+          <span className="text-xs font-semibold text-gray-800 dark:text-white">
+            {rotating ? "Refreshing..." : "Refresh"}
+          </span>
+        </button>
 
-</Button>
 
-{/* Share App */}
-<Button
-  variant="ghost"
-  size="sm"
-  onClick={() => {
-    const shareMessage = `Medrae – The Professional Medical Education & Career Network
+
+        {/* Share App */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const shareMessage = `Medrae – The Professional Medical Education & Career Network
 
 • Structured learning modules across clinical disciplines  
 • Evidence-based resources and expert-led video lectures  
@@ -283,22 +291,22 @@ if (lastPlayed !== today) {
 
 Advance your medical journey today: https://medrae.vercel.app`;
 
-    if (navigator.share) {
-      navigator
-        .share({
-          title: "Medrae – Medical Education & Career Network",
-          text: shareMessage,
-          url: "https://medrae.vercel.app",
-        })
-        .catch((err) => console.log("Share cancelled:", err));
-    } else {
-      navigator.clipboard.writeText(shareMessage);
-      alert("Medrae link and overview copied to clipboard!");
-    }
-  }}
->
-  <Share2 className="h-5 w-5" />
-</Button>
+            if (navigator.share) {
+              navigator
+                .share({
+                  title: "Medrae – Medical Education & Career Network",
+                  text: shareMessage,
+                  url: "https://medrae.vercel.app",
+                })
+                .catch((err) => console.log("Share cancelled:", err));
+            } else {
+              navigator.clipboard.writeText(shareMessage);
+              alert("Medrae link and overview copied to clipboard!");
+            }
+          }}
+        >
+          <Share2 className="h-5 w-5" />
+        </Button>
 
 
         {/* Notifications */}
@@ -326,42 +334,41 @@ Advance your medical journey today: https://medrae.vercel.app`;
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => navigate("/profile")}
         >
-        <div className="hidden sm:block text-right">
-<div className="text-sm font-medium flex items-center gap-2 truncate max-w-[150px]">
-  {user.name ? user.name.split(" ")[0] : (!isOnline ? "Offline" : "")}
-  {streak > 0 && isOnline && (
-    <Badge
-      variant="secondary"
-      className={`text-xs ${
-        streak <= 7
-          ? "bg-red-700 text-white"
-          : streak <= 30
-          ? "bg-purple-800 text-white"
-          : "bg-gray-900 text-white"
-      }`}
-    >
-      🔥 {streak} day{streak !== 1 ? "s" : ""}
-    </Badge>
-  )}
-</div>
+          <div className="hidden sm:block text-right">
+            <div className="text-sm font-medium flex items-center gap-2 truncate max-w-[150px]">
+              {user.name ? user.name.split(" ")[0] : (!isOnline ? "Offline" : "")}
+              {streak > 0 && isOnline && (
+                <Badge
+                  variant="secondary"
+                  className={`text-xs ${streak <= 7
+                    ? "bg-red-700 text-white"
+                    : streak <= 30
+                      ? "bg-purple-800 text-white"
+                      : "bg-gray-900 text-white"
+                    }`}
+                >
+                  🔥 {streak} day{streak !== 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
 
 
-  <p className="text-xs text-muted-foreground">
-  {user.role || (!isOnline ? "Offline" : "")}
+            <p className="text-xs text-muted-foreground">
+              {user.role || (!isOnline ? "Offline" : "")}
 
-  </p>
-</div>
-<Avatar className="h-6 w-6 sm:h-8 sm:w-8 mobile-profile-avatar">
-  <AvatarImage
-    src={user.avatar && isOnline ? user.avatar : undefined}
-    className="object-cover"
-  />
-  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xs">
-    {isOnline
-      ? (user.name?.split(" ").map((n) => n[0]).join("") || <User className="h-4 w-4" />)
-      : <User className="h-4 w-4" />}
-  </AvatarFallback>
-</Avatar>
+            </p>
+          </div>
+          <Avatar className="h-6 w-6 sm:h-8 sm:w-8 mobile-profile-avatar">
+            <AvatarImage
+              src={user.avatar && isOnline ? user.avatar : undefined}
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xs">
+              {isOnline
+                ? (user.name?.split(" ").map((n) => n[0]).join("") || <User className="h-4 w-4" />)
+                : <User className="h-4 w-4" />}
+            </AvatarFallback>
+          </Avatar>
         </div>
       </div>
     </header>

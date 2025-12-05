@@ -24,19 +24,18 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
 
   const allItems = [
     { title: "Feed", url: "/feed", icon: Newspaper },
-   
+
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain },
-    { title: "Chat Room", url: "/chat", icon: MessageCircle },
     { title: "Forum", url: "/forum", icon: MessageSquare },
     { title: "Assessment Calendar", url: "/calendar", icon: Calendar },
     { title: "Study Progress", url: "/progress", icon: TrendingUp },
     { title: "Medrae Quizzes Bank", url: "/Medrae-quizzes", icon: Heart },
     { title: "NCK Simulation", url: "/simulation/candidate", icon: Play },
-     { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home },
+    { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home },
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
     { title: "Notes & Resources Bank", url: "/resources", icon: FileText },
     { title: "MedTube", url: "/medtube", icon: Play },
-    { title: "Reels", url: "/reels", icon: Video },
+
     ...(userRole === "tutor" ? [
       { title: "Student Analytics", url: "/analytics", icon: Users },
       { title: "Create Content", url: "/create", icon: BookOpen },
@@ -61,34 +60,34 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
 
 
 
-return (
-  <div className={`${isSidebarOpen ? 'hidden' : ''} fixed bottom-0 left-0 right-0 z-50`}>
-  {/* Hover-sensitive area */}
-  <div className="h-8 w-full relative group">
-    <div className="absolute bottom-0 left-0 right-0 h-12 bg-background shadow-t flex justify-around items-center border-t border-border transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-      {allItems.map((item) => (
-        <div key={item.title} className="relative flex flex-col items-center justify-center w-8 h-8">
-          <Link
-            to={item.url}
-            className={`flex items-center justify-center w-full h-full ${getNavClass(item.url)}`}
-          >
-            <item.icon className="h-6 w-6 transition-transform duration-200 group-hover:scale-110" />
-            {(item.title === "Chat Room" && unreadCount > 0) && (
-              <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadCount}</Badge>
-            )}
-            {(item.title === "Announcements" && unreadAnnouncements > 0) && (
-              <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadAnnouncements}</Badge>
-            )}
-          </Link>
+  return (
+    <div className={`${isSidebarOpen ? 'hidden' : ''} fixed bottom-0 left-0 right-0 z-50`}>
+      {/* Hover-sensitive area */}
+      <div className="h-8 w-full relative group">
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-background shadow-t flex justify-around items-center border-t border-border transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+          {allItems.map((item) => (
+            <div key={item.title} className="relative flex flex-col items-center justify-center w-8 h-8">
+              <Link
+                to={item.url}
+                className={`flex items-center justify-center w-full h-full ${getNavClass(item.url)}`}
+              >
+                <item.icon className="h-6 w-6 transition-transform duration-200 group-hover:scale-110" />
+                {(item.title === "Chat Room" && unreadCount > 0) && (
+                  <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadCount}</Badge>
+                )}
+                {(item.title === "Announcements" && unreadAnnouncements > 0) && (
+                  <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadAnnouncements}</Badge>
+                )}
+              </Link>
 
-          <span className="absolute bottom-full mb-2 px-2 py-1 rounded bg-black text-white text-[10px] opacity-0 translate-y-1 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
-            {item.title}
-          </span>
+              <span className="absolute bottom-full mb-2 px-2 py-1 rounded bg-black text-white text-[10px] opacity-0 translate-y-1 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                {item.title}
+              </span>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
-  </div>
-  </div>
-);
+  );
 
 }

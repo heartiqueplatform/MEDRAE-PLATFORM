@@ -775,7 +775,7 @@ const Index = () => {
             <div>
               <h3 className="font-semibold mb-3">Platform</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                {["Feed", "Medrae Quizzes", "MedTube", "Reels", "Forum", "Announcements"].map((item) => (
+                {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Announcements"].map((item) => (
                   <li key={item}>
                     <Tooltip>
                       <TooltipTrigger asChild>

@@ -107,7 +107,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "Feed", url: "/feed", icon: Newspaper },
     { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
-    { title: "Chat Room", url: "/chat", icon: MessageCircle },
     { title: "Forum", url: "/forum", icon: MessageSquare },
   ];
 
@@ -115,17 +114,17 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const learningItems = [
     { title: "Assessment Calendar", url: "/calendar", icon: Calendar, badge: `${totalEvents}E` },
     { title: "Study Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★` },
-    { title: "Medrae Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
-    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
+    { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
+    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
 
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
-    { title: "Notes & Resources Bank", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)} Notes` : "Loading..." },
+    { title: "Resources Bank", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
 
   ];
 
   const mediaItems = [
     { title: "MedTube", url: "/medtube", icon: Play, badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
-    { title: "Reels", url: "/reels", icon: Video },
+
   ];
 
   const otherItems = [
@@ -454,50 +453,45 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
         {/* Media Section */}
         <SidebarGroup>
-          <Collapsible open={openGroups.includes('media')} onOpenChange={() => toggleGroup('media')}>
-            <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-                Media
-                {!isCollapsed && (
-                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
-                )}
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {mediaItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <button
-                          className={getNavClass(item.url)}
-                          onClick={() => {
-                            if (navigator.vibrate) navigator.vibrate(50);
-                            handleCollapse();
-                            navigate(item.url);
-                          }}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {!isCollapsed && (
-                            <>
-                              <span>{item.title}</span>
-                              {item.badge && (
-                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                  {item.badge}
-                                </Badge>
-                              )}
-                            </>
-                          )}
-                        </button>
+          <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+            Media
+            {!isCollapsed && (
+              <ChevronDown className="ml-auto h-4 w-4" />
+            )}
+          </SidebarGroupLabel>
 
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </Collapsible>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mediaItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <button
+                      className={getNavClass(item.url)}
+                      onClick={() => {
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        handleCollapse();
+                        navigate(item.url);
+                      }}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && (
+                        <>
+                          <span>{item.title}</span>
+                          {item.badge && (
+                            <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
+
 
         {/* Tutor Section */}
         {tutorItems.length > 0 && (
