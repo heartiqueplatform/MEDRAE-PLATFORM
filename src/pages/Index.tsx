@@ -29,7 +29,7 @@ const HeroSkeleton = () => {
 const Index = () => {
   const [ready, setReady] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
-
+  const [isMobile, setIsMobile] = useState(false);
   // ✅ track loading state PER hero slide
   const [heroMediaLoaded, setHeroMediaLoaded] = useState<Record<number, boolean>>({});
 
@@ -72,6 +72,14 @@ const Index = () => {
     preloadMedia();
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768); // Tailwind's md breakpoint
+    };
+    handleResize(); // initial check
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -378,6 +386,40 @@ const Index = () => {
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume className="h-5 w-5" />}
         </button>
+        {/* Mobile gallery for small screens */}
+        <div className="block md:hidden overflow-x-auto flex gap-4 px-4 py-6 snap-x snap-mandatory">
+          {heroStorySlides.map((slide, idx) => (
+            <div
+              key={idx}
+              className="flex-none w-[80%] max-w-[300px] snap-center relative rounded-2xl shadow-lg cursor-pointer overflow-hidden"
+              onClick={() => setActiveHeroStory(idx)} // optional tap to activate
+            >
+              {slide.video ? (
+                <video
+                  src={slide.video}
+                  className="w-full h-[400px] object-cover rounded-2xl"
+                  muted
+                  playsInline
+                  loop
+                  preload="auto"
+                />
+              ) : (
+                <img
+                  src={slide.bg}
+                  alt={`Slide ${idx + 1}`}
+                  className="w-full h-[400px] object-cover rounded-2xl"
+                />
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-end p-4 text-white text-left">
+                {typeof slide.text === "string"
+                  ? slide.text
+                  : React.isValidElement(slide.text)
+                    ? slide.text
+                    : null}
+              </div>
+            </div>
+          ))}
+        </div>
 
 
         {/* Hero slides container */}
