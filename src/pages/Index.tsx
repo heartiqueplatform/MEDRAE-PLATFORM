@@ -146,7 +146,7 @@ const Index = () => {
 
   const heroStorySlides = [
     {
-      video: "/videos/Medrae4.mp4",
+      bg: "/indexbackground7.jpg",
       text: (
         <div className="w-full h-full flex items-end justify-center text-center pb-6 md:pb-12 lg:pb-16">
           <div className="px-3 py-1 rounded-lg bg-white/05 backdrop-blur-sm shadow-sm">
@@ -166,7 +166,7 @@ const Index = () => {
       ),
     },
     {
-      video: "/videos/Medrae5.mp4",
+      bg: "/background03.jpg",
       text: "Kenya’s Nursing Network Platform",
     },
 
@@ -201,7 +201,7 @@ const Index = () => {
     },
 
     {
-      video: "/videos/Medrae3.mp4",
+      bg: "/background02.jpg",
       text: "Strengthen your skills through simulations, certification modules, and structured progression tracking.\n\nFor the best experience, access Medrae via desktop for enhanced clarity and performance, or use mobile for flexible learning anywhere.",
     },
 
@@ -561,21 +561,12 @@ const Index = () => {
 
           </div>
           {/* Video Side */}
-          <div className="lg:w-1/2 w-full flex justify-center">
-            <div className="w-full max-w-lg bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-              <video
-                className="w-full h-[250px] md:h-[300px] lg:h-[400px] object-cover rounded-lg"
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              >
-                <source src="/videos/Medrae7.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            </div>
-          </div>
+          <img
+            src="/indexbackground1.jpg"
+            alt="Medrae background"
+            className="w-full h-[250px] md:h-[300px] lg:h-[400px] object-cover rounded-lg"
+          />
+
 
         </div>
       </section >
