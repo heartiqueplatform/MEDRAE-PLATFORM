@@ -827,50 +827,53 @@ const Index = () => {
           {/* Regulatory Info Section Below */}
           <div className="max-w-7xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-10">
 
-            {/* KMT / College Info */}
-            <div className="p-4 bg-white dark:bg-gray-900  rounded-3xl shadow-sm">
+            {/* College & Licensing Prep */}
+            <div className="p-4 bg-white dark:bg-gray-900 rounded-3xl shadow-sm">
               <h4 className="font-semibold mb-2 text-lg text-gray-900 dark:text-gray-100">
-                KMT / College Info
+                College & Licensing Prep
               </h4>
               <p className="text-sm text-muted-foreground mb-2">
-                Kenya Medical Training College (KMTC) is a national institution for healthcare training with campuses across Kenya. It offers diploma, certificate, and higher diploma programs in nursing, clinical medicine, laboratory sciences, pharmacy, and other allied health courses. KMTC aims to produce competent healthcare professionals who serve both public and private sectors.
+                Medrae provides structured support for students completing their college final exams, including NCK licensing exams. The platform offers study materials, practice tests, and guidance to ensure students are well-prepared for their professional assessments.
               </p>
               <p className="text-sm text-muted-foreground mb-2">
-                Students are provided with both theoretical and practical clinical skills training, including access to clinical placements in hospitals and community health facilities. Programs are regulated by the Ministry of Health and relevant professional boards to ensure high standards.
+                Through interactive tutorials and exam simulations, users gain confidence in clinical skills, theoretical knowledge, and practical application. Medrae’s tools align with Ministry of Health standards and NCK regulations to ensure high-quality exam preparation.
               </p>
               <p className="text-sm text-muted-foreground">
-                For more info, visit: <a href="https://www.kmtc.ac.ke" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
-                  KMTC Official Website
+                Learn more about your exam requirements and preparation tips via official resources: <a href="https://www.kmtc.ac.ke" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
+                  KMTC & Ministry Resources
                 </a>
               </p>
             </div>
 
-
-            {/* NCK Info */}
-            <div>
-              <h4 className="font-semibold mb-2">About NCK</h4>
-              <p className="text-sm text-muted-foreground">
-                The Nursing Council of Kenya (NCK) is the statutory regulatory body for nursing and midwifery in Kenya, established under the Nurses and Midwives Act Cap 257.
+            {/* NCK Exam & Professional Guidance */}
+            <div className="p-4 bg-white dark:bg-gray-900 rounded-3xl shadow-sm">
+              <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">NCK Exam & Professional Guidance</h4>
+              <p className="text-sm text-muted-foreground mb-2">
+                Medrae helps nurses and midwives prepare for the NCK licensing exam by providing sample questions, exam tips, and professional guidance. Users can track progress and focus on areas that require more attention.
+              </p>
+              <p className="text-sm text-muted-foreground mb-2">
+                The platform also explains regulatory policies in Kenya, including registration, licensing, and ethical standards, helping users comply with all statutory requirements.
               </p>
               <p className="text-sm text-muted-foreground">
-                NCK’s mandate includes accreditation of training institutions, regulation of nursing and midwifery education, licensing and registration of practising nurses and midwives, conducting licensure examinations, enforcing professional and ethical standards, and ensuring quality healthcare through well‑trained professionals.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                NCK also provides an online services portal for licensing, registration, retention, CPD, and other regulatory services, making it easier for nurses to manage their professional credentials.
+                Access online resources for NCK exam updates and professional registration: <a href="https://www.nckenya.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
+                  NCK Official Website
+                </a>
               </p>
             </div>
 
-            {/* NCLEX Info */}
-            <div>
-              <h4 className="font-semibold mb-2">About NCLEX</h4>
-              <p className="text-sm text-muted-foreground">
-                NCLEX stands for the National Council Licensure Examination, a standardized, computer‑adaptive exam required to obtain nursing licensure in the United States and Canada.
+            {/* NCLEX Familiarity & Global Mobility */}
+            <div className="p-4 bg-white dark:bg-gray-900 rounded-3xl shadow-sm">
+              <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">NCLEX Familiarity & Global Mobility</h4>
+              <p className="text-sm text-muted-foreground mb-2">
+                For users aiming to practice nursing internationally, Medrae introduces NCLEX exam content and preparation strategies. This includes practice questions, test-taking strategies, and guidance on international licensing requirements.
+              </p>
+              <p className="text-sm text-muted-foreground mb-2">
+                While focused on Kenyan regulations and licensing, the platform also supports nurses in understanding global pathways, enabling smoother transitions for work abroad.
               </p>
               <p className="text-sm text-muted-foreground">
-                There are different NCLEX exam types depending on the level of nursing practice (e.g. RN, PN), and passing NCLEX is a prerequisite for nurses trained internationally who wish to practice in the U.S.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Including mention of NCK shows compliance with Kenyan regulations, while mentioning NCLEX acknowledges the global mobility aspirations of Kenyan nurses. This demonstrates that Medrae is aware of both local regulation and international licensure pathways.
+                Learn more about NCLEX and international nursing licensure via official resources: <a href="https://www.ncsbn.org/nclex.htm" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
+                  NCLEX Official Website
+                </a>
               </p>
             </div>
 
@@ -883,7 +886,6 @@ const Index = () => {
           © {new Date().getFullYear()} Medrae. All rights reserved.
         </div>
       </footer>
-
     </div >
   );
 };
