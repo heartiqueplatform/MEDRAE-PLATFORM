@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "react-router-dom";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, RefreshCw, ChevronLeft, ChevronRight, CornerRightDown, Flag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -859,7 +859,8 @@ export default function SimulationPage() {
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
       <div className="md:col-span-2 space-y-4">
 
-        <Card>
+        <Card className="min-h-[400px]">
+
           <CardHeader>
             <CardTitle>
               Question {currentIndex + 1} of {questions.length}
@@ -885,20 +886,38 @@ export default function SimulationPage() {
 
         {/* Centered navigation buttons */}
         <div className="flex flex-wrap justify-center gap-2 mt-4">
-          <Button onClick={goPrev} disabled={currentIndex === 0}>
+          <Button
+            onClick={goPrev}
+            disabled={currentIndex === 0}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="w-5 h-5" />
             Previous
           </Button>
-
-          <Button variant="outline" onClick={handleFlag}>
+          <Button
+            variant="outline"
+            onClick={handleFlag}
+            className="flex items-center gap-2"
+          >
+            <Flag className="w-5 h-5" />
             Flag
           </Button>
-
-          <Button variant="ghost" onClick={handleSkip}>
+          <Button
+            variant="ghost"
+            onClick={handleSkip}
+            className="flex items-center gap-2"
+          >
             Skip
+            <CornerRightDown className="w-5 h-5" />
           </Button>
 
-          <Button onClick={goNext} disabled={currentIndex === questions.length - 1}>
+          <Button
+            onClick={goNext}
+            disabled={currentIndex === questions.length - 1}
+            className="flex items-center gap-2"
+          >
             Next
+            <ChevronRight className="w-5 h-5" />
           </Button>
 
           <Button
@@ -947,7 +966,7 @@ export default function SimulationPage() {
 
         <div className="flex gap-4 mt-6 items-start">
           {/* Camera Panel */}
-          <div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-48">
+          <div className="border border-gray-300 rounded-lg overflow-hidden w-24 h-16">
             {cameraStream ? (
               <video
                 ref={videoRef}
@@ -961,7 +980,7 @@ export default function SimulationPage() {
           </div>
 
           {/* Sound Wave Panel (Right side) */}
-          <div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-48 relative flex items-center justify-center">
+          <div className="border border-gray-300 rounded-lg overflow-hidden w-24 h-16 relative flex items-center justify-center">
             <canvas ref={canvasRef} width={256} height={192} className="w-full h-full" />
             {loudWarning && (
               <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
@@ -972,8 +991,10 @@ export default function SimulationPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => initMedia(true)}  // pass flag to force reload
+            onClick={() => initMedia(true)}
+            className="flex items-center gap-2"
           >
+            <RefreshCw className="w-4 h-4" />
             Reset Cam & Mic
           </Button>
 
