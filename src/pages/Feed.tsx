@@ -1133,22 +1133,21 @@ export default function Feed() {
                       {/* Like Button */}
                       <Button
                         variant="ghost"
-                        className={`flex items-center gap-2 ${liked ? "text-red-500" : ""}`}
-                        onClick={() => toggleLike(q.id, liked)}
+                        className={`flex items-center gap-2 ${liked ? "text-red-500 animate-emoji-zoom" : ""}`}
+                        onClick={() => {
+                          toggleLike(q.id, liked);
+
+                          // Play tap sound only on adding a like
+                          if (!liked) {
+                            const audio = new Audio("/sounds/tap1.mp3");
+                            audio.play().catch((err) => console.error("Audio play error:", err));
+                          }
+                        }}
                       >
                         <Heart size={18} /> {q.qfeed_likes?.length || 0}
                       </Button>
 
                       {/* Favorite Button */}
-                      {/* Favorite Button */}
-                      <Button
-                        variant="ghost"
-                        className={`flex items-center gap-2 ${q.favorited ? "text-yellow-500" : ""}`}
-                        onClick={() => toggleFavorite(q.id, q.quiz_id, q.favorited)}
-                      >
-                        <Star size={18} /> {q.favorited_count || 0}
-                      </Button>
-
 
                       {/* Comment Button */}
                       <Button
