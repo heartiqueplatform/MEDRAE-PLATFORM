@@ -30,42 +30,42 @@ const getStatusVariant = (status: string) => {
 
 
 export default function SimulationPage() {
-const navigate = useNavigate();
-// 🚫 Block mobile screens completely
-if (typeof window !== "undefined") {
-  const isLaptop = window.innerWidth >= 1000; // adjust size if needed
-  const [dismissed, setDismissed] = useState(false);
-
-  if (!isLaptop && !dismissed) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-black text-white p-6 text-center">
-        <h1 className="text-3xl font-bold mb-4">Laptop Required</h1>
-        <p className="text-lg mb-6">
-          This simulation is only available on laptops or desktops for 
-          proctoring (camera + mic + full interface).
-        </p>
-      <button
-  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
-  onClick={() => navigate("/dashboard")}
->
-  OK
-</button>
-
-      </div>
-    );
-  }
-}
-
-// will hold paper id being reset
-
-const [paperList, setPaperList] = useState<any[]>(() => {
-  // ✅ Load from localStorage first for instant display
+  const navigate = useNavigate();
+  // 🚫 Block mobile screens completely
   if (typeof window !== "undefined") {
-    const cached = localStorage.getItem("sim-papers");
-    if (cached) return JSON.parse(cached);
+    const isLaptop = window.innerWidth >= 1000; // adjust size if needed
+    const [dismissed, setDismissed] = useState(false);
+
+    if (!isLaptop && !dismissed) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-black text-white p-6 text-center">
+          <h1 className="text-3xl font-bold mb-4">Laptop Required</h1>
+          <p className="text-lg mb-6">
+            This simulation is only available on laptops or desktops for
+            proctoring (camera + mic + full interface).
+          </p>
+          <button
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
+            onClick={() => navigate("/dashboard")}
+          >
+            OK
+          </button>
+
+        </div>
+      );
+    }
   }
-  return [];
-});
+
+  // will hold paper id being reset
+
+  const [paperList, setPaperList] = useState<any[]>(() => {
+    // ✅ Load from localStorage first for instant display
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("sim-papers");
+      if (cached) return JSON.parse(cached);
+    }
+    return [];
+  });
 
 
   const [selectedPaper, setSelectedPaper] = useState<any | null>(null);
@@ -81,254 +81,254 @@ const [paperList, setPaperList] = useState<any[]>(() => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const localKey = selectedPaper?.id ? `sim-answers-${selectedPaper.id}` : "";
   const currentQuestion = questions?.[currentIndex] ?? null;
-const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
-const canvasRef = useRef<HTMLCanvasElement | null>(null);
-const [loudWarning, setLoudWarning] = useState(false);
-const [mediaAllowed, setMediaAllowed] = useState(false);
-const [profile, setProfile] = useState<any>(null);
-const [loading, setLoading] = useState(true); // new
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [loudWarning, setLoudWarning] = useState(false);
+  const [mediaAllowed, setMediaAllowed] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true); // new
 
-// 1️⃣ Add this state at the top of your component
-const [resettingPaper, setResettingPaper] = useState<string | null>(null);
-const [isDark, setIsDark] = useState(() => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("theme") === "dark";
-  }
-  return false;
-});
-const initMedia = useCallback(async (force = false) => {
-  try {
-    if (force) {
-      cameraStream?.getTracks().forEach((t) => t.stop());
-      audioStream?.getTracks().forEach((t) => t.stop());
+  // 1️⃣ Add this state at the top of your component
+  const [resettingPaper, setResettingPaper] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") === "dark";
     }
-
-    // Request video separately
-    const cam = await navigator.mediaDevices.getUserMedia({ video: true });
-    setCameraStream(cam);
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = cam;
-      videoRef.current.muted = true;
-      videoRef.current.playsInline = true;
-      videoRef.current.autoplay = true;
-      await videoRef.current.play().catch((err) =>
-        console.log("Autoplay blocked:", err)
-      );
-    }
-
-    // Request audio separately
-    const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-    setAudioStream(mic);
-  setMediaAllowed(true);
-
-
-    // ---- Audio analyser setup ----
-    const audioCtx = new (window.AudioContext ||
-      (window as any).webkitAudioContext)();
-    const source = audioCtx.createMediaStreamSource(mic);
-    const analyser = audioCtx.createAnalyser();
-    source.connect(analyser);
-    analyser.fftSize = 256;
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const canvasCtx = canvas.getContext("2d");
-    if (!canvasCtx) return;
-
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-
-    const draw = () => {
-      requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(dataArray);
-
-      canvasCtx.fillStyle = "#f3f4f6";
-      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-      let maxVolume = 0;
-      const barWidth = (canvas.width / bufferLength) * 2.5;
-      let x = 0;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = dataArray[i] / 2;
-        maxVolume = Math.max(maxVolume, dataArray[i]);
-
-        let color = "green";
-        if (barHeight > 40 && barHeight <= 80) color = "blue";
-        if (barHeight > 80) color = "red";
-
-        canvasCtx.fillStyle = color;
-        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-        x += barWidth + 1;
+    return false;
+  });
+  const initMedia = useCallback(async (force = false) => {
+    try {
+      if (force) {
+        cameraStream?.getTracks().forEach((t) => t.stop());
+        audioStream?.getTracks().forEach((t) => t.stop());
       }
 
-      setLoudWarning(maxVolume > 150);
-    };
+      // Request video separately
+      const cam = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraStream(cam);
 
-    draw();
-  } catch (err) {
-    console.error("Camera or Audio access denied/unavailable", err);
-  }
-}, [cameraStream, audioStream]);
+      if (videoRef.current) {
+        videoRef.current.srcObject = cam;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        await videoRef.current.play().catch((err) =>
+          console.log("Autoplay blocked:", err)
+        );
+      }
+
+      // Request audio separately
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioStream(mic);
+      setMediaAllowed(true);
+
+
+      // ---- Audio analyser setup ----
+      const audioCtx = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(mic);
+      const analyser = audioCtx.createAnalyser();
+      source.connect(analyser);
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const canvasCtx = canvas.getContext("2d");
+      if (!canvasCtx) return;
+
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+
+      const draw = () => {
+        requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+
+        canvasCtx.fillStyle = "#f3f4f6";
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let maxVolume = 0;
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = dataArray[i] / 2;
+          maxVolume = Math.max(maxVolume, dataArray[i]);
+
+          let color = "green";
+          if (barHeight > 40 && barHeight <= 80) color = "blue";
+          if (barHeight > 80) color = "red";
+
+          canvasCtx.fillStyle = color;
+          canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          x += barWidth + 1;
+        }
+
+        setLoudWarning(maxVolume > 150);
+      };
+
+      draw();
+    } catch (err) {
+      console.error("Camera or Audio access denied/unavailable", err);
+    }
+  }, [cameraStream, audioStream]);
 
 
 
-// Fetch full profile of logged-in user
-const fetchProfile = async (userId: string) => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")  // fetch ALL columns
-    .eq("user_id", userId)
-    .single();
+  // Fetch full profile of logged-in user
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")  // fetch ALL columns
+      .eq("user_id", userId)
+      .single();
 
-  if (error) {
-    console.error("Error fetching profile:", error.message);
-    return null;
-  }
+    if (error) {
+      console.error("Error fetching profile:", error.message);
+      return null;
+    }
 
-  return data;
-};
+    return data;
+  };
 
-// Fetch active papers and mark which ones are already done
+  // Fetch active papers and mark which ones are already done
 
   const fetchPapers = async () => {
-  setLoading(true); //  start loading
+    setLoading(true); //  start loading
 
-  const { data: papers } = await supabase
-    .from("simulation_papers")
-    .select("*")
-    .eq("is_active", true);
+    const { data: papers } = await supabase
+      .from("simulation_papers")
+      .select("*")
+      .eq("is_active", true);
 
-  if (!papers) {
-    setLoading(false);
-    return;
-  }
-
-  //  Fetch logged-in user profile
-  const { data: userData } = await supabase.auth.getUser();
-  if (userData?.user?.id) {
-    const profileData = await fetchProfile(userData.user.id);
-    setProfile(profileData);
-
-    // Fetch active subscription for this user
-    const { data: subData } = await supabase
-      .from("subscriptions")
-      .select("plan_type, is_active")
-      .eq("user_id", userData.user.id)
-      .eq("is_active", true)
-      
-
-    if (subData) {
-      setProfile((prev: any) => ({
-        ...prev,
-        subscription: subData.plan_type,
-        subscription_active: subData.is_active,
-      }));
+    if (!papers) {
+      setLoading(false);
+      return;
     }
-  }
 
-  // Check which papers are done
-  const { data: results } = await supabase.from("simulation_results").select("paper_id");
-  const donePaperIds = results?.map((r) => r.paper_id) || [];
+    //  Fetch logged-in user profile
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData?.user?.id) {
+      const profileData = await fetchProfile(userData.user.id);
+      setProfile(profileData);
 
-  const papersWithStatus = papers.map((p) => ({
-    ...p,
-    is_done: donePaperIds.includes(p.id),
-  }));
-setPaperList(papersWithStatus);
-//  Cache in localStorage for next load
-localStorage.setItem("sim-papers", JSON.stringify(papersWithStatus));
-
-
-  setLoading(false); //  stop loading
-};
-
-useEffect(() => {
-  if (isDark) {
-    document.documentElement.classList.add("dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-  }
-
-  // Save the preference so next visit remembers it
-  localStorage.setItem("theme", isDark ? "dark" : "light");
-}, [isDark]);
+      // Fetch active subscription for this user
+      const { data: subData } = await supabase
+        .from("subscriptions")
+        .select("plan_type, is_active")
+        .eq("user_id", userData.user.id)
+        .eq("is_active", true)
 
 
-
-useEffect(() => {
-  fetchPapers();
-}, []);
-// Confirm before leaving if user is in the middle of a simulation
-useEffect(() => {
-  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-    if (selectedPaper) {
-      event.preventDefault();
-      event.returnValue = "Are you sure you want to leave? Your progress may be lost.";
+      if (subData) {
+        setProfile((prev: any) => ({
+          ...prev,
+          subscription: subData.plan_type,
+          subscription_active: subData.is_active,
+        }));
+      }
     }
+
+    // Check which papers are done
+    const { data: results } = await supabase.from("simulation_results").select("paper_id");
+    const donePaperIds = results?.map((r) => r.paper_id) || [];
+
+    const papersWithStatus = papers.map((p) => ({
+      ...p,
+      is_done: donePaperIds.includes(p.id),
+    }));
+    setPaperList(papersWithStatus);
+    //  Cache in localStorage for next load
+    localStorage.setItem("sim-papers", JSON.stringify(papersWithStatus));
+
+
+    setLoading(false); //  stop loading
   };
 
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-  };
-}, [selectedPaper]);
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+
+    // Save the preference so next visit remembers it
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }, [isDark]);
 
 
-//  Realtime subscription for simulation (papers, results, subscription)
-useEffect(() => {
-  let channel = supabase.channel("simulation_realtime");
 
-  channel
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "simulation_papers",
-      },
-      () => {
-        console.log("Realtime: papers changed, refreshing...");
-        fetchPapers(); // refresh paper list
+  useEffect(() => {
+    fetchPapers();
+  }, []);
+  // Confirm before leaving if user is in the middle of a simulation
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (selectedPaper) {
+        event.preventDefault();
+        event.returnValue = "Are you sure you want to leave? Your progress may be lost.";
       }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "simulation_results",
-      },
-      () => {
-        console.log("Realtime: results changed, refreshing...");
-        fetchPapers(); // refresh paper statuses
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "subscriptions",
-      },
-      async () => {
-        console.log("Realtime: subscription changed, refreshing profile...");
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user?.id) {
-          const profileData = await fetchProfile(userData.user.id);
-          setProfile(profileData);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [selectedPaper]);
+
+
+  //  Realtime subscription for simulation (papers, results, subscription)
+  useEffect(() => {
+    let channel = supabase.channel("simulation_realtime");
+
+    channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "simulation_papers",
+        },
+        () => {
+          console.log("Realtime: papers changed, refreshing...");
+          fetchPapers(); // refresh paper list
         }
-      }
-    )
-    .subscribe();
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "simulation_results",
+        },
+        () => {
+          console.log("Realtime: results changed, refreshing...");
+          fetchPapers(); // refresh paper statuses
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "subscriptions",
+        },
+        async () => {
+          console.log("Realtime: subscription changed, refreshing profile...");
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user?.id) {
+            const profileData = await fetchProfile(userData.user.id);
+            setProfile(profileData);
+          }
+        }
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, []);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Fetch questions for selected paper
   useEffect(() => {
@@ -361,22 +361,22 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [selectedPaper]);
 
- // Inside your component, replace the two existing camera/audio useEffects
-useEffect(() => {
-  return () => {
-    cameraStream?.getTracks().forEach((t) => t.stop());
-    audioStream?.getTracks().forEach((t) => t.stop());
+  // Inside your component, replace the two existing camera/audio useEffects
+  useEffect(() => {
+    return () => {
+      cameraStream?.getTracks().forEach((t) => t.stop());
+      audioStream?.getTracks().forEach((t) => t.stop());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+  const formatTime = (s: number) => {
+    const h = Math.floor(s / 3600).toString().padStart(2, "0");
+    const m = Math.floor((s % 3600) / 60).toString().padStart(2, "0");
+    const sec = (s % 60).toString().padStart(2, "0");
+    return `${h}:${m}:${sec}`;
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
-
-
-const formatTime = (s: number) => {
-  const h = Math.floor(s / 3600).toString().padStart(2, "0");
-  const m = Math.floor((s % 3600) / 60).toString().padStart(2, "0");
-  const sec = (s % 60).toString().padStart(2, "0");
-  return `${h}:${m}:${sec}`;
-};
 
 
   const handleSelect = (option: string) => {
@@ -437,151 +437,151 @@ const formatTime = (s: number) => {
     setShowDonePanel(false);
     setPendingAction(null);
   };
-const confirmSubmit = async () => {
-  if (!selectedPaper) return;
+  const confirmSubmit = async () => {
+    if (!selectedPaper) return;
 
-  const correctCount = questions.reduce((count, q) => {
-    const userAnswer = answers[q.id];
-    return userAnswer === q.correct_answer ? count + 1 : count;
-  }, 0);
+    const correctCount = questions.reduce((count, q) => {
+      const userAnswer = answers[q.id];
+      return userAnswer === q.correct_answer ? count + 1 : count;
+    }, 0);
 
-  const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
-await supabase.from("simulation_results").insert({
-  paper_id: selectedPaper.id,
-  user_id: (await supabase.auth.getUser()).data.user?.id, //  include user_id
-  score: correctCount,
-  total_questions: questions.length,
-  });
-
-  generatePDF();
-  alert(
-  `Congratulations! You’ve successfully completed the simulation.\n\n` +
-  `Your Score: ${correctCount}/${questions.length} (${percentageScore}%)\n\n` +
-  `Every question you tackled sharpened your knowledge and strengthened your skills. ` +
-  `Remember, mastery is built step by step  each challenge you face is an opportunity to grow. ` +
-  `Keep striving, stay curious, and trust in your dedication. Your persistence today shapes the exceptional professional you’re becoming!`
-);
-
-
-  resetNow();
-  setSelectedPaper(null);
-  setShowDonePanel(false);
-  setPendingAction(null);
-
-    //  No manual refresh needed, realtime will update the paper list
-};
-const generatePDF = async () => {
-  const doc = new jsPDF();
-  doc.setFontSize(16);
-  doc.text("Heatique nursing nexus scholar Simulation Results", 14, 20);
-  
-  // NEW: Candidate Details Section
-
-  const correctCount = questions.reduce((count, q) => {
-    const userAnswer = answers[q.id];
-    return userAnswer === q.correct_answer ? count + 1 : count;
-  }, 0);
-  const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
-
-  doc.setFontSize(12);
-  doc.setFont(undefined, "bold");
-  doc.text("Candidate Details", 14, 30);
-//  Candidate Profile Details
-doc.setFont(undefined, "normal");
-let y = 38;
-
-if (profile) {
-  doc.text(`Name: ${profile.name || "N/A"}`, 14, y); y += 6;
-  doc.text(`Email: ${profile.email || "N/A"}`, 14, y); y += 6;
-  doc.text(`Institution: ${profile.institution || "N/A"}`, 14, y); y += 6;
-  doc.text(`Course: ${profile.course || "N/A"}`, 14, y); y += 6;
-  doc.text(`County: ${profile.county || "N/A"}`, 14, y); y += 6;
-  doc.text(`Phone: ${profile.phone || "N/A"}`, 14, y); y += 6;
-  doc.text(`Subscription: ${profile.subscription || "N/A"}`, 14, y); y += 6;
-  doc.text(`Role: ${profile.role || "N/A"}`, 14, y); y += 6;
-} else {
-  doc.text("Candidate Profile: Not Available", 14, y); 
-  y += 6;
-}
-
-//  Paper details
-doc.text(`Paper Title: ${selectedPaper?.title || "N/A"}`, 14, y); y += 6;
-doc.text(`Score: ${correctCount}/${questions.length} (${percentageScore}%)`, 14, y); y += 6;
-doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, y); y += 10;
-
-let yPos = y; // continue after candidate + paper info
-
-// Add advisory paragraph
-doc.setFontSize(11);
-const advisoryText = `Dear Student, these results are for your personal review and learning. Always cross-check answers with your study notes and seek clarification for any doubts. Remember, consistent practice improves retention and exam performance. For more detailed resources, practice questions, and interactive learning, visit Medrae NURSING NEXUS at https://Medrae-nurses.com.`;
-
-// Wrap text to fit PDF width
-doc.setFont(undefined, "normal");
-const pageWidth = doc.internal.pageSize.getWidth();
-const splitText = doc.splitTextToSize(advisoryText, pageWidth - 28);
-
-//  Use yPos (after details), not 30
-doc.text(splitText, 14, yPos);
-
-yPos = yPos + splitText.length * 6 + 4; // continue after advisory
-
-
-
-  questions.forEach((q, i) => {
-    if (yPos > 260) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    doc.setFont(undefined, "bold");
-    doc.text(`Q${i + 1}: ${q.question_text}`, 14, yPos);
-
-    yPos += 6;
-    ["A", "B", "C", "D"].forEach((opt) => {
-      const text = `${opt}. ${q[`option_${opt.toLowerCase()}`]}`;
-      if (q.correct_answer === opt) {
-        doc.setTextColor(0, 128, 0);
-        doc.setFont(undefined, "bold");
-      } else {
-        doc.setTextColor(0, 0, 0);
-        doc.setFont(undefined, "normal");
-      }
-      doc.text(text, 20, yPos);
-      yPos += 6;
+    const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
+    await supabase.from("simulation_results").insert({
+      paper_id: selectedPaper.id,
+      user_id: (await supabase.auth.getUser()).data.user?.id, //  include user_id
+      score: correctCount,
+      total_questions: questions.length,
     });
 
-    yPos += 4;
-    doc.setTextColor(0, 0, 0);
+    generatePDF();
+    alert(
+      `Congratulations! You’ve successfully completed the simulation.\n\n` +
+      `Your Score: ${correctCount}/${questions.length} (${percentageScore}%)\n\n` +
+      `Every question you tackled sharpened your knowledge and strengthened your skills. ` +
+      `Remember, mastery is built step by step  each challenge you face is an opportunity to grow. ` +
+      `Keep striving, stay curious, and trust in your dedication. Your persistence today shapes the exceptional professional you’re becoming!`
+    );
+
+
+    resetNow();
+    setSelectedPaper(null);
+    setShowDonePanel(false);
+    setPendingAction(null);
+
+    //  No manual refresh needed, realtime will update the paper list
+  };
+  const generatePDF = async () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Heatique nursing nexus scholar Simulation Results", 14, 20);
+
+    // NEW: Candidate Details Section
+
+    const correctCount = questions.reduce((count, q) => {
+      const userAnswer = answers[q.id];
+      return userAnswer === q.correct_answer ? count + 1 : count;
+    }, 0);
+    const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
+
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text("Candidate Details", 14, 30);
+    //  Candidate Profile Details
     doc.setFont(undefined, "normal");
-  });
+    let y = 38;
 
-  //  Footer + page numbers AFTER all content
-  const pageCount = doc.internal.getNumberOfPages();
-  const footerLine1 = "MEDRAE";
-  const footerLine2 = "Keep pushing, your dedication shapes the future of care!";
+    if (profile) {
+      doc.text(`Name: ${profile.name || "N/A"}`, 14, y); y += 6;
+      doc.text(`Email: ${profile.email || "N/A"}`, 14, y); y += 6;
+      doc.text(`Institution: ${profile.institution || "N/A"}`, 14, y); y += 6;
+      doc.text(`Course: ${profile.course || "N/A"}`, 14, y); y += 6;
+      doc.text(`County: ${profile.county || "N/A"}`, 14, y); y += 6;
+      doc.text(`Phone: ${profile.phone || "N/A"}`, 14, y); y += 6;
+      doc.text(`Subscription: ${profile.subscription || "N/A"}`, 14, y); y += 6;
+      doc.text(`Role: ${profile.role || "N/A"}`, 14, y); y += 6;
+    } else {
+      doc.text("Candidate Profile: Not Available", 14, y);
+      y += 6;
+    }
 
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(10);
-    doc.setTextColor(100);
+    //  Paper details
+    doc.text(`Paper Title: ${selectedPaper?.title || "N/A"}`, 14, y); y += 6;
+    doc.text(`Score: ${correctCount}/${questions.length} (${percentageScore}%)`, 14, y); y += 6;
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, y); y += 10;
 
+    let yPos = y; // continue after candidate + paper info
+
+    // Add advisory paragraph
+    doc.setFontSize(11);
+    const advisoryText = `Dear Student, these results are for your personal review and learning. Always cross-check answers with your study notes and seek clarification for any doubts. Remember, consistent practice improves retention and exam performance. For more detailed resources, practice questions, and interactive learning, visit Medrae NURSING NEXUS at https://Medrae-nurses.com.`;
+
+    // Wrap text to fit PDF width
+    doc.setFont(undefined, "normal");
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+    const splitText = doc.splitTextToSize(advisoryText, pageWidth - 28);
 
-    const textWidth1 = doc.getTextWidth(footerLine1);
-    doc.text(footerLine1, (pageWidth - textWidth1) / 2, pageHeight - 20);
+    //  Use yPos (after details), not 30
+    doc.text(splitText, 14, yPos);
 
-    const textWidth2 = doc.getTextWidth(footerLine2);
-    doc.text(footerLine2, (pageWidth - textWidth2) / 2, pageHeight - 14);
-
-    const pageText = `Page ${i} of ${pageCount}`;
-    const textWidthPage = doc.getTextWidth(pageText);
-    doc.text(pageText, (pageWidth - textWidthPage) / 2, pageHeight - 8);
-  }
+    yPos = yPos + splitText.length * 6 + 4; // continue after advisory
 
 
-  doc.save("MEDRAE.pdf");
-};
+
+    questions.forEach((q, i) => {
+      if (yPos > 260) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFont(undefined, "bold");
+      doc.text(`Q${i + 1}: ${q.question_text}`, 14, yPos);
+
+      yPos += 6;
+      ["A", "B", "C", "D"].forEach((opt) => {
+        const text = `${opt}. ${q[`option_${opt.toLowerCase()}`]}`;
+        if (q.correct_answer === opt) {
+          doc.setTextColor(0, 128, 0);
+          doc.setFont(undefined, "bold");
+        } else {
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, "normal");
+        }
+        doc.text(text, 20, yPos);
+        yPos += 6;
+      });
+
+      yPos += 4;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, "normal");
+    });
+
+    //  Footer + page numbers AFTER all content
+    const pageCount = doc.internal.getNumberOfPages();
+    const footerLine1 = "MEDRAE";
+    const footerLine2 = "Keep pushing, your dedication shapes the future of care!";
+
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      const textWidth1 = doc.getTextWidth(footerLine1);
+      doc.text(footerLine1, (pageWidth - textWidth1) / 2, pageHeight - 20);
+
+      const textWidth2 = doc.getTextWidth(footerLine2);
+      doc.text(footerLine2, (pageWidth - textWidth2) / 2, pageHeight - 14);
+
+      const pageText = `Page ${i} of ${pageCount}`;
+      const textWidthPage = doc.getTextWidth(pageText);
+      doc.text(pageText, (pageWidth - textWidthPage) / 2, pageHeight - 8);
+    }
+
+
+    doc.save("MEDRAE.pdf");
+  };
 
 
   // Render Review Panel with percentage score
@@ -599,418 +599,419 @@ yPos = yPos + splitText.length * 6 + 4; // continue after advisory
     const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 
     return (
-   <div className="p-6 space-y-6 bg-background text-foreground dark:bg-gray-900 dark:text-gray-100 min-h-screen">
-  <h2 className="text-2xl font-semibold">
-    Review Before You {pendingAction === "submit" ? "Submit" : "Reset"}
-  </h2>
+      <div className="p-6 space-y-6 bg-background text-foreground dark:bg-gray-900 dark:text-gray-100 min-h-screen">
+        <h2 className="text-2xl font-semibold">
+          Review Before You {pendingAction === "submit" ? "Submit" : "Reset"}
+        </h2>
 
-  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-    Every challenge you face is an opportunity to grow and refine your knowledge. Take a moment to
-    reflect on your progress, celebrate the answers you have mastered, and view the areas you can
-    improve as stepping stones toward mastery. Remember, true learning is not only about the final
-    score but the effort, perseverance, and insight gained along the way. Embrace this moment with
-    confidence, curiosity, and the unwavering belief that each step forward strengthens your
-    professional journey.
-  </p>
+        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+          Every challenge you face is an opportunity to grow and refine your knowledge. Take a moment to
+          reflect on your progress, celebrate the answers you have mastered, and view the areas you can
+          improve as stepping stones toward mastery. Remember, true learning is not only about the final
+          score but the effort, perseverance, and insight gained along the way. Embrace this moment with
+          confidence, curiosity, and the unwavering belief that each step forward strengthens your
+          professional journey.
+        </p>
 
-  {pendingAction === "submit" && (
-    <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">
-      Your Score Preview: {correctCount}/{questions.length} ({percentageScore}%)
-    </h3>
-  )}
+        {pendingAction === "submit" && (
+          <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">
+            Your Score Preview: {correctCount}/{questions.length} ({percentageScore}%)
+          </h3>
+        )}
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {/* Answered */}
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-      <h3 className="font-bold text-lg mb-2 text-green-700 dark:text-green-400">
-        Answered Questions ({answered.length})
-      </h3>
-      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-        {answered.map((q, i) => (
-          <li key={q.id}>
-            Q{i + 1}: {q.question_text.slice(0, 50)}... – <strong>{answers[q.id]}</strong>
-          </li>
-        ))}
-      </ul>
-    </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Answered */}
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+            <h3 className="font-bold text-lg mb-2 text-green-700 dark:text-green-400">
+              Answered Questions ({answered.length})
+            </h3>
+            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+              {answered.map((q, i) => (
+                <li key={q.id}>
+                  Q{i + 1}: {q.question_text.slice(0, 50)}... – <strong>{answers[q.id]}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-    {/* Unanswered */}
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-      <h3 className="font-bold text-lg mb-2 text-red-600 dark:text-red-400">
-        Unanswered Questions ({unanswered.length})
-      </h3>
-     <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+          {/* Unanswered */}
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+            <h3 className="font-bold text-lg mb-2 text-red-600 dark:text-red-400">
+              Unanswered Questions ({unanswered.length})
+            </h3>
+            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
 
-        {unanswered.map((q, i) => (
-          <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-        ))}
-      </ul>
-    </div>
+              {unanswered.map((q, i) => (
+                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
+              ))}
+            </ul>
+          </div>
 
-    {/* Flagged */}
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-      <h3 className="font-bold text-lg mb-2 text-yellow-600 dark:text-yellow-400">
-        Flagged ({flaggedQs.length})
-      </h3>
-      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-        {flaggedQs.map((q, i) => (
-          <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-        ))}
-      </ul>
-    </div>
+          {/* Flagged */}
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+            <h3 className="font-bold text-lg mb-2 text-yellow-600 dark:text-yellow-400">
+              Flagged ({flaggedQs.length})
+            </h3>
+            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+              {flaggedQs.map((q, i) => (
+                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
+              ))}
+            </ul>
+          </div>
 
-    {/* Skipped */}
-    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-      <h3 className="font-bold text-lg mb-2 text-blue-600 dark:text-blue-400">
-        ⏭ Skipped ({skippedQs.length})
-      </h3>
-      <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-        {skippedQs.map((q, i) => (
-          <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-        ))}
-      </ul>
-    </div>
-  </div>
+          {/* Skipped */}
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+            <h3 className="font-bold text-lg mb-2 text-blue-600 dark:text-blue-400">
+              ⏭ Skipped ({skippedQs.length})
+            </h3>
+            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+              {skippedQs.map((q, i) => (
+                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
-  <div className="flex flex-col sm:flex-row gap-4 mt-6">
-   <Button
-  className="flex-1 bg-blue-600 text-white hover:bg-green-600 dark:bg-blue-500 dark:hover:bg-green-500 transition-colors"
-  onClick={() => {
-    if (pendingAction === "submit") confirmSubmit();
-    if (pendingAction === "reset") resetNow();
-  }}
->
-  Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
-</Button>
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <Button
+            className="flex-1 bg-blue-600 text-white hover:bg-green-600 dark:bg-blue-500 dark:hover:bg-green-500 transition-colors"
+            onClick={() => {
+              if (pendingAction === "submit") confirmSubmit();
+              if (pendingAction === "reset") resetNow();
+            }}
+          >
+            Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
+          </Button>
 
-    <Button
-      variant="ghost"
-      className="flex-1"
-      onClick={() => {
-        setShowDonePanel(false);
-        setPendingAction(null);
-      }}
-    >
-      Cancel Request
-    </Button>
-  </div>
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={() => {
+              setShowDonePanel(false);
+              setPendingAction(null);
+            }}
+          >
+            Cancel Request
+          </Button>
+        </div>
 
-  {/* Thank You Marquee — centered */}
-<div className="w-full h-16 flex items-center justify-center overflow-hidden border-t border-border">
-  <div className="whitespace-nowrap animate-marquee-slow text-lg md:text-xl font-semibold tracking-wide text-foreground">
-    🌟 Thank you for choosing our website! We appreciate your trust and commitment to learning! 🌟
-  </div>
-</div>
+        {/* Thank You Marquee — centered */}
+        <div className="w-full h-16 flex items-center justify-center overflow-hidden border-t border-border">
+          <div className="whitespace-nowrap animate-marquee-slow text-lg md:text-xl font-semibold tracking-wide text-foreground">
+            🌟 Thank you for choosing our website! We appreciate your trust and commitment to learning! 🌟
+          </div>
+        </div>
 
-</div>
+      </div>
     );
   }
   // Render paper selection
-if (!selectedPaper) {
- if (loading && paperList.length === 0) {
-  // Only show loader if no cached papers
-  return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-      <GlobalLoader message="Medrae is Loading papers..." />
-    </div>
-  );
-}
-  return (
-    <div className="min-h-screen bg-background text-foreground p-4">
-      <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
-      {/* Dashboard Button */}
-<div className="mb-4">
-  <Button
-    size="sm"
-    asChild
-    variant="outline"
-    className="text-foreground hover:bg-green-500 hover:text-white dark:hover:text-white transition-colors"
-  >
-    <Link to="/dashboard">
-          Home
-    </Link>
-  </Button>
-</div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {paperList.map((paper) => {
-          const canAccess = profile?.subscription_active ? true : paper.is_free;
+  if (!selectedPaper) {
+    if (loading && paperList.length === 0) {
+      // Only show loader if no cached papers
+      return (
+        <div className="fixed inset-0 flex items-center justify-center z-50
+                bg-white text-black dark:bg-black dark:text-white">
+          <GlobalLoader message="Medrae is Loading papers..." />
+        </div>
 
-          return (
-            <Card
-              key={paper.id}
-              className={`cursor-pointer hover:shadow-md transition ${
-                paper.is_done ? "opacity-60" : canAccess ? "" : "opacity-50 cursor-not-allowed"
-              }`}
-             onClick={async () => {
-  if (!paper.is_done && canAccess) {
-    setSelectedPaper(paper);
-    // Insert visit row
-    const { data: userData } = await supabase.auth.getUser();
-    if (userData?.user?.id) {
-      await supabase.from("simulation_visits").insert({
-        paper_id: paper.id,
-        user_id: userData.user.id,
-        visited_at: new Date().toISOString(), // optional timestamp column
-      });
+      );
     }
-  }
-}}
->
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {paper.title}
-                  {paper.is_done ? (
-                    <Badge variant={getStatusVariant("done")}>Done</Badge>
-                  ) : profile?.subscription_active ? (
-                    <Badge className="bg-green-600 text-white">Unlocked</Badge>
-                  ) : paper.is_free ? (
-                    <Badge className="bg-emerald-500 text-white">Free</Badge>
-                  ) : (
-                    <Badge variant="destructive">Premium / Pro</Badge>
+    return (
+      <div className="min-h-screen bg-background text-foreground p-4">
+        <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
+        {/* Dashboard Button */}
+        <div className="mb-4">
+          <Button
+            size="sm"
+            asChild
+            variant="outline"
+            className="text-foreground hover:bg-green-500 hover:text-white dark:hover:text-white transition-colors"
+          >
+            <Link to="/dashboard">
+              Home
+            </Link>
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {paperList.map((paper) => {
+            const canAccess = profile?.subscription_active ? true : paper.is_free;
+
+            return (
+              <Card
+                key={paper.id}
+                className={`cursor-pointer hover:shadow-md transition ${paper.is_done ? "opacity-60" : canAccess ? "" : "opacity-50 cursor-not-allowed"
+                  }`}
+                onClick={async () => {
+                  if (!paper.is_done && canAccess) {
+                    setSelectedPaper(paper);
+                    // Insert visit row
+                    const { data: userData } = await supabase.auth.getUser();
+                    if (userData?.user?.id) {
+                      await supabase.from("simulation_visits").insert({
+                        paper_id: paper.id,
+                        user_id: userData.user.id,
+                        visited_at: new Date().toISOString(), // optional timestamp column
+                      });
+                    }
+                  }
+                }}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {paper.title}
+                    {paper.is_done ? (
+                      <Badge variant={getStatusVariant("done")}>Done</Badge>
+                    ) : profile?.subscription_active ? (
+                      <Badge className="bg-green-600 text-white">Unlocked</Badge>
+                    ) : paper.is_free ? (
+                      <Badge className="bg-emerald-500 text-white">Free</Badge>
+                    ) : (
+                      <Badge variant="destructive">Premium / Pro</Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{paper.description}</p>
+
+                  {paper.is_done && (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-xs text-green-600">
+                        You’ve already submitted this paper.
+                      </p>
+                      <Badge variant="secondary">Completed</Badge>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+
+                          setResettingPaper(paper.id); // ← start showing "Reseting..."
+
+                          const { data: userData } = await supabase.auth.getUser();
+                          if (!userData?.user?.id) {
+                            setResettingPaper(null);
+                            return;
+                          }
+
+                          // 1️⃣ Delete results from Supabase
+                          await supabase
+                            .from("simulation_results")
+                            .delete()
+                            .eq("paper_id", paper.id)
+                            .eq("user_id", userData.user.id);
+
+                          // 2️⃣ Remove saved answers in localStorage
+                          const localKey = `sim-answers-${paper.id}`;
+                          localStorage.removeItem(localKey);
+
+                          // 3️⃣ Update paperList state to reflect UI immediately
+                          setPaperList((prev) =>
+                            prev.map((p) =>
+                              p.id === paper.id ? { ...p, is_done: false } : p
+                            )
+                          );
+
+                          alert("Paper reset successfully. You can now retake it.");
+
+                          setResettingPaper(null); // ← done resetting
+                        }}
+                        disabled={resettingPaper === paper.id} // optional: prevent double clicks
+                      >
+                        {resettingPaper === paper.id ? "Reseting..." : "Reset Paper"}
+                      </Button>
+
+                    </div>
                   )}
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{paper.description}</p>
-
-                {paper.is_done && (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-xs text-green-600">
-                      You’ve already submitted this paper.
-                    </p>
-                    <Badge variant="secondary">Completed</Badge>
-<Button
-  size="sm"
-  variant="destructive"
-  onClick={async (e) => {
-    e.stopPropagation();
-
-    setResettingPaper(paper.id); // ← start showing "Reseting..."
-
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user?.id) {
-      setResettingPaper(null);
-      return;
-    }
-
-    // 1️⃣ Delete results from Supabase
-    await supabase
-      .from("simulation_results")
-      .delete()
-      .eq("paper_id", paper.id)
-      .eq("user_id", userData.user.id);
-
-    // 2️⃣ Remove saved answers in localStorage
-    const localKey = `sim-answers-${paper.id}`;
-    localStorage.removeItem(localKey);
-
-    // 3️⃣ Update paperList state to reflect UI immediately
-    setPaperList((prev) =>
-      prev.map((p) =>
-        p.id === paper.id ? { ...p, is_done: false } : p
-      )
-    );
-
-    alert("Paper reset successfully. You can now retake it.");
-
-    setResettingPaper(null); // ← done resetting
-  }}
-  disabled={resettingPaper === paper.id} // optional: prevent double clicks
->
-  {resettingPaper === paper.id ? "Reseting..." : "Reset Paper"}
-</Button>
-
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // No questions found / Loading questions
-if (!currentQuestion) {
-  if (questions.length === 0 && timeLeft > 0) {
+  if (!currentQuestion) {
+    if (questions.length === 0 && timeLeft > 0) {
+      return (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">
+          <GlobalLoader message="Medrae is Loading questions..." />
+        </div>
+      );
+    }
+
+
+    // No questions exist
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">
-        <GlobalLoader message="Medrae is Loading questions..." />
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-8">
+        <p className="text-muted-foreground">No questions found for this paper.</p>
+        <Button className="mt-4" onClick={() => setSelectedPaper(null)}>
+          Choose Another Paper
+        </Button>
       </div>
     );
   }
-
-
-  // No questions exist
-  return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-8">
-      <p className="text-muted-foreground">No questions found for this paper.</p>
-      <Button className="mt-4" onClick={() => setSelectedPaper(null)}>
-        Choose Another Paper
-      </Button>
-    </div>
-  );
-}
   // Main question view
   return (
-  <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
-     <div className="md:col-span-2 space-y-4">
+    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
+      <div className="md:col-span-2 space-y-4">
 
-  <Card>
-    <CardHeader>
-      <CardTitle>
-        Question {currentIndex + 1} of {questions.length}
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <p className="text-base">{currentQuestion.question_text}</p>
-      <div className="space-y-2">
-        {["A", "B", "C", "D"].map((opt) => (
-         <Button
-  key={opt}
-  variant={answers[currentQuestion.id] === opt ? "default" : "outline"}
-  className="w-full justify-start whitespace-normal"
-  onClick={() => handleSelect(opt)}
->
-  {currentQuestion[`option_${opt.toLowerCase()}`]}
-</Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Question {currentIndex + 1} of {questions.length}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-base">{currentQuestion.question_text}</p>
+            <div className="space-y-2">
+              {["A", "B", "C", "D"].map((opt) => (
+                <Button
+                  key={opt}
+                  variant={answers[currentQuestion.id] === opt ? "default" : "outline"}
+                  className="w-full justify-start whitespace-normal"
+                  onClick={() => handleSelect(opt)}
+                >
+                  {currentQuestion[`option_${opt.toLowerCase()}`]}
+                </Button>
 
-        ))}
-      </div>
-    </CardContent>
-  </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-  {/* Centered navigation buttons */}
-  <div className="flex flex-wrap justify-center gap-2 mt-4">
-    <Button onClick={goPrev} disabled={currentIndex === 0}>
-      Previous
-    </Button>
+        {/* Centered navigation buttons */}
+        <div className="flex flex-wrap justify-center gap-2 mt-4">
+          <Button onClick={goPrev} disabled={currentIndex === 0}>
+            Previous
+          </Button>
 
-    <Button variant="outline" onClick={handleFlag}>
-      Flag
-    </Button>
+          <Button variant="outline" onClick={handleFlag}>
+            Flag
+          </Button>
 
-    <Button variant="ghost" onClick={handleSkip}>
-      Skip
-    </Button>
+          <Button variant="ghost" onClick={handleSkip}>
+            Skip
+          </Button>
 
-    <Button onClick={goNext} disabled={currentIndex === questions.length - 1}>
-      Next
-    </Button>
+          <Button onClick={goNext} disabled={currentIndex === questions.length - 1}>
+            Next
+          </Button>
 
-<Button
-  variant="default"
-  onClick={handleSubmit}
-  disabled={currentIndex !== questions.length - 1} // disable until last question
-  title={
-    currentIndex !== questions.length - 1
-      ? `You must reach the last question to submit`
-      : `Submit your answers`
-  }
->
-  Submit & Generate PDF
-</Button>
+          <Button
+            variant="default"
+            onClick={handleSubmit}
+            disabled={currentIndex !== questions.length - 1} // disable until last question
+            title={
+              currentIndex !== questions.length - 1
+                ? `You must reach the last question to submit`
+                : `Submit your answers`
+            }
+          >
+            Submit & Generate PDF
+          </Button>
 
-  </div>
+        </div>
 
-  {/* Skipped / Flagged question tabs */}
-  <div className="flex justify-center gap-4 mt-2">
-    <Button
-      size="sm"
-      variant="secondary"
-      disabled={skipped.length === 0}
-      onClick={() => {
-        if (skipped.length > 0) {
-          jumpTo(questions.findIndex((q) => q.id === skipped[0]));
-        }
-      }}
-    >
-      ⏭ Skipped ({skipped.length})
-    </Button>
+        {/* Skipped / Flagged question tabs */}
+        <div className="flex justify-center gap-4 mt-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={skipped.length === 0}
+            onClick={() => {
+              if (skipped.length > 0) {
+                jumpTo(questions.findIndex((q) => q.id === skipped[0]));
+              }
+            }}
+          >
+            ⏭ Skipped ({skipped.length})
+          </Button>
 
-    <Button
-      size="sm"
-      variant="destructive"
-      disabled={flags.length === 0}
-      onClick={() => {
-        if (flags.length > 0) {
-          jumpTo(questions.findIndex((q) => q.id === flags[0]));
-        }
-      }}
-    >
-       Flagged ({flags.length})
-    </Button>
-  </div>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={flags.length === 0}
+            onClick={() => {
+              if (flags.length > 0) {
+                jumpTo(questions.findIndex((q) => q.id === flags[0]));
+              }
+            }}
+          >
+            Flagged ({flags.length})
+          </Button>
+        </div>
 
-  <div className="flex gap-4 mt-6 items-start">
-  {/* Camera Panel */}
-  <div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-48">
-    {cameraStream ? (
-      <video
-        ref={videoRef}
-        className="w-full h-full object-cover"
-        muted
-        autoPlay
-      />
-    ) : (
-      <p className="text-center text-sm text-gray-500">Camera not available</p>
-    )}
-  </div>
+        <div className="flex gap-4 mt-6 items-start">
+          {/* Camera Panel */}
+          <div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-48">
+            {cameraStream ? (
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                muted
+                autoPlay
+              />
+            ) : (
+              <p className="text-center text-sm text-gray-500">Camera not available</p>
+            )}
+          </div>
 
-  {/* Sound Wave Panel (Right side) */}
-<div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-48 relative flex items-center justify-center">
-  <canvas ref={canvasRef} width={256} height={192} className="w-full h-full" />
-  {loudWarning && (
-    <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
-      Loud noise detected
-    </span>
-  )}
-  </div>
- <Button
-  size="sm"
-  variant="outline"
-  onClick={() => initMedia(true)}  // pass flag to force reload
->
-  Reset Cam & Mic
-</Button>
+          {/* Sound Wave Panel (Right side) */}
+          <div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-48 relative flex items-center justify-center">
+            <canvas ref={canvasRef} width={256} height={192} className="w-full h-full" />
+            {loudWarning && (
+              <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
+                Loud noise detected
+              </span>
+            )}
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => initMedia(true)}  // pass flag to force reload
+          >
+            Reset Cam & Mic
+          </Button>
 
-</div>
+        </div>
 
       </div>
 
       <div className="space-y-4">
-  <Card className="bg-white text-black dark:bg-gray-800 dark:text-white">
-  <CardHeader className="flex justify-between items-center">
-    <CardTitle>Time Left</CardTitle>
-    {/* Light/Dark toggle */}
-    <button
-      onClick={() => setIsDark(!isDark)}
-      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-    >
-      {isDark ? (
-        <Sun className="w-5 h-5 text-yellow-400" />
-      ) : (
-        <Moon className="w-5 h-5 text-gray-700" />
-      )}
-    </button>
-  </CardHeader>
-  <CardContent className="text-center space-y-2">
-    <p className="text-sm text-muted-foreground">
-      {new Date().toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })}
-    </p>
+        <Card className="bg-white text-black dark:bg-gray-800 dark:text-white">
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Time Left</CardTitle>
+            {/* Light/Dark toggle */}
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            >
+              {isDark ? (
+                <Sun className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-700" />
+              )}
+            </button>
+          </CardHeader>
+          <CardContent className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              {new Date().toLocaleDateString(undefined, {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
 
-    <p className="text-2xl font-bold">{formatTime(timeLeft)}</p>
-  </CardContent>
-</Card>
+            <p className="text-2xl font-bold">{formatTime(timeLeft)}</p>
+          </CardContent>
+        </Card>
 
-      <Card className="max-h-[400px] overflow-y-auto pr-2 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+        <Card className="max-h-[400px] overflow-y-auto pr-2 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
 
 
           <CardHeader className="flex justify-between items-center sticky top-0 bg-background z-10">
@@ -1028,10 +1029,10 @@ if (!currentQuestion) {
                   currentIndex === i
                     ? "default"
                     : answers[q.id]
-                    ? "secondary"
-                    : flags.includes(q.id)
-                    ? "destructive"
-                    : "outline"
+                      ? "secondary"
+                      : flags.includes(q.id)
+                        ? "destructive"
+                        : "outline"
                 }
                 onClick={() => jumpTo(i)}
               >
@@ -1041,161 +1042,161 @@ if (!currentQuestion) {
           </CardContent>
         </Card>
 
-{/* Encouragement Marquee — Endless Loop */}
-<div className="w-full overflow-hidden border-t border-border pt-4">
-  <div className="flex w-max animate-marquee-slow">
-    <div
-      dir="rtl"
-      className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
-    >
-      🌟 Keep going — every question makes you stronger • Believe in yourself • Progress over perfection • You’ve got this • Stay focused and finish strong 🌟
-    </div>
+        {/* Encouragement Marquee — Endless Loop */}
+        <div className="w-full overflow-hidden border-t border-border pt-4">
+          <div className="flex w-max animate-marquee-slow">
+            <div
+              dir="rtl"
+              className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
+            >
+              🌟 Keep going — every question makes you stronger • Believe in yourself • Progress over perfection • You’ve got this • Stay focused and finish strong 🌟
+            </div>
 
-    <div
-      dir="rtl"
-      className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
-    >
-      🌟 Keep going — every question makes you stronger • Believe in yourself • Progress over perfection • You’ve got this • Stay focused and finish strong 🌟
-    </div>
-  </div>
-</div>
+            <div
+              dir="rtl"
+              className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
+            >
+              🌟 Keep going — every question makes you stronger • Believe in yourself • Progress over perfection • You’ve got this • Stay focused and finish strong 🌟
+            </div>
+          </div>
+        </div>
 
       </div>
 
-      
-{!mediaAllowed && (
-  <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center">
-    <div className="text-center space-y-6">
-      <h2 className="text-white text-2xl font-bold">Camera & Mic Disabled</h2>
-      <p className="text-gray-300">
-        Double Click below to enable camera and microphone to start your simulation
-      </p>
 
-      <div className="flex flex-col gap-4">
-      {/* Camera Button */}
-<motion.button
-  whileHover={{ scale: 1.05 }}
-  whileTap={{ scale: 0.95 }}
-  animate={
-    cameraStream
-      ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
-      : { opacity: [0.8, 1, 0.8] }
-  }
-  transition={{ repeat: Infinity, duration: 2 }}
-  onClick={async () => {
-    try {
-      const cam = await navigator.mediaDevices.getUserMedia({ video: true });
-      setCameraStream(cam);
-      if (videoRef.current) videoRef.current.srcObject = cam;
-    } catch (err) {
-      console.error("Camera blocked", err);
-    }
-  }}
-  className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
+      {!mediaAllowed && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center">
+          <div className="text-center space-y-6">
+            <h2 className="text-white text-2xl font-bold">Camera & Mic Disabled</h2>
+            <p className="text-gray-300">
+              Double Click below to enable camera and microphone to start your simulation
+            </p>
+
+            <div className="flex flex-col gap-4">
+              {/* Camera Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={
+                  cameraStream
+                    ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
+                    : { opacity: [0.8, 1, 0.8] }
+                }
+                transition={{ repeat: Infinity, duration: 2 }}
+                onClick={async () => {
+                  try {
+                    const cam = await navigator.mediaDevices.getUserMedia({ video: true });
+                    setCameraStream(cam);
+                    if (videoRef.current) videoRef.current.srcObject = cam;
+                  } catch (err) {
+                    console.error("Camera blocked", err);
+                  }
+                }}
+                className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
     ${cameraStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
->
-  Double Click to Enable camera
-</motion.button>
-{/* Mic Button */}
-<motion.button
-  whileHover={{ scale: 1.05 }}
-  whileTap={{ scale: 0.95 }}
-  animate={
-    audioStream
-      ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
-      : { opacity: [0.8, 1, 0.8] }
-  }
-  transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
-  onClick={async () => {
-    try {
-      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setAudioStream(mic);
+              >
+                Double Click to Enable camera
+              </motion.button>
+              {/* Mic Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={
+                  audioStream
+                    ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
+                    : { opacity: [0.8, 1, 0.8] }
+                }
+                transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
+                onClick={async () => {
+                  try {
+                    const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    setAudioStream(mic);
 
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(mic);
-      const analyser = audioCtx.createAnalyser();
-      source.connect(analyser);
-      analyser.fftSize = 256;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
+                    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    const source = audioCtx.createMediaStreamSource(mic);
+                    const analyser = audioCtx.createAnalyser();
+                    source.connect(analyser);
+                    analyser.fftSize = 256;
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
 
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const canvasCtx = canvas.getContext("2d");
-      if (!canvasCtx) return;
+                    const canvas = canvasRef.current;
+                    if (!canvas) return;
+                    const canvasCtx = canvas.getContext("2d");
+                    if (!canvasCtx) return;
 
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
+                    canvas.width = canvas.clientWidth;
+                    canvas.height = canvas.clientHeight;
 
-      const draw = () => {
-        requestAnimationFrame(draw);
-        analyser.getByteFrequencyData(dataArray);
+                    const draw = () => {
+                      requestAnimationFrame(draw);
+                      analyser.getByteFrequencyData(dataArray);
 
-        canvasCtx.fillStyle = "#f3f4f6";
-        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                      canvasCtx.fillStyle = "#f3f4f6";
+                      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-        let maxVolume = 0;
-        const barWidth = (canvas.width / bufferLength) * 2.5;
-        let x = 0;
+                      let maxVolume = 0;
+                      const barWidth = (canvas.width / bufferLength) * 2.5;
+                      let x = 0;
 
-        for (let i = 0; i < bufferLength; i++) {
-          const barHeight = dataArray[i] / 2;
-          maxVolume = Math.max(maxVolume, dataArray[i]);
+                      for (let i = 0; i < bufferLength; i++) {
+                        const barHeight = dataArray[i] / 2;
+                        maxVolume = Math.max(maxVolume, dataArray[i]);
 
-          let color = "#10b981"; // Tailwind green-500
-          if (barHeight > 40 && barHeight <= 80) color = "#3b82f6"; // blue-500
-          if (barHeight > 80) color = "#ef4444"; // red-500
+                        let color = "#10b981"; // Tailwind green-500
+                        if (barHeight > 40 && barHeight <= 80) color = "#3b82f6"; // blue-500
+                        if (barHeight > 80) color = "#ef4444"; // red-500
 
-          canvasCtx.fillStyle = color;
-          canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-          x += barWidth + 1;
-        }
+                        canvasCtx.fillStyle = color;
+                        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                        x += barWidth + 1;
+                      }
 
-        setLoudWarning(maxVolume > 150);
-      };
+                      setLoudWarning(maxVolume > 150);
+                    };
 
-      draw();
-    } catch (err) {
-      console.error("Mic blocked", err);
-    }
-  }}
-  className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
+                    draw();
+                  } catch (err) {
+                    console.error("Mic blocked", err);
+                  }
+                }}
+                className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
     ${audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
->
-  Enable mic
-</motion.button>
+              >
+                Enable mic
+              </motion.button>
 
 
-        {/* Final Start Button */}
-  <motion.button
-  whileHover={{ scale: 1.1 }}
-  whileTap={{ scale: 0.95 }}
-  animate={
-    cameraStream && audioStream
-      ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #fff", "0 0 20px #10b981", "0 0 0px #fff"] }
-      : {}
-  }
-  transition={{ repeat: Infinity, duration: 2 }}
-  disabled={!cameraStream || !audioStream}
-  onClick={() => {
-    // Play sound
-   const audio = new Audio("/sounds/medrae.mp3");
-audio.play().catch(err => console.log("Audio play blocked", err));
+              {/* Final Start Button */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                animate={
+                  cameraStream && audioStream
+                    ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #fff", "0 0 20px #10b981", "0 0 0px #fff"] }
+                    : {}
+                }
+                transition={{ repeat: Infinity, duration: 2 }}
+                disabled={!cameraStream || !audioStream}
+                onClick={() => {
+                  // Play sound
+                  const audio = new Audio("/sounds/medrae.mp3");
+                  audio.play().catch(err => console.log("Audio play blocked", err));
 
 
-    // Proceed with allowing media
-    setMediaAllowed(true);
-  }}
-  className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
+                  // Proceed with allowing media
+                  setMediaAllowed(true);
+                }}
+                className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
     ${cameraStream && audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
->
-  Hey, I'm ready to start!
-</motion.button>
+              >
+                Hey, I'm ready to start!
+              </motion.button>
 
-      </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-)}
-  </div>
   );
 }
