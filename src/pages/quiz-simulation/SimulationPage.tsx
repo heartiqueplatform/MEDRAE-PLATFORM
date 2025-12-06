@@ -1113,8 +1113,8 @@ export default function SimulationPage() {
                     console.error("Camera blocked", err);
                   }
                 }}
-                className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
-    ${cameraStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                className={`block mx-auto w-64 px-3 py-1.5 rounded-3xl font-semibold shadow-lg transition-colors
+    ${cameraStream ? 'bg-green-500 text-white hover:bg-purple-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
               >
                 Double Click to Enable camera
               </motion.button>
@@ -1164,7 +1164,7 @@ export default function SimulationPage() {
                         const barHeight = dataArray[i] / 2;
                         maxVolume = Math.max(maxVolume, dataArray[i]);
 
-                        let color = "#10b981"; // Tailwind green-500
+                        let color = "#ac0e97ff"; // Tailwind green-500
                         if (barHeight > 40 && barHeight <= 80) color = "#3b82f6"; // blue-500
                         if (barHeight > 80) color = "#ef4444"; // red-500
 
@@ -1181,8 +1181,8 @@ export default function SimulationPage() {
                     console.error("Mic blocked", err);
                   }
                 }}
-                className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
-    ${audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                className={`block mx-auto w-64 px-3 py-1.5 rounded-3xl font-semibold shadow-lg transition-colors
+    ${audioStream ? 'bg-green-500 text-white hover:bg-blue-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
               >
                 Enable mic
               </motion.button>
@@ -1208,7 +1208,7 @@ export default function SimulationPage() {
                   // Proceed with allowing media
                   setMediaAllowed(true);
                 }}
-                className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-colors
+                className={`block mx-auto w-64 px-3 rounded-3xl py-1.5 font-semibold shadow-lg transition-colors
     ${cameraStream && audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
               >
                 Hey, I'm ready to start!
