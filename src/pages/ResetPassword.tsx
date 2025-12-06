@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 export default function ResetPassword() {
   const [email, setEmail] = useState("");
@@ -36,17 +37,58 @@ export default function ResetPassword() {
       .single();
 
     if (error || !userProfile) {
-      toast({ title: "Email not found", variant: "destructive" });
+      const whatsappNumber = "254717517371";
+      const prefilledMessage = encodeURIComponent(
+        `Hello, I attempted to reset my password for ${email.trim()} but my email is not recognized. Please assist me.`
+      );
+      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
+
+      toast({
+        title: "Email not found",
+        description: (
+          <span>
+            To reset your password, you must answer the security question associated with your account.
+            If you are unable to provide an answer or need assistance, you can reach our support team directly.
+            <br />
+            Contact us via{" "}
+            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="underline">
+              WhatsApp
+            </a>
+          </span>
+        ),
+        variant: "destructive",
+      });
       return;
     }
 
     setResetQuestion(userProfile.reset_question || "");
   };
 
+
   // Step 1: Request reset
   const handleRequestReset = async () => {
     if (!email.trim()) {
-      toast({ title: "Email required", variant: "destructive" });
+      const whatsappNumber = "254717517371";
+      const prefilledMessage = encodeURIComponent(
+        `Hello, I attempted to reset my password but didn't enter my email. Please assist me.`
+      );
+      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
+
+      toast({
+        title: "Email required",
+        description: (
+          <span>
+            To reset your password, you must answer the security question associated with your account.
+            If you are unable to provide an answer or need assistance, you can reach our support team directly.
+            <br />
+            Contact us via{" "}
+            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="underline">
+              WhatsApp
+            </a>
+          </span>
+        ),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -55,54 +97,74 @@ export default function ResetPassword() {
   };
 
   // Step 2: Answer security question
-const handleCheckAnswer = async () => {
-  if (!resetAnswer.trim()) {
-    toast({ title: "Answer required", variant: "destructive" });
-    return;
-  }
+  const handleCheckAnswer = async () => {
+    if (!resetAnswer.trim()) {
+      const whatsappNumber = "254717517371";
+      const prefilledMessage = encodeURIComponent(
+        `Hello, I attempted to reset my password but didn't provide an answer to the security question. Please assist me.`
+      );
+      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
 
-  const { data: userProfile, error } = await supabase
-    .from("profiles")
-    .select("user_id, reset_answer")
-    .eq("email", email.trim())
-    .single();
+      toast({
+        title: "Answer required",
+        description: (
+          <span>
+            To reset your password, you must answer the security question associated with your account.
+            If you are unable to provide an answer or need assistance, you can reach our support team directly.
+            <br />
+            Contact us via{" "}
+            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="underline">
+              WhatsApp
+            </a>.
+          </span>
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
 
-  if (!userProfile) {
-    toast({ title: "Email not found", variant: "destructive" });
-    return;
-  }
+    const { data: userProfile, error } = await supabase
+      .from("profiles")
+      .select("user_id, reset_answer")
+      .eq("email", email.trim())
+      .single();
 
-  if ((userProfile.reset_answer || "").trim() !== resetAnswer.trim()) {
-    const whatsappNumber = "254717517371";
-    const prefilledMessage = encodeURIComponent(
-      `Hello, I attempted to reset my password for ${email.trim()} but answered the security question incorrectly. Please assist me.`
-    );
-    const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
+    if (!userProfile) {
+      toast({ title: "Email not found", variant: "destructive" });
+      return;
+    }
 
-toast({
-  title: "Incorrect answer",
-  description: (
-    <span className="text-white">
-      The answer you provided is incorrect. Please{" "}
-      <a
-        href={whatsappLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline text-yellow-200"
-      >
-        contact us on WhatsApp
-      </a>{" "}
-      for assistance.
-    </span>
-  ),
-  variant: "destructive", // keeps the red background
-});
+    if ((userProfile.reset_answer || "").trim() !== resetAnswer.trim()) {
+      const whatsappNumber = "254717517371";
+      const prefilledMessage = encodeURIComponent(
+        `Hello, I attempted to reset my password for ${email.trim()} but answered the security question incorrectly. Please assist me.`
+      );
+      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${prefilledMessage}`;
 
-    return;
-  }
+      toast({
+        title: "Incorrect answer",
+        description: (
+          <span className="text-white">
+            The answer you provided is incorrect. Please{" "}
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-yellow-200"
+            >
+              contact us on WhatsApp
+            </a>{" "}
+            for assistance.
+          </span>
+        ),
+        variant: "destructive", // keeps the red background
+      });
 
-  setStep("newPassword");
-};
+      return;
+    }
+
+    setStep("newPassword");
+  };
 
   // Step 3: Update password via Supabase Edge Function
   const handleResetPassword = async () => {
@@ -176,6 +238,16 @@ toast({
             <Button onClick={handleRequestReset} className="w-full">
               Next
             </Button>
+
+
+            <div
+              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
+              onClick={() => navigate("/login")}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Login</span>
+            </div>
+
           </>
         )}
 
@@ -192,9 +264,23 @@ toast({
               placeholder="Enter your answer"
               className="mb-4"
             />
-            <Button onClick={handleCheckAnswer} className="w-full">
-              Next
-            </Button>
+            <div
+              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer"
+              onClick={handleCheckAnswer}
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span>Next</span>
+            </div>
+
+
+            <div
+              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
+              onClick={() => navigate("/login")}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Login</span>
+            </div>
+
           </>
         )}
 
@@ -218,6 +304,14 @@ toast({
             >
               {isLoading ? "Resetting..." : "Reset Password"}
             </Button>
+
+            <div
+              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
+              onClick={() => navigate("/login")}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Login</span>
+            </div>
           </>
         )}
       </div>

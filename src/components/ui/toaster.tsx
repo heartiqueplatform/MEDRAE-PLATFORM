@@ -14,6 +14,11 @@ export function Toaster() {
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
+        if (props.variant === "destructive") {
+          // Play destructive sound
+          new Audio("/sounds/tap2.mp3").play();
+        }
+
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
@@ -27,7 +32,7 @@ export function Toaster() {
           </Toast>
         )
       })}
-   <ToastViewport className="fixed !top-auto !bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center space-y-2 w-full max-w-xs sm:max-w-sm" />
+      <ToastViewport className="fixed !top-auto !bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center space-y-2 w-full max-w-xs sm:max-w-sm" />
 
 
     </ToastProvider>
