@@ -282,8 +282,16 @@ export function MedraeQuizzes() {
           schema: "public",
           table: "questions",
         },
-        () => {
-          incrementCount(""); // refresh all counts live
+        async () => {
+          const newCounts = await incrementCount("");
+
+          // Save all refreshed counts to localStorage
+          const saveObj = {};
+          newCounts?.forEach((u) => {
+            saveObj[u.unit_code] = u.count;
+          });
+
+          localStorage.setItem("cachedCounts", JSON.stringify(saveObj));
         }
       )
       .subscribe();
@@ -293,18 +301,32 @@ export function MedraeQuizzes() {
     };
   }, [incrementCount]);
 
+
   const [refreshing, setRefreshing] = useState(false);
   const [popup, setPopup] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const getQuestionCount = (code: string) => {
-    if (!unitCounts || unitCounts.length === 0) return 0;
-    return (
-      unitCounts.find(
-        (u) => u.unit_code?.trim().toLowerCase() === code.trim().toLowerCase()
-      )?.count || 0
-    );
+    // 1) try live data first
+    if (unitCounts && unitCounts.length > 0) {
+      const count =
+        unitCounts.find(
+          (u) => u.unit_code?.trim().toLowerCase() === code.trim().toLowerCase()
+        )?.count || 0;
+
+      // save to localStorage for offline use
+      const cached = JSON.parse(localStorage.getItem("cachedCounts") || "{}");
+      cached[code] = count;
+      localStorage.setItem("cachedCounts", JSON.stringify(cached));
+
+      return count;
+    }
+
+    // 2) fallback to localStorage if offline
+    const cached = JSON.parse(localStorage.getItem("cachedCounts") || "{}");
+    return cached[code] || 0;
   };
+
 
   const totalPaperOne = paperOneUnits.reduce((sum, unit) => sum + getQuestionCount(unit.code), 0);
   const totalPaperTwo = paperTwoUnits.reduce((sum, unit) => sum + getQuestionCount(unit.code), 0);

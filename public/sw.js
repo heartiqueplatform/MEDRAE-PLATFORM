@@ -6,6 +6,34 @@ const urlsToCache = [
     "/main.js", // your compiled JS filename from Vite
     "/pwa-192x192.jpeg",
     "/pwa-512x512.jpeg",
+    "/UsersAvatar.jpg",
+    "/indexbackground7.jpg",
+    "/indexbackground6.jpg",
+    "/indexbackground5.jpg",
+    "/indexbackground3.jpg",
+    "/indexbackground2.jpg",
+    "/icon-512.jpg",
+    "/background06.jpg",
+    "/background05.jpg",
+    "/background04.jpg",
+    "/background03.jpg",
+    "/background02.jpg",
+    "/background1.jpg",
+
+    // Sounds
+    "/sounds/medrae.mp3",
+    "/sounds/MedraeStudy.mp3",
+    "/sounds/MedraeVoice.mp3",
+    "/sounds/notification.mp3",
+    "/sounds/tap1.mp3",
+    "/sounds/tap2.mp3",
+
+
+    // Videos
+    "/videos/Medrae1.mp4",
+    "/videos/Medrae2.mp4",
+    "/videos/Medrae3.mp4",
+    // Add all other videos
 
     // SPA routes (from App.tsx)
     "/dashboard/student",

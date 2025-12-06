@@ -948,9 +948,11 @@ export function Resources() {
 
                             {session?.user?.id === note.uploaded_by && (
                               <Button
-                                variant="ghost"
+
                                 size="sm"
-                                className="w-full sm:w-auto"
+                                variant="ghost"
+                                className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+
                                 onClick={async () => {
                                   if (!confirm("Are you sure you want to delete this note?")) return;
 
