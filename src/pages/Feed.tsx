@@ -2,7 +2,7 @@
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { useWindowSize } from "react-use";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload } from "lucide-react";
+import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload, Star, Heart, MessageCircle, Reply, ThumbsUp } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Reply, ThumbsUp } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -366,6 +366,44 @@ export default function Feed() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [user, answers]);
 
+  // Toggle favorite question
+  const toggleFavorite = async (questionId, quizId, currentlyFavorited) => {
+    if (!user) return alert("Login first!");
+
+    try {
+      if (currentlyFavorited) {
+        // Remove from favorites
+        await supabase
+          .from("favorites")
+          .delete()
+          .match({ user_id: user.id, quiz_id: quizId });
+      } else {
+        // Add to favorites
+        await supabase
+          .from("favorites")
+          .insert([{ user_id: user.id, quiz_id: quizId }]);
+      }
+
+      // Update state immediately
+      setQuestions((prev) =>
+        prev.map((q) => {
+          if (q.id === questionId) {
+            return {
+              ...q,
+              favorited: !currentlyFavorited,
+              favorited_count: currentlyFavorited
+                ? (q.favorited_count || 1) - 1
+                : (q.favorited_count || 0) + 1,
+            };
+          }
+          return q;
+        })
+      );
+    } catch (err) {
+      console.error("Failed toggling favorite:", err);
+      alert("Could not update favorite. See console.");
+    }
+  };
 
   // Fetch questions with likes/comments
   const fetchQuestions = async (page = 0, limit = 5) => {
@@ -417,6 +455,14 @@ export default function Feed() {
       .from("quizzes")
       .select("id, title")
       .in("id", quizIds);
+    // Fetch favorites for the current user
+    const { data: favoriteData } = await supabase
+      .from("favorites")
+      .select("quiz_id")
+      .eq("user_id", user.id)
+      .in("quiz_id", quizIds); // all quiz IDs of fetched questions
+
+    const favoriteSet = new Set(favoriteData?.map(f => f.quiz_id));
 
     return shuffled.map((q) => ({
       ...q,
@@ -1084,15 +1130,27 @@ export default function Feed() {
 
                     {/* Buttons row */}
                     <div className="flex gap-6 mt-4">
+                      {/* Like Button */}
                       <Button
                         variant="ghost"
-                        className={`flex items-center gap-2 ${liked ? "text-red-500" : ""
-                          }`}
+                        className={`flex items-center gap-2 ${liked ? "text-red-500" : ""}`}
                         onClick={() => toggleLike(q.id, liked)}
                       >
                         <Heart size={18} /> {q.qfeed_likes?.length || 0}
                       </Button>
 
+                      {/* Favorite Button */}
+                      {/* Favorite Button */}
+                      <Button
+                        variant="ghost"
+                        className={`flex items-center gap-2 ${q.favorited ? "text-yellow-500" : ""}`}
+                        onClick={() => toggleFavorite(q.id, q.quiz_id, q.favorited)}
+                      >
+                        <Star size={18} /> {q.favorited_count || 0}
+                      </Button>
+
+
+                      {/* Comment Button */}
                       <Button
                         variant="ghost"
                         className="flex items-center gap-2"
@@ -1101,17 +1159,32 @@ export default function Feed() {
                         <MessageCircle size={18} /> {commentCount}
                       </Button>
 
+                      {/* Share Button */}
                       <Button
                         variant="ghost"
                         className="flex items-center gap-2"
                         onClick={() => {
-                          const link = window.location.origin;
-                          navigator.clipboard.writeText(link);
-                          alert("App link copied!");
+                          if (!user) {
+                            alert("Please log in to share!");
+                            return;
+                          }
+
+                          const siteLink = window.location.origin;
+                          const questionText = q.question_text;
+                          const correctAnswer = q.correct_answer;
+
+                          const prefilledMessage = encodeURIComponent(
+                            `Hey! Have you checked out this website? It has great questions for NCK, KMTC revision, and nursing. Here's one:\n\nQuestion: ${questionText}\nAnswer: ${correctAnswer}\n\nExplore more here: ${siteLink}`
+                          );
+
+                          // Open WhatsApp with prefilled message
+                          const whatsappURL = `https://wa.me/?text=${prefilledMessage}`;
+                          window.open(whatsappURL, "_blank");
                         }}
                       >
-                        <Reply size={18} /> Share
+                        < MessageCircle size={18} /> WhatsApp
                       </Button>
+
                     </div>
                   </CardContent>
                 </Card>
@@ -1585,7 +1658,7 @@ export default function Feed() {
           </Dialog>
         </div>
 
-      </PullToRefresh>
+      </PullToRefresh >
     </>
   );
 }
