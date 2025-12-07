@@ -979,11 +979,42 @@ export default function Feed() {
           bg-white dark:bg-gray-900
           shadow-2xl text-center max-w-sm w-[90%]"
                 >
-                  <div className="text-5xl mb-3">
-                    {feedbackMessage.includes("🔥") && "🔥"}
-                    {feedbackMessage.includes("🏆") && "🏆"}
-                    {feedbackMessage.includes("💬") && "💡"}
+                  {/* Animated Feedback Emojis */}
+                  <div className="w-full flex justify-center items-center">
+                    {feedbackMessage.includes("🔥") && (
+                      <img
+                        src="https://em-content.zobj.net/source/animated-noto-color-emoji/356/fire_1f525.gif"
+                        alt="fire"
+                        style={{
+                          width: "120px",
+                          height: "120px"
+                        }}
+                      />
+                    )}
+
+                    {feedbackMessage.includes("🏆") && (
+                      <img
+                        src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3c6/512.gif"
+                        alt="trophy"
+                        style={{
+                          width: "120px",
+                          height: "120px"
+                        }}
+                      />
+                    )}
+
+                    {feedbackMessage.includes("💬") && (
+                      <img
+                        src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4a1/512.gif"
+                        alt="hint"
+                        style={{
+                          width: "120px",
+                          height: "120px"
+                        }}
+                      />
+                    )}
                   </div>
+
 
                   <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                     {feedbackMessage}
@@ -1790,3 +1821,4 @@ export default function Feed() {
     </>
   );
 }
+

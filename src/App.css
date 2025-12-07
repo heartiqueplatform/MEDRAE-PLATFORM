@@ -282,3 +282,70 @@ body,
 .animated-heading {
   animation: fadeSlideUp 0.8s ease-out forwards;
 }
+
+@keyframes fireFlicker {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  20% {
+    transform: scale(1.1) rotate(-3deg);
+  }
+
+  40% {
+    transform: scale(0.95) rotate(2deg);
+  }
+
+  60% {
+    transform: scale(1.05) rotate(-2deg);
+  }
+
+  80% {
+    transform: scale(1) rotate(1deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-fire {
+  display: inline-block;
+  animation: fireFlicker 0.4s infinite ease-in-out;
+}
+
+@keyframes trophyBounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-trophy {
+  display: inline-block;
+  animation: trophyBounce 0.6s infinite;
+}
+
+@keyframes hintGlow {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+}
+
+.animate-hint {
+  display: inline-block;
+  animation: hintGlow 1s infinite;
+}
