@@ -1,4 +1,4 @@
-const CACHE_NAME = "medrae-app-shell-v1";
+const CACHE_NAME = "medrae-app-shell-v2";
 const urlsToCache = [
     "/", // SPA index
     "/index.html",
