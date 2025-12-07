@@ -34,19 +34,39 @@ const safeParse = (key, fallback) => {
 
 // Skeleton loader
 const SkeletonCard = () => (
-  <div className="animate-pulse p-4 border rounded-xl space-y-3">
-    <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
-    <div className="w-full h-4 bg-gray-300 dark:bg-gray-700 rounded mt-3"></div>
-    <div className="w-20 h-4 bg-gray-300 dark:bg-gray-700 rounded mt-2"></div>
+  <div className="animate-pulse border rounded-xl p-4 bg-muted/20">
+    {/* FIXED HEIGHT CARD – NEVER JUMPS */}
+    <div className="h-[260px] w-full flex flex-col justify-between">
+
+      {/* User row placeholder */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+        <div className="w-32 h-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
+      </div>
+
+      {/* Image placeholder (FIXED HEIGHT!!) */}
+      <div className="w-full h-[160px] bg-gray-300 dark:bg-gray-700 rounded mt-4"></div>
+
+      {/* Footer placeholder */}
+      <div className="w-20 h-4 bg-gray-300 dark:bg-gray-700 rounded mt-4"></div>
+    </div>
   </div>
 );
 
+
 export default function Feed() {
+
   const [questions, setQuestions] = useState([]);
+  // ✅ Feedback Power-Up tracking
+  const [correctStreak, setCorrectStreak] = useState(0);
+  const [wrongStreak, setWrongStreak] = useState(0);
+  // ✅ Feedback Power-Up message
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [answers, setAnswers] = useState({});
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const { width, height } = useWindowSize();
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const [activeQuestion, setActiveQuestion] = useState(null);
   const [comments, setComments] = useState([]);
@@ -217,7 +237,54 @@ export default function Feed() {
     };
     loadCount();
   }, [user]);
+  useEffect(() => {
+    // ✅ Correct streak rewards (every 5 and 10)
+    if (correctStreak > 0 && correctStreak % 10 === 0) {
+      setFeedbackMessage(
+        "🏆 Incredible streak! Keep shining—you’re amazing! Every answer you get right is a step closer to mastering this, and you’re doing wonderfully!"
+      );
+    } else if (correctStreak > 0 && correctStreak % 5 === 0) {
+      setFeedbackMessage(
+        "🔥 You’re on fire! Fantastic work, keep going! Your effort is paying off and each correct answer is proof of your progress!"
+      );
+    }
 
+    // ✅ Wrong streak encouragement (every 3)
+    if (wrongStreak > 0 && wrongStreak % 3 === 0) {
+      setFeedbackMessage(
+        "💬 Oops, don’t worry! Mistakes happen and that’s completely okay. Take a deep breath, reflect on what you’ve learned so far, and here’s a helpful hint to guide you forward. You’re doing great, and every attempt makes you stronger!"
+      );
+    }
+  }, [correctStreak, wrongStreak]);
+
+
+  useEffect(() => {
+    if (!feedbackMessage) return;
+
+    const timer = setTimeout(() => {
+      setFeedbackMessage(null);
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, [feedbackMessage]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (overlayRef.current && !overlayRef.current.contains(event.target as Node)) {
+        setFeedbackMessage(null);
+      }
+    };
+
+    if (feedbackMessage) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [feedbackMessage]);
 
 
   // Load all images once
@@ -274,52 +341,111 @@ export default function Feed() {
 
   }, []);
 
-
-  // Load user & restore localStorage (⚡ instant load + background refresh)
+  // Load user & restore localStorage safely with preloading
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return;
-      setUser(data.user);
+    let backgroundTimer: NodeJS.Timeout;
 
-      // ✅ Show saved questions immediately (instant render)
+    const init = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+
+      setUser(data.user);
+      const userId = data.user.id;
+
+      // Load saved data from localStorage
       const savedQuestions = JSON.parse(
-        localStorage.getItem(`feed_questions_${data.user.id}`) || "[]"
+        localStorage.getItem(`feed_questions_${userId}`) || "[]"
       );
       const savedAnswers = JSON.parse(
-        localStorage.getItem(`feed_answers_${data.user.id}`) || "{}"
+        localStorage.getItem(`feed_answers_${userId}`) || "{}"
       );
       const savedComments = JSON.parse(
-        localStorage.getItem(`feed_comments_${data.user.id}`) || "{}"
+        localStorage.getItem(`feed_comments_${userId}`) || "{}"
       );
 
-      // Remove already answered from local cache
+      // Filter out answered/incomplete questions
       const filteredQuestions = savedQuestions.filter(
-        (q) => !savedAnswers[q.id]
+        (q) =>
+          q &&
+          q.id &&
+          q.question_text &&
+          (q.option_a || q.option_b || q.option_c || q.option_d) &&
+          !savedAnswers[q.id]
       );
+
       setQuestions(filteredQuestions);
       setAnswers(savedAnswers);
 
-      // Restore comments if open
+      // Restore comments if active question is open
       if (activeQuestion && savedComments[activeQuestion]) {
         setComments(savedComments[activeQuestion]);
       }
 
-      // ✅ Silent background refresh from Supabase
-      fetchQuestions(0).then((fresh) => {
-        const existingIds = new Set(filteredQuestions.map((q) => q.id));
+      // 1️⃣ Fetch first 450 questions immediately
+      const firstBatch = await fetchQuestions(0, 450);
+      setQuestions((prev) => {
+        const existingIds = new Set(prev.map((q) => q.id));
         const merged = [
-          ...filteredQuestions,
-          ...fresh.filter((q) => !existingIds.has(q.id)),
+          ...prev,
+          ...firstBatch.filter((q) => !existingIds.has(q.id)),
         ];
-        setQuestions(merged);
-
         localStorage.setItem(
-          `feed_questions_${data.user.id}`,
+          `feed_questions_${userId}`,
           JSON.stringify(merged)
         );
+        return merged;
       });
-    });
+      setPage(Math.ceil(450 / 20)); // update page based on fetchQuestions paging
+
+      // 2️⃣ Progressive background fetch schedule: 10, 20, 30, 60 minutes
+      const fetchSchedule = [10 * 60000, 20 * 60000, 30 * 60000, 60 * 60000];
+
+      const fetchBatches = async (index = 0) => {
+        if (!user) return;
+
+        const nextBatch = await fetchQuestions(page, 150); // fetch next 150 questions
+
+        // Stop if no new questions returned
+        if (!nextBatch || nextBatch.length === 0) return;
+
+        setQuestions((prev) => {
+          const currentIds = new Set(prev.map((q) => q.id));
+          const mergedNext = [
+            ...prev,
+            ...nextBatch.filter((q) => !currentIds.has(q.id)),
+          ];
+          localStorage.setItem(
+            `feed_questions_${user.id}`,
+            JSON.stringify(mergedNext)
+          );
+          return mergedNext;
+        });
+
+        setPage((prev) => prev + Math.ceil(150 / 20));
+
+        // Schedule next fetch
+        if (index < fetchSchedule.length - 1) {
+          backgroundTimer = setTimeout(
+            () => fetchBatches(index + 1),
+            fetchSchedule[index]
+          );
+        } else {
+          // After schedule ends, continue fetching every 60 min
+          backgroundTimer = setTimeout(() => fetchBatches(index), 60 * 60000);
+        }
+      };
+
+      // Start progressive background fetch 10 minutes after initial fetch
+      backgroundTimer = setTimeout(() => fetchBatches(0), fetchSchedule[0]);
+    };
+
+    // Call init
+    init();
+
+    // Cleanup
+    return () => clearTimeout(backgroundTimer);
   }, []);
+
   //  Sync answered questions to qfeed_seen whenever answers change
   useEffect(() => {
     if (!user) return;
@@ -366,44 +492,6 @@ export default function Feed() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [user, answers]);
 
-  // Toggle favorite question
-  const toggleFavorite = async (questionId, quizId, currentlyFavorited) => {
-    if (!user) return alert("Login first!");
-
-    try {
-      if (currentlyFavorited) {
-        // Remove from favorites
-        await supabase
-          .from("favorites")
-          .delete()
-          .match({ user_id: user.id, quiz_id: quizId });
-      } else {
-        // Add to favorites
-        await supabase
-          .from("favorites")
-          .insert([{ user_id: user.id, quiz_id: quizId }]);
-      }
-
-      // Update state immediately
-      setQuestions((prev) =>
-        prev.map((q) => {
-          if (q.id === questionId) {
-            return {
-              ...q,
-              favorited: !currentlyFavorited,
-              favorited_count: currentlyFavorited
-                ? (q.favorited_count || 1) - 1
-                : (q.favorited_count || 0) + 1,
-            };
-          }
-          return q;
-        })
-      );
-    } catch (err) {
-      console.error("Failed toggling favorite:", err);
-      alert("Could not update favorite. See console.");
-    }
-  };
 
   // Fetch questions with likes/comments
   const fetchQuestions = async (page = 0, limit = 5) => {
@@ -476,47 +564,72 @@ export default function Feed() {
 
   // Infinite scroll loader
   const loadMore = async () => {
-    // 🔮 Prefetch next page silently
-    const prefetchNext = async (nextPage) => {
-      if (!user) return;
-      const nextData = await fetchQuestions(nextPage);
-      if (nextData.length > 0) {
-        localStorage.setItem(
-          `feed_prefetch_${user.id}`,
-          JSON.stringify(nextData)
-        );
-      }
-    };
-
     if (loading || !user) return;
     setLoading(true);
+
+    // Preserve scroll position
+    const container = loaderRef.current?.parentElement; // assuming loaderRef is at the bottom
+    const prevScrollHeight = container?.scrollHeight || 0;
 
     const savedQuestions = [...questions];
     const seenIdsSet = new Set(savedQuestions.map((q) => q.id));
 
     const newData = await fetchQuestions(page);
-    if (newData.length > 0) {
-      const merged = [
-        ...savedQuestions,
-        ...newData.filter((q) => !seenIdsSet.has(q.id)),
-      ];
-      setQuestions(merged);
-      localStorage.setItem(`feed_questions_${user.id}`, JSON.stringify(merged));
-      setPage((prev) => prev + 1);
-      // ✅ Start prefetching the next page
-      prefetchNext(page + 1);
 
+    if (newData.length > 0) {
+
+      // ⚡ Filter out invalid/empty questions
+      const validNewData = newData.filter(
+        (q) =>
+          q &&
+          q.id &&
+          q.question_text &&
+          (q.option_a || q.option_b || q.option_c || q.option_d) &&
+          !seenIdsSet.has(q.id)
+      );
+
+      if (validNewData.length > 0) {
+        const merged = [...savedQuestions, ...validNewData];
+        setQuestions(merged);
+        localStorage.setItem(`feed_questions_${user.id}`, JSON.stringify(merged));
+        setPage((prev) => prev + 1);
+
+        // 🔧 Adjust scroll to reduce jumps
+        setTimeout(() => {
+          if (container) {
+            const newScrollHeight = container.scrollHeight;
+            container.scrollTop += newScrollHeight - prevScrollHeight;
+          }
+        }, 50); // delay to let React render the new cards
+      }
     }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !loading) loadMore();
-    });
-    if (loaderRef.current) observer.observe(loaderRef.current);
+    if (!loaderRef.current) return;
+
+    const container = loaderRef.current.parentElement; // scrollable container
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading) {
+          loadMore();
+        }
+      },
+      {
+        root: container, // scrollable container
+        rootMargin: "200px", // preload before hitting bottom
+        threshold: 0.1,    // trigger when 10% of loader is visible
+      }
+    );
+
+    observer.observe(loaderRef.current);
+
     return () => observer.disconnect();
-  }, [loading, questions]);
+  }, [loaderRef.current, loading]); // only depend on loaderRef & loading
+
 
   // Mark question seen
   const markSeen = async (id) => {
@@ -541,15 +654,27 @@ export default function Feed() {
   const handleAnswer = async (q, option) => {
     if (answers[q.id]) return;
 
+    const isCorrect = q.correct_answer === option;
     const newAnswers = { ...answers, [q.id]: option };
 
-    if (q.correct_answer === option) {
+    // ✅ Update streaks (logic only)
+    if (isCorrect) {
+      setCorrectStreak((prev) => prev + 1);
+      setWrongStreak(0);
+    } else {
+      setWrongStreak((prev) => prev + 1);
+      setCorrectStreak(0);
+    }
+
+    // 🎉 Existing confetti logic (unchanged)
+    if (isCorrect) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 3000);
     }
 
     // Save answer locally
     setAnswers(newAnswers);
+
     // Increment count only the first time answering this question
     setQuestionCount((prev) => {
       const newCount = prev + 1;
@@ -557,8 +682,12 @@ export default function Feed() {
       return newCount;
     });
 
-    localStorage.setItem(`feed_answers_${user.id}`, JSON.stringify(newAnswers));
+    localStorage.setItem(
+      `feed_answers_${user.id}`,
+      JSON.stringify(newAnswers)
+    );
   };
+
 
   // Toggle like question
   const toggleLike = async (questionId, liked) => {
@@ -805,8 +934,6 @@ export default function Feed() {
       console.error("Failed to load leaderboard:", err);
     }
   };
-
-
   return (
     <>
       <PullToRefresh
@@ -828,13 +955,47 @@ export default function Feed() {
              h-[80vh] overflow-y-auto overflow-x-hidden
              scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent"
         >
+          <AnimatePresence>
+            {feedbackMessage && (
+              <motion.div
+                className="fixed inset-0 z-[999] flex items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {/* Dark backdrop with click listener */}
+                <div
+                  className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                  onClick={() => setFeedbackMessage(null)} // ✅ close on outside click
+                />
+
+                {/* Message Card */}
+                <motion.div
+                  initial={{ scale: 0.6, y: 40 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.7, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                  className="relative z-10 px-8 py-6 rounded-3xl
+          bg-white dark:bg-gray-900
+          shadow-2xl text-center max-w-sm w-[90%]"
+                >
+                  <div className="text-5xl mb-3">
+                    {feedbackMessage.includes("🔥") && "🔥"}
+                    {feedbackMessage.includes("🏆") && "🏆"}
+                    {feedbackMessage.includes("💬") && "💡"}
+                  </div>
+
+                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                    {feedbackMessage}
+                  </p>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/*  Reload Feed + Leaderboard + Reset Section */}
           <div className="flex flex-row flex-wrap justify-between items-center mt-4 gap-3">
-
-
             {/* Left side: Question count + two buttons */}
             <div className="flex flex-row flex-wrap items-center gap-3 w-full sm:w-auto">
-
               <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                 Questions Tried: {questionCount}
               </span>
@@ -868,13 +1029,10 @@ export default function Feed() {
                     <RotateCcw size={20} />
                   </Button>
                 </TooltipTrigger>
-
                 <TooltipContent>
                   <p>Reset images</p>
                 </TooltipContent>
               </Tooltip>
-
-
               {/*  Reset My Seen Questions Button (mobile + desktop friendly) */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1006,7 +1164,8 @@ export default function Feed() {
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="relative w-full max-w-screen-lg mx-auto mb-5"
-                ref={loaderRef}
+                ref={index === questions.length - 1 ? loaderRef : null}
+
               >
                 <Card className="relative bg-white/40 dark:bg-gray-800/60 backdrop-blur-md border border-gray-300/30 dark:border-gray-700/30 shadow-lg rounded-2xl overflow-hidden transition-all hover:shadow-xl hover:border-gray-400/50">
                   {/* Confetti overlay */}
@@ -1181,7 +1340,11 @@ export default function Feed() {
                           window.open(whatsappURL, "_blank");
                         }}
                       >
-                        < MessageCircle size={18} /> WhatsApp
+                        <div className="flex items-center gap-2">
+                          <MessageCircle size={18} />
+                          <span className="text-[10px]">WhatsApp</span>     {/* smaller */}
+                        </div>
+
                       </Button>
 
                     </div>
@@ -1191,7 +1354,8 @@ export default function Feed() {
             );
 
             // 🖼️ Fancy image card + delete option + upload always last
-            if ((index + 1) % 2 === 0) {
+            if ((index + 1) % 15 === 0 && feedImages?.length > 0) {
+
               // updated: show exactly ONE image after every 2 questions
               if (feedImages?.length > 0) {
                 // pick which image to show for this insertion spot:
@@ -1208,7 +1372,7 @@ export default function Feed() {
                   <motion.div
                     key={`image-${img.id}`}
                     whileHover={{ scale: 1.02 }}
-                    className="w-full max-w-screen-md mx-auto mb-6"
+                    className="w-full max-w-screen-lg mx-auto mb-6"
                   >
                     <Card className="rounded-2xl overflow-hidden bg-white/30 dark:bg-gray-800/50 border border-gray-200/30 shadow-md relative">
                       {/* updated: educational inspiration banner */}
@@ -1238,8 +1402,10 @@ export default function Feed() {
                       <img
                         src={img.image_url}
                         alt={img.title || "Feed image"}
+                        className="w-full h-[110px] object-cover rounded-lg cursor-pointer"
                         onClick={async () => {
                           openViewer(img);
+
 
                           const { data: { user } } = await supabase.auth.getUser();
                           if (!user) return;
@@ -1378,14 +1544,8 @@ export default function Feed() {
                       </div>
                     )}
                   </div>
-                </motion.div>
-              );
-
-
-
+                </motion.div>);
             }
-
-
             return cards;
           })}
 
@@ -1450,43 +1610,12 @@ export default function Feed() {
               </motion.div>
             )}
           </AnimatePresence>
-
           <div
             ref={loaderRef}
-            className="flex flex-col items-center justify-center py-4 w-full gap-5"
+            className="flex flex-col items-center justify-center py-4 w-full"
           >
-            {(loading || questions.length === 0) &&
-              Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-full max-w-screen-lg mx-auto bg-white/40 dark:bg-gray-800/60 
-                   backdrop-blur-md border border-gray-300/30 dark:border-gray-700/30 
-                   rounded-2xl shadow-lg overflow-hidden animate-pulse"
-                >
-                  {/* Question area */}
-                  <div className="p-5 space-y-3">
-                    <div className="h-5 w-32 bg-gray-300 dark:bg-gray-700 rounded"></div> {/* quiz title */}
-                    <div className="h-6 w-full bg-gray-300 dark:bg-gray-700 rounded"></div> {/* question text */}
-
-                    {/* Options */}
-                    <div className="space-y-2 mt-3">
-                      {Array.from({ length: 4 }).map((_, j) => (
-                        <div
-                          key={j}
-                          className="h-10 w-full bg-gray-300 dark:bg-gray-700 rounded"
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Image placeholder for every other card */}
-                  {i % 2 === 1 && (
-                    <div className="w-full h-60 bg-gray-300 dark:bg-gray-700 rounded-b-2xl" />
-                  )}
-                </div>
-              ))}
+            {/* infinite scroll observer only – no skeleton UI */}
           </div>
-
 
           {/* 💬 Comments Modal */}
           <Dialog

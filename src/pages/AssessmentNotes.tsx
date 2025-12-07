@@ -598,7 +598,7 @@ export default function AssessmentNotes() {
                                   {session?.user?.id === note.uploaded_by && (
                                     <Button
                                       size="sm"
-                                      variant="destructive"
+
                                       onClick={() => handleDelete(note)}
                                       variant="ghost"
                                       className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
