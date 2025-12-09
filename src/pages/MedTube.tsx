@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Play, Eye, Heart, Clock, Search, Upload, TrendingUp, Calendar,
+  Play, Eye, Heart, Clock, Search, Trash2, Upload, TrendingUp, Calendar,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
@@ -20,23 +20,24 @@ import { useRef } from "react";
 export function MedTube() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
- const [videos, setVideos] = useState<any[]>(() => {
-  if (typeof window !== "undefined") {
-    // Load cached videos first
-    const cached = localStorage.getItem("cachedVideos");
-    if (cached) return JSON.parse(cached);
-  }
-  return [];
-});
+  const [videos, setVideos] = useState<any[]>(() => {
+    if (typeof window !== "undefined") {
+      // Load cached videos first
+      const cached = localStorage.getItem("cachedVideos");
+      if (cached) return JSON.parse(cached);
+    }
+    return [];
+  });
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
-const [selectedTab, setSelectedTab] = useState("trending");
-const [activeTab, setActiveTab] = useState("trending");
+  const [selectedTab, setSelectedTab] = useState("trending");
+  const [activeTab, setActiveTab] = useState("trending");
 
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [overlayVideo, setOverlayVideo] = useState<{ id: string; url: string } | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -50,25 +51,25 @@ const [activeTab, setActiveTab] = useState("trending");
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState<string>("00:00");
-const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
-const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null);
+  const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  const [loadingVideoId, setLoadingVideoId] = useState<string | null>(null);
 
-// Track progress in localStorage
-useEffect(() => {
-  const savedProgress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
-  Object.entries(savedProgress).forEach(([id, time]) => {
-    const vid = videoRefs.current[id];
-    if (vid) {
-      vid.currentTime = Number(time);
-    }
-  });
-}, []);
+  // Track progress in localStorage
+  useEffect(() => {
+    const savedProgress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
+    Object.entries(savedProgress).forEach(([id, time]) => {
+      const vid = videoRefs.current[id];
+      if (vid) {
+        vid.currentTime = Number(time);
+      }
+    });
+  }, []);
 
-const saveProgress = (videoId: string, time: number) => {
-  const progress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
-  progress[videoId] = time;
-  localStorage.setItem("videoProgress", JSON.stringify(progress));
-};
+  const saveProgress = (videoId: string, time: number) => {
+    const progress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
+    progress[videoId] = time;
+    localStorage.setItem("videoProgress", JSON.stringify(progress));
+  };
 
   const categories = [
     { id: "trending", name: "Trending", icon: TrendingUp },
@@ -80,7 +81,7 @@ const saveProgress = (videoId: string, time: number) => {
     { id: "mine", name: "My Uploads", icon: Upload },
   ];
 
-   useEffect(() => {
+  useEffect(() => {
     const getUserAndSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
@@ -118,170 +119,170 @@ const saveProgress = (videoId: string, time: number) => {
       return;
     }
 
-const enrichedVideos = await Promise.all(
-  videosData.map(async (video) => {
-    // Check if video is blocked or premium
-// If subscription exists, nothing is blocked
-const isBlocked = subscription ? false : (video.block === 'true' || video.is_visible === false);
-const isPremium = video.is_premium === true;
-const isFreeVideo = video.is_free === true;
+    const enrichedVideos = await Promise.all(
+      videosData.map(async (video) => {
+        // Check if video is blocked or premium
+        // If subscription exists, nothing is blocked
+        const isBlocked = subscription ? false : (video.block === 'true' || video.is_visible === false);
+        const isPremium = video.is_premium === true;
+        const isFreeVideo = video.is_free === true;
 
-// Access rules
-const canAccess = subscription ? true : !isBlocked && isFreeVideo;
+        // Access rules
+        const canAccess = subscription ? true : !isBlocked && isFreeVideo;
 
 
-    const [likesRes, viewsRes, uploaderRes] = await Promise.all([
-      supabase
-        .from("medtube_video_likes")
-        .select("user_id")
-        .eq("video_id", video.id),
-      supabase
-        .from("medtube_video_views")
-        .select("id")
-        .eq("video_id", video.id),
-  supabase
-  .from("profiles")
-  .select("username, name, avatar_url")
-  .eq("user_id", video.uploaded_by)
-  .single()
+        const [likesRes, viewsRes, uploaderRes] = await Promise.all([
+          supabase
+            .from("medtube_video_likes")
+            .select("user_id")
+            .eq("video_id", video.id),
+          supabase
+            .from("medtube_video_views")
+            .select("id")
+            .eq("video_id", video.id),
+          supabase
+            .from("profiles")
+            .select("username, name, avatar_url")
+            .eq("user_id", video.uploaded_by)
+            .single()
 
-    ]);
-return {
-  ...video,
-  likes_count: likesRes.data?.length ?? 0,
-  views_count: viewsRes.data?.length ?? 0,
-  uploader: uploaderRes.data?.username || uploaderRes.data?.name || "Unknown",
-  uploader_avatar: uploaderRes.data?.avatar_url || null,
-  liked_by_me: likesRes.data?.some((like) => like.user_id === user?.id),
-  isBlocked,
-  canAccess,
-};
+        ]);
+        return {
+          ...video,
+          likes_count: likesRes.data?.length ?? 0,
+          views_count: viewsRes.data?.length ?? 0,
+          uploader: uploaderRes.data?.username || uploaderRes.data?.name || "Unknown",
+          uploader_avatar: uploaderRes.data?.avatar_url || null,
+          liked_by_me: likesRes.data?.some((like) => like.user_id === user?.id),
+          isBlocked,
+          canAccess,
+        };
 
-  })
-);
-localStorage.setItem("cachedVideos", JSON.stringify(enrichedVideos));
+      })
+    );
+    localStorage.setItem("cachedVideos", JSON.stringify(enrichedVideos));
 
     setVideos(enrichedVideos);
     setLoading(false);
   };
 
-useEffect(() => {
-  if (user !== undefined) {
-    fetchVideos();
-  }
-}, [user, subscription]);
-// 🔴 Realtime subscription for MedTube (videos, likes, views, subscriptions)
-useEffect(() => {
-  const channel = supabase.channel("medtube_realtime");
-
-  channel
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "medtube_videos" },
-      () => {
-        console.log("Realtime: videos changed, refreshing...");
-        fetchVideos();
-      }
-    )
-.on(
-  "postgres_changes",
-  { event: "*", schema: "public", table: "medtube_video_likes" },
-  (payload) => {
-    console.log("Realtime: like event", payload);
-    const { eventType, new: newRow, old: oldRow } = payload;
-
-    setVideos((prev) =>
-      prev.map((v) => {
-        if (v.id !== (newRow?.video_id || oldRow?.video_id)) return v;
-
-        if (eventType === "INSERT") {
-          return {
-            ...v,
-            likes_count: v.likes_count + 1,
-            liked_by_me: newRow.user_id === user?.id ? true : v.liked_by_me,
-          };
-        }
-        if (eventType === "DELETE") {
-          return {
-            ...v,
-            likes_count: v.likes_count - 1,
-            liked_by_me: oldRow.user_id === user?.id ? false : v.liked_by_me,
-          };
-        }
-        return v;
-      })
-    );
-  }
-)
-
-    .on(
-  "postgres_changes",
-  { event: "*", schema: "public", table: "medtube_video_views" },
-  (payload) => {
-    const newView = payload.new;
-    if (!newView) return;
-
-    // Update only the specific video in state silently
-    setVideos((prev) =>
-      prev.map((v) =>
-        v.id === newView.video_id
-          ? { ...v, views_count: (v.views_count ?? 0) + 1 }
-          : v
-      )
-    );
-  }
-)
-
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "subscriptions" },
-      async () => {
-        console.log("Realtime: subscription changed, refreshing user subscription...");
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        if (user) {
-          const { data: subData } = await supabase
-            .from("subscriptions")
-            .select("*")
-            .eq("user_id", user.id)
-            .eq("is_active", true)
-            .maybeSingle();
-          setSubscription(subData || null);
-        }
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, []);
-
-
-
-const recordView = async (videoId: string, updateUI = true) => {
-  if (!user || !videoId) return;
-
-  try {
-    const { error } = await supabase
-      .from("medtube_video_views")
-      .upsert({ video_id: videoId, user_id: user.id }, { onConflict: ["video_id", "user_id"] });
-
-    if (!error && updateUI) {
-      setVideos((prev) =>
-        prev.map((v) =>
-          v.id === videoId ? { ...v, views_count: v.views_count + 1 } : v
-        )
-      );
+  useEffect(() => {
+    if (user !== undefined) {
+      fetchVideos();
     }
-  } catch (err) {
-    console.error("Error tracking view:", err);
-  } finally {
-    // hide spinner after recording view
-    setLoadingVideoId(null);
-  }
-};
-    const handleDeleteVideo = async (video: any) => {
+  }, [user, subscription]);
+  // 🔴 Realtime subscription for MedTube (videos, likes, views, subscriptions)
+  useEffect(() => {
+    const channel = supabase.channel("medtube_realtime");
+
+    channel
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "medtube_videos" },
+        () => {
+          console.log("Realtime: videos changed, refreshing...");
+          fetchVideos();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "medtube_video_likes" },
+        (payload) => {
+          console.log("Realtime: like event", payload);
+          const { eventType, new: newRow, old: oldRow } = payload;
+
+          setVideos((prev) =>
+            prev.map((v) => {
+              if (v.id !== (newRow?.video_id || oldRow?.video_id)) return v;
+
+              if (eventType === "INSERT") {
+                return {
+                  ...v,
+                  likes_count: v.likes_count + 1,
+                  liked_by_me: newRow.user_id === user?.id ? true : v.liked_by_me,
+                };
+              }
+              if (eventType === "DELETE") {
+                return {
+                  ...v,
+                  likes_count: v.likes_count - 1,
+                  liked_by_me: oldRow.user_id === user?.id ? false : v.liked_by_me,
+                };
+              }
+              return v;
+            })
+          );
+        }
+      )
+
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "medtube_video_views" },
+        (payload) => {
+          const newView = payload.new;
+          if (!newView) return;
+
+          // Update only the specific video in state silently
+          setVideos((prev) =>
+            prev.map((v) =>
+              v.id === newView.video_id
+                ? { ...v, views_count: (v.views_count ?? 0) + 1 }
+                : v
+            )
+          );
+        }
+      )
+
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "subscriptions" },
+        async () => {
+          console.log("Realtime: subscription changed, refreshing user subscription...");
+          const { data: { user } } = await supabase.auth.getUser();
+          setUser(user);
+          if (user) {
+            const { data: subData } = await supabase
+              .from("subscriptions")
+              .select("*")
+              .eq("user_id", user.id)
+              .eq("is_active", true)
+              .maybeSingle();
+            setSubscription(subData || null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+
+
+  const recordView = async (videoId: string, updateUI = true) => {
+    if (!user || !videoId) return;
+
+    try {
+      const { error } = await supabase
+        .from("medtube_video_views")
+        .upsert({ video_id: videoId, user_id: user.id }, { onConflict: ["video_id", "user_id"] });
+
+      if (!error && updateUI) {
+        setVideos((prev) =>
+          prev.map((v) =>
+            v.id === videoId ? { ...v, views_count: v.views_count + 1 } : v
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error tracking view:", err);
+    } finally {
+      // hide spinner after recording view
+      setLoadingVideoId(null);
+    }
+  };
+  const handleDeleteVideo = async (video: any) => {
     if (!user || user.id !== video.uploaded_by) {
       alert("You can only delete your own videos.");
       return;
@@ -347,19 +348,19 @@ const recordView = async (videoId: string, updateUI = true) => {
         .insert({ video_id: videoId, user_id: user.id });
     }
 
-   setVideos((prev) =>
-  prev.map((v) =>
-    v.id === videoId
-      ? {
-          ...v,
-          liked_by_me: !v.liked_by_me,
-          likes_count: v.liked_by_me
-            ? v.likes_count - 1
-            : v.likes_count + 1,
-        }
-      : v
-  )
-);
+    setVideos((prev) =>
+      prev.map((v) =>
+        v.id === videoId
+          ? {
+            ...v,
+            liked_by_me: !v.liked_by_me,
+            likes_count: v.liked_by_me
+              ? v.likes_count - 1
+              : v.likes_count + 1,
+          }
+          : v
+      )
+    );
 
   };
 
@@ -381,85 +382,85 @@ const recordView = async (videoId: string, updateUI = true) => {
     return `${Math.ceil(days / 30)} months ago`;
   };
 
- const handleUpload = async () => {
-  if (!file || !title || !user || !category) return alert("Login and fill in all fields");
-  setUploading(true);
+  const handleUpload = async () => {
+    if (!file || !title || !user || !category) return alert("Login and fill in all fields");
+    setUploading(true);
 
-  const filename = `${Date.now()}_${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
+    const filename = `${Date.now()}_${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
 
-  // Step 1: Get a signed URL from Supabase for direct upload
-  const { data: signedUrl, error: signedError } = await supabase.storage
-    .from("videos")
-    .createSignedUploadUrl(filename);
+    // Step 1: Get a signed URL from Supabase for direct upload
+    const { data: signedUrl, error: signedError } = await supabase.storage
+      .from("videos")
+      .createSignedUploadUrl(filename);
 
-  if (signedError || !signedUrl) {
-    console.error("Signed URL error:", signedError);
-    alert("Upload failed");
+    if (signedError || !signedUrl) {
+      console.error("Signed URL error:", signedError);
+      alert("Upload failed");
+      setUploading(false);
+      return;
+    }
+
+    // Step 2: Upload with XMLHttpRequest to track progress
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      uploadXhrRef.current = xhr; // ✅ store reference so we can cancel later
+      xhr.open("PUT", signedUrl.signedUrl, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percent);
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          resolve();
+        } else {
+          reject(new Error("Upload failed"));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Upload failed"));
+      xhr.onabort = () => reject(new Error("Upload cancelled"));
+
+      xhr.send(file);
+    });
+
+    // Step 3: Get public URL for DB insert
+    const { data: publicUrlData } = supabase.storage
+      .from("videos")
+      .getPublicUrl(filename);
+
+    const videoUrl = publicUrlData?.publicUrl;
+    const userId = user.id;
+
+    const { error: insertError } = await supabase.from("medtube_videos").insert({
+      title,
+      description,
+      video_url: videoUrl,
+      uploaded_by: userId,
+      tags: tags.split(",").map((t) => t.trim()),
+      duration,
+      is_visible: true,
+      category,
+    });
+
+    if (insertError) {
+      console.error("Database Insert Error:", insertError);
+      alert("Database error");
+    } else {
+      alert("Upload successful");
+      setTitle("");
+      setDescription("");
+      setTags("");
+      setFile(null);
+      setCategory("");
+      setPreviewUrl(null);
+      setDuration("00:00");
+      setShowUploadForm(false);
+    }
+
     setUploading(false);
-    return;
-  }
-
-  // Step 2: Upload with XMLHttpRequest to track progress
- await new Promise<void>((resolve, reject) => {
-  const xhr = new XMLHttpRequest();
-  uploadXhrRef.current = xhr; // ✅ store reference so we can cancel later
-  xhr.open("PUT", signedUrl.signedUrl, true);
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const percent = Math.round((event.loaded / event.total) * 100);
-        setUploadProgress(percent);
-      }
-    };
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        resolve();
-      } else {
-        reject(new Error("Upload failed"));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Upload failed"));
-        xhr.onabort = () => reject(new Error("Upload cancelled"));
-
-    xhr.send(file);
-  });
-
-  // Step 3: Get public URL for DB insert
-  const { data: publicUrlData } = supabase.storage
-    .from("videos")
-    .getPublicUrl(filename);
-
-  const videoUrl = publicUrlData?.publicUrl;
-  const userId = user.id;
-
-  const { error: insertError } = await supabase.from("medtube_videos").insert({
-    title,
-    description,
-    video_url: videoUrl,
-    uploaded_by: userId,
-    tags: tags.split(",").map((t) => t.trim()),
-    duration,
-    is_visible: true,
-    category,
-  });
-
-  if (insertError) {
-    console.error("Database Insert Error:", insertError);
-    alert("Database error");
-  } else {
-    alert("Upload successful");
-    setTitle("");
-    setDescription("");
-    setTags("");
-    setFile(null);
-    setCategory("");
-    setPreviewUrl(null);
-    setDuration("00:00");
-    setShowUploadForm(false);
-  }
-
-  setUploading(false);
-};
+  };
 
   useEffect(() => {
     if (file) {
@@ -486,16 +487,16 @@ const recordView = async (videoId: string, updateUI = true) => {
         <div>
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">MedTube</h1>
           {subscription && (
-  <Badge className="ml-2 bg-green-600 text-white">
-    {subscription.plan_type.toUpperCase()}
-  </Badge>
-)}
+            <Badge className="ml-2 bg-green-600 text-white">
+              {subscription.plan_type.toUpperCase()}
+            </Badge>
+          )}
 
-         <p className="text-muted-foreground mt-2">
-  Explore a rich library of educational videos designed specifically for nursing and medical students. Learn essential clinical skills, master pharmacology concepts, understand complex medical conditions, and stay prepared for emergencies. Our platform empowers you to grow confidently, practice with real-world scenarios, and advance your knowledge at your own pace. Dive in, stay curious, and let MedTube guide your journey to becoming a skilled healthcare professional!
-</p>
-</div>
-</div>
+          <p className="text-muted-foreground mt-2">
+            Explore a rich library of educational videos designed specifically for nursing and medical students. Learn essential clinical skills, master pharmacology concepts, understand complex medical conditions, and stay prepared for emergencies. Our platform empowers you to grow confidently, practice with real-world scenarios, and advance your knowledge at your own pace. Dive in, stay curious, and let MedTube guide your journey to becoming a skilled healthcare professional!
+          </p>
+        </div>
+      </div>
 
       {showUploadForm && (
         <div className="space-y-4 border rounded-lg p-4">
@@ -517,44 +518,44 @@ const recordView = async (videoId: string, updateUI = true) => {
             {uploading ? "Uploading..." : "Submit"}
           </Button>
           {uploading && (
-  <Button
-    variant="destructive"
-    onClick={() => {
-      if (window.confirm("Are you sure you want to cancel this upload?")) {
-        if (uploadXhrRef.current) {
-          uploadXhrRef.current.abort(); //  cancel the request
-          setUploading(false);
-          setUploadProgress(0);
-          alert("Upload cancelled");
-        }
-      }
-    }}
-  >
-    Cancel Upload
-  </Button>
-)}
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to cancel this upload?")) {
+                  if (uploadXhrRef.current) {
+                    uploadXhrRef.current.abort(); //  cancel the request
+                    setUploading(false);
+                    setUploadProgress(0);
+                    alert("Upload cancelled");
+                  }
+                }
+              }}
+            >
+              Cancel Upload
+            </Button>
+          )}
           {uploading && (
-  <div className="w-full mt-2 space-y-2">
-    {/* Progress bar */}
-    <div className="w-full bg-gray-200 rounded-full h-2">
-      <div
-        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-        style={{ width: `${uploadProgress}%` }}
-      />
-    </div>
+            <div className="w-full mt-2 space-y-2">
+              {/* Progress bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
 
-    {/* Percentage + MB display */}
-    <div className="flex justify-between text-sm text-gray-600">
-      <span>{uploadProgress}%</span>
-      {file && (
-        <span>
-          {((file.size * uploadProgress) / 100 / (1024 * 1024)).toFixed(2)} MB /{" "}
-          {(file.size / (1024 * 1024)).toFixed(2)} MB
-        </span>
-      )}
-    </div>
-  </div>
-)}
+              {/* Percentage + MB display */}
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>{uploadProgress}%</span>
+                {file && (
+                  <span>
+                    {((file.size * uploadProgress) / 100 / (1024 * 1024)).toFixed(2)} MB /{" "}
+                    {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
 
         </div>
@@ -569,48 +570,48 @@ const recordView = async (videoId: string, updateUI = true) => {
           className="pl-10"
         />
       </div>
-       <Button className="flex items-center gap-2" onClick={() => setShowUploadForm(!showUploadForm)}>
-          <Upload className="h-4 w-4" /> Upload Video
-        </Button>
-<Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Button className="flex items-center gap-2" onClick={() => setShowUploadForm(!showUploadForm)}>
+        <Upload className="h-4 w-4" /> Upload Video
+      </Button>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
 
-  {/* Mobile dropdown */}
-  <div className="md:hidden">
-<select
-  className="w-full p-2 rounded-md border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-  onChange={(e) => setActiveTab(e.target.value)}
-  value={activeTab}
->
-  {categories.map((c) => (
-    <option key={c.id} value={c.id}>
-      {c.name}
-    </option>
-  ))}
-</select>
+        {/* Mobile dropdown */}
+        <div className="md:hidden">
+          <select
+            className="w-full p-2 rounded-md border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => setActiveTab(e.target.value)}
+            value={activeTab}
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
 
-  </div>
+        </div>
 
-  {/* Desktop tabs (remain unchanged) */}
-  <div className="hidden md:block">
-    <TabsList className="grid w-full grid-cols-7">
-      {categories.map((c) => (
-        <TabsTrigger key={c.id} value={c.id} className="flex items-center gap-1 text-xs">
-          <c.icon className="h-3 w-3" /> {c.name}
-        </TabsTrigger>
-      ))}
-    </TabsList>
-  </div>
+        {/* Desktop tabs (remain unchanged) */}
+        <div className="hidden md:block">
+          <TabsList className="grid w-full grid-cols-7">
+            {categories.map((c) => (
+              <TabsTrigger key={c.id} value={c.id} className="flex items-center gap-1 text-xs">
+                <c.icon className="h-3 w-3" /> {c.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
-{categories.map((cat) => (
-  <TabsContent
-    key={cat.id}
-    value={cat.id}
-  >
+        {categories.map((cat) => (
+          <TabsContent
+            key={cat.id}
+            value={cat.id}
+          >
 
-    {videos.length === 0 && loading ? (
-  <GlobalLoader message="Medrae is loading videos..." />
-) : (
-  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {videos.length === 0 && loading ? (
+              <GlobalLoader message="Medrae is loading videos..." />
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 
                 {filteredVideos
                   .filter((video) => {
@@ -627,73 +628,73 @@ const recordView = async (videoId: string, updateUI = true) => {
                   .map((video) => (
                     <Card key={video.id} className="group cursor-pointer transition-all hover:shadow-lg">
                       <div className="relative" onPlay={() => recordView(video.id)}>
-{video.video_url ? (
-  video.canAccess ? (
-<div className="relative w-full h-48">
-  <video
-    ref={(el) => (videoRefs.current[video.id] = el)}
-    id={`video-${video.id}`}
-    controls
-    preload="none"
-    poster={video.thumbnail_url || "/placeholder.svg"}
-    className="w-full h-48 rounded-t-lg bg-black"
-onPlay={() => {
-  const vid = videoRefs.current[video.id];
-  if (!vid) return;
+                        {video.video_url ? (
+                          video.canAccess ? (
+                            <div className="relative w-full h-48">
+                              <video
+                                ref={(el) => (videoRefs.current[video.id] = el)}
+                                id={`video-${video.id}`}
+                                controls
+                                preload="none"
+                                poster={video.thumbnail_url || "/placeholder.svg"}
+                                className="w-full h-48 rounded-t-lg bg-black"
+                                onPlay={() => {
+                                  const vid = videoRefs.current[video.id];
+                                  if (!vid) return;
 
-  // Only set src if not already set
-  if (!vid.src || vid.src === "") {
-    vid.src = video.video_url;
-    vid.play();
-    return; // exit to wait for video to load
-  }
+                                  // Only set src if not already set
+                                  if (!vid.src || vid.src === "") {
+                                    vid.src = video.video_url;
+                                    vid.play();
+                                    return; // exit to wait for video to load
+                                  }
 
-  // Show loading spinner while the video is buffering
-  setLoadingVideoId(video.id);
+                                  // Show loading spinner while the video is buffering
+                                  setLoadingVideoId(video.id);
 
-  // Record view WITHOUT triggering full fetch
-  recordView(video.id, false); // we'll adjust recordView to optionally skip updating videos state
-}}
-    onLoadedData={() => {
-      setLoadingVideoId(null);
-      const vid = videoRefs.current[video.id];
-      if (vid) {
-        const savedProgress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
-        if (savedProgress[video.id]) {
-          vid.currentTime = savedProgress[video.id];
-        }
-      }
-    }}
-    onTimeUpdate={(e) => {
-      const vid = e.currentTarget;
-      saveProgress(video.id, vid.currentTime);
-    }}
-  />
-  
-  {/* Spinner overlay */}
-  {loadingVideoId === video.id && (
-    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-      <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  )}
-</div>
+                                  // Record view WITHOUT triggering full fetch
+                                  recordView(video.id, false); // we'll adjust recordView to optionally skip updating videos state
+                                }}
+                                onLoadedData={() => {
+                                  setLoadingVideoId(null);
+                                  const vid = videoRefs.current[video.id];
+                                  if (vid) {
+                                    const savedProgress = JSON.parse(localStorage.getItem("videoProgress") || "{}");
+                                    if (savedProgress[video.id]) {
+                                      vid.currentTime = savedProgress[video.id];
+                                    }
+                                  }
+                                }}
+                                onTimeUpdate={(e) => {
+                                  const vid = e.currentTarget;
+                                  saveProgress(video.id, vid.currentTime);
+                                }}
+                              />
+
+                              {/* Spinner overlay */}
+                              {loadingVideoId === video.id && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                  <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                              )}
+                            </div>
 
 
 
-  ) : (
-    <div className="w-full h-48 rounded-t-lg bg-black flex items-center justify-center text-white text-center p-2">
-      {video.isBlocked
-        ? "This video has been blocked."
-        : "Upgrade to Premium to watch this video."}
-    </div>
-  )
-) : (
-  <img
-    src={video.thumbnail_url || "/placeholder.svg"}
-    alt={video.title}
-    className="w-full h-48 object-cover rounded-t-lg"
-  />
-)}
+                          ) : (
+                            <div className="w-full h-48 rounded-t-lg bg-black flex items-center justify-center text-white text-center p-2">
+                              {video.isBlocked
+                                ? "This video has been blocked."
+                                : "Upgrade to Premium to watch this video."}
+                            </div>
+                          )
+                        ) : (
+                          <img
+                            src={video.thumbnail_url || "/placeholder.svg"}
+                            alt={video.title}
+                            className="w-full h-48 object-cover rounded-t-lg"
+                          />
+                        )}
 
 
 
@@ -703,36 +704,33 @@ onPlay={() => {
                             size="lg"
                             className="rounded-full w-16 h-16 pointer-events-auto"
                             onClick={(e) => {
-  e.stopPropagation();
-  // Do nothing if user cannot access the video
-  if (!video.canAccess) {
-  const message = video.isBlocked 
-    ? "This video has been blocked." 
-    : "Upgrade to Premium to watch this video.";
-  alert(message);
-  // Redirect free users to subscription page
-  if (!video.isBlocked) {
-    navigate("/subscription");
-  }
-  return;
-}
-const vid = videoRefs.current[video.id];
-if (!vid) return;
-// Pause any other playing video
-Object.entries(videoRefs.current).forEach(([id, v]) => {
-  if (id !== video.id && v && !v.paused) {
-    v.pause();
-  }
-});
+                              e.stopPropagation();
 
-if (vid.paused) {
-  vid.play();
-  setPlayingVideoId(video.id);
-} else {
-  vid.pause();
-  setPlayingVideoId(null);
-}
-}}
+                              // Do nothing if user cannot access the video
+                              if (!video.canAccess) {
+                                const message = video.isBlocked
+                                  ? "This video has been blocked."
+                                  : "Upgrade to Premium to watch this video.";
+                                alert(message);
+                                if (!video.isBlocked) {
+                                  navigate("/subscription"); // redirect free users to subscription page
+                                }
+                                return;
+                              }
+
+                              // Open overlay modal with this video
+                              setOverlayVideo({ id: video.id, url: video.video_url });
+
+                              // Pause all other videos (optional, keeps logic consistent)
+                              Object.entries(videoRefs.current).forEach(([id, v]) => {
+                                if (id !== video.id && v && !v.paused) {
+                                  v.pause();
+                                }
+                              });
+
+                              // Record the view for analytics
+                              recordView(video.id, false);
+                            }}
                           >
                             {playingVideoId === video.id ? (
                               <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -743,6 +741,9 @@ if (vid.paused) {
                               <Play className="h-6 w-6" />
                             )}
                           </Button>
+
+
+
                         </div>
 
                         <Badge className="absolute bottom-2 right-2 bg-black/70 text-white">
@@ -755,20 +756,20 @@ if (vid.paused) {
                           {video.title}
                         </CardTitle>
                         {subscription && (
-  <Badge className="bg-green-600 text-white ml-2">
-    UNLOCKED
-  </Badge>
-)}
+                          <Badge className="bg-green-600 text-white ml-2">
+                            UNLOCKED
+                          </Badge>
+                        )}
                         <div className="flex items-center gap-2">
-<Avatar className="h-6 w-6">
-  <AvatarImage
-    src={video.uploader_avatar || "/placeholder.svg"}
-    className="object-cover"
-  />
-  <AvatarFallback className="flex items-center justify-center text-xs">
-    {video.uploader?.[0]?.toUpperCase() || "👤"}
-  </AvatarFallback>
-</Avatar>
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage
+                              src={video.uploader_avatar || "/placeholder.svg"}
+                              className="object-cover"
+                            />
+                            <AvatarFallback className="flex items-center justify-center text-xs">
+                              {video.uploader?.[0]?.toUpperCase() || "👤"}
+                            </AvatarFallback>
+                          </Avatar>
 
                           <span className="text-sm text-muted-foreground">{video.uploader}</span>
                         </div>
@@ -791,37 +792,38 @@ if (vid.paused) {
                           ))}
                         </div>
 
-           <div className="flex items-center justify-between text-sm text-muted-foreground">
-  <div className="flex items-center gap-2">
-    <Eye className="h-4 w-4" /> {formatViews(video.views_count)}
-    <Heart
-      className="h-4 w-4 ml-3 cursor-pointer"
-      fill={video.liked_by_me ? "red" : "none"}
-      stroke={video.liked_by_me ? "red" : "currentColor"}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleLikeToggle(video.id);
-      }}
-    />
-    {video.likes_count}
-  </div>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-4 w-4" /> {formatViews(video.views_count)}
+                            <Heart
+                              className="h-4 w-4 ml-3 cursor-pointer"
+                              fill={video.liked_by_me ? "red" : "none"}
+                              stroke={video.liked_by_me ? "red" : "currentColor"}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleLikeToggle(video.id);
+                              }}
+                            />
+                            {video.likes_count}
+                          </div>
 
-  {/*  Delete button visible only for owner */}
-  {user?.id === video.uploaded_by && (
-    <Button
-      variant="destructive"
-      size="sm"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleDeleteVideo(video);
-      }}
-    >
-      Delete
-    </Button>
-  )}
-</div>
+                          {/*  Delete button visible only for owner */}
+                          {user?.id === video.uploaded_by && (
+                            <Button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteVideo(video);
+                              }}
+                              variant="ghost"
+                              className="p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+
+                          )}
+                        </div>
 
                       </CardContent>
                     </Card>
@@ -831,6 +833,32 @@ if (vid.paused) {
           </TabsContent>
         ))}
       </Tabs>
+      {overlayVideo && (
+        <div
+          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"
+          onClick={() => setOverlayVideo(null)}
+        >
+          <div
+            className="relative w-full max-w-5xl aspect-video"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <video
+              src={overlayVideo.url}
+              autoPlay
+              controls
+              className="w-full h-full rounded-md object-contain bg-black"
+            />
+          </div>
+
+          <Button
+            onClick={() => setOverlayVideo(null)}
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 text-white"
+          >
+            ✕
+          </Button>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -338,13 +338,16 @@ export function AIAssistant() {
               </DropdownMenuContent>
             </DropdownMenu>
             {/* Delete button floating at top-right */}
-            <Button
-              onClick={handleDeleteChat}
-              variant="ghost"
-              className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <div className="flex w-full">
+              <Button
+                onClick={handleDeleteChat}
+                variant="ghost"
+                className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed ml-auto"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+
           </div>
           <div
             ref={scrollRef}
