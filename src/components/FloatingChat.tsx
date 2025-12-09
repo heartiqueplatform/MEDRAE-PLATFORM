@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Check, MessageCircle, X, Edit2, Trash2, CornerUpLeft } from "lucide-react";
+import { Send, Check, MessageCircle, X, Edit2, Trash2, CornerUpLeft, Maximize2, Minimize2, } from "lucide-react";
 // ✅ Add these two lines for the emoji picker
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
@@ -49,8 +49,13 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
   // Which chat’s emoji picker is active
   const [activeEmojiUnit, setActiveEmojiUnit] = useState<string | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
+  // Track the last read message id per unit
+  const [lastReadMap, setLastReadMap] = useState<Record<string, number>>({});
 
-  const [panelSizes, setPanelSizes] = useState<Record<string, { width: number; height: number }>>({});
+  const [panelSizes, setPanelSizes] = useState<
+    Record<string, { width: number; height: number; expanded?: boolean; right?: number }>
+  >({});
+
   // Track which message user is replying to per unit
   const [replyingTo, setReplyingTo] = useState<Record<string, Message | null>>({});
 
@@ -170,6 +175,24 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
 
     setMessagesMap((prev) => ({ ...prev, [unit_code]: mappedMessages }));
   };
+  useEffect(() => {
+    openChats.forEach((unit_code) => {
+      const messages = messagesMap[unit_code] || [];
+
+      // Scroll to bottom
+      if (messagesEndRefs.current[unit_code]) {
+        messagesEndRefs.current[unit_code]?.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // ✅ Update last read safely
+      if (messages.length > 0) {
+        setLastReadMap(prev => ({
+          ...prev,
+          [unit_code]: messages[messages.length - 1].id,
+        }));
+      }
+    });
+  }, [messagesMap, openChats]);
 
 
   // Subscribe to real-time updates
@@ -406,13 +429,40 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
                 flex justify-between items-center
               "
                     >
-                      <span>{unit.title}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{unit.title}</span>
+
+                        {/* Message indicator dot */}
+                        {/* Unread message count badge */}
+                        {(messagesMap[unit.unit_code]?.length || 0) >
+                          (lastReadMap[unit.unit_code] ?
+                            messagesMap[unit.unit_code].findIndex(m => m.id === lastReadMap[unit.unit_code]) + 1 : 0) && (
+                            <span
+                              className="
+      min-w-[16px] h-4 px-1
+      rounded-full
+      bg-blue-500
+      text-white text-[10px] font-bold
+      flex items-center justify-center
+    "
+                            >
+                              {
+                                messagesMap[unit.unit_code].length -
+                                (lastReadMap[unit.unit_code] ?
+                                  messagesMap[unit.unit_code].findIndex(m => m.id === lastReadMap[unit.unit_code]) + 1 : 0)
+                              }
+                            </span>
+                          )}
+
+
+                      </div>
 
                       {openChats.includes(unit.unit_code) && (
                         <span className="text-[10px] text-muted-foreground">
                           recent
                         </span>
                       )}
+
                     </button>
                   </li>
                 ))}
@@ -479,23 +529,90 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
 
               {/* Header */}
               <CardHeader className="border-b px-2 py-1 flex items-start justify-between">
+
                 <CardTitle className="text-sm font-medium leading-tight">
                   Unit Chat: {userUnits.find((u) => u.unit_code === unit_code)?.title || unit_code}
                 </CardTitle>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="ml-2 mt-0.5 p-1"
-                  onClick={() => setOpenChats((prev) => prev.filter((code) => code !== unit_code))}
-                >
-                  ✕
-                </Button>
+                <div className="flex items-center gap-1">
+                  {/* Expand / Collapse */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="p-1"
+                    onClick={() => {
+                      setPanelSizes(prev => {
+                        const current = prev[unit_code] || {
+                          width: 320,
+                          height: 384,
+                          expanded: false,
+                          right: 0,
+                        };
+
+                        if (current.expanded) {
+                          return {
+                            ...prev,
+                            [unit_code]: {
+                              ...current,
+                              width: 320,
+                              height: 384,
+                              expanded: false,
+                            },
+                          };
+                        }
+
+                        return {
+                          ...prev,
+                          [unit_code]: {
+                            ...current,
+                            width: Math.min(window.innerWidth - 40, 520),
+                            height: Math.min(window.innerHeight - 40, 600),
+                            expanded: true,
+                          },
+                        };
+                      });
+                    }}
+                  >
+                    {panelSizes[unit_code]?.expanded ? (
+                      <Minimize2 className="h-4 w-4" />
+                    ) : (
+                      <Maximize2 className="h-4 w-4" />
+                    )}
+
+                  </Button>
+
+                  {/* Close */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="p-1"
+                    onClick={() =>
+                      setOpenChats(prev => prev.filter(code => code !== unit_code))
+                    }
+                  >
+                    ✕
+                  </Button>
+                </div>
+
+
               </CardHeader>
 
               {/* Messages */}
               <ScrollArea className="flex-1 overflow-y-auto mb-2 p-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans text-sm">
                 <ul className="flex flex-col gap-2">
+                  {messages.length === 0 && (
+                    <li className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-10 select-none">
+                      <p className="text-sm font-medium">
+                        No messages yet
+                      </p>
+                      <p className="text-xs mt-1 max-w-[220px]">
+                        Chat in real time with other students taking this same unit — ask questions, share ideas, and support each other as you learn.
+
+                      </p>
+                    </li>
+                  )}
+
                   {messages.map((msg, idx) => {
+
                     const prevMsg = messages[idx - 1];
                     const isSameSender = prevMsg && prevMsg.user_id === msg.user_id;
 
