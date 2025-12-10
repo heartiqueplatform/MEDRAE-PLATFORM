@@ -32,8 +32,6 @@ import { Settings } from "./pages/Settings";
 import { Subscription } from "./pages/Subscription";
 import { Notifications } from "./pages/Notifications";
 import { Profile } from "./pages/Profile";
-import { QuizUnits } from "./pages/QuizUnits";
-import { QuizTaking } from "./pages/QuizTaking";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
 import { useEffect, useState } from "react";
 import SplashScreen from "./SplashScreen";
@@ -181,8 +179,6 @@ const App = () => {
                   <Route path="/subscription" element={<DashboardLayout userRole={getRole()}><Subscription /></DashboardLayout>} />
                   <Route path="/notifications" element={<DashboardLayout userRole={getRole()}><Notifications /></DashboardLayout>} />
                   <Route path="/profile" element={<DashboardLayout userRole={getRole()}><Profile /></DashboardLayout>} />
-                  <Route path="/quiz-units/:subject" element={<DashboardLayout userRole={getRole()}><QuizUnits /></DashboardLayout>} />
-                  <Route path="/quiz/:subject/:unitId/:paperId" element={<DashboardLayout userRole={getRole()}><QuizTaking /></DashboardLayout>} />
                   <Route path="/quiz" element={<DashboardLayout userRole={getRole()}><QuizPage /></DashboardLayout>} />
                   <Route path="/assessment-notes" element={<DashboardLayout userRole={getRole()}><AssessmentNotes /></DashboardLayout>} />
                   <Route path="/simulation/candidate" element={<DashboardLayout userRole={getRole()}><CandidateInfo /></DashboardLayout>} />

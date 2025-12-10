@@ -29,9 +29,9 @@ export function useUnitQuestionCount() {
         { event: "UPDATE", schema: "public", table: "quiz_question_counts" },
         (payload) => {
           setData((prev) =>
-          prev.map((u) =>
-             u.unit_code === payload.new.unit_code ? payload.new : u
-          )
+            prev.map((u) =>
+              u.unit_code === payload.new.unit_code ? payload.new : u
+            )
           );
         }
       )
