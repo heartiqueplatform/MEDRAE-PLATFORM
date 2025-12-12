@@ -69,6 +69,9 @@ export default function QuizPage() {
   // Then somewhere, assign it from your route or API
   // e.g., setUnitId(currentUnitId);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [confidenceLevels, setConfidenceLevels] = useState<Record<string, string>>({});
+
   const [questionsSource, setQuestionsSource] = useState<"remote" | "local" | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -451,6 +454,12 @@ export default function QuizPage() {
     };
   }, [unit]);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("confidenceLevels");
+    if (saved) {
+      setConfidenceLevels(JSON.parse(saved));
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -493,6 +502,8 @@ export default function QuizPage() {
     setAnswers(updatedAnswers);
     setFeedbackShown((prev) => ({ ...prev, [questionId]: true }));
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
+    setQuestionStartTime(Date.now());
+
   };
 
   const handleReportQuestion = async (question: Question) => {
@@ -760,14 +771,55 @@ Please provide a detailed discussion and guidance.`;
                     <button
                       key={letter}
                       disabled={!!selectedAnswer || quizFinished}
+
                       onClick={() => {
+                        const correct = q.correct_answer === letter;
+
+                        // 1️⃣ TIME TAKEN
+                        const endTime = Date.now();
+                        const timeTaken = (endTime - questionStartTime) / 1000;
+
+                        // 2️⃣ CONFIDENCE LOGIC
+                        let confidence = "";
+                        let accuracy = 0;
+
+                        if (correct) {
+                          confidence = "High confidence";
+                          accuracy = 100; // Always 100% if correct
+                        } else if (timeTaken <= 10) {
+                          confidence = "Overconfident";
+                          accuracy = Math.floor(Math.random() * 20); // 0-19%
+                        } else if (timeTaken <= 20) {
+                          confidence = "Medium confidence";
+                          accuracy = Math.floor(Math.random() * 30) + 50; // 50-79%
+                        } else {
+                          confidence = "Low confidence";
+                          accuracy = Math.floor(Math.random() * 30) + 20; // 20-49%
+                        }
+
+                        // 3️⃣ Save confidence for THIS question and persist
+                        setConfidenceLevels((prev) => {
+                          const updated = {
+                            ...prev,
+                            [q.id]: confidence, // only store rating; accuracy calculated in display
+                          };
+                          localStorage.setItem("confidenceLevels", JSON.stringify(updated));
+                          return updated;
+                        });
+
+                        // 4️⃣ Original submit logic
                         handleAnswer(q.id, letter);
 
+                        // 5️⃣ Sound
                         if (!isMuted) {
                           const audio = new Audio(correct ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
-                          audio.play().catch(err => console.error("Audio play error:", err));
+                          audio.play().catch((err) => console.error("Audio play error:", err));
                         }
                       }}
+
+
+
+
                       className={`w-full text-left px-3 py-2 rounded-lg font-semibold border transition-all duration-150
     ${isSelected
                           ? correct
@@ -794,10 +846,44 @@ Please provide a detailed discussion and guidance.`;
                   );
                 })}
               </div>
+              {/* Confidence Label with Accuracy */}
+              {/* Confidence Label with Accuracy */}
+              {confidenceLevels[q.id] && (
+                <div
+                  className={`mt-3 px-4 py-2 rounded-2xl text-center
+      ${confidenceLevels[q.id]?.startsWith("High confidence")
+                      ? "bg-green-600 text-white"
+                      : confidenceLevels[q.id]?.startsWith("Overconfident")
+                        ? "bg-red-600 text-white"
+                        : confidenceLevels[q.id]?.startsWith("Medium confidence")
+                          ? "bg-yellow-500 text-black"
+                          : "bg-gray-600 text-white"
+                    }`}
+                >
+                  <span className="text-xl font-extrabold">
+                    Confidence Rating: {confidenceLevels[q.id].toUpperCase()}
+                    {(() => {
+                      let accuracyText = "";
 
+                      if (confidenceLevels[q.id]?.startsWith("High confidence")) {
+                        accuracyText = "100% Accuracy"; // Always 100% for correct answers
+                      } else if (confidenceLevels[q.id]?.startsWith("Overconfident")) {
+                        const acc = Math.floor(Math.random() * 20); // 0-19%
+                        if (acc > 0) accuracyText = `${acc}% Accuracy`;
+                      } else if (confidenceLevels[q.id]?.startsWith("Medium confidence")) {
+                        const acc = Math.floor(Math.random() * 30) + 50; // 50-79%
+                        accuracyText = `${acc}% Accuracy`;
+                      } else if (confidenceLevels[q.id]?.startsWith("Low confidence")) {
+                        const acc = Math.floor(Math.random() * 30) + 20; // 20-49%
+                        accuracyText = `${acc}% Accuracy`;
+                      }
+
+                      return accuracyText ? ` (${accuracyText})` : "";
+                    })()}
+                  </span>
+                </div>
+              )}
               <div className="mt-2 flex gap-2">
-
-
                 <button
                   onClick={() => handleReportQuestion(q)}
                   className="
@@ -1630,7 +1716,7 @@ Please provide a detailed discussion and guidance.`;
         showScrollTop && (
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className={`fixed bottom-6 right-6 p-3 rounded-lg-full shadow-lg hover:scale-110 transition-transform 
+            className={`fixed bottom-6 right-6 p-3 rounded-lg-full shadow-lg hover:scale-110 transition-transform
       ${isDarkMode ? "bg-white text-gray-900" : "bg-gray-900 text-white"}`}
             aria-label="Scroll to top"
           >

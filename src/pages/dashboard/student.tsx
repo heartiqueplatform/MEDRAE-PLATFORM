@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast as sonnerToast } from "sonner"; // ✅ renamed
+import { DailyTriviaCard } from "@/components/TopStudentsPanel";
+import FriendlyProgressCard from "@/components/FriendlyProgressCard";
+
 
 
 import { Badge } from "@/components/ui/badge";
@@ -1106,7 +1109,11 @@ export default function StudentDashboard() {
         </Card>
 
       </div>
+      <FriendlyProgressCard userTheme={userTheme} name={name} />
 
+
+
+      <DailyTriviaCard />
 
       {/* 🏆 Top Students Leaderboard */}
       <Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
@@ -1771,10 +1778,10 @@ export default function StudentDashboard() {
                     const shareMessage =
                       `Medrae – The Professional Medical Education & Career Network
 
-• Structured modules across core clinical disciplines  
-• Expert-led lectures and verified medical resources  
-• Comprehensive study materials and case-based learning  
-• Certification pathways and professional development tools  
+• Structured modules across core clinical disciplines
+• Expert-led lectures and verified medical resources
+• Comprehensive study materials and case-based learning
+• Certification pathways and professional development tools
 
 Join the Medrae community today: https://medrae.vercel.app`;
 

@@ -179,10 +179,10 @@ export function StudyProgress() {
           Study Progress Tracker
         </h1>
         <p className="text-muted-foreground mt-2">
-          This tracker measures your learning journey in three ways: 
-          <br />• <strong>Progress %</strong> is calculated as <em>completed topics ÷ total topics × 100</em>. 
-          <br />• <strong>Stars</strong> are awarded once you submit at least one quiz through the Medrae Quizzes App. 
-          <br />• <strong>Hours Studied</strong> are estimated at 1.5 hours per topic completed. 
+          This tracker measures your learning journey in three ways:
+          <br />• <strong>Progress %</strong> is calculated as <em>completed topics ÷ total topics × 100</em>.
+          <br />• <strong>Stars</strong> are awarded once you submit at least one quiz through the Medrae Quizzes App.
+          <br />• <strong>Hours Studied</strong> are estimated at 1.5 hours per topic completed.
           <br /><br />
           To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App — your results will automatically update here.
         </p>
@@ -235,6 +235,8 @@ export function StudyProgress() {
           </CardContent>
         </Card>
       </div>
+      {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
+      <SimulationAndTriviaSummary />
 
       <Tabs defaultValue="subjects" className="space-y-4">
         <TabsList>
@@ -249,52 +251,52 @@ export function StudyProgress() {
               <p className="ml-4 text-muted-foreground">Updating progress...</p>
             </div>
           ) : (
-       <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
+            <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
 
-  {subjects.map((subject) => (
-    <Card key={subject.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">{subject.name}</CardTitle>
-            <CardDescription>
-              {subject.topicsCompleted} of {subject.totalTopics} topics completed
-            </CardDescription>
-          </div>
-          <div className="text-right">
-            <div className="flex items-center gap-1 mb-1">
-              {renderStars(subject.rating)}
+              {subjects.map((subject) => (
+                <Card key={subject.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{subject.name}</CardTitle>
+                        <CardDescription>
+                          {subject.topicsCompleted} of {subject.totalTopics} topics completed
+                        </CardDescription>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-1 mb-1">
+                          {renderStars(subject.rating)}
+                        </div>
+                        <Badge variant="secondary">{subject.progress}% Complete</Badge>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Progress</span>
+                        <span>{subject.progress}%</span>
+                      </div>
+                      <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="text-center">
+                        <p className="font-semibold text-lg">{subject.hoursStudied}</p>
+                        <p className="text-muted-foreground">Hours</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
+                        <p className="text-muted-foreground">Topics</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-lg">{subject.rating}/5</p>
+                        <p className="text-muted-foreground">Rating</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-            <Badge variant="secondary">{subject.progress}% Complete</Badge>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span>Progress</span>
-            <span>{subject.progress}%</span>
-          </div>
-          <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
-        </div>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div className="text-center">
-            <p className="font-semibold text-lg">{subject.hoursStudied}</p>
-            <p className="text-muted-foreground">Hours</p>
-          </div>
-          <div className="text-center">
-            <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
-            <p className="text-muted-foreground">Topics</p>
-          </div>
-          <div className="text-center">
-            <p className="font-semibold text-lg">{subject.rating}/5</p>
-            <p className="text-muted-foreground">Rating</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  ))}
-</div>
 
           )}
         </TabsContent>
@@ -322,6 +324,240 @@ export function StudyProgress() {
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+// ⭐ Summary item (needed by both cards)
+function SummaryItem({ label, value }) {
+  return (
+    <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl shadow-sm">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="text-xl font-bold">{value}</p>
+    </div>
+  );
+}
+
+function SimulationAndTriviaSummary() {
+  const [profile, setProfile] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [simSummary, setSimSummary] = useState(null);
+  const [triviaSummary, setTriviaSummary] = useState(null);
+
+  useEffect(() => {
+    // Load from localStorage instantly
+    const storedSim = localStorage.getItem("simSummary");
+    const storedTrivia = localStorage.getItem("triviaSummary");
+    if (storedSim) setSimSummary(JSON.parse(storedSim));
+    if (storedTrivia) setTriviaSummary(JSON.parse(storedTrivia));
+
+    // Background fetch
+    fetchSummary();
+    loadProfile();
+    calculateStreak();
+  }, []);
+
+  async function loadProfile() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("name, avatar_url")
+      .eq("user_id", user.id)
+      .single();
+    setProfile(data);
+  }
+
+  async function calculateStreak() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - today.getDay() + 1);
+
+    const { data: sim } = await supabase
+      .from("simulation_results")
+      .select("submitted_at")
+      .eq("user_id", user.id);
+
+    const { data: trivia } = await supabase
+      .from("daily_trivia_results")
+      .select("created_at")
+      .eq("user_id", user.id);
+
+    const allDates = [...(sim || []), ...(trivia || [])]
+      .map((x) => new Date(x.submitted_at || x.created_at))
+      .filter((d) => d >= monday);
+
+    const uniqueDays = new Set(allDates.map((d) => d.toDateString()));
+    setStreak(uniqueDays.size);
+  }
+
+  async function fetchSummary() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const todayKey = `alertShown-${new Date().toDateString()}`;
+    const playAlertOnce = (message) => {
+      if (!localStorage.getItem(todayKey)) {
+        const audio = new Audio("/tap2.mp3");
+        audio.play();
+        alert(message);
+        localStorage.setItem(todayKey, "true");
+      }
+    };
+
+    // --- Simulation ---
+    const { data: sim } = await supabase
+      .from("simulation_results")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("submitted_at", { ascending: false });
+
+    let simLow = false;
+    if (sim?.length > 0) {
+      const scores = sim.map((r) => Math.round((r.score / r.total_questions) * 100));
+      const summary = {
+        attempts: sim.length,
+        best: Math.max(...scores),
+        worst: Math.min(...scores),
+        average: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+        latest: scores[0],
+      };
+      setSimSummary(summary);
+      localStorage.setItem("simSummary", JSON.stringify(summary));
+      if (summary.latest < 50) simLow = true;
+    } else {
+      setSimSummary("empty");
+      localStorage.removeItem("simSummary");
+    }
+
+    // --- Trivia ---
+    const { data: trivia } = await supabase
+      .from("daily_trivia_results")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    let triviaLow = false;
+    if (trivia?.length > 0) {
+      const scores = trivia.map((t) => t.score);
+      const summary = {
+        attempts: trivia.length,
+        best: Math.max(...scores),
+        worst: Math.min(...scores),
+        average: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+        latest: scores[0],
+      };
+      setTriviaSummary(summary);
+      localStorage.setItem("triviaSummary", JSON.stringify(summary));
+      if (summary.latest < 50) triviaLow = true;
+    } else {
+      setTriviaSummary("empty");
+      localStorage.removeItem("triviaSummary");
+    }
+
+    // Play alert if any low score
+    if (simLow || triviaLow) {
+      playAlertOnce("⚠️ Your latest score is below 50. Focus and try again!");
+    }
+  }
+
+  const getMessage = (summary) => {
+    if (!summary || summary === "empty") return { text: "", warning: false };
+    const { latest, average } = summary;
+    if (latest >= 85) return { text: "🔥 Outstanding! You're mastering these topics!", warning: false };
+    if (latest >= 70) return { text: "💪 Great work! You’re improving steadily.", warning: false };
+    if (latest >= 50) return { text: "✨ You're making progress. Keep practicing for even stronger results.", warning: false };
+    if (latest > average) return { text: "📈 Nice! Your latest score is above your average. You're on the right track.", warning: false };
+    return { text: "⚠️ Your latest score is below 50. Focus and try again!", warning: true };
+  };
+
+  const ProgressRing = ({ value }) => {
+    const radius = 45;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (value / 100) * circumference;
+    return (
+      <div className="flex justify-center mb-4">
+        <svg width="120" height="120">
+          <circle stroke="#e5e7eb" fill="transparent" strokeWidth="10" r={radius} cx="60" cy="60" />
+          <circle stroke="#3b82f6" fill="transparent" strokeWidth="10" r={radius} cx="60" cy="60"
+            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 1s ease" }} />
+          <text
+            x="50%"
+            y="52%"
+            dominantBaseline="middle"
+            textAnchor="middle"
+            className="text-xl font-bold"
+            style={{ fill: "currentColor" }}
+          >
+            {value}%
+          </text>
+        </svg>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      {/* GREETING HEADER */}
+      <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-white/40 dark:bg-gray-800/60 backdrop-blur border border-gray-300/30 dark:border-gray-700/30 animate-fade-slide">
+        <img src={profile?.avatar_url || "/UsersAvatar.jpg"} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
+        <div className="text-lg font-semibold">{profile?.name ? `Welcome back, ${profile.name}!` : "Welcome back!"}</div>
+        <div className="ml-auto text-sm bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">🔥 {streak}-day streak</div>
+      </div>
+
+      {/* CARD GRID */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* SIMULATION CARD */}
+        <Card className="hover:shadow-lg hover:-translate-y-1 transition-all">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-blue-500" /> Simulation Paper Summary</CardTitle>
+            <CardDescription>Your overall performance in full mock exams</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!simSummary || simSummary === "empty" ? <p className="text-muted-foreground">No simulation papers done yet.</p> :
+              <>
+                <ProgressRing value={simSummary.latest} />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                  <SummaryItem label="Best" value={`${simSummary.best}%`} />
+                  <SummaryItem label="Worst" value={`${simSummary.worst}%`} />
+                  <SummaryItem label="Average" value={`${simSummary.average}%`} />
+                  <SummaryItem label="Attempts" value={simSummary.attempts} />
+                </div>
+                <p className={`mt-4 text-center text-sm font-medium ${getMessage(simSummary).warning ? "text-red-600" : "text-primary"}`}>
+                  {getMessage(simSummary).text}
+                </p>
+              </>
+            }
+          </CardContent>
+        </Card>
+
+        {/* TRIVIA CARD */}
+        <Card className="hover:shadow-lg hover:-translate-y-1 transition-all">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" /> Daily Short Test Summary</CardTitle>
+            <CardDescription>Your performance in quick daily tests</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!triviaSummary || triviaSummary === "empty" ? <p className="text-muted-foreground">No daily tests attempted yet.</p> :
+              <>
+                <ProgressRing value={triviaSummary.latest} />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                  <SummaryItem label="Best" value={`${triviaSummary.best}%`} />
+                  <SummaryItem label="Worst" value={`${triviaSummary.worst}%`} />
+                  <SummaryItem label="Average" value={`${triviaSummary.average}%`} />
+                  <SummaryItem label="Attempts" value={triviaSummary.attempts} />
+                </div>
+                <p className={`mt-4 text-center text-sm font-medium ${getMessage(triviaSummary).warning ? "text-red-600" : "text-primary"}`}>
+                  {getMessage(triviaSummary).text}
+                </p>
+              </>
+            }
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

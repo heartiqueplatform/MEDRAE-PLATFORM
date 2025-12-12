@@ -18,7 +18,7 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
-
+import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -457,7 +457,7 @@ export function MedraeQuizzes() {
 
       </div>
 
-
+      <DailyTriviaCard />
 
       {/* PAPER ONE */}
       <div className="space-y-4">

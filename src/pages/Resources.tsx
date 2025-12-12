@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-
+import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -883,7 +883,7 @@ export function Resources() {
         )}
       </div>
 
-
+      <DailyTriviaCard />
       {/* Tabs content controlled by selectedBlock */}
       <div className="space-y-4 mt-2">
         {/* Dynamic Heading for Selected Block */}
