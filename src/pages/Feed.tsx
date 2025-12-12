@@ -382,7 +382,7 @@ export default function Feed() {
       }
 
       // 1️⃣ Fetch first 450 questions immediately
-      const firstBatch = await fetchQuestions(0, 450);
+      const firstBatch = await fetchQuestions(0, 250);
       setQuestions((prev) => {
         const existingIds = new Set(prev.map((q) => q.id));
         const merged = [
@@ -1385,7 +1385,7 @@ export default function Feed() {
             );
 
             // 🖼️ Fancy image card + delete option + upload always last
-            if ((index + 1) % 15 === 0 && feedImages?.length > 0) {
+            if ((index + 1) % 5 === 0 && feedImages?.length > 0) {
 
               // updated: show exactly ONE image after every 2 questions
               if (feedImages?.length > 0) {
