@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Medrae Scholar Platform Design System - Medical/Healthcare Theme */
 
@@ -60,19 +58,12 @@
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -145,12 +136,9 @@ body,
 #root {
   height: 100%;
   background-color: hsl(210, 20%, 98%);
-  /* light mode default */
   transition: background-color 0.3s;
-  /* optional for smooth switch */
 }
 
-/* Dark mode media query for instant load */
 @media (prefers-color-scheme: dark) {
 
   html,
@@ -171,13 +159,11 @@ body,
   }
 }
 
-/* ✅ Custom slim, themed scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: var(--scroll-thumb) transparent;
 }
 
-/* WebKit (Chrome, Edge, Safari) */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -192,12 +178,10 @@ body,
   background: transparent;
 }
 
-/* 🌞 Light mode */
 :root {
   --scroll-thumb: rgba(100, 100, 100, 0.3);
 }
 
-/* 🌙 Dark mode */
 .dark {
   --scroll-thumb: rgba(255, 255, 255, 0.25);
 }
