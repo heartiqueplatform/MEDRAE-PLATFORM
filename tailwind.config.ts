@@ -97,7 +97,7 @@ export default {
       /* ----------------------------- */
       keyframes: {
 
-        
+
         spinMotor: {
           "0%": { transform: "rotate(0deg)" },
           "25%": { transform: "rotate(20deg)" },
@@ -106,7 +106,7 @@ export default {
           "100%": { transform: "rotate(0deg)" },
         },
 
-        
+
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -132,7 +132,7 @@ export default {
           "100%": { transform: "scale(1) rotate(0deg)", opacity: "1" },
         },
 
-        
+
       },
 
       /* ----------------------------- */

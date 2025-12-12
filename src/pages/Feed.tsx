@@ -951,7 +951,7 @@ export default function Feed() {
         }}
       >
         <div
-          className="p-4 max-w-2xl mx-auto space-y-4 
+          className="p-4 max-w-2xl mx-auto space-y-4
              h-[80vh] overflow-y-auto overflow-x-hidden
              scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent"
         >
@@ -1433,10 +1433,8 @@ export default function Feed() {
                       <img
                         src={img.image_url}
                         alt={img.title || "Feed image"}
-                        className="w-full h-[110px] object-cover rounded-lg cursor-pointer"
                         onClick={async () => {
                           openViewer(img);
-
 
                           const { data: { user } } = await supabase.auth.getUser();
                           if (!user) return;
@@ -1455,7 +1453,7 @@ export default function Feed() {
                             setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
                           }
                         }}
-                        className="w-full h-auto max-h-[80vh] sm:max-h-[70vh] object-contain cursor-pointer transition-transform hover:scale- 100 duration-300 bg-black rounded-3xl"
+                        className="w-full h-auto max-h-[80vh] sm:max-h-[70vh] object-contain cursor-pointer transition-transform hover:scale-100 duration-300 bg-black rounded-3xl"
                       />
 
                       {img.added_by === user?.id && (
