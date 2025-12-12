@@ -11,18 +11,40 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: { host: "::", port: 8080 },
-    build: { target: "esnext", outDir: "dist", sourcemap: mode === "development", chunkSizeWarningLimit: 1500 },
+    build: {
+      target: "esnext",
+      outDir: "dist",
+      sourcemap: mode === "development",
+      chunkSizeWarningLimit: 1500
+    },
+
     plugins: [
       react(),
       mode === "development" && componentTagger(),
+
+      // ⭐ Updated PWA config
       VitePWA({
         registerType: "autoUpdate",
+
+        // ✔ Use YOUR custom service worker
+        strategies: "injectManifest",
+        srcDir: "public",
+        filename: "service-worker.js",
+
         devOptions: { enabled: true },
-        includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.jpeg", "pwa-512x512.jpeg"],
+
+        includeAssets: [
+          "favicon.svg",
+          "robots.txt",
+          "pwa-192x192.jpeg",
+          "pwa-512x512.jpeg"
+        ],
+
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
-          description: "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools.",
+          description:
+            "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools.",
           theme_color: "#4ade80",
           background_color: "#ffffff",
           display: "standalone",
@@ -32,23 +54,14 @@ export default defineConfig(({ mode }) => {
             { src: "/pwa-192x192.jpeg", sizes: "192x192", type: "image/jpeg" },
             { src: "/pwa-512x512.jpeg", sizes: "512x512", type: "image/jpeg" }
           ]
-        },
-        workbox: {
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: ["**/*.{html,js,css,ico,png,svg,jpg,jpeg,webp,json}"],
-          navigateFallback: "/index.html",
-          navigateFallbackDenylist: [/^\/api\//],
-          runtimeCaching: [
-            { urlPattern: ({ request }) => request.destination === "script" || request.destination === "style", handler: "CacheFirst", options: { cacheName: "js-css-cache", expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 } } },
-            { urlPattern: ({ request }) => request.destination === "image", handler: "CacheFirst", options: { cacheName: "images", expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 } } },
-            { urlPattern: ({ url }) => url.pathname.startsWith("/api"), handler: "NetworkFirst", options: { cacheName: "api-cache", networkTimeoutSeconds: 5, expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 6 } } }
-          ],
-          cleanupOutdatedCaches: true
         }
       })
     ].filter(Boolean),
+
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+
     define: { "process.env": env },
+
     optimizeDeps: { include: ["react", "react-dom"] }
   };
 });
