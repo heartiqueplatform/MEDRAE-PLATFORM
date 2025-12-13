@@ -14,7 +14,7 @@ import { toast as sonnerToast } from "sonner"; // ✅ renamed
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import FriendlyProgressCard from "@/components/FriendlyProgressCard";
 
-
+import MistakeCard from "@/components/MistakeCard";
 
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -1111,7 +1111,7 @@ export default function StudentDashboard() {
       </div>
       <FriendlyProgressCard userTheme={userTheme} name={name} />
 
-
+      <MistakeCard />
 
       <DailyTriviaCard />
 

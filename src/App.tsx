@@ -11,6 +11,7 @@ import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
 import Feed from "./pages/Feed";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import MyMistakes from "./pages/MyMistakes";
 
 // Pages
 import { Forum } from "./pages/Forum";
@@ -125,6 +126,64 @@ const App = () => {
 
 
   const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (!("setAppBadge" in navigator)) return;
+
+    let subscription: any;
+
+    const updateBadge = (count: number) => {
+      if (count > 0) {
+        navigator.setAppBadge(count).catch(() => { });
+      } else {
+        navigator.clearAppBadge?.();
+      }
+    };
+
+    const fetchCount = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Initial fetch
+      const { count, error } = await supabase
+        .from("user_mistakes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("resolved", false);
+
+      if (!error) {
+        updateBadge(count || 0);
+      }
+
+      // Real-time subscription
+      subscription = supabase
+        .channel(`user_mistakes_real_time_${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "user_mistakes",
+            filter: `user_id=eq.${user.id}`,
+          },
+          async () => {
+            const { count } = await supabase
+              .from("user_mistakes")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("resolved", false);
+            updateBadge(count || 0);
+          }
+        )
+        .subscribe();
+    };
+
+    fetchCount();
+
+    return () => {
+      if (subscription) supabase.removeChannel(subscription);
+    };
+  }, []);
+
 
   useEffect(() => {
     const alreadyShown = sessionStorage.getItem("splashShown");
@@ -164,6 +223,7 @@ const App = () => {
                   <Route path="/dashboard/student" element={<DashboardLayout userRole="student"><StudentDashboard /></DashboardLayout>} />
                   <Route path="/dashboard/tutor" element={<DashboardLayout userRole="tutor"><TutorDashboard /></DashboardLayout>} />
                   <Route path="/dashboard/staff" element={<DashboardLayout userRole="staff"><StaffDashboard /></DashboardLayout>} />
+                  <Route path="/my-mistakes" element={<DashboardLayout userRole={getRole()}>  <MyMistakes /></DashboardLayout>} />
 
                   {/* Authenticated Pages */}
                   <Route path="/ai-assistant" element={<DashboardLayout userRole={getRole()}><AIAssistant /></DashboardLayout>} />

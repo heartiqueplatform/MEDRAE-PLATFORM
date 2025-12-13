@@ -28,6 +28,7 @@ import {
   CalendarDays,
   PenTool,
   Network,
+  AlertCircle,
   Newspaper
 
 } from "lucide-react";
@@ -68,6 +69,57 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // ✅ At the top of your AppSidebar component
+  const [mistakeCount, setMistakeCount] = useState(0);
+
+  // ✅ Sync with localStorage and update in real-time
+  useEffect(() => {
+    const fetchCount = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Initial fetch
+      const { count, error } = await supabase
+        .from("user_mistakes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("resolved", false);
+
+      if (!error) setMistakeCount(count || 0);
+
+      // Subscribe to changes for this user
+      const subscription = supabase
+        .channel(`user_mistakes_real_time_${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "user_mistakes",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            // Refetch count whenever a row is inserted, updated, or deleted
+            supabase
+              .from("user_mistakes")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("resolved", false)
+              .then(({ count }) => setMistakeCount(count || 0));
+          }
+        )
+        .subscribe();
+
+      return () => supabase.removeChannel(subscription);
+    };
+
+    fetchCount();
+  }, []);
+
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
@@ -104,10 +156,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
   };
   const mainItems = [
+
     { title: "Feed", url: "/feed", icon: Newspaper },
+    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? mistakeCount : undefined },
     { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
     { title: "Forum", url: "/forum", icon: MessageSquare },
+
   ];
 
 

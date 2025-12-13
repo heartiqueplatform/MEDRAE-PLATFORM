@@ -509,7 +509,15 @@ function SimulationAndTriviaSummary() {
       <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-white/40 dark:bg-gray-800/60 backdrop-blur border border-gray-300/30 dark:border-gray-700/30 animate-fade-slide">
         <img src={profile?.avatar_url || "/UsersAvatar.jpg"} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
         <div className="text-lg font-semibold">{profile?.name ? `Welcome back, ${profile.name}!` : "Welcome back!"}</div>
-        <div className="ml-auto text-sm bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">🔥 {streak}-day streak</div>
+        <div className="ml-auto text-center">
+          <div className="text-sm bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full font-semibold">
+            🔥 {streak}-day streak
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+            Active attempt days this week
+          </p>
+        </div>
+
       </div>
 
       {/* CARD GRID */}

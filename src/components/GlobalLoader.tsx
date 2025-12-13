@@ -1,6 +1,6 @@
 "use client";
 
-export function GlobalLoader({ message = "Loading..." }: { message?: string }) {
+export function GlobalLoader({ message = "..." }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] w-full">
       <div className="flex flex-col items-center">

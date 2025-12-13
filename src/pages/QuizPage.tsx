@@ -86,6 +86,35 @@ export default function QuizPage() {
   // Detect system dark mode
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  // ✅ Controls whether the “What went wrong?” box is visible for each question
+  const [showReasonBox, setShowReasonBox] = useState<{ [key: string]: boolean }>(() => {
+    const saved = localStorage.getItem("showReasonBox");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // ✅ Stores the user-selected reason for each question
+  const [selectedReason, setSelectedReason] = useState<{ [key: string]: string | null }>(() => {
+    const saved = localStorage.getItem("selectedReason");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // ✅ Predefined reasons for wrong answers
+  const reasonOptions = [
+    "Misread question",
+    "Concept gap",
+    "Rushed",
+    "Guess"
+  ];
+
+  // ✅ Save to localStorage whenever a reason is selected or the box is shown/hidden
+  useEffect(() => {
+    localStorage.setItem("showReasonBox", JSON.stringify(showReasonBox));
+  }, [showReasonBox]);
+
+  useEffect(() => {
+    localStorage.setItem("selectedReason", JSON.stringify(selectedReason));
+  }, [selectedReason]);
+
 
   // State to control overlay visibility and selected question helpers
   const [helpMeOverlayOpen, setHelpMeOverlayOpen] = useState(false);
@@ -98,6 +127,43 @@ export default function QuizPage() {
   const [isMuted, setIsMuted] = useState(
     localStorage.getItem("quizMuted") === "true" ? true : false
   );
+  // ✅ Records a wrong answer, increments times_wrong if repeated, stores selected wrong option, and optionally saves reason
+  async function recordMistake(userId: string, question: any, selectedOption: string, reason?: string) {
+    try {
+      // 1️⃣ Upsert first attempt (insert if not exists)
+      const { error: upsertError } = await supabase
+        .from("user_mistakes")
+        .upsert(
+          {
+            user_id: userId,
+            question_id: question.id,
+            quiz_id: question.quiz_id,
+            last_wrong_at: new Date(),
+            times_wrong: 1, // default for first insertion
+            user_selected: selectedOption, // store the selected wrong option
+            ...(reason ? { mistake_reason: reason } : {}), // optionally include reason
+          },
+          { onConflict: "user_id,question_id" }
+        );
+
+      if (upsertError) throw upsertError;
+
+      // 2️⃣ Increment times_wrong using RPC and update last_wrong_at and user_selected
+      const { data, error } = await supabase.rpc("increment_mistake", {
+        user_uuid: userId,
+        question_uuid: question.id,
+        selected_option: selectedOption, // latest wrong selection
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error recording mistake:", error);
+    }
+  }
+
+
+
+
   // ------------------------------
   // Offline Notes Storage Helpers
   // ------------------------------
@@ -751,14 +817,13 @@ Please provide a detailed discussion and guidance.`;
             {/* Question Card */}
             <div
               className={`flex-1 p-4 border rounded-lg shadow-sm border-gray-200 dark:border-gray-700 text-black dark:text-white transition-colors
-  ${understood[q.id]
+${understood[q.id]
                   ? "bg-green-300 dark:bg-green-800"
                   : notUnderstood[q.id]
                     ? "bg-[#FF4C4C] dark:bg-[#800000]"
                     : "bg-white dark:bg-gray-800"
                 }`}
             >
-
               <p className="font-bold mb-2">Q{i + 1}: {q.question_text}</p>
 
               <div className="ml-4 space-y-2 text-sm">
@@ -771,8 +836,14 @@ Please provide a detailed discussion and guidance.`;
                     <button
                       key={letter}
                       disabled={!!selectedAnswer || quizFinished}
-
-                      onClick={() => {
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold border transition-all duration-150
+${isSelected
+                          ? correct
+                            ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
+                            : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
+                          : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"
+                        } ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
+                      onClick={async () => {
                         const correct = q.correct_answer === letter;
 
                         // 1️⃣ TIME TAKEN
@@ -782,76 +853,88 @@ Please provide a detailed discussion and guidance.`;
                         // 2️⃣ CONFIDENCE LOGIC
                         let confidence = "";
                         let accuracy = 0;
-
                         if (correct) {
                           confidence = "High confidence";
-                          accuracy = 100; // Always 100% if correct
+                          accuracy = 100;
                         } else if (timeTaken <= 10) {
                           confidence = "Overconfident";
-                          accuracy = Math.floor(Math.random() * 20); // 0-19%
+                          accuracy = Math.floor(Math.random() * 20);
                         } else if (timeTaken <= 20) {
                           confidence = "Medium confidence";
-                          accuracy = Math.floor(Math.random() * 30) + 50; // 50-79%
+                          accuracy = Math.floor(Math.random() * 30) + 50;
                         } else {
                           confidence = "Low confidence";
-                          accuracy = Math.floor(Math.random() * 30) + 20; // 20-49%
+                          accuracy = Math.floor(Math.random() * 30) + 20;
                         }
 
-                        // 3️⃣ Save confidence for THIS question and persist
+                        // 3️⃣ SAVE CONFIDENCE FOR THIS QUESTION
                         setConfidenceLevels((prev) => {
-                          const updated = {
-                            ...prev,
-                            [q.id]: confidence, // only store rating; accuracy calculated in display
-                          };
+                          const updated = { ...prev, [q.id]: confidence };
                           localStorage.setItem("confidenceLevels", JSON.stringify(updated));
                           return updated;
                         });
 
-                        // 4️⃣ Original submit logic
+                        // 4️⃣ ORIGINAL ANSWER LOGIC
                         handleAnswer(q.id, letter);
 
-                        // 5️⃣ Sound
+                        // 5️⃣ RECORD MISTAKE IF WRONG
+                        if (!correct) {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (user) {
+                            try {
+                              // Upsert first attempt
+                              await supabase.from("user_mistakes").upsert(
+                                {
+                                  user_id: user.id,
+                                  question_id: q.id,
+                                  quiz_id: q.quiz_id,
+                                  last_wrong_at: new Date(),
+                                  times_wrong: 1,
+                                  user_selected: letter,
+                                },
+                                { onConflict: "user_id,question_id" }
+                              );
+
+                              // Increment times_wrong using RPC
+                              await supabase.rpc("increment_mistake", {
+                                user_uuid: user.id,
+                                question_uuid: q.id,
+                                selected_option: letter,
+                              });
+
+                              // ✅ SHOW REASON BOX FOR THIS QUESTION
+                              setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
+
+                            } catch (error) {
+                              console.error("Error recording mistake:", error);
+                            }
+                          }
+                        }
+
+                        // 6️⃣ PLAY SOUND
                         if (!isMuted) {
                           const audio = new Audio(correct ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
                           audio.play().catch((err) => console.error("Audio play error:", err));
                         }
                       }}
-
-
-
-
-                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold border transition-all duration-150
-    ${isSelected
-                          ? correct
-                            ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
-                            : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
-                          : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"}
-    ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                     >
                       <div className="flex justify-between items-center relative">
                         <span>{letter}. {optionText}</span>
 
                         {/* Emoji reaction */}
-                        {isSelected && correct && (
-                          <span className="ml-2 text-4xl animate-emoji-zoom">😊</span>
-                        )}
-                        {isSelected && !correct && (
-                          <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>
-                        )}
+                        {isSelected && correct && <span className="ml-2 text-4xl animate-emoji-zoom">😊</span>}
+                        {isSelected && !correct && <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>}
                       </div>
                     </button>
-
-
-
                   );
                 })}
               </div>
-              {/* Confidence Label with Accuracy */}
+
               {/* Confidence Label with Accuracy */}
               {confidenceLevels[q.id] && (
                 <div
                   className={`mt-3 px-4 py-2 rounded-2xl text-center
-      ${confidenceLevels[q.id]?.startsWith("High confidence")
+${confidenceLevels[q.id]?.startsWith("High confidence")
                       ? "bg-green-600 text-white"
                       : confidenceLevels[q.id]?.startsWith("Overconfident")
                         ? "bg-red-600 text-white"
@@ -864,25 +947,56 @@ Please provide a detailed discussion and guidance.`;
                     Confidence Rating: {confidenceLevels[q.id].toUpperCase()}
                     {(() => {
                       let accuracyText = "";
-
-                      if (confidenceLevels[q.id]?.startsWith("High confidence")) {
-                        accuracyText = "100% Accuracy"; // Always 100% for correct answers
-                      } else if (confidenceLevels[q.id]?.startsWith("Overconfident")) {
-                        const acc = Math.floor(Math.random() * 20); // 0-19%
-                        if (acc > 0) accuracyText = `${acc}% Accuracy`;
-                      } else if (confidenceLevels[q.id]?.startsWith("Medium confidence")) {
-                        const acc = Math.floor(Math.random() * 30) + 50; // 50-79%
-                        accuracyText = `${acc}% Accuracy`;
-                      } else if (confidenceLevels[q.id]?.startsWith("Low confidence")) {
-                        const acc = Math.floor(Math.random() * 30) + 20; // 20-49%
-                        accuracyText = `${acc}% Accuracy`;
-                      }
-
+                      if (confidenceLevels[q.id]?.startsWith("High confidence")) accuracyText = "100% Accuracy";
+                      else if (confidenceLevels[q.id]?.startsWith("Overconfident")) accuracyText = `${Math.floor(Math.random() * 20)}% Accuracy`;
+                      else if (confidenceLevels[q.id]?.startsWith("Medium confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 50}% Accuracy`;
+                      else if (confidenceLevels[q.id]?.startsWith("Low confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 20}% Accuracy`;
                       return accuracyText ? ` (${accuracyText})` : "";
                     })()}
                   </span>
                 </div>
               )}
+
+              {/* Reason Box */}
+              {/* Reason Box */}
+              {showReasonBox[q.id] && !selectedReason[q.id] && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <p className="text-sm font-medium">What went wrong?</p>
+                  {reasonOptions.map((reason) => (
+                    <button
+                      key={reason}
+                      className={`px-3 py-1 rounded-lg
+${selectedReason[q.id] === reason
+                          ? "bg-blue-500 text-white dark:bg-blue-700"
+                          : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                        }`}
+                      onClick={async () => {
+                        setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
+                        setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
+
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                          try {
+                            const { error } = await supabase
+                              .from("user_mistakes")
+                              .update({ mistake_reason: reason })
+                              .eq("user_id", user.id)
+                              .eq("question_id", q.id);
+                            if (error) throw error;
+                          } catch (err) {
+                            console.error("Error saving mistake reason:", err);
+                          }
+                        }
+                      }}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+
+
               <div className="mt-2 flex gap-2">
                 <button
                   onClick={() => handleReportQuestion(q)}
