@@ -43,7 +43,7 @@ Keep practicing to improve your scores and reach your best results!`
 
             if ((latestSim !== null && latestSim < 50) || (latestTrivia !== null && latestTrivia < 50)) {
                 setWarning(true);
-                setMessage("⚠️ One of your latest scores is below 50! Focus and try again!");
+                setMessage("One of your latest scores is below 50! Focus and try again!");
             }
         }
 

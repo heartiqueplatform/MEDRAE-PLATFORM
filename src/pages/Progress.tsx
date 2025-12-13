@@ -463,18 +463,18 @@ function SimulationAndTriviaSummary() {
 
     // Play alert if any low score
     if (simLow || triviaLow) {
-      playAlertOnce("⚠️ Your latest score is below 50. Focus and try again!");
+      playAlertOnce("Your latest score is below 50. Focus and try again!");
     }
   }
 
   const getMessage = (summary) => {
     if (!summary || summary === "empty") return { text: "", warning: false };
     const { latest, average } = summary;
-    if (latest >= 85) return { text: "🔥 Outstanding! You're mastering these topics!", warning: false };
-    if (latest >= 70) return { text: "💪 Great work! You’re improving steadily.", warning: false };
-    if (latest >= 50) return { text: "✨ You're making progress. Keep practicing for even stronger results.", warning: false };
-    if (latest > average) return { text: "📈 Nice! Your latest score is above your average. You're on the right track.", warning: false };
-    return { text: "⚠️ Your latest score is below 50. Focus and try again!", warning: true };
+    if (latest >= 85) return { text: " Outstanding! You're mastering these topics!", warning: false };
+    if (latest >= 70) return { text: " Great work! You’re improving steadily.", warning: false };
+    if (latest >= 50) return { text: " You're making progress. Keep practicing for even stronger results.", warning: false };
+    if (latest > average) return { text: " Nice! Your latest score is above your average. You're on the right track.", warning: false };
+    return { text: "Your latest score is below 50. Focus and try again!", warning: true };
   };
 
   const ProgressRing = ({ value }) => {
