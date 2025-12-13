@@ -844,6 +844,14 @@ ${isSelected
                           : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"
                         } ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                       onClick={async () => {
+                        if (!!selectedAnswer || quizFinished) return;
+
+                        // ✅ PLAY SOUND IMMEDIATELY
+                        if (!isMuted) {
+                          const audio = new Audio(q.correct_answer === letter ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
+                          audio.play().catch((err) => console.error("Audio play error:", err));
+                        }
+
                         const correct = q.correct_answer === letter;
 
                         // 1️⃣ TIME TAKEN
@@ -910,12 +918,6 @@ ${isSelected
                             }
                           }
                         }
-
-                        // 6️⃣ PLAY SOUND
-                        if (!isMuted) {
-                          const audio = new Audio(correct ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
-                          audio.play().catch((err) => console.error("Audio play error:", err));
-                        }
                       }}
                     >
                       <div className="flex justify-between items-center relative">
@@ -926,6 +928,7 @@ ${isSelected
                         {isSelected && !correct && <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>}
                       </div>
                     </button>
+
                   );
                 })}
               </div>

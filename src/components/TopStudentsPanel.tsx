@@ -369,25 +369,22 @@ export const DailyTriviaCard = () => {
                             <div className="ml-1 mt-1 text-sm">
                                 {topStudents.map((s, idx) => (
                                     <div key={s.user_id} className="flex justify-between items-center gap-2 py-1">
-                                        <div className="flex items-center gap-2">
-                                            <img
-                                                src={s.avatar_url || "/UsersAvatar.jpg"}
-                                                alt={s.name}
-                                                className="w-8 h-8 rounded-full object-cover"
-                                            />
-                                            <div className="flex flex-col text-sm">
-                                                <span className="font-medium">{s.name}</span>
-                                                {s.institution && <span className="text-xs text-muted-foreground">{s.institution}</span>}
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <img src={s.avatar_url || "/UsersAvatar.jpg"} alt={s.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                                            <div className="flex flex-col text-sm truncate min-w-0">
+                                                <span className="font-medium truncate">{s.name}</span>
+                                                {s.institution && <span className="text-xs text-muted-foreground truncate">{s.institution}</span>}
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-1 text-sm">
+                                        <div className="flex items-center gap-1 text-sm flex-shrink-0">
                                             <span>{s.score} pts</span>
                                             {idx === 0 && <Badge variant="destructive">🥇</Badge>}
                                             {idx === 1 && <Badge variant="secondary">🥈</Badge>}
                                             {idx === 2 && <Badge variant="warning">🥉</Badge>}
                                         </div>
                                     </div>
+
                                 ))}
                             </div>
                         </div>

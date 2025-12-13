@@ -84,21 +84,25 @@ export function StudyProgress() {
         return;
       }
 
-      // Group results by unit
-      const grouped: Record<string, { score: number; total: number; count: number }> = {};
+      // --- Group results by unit (highest progress, count attempts) ---
+      const grouped: Record<string, { highestProgress: number; count: number }> = {};
       data?.forEach((res) => {
         const key = res.unit || "Unknown";
-        if (!grouped[key]) grouped[key] = { score: 0, total: 0, count: 0 };
-        grouped[key].score += res.score;
-        grouped[key].total += res.total_questions;
-        grouped[key].count += 1;
+        const percent = res.total_questions > 0 ? (res.score / res.total_questions) * 100 : 0;
+
+        if (!grouped[key]) grouped[key] = { highestProgress: percent, count: 1 };
+        else {
+          grouped[key].highestProgress = Math.max(grouped[key].highestProgress, percent);
+          grouped[key].count += 1;
+        }
       });
 
+      // --- Build unit stats ---
       const unitsWithStats = allUnits
         .filter((unit) => grouped[unit.title])
         .map((unit) => {
           const stats = grouped[unit.title];
-          const progress = stats.total > 0 ? Math.round((stats.score / stats.total) * 100) : 0;
+          const progress = Math.round(stats.highestProgress);
           const hours = stats.count * 1.5;
           const rating = stats.count > 0 ? 5 : 0;
 
@@ -109,7 +113,7 @@ export function StudyProgress() {
             rating,
             hoursStudied: hours,
             topicsCompleted: stats.count,
-            totalTopics: stats.count,
+            totalTopics: stats.count, // number of attempts as totalTopics
           };
         });
 
@@ -126,7 +130,7 @@ export function StudyProgress() {
       if (showLoader) setLoading(false);
     };
 
-    // --- Initial load with loader ---
+    // --- Initial load with cached data ---
     const cached = loadFromLocalStorage();
     if (cached) {
       setSubjects(cached.subjects);
@@ -136,16 +140,13 @@ export function StudyProgress() {
       fetchProgress(true);
     }
 
-    // ✅ Realtime subscription
+    // --- Realtime subscription ---
     const channel = supabase
       .channel("quiz_results_changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "quiz_results" },
-        () => {
-          // Fetch fresh data silently (no loader)
-          fetchProgress(false);
-        }
+        () => fetchProgress(false)
       )
       .subscribe();
 
@@ -180,9 +181,9 @@ export function StudyProgress() {
         </h1>
         <p className="text-muted-foreground mt-2">
           This tracker measures your learning journey in three ways:
-          <br />• <strong>Progress %</strong> is calculated as <em>completed topics ÷ total topics × 100</em>.
-          <br />• <strong>Stars</strong> are awarded once you submit at least one quiz through the Medrae Quizzes App.
-          <br />• <strong>Hours Studied</strong> are estimated at 1.5 hours per topic completed.
+          <br />• <strong>Progress %</strong> = highest quiz score in the unit.
+          <br />• <strong>Stars</strong> = 5 if at least one quiz attempted.
+          <br />• <strong>Hours Studied</strong> = 1.5 × number of attempts.
           <br /><br />
           To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App — your results will automatically update here.
         </p>
@@ -235,6 +236,7 @@ export function StudyProgress() {
           </CardContent>
         </Card>
       </div>
+
       {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
       <SimulationAndTriviaSummary />
 
@@ -252,7 +254,6 @@ export function StudyProgress() {
             </div>
           ) : (
             <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
-
               {subjects.map((subject) => (
                 <Card key={subject.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
                   <CardHeader>
@@ -260,7 +261,7 @@ export function StudyProgress() {
                       <div>
                         <CardTitle className="text-lg">{subject.name}</CardTitle>
                         <CardDescription>
-                          {subject.topicsCompleted} of {subject.totalTopics} topics completed
+                          {subject.topicsCompleted} of {subject.totalTopics} completed Atempt
                         </CardDescription>
                       </div>
                       <div className="text-right">
@@ -286,7 +287,7 @@ export function StudyProgress() {
                       </div>
                       <div className="text-center">
                         <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
-                        <p className="text-muted-foreground">Topics</p>
+                        <p className="text-muted-foreground">Atempt</p>
                       </div>
                       <div className="text-center">
                         <p className="font-semibold text-lg">{subject.rating}/5</p>
@@ -297,7 +298,6 @@ export function StudyProgress() {
                 </Card>
               ))}
             </div>
-
           )}
         </TabsContent>
 
@@ -327,6 +327,7 @@ export function StudyProgress() {
     </div>
   );
 }
+
 // ⭐ Summary item (needed by both cards)
 function SummaryItem({ label, value }) {
   return (
