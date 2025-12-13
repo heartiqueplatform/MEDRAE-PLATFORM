@@ -32,7 +32,11 @@ Keep practicing to improve your scores and reach your best results!`
                 .limit(1);
 
             const latestSim = sim?.[0] ? Math.round((sim[0].score / sim[0].total_questions) * 100) : null;
-            const latestTrivia = trivia?.[0]?.score ?? null;
+            const TOTAL_TRIVIA_QUESTIONS = 15;
+
+            const latestTrivia = trivia?.[0]
+                ? Math.round((trivia[0].score / TOTAL_TRIVIA_QUESTIONS) * 100)
+                : null;
 
             const latest = Math.max(latestSim ?? 0, latestTrivia ?? 0);
             setLatestScore(latest);

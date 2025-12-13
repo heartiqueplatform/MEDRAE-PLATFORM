@@ -441,7 +441,11 @@ function SimulationAndTriviaSummary() {
 
     let triviaLow = false;
     if (trivia?.length > 0) {
-      const scores = trivia.map((t) => t.score);
+      const TOTAL_TRIVIA_QUESTIONS = 15;
+
+      const scores = trivia.map((t) =>
+        Math.round((t.score / TOTAL_TRIVIA_QUESTIONS) * 100)
+      );
       const summary = {
         attempts: trivia.length,
         best: Math.max(...scores),

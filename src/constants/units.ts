@@ -46,4 +46,13 @@ export const allUnits = [
   { code: "HNX-045", title: "Psychology" },
   { code: "HNX-046", title: "Health System Management" },
   { code: "HNX-047", title: "Teaching Methodology" },
+
+  { code: "HNX3-001", title: "Management of Care (NCLEX)" },
+  { code: "HNX3-002", title: "Safety and Infection Control  (NCLEX)" },
+  { code: "HNX3-003", title: "Health Promotion and Maintenance  (NCLEX)" },
+  { code: "HNX3-004", title: "Psychosocial Integrity  (NCLEX)" },
+  { code: "HNX3-005", title: "Basic Care and Comfort  (NCLEX)" },
+  { code: "HNX3-006", title: "Pharmacological and Parenteral Therapies  (NCLEX)" },
+  { code: "HNX3-007", title: "Reduction of Risk Potential  (NCLEX)" },
+  { code: "HNX3-008", title: "Physiological Adaptation  (NCLEX)" },
 ];
