@@ -256,7 +256,7 @@ export const DailyTriviaCard = () => {
 
     return (
         <div className="relative">
-            {!selfUserId && <div className="text-center py-6 text-red-500">Updating session…</div>}
+
 
             <Card className="rounded-3xl overflow-hidden border border-blue-300 dark:border-blue-800 relative">
                 <CardHeader className="bg-blue-50 dark:bg-blue-900/40">

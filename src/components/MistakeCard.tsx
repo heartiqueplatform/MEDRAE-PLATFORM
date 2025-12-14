@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -10,7 +10,10 @@ export default function MistakeCard() {
         const stored = localStorage.getItem("mistakeCount");
         return stored ? parseInt(stored, 10) : 0;
     });
+
     const [loading, setLoading] = useState(true);
+    const [animate, setAnimate] = useState(false); // Trigger number animation
+    const prevCountRef = useRef<number>(mistakeCount);
 
     useEffect(() => {
         const fetchMistakes = async () => {
@@ -26,6 +29,10 @@ export default function MistakeCard() {
             if (error) console.error("Error fetching mistakes:", error);
             else {
                 const count = data?.length || 0;
+                if (count !== prevCountRef.current) {
+                    setAnimate(true); // trigger animation
+                    prevCountRef.current = count;
+                }
                 setMistakeCount(count);
                 localStorage.setItem("mistakeCount", String(count));
             }
@@ -45,12 +52,12 @@ export default function MistakeCard() {
         return () => supabase.removeChannel(channel);
     }, []);
 
-    if (loading) return null;
-
     const baseCardClass =
         "cursor-pointer rounded-xl p-4 shadow-md border flex items-center justify-between hover:shadow-lg transition-all select-none";
-
     const themedCardClass = `${baseCardClass} bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700`;
+
+    // Animation end handler
+    const handleAnimationEnd = () => setAnimate(false);
 
     return (
         <div
@@ -70,7 +77,11 @@ export default function MistakeCard() {
                 ) : (
                     <>
                         {/* Only this sentence is red and bouncing */}
-                        <h2 className="text-lg font-bold text-red-700 dark:text-red-300 animate-pulse-sentence">
+                        <h2
+                            className={`text-lg font-bold text-red-700 dark:text-red-300 animate-pulse-sentence ${animate ? "animate-number-pop" : ""
+                                }`}
+                            onAnimationEnd={handleAnimationEnd}
+                        >
                             You have {mistakeCount} unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}
                         </h2>
                         <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
@@ -81,7 +92,7 @@ export default function MistakeCard() {
             </div>
             <div className="ml-4 text-gray-700 dark:text-gray-300 font-bold text-xl">➔</div>
 
-            {/* Keyframes for sentence pulse */}
+            {/* Keyframes for sentence pulse and number pop */}
             <style>
                 {`
                     @keyframes pulse-sentence {
@@ -91,6 +102,16 @@ export default function MistakeCard() {
                     .animate-pulse-sentence {
                         display: inline-block;
                         animation: pulse-sentence 1.2s ease-in-out infinite;
+                    }
+
+                    @keyframes number-pop {
+                        0% { transform: scale(1); }
+                        50% { transform: scale(1.3); color: #f87171; }
+                        100% { transform: scale(1); color: inherit; }
+                    }
+                    .animate-number-pop {
+                        animation: number-pop 0.6s ease-in-out;
+                        display: inline-block;
                     }
                 `}
             </style>
