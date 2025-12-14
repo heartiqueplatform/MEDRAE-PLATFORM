@@ -1004,8 +1004,8 @@ ${selectedReason[q.id] === reason
                 <button
                   onClick={() => handleReportQuestion(q)}
                   className="
-    relative group
-    w-8 h-8 flex items-center justify-center
+    flex items-center gap-2
+    px-3 h-8
     rounded-md
     bg-transparent
     text-red-600
@@ -1016,28 +1016,21 @@ ${selectedReason[q.id] === reason
   "
                 >
                   <AlertTriangle className="w-4 h-4" />
-
-                  {/* Tooltip above */}
-                  <span
-                    className="
-      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-      opacity-0 group-hover:opacity-100
-      pointer-events-none
-      bg-gray-900 text-white text-[10px]
-      px-2 py-1 rounded-md whitespace-nowrap
-      transition
-      shadow-lg z-50
-    "
-                  >
+                  <span className="text-xs font-medium whitespace-nowrap">
                     Report Question
                   </span>
                 </button>
 
 
+
                 <button
                   onClick={() => {
                     const optionsText = ["A", "B", "C", "D"]
-                      .map(letter => `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`)
+                      .map(
+                        letter =>
+                          `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]
+                          }`
+                      )
                       .join("\n");
 
                     const chunkText = (text: string, maxLength = 200) => {
@@ -1061,33 +1054,21 @@ Please provide a detailed discussion and guidance.`;
                     setAIOverlayOpen(true);
                   }}
                   className="
-  relative group
-  w-8 h-8 flex items-center justify-center
-  rounded-md
-  bg-gray-200 dark:bg-gray-800
-  text-gray-700 dark:text-gray-300
-  transition
-  hover:bg-gray-300 dark:hover:bg-gray-700
-"
-
+    flex items-center gap-2
+    px-3 h-8
+    rounded-md
+    bg-gray-200 dark:bg-gray-800
+    text-gray-700 dark:text-gray-300
+    transition
+    hover:bg-gray-300 dark:hover:bg-gray-700
+  "
                 >
                   <Cpu className="w-4 h-4" />
-
-                  {/* Tooltip above */}
-                  <span
-                    className="
-      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-      opacity-0 group-hover:opacity-100
-      pointer-events-none
-      bg-gray-900 text-white text-[10px]
-      px-2 py-1 rounded-md whitespace-nowrap
-      transition
-      shadow-lg z-50
-    "
-                  >
+                  <span className="text-xs font-medium whitespace-nowrap">
                     AI Assistance
                   </span>
                 </button>
+
                 <button
                   onClick={toggleMute}
                   className="relative group w-8 h-8 flex items-center justify-center rounded-md

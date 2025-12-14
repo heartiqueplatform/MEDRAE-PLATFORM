@@ -1,17 +1,10 @@
 "use client";
 
-export function GlobalLoader({ message = "..." }: { message?: string }) {
+export function GlobalLoader() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] w-full">
-      <div className="flex flex-col items-center">
-        {/* Bigger spinner with dark mode support */}
-        <div className="animate-spin rounded-full h-24 w-24 border-t-8 border-b-8 border-blue-500 dark:border-blue-400"></div>
-
-        {/* Text auto-adjusts for dark mode */}
-        <p className="mt-4 text-lg font-semibold text-black dark:text-white">
-          {message}
-        </p>
-      </div>
+    <div className="flex items-center justify-center min-h-[70vh] w-full">
+      {/* Multicolor spherical spinning ball */}
+      <div className="animate-spin rounded-full h-32 w-32 border-8 border-t-red-500 border-r-yellow-500 border-b-green-500 border-l-blue-500"></div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import AuthGate from "@/auth/AuthGate";
 
 // ✅ App version for cache control
 const APP_VERSION = "2"; // increment this with each deployment
@@ -41,7 +42,6 @@ if ("serviceWorker" in navigator) {
                         newWorker.addEventListener("statechange", () => {
                             if (newWorker.state === "installed") {
                                 console.log("🟢 New Service Worker installed and ready.");
-                                // Automatically reload the page if app version changed
                                 if (storedVersion !== APP_VERSION) {
                                     window.location.reload();
                                 }
@@ -62,5 +62,9 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-// Render the app
-createRoot(document.getElementById("root")!).render(<App />);
+// 🚫 Nothing renders until auth state is known
+createRoot(document.getElementById("root")!).render(
+    <AuthGate>
+        <App />
+    </AuthGate>
+);

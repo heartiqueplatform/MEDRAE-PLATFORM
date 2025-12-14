@@ -384,12 +384,10 @@ export const DailyTriviaCard = () => {
                                             {idx === 2 && <Badge variant="warning">🥉</Badge>}
                                         </div>
                                     </div>
-
                                 ))}
                             </div>
                         </div>
                     </div>
-
                     {!started && !completed && (
                         <Button
                             className="w-full mt-4"

@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { supabase } from "./lib/supabaseClient";
 import { MedraeQuizzes } from "@/pages/MedraeQuizzes";
@@ -12,6 +12,8 @@ import Feed from "./pages/Feed";
 import { BottomBar } from "@/components/ui/BottomBar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import MyMistakes from "./pages/MyMistakes";
+import PublicOnlyRoute from "@/auth/PublicOnlyRoute";
+import PrivateRoute from "@/auth/PrivateRoute";
 
 // Pages
 import { Forum } from "./pages/Forum";
@@ -88,44 +90,22 @@ const BottomBarWrapper = () => {
 };
 
 const App = () => {
-  // 🚀 Redirect wrapper so logged-in users never see Index page
-  const RootRedirect = () => {
-    const navigate = useNavigate();
-    const [checking, setChecking] = useState(true);
-    const [session, setSession] = useState(null);
+  // Splash state for first-time visitors
+  const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
+  const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
 
-    useEffect(() => {
-      const checkSession = async () => {
-        try {
-          const {
-            data: { session: currentSession },
-          } = await supabase.auth.getSession();
+  useEffect(() => {
+    if (!loading) return;
 
-          setSession(currentSession);
+    const timer = setTimeout(() => {
+      setLoading(false);
+      localStorage.setItem("splashShown", "true"); // mark splash as shown
+    }, 2000); // 2 seconds duration
 
-          // Only redirect if logged in
-          if (currentSession) {
-            navigate("/redirect", { replace: true });
-          }
-        } catch (error) {
-          console.error("Error checking session:", error);
-        } finally {
-          setChecking(false);
-        }
-      };
+    return () => clearTimeout(timer);
+  }, [loading]);
 
-      checkSession();
-    }, [navigate]);
-
-    // Show nothing while checking session
-    if (checking) return null;
-
-    // If logged out, show the Index page
-    return <Index />;
-  };
-
-
-  const [loading, setLoading] = useState(true);
+  // App badge real-time logic
   useEffect(() => {
     if (!("setAppBadge" in navigator)) return;
 
@@ -143,28 +123,19 @@ const App = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Initial fetch
       const { count, error } = await supabase
         .from("user_mistakes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("resolved", false);
 
-      if (!error) {
-        updateBadge(count || 0);
-      }
+      if (!error) updateBadge(count || 0);
 
-      // Real-time subscription
       subscription = supabase
         .channel(`user_mistakes_real_time_${user.id}`)
         .on(
           "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "user_mistakes",
-            filter: `user_id=eq.${user.id}`,
-          },
+          { event: "*", schema: "public", table: "user_mistakes", filter: `user_id=eq.${user.id}` },
           async () => {
             const { count } = await supabase
               .from("user_mistakes")
@@ -184,19 +155,7 @@ const App = () => {
     };
   }, []);
 
-
-  useEffect(() => {
-    const alreadyShown = sessionStorage.getItem("splashShown");
-    if (alreadyShown) {
-      setLoading(false);
-      return;
-    }
-    sessionStorage.setItem("splashShown", "true");
-    const timer = setTimeout(() => setLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading) return <SplashScreen />;
+  if (loading) return <SplashScreen theme={theme} />; // pass theme to SplashScreen
 
   return (
     <SessionContextProvider supabaseClient={supabase}>
@@ -210,24 +169,25 @@ const App = () => {
                 <FirstTimeGuide />
                 <Routes>
                   {/* Public Routes */}
-                  <Route path="/" element={<RootRedirect />} />
+                  <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                  <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                  <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+
                   <Route path="/redirect" element={<RedirectToRoleDashboard />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
 
                   {/* Redirect to role dashboard */}
                   <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
 
                   {/* Role Dashboards */}
-                  <Route path="/dashboard/student" element={<DashboardLayout userRole="student"><StudentDashboard /></DashboardLayout>} />
-                  <Route path="/dashboard/tutor" element={<DashboardLayout userRole="tutor"><TutorDashboard /></DashboardLayout>} />
-                  <Route path="/dashboard/staff" element={<DashboardLayout userRole="staff"><StaffDashboard /></DashboardLayout>} />
-                  <Route path="/my-mistakes" element={<DashboardLayout userRole={getRole()}>  <MyMistakes /></DashboardLayout>} />
+                  <Route path="/dashboard/student" element={<PrivateRoute><DashboardLayout userRole="student"><StudentDashboard /></DashboardLayout></PrivateRoute>} />
+                  <Route path="/dashboard/tutor" element={<PrivateRoute><DashboardLayout userRole="tutor"><TutorDashboard /></DashboardLayout></PrivateRoute>} />
+                  <Route path="/dashboard/staff" element={<PrivateRoute><DashboardLayout userRole="staff"><StaffDashboard /></DashboardLayout></PrivateRoute>} />
+
+                  <Route path="/my-mistakes" element={<DashboardLayout userRole={getRole()}><MyMistakes /></DashboardLayout>} />
 
                   {/* Authenticated Pages */}
                   <Route path="/ai-assistant" element={<DashboardLayout userRole={getRole()}><AIAssistant /></DashboardLayout>} />
-
                   <Route path="/calendar" element={<DashboardLayout userRole={getRole()}><Calendar /></DashboardLayout>} />
                   <Route path="/progress" element={<DashboardLayout userRole={getRole()}><StudyProgress /></DashboardLayout>} />
                   <Route path="/resources" element={<DashboardLayout userRole={getRole()}><Resources /></DashboardLayout>} />

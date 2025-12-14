@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 
 <head>
   <meta charset="UTF-8" />
@@ -34,29 +34,20 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
 
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "EducationalOrganization",
-      "name": "Medrae",
-      "url": "https://medrae.com/",
-      "logo": "https://medrae.com/icon-512.png",
-      "description": "Medrae is a professional medical education and career network offering clinical skills training, certifications, and healthcare opportunities.",
-      "sameAs": ["https://twitter.com/medrae_network"]
-    }
-  </script>
-</head>
-
-<body style="margin:0; height:100%; background:#fff;">
-  <div id="root" style="height:100%;"></div>
-
+  <!-- ✅ Lock theme and gradient splash BEFORE paint -->
   <script>
-    // ✅ Respect saved theme or system preference
-    let userTheme = localStorage.getItem('theme'); // 'light' | 'dark'
+    // Determine user theme immediately
+    let userTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
+    document.documentElement.classList.add(userTheme);
 
-    // Show gradient only for first-time visitors
+    // Default background to prevent flash
+    const bgColor = userTheme === 'dark' ? '#000' : '#fff';
+    document.documentElement.style.backgroundColor = bgColor;
+    document.body.style.backgroundColor = bgColor;
+
+    // Show animated gradient for first-time visitors
     const firstVisit = !localStorage.getItem('hasVisited');
     if (firstVisit) {
       localStorage.setItem('hasVisited', 'true');
@@ -79,19 +70,35 @@
         }
       `;
       document.head.appendChild(styleEl);
-    } else {
-      // Solid background for returning users respecting theme
-      const bgColor = userTheme === 'dark' ? '#000' : '#fff';
-      document.documentElement.style.backgroundColor = bgColor;
-      document.body.style.backgroundColor = bgColor;
     }
 
-    // Offline fallback
+    // Offline fallback: ensure UI shell visible immediately
     window.addEventListener("offline", () => {
       console.warn("You are offline. App shell is visible, network data won't load.");
+      const root = document.getElementById("root");
+      if (root && !root.innerHTML) {
+        root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
+      }
     });
   </script>
 
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "Medrae",
+      "url": "https://medrae.com/",
+      "logo": "https://medrae.com/icon-512.png",
+      "description": "Medrae is a professional medical education and career network offering clinical skills training, certifications, and healthcare opportunities.",
+      "sameAs": ["https://twitter.com/medrae_network"]
+    }
+  </script>
+</head>
+
+<body style="margin:0; height:100%;">
+  <div id="root" style="height:100%;"></div>
+
+  <!-- ✅ Load React app with offline-safe fallback -->
   <script type="module">
     import("/src/main.tsx").catch((err) => {
       console.error("Failed to load app. You may be offline.", err);

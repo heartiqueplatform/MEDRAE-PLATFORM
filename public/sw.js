@@ -1,4 +1,4 @@
-const CACHE_NAME = "medrae-app-shell-v01";
+const CACHE_NAME = "medrae-app-shell-v02";
 const urlsToCache = [
     "/", // SPA index
     "/index.html",
@@ -28,12 +28,11 @@ const urlsToCache = [
     "/sounds/tap1.mp3",
     "/sounds/tap2.mp3",
 
-
     // Videos
     "/videos/Medrae1.mp4",
     "/videos/Medrae2.mp4",
     "/videos/Medrae3.mp4",
-    // Add all other videos
+    // Add other videos if needed
 
     // SPA routes (from App.tsx)
     "/dashboard/student",
@@ -62,7 +61,7 @@ const urlsToCache = [
     "/feed"
 ];
 
-// Install: cache app shell + SPA routes
+// Install: cache app shell + SPA routes + gradient splash style
 self.addEventListener("install", (event) => {
     console.log("[SW] Install");
     event.waitUntil(
@@ -73,17 +72,25 @@ self.addEventListener("install", (event) => {
     self.skipWaiting();
 });
 
-// Activate: keep cache, claim clients
+// Activate: clean old caches if needed & claim clients
 self.addEventListener("activate", (event) => {
     console.log("[SW] Activate");
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then((keys) => {
+            return Promise.all(
+                keys
+                    .filter((key) => key !== CACHE_NAME)
+                    .map((key) => caches.delete(key))
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
-// Fetch: serve cache first, fallback to network
+// Fetch: cache-first with SPA fallback & offline image fallback
 self.addEventListener("fetch", (event) => {
     const request = event.request;
 
-    // SPA fallback for navigation requests
+    // SPA navigation fallback
     if (request.mode === "navigate") {
         event.respondWith(
             caches.match("/index.html").then((cached) => cached || fetch("/index.html"))
@@ -91,17 +98,18 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // Other requests: cache first, then network
+    // Other requests: cache-first then network
     event.respondWith(
         caches.match(request).then((cached) => {
             if (cached) return cached;
 
             return fetch(request)
                 .then((response) => {
-                    // Only cache same-origin requests (skip large media)
+                    // Cache same-origin requests except large media
                     if (
                         request.url.startsWith(self.location.origin) &&
-                        !request.url.includes("/medtube_videos/")
+                        !request.url.includes("/medtube_videos/") &&
+                        !request.url.includes("/videos/")
                     ) {
                         const responseClone = response.clone();
                         caches.open(CACHE_NAME).then((cache) =>
@@ -111,7 +119,7 @@ self.addEventListener("fetch", (event) => {
                     return response;
                 })
                 .catch(() => {
-                    // Optional: offline fallback for images
+                    // Offline fallback for images
                     if (request.destination === "image") {
                         return caches.match("/pwa-192x192.jpeg");
                     }
@@ -120,7 +128,7 @@ self.addEventListener("fetch", (event) => {
     );
 });
 
-// Optional: listen for skip waiting message
+// Optional: listen for skip waiting message to immediately activate new SW
 self.addEventListener("message", (event) => {
     if (event.data && event.data.type === "SKIP_WAITING") {
         self.skipWaiting();
