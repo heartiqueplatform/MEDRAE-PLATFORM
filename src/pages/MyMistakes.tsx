@@ -39,13 +39,25 @@ interface Mistake {
 
 export default function MyMistakes() {
     const navigate = useNavigate();
-    const [mistakes, setMistakes] = useState<Mistake[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [mistakeCount, setMistakeCount] = useState(0);
+
+    // 🌟 Load cached mistakes from localStorage first
+    const loadCachedMistakes = (): Mistake[] => {
+        const cached = localStorage.getItem("mistakes");
+        if (!cached) return [];
+        try {
+            return JSON.parse(cached);
+        } catch (e) {
+            console.error("Failed to parse cached mistakes:", e);
+            return [];
+        }
+    };
+
+    const [mistakes, setMistakes] = useState<Mistake[]>(() => loadCachedMistakes());
+    const [loading, setLoading] = useState(mistakes.length === 0); // Only show loader if nothing cached
+    const [mistakeCount, setMistakeCount] = useState(mistakes.length);
 
     // 🌟 Theme & body background (runs once after mount)
     useEffect(() => {
-        // Only run if window exists (prevents SSR issues)
         if (typeof window === "undefined") return;
 
         let userTheme = localStorage.getItem("theme");
@@ -60,20 +72,18 @@ export default function MyMistakes() {
         const bgColor = userTheme === "dark" ? "#000" : "#fff";
         document.documentElement.style.backgroundColor = bgColor;
 
-        // ✅ Safe: check if body exists before touching style
         if (document.body) {
             document.body.style.backgroundColor = bgColor;
         } else {
-            // If body doesn't exist yet, wait for DOMContentLoaded
             window.addEventListener("DOMContentLoaded", () => {
                 document.body.style.backgroundColor = bgColor;
             });
         }
     }, []);
 
-    // 🌟 Fetch mistakes and setup real-time updates
+    // 🌟 Fetch mistakes from Supabase in background
     useEffect(() => {
-        let isMounted = true; // track component mount for safe state updates
+        let isMounted = true;
 
         const fetchMistakes = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -110,8 +120,8 @@ export default function MyMistakes() {
                 const userMistakes = (data || []).filter((m) => m.questions);
                 setMistakes(userMistakes);
                 setMistakeCount(userMistakes.length);
+                localStorage.setItem("mistakes", JSON.stringify(userMistakes));
                 localStorage.setItem("mistakeCount", String(userMistakes.length));
-                // Loader hides immediately, while mistakes are updated silently
                 setLoading(false);
             }
         };
@@ -155,6 +165,7 @@ export default function MyMistakes() {
             const updated = mistakes.filter((m) => m.questions.id !== questionId);
             setMistakes(updated);
             setMistakeCount(updated.length);
+            localStorage.setItem("mistakes", JSON.stringify(updated));
             localStorage.setItem("mistakeCount", String(updated.length));
 
             // Play tap sound

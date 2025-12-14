@@ -1,30 +1,29 @@
 "use client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
 import { useSidebar } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import {
-  Newspaper, Home, Brain, MessageCircle, MessageSquare,
+  Newspaper, Home, Brain, MessageSquare,
   Calendar, TrendingUp, Heart, Play, BookOpen, FileText,
   Video, Bell, Settings, CreditCard, Users, Star,
-  Network, CalendarDays, Briefcase, PenTool
+  Network, CalendarDays, Briefcase, PenTool, AlertCircle
 } from "lucide-react";
 
 interface BottomBarProps {
   userRole: 'student' | 'tutor' | 'staff';
   unreadCount: number;
   unreadAnnouncements: number;
+  mistakeCount: number;
 }
 
-export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: BottomBarProps) {
+export function BottomBar({ userRole, unreadCount, unreadAnnouncements, mistakeCount }: BottomBarProps) {
   const { state } = useSidebar();
   const isSidebarOpen = state !== "collapsed";
   const location = useLocation();
 
   const allItems = [
     { title: "Feed", url: "/feed", icon: Newspaper },
-
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain },
     { title: "Forum", url: "/forum", icon: MessageSquare },
     { title: "Assessment Calendar", url: "/calendar", icon: Calendar },
@@ -32,6 +31,10 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
     { title: "Medrae Quizzes Bank", url: "/Medrae-quizzes", icon: Heart },
     { title: "NCK Simulation", url: "/simulation/candidate", icon: Play },
     { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home },
+
+    // Added My Mistakes here
+    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? mistakeCount : undefined },
+
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
     { title: "Notes & Resources Bank", url: "/resources", icon: FileText },
     { title: "MedTube", url: "/medtube", icon: Play },
@@ -58,11 +61,8 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
       ? "text-primary"
       : "text-muted-foreground hover:text-foreground";
 
-
-
   return (
     <div className={`${isSidebarOpen ? 'hidden' : ''} fixed bottom-0 left-0 right-0 z-50`}>
-      {/* Hover-sensitive area */}
       <div className="h-8 w-full relative group">
         <div className="absolute bottom-0 left-0 right-0 h-12 bg-background shadow-t flex justify-around items-center border-t border-border transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
           {allItems.map((item) => (
@@ -72,11 +72,16 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
                 className={`flex items-center justify-center w-full h-full ${getNavClass(item.url)}`}
               >
                 <item.icon className="h-6 w-6 transition-transform duration-200 group-hover:scale-110" />
+
+                {/* Badges */}
                 {(item.title === "Chat Room" && unreadCount > 0) && (
                   <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadCount}</Badge>
                 )}
                 {(item.title === "Announcements" && unreadAnnouncements > 0) && (
                   <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{unreadAnnouncements}</Badge>
+                )}
+                {(item.title === "My Mistakes" && item.badge) && (
+                  <Badge variant="secondary" className="absolute -top-1 -right-1 h-3 text-[10px]">{item.badge}</Badge>
                 )}
               </Link>
 
@@ -89,5 +94,4 @@ export function BottomBar({ userRole, unreadCount, unreadAnnouncements }: Bottom
       </div>
     </div>
   );
-
 }

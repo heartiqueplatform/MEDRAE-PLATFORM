@@ -156,10 +156,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
   };
   const mainItems = [
-
-    { title: "Feed", url: "/feed", icon: Newspaper },
-    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? mistakeCount : undefined },
     { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home },
+    { title: "Feed Page", url: "/feed", icon: Newspaper },
+    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? mistakeCount : undefined },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
     { title: "Forum", url: "/forum", icon: MessageSquare },
 

@@ -55,16 +55,21 @@ const SkeletonCard = () => (
 
 
 export default function Feed() {
-
-  const [questions, setQuestions] = useState([]);
   // ✅ Feedback Power-Up tracking
   const [correctStreak, setCorrectStreak] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(0);
   // ✅ Feedback Power-Up message
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [answers, setAnswers] = useState({});
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(() => {
+    const saved = localStorage.getItem("feed_page");
+    return saved ? parseInt(saved) : 0;
+  });
+  const savedQuestions = JSON.parse(localStorage.getItem("questions")) || [];
+
+  const [questions, setQuestions] = useState(savedQuestions);
+  const [loading, setLoading] = useState(savedQuestions.length === 0);
+
   const { width, height } = useWindowSize();
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -211,6 +216,16 @@ export default function Feed() {
 
   const [user, setUser] = useState(null);
   const [questionCount, setQuestionCount] = useState(0);
+  useEffect(() => {
+    if (!questions.length) {  // only fetch if no cached questions
+      setLoading(true);
+      fetchQuestions().then((data) => {
+        setQuestions(data);
+        localStorage.setItem("questions", JSON.stringify(data));
+        setLoading(false);
+      });
+    }
+  }, []);
 
   // Load total answered count from DB (and cache in localStorage)
   useEffect(() => {
@@ -342,6 +357,7 @@ export default function Feed() {
   }, []);
 
   // Load user & restore localStorage safely with preloading
+  // NEW: user & questions init with stale-while-revalidate
   useEffect(() => {
     let backgroundTimer: NodeJS.Timeout;
 
@@ -352,99 +368,58 @@ export default function Feed() {
       setUser(data.user);
       const userId = data.user.id;
 
-      // Load saved data from localStorage
+      // 1️⃣ Load saved data from localStorage immediately
       const savedQuestions = JSON.parse(
         localStorage.getItem(`feed_questions_${userId}`) || "[]"
       );
       const savedAnswers = JSON.parse(
         localStorage.getItem(`feed_answers_${userId}`) || "{}"
       );
-      const savedComments = JSON.parse(
-        localStorage.getItem(`feed_comments_${userId}`) || "{}"
-      );
 
-      // Filter out answered/incomplete questions
+      // Filter out answered questions
       const filteredQuestions = savedQuestions.filter(
-        (q) =>
-          q &&
-          q.id &&
-          q.question_text &&
-          (q.option_a || q.option_b || q.option_c || q.option_d) &&
-          !savedAnswers[q.id]
+        (q) => q && q.id && !savedAnswers[q.id]
       );
 
       setQuestions(filteredQuestions);
       setAnswers(savedAnswers);
 
-      // Restore comments if active question is open
-      if (activeQuestion && savedComments[activeQuestion]) {
-        setComments(savedComments[activeQuestion]);
-      }
-
-      // 1️⃣ Fetch first 450 questions immediately
-      const firstBatch = await fetchQuestions(0, 250);
-      setQuestions((prev) => {
-        const existingIds = new Set(prev.map((q) => q.id));
-        const merged = [
-          ...prev,
-          ...firstBatch.filter((q) => !existingIds.has(q.id)),
-        ];
-        localStorage.setItem(
-          `feed_questions_${userId}`,
-          JSON.stringify(merged)
-        );
-        return merged;
-      });
-      setPage(Math.ceil(450 / 20)); // update page based on fetchQuestions paging
-
-      // 2️⃣ Progressive background fetch schedule: 10, 20, 30, 60 minutes
-      const fetchSchedule = [10 * 60000, 20 * 60000, 30 * 60000, 60 * 60000];
-
-      const fetchBatches = async (index = 0) => {
-        if (!user) return;
-
-        const nextBatch = await fetchQuestions(page, 150); // fetch next 150 questions
-
-        // Stop if no new questions returned
-        if (!nextBatch || nextBatch.length === 0) return;
+      // 2️⃣ Start background fetching
+      const fetchAndMergeQuestions = async (page = 0) => {
+        const newQuestions = await fetchQuestions(page, 150);
+        if (!newQuestions || newQuestions.length === 0) return;
 
         setQuestions((prev) => {
-          const currentIds = new Set(prev.map((q) => q.id));
-          const mergedNext = [
-            ...prev,
-            ...nextBatch.filter((q) => !currentIds.has(q.id)),
-          ];
-          localStorage.setItem(
-            `feed_questions_${user.id}`,
-            JSON.stringify(mergedNext)
-          );
-          return mergedNext;
+          const seenIds = new Set(prev.map((q) => q.id));
+          const merged = [...prev, ...newQuestions.filter(q => !seenIds.has(q.id))];
+          localStorage.setItem(`feed_questions_${userId}`, JSON.stringify(merged));
+          return merged;
         });
 
-        setPage((prev) => prev + Math.ceil(150 / 20));
+        // Schedule next fetch: 10, 20, 30, 60 minutes
+        const fetchSchedule = [10, 20, 30, 60]; // minutes
+        let index = 0;
 
-        // Schedule next fetch
-        if (index < fetchSchedule.length - 1) {
-          backgroundTimer = setTimeout(
-            () => fetchBatches(index + 1),
-            fetchSchedule[index]
-          );
-        } else {
-          // After schedule ends, continue fetching every 60 min
-          backgroundTimer = setTimeout(() => fetchBatches(index), 60 * 60000);
-        }
+        const scheduleNext = () => {
+          if (index >= fetchSchedule.length) index = fetchSchedule.length - 1; // keep 60 min
+          backgroundTimer = setTimeout(async () => {
+            index++;
+            await fetchAndMergeQuestions(page + 1);
+            scheduleNext();
+          }, fetchSchedule[index - 1] * 60 * 1000);
+        };
+
+        scheduleNext();
       };
 
-      // Start progressive background fetch 10 minutes after initial fetch
-      backgroundTimer = setTimeout(() => fetchBatches(0), fetchSchedule[0]);
+      fetchAndMergeQuestions(0);
     };
 
-    // Call init
     init();
 
-    // Cleanup
     return () => clearTimeout(backgroundTimer);
   }, []);
+
 
   //  Sync answered questions to qfeed_seen whenever answers change
   useEffect(() => {
@@ -563,44 +538,58 @@ export default function Feed() {
   };
 
   // Infinite scroll loader
+  // Infinite scroll loader (localStorage-safe)
   const loadMore = async () => {
     if (loading || !user) return;
     setLoading(true);
 
-    // Preserve scroll position
-    const container = loaderRef.current?.parentElement; // assuming loaderRef is at the bottom
+    const container = loaderRef.current?.parentElement;
     const prevScrollHeight = container?.scrollHeight || 0;
 
-    const savedQuestions = [...questions];
-    const seenIdsSet = new Set(savedQuestions.map((q) => q.id));
+    // 1️⃣ Always start from localStorage (source of truth)
+    const stored = JSON.parse(
+      localStorage.getItem(`feed_questions_${user.id}`) || "[]"
+    );
 
+    const existingIds = new Set(stored.map((q) => q.id));
+
+    // 2️⃣ Fetch next page in background
     const newData = await fetchQuestions(page);
 
-    if (newData.length > 0) {
-
-      // ⚡ Filter out invalid/empty questions
+    if (newData && newData.length > 0) {
       const validNewData = newData.filter(
         (q) =>
           q &&
           q.id &&
           q.question_text &&
           (q.option_a || q.option_b || q.option_c || q.option_d) &&
-          !seenIdsSet.has(q.id)
+          !existingIds.has(q.id)
       );
 
       if (validNewData.length > 0) {
-        const merged = [...savedQuestions, ...validNewData];
-        setQuestions(merged);
-        localStorage.setItem(`feed_questions_${user.id}`, JSON.stringify(merged));
-        setPage((prev) => prev + 1);
+        const merged = [...stored, ...validNewData];
 
-        // 🔧 Adjust scroll to reduce jumps
+        // 3️⃣ Update state + cache
+        setQuestions(merged);
+        localStorage.setItem(
+          `feed_questions_${user.id}`,
+          JSON.stringify(merged)
+        );
+
+        setPage((prev) => {
+          const next = prev + 1;
+          localStorage.setItem("feed_page", next.toString());
+          return next;
+        });
+
+
+        // 4️⃣ Preserve scroll position
         setTimeout(() => {
           if (container) {
             const newScrollHeight = container.scrollHeight;
             container.scrollTop += newScrollHeight - prevScrollHeight;
           }
-        }, 50); // delay to let React render the new cards
+        }, 50);
       }
     }
 
@@ -750,8 +739,9 @@ export default function Feed() {
     const { data, error } = await supabase
       .from("qfeed_comments")
       .select(
-        "id, comment_text, created_at, user_id, parent_id, profiles(full_name, avatar_url)"
+        "id, comment_text, created_at, user_id, parent_id, profiles(name, avatar_url)"
       )
+
       .eq("question_id", questionId)
       .order("created_at", { ascending: true });
 
@@ -1673,13 +1663,15 @@ export default function Feed() {
                     >
                       <img
                         src={c.profiles?.avatar_url || "/UsersAvatar.jpg"}
-                        alt={c.profiles?.full_name || "User"}
+                        alt={c.profiles?.name || "User"}
                         className="w-8 h-8 rounded-full"
                       />
+
                       <div className="flex-1">
                         <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                          {c.profiles?.full_name || "User"}
+                          {c.profiles?.name || "User"}
                         </p>
+
                         <p className="text-gray-700 dark:text-gray-300">
                           {c.comment_text}
                         </p>
