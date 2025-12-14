@@ -353,32 +353,39 @@ export const DailyTriviaCard = () => {
                             </motion.div>
                         </div>
                     )}
-
-                    <div className="flex justify-between items-start mt-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex flex-col md:flex-row justify-between items-start mt-4">
+                        {/* Students attempted info */}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 md:mb-0">
                             <MessageCircle className="w-4 h-4" />
                             {topStudents.length} students attempted today
                         </div>
 
-                        <div>
+                        {/* Top students */}
+                        <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
                             <div className="flex items-center gap-2">
                                 <Trophy className="w-4 h-4 text-yellow-500" />
                                 Daily Top Students
                             </div>
 
-                            <div className="ml-1 mt-1 text-sm">
+                            <div className="ml-1 mt-1 text-sm w-full md:w-auto">
                                 {topStudents.map((s, idx) => (
                                     <div key={s.user_id} className="flex justify-between items-center gap-2 py-1">
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <img src={s.avatar_url || "/UsersAvatar.jpg"} alt={s.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                                            <img
+                                                src={s.avatar_url || "/UsersAvatar.jpg"}
+                                                alt={s.name}
+                                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                            />
                                             <div className="flex flex-col text-sm truncate min-w-0">
                                                 <span className="font-medium truncate">{s.name}</span>
-                                                {s.institution && <span className="text-xs text-muted-foreground truncate">{s.institution}</span>}
+                                                {s.institution && (
+                                                    <span className="text-xs text-muted-foreground truncate">{s.institution}</span>
+                                                )}
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-1 text-sm flex-shrink-0">
-                                            <span>{s.score} pts</span>
+                                        <div className="flex items-center gap-1 text-sm flex-shrink-0 text-right">
+                                            <span className="whitespace-nowrap">{s.score} pts</span>
                                             {idx === 0 && <Badge variant="destructive">🥇</Badge>}
                                             {idx === 1 && <Badge variant="secondary">🥈</Badge>}
                                             {idx === 2 && <Badge variant="warning">🥉</Badge>}
@@ -388,6 +395,7 @@ export const DailyTriviaCard = () => {
                             </div>
                         </div>
                     </div>
+
                     {!started && !completed && (
                         <Button
                             className="w-full mt-4"

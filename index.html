@@ -34,53 +34,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
 
-  <!-- ✅ Lock theme and gradient splash BEFORE paint -->
-  <script>
-    // Determine user theme immediately
-    let userTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
-    document.documentElement.classList.add(userTheme);
-
-    // Default background to prevent flash
-    const bgColor = userTheme === 'dark' ? '#000' : '#fff';
-    document.documentElement.style.backgroundColor = bgColor;
-    document.body.style.backgroundColor = bgColor;
-
-    // Show animated gradient for first-time visitors
-    const firstVisit = !localStorage.getItem('hasVisited');
-    if (firstVisit) {
-      localStorage.setItem('hasVisited', 'true');
-      const gradient = userTheme === 'dark'
-        ? 'linear-gradient(135deg, #003366, #0059b3, #0a1f2e)'
-        : 'linear-gradient(135deg, #1e90ff, #4dd2ff, #00aaff)';
-      const styleEl = document.createElement('style');
-      styleEl.innerHTML = `
-        html, body, #root {
-          height: 100%;
-          margin: 0;
-          background: ${gradient};
-          background-size: 400% 400%;
-          animation: glow 6s ease-in-out infinite alternate;
-        }
-        @keyframes glow {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-      `;
-      document.head.appendChild(styleEl);
-    }
-
-    // Offline fallback: ensure UI shell visible immediately
-    window.addEventListener("offline", () => {
-      console.warn("You are offline. App shell is visible, network data won't load.");
-      const root = document.getElementById("root");
-      if (root && !root.innerHTML) {
-        root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
-      }
-    });
-  </script>
 
   <script type="application/ld+json">
     {
@@ -106,6 +59,54 @@
       if (root) root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
     });
   </script>
+  <!-- ✅ Lock theme and gradient splash BEFORE paint -->
+  <script>
+    // Determine user theme immediately
+    let userTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
+    document.documentElement.classList.add(userTheme);
+
+    // Default background to prevent flash
+    const bgColor = userTheme === 'dark' ? '#000' : '#fff';
+    document.documentElement.style.backgroundColor = bgColor;
+    document.body.style.backgroundColor = bgColor;
+
+    // Show animated gradient for first-time visitors
+    const firstVisit = !localStorage.getItem('hasVisited');
+    if (firstVisit) {
+      localStorage.setItem('hasVisited', 'true');
+      const gradient = userTheme === 'dark'
+        ? 'linear-gradient(135deg, #003366, #0059b3, #0a1f2e)'
+        : 'linear-gradient(135deg, #1e90ff, #4dd2ff, #00aaff)';
+      const styleEl = document.createElement('style');
+      styleEl.innerHTML = `
+          html, body, #root {
+            height: 100%;
+            margin: 0;
+            background: ${gradient};
+            background-size: 400% 400%;
+            animation: glow 6s ease-in-out infinite alternate;
+          }
+          @keyframes glow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+        `;
+      document.head.appendChild(styleEl);
+    }
+
+    // Offline fallback: ensure UI shell visible immediately
+    window.addEventListener("offline", () => {
+      console.warn("You are offline. App shell is visible, network data won't load.");
+      const root = document.getElementById("root");
+      if (root && !root.innerHTML) {
+        root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
+      }
+    });
+  </script>
+
 </body>
 
 </html>

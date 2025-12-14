@@ -31,7 +31,8 @@ export default function StudentDashboard() {
   const [name, setName] = useState<string | null>(null);
   const [studyProgress, setStudyProgress] = useState(0);
   const [quizCount, setQuizCount] = useState(0);
-  const [avgScore, setAvgScore] = useState(0);
+  const [targetScore, setTargetScore] = useState<number>(50);
+
   const [studyStreak, setStudyStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
@@ -78,6 +79,61 @@ export default function StudentDashboard() {
     }
   };
 
+
+  // Function to fetch quiz count following the "latest attempt > 0" rule
+  const fetchQuizCount = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Fetch all quiz results for the user
+      const { data, error } = await supabase
+        .from("quiz_results")
+        .select("unit, score")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error fetching quiz results:", error.message);
+        return;
+      }
+
+      if (!data) return;
+
+      // Group by unit
+      const grouped: Record<string, any[]> = {};
+      data.forEach((res) => {
+        const key = res.unit || "Unknown";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(res);
+      });
+
+      // Only count units whose latest attempt has score > 0
+      const validUnits = Object.keys(grouped).filter((unitName) => {
+        const attempts = grouped[unitName];
+        const latestAttempt = attempts[attempts.length - 1]; // assume last = latest
+        return latestAttempt?.score && latestAttempt.score > 0;
+      });
+
+      setQuizCount(validUnits.length);
+    } catch (err) {
+      console.error("Error fetching quiz count:", err);
+    }
+  };
+
+  // Fetch quiz count when user changes
+  useEffect(() => {
+    if (user?.id) {
+      setLoadingStats(true); // show loading
+      fetchQuizCount().finally(() => setLoadingStats(false));
+    }
+  }, [user]);
+
+  // Persist quiz count in localStorage
+  useEffect(() => {
+    if (quizCount !== undefined) {
+      localStorage.setItem("quizCount", JSON.stringify(quizCount));
+    }
+  }, [quizCount]);
+
   const loadDashboardData = async () => {
 
     if (!user?.id) return;
@@ -93,7 +149,6 @@ export default function StudentDashboard() {
       await Promise.all([
         fetchProfile(),
         fetchProgress(),
-        fetchQuizzes(),
         handleLoginAndStreak(),
         fetchCalendarEvents(),
         fetchUnitCounts(),
@@ -112,7 +167,7 @@ export default function StudentDashboard() {
           name,
           studyProgress,
           quizCount,
-          avgScore,
+
           studyStreak,
           bestStreak,
           calendarEvents,
@@ -345,17 +400,18 @@ export default function StudentDashboard() {
     setLatestPostId(mergedPosts[0].id);
   };
 
+
   useEffect(() => {
     if (
       studyProgress !== undefined &&
       quizCount !== undefined &&
-      avgScore !== undefined &&
+
       studyStreak !== undefined &&
       bestStreak !== undefined
     ) {
       setLoadingStats(false);
     }
-  }, [studyProgress, quizCount, avgScore, studyStreak, bestStreak]);
+  }, [studyProgress, quizCount, studyStreak, bestStreak]);
 
   // Initial fetch
   // Load all dashboard data on page open
@@ -369,7 +425,7 @@ export default function StudentDashboard() {
         if (parsed.name) setName(parsed.name);
         if (parsed.studyProgress) setStudyProgress(parsed.studyProgress);
         if (parsed.quizCount) setQuizCount(parsed.quizCount);
-        if (parsed.avgScore) setAvgScore(parsed.avgScore);
+
         if (parsed.studyStreak) setStudyStreak(parsed.studyStreak);
         if (parsed.bestStreak) setBestStreak(parsed.bestStreak);
         if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
@@ -632,12 +688,15 @@ export default function StudentDashboard() {
     if (!name) setLoading(true); // show spinner only if name not yet loaded
     const { data, error } = await supabase
       .from("profiles")
-      .select("name")
+      .select("name, target_score")
+
       .eq("user_id", user.id)
       .single();
-    if (!error && data?.name) {
-      setName(data.name.split(" ")[0]);
+    if (!error && data) {
+      if (data.name) setName(data.name.split(" ")[0]);
+      if (data.target_score !== null) setTargetScore(data.target_score);
     }
+
     setLoading(false); // hide spinner
   };
   const handleLoginAndStreak = async () => {
@@ -718,54 +777,80 @@ export default function StudentDashboard() {
     }
   };
 
+  const STUDY_PROGRESS_KEY = "dashboard_study_progress";
+
   const fetchProgress = async () => {
-    const { data, error } = await supabase
-      .from("progress")
-      .select("percentage_complete")
-      .eq("user_id", user.id);
+    if (!user?.id) return;
 
-    if (!error && data && data.length > 0) {
-      const avg =
-        data.reduce((sum, item) => sum + (item.percentage_complete || 0), 0) /
-        data.length;
-      setStudyProgress(Math.round(avg));
-    } else {
-      // fallback: calculate from quiz_results
-      const { data: quizData, error: quizError } = await supabase
-        .from("quiz_results")
-        .select("score, total_questions")
-        .eq("user_id", user.id);
-
-      if (!quizError && quizData && quizData.length > 0) {
-        const overall =
-          quizData.reduce(
-            (sum, item) =>
-              sum + (item.total_questions > 0 ? (item.score / item.total_questions) * 100 : 0),
-            0
-          ) / quizData.length;
-
-        setStudyProgress(Math.round(overall));
-      } else {
-        setStudyProgress(0);
+    // 0️⃣ Load cached progress instantly (no waiting)
+    try {
+      const cached = localStorage.getItem(STUDY_PROGRESS_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (typeof parsed === "number") {
+          setStudyProgress(parsed);
+        }
       }
+    } catch (e) {
+      console.warn("Failed to read cached progress");
     }
-  };
 
-
-  const fetchQuizzes = async () => {
-    const { data, error } = await supabase
-      .from("quiz_attempts")
-      .select("score, submitted_at")
+    // 1️⃣ Fetch user quiz results (background update)
+    const { data: results, error } = await supabase
+      .from("quiz_results")
+      .select("unit, score, total_questions")
       .eq("user_id", user.id);
-    if (!error && data.length > 0) {
-      const scores = data.map((q) => q.score || 0);
-      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      setQuizCount(data.length);
-      setAvgScore(Math.round(avg));
-      const submittedDates = data.map((q) => q.submitted_at);
-      calculateStreak(submittedDates);
+
+    if (error || !results) {
+      console.error("Failed to fetch progress");
+      return;
+    }
+
+    if (results.length === 0) {
+      setStudyProgress(0);
+      localStorage.setItem(STUDY_PROGRESS_KEY, JSON.stringify(0));
+      return;
+    }
+
+    // 2️⃣ Group by unit & keep highest progress per unit
+    const grouped: Record<string, number> = {};
+
+    results.forEach((res) => {
+      const unit = res.unit || "Unknown";
+      const percent =
+        res.total_questions > 0
+          ? (res.score / res.total_questions) * 100
+          : 0;
+
+      grouped[unit] = grouped[unit]
+        ? Math.max(grouped[unit], percent)
+        : percent;
+    });
+
+    // 3️⃣ Average unit progress
+    const unitProgressValues = Object.values(grouped);
+
+    const overallProgress =
+      unitProgressValues.length > 0
+        ? Math.round(
+          unitProgressValues.reduce((a, b) => a + b, 0) /
+          unitProgressValues.length
+        )
+        : 0;
+
+    // 4️⃣ Update state + cache (silent sync)
+    setStudyProgress(overallProgress);
+
+    try {
+      localStorage.setItem(
+        STUDY_PROGRESS_KEY,
+        JSON.stringify(overallProgress)
+      );
+    } catch (e) {
+      console.warn("Failed to cache progress");
     }
   };
+
 
   const calculateStreak = (submittedDates: string[]) => {
     let streak = 0;
@@ -1025,8 +1110,9 @@ export default function StudentDashboard() {
 
           <div className="relative z-20 p-4">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-white">Average Score</CardTitle>
-              <Star className="h-4 w-4 text-white/80" />
+              <CardTitle className="text-sm font-medium text-white">My Target Score</CardTitle>
+              <Target className="h-4 w-4 text-white/80" />
+
             </CardHeader>
             <CardContent>
               {loadingStats ? (
@@ -1036,9 +1122,11 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold text-white">{avgScore}%</div>
-                  <p className="text-xs text-white/80 truncate">+5% from last month</p>
+
+                  <div className="text-2xl font-bold text-white">{targetScore}%</div>
+                  <p className="text-xs text-white/80 truncate">Your personal target</p>
                 </>
+
               )}
             </CardContent>
           </div>

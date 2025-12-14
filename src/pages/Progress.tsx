@@ -1,5 +1,5 @@
 "use client";
-
+import { GlobalLoader } from "@/components/GlobalLoader";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -29,19 +29,23 @@ import { allUnits } from "@/constants/units";
 
 // --- Local Storage Helpers ---
 const LOCAL_STORAGE_KEY = "study_progress_cache";
-
-function saveToLocalStorage(data: any) {
+function saveToLocalStorage(userId: string, data: any) {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      JSON.stringify({ userId, ...data })
+    );
   } catch (e) {
     console.error("Error saving to localStorage:", e);
   }
 }
 
-function loadFromLocalStorage() {
+function loadFromLocalStorage(userId: string) {
   try {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    return parsed.userId === userId ? parsed : null;
   } catch (e) {
     console.error("Error reading from localStorage:", e);
     return null;
@@ -57,11 +61,13 @@ export function StudyProgress() {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
-
+  const [unitsWithStats, setUnitsWithStats] = useState<any[]>([]);
+  const [totalTopicsInApp, setTotalTopicsInApp] = useState(0);
   useEffect(() => {
     const fetchProgress = async (showLoader = true) => {
       if (showLoader) setLoading(true);
 
+      // 1️⃣ Get current user
       const {
         data: { user },
         error: userError,
@@ -73,6 +79,15 @@ export function StudyProgress() {
         return;
       }
 
+      // 2️⃣ Load cached progress first
+      const cached = loadFromLocalStorage(user.id);
+      if (cached) {
+        setSubjects(cached.subjects || []);
+        setTotalStarsEarned(cached.totalStarsEarned || 0);
+        setUnitsWithStats(cached.subjects || []);
+      }
+
+      // 3️⃣ Fetch quiz results
       const { data, error } = await supabase
         .from("quiz_results")
         .select("unit, score, total_questions")
@@ -84,69 +99,84 @@ export function StudyProgress() {
         return;
       }
 
-      // --- Group results by unit (highest progress, count attempts) ---
-      const grouped: Record<string, { highestProgress: number; count: number }> = {};
+      // 4️⃣ Fetch all quizzes to know total topics
+      const { data: allQuizzes, error: quizError } = await supabase
+        .from("quizzes")
+        .select("unit, id");
+
+      if (quizError) {
+        console.error("Error fetching quizzes:", quizError.message);
+        if (showLoader) setLoading(false);
+        return;
+      }
+
+      const totalTopicsInApp = allQuizzes?.length || 0;
+
+      // 5️⃣ Group results by unit, only include units whose latest attempt > 0
+      const grouped: Record<string, { highestProgress: number; attempts: number }> = {};
+
       data?.forEach((res) => {
         const key = res.unit || "Unknown";
         const percent = res.total_questions > 0 ? (res.score / res.total_questions) * 100 : 0;
 
-        if (!grouped[key]) grouped[key] = { highestProgress: percent, count: 1 };
+        if (!grouped[key]) grouped[key] = { highestProgress: percent, attempts: 1 };
         else {
           grouped[key].highestProgress = Math.max(grouped[key].highestProgress, percent);
-          grouped[key].count += 1;
+          grouped[key].attempts += 1;
         }
       });
 
-      // --- Build unit stats ---
-      const unitsWithStats = allUnits
-        .filter((unit) => grouped[unit.title])
-        .map((unit) => {
-          const stats = grouped[unit.title];
-          const progress = Math.round(stats.highestProgress);
-          const hours = stats.count * 1.5;
-          const rating = stats.count > 0 ? 5 : 0;
+      // 6️⃣ Filter units: only include if latest attempt > 0
+      const unitsToInclude = Object.keys(grouped).filter((unitName) => {
+        // Find all attempts for this unit
+        const attempts = data?.filter((r) => r.unit === unitName) || [];
+        const latestAttempt = attempts[attempts.length - 1]; // assume last is latest
+        return latestAttempt?.score && latestAttempt.score > 0;
+      });
 
-          return {
-            id: unit.code,
-            name: unit.title,
-            progress,
-            rating,
-            hoursStudied: hours,
-            topicsCompleted: stats.count,
-            totalTopics: stats.count, // number of attempts as totalTopics
-          };
-        });
+      const computedUnits = unitsToInclude.map((unitName) => {
+        const stats = grouped[unitName];
+        return {
+          id: unitName,
+          name: unitName,
+          progress: Math.round(stats.highestProgress),
+          hoursStudied: stats.attempts * 1.5,
+          topicsCompleted: stats.attempts,
+          totalTopics: allQuizzes.filter((q) => q.unit === unitName).length || stats.attempts,
+          rating: stats.attempts > 0 ? 5 : 0,
+        };
+      });
 
-      const totalStars = unitsWithStats.reduce((acc, s) => acc + s.rating, 0);
+      // 7️⃣ Compute overall stats
+      const totalStars = computedUnits.reduce((acc, s) => acc + s.rating, 0);
 
-      // --- Only update if data changed ---
-      const cached = loadFromLocalStorage();
-      if (!cached || !isEqualData(cached.subjects, unitsWithStats)) {
-        setSubjects(unitsWithStats);
+      // 8️⃣ Only update state if data changed
+      if (!isEqualData(computedUnits, unitsWithStats)) {
+        setUnitsWithStats(computedUnits);
+        setSubjects(computedUnits);
         setTotalStarsEarned(totalStars);
-        saveToLocalStorage({ subjects: unitsWithStats, totalStarsEarned: totalStars });
+        setTotalTopicsInApp(totalTopicsInApp);
+
+        // 9️⃣ Save updated data to localStorage
+        saveToLocalStorage(user.id, {
+          subjects: computedUnits,
+          totalStarsEarned: totalStars,
+        });
       }
 
       if (showLoader) setLoading(false);
     };
 
-    // --- Initial load with cached data ---
-    const cached = loadFromLocalStorage();
-    if (cached) {
-      setSubjects(cached.subjects);
-      setTotalStarsEarned(cached.totalStarsEarned);
-      setLoading(false);
-    } else {
-      fetchProgress(true);
-    }
+    // Initial load (uses cached data immediately)
+    fetchProgress(true);
 
-    // --- Realtime subscription ---
+    // Realtime subscription to automatically update progress
     const channel = supabase
       .channel("quiz_results_changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "quiz_results" },
-        () => fetchProgress(false)
+        () => fetchProgress(false) // background update
       )
       .subscribe();
 
@@ -156,14 +186,15 @@ export function StudyProgress() {
   }, []);
 
   const overallStats = {
-    totalHours: subjects.reduce((acc, s) => acc + s.hoursStudied, 0),
-    totalStars: totalStarsEarned,
-    totalProgress: subjects.length
-      ? subjects.reduce((acc, s) => acc + s.progress, 0) / subjects.length
+    totalHours: unitsWithStats.reduce((acc, s) => acc + s.hoursStudied, 0),
+    totalStars: unitsWithStats.reduce((acc, s) => acc + s.rating, 0),
+    totalProgress: unitsWithStats.length
+      ? Math.round(unitsWithStats.reduce((acc, s) => acc + s.progress, 0) / unitsWithStats.length)
       : 0,
-    completedTopics: subjects.reduce((acc, s) => acc + s.topicsCompleted, 0),
-    totalTopics: subjects.reduce((acc, s) => acc + s.totalTopics, 0),
+    completedTopics: unitsWithStats.reduce((acc, s) => acc + s.topicsCompleted, 0),
+    totalTopics: totalTopicsInApp,
   };
+
 
   const renderStars = (rating: number) =>
     Array.from({ length: 5 }).map((_, i) => (
@@ -239,7 +270,6 @@ export function StudyProgress() {
 
       {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
       <SimulationAndTriviaSummary />
-
       <Tabs defaultValue="subjects" className="space-y-4">
         <TabsList>
           <TabsTrigger value="subjects">By Unit</TabsTrigger>
@@ -247,10 +277,9 @@ export function StudyProgress() {
         </TabsList>
 
         <TabsContent value="subjects" className="space-y-4">
-          {loading ? (
+          {subjects.length === 0 && loading ? (
             <div className="flex justify-center items-center py-10">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
-              <p className="ml-4 text-muted-foreground">Updating progress...</p>
+              <GlobalLoader />
             </div>
           ) : (
             <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
@@ -323,6 +352,30 @@ export function StudyProgress() {
             </CardContent>
           </Card>
         </TabsContent>
+
+
+        <TabsContent value="timeline">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Learning Timeline
+              </CardTitle>
+              <CardDescription>Your progress over the past weeks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border-l-2 border-primary pl-4">
+                <div className="relative">
+                  <div className="absolute -left-6 w-3 h-3 bg-primary rounded-full" />
+                  <div className="space-y-1">
+                    <p className="font-medium">Completed latest quiz</p>
+                    <p className="text-sm text-muted-foreground">Recently • Updated</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -343,29 +396,105 @@ function SimulationAndTriviaSummary() {
   const [streak, setStreak] = useState(0);
   const [simSummary, setSimSummary] = useState(null);
   const [triviaSummary, setTriviaSummary] = useState(null);
+  const [targetInput, setTargetInput] = useState(50);
+  const [savingTarget, setSavingTarget] = useState(false);
 
+  // 🔹 Load saved targetInput from localStorage on mount
   useEffect(() => {
-    // Load from localStorage instantly
+    // Load stored summaries
     const storedSim = localStorage.getItem("simSummary");
     const storedTrivia = localStorage.getItem("triviaSummary");
     if (storedSim) setSimSummary(JSON.parse(storedSim));
     if (storedTrivia) setTriviaSummary(JSON.parse(storedTrivia));
 
-    // Background fetch
-    fetchSummary();
+    // Load profile first, then fetch summaries
     loadProfile();
-    calculateStreak();
   }, []);
 
+  useEffect(() => {
+    // Only fetch summary & streak after profile is loaded
+    if (profile) {
+      fetchSummary();
+      calculateStreak();
+    }
+  }, [profile]);
+
+
+  // 🔹 Persist targetInput to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("target_score", targetInput);
+  }, [targetInput]);
   async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error("No user found:", userError);
+        setProfile({ name: "Guest", avatar_url: null, target_score: 50 });
+        setTargetInput(50);
+        return;
+      }
+
+      // Remove themeColor from select
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("name, avatar_url, target_score") // themeColor removed
+        .eq("user_id", user.id)
+        .single();
+
+      if (error || !data) {
+        console.error("Profile not found or query error:", error);
+        setProfile({ name: "Guest", avatar_url: null, target_score: 50 });
+        setTargetInput(50);
+        return;
+      }
+
+
+
+      setProfile(data);
+      setTargetInput(data.target_score ?? 50);
+
+    } catch (err) {
+      console.error("Unexpected error loading profile:", err);
+      setProfile({ name: "Guest", avatar_url: null, target_score: 50 });
+      setTargetInput(50);
+    }
+  }
+
+  async function saveTarget() {
+    if (!profile) return;
+    setSavingTarget(true);
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (!user || userError) {
+      console.error("No authenticated user found or error:", userError);
+      setSavingTarget(false);
+      return;
+    }
+
+    const { error } = await supabase
       .from("profiles")
-      .select("name, avatar_url")
-      .eq("user_id", user.id)
-      .single();
-    setProfile(data);
+      .update({ target_score: targetInput })
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error updating target:", error);
+      setSavingTarget(false);
+      return;
+    }
+
+    setProfile({ ...profile, target_score: targetInput });
+    localStorage.setItem("target_score", targetInput);
+
+    const popup = document.createElement("div");
+    popup.innerHTML = `🔥 New target saved: ${targetInput}%`;
+    popup.className =
+      "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 px-6 py-3 rounded-xl shadow-lg text-lg font-bold animate-bounce";
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+      popup.remove();
+      setSavingTarget(false);
+    }, 2000);
   }
 
   async function calculateStreak() {
@@ -373,8 +502,11 @@ function SimulationAndTriviaSummary() {
     if (!user) return;
 
     const today = new Date();
+    const day = today.getDay();
+    const diff = (day === 0 ? -6 : 1 - day); // Sunday = -6, Monday = 0, etc
     const monday = new Date(today);
-    monday.setDate(today.getDate() - today.getDay() + 1);
+    monday.setDate(today.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
 
     const { data: sim } = await supabase
       .from("simulation_results")
@@ -388,11 +520,13 @@ function SimulationAndTriviaSummary() {
 
     const allDates = [...(sim || []), ...(trivia || [])]
       .map((x) => new Date(x.submitted_at || x.created_at))
-      .filter((d) => d >= monday);
+      .map(d => d.toDateString())
+      .filter(dStr => new Date(dStr) >= monday);
 
-    const uniqueDays = new Set(allDates.map((d) => d.toDateString()));
+    const uniqueDays = new Set(allDates);
     setStreak(uniqueDays.size);
   }
+
 
   async function fetchSummary() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -408,7 +542,6 @@ function SimulationAndTriviaSummary() {
       }
     };
 
-    // --- Simulation ---
     const { data: sim } = await supabase
       .from("simulation_results")
       .select("*")
@@ -427,13 +560,12 @@ function SimulationAndTriviaSummary() {
       };
       setSimSummary(summary);
       localStorage.setItem("simSummary", JSON.stringify(summary));
-      if (summary.latest < 50) simLow = true;
+      if (summary.latest < (profile?.target_score ?? 50)) simLow = true;
     } else {
       setSimSummary("empty");
       localStorage.removeItem("simSummary");
     }
 
-    // --- Trivia ---
     const { data: trivia } = await supabase
       .from("daily_trivia_results")
       .select("*")
@@ -443,10 +575,7 @@ function SimulationAndTriviaSummary() {
     let triviaLow = false;
     if (trivia?.length > 0) {
       const TOTAL_TRIVIA_QUESTIONS = 15;
-
-      const scores = trivia.map((t) =>
-        Math.round((t.score / TOTAL_TRIVIA_QUESTIONS) * 100)
-      );
+      const scores = trivia.map((t) => Math.round((t.score / TOTAL_TRIVIA_QUESTIONS) * 100));
       const summary = {
         attempts: trivia.length,
         best: Math.max(...scores),
@@ -456,26 +585,26 @@ function SimulationAndTriviaSummary() {
       };
       setTriviaSummary(summary);
       localStorage.setItem("triviaSummary", JSON.stringify(summary));
-      if (summary.latest < 50) triviaLow = true;
+      if (summary.latest < (profile?.target_score ?? 50)) triviaLow = true;
     } else {
       setTriviaSummary("empty");
       localStorage.removeItem("triviaSummary");
     }
 
-    // Play alert if any low score
     if (simLow || triviaLow) {
-      playAlertOnce("Your latest score is below 50. Focus and try again!");
+      playAlertOnce(`Your latest score is below your target of ${profile?.target_score ?? 50}. Focus and try again!`);
     }
   }
 
   const getMessage = (summary) => {
     if (!summary || summary === "empty") return { text: "", warning: false };
     const { latest, average } = summary;
+    const target = profile?.target_score ?? 50;
     if (latest >= 85) return { text: " Outstanding! You're mastering these topics!", warning: false };
     if (latest >= 70) return { text: " Great work! You’re improving steadily.", warning: false };
-    if (latest >= 50) return { text: " You're making progress. Keep practicing for even stronger results.", warning: false };
+    if (latest >= target) return { text: " You're making progress. Keep practicing for even stronger results.", warning: false };
     if (latest > average) return { text: " Nice! Your latest score is above your average. You're on the right track.", warning: false };
-    return { text: "Your latest score is below 50. Focus and try again!", warning: true };
+    return { text: `Your latest score is below your target of ${target}. Focus and try again!`, warning: true };
   };
 
   const ProgressRing = ({ value }) => {
@@ -508,18 +637,55 @@ function SimulationAndTriviaSummary() {
     <div>
       {/* GREETING HEADER */}
       <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-white/40 dark:bg-gray-800/60 backdrop-blur border border-gray-300/30 dark:border-gray-700/30 animate-fade-slide">
-        <img src={profile?.avatar_url || "/UsersAvatar.jpg"} alt="avatar" className="w-12 h-12 rounded-full object-cover" />
-        <div className="text-lg font-semibold">{profile?.name ? `Welcome back, ${profile.name}!` : "Welcome back!"}</div>
+        <img
+          src={profile?.avatar_url || "/UsersAvatar.jpg"}
+          alt="avatar"
+          className="w-12 h-12 rounded-full object-cover"
+        />
+        <div className="text-lg font-semibold">
+          {profile?.name ? `Welcome back, ${profile.name}!` : "Welcome back!"}
+        </div>
         <div className="ml-auto text-center">
-          <div className="text-sm bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full font-semibold">
+          <div className="mt-2 flex items-center justify-center gap-2">
+            <label className="text-sm">My Target:</label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={targetInput}
+              onChange={(e) => setTargetInput(Number(e.target.value))}
+              className={`w-16 p-1 rounded border text-center text-sm ${localStorage.getItem("theme") === "dark"
+                ? "border-gray-600 text-white bg-gray-800"
+                : "border-gray-300 text-black bg-white"
+                }`}
+            />
+            <button
+              onClick={saveTarget}
+              disabled={savingTarget}
+              className={`px-3 py-1 rounded text-white ${localStorage.getItem("theme") === "dark"
+                ? "bg-blue-700 hover:opacity-80"
+                : "bg-blue-600 hover:opacity-80"
+                } transition`}
+            >
+              {savingTarget ? "Saving..." : "Save"}
+            </button>
+          </div>
+
+          {/* Streak */}
+          <div className="text-sm bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full font-semibold mt-2">
             🔥 {streak}-day streak
           </div>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
             Active attempt days this week
           </p>
-        </div>
 
+          {/* Mobile-friendly streak tip */}
+          <p className="text-[10px] sm:text-[11px] text-gray-600 dark:text-gray-300 mt-1 px-1">
+            Keep your streak by attempting at least one simulation or trivia each day.
+          </p>
+        </div>
       </div>
+
 
       {/* CARD GRID */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -571,6 +737,6 @@ function SimulationAndTriviaSummary() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   );
 }

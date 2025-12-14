@@ -299,40 +299,91 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   }, []);
 
   // ----- TOTAL STARS -----
-  // ----- TOTAL STARS -----
   useEffect(() => {
-    // Just read the same cache Progress saves
+    let isMounted = true; // avoid state updates if unmounted
+
+    // 1️⃣ Load cached stars immediately
     const cached = localStorage.getItem("study_progress_cache");
     if (cached) {
-      const parsed = JSON.parse(cached);
-      if (parsed.totalStarsEarned !== undefined) {
-        setTotalStars(parsed.totalStarsEarned);
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.totalStarsEarned !== undefined) setTotalStars(parsed.totalStarsEarned);
+      } catch (e) {
+        console.error("Error reading cached stars for sidebar:", e);
       }
     }
 
-    // ✅ Keep listening for realtime updates too
+    // 2️⃣ Function to fetch latest stars from Supabase
+    const fetchStars = async () => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("User not found or auth error in sidebar");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("quiz_results")
+        .select("unit, score, total_questions")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error fetching quiz results for sidebar:", error.message);
+        return;
+      }
+
+      // Group results by unit
+      const grouped: Record<string, { count: number }> = {};
+      data?.forEach((res) => {
+        const key = res.unit || "Unknown";
+        if (!grouped[key]) grouped[key] = { count: 1 };
+        else grouped[key].count += 1;
+      });
+
+      // Only include units whose latest attempt > 0
+      const unitsToInclude = Object.keys(grouped).filter((unitName) => {
+        const attempts = data?.filter((r) => r.unit === unitName) || [];
+        const latestAttempt = attempts[attempts.length - 1]; // assume last is latest
+        return latestAttempt?.score && latestAttempt.score > 0;
+      });
+
+      const totalStars = unitsToInclude.length * 5;
+
+      if (isMounted) setTotalStars(totalStars);
+
+      // Update localStorage cache for other components
+      try {
+        const cached = JSON.parse(localStorage.getItem("study_progress_cache") || "{}");
+        localStorage.setItem(
+          "study_progress_cache",
+          JSON.stringify({ ...cached, totalStarsEarned: totalStars, userId: user.id })
+        );
+      } catch (e) {
+        console.error("Error saving sidebar stars to cache:", e);
+      }
+    };
+
+    fetchStars(); // initial fetch
+
+    // 3️⃣ Realtime subscription for updates
     const channel = supabase
       .channel("quiz_results_changes_sidebar")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "quiz_results" },
-        () => {
-          // When results change, Progress will refresh the cache → reload here
-          const updated = localStorage.getItem("study_progress_cache");
-          if (updated) {
-            const parsed = JSON.parse(updated);
-            if (parsed.totalStarsEarned !== undefined) {
-              setTotalStars(parsed.totalStarsEarned);
-            }
-          }
-        }
+        fetchStars
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
+
 
 
   // Reset unread count when clicking Chat Room

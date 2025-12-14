@@ -689,7 +689,8 @@ export function Resources() {
         </div>
 
       </div>
-
+      <MistakeCard />
+      <DailyTriviaCard />
       {showUploadForm && (
         <div className="p-4 border rounded-lg space-y-4 bg-muted/10">
           <h2 className="text-xl font-semibold">Upload New Resource</h2>
@@ -823,8 +824,7 @@ export function Resources() {
       </div>
 
 
-      <MistakeCard />
-      <DailyTriviaCard />
+
       {/* Static Block Selector Below Search */}
       <div className="relative mt-4 w-full flex justify-center">
 

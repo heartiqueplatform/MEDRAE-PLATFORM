@@ -409,6 +409,10 @@ export function MedraeQuizzes() {
           </Link>
         </div>
       </div>
+
+
+      <MistakeCard />
+      <DailyTriviaCard />
       <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
         <input
           type="text"
@@ -459,8 +463,6 @@ export function MedraeQuizzes() {
 
       </div>
 
-      <MistakeCard />
-      <DailyTriviaCard />
 
       {/* PAPER ONE */}
       <div className="space-y-4">

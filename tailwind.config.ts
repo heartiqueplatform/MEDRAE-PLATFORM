@@ -97,6 +97,10 @@ export default {
       /* ----------------------------- */
       keyframes: {
 
+        ecg: {
+          "0%": { strokeDashoffset: "1200" },
+          "100%": { strokeDashoffset: "0" },
+        },
 
         spinMotor: {
           "0%": { transform: "rotate(0deg)" },
@@ -139,6 +143,8 @@ export default {
       /* ⭐ COMBINED ANIMATIONS         */
       /* ----------------------------- */
       animation: {
+        ecg: "ecg 3s linear infinite",
+
         spinMotor: "spinMotor 0.5s linear infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",

@@ -1,5 +1,5 @@
 "use client";
-
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -34,17 +34,47 @@ interface Mistake {
     resolved: boolean;
     quiz_id: string;
     questions: Question;
-    mistake_reason?: string; // add inside interface Mistake
-
+    mistake_reason?: string;
 }
 
 export default function MyMistakes() {
+    const navigate = useNavigate();
     const [mistakes, setMistakes] = useState<Mistake[]>([]);
     const [loading, setLoading] = useState(true);
     const [mistakeCount, setMistakeCount] = useState(0);
 
-    // ✅ Fetch mistakes on mount
+    // 🌟 Theme & body background (runs once after mount)
     useEffect(() => {
+        // Only run if window exists (prevents SSR issues)
+        if (typeof window === "undefined") return;
+
+        let userTheme = localStorage.getItem("theme");
+        const systemPrefersDark = window.matchMedia(
+            "(prefers-color-scheme: dark)"
+        ).matches;
+
+        if (!userTheme) userTheme = systemPrefersDark ? "dark" : "light";
+
+        document.documentElement.classList.add(userTheme);
+
+        const bgColor = userTheme === "dark" ? "#000" : "#fff";
+        document.documentElement.style.backgroundColor = bgColor;
+
+        // ✅ Safe: check if body exists before touching style
+        if (document.body) {
+            document.body.style.backgroundColor = bgColor;
+        } else {
+            // If body doesn't exist yet, wait for DOMContentLoaded
+            window.addEventListener("DOMContentLoaded", () => {
+                document.body.style.backgroundColor = bgColor;
+            });
+        }
+    }, []);
+
+    // 🌟 Fetch mistakes and setup real-time updates
+    useEffect(() => {
+        let isMounted = true; // track component mount for safe state updates
+
         const fetchMistakes = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
@@ -76,19 +106,18 @@ export default function MyMistakes() {
                 .order("last_wrong_at", { ascending: false });
 
             if (error) console.error(error);
-            else {
+            else if (isMounted) {
                 const userMistakes = (data || []).filter((m) => m.questions);
                 setMistakes(userMistakes);
                 setMistakeCount(userMistakes.length);
                 localStorage.setItem("mistakeCount", String(userMistakes.length));
+                // Loader hides immediately, while mistakes are updated silently
+                setLoading(false);
             }
-
-            setLoading(false);
         };
 
         fetchMistakes();
 
-        // ✅ Set up real-time subscription
         const channel = supabase
             .channel('public:user_mistakes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'user_mistakes' }, () => {
@@ -97,10 +126,10 @@ export default function MyMistakes() {
             .subscribe();
 
         return () => {
+            isMounted = false;
             supabase.removeChannel(channel);
         };
     }, []);
-
 
     const getReasonClass = (reason?: string) => {
         switch (reason) {
@@ -117,23 +146,21 @@ export default function MyMistakes() {
         }
     };
 
-    // ✅ Mark a mistake as resolved (optimistic update + silent Supabase update)
     const markAsResolved = (questionId: string) => {
         const updateMistakes = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // 1️⃣ Optimistically update local state immediately
+            // Optimistic update
             const updated = mistakes.filter((m) => m.questions.id !== questionId);
             setMistakes(updated);
             setMistakeCount(updated.length);
             localStorage.setItem("mistakeCount", String(updated.length));
 
-            // 2️⃣ Play tap sound instantly
-            const audio = new Audio("/sounds/tap1.mp3");
-            audio.play().catch((err) => console.error("Audio play error:", err));
+            // Play tap sound
+            new Audio("/sounds/tap1.mp3").play().catch((err) => console.error(err));
 
-            // 3️⃣ Update Supabase in background
+            // Update Supabase in background
             supabase
                 .from("user_mistakes")
                 .update({ resolved: true })
@@ -143,8 +170,20 @@ export default function MyMistakes() {
                     if (error) console.error("Error updating Supabase:", error);
                 });
         };
-
         updateMistakes();
+    };
+
+    const getOptionClass = (letter: string, mistake: Mistake) => {
+        const correct = mistake.questions.correct_answer;
+        const selected = mistake.user_selected;
+
+        if (letter === correct && letter === selected)
+            return "bg-green-300 dark:bg-green-700 border-green-600";
+        if (letter === correct)
+            return "bg-green-200 dark:bg-green-800 border-green-500";
+        if (letter === selected)
+            return "bg-red-200 dark:bg-red-800 border-red-500";
+        return "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600";
     };
 
     if (loading)
@@ -155,20 +194,24 @@ export default function MyMistakes() {
         );
 
     if (!mistakes.length)
-        return <p className="text-center mt-8">You have no mistakes yet! 🎉</p>;
-
-    const getOptionClass = (letter: string, mistake: Mistake) => {
-        const correct = mistake.questions.correct_answer;
-        const selected = mistake.user_selected;
-
-        if (letter === correct && letter === selected)
-            return "bg-green-300 dark:bg-green-700 border-green-600"; // picked correct
-        if (letter === correct)
-            return "bg-green-200 dark:bg-green-800 border-green-500"; // correct answer
-        if (letter === selected)
-            return "bg-red-200 dark:bg-red-800 border-red-500"; // user-selected wrong
-        return "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600"; // normal
-    };
+        return (
+            <div className="flex justify-center items-center min-h-[60vh] p-4">
+                <div className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl shadow-md p-6 text-center max-w-md">
+                    <h2 className="text-xl font-bold text-green-700 dark:text-green-300">
+                        Congratulations! You have no mistakes!
+                    </h2>
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                        Great job! Keep your streak going by practicing more quizzes.
+                    </p>
+                    <button
+                        onClick={() => navigate("/Medrae-quizzes")}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                        Go to Quizzes
+                    </button>
+                </div>
+            </div>
+        );
 
     return (
         <div className="p-4 max-w-4xl mx-auto">
@@ -209,8 +252,7 @@ export default function MyMistakes() {
 
                             <CardContent className="space-y-2 text-sm sm:text-base">
                                 {["A", "B", "C", "D"].map((letter) => {
-                                    const optionText =
-                                        m.questions[`option_${letter.toLowerCase()}` as keyof Question];
+                                    const optionText = m.questions[`option_${letter.toLowerCase()}` as keyof Question];
                                     return (
                                         <div
                                             key={letter}
@@ -220,12 +262,12 @@ export default function MyMistakes() {
                                         </div>
                                     );
                                 })}
-                                {m.mistake_reason ? (
+
+                                {m.mistake_reason && (
                                     <div className={`mt-2 px-3 py-2 rounded-md border ${getReasonClass(m.mistake_reason)} text-black dark:text-white`}>
                                         <strong>Reason for mistake:</strong> {m.mistake_reason}
                                     </div>
-                                ) : null}
-
+                                )}
 
                                 <p>
                                     <strong>Explanation:</strong> {m.questions.explanation}
