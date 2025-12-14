@@ -459,10 +459,13 @@ function SimulationAndTriviaSummary() {
       setTargetInput(50);
     }
   }
-
   async function saveTarget() {
     if (!profile) return;
     setSavingTarget(true);
+
+    // 🔊 Play sound immediately on user click
+    const audio = new Audio("/sounds/tap1.mp3");
+    audio.play().catch(err => console.error("Audio play failed:", err));
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user || userError) {
@@ -485,16 +488,29 @@ function SimulationAndTriviaSummary() {
     setProfile({ ...profile, target_score: targetInput });
     localStorage.setItem("target_score", targetInput);
 
+    // Show popup
     const popup = document.createElement("div");
-    popup.innerHTML = `🔥 New target saved: ${targetInput}%`;
-    popup.className =
-      "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 px-6 py-3 rounded-xl shadow-lg text-lg font-bold animate-bounce";
+    popup.className = `
+    fixed inset-0 flex items-center justify-center
+    bg-black/20 dark:bg-black/30 z-50
+  `;
+
+    const inner = document.createElement("div");
+    inner.innerHTML = `
+    🔥 <strong>New target saved: ${targetInput}%!</strong><br/>
+    Keep pushing, work hard, and you’ll reach your goal! 💪<br/>
+    Organized Learning. Confident Exams.
+  `;
+    inner.className = `
+    px-6 py-4 rounded-xl shadow-lg text-center
+    bg-white dark:bg-gray-800 text-lg font-bold animate-bounce
+  `;
+    popup.appendChild(inner);
     document.body.appendChild(popup);
 
-    setTimeout(() => {
-      popup.remove();
-      setSavingTarget(false);
-    }, 2000);
+    setTimeout(() => popup.remove(), 3500);
+
+    setSavingTarget(false);
   }
 
   async function calculateStreak() {
@@ -591,21 +607,33 @@ function SimulationAndTriviaSummary() {
       localStorage.removeItem("triviaSummary");
     }
 
+    // inside fetchSummary()
+    // inside fetchSummary()
     if (simLow || triviaLow) {
-      playAlertOnce(`Your latest score is below your target of ${profile?.target_score ?? 50}. Focus and try again!`);
+      const targetScore = profile?.target_score ?? Number(localStorage.getItem("target_score")) ?? 50;
+      playAlertOnce(`Your latest score is below your target of ${targetScore}. Focus and try again!`);
     }
+
+
   }
 
   const getMessage = (summary) => {
     if (!summary || summary === "empty") return { text: "", warning: false };
     const { latest, average } = summary;
-    const target = profile?.target_score ?? 50;
-    if (latest >= 85) return { text: " Outstanding! You're mastering these topics!", warning: false };
-    if (latest >= 70) return { text: " Great work! You’re improving steadily.", warning: false };
-    if (latest >= target) return { text: " You're making progress. Keep practicing for even stronger results.", warning: false };
-    if (latest > average) return { text: " Nice! Your latest score is above your average. You're on the right track.", warning: false };
-    return { text: `Your latest score is below your target of ${target}. Focus and try again!`, warning: true };
+    const target = profile?.target_score ?? Number(localStorage.getItem("target_score")) ?? 50;
+
+    if (latest >= 85)
+      return { text: "Outstanding! You're mastering these topics!", warning: false };
+    if (latest >= 70)
+      return { text: "Great work! You’re improving steadily.", warning: false };
+    if (latest < target)
+      return { text: `Your latest score is below your target of ${target}. Focus and try again!`, warning: true };
+    if (latest > average)
+      return { text: "Nice! Your latest score is above your average. You're on the right track.", warning: false };
+
+    return { text: "Keep practicing to improve your results.", warning: false };
   };
+
 
   const ProgressRing = ({ value }) => {
     const radius = 45;
@@ -651,9 +679,13 @@ function SimulationAndTriviaSummary() {
             <input
               type="number"
               min={1}
-              max={100}
+              max={100}  // limits the slider input
               value={targetInput}
-              onChange={(e) => setTargetInput(Number(e.target.value))}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                // clamp between 1 and 100
+                setTargetInput(val > 100 ? 100 : val < 1 ? 1 : val);
+              }}
               className={`w-16 p-1 rounded border text-center text-sm ${localStorage.getItem("theme") === "dark"
                 ? "border-gray-600 text-white bg-gray-800"
                 : "border-gray-300 text-black bg-white"

@@ -83,6 +83,8 @@ export default function QuizPage() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [showUnansweredOnly, setShowUnansweredOnly] = useState(false);
+  const [recentlyAnsweredId, setRecentlyAnsweredId] = useState(null);
+
   // Detect system dark mode
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -536,6 +538,15 @@ export default function QuizPage() {
 
     fetchUser();
   }, []);
+  useEffect(() => {
+    if (!recentlyAnsweredId) return;
+
+    const timer = setTimeout(() => {
+    }, 30000);
+
+
+    return () => clearTimeout(timer);
+  }, [recentlyAnsweredId]);
 
   useEffect(() => {
     const loadAttempts = async () => {
@@ -566,6 +577,9 @@ export default function QuizPage() {
     saveNoteOffline(questionId, "answered"); // just a flag, note_text can be used for actual notes
 
     setAnswers(updatedAnswers);
+
+    setRecentlyAnsweredId(questionId);
+
     setFeedbackShown((prev) => ({ ...prev, [questionId]: true }));
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
     setQuestionStartTime(Date.now());
@@ -700,10 +714,12 @@ Please provide a detailed discussion and guidance.`;
   if (loading) return <GlobalLoader message="Medrae is Loading quiz..." />;
 
   if (questions.length === 0) return <p className="p-4">No questions found for: {unit}</p>;
-
   const filteredQuestions = showUnansweredOnly
-    ? questions.filter(q => !answers[q.id])
+    ? questions.filter(
+      q => !answers[q.id] || q.id === recentlyAnsweredId
+    )
     : questions;
+
 
   return (
     <div className="min-h-screen w-full p-4 space-y-6 bg-gray-50 dark:bg-gray-900 select-none">
@@ -754,37 +770,57 @@ Please provide a detailed discussion and guidance.`;
       <div className="mt-2 flex justify-between items-center w-full gap-4">
         {/* Left side: Question actions */}
         <div className="flex items-center gap-4">
-          {/* Show Unanswered Only button */}
+          {/* Show Filtered / Unanswered button */}
           <button
             onClick={() => setShowUnansweredOnly(!showUnansweredOnly)}
-            className="relative group p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
+            className="relative group flex items-center gap-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
           >
             <Filter className="w-5 h-5 text-gray-800 dark:text-gray-200" />
-            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-          opacity-0 group-hover:opacity-100
-          pointer-events-none
-          bg-gray-900 text-white text-[10px]
-          px-2 py-1 rounded-md whitespace-nowrap
-          transition shadow-lg z-50">
-              {showUnansweredOnly ? "Show All Questions" : "Show Unanswered Only"}
+
+            {/* Text label always visible */}
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              {showUnansweredOnly ? "Filter On" : "Showing All"}
+            </span>
+
+            {/* Tooltip (unchanged logic) */}
+            <span
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition shadow-lg z-50"
+            >
+              {showUnansweredOnly
+                ? "Showing: Unanswered Questions"
+                : "Showing: All Questions"}
             </span>
           </button>
+
+
+
 
           {/* Reset Quiz button */}
           <button
             onClick={handleReset}
-            className="relative group p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
+            className="relative group p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition flex items-center gap-1"
           >
             <RotateCcw className="w-5 h-5 text-gray-800 dark:text-gray-200" />
+            <span className="text-sm text-gray-800 dark:text-gray-200">
+              Reset Quiz
+            </span>
+
+            {/* Tooltip */}
             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-          opacity-0 group-hover:opacity-100
-          pointer-events-none
-          bg-gray-900 text-white text-[10px]
-          px-2 py-1 rounded-md whitespace-nowrap
-          transition shadow-lg z-50">
+      opacity-0 group-hover:opacity-100
+      pointer-events-none
+      bg-gray-900 text-white text-[10px]
+      px-2 py-1 rounded-md whitespace-nowrap
+      transition shadow-lg z-50">
               Reset Quiz
             </span>
           </button>
+
         </div>
 
         {/* Right side: Timer action */}
