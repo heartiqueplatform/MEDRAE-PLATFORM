@@ -19,6 +19,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
+
+import MistakeCard from "@/components/MistakeCard";
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -413,7 +415,7 @@ export function MedraeQuizzes() {
           placeholder="Search all papers..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm 
+          className="flex-1 p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm
                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
                dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
         />
@@ -457,6 +459,7 @@ export function MedraeQuizzes() {
 
       </div>
 
+      <MistakeCard />
       <DailyTriviaCard />
 
       {/* PAPER ONE */}

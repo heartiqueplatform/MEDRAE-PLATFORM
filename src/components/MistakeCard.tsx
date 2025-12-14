@@ -50,51 +50,47 @@ export default function MistakeCard() {
     const baseCardClass =
         "cursor-pointer rounded-xl p-4 shadow-md border flex items-center justify-between hover:shadow-lg transition-all select-none";
 
-    const greenCardClass = `${baseCardClass} bg-green-50 dark:bg-green-900 border-green-300 dark:border-green-700`;
-    const redCardClass = `${baseCardClass} bg-red-50 dark:bg-red-900 border-red-300 dark:border-red-700 animate-pulse-card`;
-
-    if (mistakeCount === 0)
-        return (
-            <div
-                onClick={() => navigate("/my-mistakes")}
-                className={greenCardClass}
-            >
-                <div>
-                    <h2 className="text-lg font-bold text-green-700 dark:text-green-300">
-                        No unresolved mistakes 🎉
-                    </h2>
-                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                        Keep up the good work!
-                    </p>
-                </div>
-                <div className="ml-4 text-green-700 dark:text-green-300 font-bold text-xl">➔</div>
-            </div>
-        );
+    const themedCardClass = `${baseCardClass} bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700`;
 
     return (
         <div
             onClick={() => navigate("/my-mistakes")}
-            className={redCardClass}
+            className={themedCardClass}
         >
             <div>
-                <h2 className="text-lg font-bold text-red-700 dark:text-red-300">
-                    You have {mistakeCount} unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}
-                </h2>
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    Tap to review and learn from your mistakes.
-                </p>
+                {mistakeCount === 0 ? (
+                    <>
+                        <h2 className="text-lg font-bold text-green-700 dark:text-green-300">
+                            No unresolved mistakes 🎉
+                        </h2>
+                        <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                            Keep up the good work!
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        {/* Only this sentence is red and bouncing */}
+                        <h2 className="text-lg font-bold text-red-700 dark:text-red-300 animate-pulse-sentence">
+                            You have {mistakeCount} unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}
+                        </h2>
+                        <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
+                            Tap to review and learn from your mistakes.
+                        </p>
+                    </>
+                )}
             </div>
-            <div className="ml-4 text-red-700 dark:text-red-300 font-bold text-xl">➔</div>
+            <div className="ml-4 text-gray-700 dark:text-gray-300 font-bold text-xl">➔</div>
 
-            {/* Keyframes for pulse */}
+            {/* Keyframes for sentence pulse */}
             <style>
                 {`
-                    @keyframes pulse-card {
+                    @keyframes pulse-sentence {
                         0%, 100% { transform: scale(1); }
                         50% { transform: scale(1.05); }
                     }
-                    .animate-pulse-card {
-                        animation: pulse-card 1.2s ease-in-out infinite;
+                    .animate-pulse-sentence {
+                        display: inline-block;
+                        animation: pulse-sentence 1.2s ease-in-out infinite;
                     }
                 `}
             </style>

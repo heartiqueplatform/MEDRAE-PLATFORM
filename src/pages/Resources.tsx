@@ -13,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+import MistakeCard from "@/components/MistakeCard";
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import { Button } from "@/components/ui/button";
@@ -820,6 +822,9 @@ export function Resources() {
         </Button>
       </div>
 
+
+      <MistakeCard />
+      <DailyTriviaCard />
       {/* Static Block Selector Below Search */}
       <div className="relative mt-4 w-full flex justify-center">
 
@@ -883,7 +888,7 @@ export function Resources() {
         )}
       </div>
 
-      <DailyTriviaCard />
+
       {/* Tabs content controlled by selectedBlock */}
       <div className="space-y-4 mt-2">
         {/* Dynamic Heading for Selected Block */}

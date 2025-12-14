@@ -848,6 +848,16 @@ export function MedTube() {
               controls
               className="w-full h-full rounded-md object-contain bg-black"
             />
+
+            {/* Small watermark with text below */}
+            <div className="absolute bottom-16 right-4 flex flex-col items-center pointer-events-none">
+              <img
+                src="/icon-512.jpg"
+                alt="App Icon"
+                className="w-6 h-6 opacity-60"
+              />
+              <span className="text-white text-xs opacity-60 mt-1">Medrae</span>
+            </div>
           </div>
 
           <Button
@@ -858,6 +868,7 @@ export function MedTube() {
           </Button>
         </div>
       )}
+
 
     </div>
   );
