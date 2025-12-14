@@ -216,16 +216,6 @@ export default function Feed() {
 
   const [user, setUser] = useState(null);
   const [questionCount, setQuestionCount] = useState(0);
-  useEffect(() => {
-    if (!questions.length) {  // only fetch if no cached questions
-      setLoading(true);
-      fetchQuestions().then((data) => {
-        setQuestions(data);
-        localStorage.setItem("questions", JSON.stringify(data));
-        setLoading(false);
-      });
-    }
-  }, []);
 
   // Load total answered count from DB (and cache in localStorage)
   useEffect(() => {
@@ -386,7 +376,7 @@ export default function Feed() {
 
       // 2️⃣ Start background fetching
       const fetchAndMergeQuestions = async (page = 0) => {
-        const newQuestions = await fetchQuestions(page, 150);
+        const newQuestions = await fetchQuestions(page, 100);
         if (!newQuestions || newQuestions.length === 0) return;
 
         setQuestions((prev) => {
@@ -518,14 +508,6 @@ export default function Feed() {
       .from("quizzes")
       .select("id, title")
       .in("id", quizIds);
-    // Fetch favorites for the current user
-    const { data: favoriteData } = await supabase
-      .from("favorites")
-      .select("quiz_id")
-      .eq("user_id", user.id)
-      .in("quiz_id", quizIds); // all quiz IDs of fetched questions
-
-    const favoriteSet = new Set(favoriteData?.map(f => f.quiz_id));
 
     return shuffled.map((q) => ({
       ...q,

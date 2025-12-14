@@ -56,30 +56,24 @@ export default function MyMistakes() {
     const [loading, setLoading] = useState(mistakes.length === 0); // Only show loader if nothing cached
     const [mistakeCount, setMistakeCount] = useState(mistakes.length);
 
-    // 🌟 Theme & body background (runs once after mount)
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        let userTheme = localStorage.getItem("theme");
-        const systemPrefersDark = window.matchMedia(
-            "(prefers-color-scheme: dark)"
-        ).matches;
+        const savedTheme = localStorage.getItem("theme");
+        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-        if (!userTheme) userTheme = systemPrefersDark ? "dark" : "light";
+        const theme = savedTheme || (systemPrefersDark ? "dark" : "light");
 
-        document.documentElement.classList.add(userTheme);
+        // Remove any previous theme class
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(theme);
 
-        const bgColor = userTheme === "dark" ? "#000" : "#fff";
-        document.documentElement.style.backgroundColor = bgColor;
+        // Set background
+        document.documentElement.style.backgroundColor = theme === "dark" ? "#000" : "#fff";
+        document.body.style.backgroundColor = theme === "dark" ? "#000" : "#fff";
 
-        if (document.body) {
-            document.body.style.backgroundColor = bgColor;
-        } else {
-            window.addEventListener("DOMContentLoaded", () => {
-                document.body.style.backgroundColor = bgColor;
-            });
-        }
     }, []);
+
 
     // 🌟 Fetch mistakes from Supabase in background
     useEffect(() => {
