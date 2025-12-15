@@ -348,67 +348,104 @@ export default function Feed() {
 
   // Load user & restore localStorage safely with preloading
   useEffect(() => {
-    let backgroundTimer: NodeJS.Timeout;
     let saveTimer: NodeJS.Timeout;
 
     const init = async () => {
       const { data } = await supabase.auth.getUser();
       if (!data.user) return;
+
       setUser(data.user);
       const userId = data.user.id;
 
       const storageKey = `feed_questions_${userId}`;
-      const storedDataRaw = localStorage.getItem(storageKey);
+      const answersKey = `feed_answers_${userId}`;
 
-      // Clear old localStorage if older than 24h
-      if (storedDataRaw) {
-        const storedData = JSON.parse(storedDataRaw);
-        if (Date.now() - (storedData.lastSaved || 0) > 24 * 60 * 60 * 1000) {
+      // 🔹 Restore answers
+      const savedAnswers = JSON.parse(localStorage.getItem(answersKey) || "{}");
+      setAnswers(savedAnswers);
+
+      // 🔹 Restore cached questions (if fresh)
+      const storedRaw = localStorage.getItem(storageKey);
+      let cachedQuestions: any[] = [];
+
+      if (storedRaw) {
+        const parsed = JSON.parse(storedRaw);
+        if (Date.now() - (parsed.lastSaved || 0) < 24 * 60 * 60 * 1000) {
+          cachedQuestions = (parsed.questions || []).filter(
+            (q) => q && q.id && !savedAnswers[q.id]
+          );
+        } else {
           localStorage.removeItem(storageKey);
         }
       }
 
-      const savedQuestions = storedDataRaw ? JSON.parse(storedDataRaw)?.questions || [] : [];
-      const savedAnswers = JSON.parse(localStorage.getItem(`feed_answers_${userId}`) || "{}");
-
-      setAnswers(savedAnswers);
-
-      if (savedQuestions.length > 0) {
-        setQuestions(savedQuestions.filter(q => q && q.id && !savedAnswers[q.id]));
-      } else {
-        // Immediately fetch first batch
-        const fresh = await fetchQuestions(0, 150);
-        setQuestions(fresh);
-        localStorage.setItem(storageKey, JSON.stringify({ questions: fresh, lastSaved: Date.now() }));
+      // 🚀 SHOW CACHED QUESTIONS IMMEDIATELY
+      if (cachedQuestions.length > 0) {
+        setQuestions(cachedQuestions);
+        setLoading(false);
       }
 
-      // Background fetch function
-      const fetchAndMerge = async (page = 0, batchSize = 20) => {
-        const newQuestions = await fetchQuestions(page, batchSize);
-        if (!newQuestions || newQuestions.length === 0) return;
+      // 🚀 FAST FIRST FETCH (NON-BLOCKING)
+      const fast = await fetchQuestionsFast(0, 20);
+      setQuestions((prev) => {
+        const map = new Map(prev.map((q) => [q.id, q]));
+        fast.forEach((q) => map.set(q.id, q));
+        return Array.from(map.values());
+      });
+      setLoading(false); // 👈 skeleton dies here
 
-        setQuestions(prev => {
-          const seen = new Set(prev.map(q => q.id));
-          const merged = [...prev, ...newQuestions.filter(q => !seen.has(q.id))];
+      // 🧠 BACKGROUND ENRICHMENT
+      enrichQuestions(fast).then((enriched) => {
+        setQuestions((prev) => {
+          const map = new Map(prev.map((q) => [q.id, q]));
+          enriched.forEach((q) => map.set(q.id, q));
+          return Array.from(map.values());
+        });
+      });
+
+      // 🧵 BACKGROUND PREFETCH (STREAM MODE)
+      let page = 1;
+
+      const backgroundFetch = async () => {
+        const batch = await fetchQuestionsFast(page, 10);
+        if (!batch.length) return;
+
+        setQuestions((prev) => {
+          const seen = new Set(prev.map((q) => q.id));
+          const merged = [...prev, ...batch.filter((q) => !seen.has(q.id))];
 
           if (saveTimer) clearTimeout(saveTimer);
           saveTimer = setTimeout(() => {
-            localStorage.setItem(storageKey, JSON.stringify({ questions: merged, lastSaved: Date.now() }));
-          }, 5000);
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify({ questions: merged, lastSaved: Date.now() })
+            );
+          }, 4000);
 
           return merged;
         });
+
+        enrichQuestions(batch).then((enriched) => {
+          setQuestions((prev) => {
+            const map = new Map(prev.map((q) => [q.id, q]));
+            enriched.forEach((q) => map.set(q.id, q));
+            return Array.from(map.values());
+          });
+        });
+
+        page += 1;
       };
 
-      // Start background fetching in intervals
+      // Start background streaming
+      const interval = setInterval(backgroundFetch, 5000);
 
+      return () => clearInterval(interval);
     };
 
     init();
 
     return () => {
-      clearTimeout(backgroundTimer);
-      clearTimeout(saveTimer);
+      if (saveTimer) clearTimeout(saveTimer);
     };
   }, []);
 
@@ -461,7 +498,7 @@ export default function Feed() {
 
 
   // Fetch questions with likes/comments
-  const fetchQuestions = async (page = 0, limit = 150) => {
+  const fetchQuestions = async (page = 0, limit = 50) => {
     if (!user) return [];
 
     const { data: seenData } = await supabase
