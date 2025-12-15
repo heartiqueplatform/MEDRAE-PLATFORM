@@ -266,14 +266,36 @@ export function Header({
           onClick={handleReload}
           className="flex flex-col items-center space-y-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
         >
-          {/* Icon on top */}
-          <RefreshCcw className="h-5 w-5 text-gray-800 dark:text-white" />
+          {/* Spinner only when loading */}
+          {rotating && (
+            <svg
+              className="animate-spin h-5 w-5 text-gray-800 dark:text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8H4z"
+              />
+            </svg>
+          )}
 
           {/* Label below */}
           <span className="text-xs font-semibold text-gray-800 dark:text-white">
             {rotating ? "Refreshing..." : "Refresh"}
           </span>
         </button>
+
 
 
 
@@ -284,10 +306,10 @@ export function Header({
           onClick={() => {
             const shareMessage = `Medrae – The Professional Medical Education & Career Network
 
-• Structured learning modules across clinical disciplines  
-• Evidence-based resources and expert-led video lectures  
-• Comprehensive notes and case studies for clinical excellence  
-• Exam simulations and certification pathways for professional growth  
+• Structured learning modules across clinical disciplines
+• Evidence-based resources and expert-led video lectures
+• Comprehensive notes and case studies for clinical excellence
+• Exam simulations and certification pathways for professional growth
 
 Advance your medical journey today: https://medrae.vercel.app`;
 

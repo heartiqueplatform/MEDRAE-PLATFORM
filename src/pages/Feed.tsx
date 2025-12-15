@@ -1081,26 +1081,63 @@ export default function Feed() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
+                    className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition flex items-center gap-1"
                     variant="ghost"
-
-                    onClick={() => {
+                    onClick={async () => {
                       if (navigator.vibrate) navigator.vibrate(50);
+
+                      if (!user) return alert("Login first!");
+
+                      setLoading(true); // start loading
 
                       setPage(0);
                       setQuestions([]);
-                      fetchQuestions(0).then((fresh) => {
+
+                      try {
+                        const fresh = await fetchQuestions(0, 50); // fetch 50 questions
                         setQuestions(fresh);
-                        if (user) {
-                          localStorage.setItem(
-                            `feed_questions_${user.id}`,
-                            JSON.stringify(fresh)
-                          );
-                        }
-                      });
+
+                        localStorage.setItem(
+                          `feed_questions_${user.id}`,
+                          JSON.stringify(fresh)
+                        );
+                      } catch (err) {
+                        console.error("Failed to reload feed:", err);
+                        alert("Failed to reload feed.");
+                      } finally {
+                        setLoading(false); // stop loading
+                      }
                     }}
                   >
-                    <RefreshCcw size={20} />
+                    {loading ? (
+                      <span className="flex items-center gap-1">
+                        <svg
+                          className="animate-spin h-4 w-4 text-gray-700"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8H4z"
+                          />
+                        </svg>
+                        Loading...
+                      </span>
+                    ) : (
+                      <>
+                        <RefreshCcw size={20} /> <span className="text-sm">Reload Feed</span>
+                      </>
+                    )}
                   </Button>
                 </TooltipTrigger>
 
@@ -1108,6 +1145,7 @@ export default function Feed() {
                   <p>Reload feed</p>
                 </TooltipContent>
               </Tooltip>
+
 
             </div>
 
