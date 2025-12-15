@@ -258,12 +258,30 @@ export default function MyMistakes() {
                             <CardContent className="space-y-2 text-sm sm:text-base">
                                 {["A", "B", "C", "D"].map((letter) => {
                                     const optionText = m.questions[`option_${letter.toLowerCase()}` as keyof Question];
+                                    const isCorrect = letter === m.questions.correct_answer;
+                                    const isUserChoice = letter === m.user_selected;
+
                                     return (
                                         <div
                                             key={letter}
-                                            className={`px-3 py-2 rounded-md border ${getOptionClass(letter, m)}`}
+                                            className={`px-3 py-2 rounded-md border ${isCorrect
+                                                ? "bg-green-100 dark:bg-green-800 border-green-500"
+                                                : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                                                } flex justify-between items-center`}
                                         >
-                                            <strong>{letter}.</strong> {optionText}
+                                            <span>
+                                                <strong>{letter}.</strong> {optionText}
+                                            </span>
+                                            {isUserChoice && !isCorrect && (
+                                                <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 rounded-full">
+                                                    Your Choice
+                                                </span>
+                                            )}
+                                            {isCorrect && (
+                                                <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-green-200 dark:bg-green-900 text-green-900 dark:text-green-200 rounded-full">
+                                                    Correct Answer
+                                                </span>
+                                            )}
                                         </div>
                                     );
                                 })}

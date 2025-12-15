@@ -61,11 +61,11 @@ export default function Feed() {
   // ✅ Feedback Power-Up message
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [answers, setAnswers] = useState({});
-  const [page, setPage] = useState(() => {
-    const saved = localStorage.getItem("feed_page");
-    return saved ? parseInt(saved) : 0;
-  });
+  const [page, setPage] = useState(0); // start from page 0, no localStorage
+
   const savedQuestions = JSON.parse(localStorage.getItem("questions")) || [];
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   const [questions, setQuestions] = useState(savedQuestions);
   const [loading, setLoading] = useState(savedQuestions.length === 0);
@@ -347,67 +347,69 @@ export default function Feed() {
   }, []);
 
   // Load user & restore localStorage safely with preloading
-  // NEW: user & questions init with stale-while-revalidate
   useEffect(() => {
     let backgroundTimer: NodeJS.Timeout;
+    let saveTimer: NodeJS.Timeout;
 
     const init = async () => {
       const { data } = await supabase.auth.getUser();
       if (!data.user) return;
-
       setUser(data.user);
       const userId = data.user.id;
 
-      // 1️⃣ Load saved data from localStorage immediately
-      const savedQuestions = JSON.parse(
-        localStorage.getItem(`feed_questions_${userId}`) || "[]"
-      );
-      const savedAnswers = JSON.parse(
-        localStorage.getItem(`feed_answers_${userId}`) || "{}"
-      );
+      const storageKey = `feed_questions_${userId}`;
+      const storedDataRaw = localStorage.getItem(storageKey);
 
-      // Filter out answered questions
-      const filteredQuestions = savedQuestions.filter(
-        (q) => q && q.id && !savedAnswers[q.id]
-      );
+      // Clear old localStorage if older than 24h
+      if (storedDataRaw) {
+        const storedData = JSON.parse(storedDataRaw);
+        if (Date.now() - (storedData.lastSaved || 0) > 24 * 60 * 60 * 1000) {
+          localStorage.removeItem(storageKey);
+        }
+      }
 
-      setQuestions(filteredQuestions);
+      const savedQuestions = storedDataRaw ? JSON.parse(storedDataRaw)?.questions || [] : [];
+      const savedAnswers = JSON.parse(localStorage.getItem(`feed_answers_${userId}`) || "{}");
+
       setAnswers(savedAnswers);
 
-      // 2️⃣ Start background fetching
-      const fetchAndMergeQuestions = async (page = 0) => {
-        const newQuestions = await fetchQuestions(page, 100);
+      if (savedQuestions.length > 0) {
+        setQuestions(savedQuestions.filter(q => q && q.id && !savedAnswers[q.id]));
+      } else {
+        // Immediately fetch first batch
+        const fresh = await fetchQuestions(0, 150);
+        setQuestions(fresh);
+        localStorage.setItem(storageKey, JSON.stringify({ questions: fresh, lastSaved: Date.now() }));
+      }
+
+      // Background fetch function
+      const fetchAndMerge = async (page = 0, batchSize = 20) => {
+        const newQuestions = await fetchQuestions(page, batchSize);
         if (!newQuestions || newQuestions.length === 0) return;
 
-        setQuestions((prev) => {
-          const seenIds = new Set(prev.map((q) => q.id));
-          const merged = [...prev, ...newQuestions.filter(q => !seenIds.has(q.id))];
-          localStorage.setItem(`feed_questions_${userId}`, JSON.stringify(merged));
+        setQuestions(prev => {
+          const seen = new Set(prev.map(q => q.id));
+          const merged = [...prev, ...newQuestions.filter(q => !seen.has(q.id))];
+
+          if (saveTimer) clearTimeout(saveTimer);
+          saveTimer = setTimeout(() => {
+            localStorage.setItem(storageKey, JSON.stringify({ questions: merged, lastSaved: Date.now() }));
+          }, 5000);
+
           return merged;
         });
-
-        // Schedule next fetch: 10, 20, 30, 60 minutes
-        const fetchSchedule = [10, 20, 30, 60]; // minutes
-        let index = 0;
-
-        const scheduleNext = () => {
-          if (index >= fetchSchedule.length) index = fetchSchedule.length - 1; // keep 60 min
-          backgroundTimer = setTimeout(async () => {
-            index++;
-            await fetchAndMergeQuestions(page + 1);
-            scheduleNext();
-          }, fetchSchedule[index - 1] * 60 * 1000);
-        };
-
-        scheduleNext();
       };
 
-      fetchAndMergeQuestions(0);
+      // Start background fetching in intervals
+
     };
 
     init();
 
-    return () => clearTimeout(backgroundTimer);
+    return () => {
+      clearTimeout(backgroundTimer);
+      clearTimeout(saveTimer);
+    };
   }, []);
 
 
@@ -459,7 +461,7 @@ export default function Feed() {
 
 
   // Fetch questions with likes/comments
-  const fetchQuestions = async (page = 0, limit = 5) => {
+  const fetchQuestions = async (page = 0, limit = 150) => {
     if (!user) return [];
 
     const { data: seenData } = await supabase
@@ -520,86 +522,49 @@ export default function Feed() {
   };
 
   // Infinite scroll loader
-  // Infinite scroll loader (localStorage-safe)
   const loadMore = async () => {
-    if (loading || !user) return;
+    if (loading || !user || !hasMore) return;
+
     setLoading(true);
+    const batchSize = 10;
+    const nextPage = page + 1;
 
-    const container = loaderRef.current?.parentElement;
-    const prevScrollHeight = container?.scrollHeight || 0;
-
-    // 1️⃣ Always start from localStorage (source of truth)
-    const stored = JSON.parse(
-      localStorage.getItem(`feed_questions_${user.id}`) || "[]"
-    );
-
-    const existingIds = new Set(stored.map((q) => q.id));
-
-    // 2️⃣ Fetch next page in background
-    const newData = await fetchQuestions(page);
+    const newData = await fetchQuestions(nextPage, batchSize);
 
     if (newData && newData.length > 0) {
-      const validNewData = newData.filter(
-        (q) =>
-          q &&
-          q.id &&
-          q.question_text &&
-          (q.option_a || q.option_b || q.option_c || q.option_d) &&
-          !existingIds.has(q.id)
-      );
+      const existingIds = new Set(questions.map((q) => q.id));
+      const filtered = newData.filter((q) => !existingIds.has(q.id));
 
-      if (validNewData.length > 0) {
-        const merged = [...stored, ...validNewData];
+      setQuestions((prev) => [...prev, ...filtered]);
+      setPage(nextPage);
 
-        // 3️⃣ Update state + cache
-        setQuestions(merged);
-        localStorage.setItem(
-          `feed_questions_${user.id}`,
-          JSON.stringify(merged)
-        );
-
-        setPage((prev) => {
-          const next = prev + 1;
-          localStorage.setItem("feed_page", next.toString());
-          return next;
-        });
-
-
-        // 4️⃣ Preserve scroll position
-        setTimeout(() => {
-          if (container) {
-            const newScrollHeight = container.scrollHeight;
-            container.scrollTop += newScrollHeight - prevScrollHeight;
-          }
-        }, 50);
-      }
+      if (filtered.length < batchSize) setHasMore(false);
+    } else {
+      setHasMore(false);
     }
 
     setLoading(false);
   };
 
   useEffect(() => {
-    if (!loaderRef.current) return;
+    const container = document.querySelector(".scroll-container");
+    if (!container) return;
 
-    const container = loaderRef.current.parentElement; // scrollable container
+    const onScroll = () => {
+      if (loading || !hasMore) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loading) {
-          loadMore();
-        }
-      },
-      {
-        root: container, // scrollable container
-        rootMargin: "200px", // preload before hitting bottom
-        threshold: 0.1,    // trigger when 10% of loader is visible
+      const scrollPosition = container.scrollTop + container.clientHeight;
+      const halfway = container.scrollHeight / 2; // midpoint
+
+      if (scrollPosition >= halfway) {
+        loadMore();
       }
-    );
+    };
 
-    observer.observe(loaderRef.current);
+    container.addEventListener("scroll", onScroll);
+    return () => container.removeEventListener("scroll", onScroll);
+  }, [loading, questions, hasMore]);
 
-    return () => observer.disconnect();
-  }, [loaderRef.current, loading]); // only depend on loaderRef & loading
 
 
   // Mark question seen
@@ -923,10 +888,13 @@ export default function Feed() {
         }}
       >
         <div
+          ref={scrollContainerRef}   // ✅ add this
           className="p-4 max-w-2xl mx-auto space-y-4
              h-[80vh] overflow-y-auto overflow-x-hidden
-             scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent"
+             scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent scroll-container"
         >
+
+
           <AnimatePresence>
             {feedbackMessage && (
               <motion.div
@@ -1146,7 +1114,7 @@ export default function Feed() {
 
           </div>
 
-          {(loading || questions.length === 0) &&
+          {questions.length === 0 &&
             Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
 
           {questions.map((q, index) => {
@@ -1309,8 +1277,6 @@ export default function Feed() {
                         <Heart size={18} /> {q.qfeed_likes?.length || 0}
                       </Button>
 
-                      {/* Favorite Button */}
-
                       {/* Comment Button */}
                       <Button
                         variant="ghost"
@@ -1357,7 +1323,7 @@ export default function Feed() {
             );
 
             // 🖼️ Fancy image card + delete option + upload always last
-            if ((index + 1) % 5 === 0 && feedImages?.length > 0) {
+            if ((index + 1) % 3 === 0 && feedImages?.length > 0) {
 
               // updated: show exactly ONE image after every 2 questions
               if (feedImages?.length > 0) {
