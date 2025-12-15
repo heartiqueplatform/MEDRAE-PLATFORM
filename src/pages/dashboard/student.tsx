@@ -915,7 +915,8 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-2xl">
+    <div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-none sm:rounded-md
+">
 
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-3xl p-6 text-white">
@@ -1026,11 +1027,12 @@ export default function StudentDashboard() {
 
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
 
         {/* Study Progress */}
         <Card
-          className="relative overflow-hidden rounded-2xl shadow-lg"
+          className="relative overflow-hidden rounded-none sm:rounded-md
+ shadow-none-lg"
           style={{
             backgroundImage: "url('/background06.jpg')",
             backgroundSize: "cover",
@@ -1064,7 +1066,8 @@ export default function StudentDashboard() {
 
         {/* Quizzes Completed */}
         <Card
-          className="relative overflow-hidden rounded-2xl shadow-lg"
+          className="relative overflow-hidden rounded-none sm:rounded-md
+ shadow-none-lg"
           style={{
             backgroundImage: "url('/indexbackground7.jpg')",
             backgroundSize: "cover",
@@ -1097,7 +1100,8 @@ export default function StudentDashboard() {
         </Card>
 
         {/* Average Score */}
-        <Card className="relative cursor-pointer overflow-hidden rounded-2xl shadow-lg">
+        <Card className="relative cursor-pointer overflow-hidden rounded-none sm:rounded-md
+ shadow-none-lg">
           <div
             className="absolute inset-0"
             style={{
@@ -1134,7 +1138,8 @@ export default function StudentDashboard() {
 
         {/* Current Streak */}
         <Card
-          className="relative overflow-hidden rounded-2xl shadow-lg"
+          className="relative overflow-hidden rounded-none sm:rounded-md
+ shadow-none-lg"
           style={{
             backgroundImage: "url('/indexbackground5.jpg')",
             backgroundSize: "cover",
@@ -1166,7 +1171,8 @@ export default function StudentDashboard() {
 
         {/* Best Streak */}
         <Card
-          className="relative overflow-hidden rounded-2xl shadow-lg"
+          className="relative overflow-hidden rounded-none sm:rounded-md
+ shadow-none-lg"
           style={{
             backgroundImage: "url('/indexbackground2.jpg')",
             backgroundSize: "cover",
@@ -1204,7 +1210,8 @@ export default function StudentDashboard() {
       <DailyTriviaCard />
 
       {/* 🏆 Top Students Leaderboard */}
-      <Card className="rounded-2xl shadow-lg w-full max-w-full overflow-hidden">
+      <Card className="rounded-none sm:rounded-md
+ shadow-none-lg w-full max-w-full overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Trophy className="h-5 w-5 text-yellow-500" />
@@ -1233,7 +1240,7 @@ export default function StudentDashboard() {
               {loadingTopStudents ? (
                 <div className="flex gap-4 animate-pulse">
                   {Array.from({ length: 4 }).map((_, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gray-200 dark:bg-gray-700">
+                    <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-none sm:rounded-md border-0 shadow-none-none bg-gray-200 dark:bg-gray-700">
                       <div className="flex flex-col items-center text-center">
                         <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
                         <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
@@ -1263,13 +1270,13 @@ export default function StudentDashboard() {
                   return (
                     <div
                       key={s.userId}
-                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
+                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow-none bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
                     >
                       <div className="flex flex-col items-center text-center">
                         <img
                           src={s.avatar_url || "/UsersAvatar.jpg"}
                           alt={s.name}
-                          className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow"
+                          className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow-none"
                         />
 
                         <h3
@@ -1312,7 +1319,8 @@ export default function StudentDashboard() {
         </CardContent>
 
         <Card
-          className="relative cursor-pointer hover:shadow-lg transition-shadow col-span-1 md:col-span-2 max-w-xl mx-auto rounded-2xl overflow-hidden"
+          className="relative cursor-pointer hover:shadow-none-lg transition-shadow-none col-span-1 md:col-span-2 max-w-xl mx-auto rounded-none sm:rounded-md
+ overflow-hidden"
           onClick={() => {
             if (navigator.vibrate) navigator.vibrate(50);
             navigate("/feed");
@@ -1324,7 +1332,8 @@ export default function StudentDashboard() {
           }}
         >
           {/* Overlay */}
-          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-2xl"></div>
+          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-none sm:rounded-md
+"></div>
 
           <div className="relative z-20 p-4 flex flex-col justify-between h-full">
             {/* Card Heading */}
@@ -1370,13 +1379,13 @@ export default function StudentDashboard() {
                     <img
                       src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
                       alt={topStudents[0].name}
-                      className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-sm"
+                      className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
                     />
                     <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
                       {topStudents[0].name}
                     </p>
                     {topStudents[0].answeredCount !== undefined ? (
-                      <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-sm text-center">
+                      <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-none-none text-center">
                         {topStudents[0].answeredCount} answered
                       </p>
                     ) : (
@@ -1393,7 +1402,8 @@ export default function StudentDashboard() {
               </div>
 
               {topStudents.length > 0 && topStudents[0].answeredCount && (
-                <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-2xl font-semibold text-sm shadow-sm truncate">
+                <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-none sm:rounded-md
+ font-semibold text-sm shadow-none-none truncate">
                   Top student has attempted {topStudents[0].answeredCount} questions!
                 </div>
               )}
@@ -1401,7 +1411,7 @@ export default function StudentDashboard() {
               {/* Centered Button */}
               <div className="flex justify-center mt-3">
                 <Button
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-md transition-all transform hover:scale-105 hover:shadow-lg"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-none-md transition-all transform hover:scale-105 hover:shadow-none-lg"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (navigator.vibrate) navigator.vibrate(50);
@@ -1429,7 +1439,8 @@ export default function StudentDashboard() {
       </Card>
 
 
-      <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
+      <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-md
+ overflow-hidden">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
           <CardDescription className="text-gray-700 dark:text-gray-300">
@@ -1440,7 +1451,8 @@ export default function StudentDashboard() {
         <CardContent className="space-y-4">
           {/* Daily Thought Textarea */}
           <textarea
-            className="w-full p-3 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 rounded-none sm:rounded-md
+ bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Write today's thought..."
             value={dailyContent}
             onChange={(e) => setDailyContent(e.target.value)}
@@ -1452,7 +1464,8 @@ export default function StudentDashboard() {
             <select
               value={dailyDuration}
               onChange={(e) => setDailyDuration(e.target.value as any)}
-              className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-2xl w-full sm:w-40"
+              className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-none sm:rounded-md
+ w-full sm:w-40"
             >
               <option value="24h">24 Hours</option>
               <option value="1w">1 Week</option>
@@ -1472,7 +1485,7 @@ export default function StudentDashboard() {
           <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
             <label
               htmlFor="dailyImageUpload"
-              className="w-10 h-10 flex items-center justify-center cursor-pointer rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-md"
+              className="w-10 h-10 flex items-center justify-center cursor-pointer rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-none-md"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -1488,7 +1501,7 @@ export default function StudentDashboard() {
 
             <Button
               onClick={handlePostClick}
-              className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-none-md disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={uploading}
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -1500,7 +1513,8 @@ export default function StudentDashboard() {
             {loading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-3 rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
+                  <div key={i} className="p-3 rounded-none sm:rounded-md
+ bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
                 ))}
               </div>
             ) : dailyPosts.length > 0 ? (
@@ -1509,7 +1523,8 @@ export default function StudentDashboard() {
                   key={post.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 border rounded-2xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+                  className="p-3 border rounded-none sm:rounded-md
+ bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
                 >
                   <div className="flex flex-col sm:flex-row gap-4 items-start">
                     {/* User Info */}
@@ -1538,7 +1553,7 @@ export default function StudentDashboard() {
 
                       {/* Tiny Tooltip Overlay */}
                       {openProfileId === post.id && (
-                        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md text-center text-xs z-20">
+                        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white dark:bg-gray-800 shadow-none-md text-center text-xs z-20">
                           <span className="font-semibold text-gray-900 dark:text-white block truncate">
                             {post.profiles?.full_name}
                           </span>
@@ -1564,7 +1579,8 @@ export default function StudentDashboard() {
                         <img
                           src={post.image_url}
                           alt="daily"
-                          className="rounded-2xl w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
+                          className="rounded-none sm:rounded-md
+ w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
                           onClick={() => setFullscreenImage(post.image_url)}
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
@@ -1604,7 +1620,8 @@ export default function StudentDashboard() {
             <img
               src={fullscreenImage}
               alt="fullscreen"
-              className="max-w-full max-h-full object-contain rounded-2xl"
+              className="max-w-full max-h-full object-contain rounded-none sm:rounded-md
+"
             />
           </div>
         )}
@@ -1643,11 +1660,13 @@ export default function StudentDashboard() {
 
         <CardContent>
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
+
               {Array.from({ length: 8 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse p-4 rounded-2xl"
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse p-4 rounded-none sm:rounded-md
+"
                   style={{ minHeight: "250px" }}
                 >
                   <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
@@ -1658,12 +1677,14 @@ export default function StudentDashboard() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
+
               {simulationPapers.length > 0 ? (
                 simulationPapers.map((paper) => (
                   <Card
                     key={paper.id}
-                    className="flex flex-col justify-between cursor-pointer hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-2xl"
+                    className="flex flex-col justify-between cursor-pointer hover:shadow-none-lg transition-shadow-none border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-none sm:rounded-md
+"
                     onClick={async () => {
                       navigate(`/simulation/${paper.id}`);
                       const { data: userData } = await supabase.auth.getUser();
@@ -1753,7 +1774,7 @@ export default function StudentDashboard() {
           </div>
           <Button
             asChild
-            className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-md hover:shadow-lg"
+            className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-none-md hover:shadow-none-lg"
           >
             <Link to="/Medrae-quizzes">Quizzes</Link>
           </Button>
@@ -1779,7 +1800,8 @@ export default function StudentDashboard() {
                 .map((unit) => (
                   <div
                     key={unit.unit_code}
-                    className="p-4 border-2 border-purple-500 rounded-2xl flex items-center justify-between bg-white dark:bg-gray-900 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer"
+                    className="p-4 border-2 border-purple-500 rounded-none sm:rounded-md
+ flex items-center justify-between bg-white dark:bg-gray-900 shadow-none-md hover:shadow-none-lg transform hover:scale-105 cursor-pointer"
                     onClick={() => navigate('/Medrae-quizzes')}
                   >
                     <div>
@@ -1814,7 +1836,8 @@ export default function StudentDashboard() {
                 .map((unit) => (
                   <div
                     key={unit.unit_code}
-                    className="p-4 border rounded-2xl flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
+                    className="p-4 border rounded-none sm:rounded-md
+ flex items-center justify-between hover:shadow-none-md transition-shadow-none cursor-pointer"
                     onClick={() => navigate('/Medrae-quizzes')}
                   >
                     <div>
@@ -1830,7 +1853,8 @@ export default function StudentDashboard() {
             Array.from({ length: 6 }).map((_, idx) => (
               <div
                 key={idx}
-                className="p-4 border rounded-2xl flex flex-col justify-between animate-pulse bg-gray-50 dark:bg-gray-800 min-h-[80px]"
+                className="p-4 border rounded-none sm:rounded-md
+ flex flex-col justify-between animate-pulse bg-gray-50 dark:bg-gray-800 min-h-[80px]"
               >
                 <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
                 <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>
@@ -1843,10 +1867,12 @@ export default function StudentDashboard() {
       </Card>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
+
 
         {/* Share App Card */}
-        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+        <Card className="rounded-none sm:rounded-md
+ shadow-none-md border bg-white dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
             <CardDescription>
@@ -1856,12 +1882,14 @@ export default function StudentDashboard() {
           <CardContent>
             {loading ? (
               <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64"></div>
+                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-full sm:w-64"></div>
               </div>
             ) : (
               <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-none sm:rounded-md
+ flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
                   onClick={() => {
                     const shareMessage =
                       `Medrae – The Professional Medical Education & Career Network
@@ -1896,7 +1924,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
         </Card>
 
         {/* WhatsApp Channel Card */}
-        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+        <Card className="rounded-none sm:rounded-md
+ shadow-none-md border bg-white dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-primary" />
@@ -1908,11 +1937,13 @@ Join the Medrae community today: https://medrae.vercel.app`;
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-full sm:w-64 mx-auto"></div>
             ) : (
               <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
                 <div className="flex justify-center">
-                  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-none sm:rounded-md
+ flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
                     <MessageCircle className="w-4 h-4" />
                     WhatsApp Channel
                   </Button>
@@ -1923,7 +1954,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
         </Card>
 
         {/* WhatsApp Group Card */}
-        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+        <Card className="rounded-none sm:rounded-md
+ shadow-none-md border bg-white dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-green-600" />
@@ -1935,11 +1967,13 @@ Join the Medrae community today: https://medrae.vercel.app`;
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-full sm:w-64 mx-auto"></div>
             ) : (
               <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
                 <div className="flex justify-center">
-                  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white rounded-none sm:rounded-md
+ flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
                     <MessageCircle className="w-4 h-4" />
                     WhatsApp Group
                   </Button>
@@ -1950,7 +1984,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
         </Card>
 
         {/* Telegram Channel Card */}
-        <Card className="rounded-2xl shadow-md border bg-white dark:bg-gray-900">
+        <Card className="rounded-none sm:rounded-md
+ shadow-none-md border bg-white dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Send className="w-5 h-5 text-blue-600" />
@@ -1962,11 +1997,13 @@ Join the Medrae community today: https://medrae.vercel.app`;
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full sm:w-64 mx-auto"></div>
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-full sm:w-64 mx-auto"></div>
             ) : (
               <a href="https://t.me/Medraenursingnexusscholar" target="_blank" rel="noopener noreferrer">
                 <div className="flex justify-center">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-none sm:rounded-md
+ flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
                     <Send className="w-4 h-4" />
                     Telegram Channel
                   </Button>
@@ -1978,7 +2015,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* Quick Actions Card */}
         <Card
-          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64"
+          className="rounded-none sm:rounded-md
+ shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64"
           style={{
             backgroundImage: loading ? "" : "url('/background04.jpg')",
             backgroundSize: "cover",
@@ -1990,9 +2028,11 @@ Join the Medrae community today: https://medrae.vercel.app`;
           </CardHeader>
           <CardContent className="space-y-3">
             {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full mx-auto"></div>
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-full mx-auto"></div>
             ) : (
-              <Button className="w-full justify-start rounded-2xl" variant="outline" asChild>
+              <Button className="w-full justify-start rounded-none sm:rounded-md
+" variant="outline" asChild>
                 <Link to="/ai-assistant">
                   <Brain className="mr-2 h-4 w-4" />
                   Ask AI Assistant
@@ -2004,7 +2044,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* Upcoming Redletter Dates Card */}
         <Card
-          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          className="rounded-none sm:rounded-md
+ shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
           style={{
             backgroundImage: "url('/background05.jpg')",
             backgroundSize: "cover",
@@ -2018,14 +2059,16 @@ Join the Medrae community today: https://medrae.vercel.app`;
             {loading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-full"></div>
+                  <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-full"></div>
                 ))}
               </div>
             ) : calendarEvents.length > 0 ? (
               calendarEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex flex-col sm:flex-row items-center justify-between p-2 rounded-2xl bg-white/20 backdrop-blur-sm w-full"
+                  className="flex flex-col sm:flex-row items-center justify-between p-2 rounded-none sm:rounded-md
+ bg-white/20 backdrop-blur-sm w-full"
                 >
                   <div className="truncate">
                     <p className="text-sm font-medium text-white truncate">{event.title}</p>
@@ -2044,7 +2087,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* Premium / Subscription Card */}
         <Card
-          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          className="rounded-none sm:rounded-md
+ shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
           style={{
             backgroundImage: "url('/background03.jpg')",
             backgroundSize: "cover",
@@ -2056,9 +2100,11 @@ Join the Medrae community today: https://medrae.vercel.app`;
           </CardHeader>
           <CardContent className="flex items-center justify-center">
             {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-64"></div>
             ) : (
-              <Button asChild className="w-full sm:w-64 bg-purple-500 hover:bg-purple-600 text-white rounded-2xl">
+              <Button asChild className="w-full sm:w-64 bg-purple-500 hover:bg-purple-600 text-white rounded-none sm:rounded-md
+">
                 <Link to="/subscription">
                   <Star className="mr-2 h-4 w-4" />
                   Subscribe Now
@@ -2070,7 +2116,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* Candidate Simulation Card */}
         <Card
-          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          className="rounded-none sm:rounded-md
+ shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
           style={{
             backgroundImage: "url('/background02.jpg')",
             backgroundSize: "cover",
@@ -2082,9 +2129,11 @@ Join the Medrae community today: https://medrae.vercel.app`;
           </CardHeader>
           <CardContent className="flex items-center justify-center">
             {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-64"></div>
             ) : (
-              <Button asChild className="w-full sm:w-64 bg-green-500 hover:bg-green-600 text-white rounded-2xl">
+              <Button asChild className="w-full sm:w-64 bg-green-500 hover:bg-green-600 text-white rounded-none sm:rounded-md
+">
                 <Link to="/simulation/candidate">
                   <BookOpen className="mr-2 h-4 w-4" />
                   Go to Simulation
@@ -2096,7 +2145,8 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* Resources Card */}
         <Card
-          className="rounded-2xl shadow-md border cursor-pointer hover:shadow-lg transition-shadow h-64 overflow-hidden"
+          className="rounded-none sm:rounded-md
+ shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
           style={{
             backgroundImage: "url('/background1.jpeg')",
             backgroundSize: "cover",
@@ -2108,9 +2158,11 @@ Join the Medrae community today: https://medrae.vercel.app`;
           </CardHeader>
           <CardContent className="flex items-center justify-center">
             {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl h-10 w-64"></div>
+              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-64"></div>
             ) : (
-              <Button asChild className="w-full sm:w-64 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl">
+              <Button asChild className="w-full sm:w-64 bg-blue-500 hover:bg-blue-600 text-white rounded-none sm:rounded-md
+">
                 <Link to="/resources">
                   <ListChecks className="mr-2 h-4 w-4" />
                   Access Resources

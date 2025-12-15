@@ -722,7 +722,8 @@ Please provide a detailed discussion and guidance.`;
 
 
   return (
-    <div className="min-h-screen w-full p-4 space-y-6 bg-gray-50 dark:bg-gray-900 select-none">
+    <div className="min-h-screen w-full px-0 py-4 space-y-6 bg-gray-50 dark:bg-gray-900 select-none">
+
 
       <div className="flex justify-between items-center">
         <h1 className="uppercase text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-snug text-blue-700 dark:text-blue-400">
@@ -734,7 +735,7 @@ Please provide a detailed discussion and guidance.`;
             date={timerEnd}
             onComplete={() => handleSubmit(true)}
             renderer={({ hours, minutes, seconds }) => (
-              <div className="px-2 py-1 sm:px-3 sm:py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-3xl shadow-md text-center max-w-[220px] sm:max-w-xs mx-auto sm:mx-0">
+              <div className="px-2 py-1 sm:px-3 sm:py-2 bg-white dark:bg-gray-800 border-0 rounded-3xl shadow-md text-center max-w-[220px] sm:max-w-xs mx-auto sm:mx-0">
                 <p className="text-[10px] sm:text-sm font-bold text-red-600 dark:text-red-400 mb-1">
                   Time Remaining
                 </p>
@@ -841,205 +842,205 @@ Please provide a detailed discussion and guidance.`;
           </button>
         </div>
       </div>
+      <div className="flex flex-col space-y-4">
+        {filteredQuestions.map((q, i) => {
+          const selectedAnswer = answers[q.id];
+          const isCorrect = selectedAnswer === q.correct_answer;
+          const showFeedback = feedbackShown[q.id];
 
-      {filteredQuestions.map((q, i) => {
-        const selectedAnswer = answers[q.id];
-        const isCorrect = selectedAnswer === q.correct_answer;
-        const showFeedback = feedbackShown[q.id];
+          return (
+            <div key={q.id} className="flex flex-col lg:flex-row gap-4 w-full">
 
-        return (
-          <div key={q.id} className="flex flex-col lg:flex-row gap-4 w-full">
-
-            {/* Question Card */}
-            <div
-              className={`flex-1 p-4 border rounded-lg shadow-sm border-gray-200 dark:border-gray-700 text-black dark:text-white transition-colors
+              {/* Question Card */}
+              <div
+                className={`flex-1 p-4 border rounded-none sm:rounded-md shadow-none border-0 text-black dark:text-white transition-colors
 ${understood[q.id]
-                  ? "bg-green-300 dark:bg-green-800"
-                  : notUnderstood[q.id]
-                    ? "bg-[#FF4C4C] dark:bg-[#800000]"
-                    : "bg-white dark:bg-gray-800"
-                }`}
-            >
-              <p className="font-bold mb-2">Q{i + 1}: {q.question_text}</p>
+                    ? "bg-green-300 dark:bg-green-800"
+                    : notUnderstood[q.id]
+                      ? "bg-[#FF4C4C] dark:bg-[#800000]"
+                      : "bg-white dark:bg-gray-800"
+                  }`}
+              >
+                <p className="font-bold mb-2">Q{i + 1}: {q.question_text}</p>
 
-              <div className="ml-4 space-y-2 text-sm">
-                {["A", "B", "C", "D"].map((letter) => {
-                  const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
-                  const isSelected = selectedAnswer === letter;
-                  const correct = q.correct_answer === letter;
+                <div className="ml-4 space-y-2 text-sm">
+                  {["A", "B", "C", "D"].map((letter) => {
+                    const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
+                    const isSelected = selectedAnswer === letter;
+                    const correct = q.correct_answer === letter;
 
-                  return (
-                    <button
-                      key={letter}
-                      disabled={!!selectedAnswer || quizFinished}
-                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold border transition-all duration-150
+                    return (
+                      <button
+                        key={letter}
+                        disabled={!!selectedAnswer || quizFinished}
+                        className={`w-full text-left px-3 py-2 rounded-none sm:rounded-md font-semibold border-0 transition-all duration-150
 ${isSelected
-                          ? correct
-                            ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
-                            : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
-                          : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"
-                        } ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
-                      onClick={async () => {
-                        if (!!selectedAnswer || quizFinished) return;
+                            ? correct
+                              ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
+                              : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
+                            : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"
+                          } ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
+                        onClick={async () => {
+                          if (!!selectedAnswer || quizFinished) return;
 
-                        // ✅ PLAY SOUND IMMEDIATELY
-                        if (!isMuted) {
-                          const audio = new Audio(q.correct_answer === letter ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
-                          audio.play().catch((err) => console.error("Audio play error:", err));
-                        }
+                          // ✅ PLAY SOUND IMMEDIATELY
+                          if (!isMuted) {
+                            const audio = new Audio(q.correct_answer === letter ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
+                            audio.play().catch((err) => console.error("Audio play error:", err));
+                          }
 
-                        const correct = q.correct_answer === letter;
+                          const correct = q.correct_answer === letter;
 
-                        // 1️⃣ TIME TAKEN
-                        const endTime = Date.now();
-                        const timeTaken = (endTime - questionStartTime) / 1000;
+                          // 1️⃣ TIME TAKEN
+                          const endTime = Date.now();
+                          const timeTaken = (endTime - questionStartTime) / 1000;
 
-                        // 2️⃣ CONFIDENCE LOGIC
-                        let confidence = "";
-                        let accuracy = 0;
-                        if (correct) {
-                          confidence = "High confidence";
-                          accuracy = 100;
-                        } else if (timeTaken <= 10) {
-                          confidence = "Overconfident";
-                          accuracy = Math.floor(Math.random() * 20);
-                        } else if (timeTaken <= 20) {
-                          confidence = "Medium confidence";
-                          accuracy = Math.floor(Math.random() * 30) + 50;
-                        } else {
-                          confidence = "Low confidence";
-                          accuracy = Math.floor(Math.random() * 30) + 20;
-                        }
+                          // 2️⃣ CONFIDENCE LOGIC
+                          let confidence = "";
+                          let accuracy = 0;
+                          if (correct) {
+                            confidence = "High confidence";
+                            accuracy = 100;
+                          } else if (timeTaken <= 10) {
+                            confidence = "Overconfident";
+                            accuracy = Math.floor(Math.random() * 20);
+                          } else if (timeTaken <= 20) {
+                            confidence = "Medium confidence";
+                            accuracy = Math.floor(Math.random() * 30) + 50;
+                          } else {
+                            confidence = "Low confidence";
+                            accuracy = Math.floor(Math.random() * 30) + 20;
+                          }
 
-                        // 3️⃣ SAVE CONFIDENCE FOR THIS QUESTION
-                        setConfidenceLevels((prev) => {
-                          const updated = { ...prev, [q.id]: confidence };
-                          localStorage.setItem("confidenceLevels", JSON.stringify(updated));
-                          return updated;
-                        });
+                          // 3️⃣ SAVE CONFIDENCE FOR THIS QUESTION
+                          setConfidenceLevels((prev) => {
+                            const updated = { ...prev, [q.id]: confidence };
+                            localStorage.setItem("confidenceLevels", JSON.stringify(updated));
+                            return updated;
+                          });
 
-                        // 4️⃣ ORIGINAL ANSWER LOGIC
-                        handleAnswer(q.id, letter);
+                          // 4️⃣ ORIGINAL ANSWER LOGIC
+                          handleAnswer(q.id, letter);
 
-                        // 5️⃣ RECORD MISTAKE IF WRONG
-                        if (!correct) {
+                          // 5️⃣ RECORD MISTAKE IF WRONG
+                          if (!correct) {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (user) {
+                              try {
+                                // Upsert first attempt
+                                await supabase.from("user_mistakes").upsert(
+                                  {
+                                    user_id: user.id,
+                                    question_id: q.id,
+                                    quiz_id: q.quiz_id,
+                                    last_wrong_at: new Date(),
+                                    times_wrong: 1,
+                                    user_selected: letter,
+                                  },
+                                  { onConflict: "user_id,question_id" }
+                                );
+
+                                // Increment times_wrong using RPC
+                                await supabase.rpc("increment_mistake", {
+                                  user_uuid: user.id,
+                                  question_uuid: q.id,
+                                  selected_option: letter,
+                                });
+
+                                // ✅ SHOW REASON BOX FOR THIS QUESTION
+                                setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
+
+                              } catch (error) {
+                                console.error("Error recording mistake:", error);
+                              }
+                            }
+                          }
+                        }}
+                      >
+                        <div className="flex justify-between items-center relative">
+                          <span>{letter}. {optionText}</span>
+
+                          {/* Emoji reaction */}
+                          {isSelected && correct && <span className="ml-2 text-4xl animate-emoji-zoom">😊</span>}
+                          {isSelected && !correct && <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>}
+                        </div>
+                      </button>
+
+                    );
+                  })}
+                </div>
+
+                {/* Confidence Label with Accuracy */}
+                {confidenceLevels[q.id] && (
+                  <div
+                    className={`mt-3 px-4 py-2 rounded-2xl text-center
+${confidenceLevels[q.id]?.startsWith("High confidence")
+                        ? "bg-green-600 text-white"
+                        : confidenceLevels[q.id]?.startsWith("Overconfident")
+                          ? "bg-red-600 text-white"
+                          : confidenceLevels[q.id]?.startsWith("Medium confidence")
+                            ? "bg-yellow-500 text-black"
+                            : "bg-gray-600 text-white"
+                      }`}
+                  >
+                    <span className="text-xl font-extrabold">
+                      Confidence Rating: {confidenceLevels[q.id].toUpperCase()}
+                      {(() => {
+                        let accuracyText = "";
+                        if (confidenceLevels[q.id]?.startsWith("High confidence")) accuracyText = "100% Accuracy";
+                        else if (confidenceLevels[q.id]?.startsWith("Overconfident")) accuracyText = `${Math.floor(Math.random() * 20)}% Accuracy`;
+                        else if (confidenceLevels[q.id]?.startsWith("Medium confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 50}% Accuracy`;
+                        else if (confidenceLevels[q.id]?.startsWith("Low confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 20}% Accuracy`;
+                        return accuracyText ? ` (${accuracyText})` : "";
+                      })()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Reason Box */}
+                {/* Reason Box */}
+                {showReasonBox[q.id] && !selectedReason[q.id] && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <p className="text-sm font-medium">What went wrong?</p>
+                    {reasonOptions.map((reason) => (
+                      <button
+                        key={reason}
+                        className={`px-3 py-1 rounded-none sm:rounded-md
+${selectedReason[q.id] === reason
+                            ? "bg-blue-500 text-white dark:bg-blue-700"
+                            : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
+                          }`}
+                        onClick={async () => {
+                          setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
+                          setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
+
                           const { data: { user } } = await supabase.auth.getUser();
                           if (user) {
                             try {
-                              // Upsert first attempt
-                              await supabase.from("user_mistakes").upsert(
-                                {
-                                  user_id: user.id,
-                                  question_id: q.id,
-                                  quiz_id: q.quiz_id,
-                                  last_wrong_at: new Date(),
-                                  times_wrong: 1,
-                                  user_selected: letter,
-                                },
-                                { onConflict: "user_id,question_id" }
-                              );
-
-                              // Increment times_wrong using RPC
-                              await supabase.rpc("increment_mistake", {
-                                user_uuid: user.id,
-                                question_uuid: q.id,
-                                selected_option: letter,
-                              });
-
-                              // ✅ SHOW REASON BOX FOR THIS QUESTION
-                              setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
-
-                            } catch (error) {
-                              console.error("Error recording mistake:", error);
+                              const { error } = await supabase
+                                .from("user_mistakes")
+                                .update({ mistake_reason: reason })
+                                .eq("user_id", user.id)
+                                .eq("question_id", q.id);
+                              if (error) throw error;
+                            } catch (err) {
+                              console.error("Error saving mistake reason:", err);
                             }
                           }
-                        }
-                      }}
-                    >
-                      <div className="flex justify-between items-center relative">
-                        <span>{letter}. {optionText}</span>
-
-                        {/* Emoji reaction */}
-                        {isSelected && correct && <span className="ml-2 text-4xl animate-emoji-zoom">😊</span>}
-                        {isSelected && !correct && <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>}
-                      </div>
-                    </button>
-
-                  );
-                })}
-              </div>
-
-              {/* Confidence Label with Accuracy */}
-              {confidenceLevels[q.id] && (
-                <div
-                  className={`mt-3 px-4 py-2 rounded-2xl text-center
-${confidenceLevels[q.id]?.startsWith("High confidence")
-                      ? "bg-green-600 text-white"
-                      : confidenceLevels[q.id]?.startsWith("Overconfident")
-                        ? "bg-red-600 text-white"
-                        : confidenceLevels[q.id]?.startsWith("Medium confidence")
-                          ? "bg-yellow-500 text-black"
-                          : "bg-gray-600 text-white"
-                    }`}
-                >
-                  <span className="text-xl font-extrabold">
-                    Confidence Rating: {confidenceLevels[q.id].toUpperCase()}
-                    {(() => {
-                      let accuracyText = "";
-                      if (confidenceLevels[q.id]?.startsWith("High confidence")) accuracyText = "100% Accuracy";
-                      else if (confidenceLevels[q.id]?.startsWith("Overconfident")) accuracyText = `${Math.floor(Math.random() * 20)}% Accuracy`;
-                      else if (confidenceLevels[q.id]?.startsWith("Medium confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 50}% Accuracy`;
-                      else if (confidenceLevels[q.id]?.startsWith("Low confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 20}% Accuracy`;
-                      return accuracyText ? ` (${accuracyText})` : "";
-                    })()}
-                  </span>
-                </div>
-              )}
-
-              {/* Reason Box */}
-              {/* Reason Box */}
-              {showReasonBox[q.id] && !selectedReason[q.id] && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <p className="text-sm font-medium">What went wrong?</p>
-                  {reasonOptions.map((reason) => (
-                    <button
-                      key={reason}
-                      className={`px-3 py-1 rounded-lg
-${selectedReason[q.id] === reason
-                          ? "bg-blue-500 text-white dark:bg-blue-700"
-                          : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
-                        }`}
-                      onClick={async () => {
-                        setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
-                        setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
-
-                        const { data: { user } } = await supabase.auth.getUser();
-                        if (user) {
-                          try {
-                            const { error } = await supabase
-                              .from("user_mistakes")
-                              .update({ mistake_reason: reason })
-                              .eq("user_id", user.id)
-                              .eq("question_id", q.id);
-                            if (error) throw error;
-                          } catch (err) {
-                            console.error("Error saving mistake reason:", err);
-                          }
-                        }
-                      }}
-                    >
-                      {reason}
-                    </button>
-                  ))}
-                </div>
-              )}
+                        }}
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
 
 
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => handleReportQuestion(q)}
-                  className="
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => handleReportQuestion(q)}
+                    className="
     flex items-center gap-2
     px-3 h-8
     rounded-md
@@ -1050,46 +1051,46 @@ ${selectedReason[q.id] === reason
     dark:hover:bg-red-500 dark:hover:text-white
     transition
   "
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  <span className="text-xs font-medium whitespace-nowrap">
-                    Report Question
-                  </span>
-                </button>
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-xs font-medium whitespace-nowrap">
+                      Report Question
+                    </span>
+                  </button>
 
 
 
-                <button
-                  onClick={() => {
-                    const optionsText = ["A", "B", "C", "D"]
-                      .map(
-                        letter =>
-                          `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]
-                          }`
-                      )
-                      .join("\n");
+                  <button
+                    onClick={() => {
+                      const optionsText = ["A", "B", "C", "D"]
+                        .map(
+                          letter =>
+                            `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]
+                            }`
+                        )
+                        .join("\n");
 
-                    const chunkText = (text: string, maxLength = 200) => {
-                      const chunks: string[] = [];
-                      let start = 0;
-                      while (start < text.length) {
-                        chunks.push(text.slice(start, start + maxLength));
-                        start += maxLength;
-                      }
-                      return chunks.join("\n\n");
-                    };
+                      const chunkText = (text: string, maxLength = 200) => {
+                        const chunks: string[] = [];
+                        let start = 0;
+                        while (start < text.length) {
+                          chunks.push(text.slice(start, start + maxLength));
+                          start += maxLength;
+                        }
+                        return chunks.join("\n\n");
+                      };
 
-                    const fullText = `Let's discuss this question in NCK format:
+                      const fullText = `Let's discuss this question in NCK format:
 Question: ${q.question_text}
 Options:
 ${optionsText}
 User Answer: ${answers[q.id] || "No answer selected"}
 Please provide a detailed discussion and guidance.`;
 
-                    setAIPrefillQuestion(chunkText(fullText, 200));
-                    setAIOverlayOpen(true);
-                  }}
-                  className="
+                      setAIPrefillQuestion(chunkText(fullText, 200));
+                      setAIOverlayOpen(true);
+                    }}
+                    className="
     flex items-center gap-2
     px-3 h-8
     rounded-md
@@ -1098,618 +1099,618 @@ Please provide a detailed discussion and guidance.`;
     transition
     hover:bg-gray-300 dark:hover:bg-gray-700
   "
-                >
-                  <Cpu className="w-4 h-4" />
-                  <span className="text-xs font-medium whitespace-nowrap">
-                    AI Assistance
-                  </span>
-                </button>
+                  >
+                    <Cpu className="w-4 h-4" />
+                    <span className="text-xs font-medium whitespace-nowrap">
+                      AI Assistance
+                    </span>
+                  </button>
 
-                <button
-                  onClick={toggleMute}
-                  className="relative group w-8 h-8 flex items-center justify-center rounded-md
+                  <button
+                    onClick={toggleMute}
+                    className="relative group w-8 h-8 flex items-center justify-center rounded-md
              bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-                >
-                  {isMuted ? (
-                    <VolumeX className="w-5 h-5" />
-                  ) : (
-                    <Volume className="w-5 h-5" />
-                  )}
+                  >
+                    {isMuted ? (
+                      <VolumeX className="w-5 h-5" />
+                    ) : (
+                      <Volume className="w-5 h-5" />
+                    )}
 
-                  {/* Tooltip */}
-                  <span
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+                    {/* Tooltip */}
+                    <span
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
                opacity-0 group-hover:opacity-100
                pointer-events-none
                bg-gray-900 text-white text-[10px]
                px-2 py-1 rounded-md whitespace-nowrap
                transition shadow-lg z-50"
-                  >
-                    {isMuted ? "Unmute sounds" : "Mute sounds"}
-                  </span>
-                </button>
-              </div>
-
-              {showFeedback && (
-                <div className="mt-3">
-                  <p className={`font-semibold ${isCorrect ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                    {isCorrect ? "Correct!" : `Wrong. Correct answer is ${q.correct_answer}`}
-                  </p>
-                  {q.explanation && <p className="mt-1"><span className="font-semibold">Explanation:</span> {q.explanation}</p>}
-                  {q.additional && (
-                    <div className="mt-2">
-                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
-                        Additional Explanation
-                      </h3>
-                      <pre className="text-base font-sans bg-gray-100 dark:bg-gray-700 p-4 whitespace-pre-wrap rounded-3xl">
-                        {q.additional}
-                      </pre>
-                    </div>
-                  )}
-
-
-                </div>
-              )}
-            </div>
-
-            {/* Small Note Card */}
-            <div className="w-full lg:w-1/3 p-4 border rounded-lg shadow-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-black dark:text-white flex flex-col">
-
-              {/* Header */}
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="font-bold">Notes Evaluation Panel</h2>
-              </div>
-
-              {/* ------------------------------
-       NOTES TEXTAREA
-  ------------------------------ */}
-              <textarea
-                value={notes[q.id] || ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-
-                  // Update React state
-                  setNotes(prev => ({ ...prev, [q.id]: value }));
-
-                  // Save offline immediately (non-blocking, no await)
-                  saveNoteOffline(q.id, value).catch(err => console.error(err));
-                }}
-
-                className="w-full flex-1 p-2 border rounded-lg resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-2 h-32"
-                placeholder="Take notes here..."
-              />
-
-              <div className="flex gap-2 justify-end">
-
-                {/* ------------------------------
-         Expand Notes Overlay
-    ------------------------------ */}
-                <button
-                  onClick={() => setNotesOverlay(q.id)}
-                  className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-                >
-                  <PanelRightOpen className="w-4 h-4" />
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                    Expand Notes
-                  </span>
-                </button>
-
-                {/* ------------------------------
-         Understood Button
-    ------------------------------ */}
-                <button
-                  onClick={async () => {
-                    if (!userId) return;
-
-                    const newState = !understood[q.id];
-
-                    // Update local state
-                    setUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                    setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-                    // Save offline
-                    await saveNoteOffline(q.id, notes[q.id] || "");
-                    // Mark offline understood/not-understood locally
-                    await saveAnswersOffline(q.id, {
-                      understood: newState,
-                      not_understood: false,
-                      attempts: attempts[q.id] || 0,
-                    });
-
-                    // Attempt online sync
-                    try {
-                      await supabase
-                        .from("question_notes")
-                        .upsert([{
-                          user_id: userId,
-                          question_id: q.id,
-                          note_text: notes[q.id] || "",
-                          understood: newState,
-                          is_not_understood: false,
-                          attempts: attempts[q.id] || 0,
-                          help_others: helpOthersDisabled[q.id] ? "saved" : null
-                        }], { onConflict: "question_id, user_id" });
-                    } catch (err) {
-                      console.error("Error syncing Understood:", err);
-                    }
-                  }}
-                  className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${understood[q.id] ? "ring-2 ring-green-500" : ""}`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                    Understood
-                  </span>
-                </button>
-
-                {/* ------------------------------
-         Not Understood Button
-    ------------------------------ */}
-                <button
-                  onClick={async () => {
-                    if (!userId) return;
-
-                    const newState = !notUnderstood[q.id];
-
-                    // Update local state
-                    setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                    setUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-                    // Save offline
-                    await saveNoteOffline(q.id, notes[q.id] || "");
-                    await saveAnswersOffline(q.id, {
-                      understood: false,
-                      not_understood: newState,
-                      attempts: attempts[q.id] || 0,
-                    });
-
-                    // Attempt online sync
-                    try {
-                      await supabase
-                        .from("question_notes")
-                        .upsert([{
-                          user_id: userId,
-                          question_id: q.id,
-                          note_text: notes[q.id] || "",
-                          understood: false,
-                          is_not_understood: newState,
-                          attempts: attempts[q.id] || 0,
-                          help_others: helpOthersDisabled[q.id] ? "saved" : null
-                        }], { onConflict: "question_id, user_id" });
-                    } catch (err) {
-                      console.error("Error syncing Not Understood:", err);
-                    }
-                  }}
-                  className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}`}
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                    Not Understood
-                  </span>
-                </button>
-
-                {/* ------------------------------
-         Attempts Button
-    ------------------------------ */}
-                <button
-                  onClick={async () => {
-                    if (!userId) return;
-
-                    const newCount = (attempts[q.id] || 0) + 1;
-                    setAttempts(prev => ({ ...prev, [q.id]: newCount }));
-
-                    // Save offline
-                    await saveAnswersOffline(q.id, {
-                      understood: understood[q.id] || false,
-                      not_understood: notUnderstood[q.id] || false,
-                      attempts: newCount,
-                    });
-                    await saveNoteOffline(q.id, notes[q.id] || "");
-
-                    // Attempt online sync
-                    try {
-                      await supabase
-                        .from("question_notes")
-                        .upsert([{
-                          user_id: userId,
-                          question_id: q.id,
-                          note_text: notes[q.id] || "",
-                          understood: understood[q.id] || false,
-                          is_not_understood: notUnderstood[q.id] || false,
-                          attempts: newCount,
-                          help_others: helpOthersDisabled[q.id] ? "saved" : null
-                        }], { onConflict: "question_id, user_id" });
-                    } catch (err) {
-                      console.error("Error syncing Attempts:", err);
-                    }
-                  }}
-                  className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                    Attempted: {attempts[q.id] || 0}
-                  </span>
-                </button>
-
-                {/* ------------------------------
-         Save Notes Button
-    ------------------------------ */}
-                <button
-                  onClick={async () => {
-                    if (!userId) return;
-                    setSaving(true);
-                    setSaved(false);
-
-                    // 1. Save offline first
-                    await saveNoteOffline(q.id, notes[q.id] || "");
-
-                    try {
-                      // 2. Upsert online directly — no need to check existing
-                      await supabase
-                        .from("question_notes")
-                        .upsert([{
-                          question_id: q.id,
-                          user_id: userId,
-                          note_text: notes[q.id] || "",
-                          understood: understood[q.id] || false,
-                          is_not_understood: notUnderstood[q.id] || false,
-                          attempts: attempts[q.id] || 0,
-                          help_others: helpOthersDisabled[q.id] ? "saved" : null
-                        }], { onConflict: ["question_id", "user_id"] }); // <- handles both insert & update
-
-                    } catch (err) {
-                      console.error("Error syncing Save Notes:", err);
-                    }
-
-                    setSaving(false);
-                    setSaved(true);
-                    setTimeout(() => setSaved(false), 1000);
-                  }}
-                  className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-                >
-                  {saving ? (
-                    <div className="flex space-x-1">
-                      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
-                      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
-                      <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
-                    </div>
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                    {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
-                  </span>
-                </button>
-
-                {/* ------------------------------
-         Help Others Button
-    ------------------------------ */}
-                <button
-                  onClick={async () => {
-                    if (!userId || helpOthersDisabled[q.id]) return;
-
-                    const phone = prompt("Enter your WhatsApp number (with country code, e.g., +254712345678):");
-                    if (!phone) return;
-
-                    await saveNoteOffline(q.id, notes[q.id] || "");
-
-                    try {
-                      await supabase
-                        .from("question_notes")
-                        .upsert([{
-                          user_id: userId,
-                          question_id: q.id,
-                          note_text: notes[q.id] || "",
-                          understood: understood[q.id] || false,
-                          is_not_understood: notUnderstood[q.id] || false,
-                          attempts: attempts[q.id] || 0,
-                          help_others: phone
-                        }], { onConflict: "question_id, user_id" });
-
-                      setHelpOthersDisabled(prev => ({ ...prev, [q.id]: true }));
-                    } catch (err) {
-                      console.error("Error saving Help Others:", err);
-                    }
-                  }}
-                  disabled={helpOthersDisabled[q.id]}
-                  className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  <Users className="w-4 h-4" />
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                    {helpOthersDisabled[q.id] ? "Already shared" : "Help Others"}
-                  </span>
-                </button>
-
-                {/* ------------------------------
-         Help Me Button
-    ------------------------------ */}
-                <button
-                  onClick={async () => {
-                    if (!userId) return;
-
-                    const { data, error } = await supabase
-                      .from("question_notes")
-                      .select(`id, help_others, profiles:user_id(name, avatar_url)`)
-                      .eq("question_id", q.id)
-                      .not("help_others", "eq", "none");
-
-                    if (error) {
-                      console.error("Error fetching helpers:", error);
-                      alert("Failed to fetch helpers.");
-                      return;
-                    }
-
-                    if (!data || data.length === 0) {
-                      alert("No one has offered help yet for this question.");
-                      return;
-                    }
-
-                    const helpers = data.map((d: any) => ({
-                      id: d.id,
-                      whatsapp: d.help_others,
-                      profiles: d.profiles
-                    }));
-
-                    setHelpMeHelpers(helpers);
-                    setCurrentQuestionText(q.question_text);
-                    setHelpMeOverlayOpen(true);
-                  }}
-                  className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                    Help Me
-                  </span>
-                </button>
-
-                {notesOverlay === q.id && (
-                  <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
-                    onClick={() => setNotesOverlay(null)} // clicking the overlay closes it
-                  >
-
-                    <div
-                      className="bg-gray-50 dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded-lg shadow-lg flex flex-col p-4 overflow-auto"
-                      onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
                     >
+                      {isMuted ? "Unmute sounds" : "Mute sounds"}
+                    </span>
+                  </button>
+                </div>
 
-                      {/* ============================
-           HEADER SECTION
-      ============================ */}
-                      <div className="flex justify-between items-center mb-4">
-                        <h2 className="font-bold text-xl text-blue-700 dark:text-blue-300">
-                          Expanded Notes Panel
-                        </h2>
-                        <button
-                          onClick={() => setNotesOverlay(null)}
-                          className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition hover:bg-gray-400 dark:hover:bg-gray-600"
-                        >
-                          <X className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                            Close
-                          </span>
-                        </button>
+                {showFeedback && (
+                  <div className="mt-3">
+                    <p className={`font-semibold ${isCorrect ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                      {isCorrect ? "Correct!" : `Wrong. Correct answer is ${q.correct_answer}`}
+                    </p>
+                    {q.explanation && <p className="mt-1"><span className="font-semibold">Explanation:</span> {q.explanation}</p>}
+                    {q.additional && (
+                      <div className="mt-2">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                          Additional Explanation
+                        </h3>
+                        <pre className="text-base font-sans bg-gray-100 dark:bg-gray-700 p-4 whitespace-pre-wrap rounded-3xl">
+                          {q.additional}
+                        </pre>
                       </div>
-
-                      {/* ============================
-           GUIDE / INSTRUCTION SECTION
-      ============================ */}
-                      <div className="mb-4 p-3 border rounded-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                        <p className="font-semibold mb-1">How to Use This Panel:</p>
-                        <ul className="list-disc ml-5 space-y-1">
-                          <li><strong>Take deeper notes</strong> about why you got it wrong/right.</li>
-                          <li>Mark the question as <strong>Understood</strong> or <strong>Not Understood</strong>.</li>
-                          <li>Track how many times you have <strong>Attempted</strong> it.</li>
-                          <li>You can even <strong>Offer Help</strong> to others or request help using <strong>Help Me</strong>.</li>
-                          <li>Everything is auto-synced online and stored offline.</li>
-                        </ul>
-                      </div>
-
-                      {/* ============================
-           NOTES TEXTAREA
-      ============================ */}
-                      <textarea
-                        value={notes[q.id] || ""}
-                        onChange={async (e) => {
-                          const value = e.target.value;
-                          setNotes(prev => ({ ...prev, [q.id]: value }));
-
-                          // Save offline immediately
-                          await saveNoteOffline(q.id, value);
-                        }}
-                        placeholder="Take notes here..."
-                        className="w-full flex-1 p-3 border rounded-lg resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-4"
-                      />
-
-                      {/* ============================
-           BOTTOM BUTTONS
-      ============================ */}
-                      <div className="flex flex-wrap gap-2 mt-2">
-
-                        {/* -----------------------------
-             Understood Button
-        ----------------------------- */}
-                        <button
-                          onClick={async () => {
-                            if (!userId) return;
-
-                            const newState = !understood[q.id];
-                            setUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                            setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-                            // Save offline
-                            await saveAnswersOffline(q.id, { understood: newState, not_understood: false, attempts: attempts[q.id] || 0 });
-                            await saveNoteOffline(q.id, notes[q.id] || "");
-
-                            // Sync online
-                            try {
-                              await supabase
-                                .from("question_notes")
-                                .upsert([{
-                                  user_id: userId,
-                                  question_id: q.id,
-                                  note_text: notes[q.id] || "",
-                                  understood: newState,
-                                  is_not_understood: false,
-                                  attempts: attempts[q.id] || 0,
-                                  help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                }], { onConflict: "question_id, user_id" });
-                            } catch (err) {
-                              console.error("Error syncing Understood:", err);
-                            }
-                          }}
-                          className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${understood[q.id] ? "ring-2 ring-green-500" : ""}`}
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                            Understood
-                          </span>
-                        </button>
-
-                        {/* -----------------------------
-             Not Understood Button
-        ----------------------------- */}
-                        <button
-                          onClick={async () => {
-                            if (!userId) return;
-
-                            const newState = !notUnderstood[q.id];
-                            setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                            setUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-                            await saveAnswersOffline(q.id, { understood: false, not_understood: newState, attempts: attempts[q.id] || 0 });
-                            await saveNoteOffline(q.id, notes[q.id] || "");
-
-                            try {
-                              await supabase
-                                .from("question_notes")
-                                .upsert([{
-                                  user_id: userId,
-                                  question_id: q.id,
-                                  note_text: notes[q.id] || "",
-                                  understood: false,
-                                  is_not_understood: newState,
-                                  attempts: attempts[q.id] || 0,
-                                  help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                }], { onConflict: "question_id, user_id" });
-                            } catch (err) {
-                              console.error("Error syncing Not Understood:", err);
-                            }
-                          }}
-                          className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}`}
-                        >
-                          <HelpCircle className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                            Not Understood
-                          </span>
-                        </button>
-
-                        {/* -----------------------------
-             Attempts Button
-        ----------------------------- */}
-                        <button
-                          onClick={async () => {
-                            if (!userId) return;
-
-                            const newCount = (attempts[q.id] || 0) + 1;
-                            setAttempts(prev => ({ ...prev, [q.id]: newCount }));
-
-                            await saveAnswersOffline(q.id, { understood: understood[q.id] || false, not_understood: notUnderstood[q.id] || false, attempts: newCount });
-                            await saveNoteOffline(q.id, notes[q.id] || "");
-
-                            try {
-                              await supabase
-                                .from("question_notes")
-                                .upsert([{
-                                  user_id: userId,
-                                  question_id: q.id,
-                                  note_text: notes[q.id] || "",
-                                  understood: understood[q.id] || false,
-                                  is_not_understood: notUnderstood[q.id] || false,
-                                  attempts: newCount,
-                                  help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                }], { onConflict: "question_id, user_id" });
-                            } catch (err) {
-                              console.error("Error syncing Attempts:", err);
-                            }
-                          }}
-                          className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                            Attempted: {attempts[q.id] || 0}
-                          </span>
-                        </button>
-
-                        {/* -----------------------------
-             Save Notes Button
-        ----------------------------- */}
-                        <button
-                          onClick={async () => {
-                            if (!userId) return;
-                            setSaving(true);
-                            setSaved(false);
-
-                            // 1. Save offline first
-                            await saveNoteOffline(q.id, notes[q.id] || "");
-
-                            try {
-                              // 2. Upsert online directly — no need to check existing
-                              await supabase
-                                .from("question_notes")
-                                .upsert([{
-                                  question_id: q.id,
-                                  user_id: userId,
-                                  note_text: notes[q.id] || "",
-                                  understood: understood[q.id] || false,
-                                  is_not_understood: notUnderstood[q.id] || false,
-                                  attempts: attempts[q.id] || 0,
-                                  help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                }], { onConflict: ["question_id", "user_id"] }); // <- handles both insert & update
-
-                            } catch (err) {
-                              console.error("Error syncing Save Notes:", err);
-                            }
-
-                            setSaving(false);
-                            setSaved(true);
-                            setTimeout(() => setSaved(false), 1000);
-                          }}
-                          className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
-                        >
-                          {saving ? (
-                            <div className="flex space-x-1">
-                              <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
-                              <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
-                              <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
-                            </div>
-                          ) : (
-                            <Save className="w-4 h-4" />
-                          )}
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                            {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
-                          </span>
-                        </button>
+                    )}
 
 
-                      </div>
-
-                    </div>
                   </div>
                 )}
+              </div>
+
+              {/* Small Note Card */}
+              <div className="w-full lg:w-1/3 p-4 border rounded-none sm:rounded-md shadow-none bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-black dark:text-white flex flex-col">
+
+                {/* Header */}
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="font-bold">Notes Evaluation Panel</h2>
+                </div>
+
+                {/* ------------------------------
+       NOTES TEXTAREA
+  ------------------------------ */}
+                <textarea
+                  value={notes[q.id] || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    // Update React state
+                    setNotes(prev => ({ ...prev, [q.id]: value }));
+
+                    // Save offline immediately (non-blocking, no await)
+                    saveNoteOffline(q.id, value).catch(err => console.error(err));
+                  }}
+
+                  className="w-full flex-1 p-2 border rounded-none sm:rounded-md resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-2 h-32"
+                  placeholder="Take notes here..."
+                />
+
+                <div className="flex gap-2 justify-end">
+
+                  {/* ------------------------------
+         Expand Notes Overlay
+    ------------------------------ */}
+                  <button
+                    onClick={() => setNotesOverlay(q.id)}
+                    className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
+                  >
+                    <PanelRightOpen className="w-4 h-4" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                      Expand Notes
+                    </span>
+                  </button>
+
+                  {/* ------------------------------
+         Understood Button
+    ------------------------------ */}
+                  <button
+                    onClick={async () => {
+                      if (!userId) return;
+
+                      const newState = !understood[q.id];
+
+                      // Update local state
+                      setUnderstood(prev => ({ ...prev, [q.id]: newState }));
+                      setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
+
+                      // Save offline
+                      await saveNoteOffline(q.id, notes[q.id] || "");
+                      // Mark offline understood/not-understood locally
+                      await saveAnswersOffline(q.id, {
+                        understood: newState,
+                        not_understood: false,
+                        attempts: attempts[q.id] || 0,
+                      });
+
+                      // Attempt online sync
+                      try {
+                        await supabase
+                          .from("question_notes")
+                          .upsert([{
+                            user_id: userId,
+                            question_id: q.id,
+                            note_text: notes[q.id] || "",
+                            understood: newState,
+                            is_not_understood: false,
+                            attempts: attempts[q.id] || 0,
+                            help_others: helpOthersDisabled[q.id] ? "saved" : null
+                          }], { onConflict: "question_id, user_id" });
+                      } catch (err) {
+                        console.error("Error syncing Understood:", err);
+                      }
+                    }}
+                    className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${understood[q.id] ? "ring-2 ring-green-500" : ""}`}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                      Understood
+                    </span>
+                  </button>
+
+                  {/* ------------------------------
+         Not Understood Button
+    ------------------------------ */}
+                  <button
+                    onClick={async () => {
+                      if (!userId) return;
+
+                      const newState = !notUnderstood[q.id];
+
+                      // Update local state
+                      setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
+                      setUnderstood(prev => ({ ...prev, [q.id]: false }));
+
+                      // Save offline
+                      await saveNoteOffline(q.id, notes[q.id] || "");
+                      await saveAnswersOffline(q.id, {
+                        understood: false,
+                        not_understood: newState,
+                        attempts: attempts[q.id] || 0,
+                      });
+
+                      // Attempt online sync
+                      try {
+                        await supabase
+                          .from("question_notes")
+                          .upsert([{
+                            user_id: userId,
+                            question_id: q.id,
+                            note_text: notes[q.id] || "",
+                            understood: false,
+                            is_not_understood: newState,
+                            attempts: attempts[q.id] || 0,
+                            help_others: helpOthersDisabled[q.id] ? "saved" : null
+                          }], { onConflict: "question_id, user_id" });
+                      } catch (err) {
+                        console.error("Error syncing Not Understood:", err);
+                      }
+                    }}
+                    className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}`}
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                      Not Understood
+                    </span>
+                  </button>
+
+                  {/* ------------------------------
+         Attempts Button
+    ------------------------------ */}
+                  <button
+                    onClick={async () => {
+                      if (!userId) return;
+
+                      const newCount = (attempts[q.id] || 0) + 1;
+                      setAttempts(prev => ({ ...prev, [q.id]: newCount }));
+
+                      // Save offline
+                      await saveAnswersOffline(q.id, {
+                        understood: understood[q.id] || false,
+                        not_understood: notUnderstood[q.id] || false,
+                        attempts: newCount,
+                      });
+                      await saveNoteOffline(q.id, notes[q.id] || "");
+
+                      // Attempt online sync
+                      try {
+                        await supabase
+                          .from("question_notes")
+                          .upsert([{
+                            user_id: userId,
+                            question_id: q.id,
+                            note_text: notes[q.id] || "",
+                            understood: understood[q.id] || false,
+                            is_not_understood: notUnderstood[q.id] || false,
+                            attempts: newCount,
+                            help_others: helpOthersDisabled[q.id] ? "saved" : null
+                          }], { onConflict: "question_id, user_id" });
+                      } catch (err) {
+                        console.error("Error syncing Attempts:", err);
+                      }
+                    }}
+                    className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                      Attempted: {attempts[q.id] || 0}
+                    </span>
+                  </button>
+
+                  {/* ------------------------------
+         Save Notes Button
+    ------------------------------ */}
+                  <button
+                    onClick={async () => {
+                      if (!userId) return;
+                      setSaving(true);
+                      setSaved(false);
+
+                      // 1. Save offline first
+                      await saveNoteOffline(q.id, notes[q.id] || "");
+
+                      try {
+                        // 2. Upsert online directly — no need to check existing
+                        await supabase
+                          .from("question_notes")
+                          .upsert([{
+                            question_id: q.id,
+                            user_id: userId,
+                            note_text: notes[q.id] || "",
+                            understood: understood[q.id] || false,
+                            is_not_understood: notUnderstood[q.id] || false,
+                            attempts: attempts[q.id] || 0,
+                            help_others: helpOthersDisabled[q.id] ? "saved" : null
+                          }], { onConflict: ["question_id", "user_id"] }); // <- handles both insert & update
+
+                      } catch (err) {
+                        console.error("Error syncing Save Notes:", err);
+                      }
+
+                      setSaving(false);
+                      setSaved(true);
+                      setTimeout(() => setSaved(false), 1000);
+                    }}
+                    className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
+                  >
+                    {saving ? (
+                      <div className="flex space-x-1">
+                        <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
+                        <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
+                        <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
+                      </div>
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                      {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
+                    </span>
+                  </button>
+
+                  {/* ------------------------------
+         Help Others Button
+    ------------------------------ */}
+                  <button
+                    onClick={async () => {
+                      if (!userId || helpOthersDisabled[q.id]) return;
+
+                      const phone = prompt("Enter your WhatsApp number (with country code, e.g., +254712345678):");
+                      if (!phone) return;
+
+                      await saveNoteOffline(q.id, notes[q.id] || "");
+
+                      try {
+                        await supabase
+                          .from("question_notes")
+                          .upsert([{
+                            user_id: userId,
+                            question_id: q.id,
+                            note_text: notes[q.id] || "",
+                            understood: understood[q.id] || false,
+                            is_not_understood: notUnderstood[q.id] || false,
+                            attempts: attempts[q.id] || 0,
+                            help_others: phone
+                          }], { onConflict: "question_id, user_id" });
+
+                        setHelpOthersDisabled(prev => ({ ...prev, [q.id]: true }));
+                      } catch (err) {
+                        console.error("Error saving Help Others:", err);
+                      }
+                    }}
+                    disabled={helpOthersDisabled[q.id]}
+                    className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                      {helpOthersDisabled[q.id] ? "Already shared" : "Help Others"}
+                    </span>
+                  </button>
+
+                  {/* ------------------------------
+         Help Me Button
+    ------------------------------ */}
+                  <button
+                    onClick={async () => {
+                      if (!userId) return;
+
+                      const { data, error } = await supabase
+                        .from("question_notes")
+                        .select(`id, help_others, profiles:user_id(name, avatar_url)`)
+                        .eq("question_id", q.id)
+                        .not("help_others", "eq", "none");
+
+                      if (error) {
+                        console.error("Error fetching helpers:", error);
+                        alert("Failed to fetch helpers.");
+                        return;
+                      }
+
+                      if (!data || data.length === 0) {
+                        alert("No one has offered help yet for this question.");
+                        return;
+                      }
+
+                      const helpers = data.map((d: any) => ({
+                        id: d.id,
+                        whatsapp: d.help_others,
+                        profiles: d.profiles
+                      }));
+
+                      setHelpMeHelpers(helpers);
+                      setCurrentQuestionText(q.question_text);
+                      setHelpMeOverlayOpen(true);
+                    }}
+                    className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                      Help Me
+                    </span>
+                  </button>
+
+                  {notesOverlay === q.id && (
+                    <div
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
+                      onClick={() => setNotesOverlay(null)} // clicking the overlay closes it
+                    >
+
+                      <div
+                        className="bg-gray-50 dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded-none sm:rounded-md shadow-lg flex flex-col p-4 overflow-auto"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                      >
+
+                        {/* ============================
+           HEADER SECTION
+      ============================ */}
+                        <div className="flex justify-between items-center mb-4">
+                          <h2 className="font-bold text-xl text-blue-700 dark:text-blue-300">
+                            Expanded Notes Panel
+                          </h2>
+                          <button
+                            onClick={() => setNotesOverlay(null)}
+                            className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition hover:bg-gray-400 dark:hover:bg-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                              Close
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* ============================
+           GUIDE / INSTRUCTION SECTION
+      ============================ */}
+                        <div className="mb-4 p-3 border rounded-none sm:rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                          <p className="font-semibold mb-1">How to Use This Panel:</p>
+                          <ul className="list-disc ml-5 space-y-1">
+                            <li><strong>Take deeper notes</strong> about why you got it wrong/right.</li>
+                            <li>Mark the question as <strong>Understood</strong> or <strong>Not Understood</strong>.</li>
+                            <li>Track how many times you have <strong>Attempted</strong> it.</li>
+                            <li>You can even <strong>Offer Help</strong> to others or request help using <strong>Help Me</strong>.</li>
+                            <li>Everything is auto-synced online and stored offline.</li>
+                          </ul>
+                        </div>
+
+                        {/* ============================
+           NOTES TEXTAREA
+      ============================ */}
+                        <textarea
+                          value={notes[q.id] || ""}
+                          onChange={async (e) => {
+                            const value = e.target.value;
+                            setNotes(prev => ({ ...prev, [q.id]: value }));
+
+                            // Save offline immediately
+                            await saveNoteOffline(q.id, value);
+                          }}
+                          placeholder="Take notes here..."
+                          className="w-full flex-1 p-3 border rounded-none sm:rounded-md resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-4"
+                        />
+
+                        {/* ============================
+           BOTTOM BUTTONS
+      ============================ */}
+                        <div className="flex flex-wrap gap-2 mt-2">
+
+                          {/* -----------------------------
+             Understood Button
+        ----------------------------- */}
+                          <button
+                            onClick={async () => {
+                              if (!userId) return;
+
+                              const newState = !understood[q.id];
+                              setUnderstood(prev => ({ ...prev, [q.id]: newState }));
+                              setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
+
+                              // Save offline
+                              await saveAnswersOffline(q.id, { understood: newState, not_understood: false, attempts: attempts[q.id] || 0 });
+                              await saveNoteOffline(q.id, notes[q.id] || "");
+
+                              // Sync online
+                              try {
+                                await supabase
+                                  .from("question_notes")
+                                  .upsert([{
+                                    user_id: userId,
+                                    question_id: q.id,
+                                    note_text: notes[q.id] || "",
+                                    understood: newState,
+                                    is_not_understood: false,
+                                    attempts: attempts[q.id] || 0,
+                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
+                                  }], { onConflict: "question_id, user_id" });
+                              } catch (err) {
+                                console.error("Error syncing Understood:", err);
+                              }
+                            }}
+                            className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${understood[q.id] ? "ring-2 ring-green-500" : ""}`}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                              Understood
+                            </span>
+                          </button>
+
+                          {/* -----------------------------
+             Not Understood Button
+        ----------------------------- */}
+                          <button
+                            onClick={async () => {
+                              if (!userId) return;
+
+                              const newState = !notUnderstood[q.id];
+                              setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
+                              setUnderstood(prev => ({ ...prev, [q.id]: false }));
+
+                              await saveAnswersOffline(q.id, { understood: false, not_understood: newState, attempts: attempts[q.id] || 0 });
+                              await saveNoteOffline(q.id, notes[q.id] || "");
+
+                              try {
+                                await supabase
+                                  .from("question_notes")
+                                  .upsert([{
+                                    user_id: userId,
+                                    question_id: q.id,
+                                    note_text: notes[q.id] || "",
+                                    understood: false,
+                                    is_not_understood: newState,
+                                    attempts: attempts[q.id] || 0,
+                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
+                                  }], { onConflict: "question_id, user_id" });
+                              } catch (err) {
+                                console.error("Error syncing Not Understood:", err);
+                              }
+                            }}
+                            className={`relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}`}
+                          >
+                            <HelpCircle className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                              Not Understood
+                            </span>
+                          </button>
+
+                          {/* -----------------------------
+             Attempts Button
+        ----------------------------- */}
+                          <button
+                            onClick={async () => {
+                              if (!userId) return;
+
+                              const newCount = (attempts[q.id] || 0) + 1;
+                              setAttempts(prev => ({ ...prev, [q.id]: newCount }));
+
+                              await saveAnswersOffline(q.id, { understood: understood[q.id] || false, not_understood: notUnderstood[q.id] || false, attempts: newCount });
+                              await saveNoteOffline(q.id, notes[q.id] || "");
+
+                              try {
+                                await supabase
+                                  .from("question_notes")
+                                  .upsert([{
+                                    user_id: userId,
+                                    question_id: q.id,
+                                    note_text: notes[q.id] || "",
+                                    understood: understood[q.id] || false,
+                                    is_not_understood: notUnderstood[q.id] || false,
+                                    attempts: newCount,
+                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
+                                  }], { onConflict: "question_id, user_id" });
+                              } catch (err) {
+                                console.error("Error syncing Attempts:", err);
+                              }
+                            }}
+                            className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                              Attempted: {attempts[q.id] || 0}
+                            </span>
+                          </button>
+
+                          {/* -----------------------------
+             Save Notes Button
+        ----------------------------- */}
+                          <button
+                            onClick={async () => {
+                              if (!userId) return;
+                              setSaving(true);
+                              setSaved(false);
+
+                              // 1. Save offline first
+                              await saveNoteOffline(q.id, notes[q.id] || "");
+
+                              try {
+                                // 2. Upsert online directly — no need to check existing
+                                await supabase
+                                  .from("question_notes")
+                                  .upsert([{
+                                    question_id: q.id,
+                                    user_id: userId,
+                                    note_text: notes[q.id] || "",
+                                    understood: understood[q.id] || false,
+                                    is_not_understood: notUnderstood[q.id] || false,
+                                    attempts: attempts[q.id] || 0,
+                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
+                                  }], { onConflict: ["question_id", "user_id"] }); // <- handles both insert & update
+
+                              } catch (err) {
+                                console.error("Error syncing Save Notes:", err);
+                              }
+
+                              setSaving(false);
+                              setSaved(true);
+                              setTimeout(() => setSaved(false), 1000);
+                            }}
+                            className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition"
+                          >
+                            {saving ? (
+                              <div className="flex space-x-1">
+                                <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
+                                <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
+                                <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
+                              </div>
+                            ) : (
+                              <Save className="w-4 h-4" />
+                            )}
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
+                              {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
+                            </span>
+                          </button>
+
+
+                        </div>
+
+                      </div>
+                    </div>
+                  )}
 
 
 
-                {/* Help Me Overlay */}
-                {helpMeOverlayOpen && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2">
-                    <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-lg shadow-lg p-4 flex flex-col space-y-3 h-[90vh] overflow-auto">
+                  {/* Help Me Overlay */}
+                  {helpMeOverlayOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2">
+                      <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-none sm:rounded-md shadow-lg p-4 flex flex-col space-y-3 h-[90vh] overflow-auto">
 
-                      {/* Header */}
-                      <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-blue-700 dark:text-blue-300">Helpers Available</h2>
-                        <button
-                          onClick={() => setHelpMeOverlayOpen(false)}
-                          className="
+                        {/* Header */}
+                        <div className="flex justify-between items-center">
+                          <h2 className="text-lg font-bold text-blue-700 dark:text-blue-300">Helpers Available</h2>
+                          <button
+                            onClick={() => setHelpMeOverlayOpen(false)}
+                            className="
     relative group
     w-8 h-8 flex items-center justify-center
     rounded-md
@@ -1718,12 +1719,12 @@ Please provide a detailed discussion and guidance.`;
     transition
     hover:bg-gray-400 dark:hover:bg-gray-600
   "
-                        >
-                          <X className="w-4 h-4" />
+                          >
+                            <X className="w-4 h-4" />
 
-                          {/* Tooltip above */}
-                          <span
-                            className="
+                            {/* Tooltip above */}
+                            <span
+                              className="
       absolute bottom-full left-1/2 -translate-x-1/2 mb-2
       opacity-0 group-hover:opacity-100
       pointer-events-none
@@ -1732,66 +1733,66 @@ Please provide a detailed discussion and guidance.`;
       transition
       shadow-lg z-50
     "
-                          >
-                            Close
-                          </span>
-                        </button>
-
-                      </div>
-
-                      {/* List of Helpers */}
-                      <div className="flex flex-col gap-2 max-h-[70vh] overflow-y-auto">
-                        {helpMeHelpers.map((helper) => (
-                          <div
-                            key={helper.id}
-                            className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                          >
-                            {/* Avatar */}
-                            <img
-                              src={helper.profiles.avatar_url || "/UsersAvatar.jpg"}
-                              alt={helper.profiles.name}
-                              className="w-10 h-10 rounded-lg-full object-cover"
-                            />
-
-                            {/* Name and number */}
-                            <div className="flex-1 text-sm">
-                              <p className="font-semibold">{helper.profiles.name}</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">{helper.whatsapp}</p>
-                            </div>
-
-                            {/* WhatsApp button */}
-                            <button
-                              onClick={() => {
-                                const message = encodeURIComponent(
-                                  `Hi! Can you help me with this question?\n\n${currentQuestionText}\n\nThanks!`
-                                );
-                                window.open(`https://wa.me/${helper.whatsapp}?text=${message}`, "_blank");
-                              }}
-                              className="px-2 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
                             >
-                              Message
-                            </button>
-                          </div>
-                        ))}
+                              Close
+                            </span>
+                          </button>
+
+                        </div>
+
+                        {/* List of Helpers */}
+                        <div className="flex flex-col gap-2 max-h-[70vh] overflow-y-auto">
+                          {helpMeHelpers.map((helper) => (
+                            <div
+                              key={helper.id}
+                              className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-2 border rounded-none sm:rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                            >
+                              {/* Avatar */}
+                              <img
+                                src={helper.profiles.avatar_url || "/UsersAvatar.jpg"}
+                                alt={helper.profiles.name}
+                                className="w-10 h-10 rounded-none sm:rounded-md-full object-cover"
+                              />
+
+                              {/* Name and number */}
+                              <div className="flex-1 text-sm">
+                                <p className="font-semibold">{helper.profiles.name}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{helper.whatsapp}</p>
+                              </div>
+
+                              {/* WhatsApp button */}
+                              <button
+                                onClick={() => {
+                                  const message = encodeURIComponent(
+                                    `Hi! Can you help me with this question?\n\n${currentQuestionText}\n\nThanks!`
+                                  );
+                                  window.open(`https://wa.me/${helper.whatsapp}?text=${message}`, "_blank");
+                                }}
+                                className="px-2 py-1 text-xs bg-green-500 text-white rounded-none sm:rounded-md hover:bg-green-600 transition"
+                              >
+                                Message
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
+                </div>
               </div>
-            </div>
-          </div >
+            </div >
 
 
-        );
-      })}
-
+          );
+        })}
+      </div>
 
       {
         !quizFinished && Object.keys(answers).length === questions.length && (
           <button
             onClick={() => handleSubmit(false)}
-            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition mt-4"
+            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-none sm:rounded-md hover:bg-blue-700 transition mt-4"
           >
             Submit Quiz
           </button>
@@ -1801,7 +1802,7 @@ Please provide a detailed discussion and guidance.`;
       {
         quizFinished && (
           <>
-            <div className="mt-6 p-4 bg-green-100 dark:bg-green-900 rounded-lg text-green-800 dark:text-green-200 font-semibold">
+            <div className="mt-6 p-4 bg-green-100 dark:bg-green-900 rounded-none sm:rounded-md text-green-800 dark:text-green-200 font-semibold">
               You got {finalScore} out of {questions.length} correct!
             </div>
 
@@ -1817,7 +1818,7 @@ Please provide a detailed discussion and guidance.`;
                   + "\n\n Remember: progress is about growth, not perfection. The fact that you showed up and tried already puts you ahead. Keep pushing — your future self will thank you! "
                 );
               }}
-              className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg-lg shadow-md hover:bg-indigo-700 transition"
+              className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-none sm:rounded-md-lg shadow-md hover:bg-indigo-700 transition"
             >
               View Your Result
             </button>
@@ -1832,7 +1833,7 @@ Please provide a detailed discussion and guidance.`;
             <h2 className="text-lg font-bold mb-2">Past Attempts</h2>
             <ul className="space-y-2 text-sm text-gray-800">
               {attempts.map((attempt) => (
-                <li key={attempt.id} className="p-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white">
+                <li key={attempt.id} className="p-2 border rounded-none sm:rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white">
                   🗓 {new Date(attempt.submitted_at).toLocaleString()} — Score: {attempt.score}
                 </li>
               ))}
@@ -1850,7 +1851,7 @@ Please provide a detailed discussion and guidance.`;
         showScrollTop && (
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className={`fixed bottom-6 right-6 p-3 rounded-lg-full shadow-lg hover:scale-110 transition-transform
+            className={`fixed bottom-6 right-6 p-3 rounded-none sm:rounded-md-full shadow-lg hover:scale-110 transition-transform
       ${isDarkMode ? "bg-white text-gray-900" : "bg-gray-900 text-white"}`}
             aria-label="Scroll to top"
           >

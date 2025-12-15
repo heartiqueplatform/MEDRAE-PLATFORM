@@ -185,12 +185,15 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
 
         <main
           className={`
-    flex-1 box-border p-4 md:p-6 pb-14
+    flex-1 box-border
+    px-0 md:px-6
+    py-4 pb-14
     overflow-auto
     scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
     dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
   `}
         >
+
           {children}
         </main>
 
