@@ -386,7 +386,7 @@ export default function Feed() {
       }
 
       // 🚀 FAST FIRST FETCH (NON-BLOCKING)
-      const fast = await fetchQuestionsFast(0, 20);
+      const fast = await fetchQuestionsFast(0, 80);
       setQuestions((prev) => {
         const map = new Map(prev.map((q) => [q.id, q]));
         fast.forEach((q) => map.set(q.id, q));
@@ -497,18 +497,25 @@ export default function Feed() {
   }, [user, answers]);
 
 
-  // Fetch questions with likes/comments
-  const fetchQuestions = async (page = 0, limit = 50) => {
+  // Fetch questions with likes/comments (optimized but preserved)
+  const fetchQuestions = async (page = 0, limit = 80) => {
     if (!user) return [];
 
-    const { data: seenData } = await supabase
+    // 1️⃣ Fetch seen questions (only IDs)
+    const { data: seenData, error: seenError } = await supabase
       .from("qfeed_seen")
       .select("question_id")
       .eq("user_id", user.id);
 
+    if (seenError) {
+      console.error("Seen fetch error:", seenError);
+      return [];
+    }
+
     const seenList = seenData?.map((s) => s.question_id) || [];
 
-    const { data, error } = await supabase
+    // 2️⃣ Fetch questions
+    const { data: questions, error } = await supabase
       .from("quiz_questions")
       .select(
         "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, created_at"
@@ -521,40 +528,136 @@ export default function Feed() {
       .range(page * limit, page * limit + limit - 1);
 
     if (error) {
-      console.error(error);
+      console.error("Questions fetch error:", error);
       return [];
     }
-    if (!data?.length) return [];
 
-    const shuffled = data.sort(() => Math.random() - 0.5);
+    if (!questions?.length) return [];
+
+    // 3️⃣ Shuffle (preserved behavior)
+    const shuffled = [...questions].sort(() => Math.random() - 0.5);
+
     const ids = shuffled.map((q) => q.id);
     const quizIds = [...new Set(shuffled.map((q) => q.quiz_id))];
 
-    // Fetch likes
-    const { data: likes } = await supabase
-      .from("qfeed_likes")
-      .select("question_id, user_id")
-      .in("question_id", ids);
+    // 4️⃣ Fetch likes, comments, quizzes IN PARALLEL 🚀
+    const [
+      { data: likes },
+      { data: commentsData },
+      { data: quizzes },
+    ] = await Promise.all([
+      supabase
+        .from("qfeed_likes")
+        .select("question_id, user_id")
+        .in("question_id", ids),
 
-    // Fetch comments
-    const { data: commentsData } = await supabase
-      .from("qfeed_comments")
-      .select("id, question_id")
-      .in("question_id", ids);
+      supabase
+        .from("qfeed_comments")
+        .select("id, question_id")
+        .in("question_id", ids),
 
-    // Fetch quiz titles
-    const { data: quizzes } = await supabase
-      .from("quizzes")
-      .select("id, title")
-      .in("id", quizIds);
+      supabase
+        .from("quizzes")
+        .select("id, title")
+        .in("id", quizIds),
+    ]);
 
+    // 5️⃣ Normalize for O(1) lookup
+    const likesMap = new Map<string, any[]>();
+    likes?.forEach((l) => {
+      if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
+      likesMap.get(l.question_id)!.push(l);
+    });
+
+    const commentsCountMap = new Map<string, number>();
+    commentsData?.forEach((c) => {
+      commentsCountMap.set(
+        c.question_id,
+        (commentsCountMap.get(c.question_id) || 0) + 1
+      );
+    });
+
+    const quizTitleMap = new Map<string, string>();
+    quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
+
+    // 6️⃣ Final merge (same output shape as before)
     return shuffled.map((q) => ({
       ...q,
-      qfeed_likes: likes?.filter((l) => l.question_id === q.id) || [],
-      comments_count:
-        commentsData?.filter((c) => c.question_id === q.id).length || 0,
-      quiz_title:
-        quizzes?.find((zz) => zz.id === q.quiz_id)?.title || "Untitled Quiz",
+      qfeed_likes: likesMap.get(q.id) || [],
+      comments_count: commentsCountMap.get(q.id) || 0,
+      quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
+    }));
+  };
+  // 🔹 FAST QUESTION FETCH (NO HEAVY JOINS)
+  const fetchQuestionsFast = async (page = 0, limit = 80) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from("quiz_questions")
+      .select(
+        "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation"
+      )
+      .range(page * limit, page * limit + limit - 1);
+
+    if (error) {
+      console.error("fetchQuestionsFast error:", error);
+      return [];
+    }
+
+    return data || [];
+  };
+  // 🔹 Enrich questions with likes, comments & quiz title
+  const enrichQuestions = async (questions: any[]) => {
+    if (!questions.length) return [];
+
+    const ids = questions.map((q) => q.id);
+    const quizIds = [...new Set(questions.map((q) => q.quiz_id))];
+
+    const [
+      { data: likes },
+      { data: comments },
+      { data: quizzes },
+    ] = await Promise.all([
+      supabase
+        .from("qfeed_likes")
+        .select("question_id, user_id")
+        .in("question_id", ids),
+
+      supabase
+        .from("qfeed_comments")
+        .select("id, question_id")
+        .in("question_id", ids),
+
+      supabase
+        .from("quizzes")
+        .select("id, title")
+        .in("id", quizIds),
+    ]);
+
+    // Normalize
+    const likesMap = new Map<string, any[]>();
+    likes?.forEach((l) => {
+      if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
+      likesMap.get(l.question_id)!.push(l);
+    });
+
+    const commentsCountMap = new Map<string, number>();
+    comments?.forEach((c) => {
+      commentsCountMap.set(
+        c.question_id,
+        (commentsCountMap.get(c.question_id) || 0) + 1
+      );
+    });
+
+    const quizTitleMap = new Map<string, string>();
+    quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
+
+    return questions.map((q) => ({
+      ...q,
+      qfeed_likes: likesMap.get(q.id) || [],
+      comments_count: commentsCountMap.get(q.id) || 0,
+      quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
     }));
   };
 
