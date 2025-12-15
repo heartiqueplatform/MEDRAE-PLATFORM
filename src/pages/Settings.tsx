@@ -37,8 +37,8 @@ import {
 
 export function Settings() {
   // State variables
- const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
-const [profile, setProfile] = useState<any>(cachedProfile);
+  const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
+  const [profile, setProfile] = useState<any>(cachedProfile);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -47,41 +47,41 @@ const [profile, setProfile] = useState<any>(cachedProfile);
 
   // Fetch profile
   useEffect(() => {
-  const fetchProfile = async () => {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    const fetchProfile = async () => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      return toast({ title: "Error", description: "User not found" });
-    }
-
-    setUserId(user.id);
-
-    // Only fetch if no cached profile
-    if (!cachedProfile) {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error) {
-        toast({ title: "Error", description: "Could not load profile" });
-      } else {
-        setProfile(data);
-        setAvatarPreview(data.avatar_url || null);
-        localStorage.setItem("userProfile", JSON.stringify(data));
+      if (userError || !user) {
+        return toast({ title: "Error", description: "User not found" });
       }
-    } else {
-      // use cached avatar preview
-      setAvatarPreview(cachedProfile.avatar_url || null);
-    }
-  };
 
-  fetchProfile();
-}, []);
+      setUserId(user.id);
+
+      // Only fetch if no cached profile
+      if (!cachedProfile) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) {
+          toast({ title: "Error", description: "Could not load profile" });
+        } else {
+          setProfile(data);
+          setAvatarPreview(data.avatar_url || null);
+          localStorage.setItem("userProfile", JSON.stringify(data));
+        }
+      } else {
+        // use cached avatar preview
+        setAvatarPreview(cachedProfile.avatar_url || null);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
 
   // Handle input changes
@@ -104,131 +104,132 @@ const [profile, setProfile] = useState<any>(cachedProfile);
   };
 
   // Upload avatar (PRESERVED)
-// Upload avatar (with cache-busting)
-const uploadAvatar = async () => {
-  if (!avatarFile || !userId) return null;
+  // Upload avatar (with cache-busting)
+  const uploadAvatar = async () => {
+    if (!avatarFile || !userId) return null;
 
-  const fileExt = avatarFile.name.split(".").pop();
-  const folder = "avatars";
-  const filePath = `${folder}/${userId}-avatar.${fileExt}`;
+    const fileExt = avatarFile.name.split(".").pop();
+    const folder = "avatars";
+    const filePath = `${folder}/${userId}-avatar.${fileExt}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("profilepics")
-    .upload(filePath, avatarFile, {
-      cacheControl: "60", // only cache for 60 seconds
-      upsert: true,
-    });
+    const { error: uploadError } = await supabase.storage
+      .from("profilepics")
+      .upload(filePath, avatarFile, {
+        cacheControl: "60", // only cache for 60 seconds
+        upsert: true,
+      });
 
-  if (uploadError) {
-    toast({ title: "Upload Failed", description: uploadError.message });
-    return null;
-  }
+    if (uploadError) {
+      toast({ title: "Upload Failed", description: uploadError.message });
+      return null;
+    }
 
-  const { data } = supabase.storage.from("profilepics").getPublicUrl(filePath);
+    const { data } = supabase.storage.from("profilepics").getPublicUrl(filePath);
 
-  // 👇 Add a timestamp to bust browser cache
-  return `${data.publicUrl}?t=${Date.now()}`;
-};
+    // 👇 Add a timestamp to bust browser cache
+    return `${data.publicUrl}?t=${Date.now()}`;
+  };
 
 
 
   // Remove avatar with confirmation
-const handleRemoveAvatar = async () => {
-  if (!userId) return;
+  const handleRemoveAvatar = async () => {
+    if (!userId) return;
 
-  try {
-    // 👇 figure out the folder + filename convention
-    const folder = "avatars";
-    const fileExt = profile?.avatar_url?.split(".").pop() || "png";
-    const filePath = `${folder}/${userId}-avatar.${fileExt}`;
+    try {
+      // 👇 figure out the folder + filename convention
+      const folder = "avatars";
+      const fileExt = profile?.avatar_url?.split(".").pop() || "png";
+      const filePath = `${folder}/${userId}-avatar.${fileExt}`;
 
-    // 1. Delete from storage
-    const { error: storageError } = await supabase
-      .storage
-      .from("profilepics")
-      .remove([filePath]);
+      // 1. Delete from storage
+      const { error: storageError } = await supabase
+        .storage
+        .from("profilepics")
+        .remove([filePath]);
 
-    if (storageError) {
-      toast({ title: "Error", description: "Failed to delete file from storage" });
-      console.error(storageError);
-      return;
+      if (storageError) {
+        toast({ title: "Error", description: "Failed to delete file from storage" });
+        console.error(storageError);
+        return;
+      }
+
+      // 2. Clear DB field
+      const { error: dbError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: null })
+        .eq("user_id", userId);
+
+      if (dbError) {
+        toast({ title: "Error", description: "Failed to remove avatar reference" });
+        console.error(dbError);
+        return;
+      }
+
+      // 3. Update local state
+      setProfile((prev: any) => ({ ...prev, avatar_url: null }));
+      setAvatarPreview(null);
+      setAvatarFile(null);
+
+      toast({
+        title: "Avatar Removed",
+        description: "Your avatar has been deleted.",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Unexpected error while removing avatar" });
     }
-
-    // 2. Clear DB field
-    const { error: dbError } = await supabase
-      .from("profiles")
-      .update({ avatar_url: null })
-      .eq("user_id", userId);
-
-    if (dbError) {
-      toast({ title: "Error", description: "Failed to remove avatar reference" });
-      console.error(dbError);
-      return;
-    }
-
-    // 3. Update local state
-    setProfile((prev: any) => ({ ...prev, avatar_url: null }));
-    setAvatarPreview(null);
-    setAvatarFile(null);
-
-    toast({
-      title: "Avatar Removed",
-      description: "Your avatar has been deleted.",
-    });
-  } catch (err) {
-    console.error(err);
-    toast({ title: "Error", description: "Unexpected error while removing avatar" });
-  }
-};
+  };
 
 
   // Save profile
- const handleSaveProfile = async () => {
-  if (!userId) return;
+  const handleSaveProfile = async () => {
+    if (!userId) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  let avatarUrl = profile.avatar_url;
-  if (avatarFile) {
-    const uploadedUrl = await uploadAvatar();
-    if (uploadedUrl) {
-      avatarUrl = uploadedUrl;
+    let avatarUrl = profile.avatar_url;
+    if (avatarFile) {
+      const uploadedUrl = await uploadAvatar();
+      if (uploadedUrl) {
+        avatarUrl = uploadedUrl;
+      }
     }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        ...profile,
+        avatar_url: avatarUrl,
+      })
+      .eq("user_id", userId);
+
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to save profile" });
+    } else {
+      // ✅ Save to localStorage immediately
+      const updatedProfile = { ...profile, avatar_url: avatarUrl };
+      setProfile(updatedProfile);
+      localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
+
+      toast({
+        title: "Profile Saved!",
+        description: "Your profile was updated successfully.",
+      });
+    }
+  };
+
+  // Only show loader if profile is not in cache
+  if (!profile && !cachedProfile) {
+    return <GlobalLoader message="Loading profile..." />;
   }
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      ...profile,
-      avatar_url: avatarUrl,
-    })
-    .eq("user_id", userId);
-
-  setLoading(false);
-
-  if (error) {
-    toast({ title: "Error", description: "Failed to save profile" });
-  } else {
-    // ✅ Save to localStorage immediately
-    const updatedProfile = { ...profile, avatar_url: avatarUrl };
-    setProfile(updatedProfile);
-    localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
-
-    toast({
-      title: "Profile Saved!",
-      description: "Your profile was updated successfully.",
-    });
-  }
-};
-
-// Only show loader if profile is not in cache
-if (!profile && !cachedProfile) {
-  return <GlobalLoader message="Loading profile..." />;
-}
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
       <div>
         <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
           <SettingsIcon className="h-8 w-8" />
@@ -259,10 +260,10 @@ if (!profile && !cachedProfile) {
               {/* Avatar */}
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-              <AvatarImage
-  src={avatarPreview || "/placeholder.svg"}
-  className="object-cover"
-/>
+                  <AvatarImage
+                    src={avatarPreview || "/placeholder.svg"}
+                    className="object-cover"
+                  />
 
                   <AvatarFallback className="text-lg">
                     {profile.name?.[0]?.toUpperCase()}
@@ -403,14 +404,14 @@ if (!profile && !cachedProfile) {
               </div>
 
               {/* Save Button */}
-<Button
-  onClick={handleSaveProfile}
-  className="flex items-center gap-2"
-  disabled={loading}
->
-  <Save className="h-4 w-4" />
-  {loading ? "Saving..." : "Save Changes"}
-</Button>
+              <Button
+                onClick={handleSaveProfile}
+                className="flex items-center gap-2"
+                disabled={loading}
+              >
+                <Save className="h-4 w-4" />
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
 
             </CardContent>
           </Card>

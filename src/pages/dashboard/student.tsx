@@ -915,8 +915,7 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-none sm:rounded-md
-">
+    <div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-none sm:rounded-md">
 
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-3xl p-6 text-white">

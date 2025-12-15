@@ -49,6 +49,8 @@ const TIMER_DURATION = 10_800_000; // 3 hours
 
 export default function QuizPage() {
   const location = useLocation();
+  const QUESTIONS_PER_BATCH = 20;
+  const [visibleCount, setVisibleCount] = useState(QUESTIONS_PER_BATCH);
 
   const params = new URLSearchParams(location.search);
   const unit = params.get("unit");
@@ -528,6 +530,9 @@ export default function QuizPage() {
       setConfidenceLevels(JSON.parse(saved));
     }
   }, []);
+  useEffect(() => {
+    setVisibleCount(QUESTIONS_PER_BATCH);
+  }, [questions, showUnansweredOnly]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -574,7 +579,7 @@ export default function QuizPage() {
     saveAnswersOffline(unit, updatedAnswers);
 
     // Save individual question answer offline
-    saveNoteOffline(questionId, "answered"); // just a flag, note_text can be used for actual notes
+    saveNoteOffline(questionId, "You have answered this question before"); // just a flag, note_text can be used for actual notes
 
     setAnswers(updatedAnswers);
 
@@ -711,7 +716,9 @@ Please provide a detailed discussion and guidance.`;
     setFinalScore(0);
   };
 
-  if (loading) return <GlobalLoader message="Medrae is Loading quiz..." />;
+  if (loading && questions.length === 0) {
+    return <GlobalLoader message="Medrae is Loading quiz..." />;
+  }
 
   if (questions.length === 0) return <p className="p-4">No questions found for: {unit}</p>;
   const filteredQuestions = showUnansweredOnly
@@ -722,7 +729,8 @@ Please provide a detailed discussion and guidance.`;
 
 
   return (
-    <div className="min-h-screen w-full px-0 py-4 space-y-6 bg-gray-50 dark:bg-gray-900 select-none">
+    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
 
 
       <div className="flex justify-between items-center">
@@ -843,7 +851,8 @@ Please provide a detailed discussion and guidance.`;
         </div>
       </div>
       <div className="flex flex-col space-y-4">
-        {filteredQuestions.map((q, i) => {
+        {filteredQuestions.slice(0, visibleCount).map((q, i) => {
+
           const selectedAnswer = answers[q.id];
           const isCorrect = selectedAnswer === q.correct_answer;
           const showFeedback = feedbackShown[q.id];
@@ -1148,6 +1157,18 @@ Please provide a detailed discussion and guidance.`;
                       </div>
                     )}
 
+                    {/* Load More button — only after last visible question */}
+                    {i === visibleCount - 1 && visibleCount < filteredQuestions.length && (
+                      <div className="flex justify-center mt-8">
+                        <button
+                          onClick={() =>
+                            setVisibleCount(prev => prev + QUESTIONS_PER_BATCH)
+                          }
+                          className="mt-4 px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all" >
+                          Load more questions
+                        </button>
+                      </div>
+                    )}
 
                   </div>
                 )}

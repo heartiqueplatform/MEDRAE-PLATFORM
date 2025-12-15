@@ -193,7 +193,6 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
     dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
   `}
         >
-
           {children}
         </main>
 

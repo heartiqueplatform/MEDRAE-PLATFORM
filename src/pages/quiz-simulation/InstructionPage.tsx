@@ -14,17 +14,17 @@ export default function InstructionPage() {
   const [cameraReady, setCameraReady] = useState(false);
   const [micReady, setMicReady] = useState(false);
   const [loudWarning, setLoudWarning] = useState(false);
-const [loadingPage, setLoadingPage] = useState(true); // show spinner before page
+  const [loadingPage, setLoadingPage] = useState(true); // show spinner before page
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationIdRef = useRef<number | null>(null);
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setLoadingPage(false);
-  }, 300); // 0.3 second delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingPage(false);
+    }, 300); // 0.3 second delay
 
-  return () => clearTimeout(timer);
-}, []);
+    return () => clearTimeout(timer);
+  }, []);
 
   // countdown logic
   useEffect(() => {
@@ -128,11 +128,13 @@ useEffect(() => {
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
     };
   }, []);
-if (loadingPage) {
-  return <GlobalLoader message="Setting simulation page..." />;
-}
+  if (loadingPage) {
+    return <GlobalLoader message="Setting simulation page..." />;
+  }
   return (
-    <div className="max-w-4xl mx-auto mt-10 space-y-6">
+    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+
       {/* Timer + Countdown + Start Button + Explanation */}
       <div className="flex flex-col items-center mb-6 space-y-2">
         <p className="text-sm text-muted-foreground">
@@ -147,23 +149,21 @@ if (loadingPage) {
         {/* Countdown + Button side by side */}
         <div className="flex items-center gap-4">
           <span
-            className={`inline-block px-4 py-2 rounded-full font-bold text-white transition-colors duration-300 ${
-              canStart ? "bg-green-600" : "bg-red-600"
-            }`}
+            className={`inline-block px-4 py-2 rounded-full font-bold text-white transition-colors duration-300 ${canStart ? "bg-green-600" : "bg-red-600"
+              }`}
           >
             {secondsLeft === null
               ? "Waiting for camera & mic..."
               : secondsLeft > 0
-              ? `Preparing... ${secondsLeft}s`
-              : "Ready!"}
+                ? `Preparing... ${secondsLeft}s`
+                : "Ready!"}
           </span>
 
           <Button
-            className={`text-white font-bold ${
-              canStart
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-red-600 cursor-not-allowed"
-            }`}
+            className={`text-white font-bold ${canStart
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-red-600 cursor-not-allowed"
+              }`}
             onClick={handleStartQuiz}
             disabled={!canStart}
           >
@@ -191,30 +191,30 @@ if (loadingPage) {
               </p>
             )}
           </div>
-       <Button
-  onDoubleClick={async () => {
-    if (!cameraReady) {
-      // disable while waiting
-      setCameraReady("loading"); 
-      try {
-        await enableCamera();
-        setCameraReady(true);
-      } catch (err) {
-        console.error("Camera error:", err);
-        setCameraReady(false);
-      }
-    }
-  }}
-  disabled={cameraReady === "loading"}
-  className="w-full rounded-none"
-  variant="secondary"
->
-  {cameraReady === true
-    ? "Camera Enabled"
-    : cameraReady === "loading"
-    ? "Enabling..."
-    : "Double-click to Enable Camera"}
-</Button>
+          <Button
+            onDoubleClick={async () => {
+              if (!cameraReady) {
+                // disable while waiting
+                setCameraReady("loading");
+                try {
+                  await enableCamera();
+                  setCameraReady(true);
+                } catch (err) {
+                  console.error("Camera error:", err);
+                  setCameraReady(false);
+                }
+              }
+            }}
+            disabled={cameraReady === "loading"}
+            className="w-full rounded-none"
+            variant="secondary"
+          >
+            {cameraReady === true
+              ? "Camera Enabled"
+              : cameraReady === "loading"
+                ? "Enabling..."
+                : "Double-click to Enable Camera"}
+          </Button>
 
         </div>
 
@@ -229,7 +229,7 @@ if (loadingPage) {
             />
             {loudWarning && (
               <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
-                 Loud noise detected
+                Loud noise detected
               </span>
             )}
           </div>
@@ -244,22 +244,22 @@ if (loadingPage) {
       </div>
       {/* Enriched Environment Warning */}
       <div className="mt-6 text-sm text-gray-600">
-  <strong>Note: This will work only on desktop.</strong>
-  <br /><br />
-  You may see your face on the screen, notice your motor activity being monitored,
-  and hear audio playback. This simulates a real NCK-like exam environment.  
-  <br />
-  Please remember to <strong>double-click</strong> the Camera & Mic buttons to enable them.  
-  <br />
-  These monitoring features are for simulation only and are not fully automated.
-</div>
+        <strong>Note: This will work only on desktop.</strong>
+        <br /><br />
+        You may see your face on the screen, notice your motor activity being monitored,
+        and hear audio playback. This simulates a real NCK-like exam environment.
+        <br />
+        Please remember to <strong>double-click</strong> the Camera & Mic buttons to enable them.
+        <br />
+        These monitoring features are for simulation only and are not fully automated.
+      </div>
 
       {/* Instructions Card */}
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="text-center text-lg">
-             NCK Simulation Instructions
+            NCK Simulation Instructions
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5 text-sm text-muted-foreground leading-relaxed">
@@ -329,11 +329,10 @@ if (loadingPage) {
           </div>
 
           <Button
-            className={`w-full mt-6 text-white font-bold ${
-              canStart
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-red-600 cursor-not-allowed"
-            }`}
+            className={`w-full mt-6 text-white font-bold ${canStart
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-red-600 cursor-not-allowed"
+              }`}
             onClick={handleStartQuiz}
             disabled={!canStart}
           >

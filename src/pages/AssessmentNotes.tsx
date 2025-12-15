@@ -360,7 +360,9 @@ export default function AssessmentNotes() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+
       <div className="flex flex-col">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
           Assessment Notes & Uploads

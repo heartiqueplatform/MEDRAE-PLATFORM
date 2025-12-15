@@ -273,6 +273,16 @@ export function MedraeQuizzes() {
   }, []);
 
   const { data: unitCounts, loading, incrementCount } = useUnitQuestionCount();
+  // ✅ Check if question counts already exist locally
+  const [hasLocalCache, setHasLocalCache] = useState(false);
+
+  useEffect(() => {
+    const cachedCounts = localStorage.getItem("cachedCounts");
+    if (cachedCounts) {
+      setHasLocalCache(true);
+    }
+  }, []);
+
   // 🔴 Realtime subscription for question count updates
   useEffect(() => {
     const channel = supabase
@@ -375,7 +385,7 @@ export function MedraeQuizzes() {
 
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
 
       <div className="flex items-center justify-between">
@@ -471,11 +481,12 @@ export function MedraeQuizzes() {
         </h2>
         <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
 
-          {(loading ? paperOneUnits : paperOneUnits.filter((unit) =>
+          {(loading && !hasLocalCache ? paperOneUnits : paperOneUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             unit.code.toLowerCase().includes(searchTerm.toLowerCase())
           )).map((unit, index) => (
-            loading ? (
+            loading && !hasLocalCache ? (
+
               <div
                 key={index}
                 className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
@@ -542,11 +553,12 @@ export function MedraeQuizzes() {
         </h2>
         <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
 
-          {(loading ? paperTwoUnits : paperTwoUnits.filter((unit) =>
+          {(loading && !hasLocalCache ? paperTwoUnits : paperTwoUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             unit.code.toLowerCase().includes(searchTerm.toLowerCase())
           )).map((unit, index) => (
-            loading ? (
+            loading && !hasLocalCache ? (
+
               <div
                 key={index}
                 className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
@@ -612,11 +624,12 @@ export function MedraeQuizzes() {
         </h2>
         <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
 
-          {(loading ? paperThreeUnits : paperThreeUnits.filter((unit) =>
+          {(loading && !hasLocalCache ? paperThreeUnits : paperThreeUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             unit.code.toLowerCase().includes(searchTerm.toLowerCase())
           )).map((unit, index) => (
-            loading ? (
+            loading && !hasLocalCache ? (
+
               <div
                 key={index}
                 className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
