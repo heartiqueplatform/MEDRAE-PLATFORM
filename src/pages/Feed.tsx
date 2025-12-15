@@ -386,7 +386,7 @@ export default function Feed() {
       }
 
       // 🚀 FAST FIRST FETCH (NON-BLOCKING)
-      const fast = await fetchQuestionsFast(0, 40);
+      const fast = await fetchQuestionsFast(0, 25);
       setQuestions((prev) => {
         const map = new Map(prev.map((q) => [q.id, q]));
         fast.forEach((q) => map.set(q.id, q));
@@ -498,7 +498,7 @@ export default function Feed() {
 
 
   // Fetch questions with likes/comments (optimized but preserved)
-  const fetchQuestions = async (page = 0, limit = 40) => {
+  const fetchQuestions = async (page = 0, limit = 25) => {
     if (!user) return [];
 
     // 1️⃣ Fetch seen questions (only IDs)
@@ -589,7 +589,7 @@ export default function Feed() {
     }));
   };
   // 🔹 FAST QUESTION FETCH (NO HEAVY JOINS)
-  const fetchQuestionsFast = async (page = 0, limit = 40) => {
+  const fetchQuestionsFast = async (page = 0, limit = 25) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
