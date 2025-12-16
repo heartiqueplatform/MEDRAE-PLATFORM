@@ -10,7 +10,7 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
 import { useUser, useSessionContext } from "@supabase/auth-helpers-react";
 import { BottomBar } from "@/components/ui/BottomBar";
-
+import { Footer } from "@/components/Footer";
 interface DashboardLayoutProps {
   children: React.ReactNode;
   userRole?: "student" | "tutor" | "staff";
@@ -202,8 +202,9 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
             unreadCount={0}
             unreadAnnouncements={0}
           />
-        )}
 
+        )}
+        <Footer mistakeCount={0} />
       </div>
     </div>
   );

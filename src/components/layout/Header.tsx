@@ -7,7 +7,7 @@ import { Bell, Moon, Sun, User, Menu, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useSidebar } from "@/components/ui/sidebar";
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
@@ -32,41 +32,9 @@ export function Header({
   onToggleDarkMode,
   streak: propStreak = 0,
 }: HeaderProps) {
-  const { toggleSidebar } = useSidebar();
+
   const { toast } = useToast();
 
-  // Swipe gestures for mobile sidebar
-  useEffect(() => {
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartX = e.touches[0].clientX;
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      touchEndX = e.changedTouches[0].clientX;
-      const swipeDistance = touchEndX - touchStartX;
-
-      // Swipe right from left edge = OPEN
-      if (touchStartX < 30 && swipeDistance > 70) {
-        toggleSidebar();
-      }
-
-      // Swipe left starting inside screen = CLOSE
-      if (touchStartX > 200 && swipeDistance < -70) {
-        toggleSidebar();
-      }
-    };
-
-    window.addEventListener("touchstart", handleTouchStart);
-    window.addEventListener("touchend", handleTouchEnd);
-
-    return () => {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [toggleSidebar]);
   const streakSound = typeof Audio !== "undefined" ? new Audio("/sounds/medrae.mp3") : null;
 
   const navigate = useNavigate();
@@ -220,15 +188,7 @@ export function Header({
       <OnlineStatusToast />
 
       <div className="flex items-center flex-1 justify-between">
-        {/* Left toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleSidebar}
-          className="block order-1"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+
 
         {/* Center scrolling text */}
         <div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">

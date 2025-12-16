@@ -126,6 +126,16 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Pages that already exist in the mobile footer
+  const footerRoutes = [
+    `/dashboard/${userRole}`,
+    "/Medrae-quizzes",
+    "/my-mistakes",
+    "/progress",
+  ];
+
+  // Footer is mounted only on mobile
+  const isFooterMounted = windowWidth < 768;
 
 
   const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
@@ -164,6 +174,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   ];
 
+  const visibleMainItems = isFooterMounted
+    ? mainItems.filter(item => !footerRoutes.includes(item.url))
+    : mainItems;
 
   const learningItems = [
     { title: "Assessment Tracker", url: "/calendar", icon: Calendar, badge: `${totalEvents}E` },
@@ -175,6 +188,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "Resources Bank", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
 
   ];
+  const visibleLearningItems = isFooterMounted
+    ? learningItems.filter(item => !footerRoutes.includes(item.url))
+    : learningItems;
 
   const mediaItems = [
     { title: "MedTube", url: "/medtube", icon: Play, badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
@@ -468,7 +484,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {mainItems.map((item) => (
+                  {visibleMainItems.map((item) => (
+
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <button
@@ -523,7 +540,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {learningItems.map((item) => (
+                  {visibleLearningItems.map((item) => (
+
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <button

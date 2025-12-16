@@ -14,6 +14,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import MyMistakes from "./pages/MyMistakes";
 import PublicOnlyRoute from "@/auth/PublicOnlyRoute";
 import PrivateRoute from "@/auth/PrivateRoute";
+import { Footer } from "@/components/Footer";
 
 // Pages
 import { Forum } from "./pages/Forum";
@@ -214,6 +215,7 @@ const App = () => {
 
                 {/* BottomBar */}
                 <BottomBarWrapper />
+
               </AIWrapper>
             </BrowserRouter>
           </SidebarProvider>
