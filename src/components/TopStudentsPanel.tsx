@@ -124,18 +124,6 @@ export const DailyTriviaCard = () => {
         fetchTop();
     }, [today, completed]);
 
-    useEffect(() => {
-        if (attemptedToday) return; // skip if Supabase already set it
-        const stored = localStorage.getItem(`daily_trivia_completed_${today}`);
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            setSavedScore(parsed.savedScore);
-            setTimeUsedToday(parsed.timeUsed);
-            setCompleted(true);
-            setAttemptedToday(true);
-        }
-    }, [today, attemptedToday]);
-
     // Timer
     useEffect(() => {
         if (!started || completed) return;
@@ -222,12 +210,6 @@ export const DailyTriviaCard = () => {
                         savedScore.correct_answers <= 12 ? '#facc15' : // yellow
                             '#4ade80';                                     // green
             }
-            // Save completed result to localStorage
-            const completedData = {
-                savedScore: { correct_answers: correctCount, total_questions: normalizedQuestions.length },
-                timeUsed: timeUsed,
-            };
-            localStorage.setItem(`daily_trivia_completed_${today}`, JSON.stringify(completedData));
 
             // Determine time bar color
             let timeColor = 'bg-gray-400';
@@ -308,13 +290,14 @@ export const DailyTriviaCard = () => {
                     ) : questions.length === 0 ? (
                         <p>No questions available.</p>
                     ) : (
-                        <div className="w-full h-[300px] md:h-[350px] lg:h-[400px]">
-                            <motion.div className="h-full overflow-hidden">
-                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow h-full flex flex-col">
+                        <div className="w-full min-h-[200px]">
+                            <motion.div>
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow">
                                     <p className="font-semibold mb-2">{questions[currentIndex]?.question_text}</p>
+
                                     <div
-                                        className="flex flex-col gap-2 overflow-y-auto select-none flex-1"
-                                        style={{ overscrollBehavior: "contain" }}
+                                        className="flex flex-col gap-2 max-h-[250px] overflow-hidden select-none"
+                                        style={{ overscrollBehavior: "contain" }} // prevent overscroll scrolling
                                     >
                                         {(["A", "B", "C", "D"] as const).map((letter) => {
                                             const text =
@@ -339,11 +322,10 @@ export const DailyTriviaCard = () => {
 
                                                 setTimeout(() => {
                                                     if (currentIndex === questions.length - 1) {
-                                                        finishTrivia();
+                                                        finishTrivia({ ...answers, [questions[currentIndex].id]: letter });
                                                     } else {
                                                         setCurrentIndex((i) => i + 1);
                                                     }
-
                                                 }, 500);
                                             };
 
@@ -428,115 +410,115 @@ export const DailyTriviaCard = () => {
                             Trivia in Progress
                         </Button>
                     )}
-                    <div className="mt-4 h-[300px] md:h-[350px] lg:h-[400px]">
-                        {completed && (
-                            <div className="p-4 bg-green-50 dark:bg-gray-800 rounded-xl text-center font-semibold animate-fade-in">
-                                <span className="text-lg font-bold">Congratulations! You finished today's trivia!</span>
+                    {completed && (
+                        <div className="mt-4 p-4 bg-green-50 dark:bg-gray-800 rounded-xl text-center font-semibold animate-fade-in">
+                            <span className="text-lg font-bold">Congratulations! You finished today's trivia!</span>
+                            <br />
+
+                            {/* Score display */}
+                            {savedScore
+                                ? `${savedScore.correct_answers}/${savedScore.total_questions} correct! 🌟`
+                                : "0/0 correct! 🌟"}
+                            <br />
+
+                            {/* Time spent display */}
+                            {timeUsedToday !== null ? `${timeUsedToday}s spent ⏱` : "0s spent ⏱"}
+                            <br /><br />
+
+                            {/* Description for bars */}
+                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                Bars show your performance: <strong>green</strong> is good, <strong>yellow</strong> is average, <strong>red</strong> is below expectations.
                                 <br />
-
-                                {/* Score display */}
-                                {savedScore
-                                    ? `${savedScore.correct_answers}/${savedScore.total_questions} correct! 🌟`
-                                    : "0/0 correct! 🌟"}
-                                <br />
-
-                                {/* Time spent display */}
-                                {timeUsedToday !== null ? `${timeUsedToday}s spent ⏱` : "0s spent ⏱"}
-                                <br /><br />
-
-                                {/* Description for bars */}
-                                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                    Bars show your performance: <strong>green</strong> is good, <strong>yellow</strong> is average, <strong>red</strong> is below expectations.
-                                    <br />
-                                    Correct answers bar: how many questions you got right. <br />
-                                    Time used bar: how fast you completed the quiz.
-                                </div>
-
-                                {/* Progress bars */}
-                                <div className="mt-2 space-y-4">
-                                    {/* Correct answers bar */}
-                                    <div className="flex flex-col items-start">
-                                        <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4 relative">
-                                            <div
-                                                className={`h-4 rounded-full transition-all duration-500 ${savedScore
-                                                    ? savedScore.correct_answers < 8
-                                                        ? "bg-red-500"
-                                                        : savedScore.correct_answers <= 12
-                                                            ? "bg-yellow-400"
-                                                            : "bg-green-500"
-                                                    : "bg-gray-400"
-                                                    }`}
-                                                style={{
-                                                    width: savedScore
-                                                        ? `${(savedScore.correct_answers / savedScore.total_questions) * 100}%`
-                                                        : "0%",
-                                                }}
-                                            >
-                                                {savedScore && (
-                                                    <span className="absolute right-1 top-[-1.5rem] text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                        {savedScore.correct_answers}/{savedScore.total_questions}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                                            Correct answers
-                                        </span>
-                                    </div>
-
-                                    {/* Time used bar */}
-                                    <div className="flex flex-col items-start">
-                                        <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4 relative">
-                                            <div
-                                                className={`h-4 rounded-full transition-all duration-500 ${timeUsedToday !== null
-                                                    ? timeUsedToday < 150
-                                                        ? "bg-green-500"
-                                                        : timeUsedToday <= 210
-                                                            ? "bg-yellow-400"
-                                                            : "bg-red-500"
-                                                    : "bg-gray-400"
-                                                    }`}
-                                                style={{
-                                                    width: timeUsedToday
-                                                        ? `${Math.min((timeUsedToday / 300) * 100, 100)}%`
-                                                        : "0%",
-                                                }}
-                                            >
-                                                {timeUsedToday !== null && (
-                                                    <span className="absolute right-1 top-[-1.5rem] text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                        {Math.floor(timeUsedToday / 60)
-                                                            .toString()
-                                                            .padStart(2, "0")}:
-                                                        {(timeUsedToday % 60).toString().padStart(2, "0")} min
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                                            Time used
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <br />
-                                {(() => {
-                                    const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
-                                    if (score === questions.length) return "🔥 Incredible! You aced it today!";
-                                    if (score >= Math.ceil(questions.length * 0.8)) return "💪 Great job! You're getting stronger every day!";
-                                    if (score >= Math.ceil(questions.length * 0.5)) return "🙂 Nice work! Keep practicing and you'll improve!";
-                                    return "👍 Good effort! Remember, every answer helps you learn more!";
-                                })()}
-
-                                <br /><br />
-                                <span className="text-sm text-gray-700 dark:text-gray-300 italic">
-                                    Remember: Medrae helps you <strong>Organized Learning. Confident Exams.</strong>
-                                </span>
-
-                                <br />
-                                Come back tomorrow for a new challenge!
+                                Correct answers bar: how many questions you got right. <br />
+                                Time used bar: how fast you completed the quiz.
                             </div>
-                        )}
-                    </div>
+
+                            {/* Progress bars */}
+                            <div className="mt-2 space-y-4">
+
+                                {/* Correct answers bar */}
+                                <div className="flex flex-col items-start">
+                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4 relative">
+                                        <div
+                                            className={`h-4 rounded-full transition-all duration-500 ${savedScore
+                                                ? savedScore.correct_answers < 8
+                                                    ? "bg-red-500"
+                                                    : savedScore.correct_answers <= 12
+                                                        ? "bg-yellow-400"
+                                                        : "bg-green-500"
+                                                : "bg-gray-400"
+                                                }`}
+                                            style={{
+                                                width: savedScore
+                                                    ? `${(savedScore.correct_answers / savedScore.total_questions) * 100}%`
+                                                    : "0%",
+                                            }}
+                                        >
+                                            {/* Tooltip with exact value */}
+                                            {savedScore && (
+                                                <span className="absolute right-1 top-[-1.5rem] text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                                    {savedScore.correct_answers}/{savedScore.total_questions}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                                        Correct answers
+                                    </span>
+                                </div>
+
+                                {/* Time used bar */}
+                                <div className="flex flex-col items-start">
+                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4 relative">
+                                        <div
+                                            className={`h-4 rounded-full transition-all duration-500 ${timeUsedToday !== null
+                                                ? timeUsedToday < 150
+                                                    ? "bg-green-500"
+                                                    : timeUsedToday <= 210
+                                                        ? "bg-yellow-400"
+                                                        : "bg-red-500"
+                                                : "bg-gray-400"
+                                                }`}
+                                            style={{
+                                                width: timeUsedToday
+                                                    ? `${Math.min((timeUsedToday / 300) * 100, 100)}%`
+                                                    : "0%",
+                                            }}
+                                        >
+                                            {/* Tooltip with formatted time */}
+                                            {timeUsedToday !== null && (
+                                                <span className="absolute right-1 top-[-1.5rem] text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                                    {Math.floor(timeUsedToday / 60)
+                                                        .toString()
+                                                        .padStart(2, "0")}:
+                                                    {(timeUsedToday % 60).toString().padStart(2, "0")} min
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                                        Time used
+                                    </span>
+                                </div>
+                            </div>
+                            <br />
+                            {(() => {
+                                const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
+                                if (score === questions.length) return "🔥 Incredible! You aced it today!";
+                                if (score >= Math.ceil(questions.length * 0.8)) return "💪 Great job! You're getting stronger every day!";
+                                if (score >= Math.ceil(questions.length * 0.5)) return "🙂 Nice work! Keep practicing and you'll improve!";
+                                return "👍 Good effort! Remember, every answer helps you learn more!";
+                            })()}
+
+                            <br /><br />
+                            <span className="text-sm text-gray-700 dark:text-gray-300 italic">
+                                Remember: Medrae helps you <strong>Organized Learning. Confident Exams.</strong>
+                            </span>
+
+                            <br />
+                            Come back tomorrow for a new challenge!
+                        </div>
+                    )}
 
                     <div className="flex justify-center">
                         <Button
