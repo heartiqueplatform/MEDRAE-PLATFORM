@@ -68,7 +68,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalVideos, setTotalVideos] = useState<number | null>(null);
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
-
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
@@ -119,13 +119,21 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     fetchCount();
   }, []);
 
-  const isCollapsed = state === "collapsed";
 
-  // ✅ updated: rely on sidebar state, not window width
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+
+
+  const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
+
   const handleCollapse = () => {
-    toggleSidebar();
+    // Collapse sidebar on mobile
+    if (windowWidth < 1024) toggleSidebar();
   };
-
 
   const toggleGroup = (group: string) => {
     setOpenGroups(prev =>
@@ -413,17 +421,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   return (
     <Sidebar
-      className={`
-    fixed top-0 left-0 h-full z-50 bg-background shadow-none md:shadow-lg
-    w-64
-    overflow-y-auto
-
-    ${isCollapsed ? "-translate-x-full" : "translate-x-0"}
-
-    transition-none
-    md:transition-transform
-    md:duration-300
-  `}
+      className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300
+    ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
     >
 
       <div className="p-4 border-b border-border">
@@ -473,12 +472,20 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <button
-                          className={`${getNavClass(item.url)} touch-manipulation`}
+                          className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
                             if (item.title === "Chat Room") handleChatClick();
-                            navigate(item.url);
+                            requestAnimationFrame(() => {
+                              requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                  requestAnimationFrame(() => {
+                                    navigate(item.url);
+                                  });
+                                });
+                              });
+                            });
                           }}
                         >
                           <item.icon className="h-4 w-4" />
@@ -528,11 +535,19 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <button
-                          className={`${getNavClass(item.url)} touch-manipulation`}
+                          className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
-                            navigate(item.url);
+                            requestAnimationFrame(() => {
+                              requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                  requestAnimationFrame(() => {
+                                    navigate(item.url);
+                                  });
+                                });
+                              });
+                            });
                           }}
                         >
                           <item.icon className="h-4 w-4" />
@@ -572,11 +587,19 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <button
-                      className={`${getNavClass(item.url)} touch-manipulation`}
+                      className={getNavClass(item.url)}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
                         handleCollapse();
-                        navigate(item.url);
+                        requestAnimationFrame(() => {
+                          requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                              requestAnimationFrame(() => {
+                                navigate(item.url);
+                              });
+                            });
+                          });
+                        });
                       }}
                     >
                       <item.icon className="h-4 w-4" />
@@ -618,11 +641,19 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
                           <button
-                            className={`${getNavClass(item.url)} touch-manipulation`}
+                            className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              navigate(item.url);
+                              requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                  requestAnimationFrame(() => {
+                                    requestAnimationFrame(() => {
+                                      navigate(item.url);
+                                    });
+                                  });
+                                });
+                              });
                             }}
                           >
                             <item.icon className="h-4 w-4" />
@@ -658,11 +689,19 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
                           <button
-                            className={`${getNavClass(item.url)} touch-manipulation`}
+                            className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              navigate(item.url);
+                              requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                  requestAnimationFrame(() => {
+                                    requestAnimationFrame(() => {
+                                      navigate(item.url);
+                                    });
+                                  });
+                                });
+                              });
                             }}
                           >
                             <item.icon className="h-4 w-4" />
@@ -687,7 +726,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <button
-                      className={`${getNavClass(item.url)} touch-manipulation`}
+                      className={getNavClass(item.url)}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
 
@@ -707,7 +746,15 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           })();
                         }
 
-                        navigate(item.url);
+                        requestAnimationFrame(() => {
+                          requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                              requestAnimationFrame(() => {
+                                navigate(item.url);
+                              });
+                            });
+                          });
+                        });
                       }}
                     >
                       <item.icon className="h-4 w-4" />
