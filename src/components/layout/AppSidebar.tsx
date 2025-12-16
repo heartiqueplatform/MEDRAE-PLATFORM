@@ -131,8 +131,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
 
   const handleCollapse = () => {
-    // Collapse sidebar on mobile
-    if (windowWidth < 1024) toggleSidebar();
+    if (windowWidth < 1024 && state !== 'collapsed') {
+      toggleSidebar();
+    }
   };
 
   const toggleGroup = (group: string) => {
@@ -475,26 +476,21 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-
-                            if (windowWidth < 1024) {
-                              // Collapse sidebar first
-                              toggleSidebar();
-
-                              // Navigate after sidebar collapse animation (200ms delay)
-                              setTimeout(() => {
-                                navigate(item.url);
-                              }, 200);
-                            } else {
-                              // On desktop, navigate immediately
-                              navigate(item.url);
-                            }
+                            handleCollapse();
+                            if (item.title === "Chat Room") handleChatClick();
+                            navigate(item.url);
                           }}
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
                               <span>{item.title}</span>
-                              {item.badge && (
+                              {item.title === "Chat Room" && unreadCount > 0 && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {unreadCount}
+                                </Badge>
+                              )}
+                              {item.badge && item.title !== "Chat Room" && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
                                 </Badge>
@@ -502,6 +498,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             </>
                           )}
                         </button>
+
 
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -534,19 +531,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-
-                            if (windowWidth < 1024) {
-                              // Collapse sidebar first
-                              handleCollapse();
-
-                              // Navigate after a small delay so collapse animation completes
-                              setTimeout(() => {
-                                navigate(item.url);
-                              }, 200); // 200ms matches typical sidebar animation
-                            } else {
-                              // On desktop, navigate immediately
-                              navigate(item.url);
-                            }
+                            handleCollapse();
+                            navigate(item.url);
                           }}
                         >
                           <item.icon className="h-4 w-4" />
@@ -589,19 +575,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       className={getNavClass(item.url)}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
-
-                        if (windowWidth < 1024) {
-                          // Collapse sidebar first on mobile
-                          handleCollapse();
-
-                          // Navigate after the collapse animation completes
-                          setTimeout(() => {
-                            navigate(item.url);
-                          }, 200); // Adjust delay to match your sidebar animation
-                        } else {
-                          // Desktop: navigate immediately
-                          navigate(item.url);
-                        }
+                        handleCollapse();
+                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
@@ -616,7 +591,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         </>
                       )}
                     </button>
-
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -647,25 +621,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
-
-                              if (windowWidth < 1024) {
-                                // Collapse sidebar first on mobile
-                                handleCollapse();
-
-                                // Navigate after collapse animation finishes
-                                setTimeout(() => {
-                                  navigate(item.url);
-                                }, 200); // match this to your sidebar animation duration
-                              } else {
-                                // Desktop: navigate immediately
-                                navigate(item.url);
-                              }
+                              handleCollapse();
+                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </button>
-
 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -699,19 +661,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
-
-                              if (windowWidth < 1024) {
-                                // Collapse sidebar first on mobile
-                                handleCollapse();
-
-                                // Navigate after collapse animation
-                                setTimeout(() => {
-                                  navigate(item.url);
-                                }, 200); // adjust to match your sidebar animation duration
-                              } else {
-                                // Desktop: navigate immediately
-                                navigate(item.url);
-                              }
+                              handleCollapse();
+                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
@@ -740,30 +691,23 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
 
-                        const goToPage = async () => {
-                          if (item.title === "Announcements") {
+                        handleCollapse();
+
+                        if (item.title === "Announcements") {
+                          (async () => {
                             setUnreadAnnouncements(0);
                             const { data } = await supabase
                               .from("announcements")
                               .select("id")
                               .eq("is_published", true);
-                            if (data) {
-                              localStorage.setItem(
-                                "readAnnouncements",
-                                JSON.stringify(data.map(d => d.id))
-                              );
-                            }
-                          }
-                          navigate(item.url);
-                        };
-
-                        if (windowWidth < 1024) {
-                          handleCollapse();
-                          // wait for collapse animation before navigating
-                          setTimeout(goToPage, 200); // adjust 200ms to match your sidebar animation
-                        } else {
-                          goToPage(); // desktop: navigate immediately
+                            if (data) localStorage.setItem(
+                              "readAnnouncements",
+                              JSON.stringify(data.map(d => d.id))
+                            );
+                          })();
                         }
+
+                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
