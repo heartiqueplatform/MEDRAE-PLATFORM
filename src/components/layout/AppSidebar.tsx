@@ -69,12 +69,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [sidebarReady, setSidebarReady] = useState(false);
+
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
-  useEffect(() => {
-    setSidebarReady(true); // allow rendering after first render
-  }, []);
 
   // ✅ Sync with localStorage and update in real-time
   useEffect(() => {
@@ -422,7 +419,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
 
 
-  if (!sidebarReady) return null; // prevents initial flash
   return (
     <Sidebar
       className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300
@@ -477,10 +473,34 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       <SidebarMenuButton asChild>
                         <button
                           className={getNavClass(item.url)}
-                          onClick={() => {
+                          onClick={async () => {
+                            // 1️⃣ Vibrate immediately on tap
                             if (navigator.vibrate) navigator.vibrate(50);
+
+                            // 2️⃣ Collapse sidebar on mobile only
                             handleCollapse();
-                            if (item.title === "Chat Room") handleChatClick();
+
+                            // 3️⃣ Special actions per item
+                            if (item.title === "Chat Room") {
+                              await handleChatClick();
+                            }
+
+                            if (item.title === "Announcements") {
+                              setUnreadAnnouncements(0);
+                              const { data } = await supabase
+                                .from("announcements")
+                                .select("id")
+                                .eq("is_published", true);
+
+                              if (data) {
+                                localStorage.setItem(
+                                  "readAnnouncements",
+                                  JSON.stringify(data.map(d => d.id))
+                                );
+                              }
+                            }
+
+                            // 4️⃣ Navigate to the page immediately
                             navigate(item.url);
                           }}
                         >
@@ -488,19 +508,33 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           {!isCollapsed && (
                             <>
                               <span>{item.title}</span>
+
+                              {/* Chat Room badge */}
                               {item.title === "Chat Room" && unreadCount > 0 && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {unreadCount}
                                 </Badge>
                               )}
-                              {item.badge && item.title !== "Chat Room" && (
+
+                              {/* Announcements badge */}
+                              {item.title === "Announcements" && unreadAnnouncements > 0 && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                  {item.badge}
+                                  {unreadAnnouncements}
                                 </Badge>
                               )}
+
+                              {/* Other badges */}
+                              {item.badge &&
+                                item.title !== "Chat Room" &&
+                                item.title !== "Announcements" && (
+                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                    {item.badge}
+                                  </Badge>
+                                )}
                             </>
                           )}
                         </button>
+
 
 
                       </SidebarMenuButton>
@@ -532,9 +566,34 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       <SidebarMenuButton asChild>
                         <button
                           className={getNavClass(item.url)}
-                          onClick={() => {
+                          onClick={async () => {
+                            // 1️⃣ Vibrate immediately on tap
                             if (navigator.vibrate) navigator.vibrate(50);
+
+                            // 2️⃣ Collapse sidebar on mobile only
                             handleCollapse();
+
+                            // 3️⃣ Special actions per item
+                            if (item.title === "Chat Room") {
+                              await handleChatClick();
+                            }
+
+                            if (item.title === "Announcements") {
+                              setUnreadAnnouncements(0);
+                              const { data } = await supabase
+                                .from("announcements")
+                                .select("id")
+                                .eq("is_published", true);
+
+                              if (data) {
+                                localStorage.setItem(
+                                  "readAnnouncements",
+                                  JSON.stringify(data.map(d => d.id))
+                                );
+                              }
+                            }
+
+                            // 4️⃣ Navigate to the page immediately
                             navigate(item.url);
                           }}
                         >
@@ -542,14 +601,33 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           {!isCollapsed && (
                             <>
                               <span>{item.title}</span>
-                              {item.badge && (
+
+                              {/* Chat Room badge */}
+                              {item.title === "Chat Room" && unreadCount > 0 && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                  {item.badge}
+                                  {unreadCount}
                                 </Badge>
                               )}
+
+                              {/* Announcements badge */}
+                              {item.title === "Announcements" && unreadAnnouncements > 0 && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {unreadAnnouncements}
+                                </Badge>
+                              )}
+
+                              {/* Other badges */}
+                              {item.badge &&
+                                item.title !== "Chat Room" &&
+                                item.title !== "Announcements" && (
+                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                    {item.badge}
+                                  </Badge>
+                                )}
                             </>
                           )}
                         </button>
+
 
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -576,9 +654,34 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <button
                       className={getNavClass(item.url)}
-                      onClick={() => {
+                      onClick={async () => {
+                        // 1️⃣ Vibrate immediately on tap
                         if (navigator.vibrate) navigator.vibrate(50);
+
+                        // 2️⃣ Collapse sidebar on mobile only
                         handleCollapse();
+
+                        // 3️⃣ Special actions per item
+                        if (item.title === "Chat Room") {
+                          await handleChatClick();
+                        }
+
+                        if (item.title === "Announcements") {
+                          setUnreadAnnouncements(0);
+                          const { data } = await supabase
+                            .from("announcements")
+                            .select("id")
+                            .eq("is_published", true);
+
+                          if (data) {
+                            localStorage.setItem(
+                              "readAnnouncements",
+                              JSON.stringify(data.map(d => d.id))
+                            );
+                          }
+                        }
+
+                        // 4️⃣ Navigate to the page immediately
                         navigate(item.url);
                       }}
                     >
@@ -586,14 +689,33 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       {!isCollapsed && (
                         <>
                           <span>{item.title}</span>
-                          {item.badge && (
+
+                          {/* Chat Room badge */}
+                          {item.title === "Chat Room" && unreadCount > 0 && (
                             <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                              {item.badge}
+                              {unreadCount}
                             </Badge>
                           )}
+
+                          {/* Announcements badge */}
+                          {item.title === "Announcements" && unreadAnnouncements > 0 && (
+                            <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                              {unreadAnnouncements}
+                            </Badge>
+                          )}
+
+                          {/* Other badges */}
+                          {item.badge &&
+                            item.title !== "Chat Room" &&
+                            item.title !== "Announcements" && (
+                              <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                {item.badge}
+                              </Badge>
+                            )}
                         </>
                       )}
                     </button>
+
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -622,15 +744,68 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         <SidebarMenuButton asChild>
                           <button
                             className={getNavClass(item.url)}
-                            onClick={() => {
+                            onClick={async () => {
+                              // 1️⃣ Vibrate immediately on tap
                               if (navigator.vibrate) navigator.vibrate(50);
+
+                              // 2️⃣ Collapse sidebar on mobile only
                               handleCollapse();
+
+                              // 3️⃣ Special actions per item
+                              if (item.title === "Chat Room") {
+                                await handleChatClick();
+                              }
+
+                              if (item.title === "Announcements") {
+                                setUnreadAnnouncements(0);
+                                const { data } = await supabase
+                                  .from("announcements")
+                                  .select("id")
+                                  .eq("is_published", true);
+
+                                if (data) {
+                                  localStorage.setItem(
+                                    "readAnnouncements",
+                                    JSON.stringify(data.map(d => d.id))
+                                  );
+                                }
+                              }
+
+                              // 4️⃣ Navigate to the page immediately
                               navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
+                            {!isCollapsed && (
+                              <>
+                                <span>{item.title}</span>
+
+                                {/* Chat Room badge */}
+                                {item.title === "Chat Room" && unreadCount > 0 && (
+                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                    {unreadCount}
+                                  </Badge>
+                                )}
+
+                                {/* Announcements badge */}
+                                {item.title === "Announcements" && unreadAnnouncements > 0 && (
+                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                    {unreadAnnouncements}
+                                  </Badge>
+                                )}
+
+                                {/* Other badges */}
+                                {item.badge &&
+                                  item.title !== "Chat Room" &&
+                                  item.title !== "Announcements" && (
+                                    <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                      {item.badge}
+                                    </Badge>
+                                  )}
+                              </>
+                            )}
                           </button>
+
 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -662,15 +837,68 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         <SidebarMenuButton asChild>
                           <button
                             className={getNavClass(item.url)}
-                            onClick={() => {
+                            onClick={async () => {
+                              // 1️⃣ Vibrate immediately on tap
                               if (navigator.vibrate) navigator.vibrate(50);
+
+                              // 2️⃣ Collapse sidebar on mobile only
                               handleCollapse();
+
+                              // 3️⃣ Special actions per item
+                              if (item.title === "Chat Room") {
+                                await handleChatClick();
+                              }
+
+                              if (item.title === "Announcements") {
+                                setUnreadAnnouncements(0);
+                                const { data } = await supabase
+                                  .from("announcements")
+                                  .select("id")
+                                  .eq("is_published", true);
+
+                                if (data) {
+                                  localStorage.setItem(
+                                    "readAnnouncements",
+                                    JSON.stringify(data.map(d => d.id))
+                                  );
+                                }
+                              }
+
+                              // 4️⃣ Navigate to the page immediately
                               navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
+                            {!isCollapsed && (
+                              <>
+                                <span>{item.title}</span>
+
+                                {/* Chat Room badge */}
+                                {item.title === "Chat Room" && unreadCount > 0 && (
+                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                    {unreadCount}
+                                  </Badge>
+                                )}
+
+                                {/* Announcements badge */}
+                                {item.title === "Announcements" && unreadAnnouncements > 0 && (
+                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                    {unreadAnnouncements}
+                                  </Badge>
+                                )}
+
+                                {/* Other badges */}
+                                {item.badge &&
+                                  item.title !== "Chat Room" &&
+                                  item.title !== "Announcements" && (
+                                    <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                      {item.badge}
+                                    </Badge>
+                                  )}
+                              </>
+                            )}
                           </button>
+
 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -691,25 +919,34 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <button
                       className={getNavClass(item.url)}
-                      onClick={() => {
+                      onClick={async () => {
+                        // 1️⃣ Vibrate immediately on tap
                         if (navigator.vibrate) navigator.vibrate(50);
 
+                        // 2️⃣ Collapse sidebar on mobile only
                         handleCollapse();
 
+                        // 3️⃣ Special actions per item
+                        if (item.title === "Chat Room") {
+                          await handleChatClick();
+                        }
+
                         if (item.title === "Announcements") {
-                          (async () => {
-                            setUnreadAnnouncements(0);
-                            const { data } = await supabase
-                              .from("announcements")
-                              .select("id")
-                              .eq("is_published", true);
-                            if (data) localStorage.setItem(
+                          setUnreadAnnouncements(0);
+                          const { data } = await supabase
+                            .from("announcements")
+                            .select("id")
+                            .eq("is_published", true);
+
+                          if (data) {
+                            localStorage.setItem(
                               "readAnnouncements",
                               JSON.stringify(data.map(d => d.id))
                             );
-                          })();
+                          }
                         }
 
+                        // 4️⃣ Navigate to the page immediately
                         navigate(item.url);
                       }}
                     >
@@ -717,14 +954,33 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       {!isCollapsed && (
                         <>
                           <span>{item.title}</span>
+
+                          {/* Chat Room badge */}
+                          {item.title === "Chat Room" && unreadCount > 0 && (
+                            <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                              {unreadCount}
+                            </Badge>
+                          )}
+
+                          {/* Announcements badge */}
                           {item.title === "Announcements" && unreadAnnouncements > 0 && (
                             <Badge variant="secondary" className="ml-auto h-5 text-xs">
                               {unreadAnnouncements}
                             </Badge>
                           )}
+
+                          {/* Other badges */}
+                          {item.badge &&
+                            item.title !== "Chat Room" &&
+                            item.title !== "Announcements" && (
+                              <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                {item.badge}
+                              </Badge>
+                            )}
                         </>
                       )}
                     </button>
+
 
                   </SidebarMenuButton>
                 </SidebarMenuItem>
