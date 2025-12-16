@@ -477,15 +477,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
                             if (item.title === "Chat Room") handleChatClick();
-                            requestAnimationFrame(() => {
-                              requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                  requestAnimationFrame(() => {
-                                    navigate(item.url);
-                                  });
-                                });
-                              });
-                            });
+                            navigate(item.url);
                           }}
                         >
                           <item.icon className="h-4 w-4" />
@@ -539,15 +531,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
-                            requestAnimationFrame(() => {
-                              requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                  requestAnimationFrame(() => {
-                                    navigate(item.url);
-                                  });
-                                });
-                              });
-                            });
+                            navigate(item.url);
                           }}
                         >
                           <item.icon className="h-4 w-4" />
@@ -591,15 +575,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
                         handleCollapse();
-                        requestAnimationFrame(() => {
-                          requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                              requestAnimationFrame(() => {
-                                navigate(item.url);
-                              });
-                            });
-                          });
-                        });
+                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
@@ -645,15 +621,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                  requestAnimationFrame(() => {
-                                    requestAnimationFrame(() => {
-                                      navigate(item.url);
-                                    });
-                                  });
-                                });
-                              });
+                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
@@ -693,15 +661,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                  requestAnimationFrame(() => {
-                                    requestAnimationFrame(() => {
-                                      navigate(item.url);
-                                    });
-                                  });
-                                });
-                              });
+                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
@@ -746,15 +706,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           })();
                         }
 
-                        requestAnimationFrame(() => {
-                          requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                              requestAnimationFrame(() => {
-                                navigate(item.url);
-                              });
-                            });
-                          });
-                        });
+                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
