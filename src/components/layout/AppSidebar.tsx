@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { Link } from "react-router-dom";
 
 import {
   Brain,
@@ -471,33 +472,33 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   {mainItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <button
+                        <Link
+                          to={item.url}
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-
-                            if (windowWidth < 1024) {
-                              toggleSidebar();
-                              setTimeout(() => {
-                                navigate(item.url);
-                              }, 100);
-                            } else {
-                              navigate(item.url);
-                            }
+                            handleCollapse();
+                            localStorage.setItem("lastVisitedPage", item.url); // remember page
+                            if (item.title === "Chat Room") handleChatClick();
                           }}
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
                               <span>{item.title}</span>
-                              {item.badge && (
+                              {item.title === "Chat Room" && unreadCount > 0 && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {unreadCount}
+                                </Badge>
+                              )}
+                              {item.badge && item.title !== "Chat Room" && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
                                 </Badge>
                               )}
                             </>
                           )}
-                        </button>
+                        </Link>
 
 
 
@@ -528,18 +529,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   {learningItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <button
-                          className={getNavClass(item.url)}
+                        <Link
+                          to={item.url}
+                          className={getNavClass(item.url) + " flex items-center w-full"}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
-                            navigate(item.url);
                           }}
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
-                              <span>{item.title}</span>
+                              <span className="ml-2">{item.title}</span>
                               {item.badge && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
@@ -547,7 +548,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                               )}
                             </>
                           )}
-                        </button>
+                        </Link>
+
 
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -572,18 +574,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
               {mediaItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <button
-                      className={getNavClass(item.url)}
+                    <Link
+                      to={item.url}
+                      className={getNavClass(item.url) + " flex items-center w-full"}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
                         handleCollapse();
-                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && (
                         <>
-                          <span>{item.title}</span>
+                          <span className="ml-2">{item.title}</span>
                           {item.badge && (
                             <Badge variant="secondary" className="ml-auto h-5 text-xs">
                               {item.badge}
@@ -591,7 +593,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           )}
                         </>
                       )}
-                    </button>
+                    </Link>
+
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -618,17 +621,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     {tutorItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <button
-                            className={getNavClass(item.url)}
+                          <Link
+                            to={item.url}
+                            className={getNavClass(item.url) + " flex items-center w-full"}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
-                          </button>
+                            {!isCollapsed && <span className="ml-2">{item.title}</span>}
+                          </Link>
+
 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -658,17 +662,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     {staffItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <button
-                            className={getNavClass(item.url)}
+                          <Link
+                            to={item.url}
+                            className={getNavClass(item.url) + " flex items-center w-full"}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
-                          </button>
+                            {!isCollapsed && <span className="ml-2">{item.title}</span>}
+                          </Link>
+
 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -687,11 +692,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
               {otherItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <button
-                      className={getNavClass(item.url)}
+                    <Link
+                      to={item.url}
+                      className={getNavClass(item.url) + " flex items-center w-full"}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
-
                         handleCollapse();
 
                         if (item.title === "Announcements") {
@@ -707,14 +712,12 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             );
                           })();
                         }
-
-                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && (
                         <>
-                          <span>{item.title}</span>
+                          <span className="ml-2">{item.title}</span>
                           {item.title === "Announcements" && unreadAnnouncements > 0 && (
                             <Badge variant="secondary" className="ml-auto h-5 text-xs">
                               {unreadAnnouncements}
@@ -722,7 +725,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           )}
                         </>
                       )}
-                    </button>
+                    </Link>
+
 
                   </SidebarMenuButton>
                 </SidebarMenuItem>
