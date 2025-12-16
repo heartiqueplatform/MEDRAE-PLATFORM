@@ -128,7 +128,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
 
 
-  const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
+  const isCollapsed = state === "collapsed";
+
 
   const handleCollapse = () => {
     // Collapse sidebar on mobile
@@ -242,6 +243,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     };
     fetchTotalSimulationPapers();
   }, []);
+
 
   // ----- TOTAL NOTES -----
   useEffect(() => {
