@@ -891,12 +891,6 @@ ${isSelected
                           } ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                         onClick={async () => {
                           if (!!selectedAnswer || quizFinished) return;
-
-                          // ✅ PLAY SOUND IMMEDIATELY
-                          if (!isMuted) {
-                            const audio = new Audio(q.correct_answer === letter ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
-                            audio.play().catch((err) => console.error("Audio play error:", err));
-                          }
                           // ✅ VIBRATION
                           if (navigator.vibrate) {
                             if (correct) {
@@ -906,6 +900,11 @@ ${isSelected
                               // Stronger/longer vibration for wrong
                               navigator.vibrate([100, 50, 100]); // vibrate 100ms, pause 50ms, vibrate 100ms
                             }
+                          }
+                          // ✅ PLAY SOUND IMMEDIATELY
+                          if (!isMuted) {
+                            const audio = new Audio(q.correct_answer === letter ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
+                            audio.play().catch((err) => console.error("Audio play error:", err));
                           }
 
                           const correct = q.correct_answer === letter;

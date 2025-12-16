@@ -422,6 +422,14 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   };
 
 
+  {
+    isMobile && !isCollapsed && (
+      <div
+        className="fixed inset-0 bg-black/40 z-40"
+        onClick={toggleSidebar}
+      />
+    )
+  }
 
   return (
     <Sidebar
@@ -482,11 +490,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-                            handleCollapse();
-                            if (item.title === "Chat Room") handleChatClick();
+
+                            // Navigate first
                             navigate(item.url);
+
+                            // Collapse sidebar only on mobile
+                            if (isMobile) toggleSidebar();
+
+                            // Chat Room specific logic
+                            if (item.title === "Chat Room") handleChatClick();
                           }}
                         >
+
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
@@ -537,10 +552,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-                            handleCollapse();
+
+                            // Navigate first
                             navigate(item.url);
+
+                            // Collapse sidebar only on mobile
+                            if (isMobile) toggleSidebar();
+
+                            // Chat Room specific logic
+                            if (item.title === "Chat Room") handleChatClick();
                           }}
                         >
+
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
@@ -581,10 +604,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       className={getNavClass(item.url)}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
-                        handleCollapse();
+
+                        // Navigate first
                         navigate(item.url);
+
+                        // Collapse sidebar only on mobile
+                        if (isMobile) toggleSidebar();
+
+                        // Chat Room specific logic
+                        if (item.title === "Chat Room") handleChatClick();
                       }}
                     >
+
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && (
                         <>
@@ -627,10 +658,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
-                              handleCollapse();
+
+                              // Navigate first
                               navigate(item.url);
+
+                              // Collapse sidebar only on mobile
+                              if (isMobile) toggleSidebar();
+
+                              // Chat Room specific logic
+                              if (item.title === "Chat Room") handleChatClick();
                             }}
                           >
+
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </button>
@@ -667,10 +706,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
-                              handleCollapse();
+
+                              // Navigate first
                               navigate(item.url);
+
+                              // Collapse sidebar only on mobile
+                              if (isMobile) toggleSidebar();
+
+                              // Chat Room specific logic
+                              if (item.title === "Chat Room") handleChatClick();
                             }}
                           >
+
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </button>
@@ -697,8 +744,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
 
-                        handleCollapse();
+                        // 1️⃣ Navigate immediately
+                        navigate(item.url);
 
+                        // 2️⃣ Collapse sidebar only on mobile
+                        if (isMobile) toggleSidebar();
+
+                        // 3️⃣ Handle Announcements
                         if (item.title === "Announcements") {
                           (async () => {
                             setUnreadAnnouncements(0);
@@ -706,16 +758,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                               .from("announcements")
                               .select("id")
                               .eq("is_published", true);
-                            if (data) localStorage.setItem(
-                              "readAnnouncements",
-                              JSON.stringify(data.map(d => d.id))
-                            );
+
+                            if (data) {
+                              localStorage.setItem(
+                                "readAnnouncements",
+                                JSON.stringify(data.map(d => d.id))
+                              );
+                            }
                           })();
                         }
-
-                        navigate(item.url);
                       }}
                     >
+
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && (
                         <>
