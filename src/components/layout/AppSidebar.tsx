@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { useLayoutEffect } from "react"; // add this at the top with your imports
+
 import {
   Brain,
   Heart,
@@ -68,10 +68,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalVideos, setTotalVideos] = useState<number | null>(null);
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
-  const [windowWidth, setWindowWidth] = useState(0); // start at 0 to hide initially
-
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [sidebarReady, setSidebarReady] = useState(false);
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
+  useEffect(() => {
+    setSidebarReady(true); // allow rendering after first render
+  }, []);
 
   // ✅ Sync with localStorage and update in real-time
   useEffect(() => {
@@ -120,19 +123,15 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   }, []);
 
 
-  useLayoutEffect(() => {
-    // Set initial width before painting
-    setWindowWidth(window.innerWidth);
-
+  useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-  const isMobile = windowWidth > 0 && windowWidth < 1024;
 
-  // Only collapse on mobile if the sidebar state is 'collapsed'
-  const isCollapsed = isMobile ? state === 'collapsed' : state === 'collapsed';
 
+
+  const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
 
   const handleCollapse = () => {
     // Collapse sidebar on mobile
@@ -423,59 +422,193 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
 
 
+  if (!sidebarReady) return null; // prevents initial flash
   return (
-    <>
-      {/* Overlay */}
-      {isMobile && !isCollapsed && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 transition-opacity duration-300"
-          onClick={toggleSidebar}
-        />
-      )}
+    <Sidebar
+      className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300
+    ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
+    >
 
-      <Sidebar
-        className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300
-  ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
-      >
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          {/* Icon with gradient */}
+          <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
+            <img
+              src="/pwa-192x192.jpeg"
+              alt="Logo"
+              className="h-full w-full object-cover"
+            />
+          </div>
 
 
-
-
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            {/* Icon with gradient */}
-            <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
-              <img
-                src="/pwa-192x192.jpeg"
-                alt="Logo"
-                className="h-full w-full object-cover"
-              />
+          {/* Text info */}
+          {!isCollapsed && (
+            <div>
+              <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 relative inline-block">
+                MEDRAE
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Kenya Nursing Network Platform (MKN)
+              </p>
             </div>
 
-
-            {/* Text info */}
-            {!isCollapsed && (
-              <div>
-                <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 relative inline-block">
-                  MEDRAE
-                </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Kenya Nursing Network Platform (MKN)
-                </p>
-              </div>
-
-            )}
-          </div>
+          )}
         </div>
+      </div>
 
-        <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
+      <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
 
-          {/* Main Navigation */}
+        {/* Main Navigation */}
+        <SidebarGroup>
+          <Collapsible open={openGroups.includes('main')} onOpenChange={() => toggleGroup('main')}>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+                Main
+                {!isCollapsed && (
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {mainItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <button
+                          className={getNavClass(item.url)}
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            handleCollapse();
+                            if (item.title === "Chat Room") handleChatClick();
+                            navigate(item.url);
+                          }}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!isCollapsed && (
+                            <>
+                              <span>{item.title}</span>
+                              {item.title === "Chat Room" && unreadCount > 0 && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {unreadCount}
+                                </Badge>
+                              )}
+                              {item.badge && item.title !== "Chat Room" && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                        </button>
+
+
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarGroup>
+
+
+        {/* Learning Section */}
+        <SidebarGroup>
+          <Collapsible open={openGroups.includes('learning')} onOpenChange={() => toggleGroup('learning')}>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+                Learning
+                {!isCollapsed && (
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {learningItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <button
+                          className={getNavClass(item.url)}
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            handleCollapse();
+                            navigate(item.url);
+                          }}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!isCollapsed && (
+                            <>
+                              <span>{item.title}</span>
+                              {item.badge && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                        </button>
+
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarGroup>
+
+        {/* Media Section */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+            Media
+            {!isCollapsed && (
+              <ChevronDown className="ml-auto h-4 w-4" />
+            )}
+          </SidebarGroupLabel>
+
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mediaItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <button
+                      className={getNavClass(item.url)}
+                      onClick={() => {
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        handleCollapse();
+                        navigate(item.url);
+                      }}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && (
+                        <>
+                          <span>{item.title}</span>
+                          {item.badge && (
+                            <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
+        {/* Tutor Section */}
+        {tutorItems.length > 0 && (
           <SidebarGroup>
-            <Collapsible open={openGroups.includes('main')} onOpenChange={() => toggleGroup('main')}>
+            <Collapsible open={openGroups.includes('tutor')} onOpenChange={() => toggleGroup('tutor')}>
               <CollapsibleTrigger asChild>
                 <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-                  Main
+                  Tutor Tools
                   {!isCollapsed && (
                     <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
                   )}
@@ -484,7 +617,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
               <CollapsibleContent>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {mainItems.map((item) => (
+                    {tutorItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
                           <button
@@ -492,309 +625,128 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
 
-                              // Navigate first
-                              navigate(item.url);
-
-                              // Collapse sidebar only on mobile
-                              if (isMobile) toggleSidebar();
-
-                              // Chat Room specific logic
-                              if (item.title === "Chat Room") handleChatClick();
-                            }}
-                          >
-
-                            <item.icon className="h-4 w-4" />
-                            {!isCollapsed && (
-                              <>
-                                <span>{item.title}</span>
-                                {item.title === "Chat Room" && unreadCount > 0 && (
-                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                    {unreadCount}
-                                  </Badge>
-                                )}
-                                {item.badge && item.title !== "Chat Room" && (
-                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                              </>
-                            )}
-                          </button>
-
-
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-
-
-          {/* Learning Section */}
-          <SidebarGroup>
-            <Collapsible open={openGroups.includes('learning')} onOpenChange={() => toggleGroup('learning')}>
-              <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-                  Learning
-                  {!isCollapsed && (
-                    <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
-                  )}
-                </SidebarGroupLabel>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {learningItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <button
-                            className={getNavClass(item.url)}
-                            onClick={() => {
-                              if (navigator.vibrate) navigator.vibrate(50);
-
-                              // Navigate first
-                              navigate(item.url);
-
-                              // Collapse sidebar only on mobile
-                              if (isMobile) toggleSidebar();
-
-                              // Chat Room specific logic
-                              if (item.title === "Chat Room") handleChatClick();
-                            }}
-                          >
-
-                            <item.icon className="h-4 w-4" />
-                            {!isCollapsed && (
-                              <>
-                                <span>{item.title}</span>
-                                {item.badge && (
-                                  <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                              </>
-                            )}
-                          </button>
-
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-
-          {/* Media Section */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-              Media
-              {!isCollapsed && (
-                <ChevronDown className="ml-auto h-4 w-4" />
-              )}
-            </SidebarGroupLabel>
-
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mediaItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <button
-                        className={getNavClass(item.url)}
-                        onClick={() => {
-                          if (navigator.vibrate) navigator.vibrate(50);
-
-                          // Navigate first
-                          navigate(item.url);
-
-                          // Collapse sidebar only on mobile
-                          if (isMobile) toggleSidebar();
-
-                          // Chat Room specific logic
-                          if (item.title === "Chat Room") handleChatClick();
-                        }}
-                      >
-
-                        <item.icon className="h-4 w-4" />
-                        {!isCollapsed && (
-                          <>
-                            <span>{item.title}</span>
-                            {item.badge && (
-                              <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                {item.badge}
-                              </Badge>
-                            )}
-                          </>
-                        )}
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-
-          {/* Tutor Section */}
-          {tutorItems.length > 0 && (
-            <SidebarGroup>
-              <Collapsible open={openGroups.includes('tutor')} onOpenChange={() => toggleGroup('tutor')}>
-                <CollapsibleTrigger asChild>
-                  <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-                    Tutor Tools
-                    {!isCollapsed && (
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
-                    )}
-                  </SidebarGroupLabel>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {tutorItems.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild>
-                            <button
-                              className={getNavClass(item.url)}
-                              onClick={() => {
-                                if (navigator.vibrate) navigator.vibrate(50);
-
-                                // Navigate first
-                                navigate(item.url);
-
-                                // Collapse sidebar only on mobile
-                                if (isMobile) toggleSidebar();
-
-                                // Chat Room specific logic
-                                if (item.title === "Chat Room") handleChatClick();
-                              }}
-                            >
-
-                              <item.icon className="h-4 w-4" />
-                              {!isCollapsed && <span>{item.title}</span>}
-                            </button>
-
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarGroup>
-          )}
-
-          {/* Staff Section */}
-          {staffItems.length > 0 && (
-            <SidebarGroup>
-              <Collapsible open={openGroups.includes('staff')} onOpenChange={() => toggleGroup('staff')}>
-                <CollapsibleTrigger asChild>
-                  <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-                    Staff Tools
-                    {!isCollapsed && (
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
-                    )}
-                  </SidebarGroupLabel>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {staffItems.map((item) => (
-                        <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton asChild>
-                            <button
-                              className={getNavClass(item.url)}
-                              onClick={() => {
-                                if (navigator.vibrate) navigator.vibrate(50);
-
-                                // Navigate first
-                                navigate(item.url);
-
-                                // Collapse sidebar only on mobile
-                                if (isMobile) toggleSidebar();
-
-                                // Chat Room specific logic
-                                if (item.title === "Chat Room") handleChatClick();
-                              }}
-                            >
-
-                              <item.icon className="h-4 w-4" />
-                              {!isCollapsed && <span>{item.title}</span>}
-                            </button>
-
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarGroup>
-          )}
-
-          {/* Other Section */}
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {otherItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <button
-                        className={getNavClass(item.url)}
-                        onClick={() => {
-                          if (navigator.vibrate) navigator.vibrate(50);
-
-                          // 1️⃣ Navigate immediately
-                          navigate(item.url);
-
-                          // 2️⃣ Collapse sidebar only on mobile
-                          if (isMobile) toggleSidebar();
-
-                          // 3️⃣ Handle Announcements
-                          if (item.title === "Announcements") {
-                            (async () => {
-                              setUnreadAnnouncements(0);
-                              const { data } = await supabase
-                                .from("announcements")
-                                .select("id")
-                                .eq("is_published", true);
-
-                              if (data) {
-                                localStorage.setItem(
-                                  "readAnnouncements",
-                                  JSON.stringify(data.map(d => d.id))
-                                );
+                              if (windowWidth < 1024) {
+                                handleCollapse(); // triggers smooth collapse
+                                setTimeout(() => navigate(item.url), 300); // wait until collapse finishes
+                              } else {
+                                navigate(item.url); // direct navigation on desktop
                               }
-                            })();
-                          }
-                        }}
-                      >
+                            }}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            {!isCollapsed && <span>{item.title}</span>}
+                          </button>
 
-                        <item.icon className="h-4 w-4" />
-                        {!isCollapsed && (
-                          <>
-                            <span>{item.title}</span>
-                            {item.title === "Announcements" && unreadAnnouncements > 0 && (
-                              <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                {unreadAnnouncements}
-                              </Badge>
-                            )}
-                          </>
-                        )}
-                      </button>
-
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-
-              </SidebarMenu>
-            </SidebarGroupContent>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
+        )}
+
+        {/* Staff Section */}
+        {staffItems.length > 0 && (
+          <SidebarGroup>
+            <Collapsible open={openGroups.includes('staff')} onOpenChange={() => toggleGroup('staff')}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+                  Staff Tools
+                  {!isCollapsed && (
+                    <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {staffItems.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                          <button
+                            className={getNavClass(item.url)}
+                            onClick={() => {
+                              if (navigator.vibrate) navigator.vibrate(50);
+
+                              if (windowWidth < 1024) {
+                                handleCollapse(); // triggers smooth collapse
+                                setTimeout(() => navigate(item.url), 300); // wait until collapse finishes
+                              } else {
+                                navigate(item.url); // direct navigation on desktop
+                              }
+                            }}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            {!isCollapsed && <span>{item.title}</span>}
+                          </button>
 
 
-        </SidebarContent>
-      </Sidebar>
-    </>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
+
+        {/* Other Section */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {otherItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <button
+                      className={getNavClass(item.url)}
+                      onClick={() => {
+                        if (navigator.vibrate) navigator.vibrate(50);
+
+                        handleCollapse();
+
+                        if (item.title === "Announcements") {
+                          (async () => {
+                            setUnreadAnnouncements(0);
+                            const { data } = await supabase
+                              .from("announcements")
+                              .select("id")
+                              .eq("is_published", true);
+                            if (data) localStorage.setItem(
+                              "readAnnouncements",
+                              JSON.stringify(data.map(d => d.id))
+                            );
+                          })();
+                        }
+
+                        navigate(item.url);
+                      }}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && (
+                        <>
+                          <span>{item.title}</span>
+                          {item.title === "Announcements" && unreadAnnouncements > 0 && (
+                            <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                              {unreadAnnouncements}
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                    </button>
+
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
+      </SidebarContent>
+    </Sidebar>
   );
 }

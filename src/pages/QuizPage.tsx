@@ -891,16 +891,7 @@ ${isSelected
                           } ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                         onClick={async () => {
                           if (!!selectedAnswer || quizFinished) return;
-                          // ✅ VIBRATION
-                          if (navigator.vibrate) {
-                            if (correct) {
-                              // Short vibration for correct
-                              navigator.vibrate(50);
-                            } else {
-                              // Stronger/longer vibration for wrong
-                              navigator.vibrate([100, 50, 100]); // vibrate 100ms, pause 50ms, vibrate 100ms
-                            }
-                          }
+
                           // ✅ PLAY SOUND IMMEDIATELY
                           if (!isMuted) {
                             const audio = new Audio(q.correct_answer === letter ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
@@ -908,7 +899,14 @@ ${isSelected
                           }
 
                           const correct = q.correct_answer === letter;
-
+                          // ✅ VIBRATION
+                          if (navigator.vibrate) {
+                            if (correct) {
+                              navigator.vibrate(50); // short for correct
+                            } else {
+                              navigator.vibrate([100, 50, 100]); // stronger for wrong
+                            }
+                          }
                           // 1️⃣ TIME TAKEN
                           const endTime = Date.now();
                           const timeTaken = (endTime - questionStartTime) / 1000;
