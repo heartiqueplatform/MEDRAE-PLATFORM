@@ -1372,6 +1372,16 @@ export default function Feed() {
                                 const audio = new Audio(correct ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
                                 audio.play().catch((err) => console.error("Audio play error:", err));
                               }
+                              // ✅ VIBRATION
+                              if (navigator.vibrate) {
+                                if (correct) {
+                                  // Short vibration for correct
+                                  navigator.vibrate(50);
+                                } else {
+                                  // Stronger/longer vibration for wrong
+                                  navigator.vibrate([100, 50, 100]); // vibrate 100ms, pause 50ms, vibrate 100ms
+                                }
+                              }
 
                             }}
 
