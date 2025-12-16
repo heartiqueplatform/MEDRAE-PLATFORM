@@ -422,7 +422,7 @@ export function MedraeQuizzes() {
 
 
       <MistakeCard />
-      <DailyTriviaCard />
+
       <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
         <input
           type="text"
@@ -703,7 +703,7 @@ export function MedraeQuizzes() {
           ))}
         </div>
       </div>
-
+      <DailyTriviaCard />
       {/* Progress */}
       <Card>
         <CardHeader>
