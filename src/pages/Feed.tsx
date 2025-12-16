@@ -66,6 +66,7 @@ export default function Feed() {
   const savedQuestions = JSON.parse(localStorage.getItem("questions")) || [];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   const [questions, setQuestions] = useState(savedQuestions);
   const [loading, setLoading] = useState(savedQuestions.length === 0);
@@ -386,13 +387,13 @@ export default function Feed() {
       }
 
       // 🚀 FAST FIRST FETCH (NON-BLOCKING)
-      const fast = await fetchQuestionsFast(0, 25);
-      setQuestions((prev) => {
-        const map = new Map(prev.map((q) => [q.id, q]));
-        fast.forEach((q) => map.set(q.id, q));
-        return Array.from(map.values());
-      });
-      setLoading(false); // 👈 skeleton dies here
+      // 🚀 INITIAL LOAD — ONLY 10 QUESTIONS
+      const INITIAL_LIMIT = 10;
+
+      const fast = await fetchQuestionsFast(0, INITIAL_LIMIT);
+      setQuestions(fast);
+      setLoading(false);
+
 
       // 🧠 BACKGROUND ENRICHMENT
       enrichQuestions(fast).then((enriched) => {
@@ -685,26 +686,6 @@ export default function Feed() {
 
     setLoading(false);
   };
-
-  useEffect(() => {
-    const container = document.querySelector(".scroll-container");
-    if (!container) return;
-
-    const onScroll = () => {
-      if (loading || !hasMore) return;
-
-      const scrollPosition = container.scrollTop + container.clientHeight;
-      const halfway = container.scrollHeight / 2; // midpoint
-
-      if (scrollPosition >= halfway) {
-        loadMore();
-      }
-    };
-
-    container.addEventListener("scroll", onScroll);
-    return () => container.removeEventListener("scroll", onScroll);
-  }, [loading, questions, hasMore]);
-
 
 
   // Mark question seen
@@ -1423,6 +1404,7 @@ export default function Feed() {
                           </button>
                         );
                       })}
+
                     </div>
 
                     {selected && (
@@ -1498,7 +1480,60 @@ export default function Feed() {
                   </CardContent>
                 </Card>
               </motion.div>
+
             );
+            // 🔽 Show Load More ONLY after every 10 questions
+            if (
+              (index + 1) % 10 === 0 &&
+              hasMore &&
+              index === questions.length - 1
+            ) {
+              cards.push(
+                <div key={`load-more-${index}`} className="flex justify-center py-6">
+                  <Button
+                    onClick={loadMore}
+                    disabled={loading}
+                    className="
+          px-8 py-3
+          text-base font-semibold
+          rounded-full
+          bg-blue-600 hover:bg-blue-700
+          text-white
+          shadow-md
+          transition
+          flex items-center gap-2
+        "
+                  >
+                    {loading ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            className="opacity-25"
+                          />
+                          <path
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8H4z"
+                            className="opacity-75"
+                          />
+                        </svg>
+                        Loading more…
+                      </>
+                    ) : (
+                      "Load more questions"
+                    )}
+                  </Button>
+                </div>
+              );
+            }
 
             // 🖼️ Fancy image card + delete option + upload always last
             if ((index + 1) % 4 === 0 && feedImages?.length > 0) {
@@ -1544,33 +1579,38 @@ export default function Feed() {
                           </span>
                         </div>
                       </div>
+                      <div className="relative w-full h-[420px] sm:h-[520px] bg-black flex items-center justify-center overflow-hidden rounded-3xl">
+                        {/* Show loader while image is loading */}
+                        {!loadedImages[img.id] && (
+                          <div className="absolute inset-0 flex items-center justify-center scale-[0.45]">
+                            <GlobalLoader />
+                          </div>
+                        )}
 
+                        {/* Image */}
+                        <img
+                          src={img.image_url}
+                          alt={img.title || "Feed image"}
+                          onLoad={() => setLoadedImages((prev) => ({ ...prev, [img.id]: true }))}
+                          onClick={async () => {
+                            openViewer(img);
 
-                      <img
-                        src={img.image_url}
-                        alt={img.title || "Feed image"}
-                        onClick={async () => {
-                          openViewer(img);
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) return;
 
-                          const { data: { user } } = await supabase.auth.getUser();
-                          if (!user) return;
+                            const { error } = await supabase.from("seen_images").insert({
+                              user_id: user.id,
+                              image_id: img.id,
+                            });
 
-                          // Insert record into seen_images
-                          const { error } = await supabase.from("seen_images").insert({
-                            user_id: user.id,
-                            image_id: img.id,
-                          });
-
-                          if (error) {
-                            console.error("Failed to mark image as seen:", error);
-                          } else {
-                            console.log("Marked image as seen:", img.id);
-                            // Remove immediately from feed without reload
-                            setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
-                          }
-                        }}
-                        className="w-full h-auto max-h-[80vh] sm:max-h-[70vh] object-contain cursor-pointer transition-transform hover:scale-100 duration-300 bg-black rounded-3xl"
-                      />
+                            if (!error) {
+                              setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
+                            }
+                          }}
+                          className={`w-full h-full object-contain cursor-pointer transition-opacity duration-500 ${loadedImages[img.id] ? "opacity-100" : "opacity-0"
+                            }`}
+                        />
+                      </div>
 
                       {img.added_by === user?.id && (
                         <button

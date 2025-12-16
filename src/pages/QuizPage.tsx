@@ -1157,19 +1157,21 @@ Please provide a detailed discussion and guidance.`;
                       </div>
                     )}
 
-                    {/* Load More button — only after last visible question */}
-                    {i === visibleCount - 1 && visibleCount < filteredQuestions.length && (
-                      <div className="flex justify-center mt-8">
-                        <button
-                          onClick={() =>
-                            setVisibleCount(prev => prev + QUESTIONS_PER_BATCH)
-                          }
-                          className="mt-4 px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all" >
-                          Load more questions
-                        </button>
-                      </div>
-                    )}
 
+
+                  </div>
+
+                )}
+                {/* Load More button — only after last visible question */}
+                {i === visibleCount - 1 && visibleCount < filteredQuestions.length && (
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={() =>
+                        setVisibleCount(prev => prev + QUESTIONS_PER_BATCH)
+                      }
+                      className="mt-4 px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all" >
+                      Load more questions
+                    </button>
                   </div>
                 )}
               </div>
