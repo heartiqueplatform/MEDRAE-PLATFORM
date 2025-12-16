@@ -477,21 +477,20 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-                            handleCollapse();
-                            if (item.title === "Chat Room") handleChatClick();
-                            navigate(item.url);
+
+                            if (windowWidth < 1024) {
+                              toggleSidebar();
+                              setTimeout(() => navigate(item.url), 220);
+                            } else {
+                              navigate(item.url);
+                            }
                           }}
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
                               <span>{item.title}</span>
-                              {item.title === "Chat Room" && unreadCount > 0 && (
-                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                  {unreadCount}
-                                </Badge>
-                              )}
-                              {item.badge && item.title !== "Chat Room" && (
+                              {item.badge && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
                                 </Badge>
@@ -499,6 +498,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             </>
                           )}
                         </button>
+
 
 
                       </SidebarMenuButton>
@@ -576,8 +576,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       className={getNavClass(item.url)}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
-                        handleCollapse();
-                        navigate(item.url);
+
+                        if (windowWidth < 1024) {
+                          toggleSidebar();
+                          setTimeout(() => navigate(item.url), 220);
+                        } else {
+                          navigate(item.url);
+                        }
                       }}
                     >
                       <item.icon className="h-4 w-4" />
@@ -592,6 +597,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         </>
                       )}
                     </button>
+
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -689,26 +695,30 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <button
                       className={getNavClass(item.url)}
-                      onClick={() => {
+                      onClick={async () => {
                         if (navigator.vibrate) navigator.vibrate(50);
 
-                        handleCollapse();
-
                         if (item.title === "Announcements") {
-                          (async () => {
-                            setUnreadAnnouncements(0);
-                            const { data } = await supabase
-                              .from("announcements")
-                              .select("id")
-                              .eq("is_published", true);
-                            if (data) localStorage.setItem(
+                          setUnreadAnnouncements(0);
+                          const { data } = await supabase
+                            .from("announcements")
+                            .select("id")
+                            .eq("is_published", true);
+
+                          if (data) {
+                            localStorage.setItem(
                               "readAnnouncements",
                               JSON.stringify(data.map(d => d.id))
                             );
-                          })();
+                          }
                         }
 
-                        navigate(item.url);
+                        if (windowWidth < 1024) {
+                          toggleSidebar();
+                          setTimeout(() => navigate(item.url), 220);
+                        } else {
+                          navigate(item.url);
+                        }
                       }}
                     >
                       <item.icon className="h-4 w-4" />
@@ -723,6 +733,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         </>
                       )}
                     </button>
+
 
                   </SidebarMenuButton>
                 </SidebarMenuItem>
