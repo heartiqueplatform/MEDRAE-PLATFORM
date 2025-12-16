@@ -624,13 +624,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
-
-                              if (windowWidth < 1024) {
-                                handleCollapse(); // triggers smooth collapse
-                                setTimeout(() => navigate(item.url), 300); // wait until collapse finishes
-                              } else {
-                                navigate(item.url); // direct navigation on desktop
-                              }
+                              handleCollapse();
+                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
@@ -669,19 +664,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
-
-                              if (windowWidth < 1024) {
-                                handleCollapse(); // triggers smooth collapse
-                                setTimeout(() => navigate(item.url), 300); // wait until collapse finishes
-                              } else {
-                                navigate(item.url); // direct navigation on desktop
-                              }
+                              handleCollapse();
+                              navigate(item.url);
                             }}
                           >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
                           </button>
-
 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
