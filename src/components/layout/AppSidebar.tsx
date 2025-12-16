@@ -414,7 +414,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   return (
     <Sidebar
       className={`
-    fixed top-0 left-0 h-full z-50 bg-background shadow-lg
+    fixed top-0 left-0 h-full z-50 bg-background shadow-none md:shadow-lg
     w-64
     overflow-y-auto
 
@@ -473,7 +473,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <button
-                          className={getNavClass(item.url)}
+                          className={`${getNavClass(item.url)} touch-manipulation`}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
@@ -528,7 +528,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <button
-                          className={getNavClass(item.url)}
+                          className={`${getNavClass(item.url)} touch-manipulation`}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
@@ -572,7 +572,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <button
-                      className={getNavClass(item.url)}
+                      className={`${getNavClass(item.url)} touch-manipulation`}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
                         handleCollapse();
@@ -618,7 +618,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
                           <button
-                            className={getNavClass(item.url)}
+                            className={`${getNavClass(item.url)} touch-manipulation`}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
@@ -658,7 +658,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
                           <button
-                            className={getNavClass(item.url)}
+                            className={`${getNavClass(item.url)} touch-manipulation`}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
@@ -687,7 +687,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <button
-                      className={getNavClass(item.url)}
+                      className={`${getNavClass(item.url)} touch-manipulation`}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
 
