@@ -68,7 +68,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalVideos, setTotalVideos] = useState<number | null>(null);
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  // ✅ Stable mobile detection
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
@@ -118,22 +119,22 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
     fetchCount();
   }, []);
-
-
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
 
-
-  const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
-
+  // ✅ Only collapse if sidebar is open
   const handleCollapse = () => {
-    // Collapse sidebar on mobile
-    if (windowWidth < 1024) toggleSidebar();
+    if (isMobile && state !== 'collapsed') {
+      toggleSidebar();
+    }
   };
+
+  // ✅ Determine collapsed state properly
+  const isCollapsed = !isMobile ? false : state === 'collapsed';
 
   const toggleGroup = (group: string) => {
     setOpenGroups(prev =>

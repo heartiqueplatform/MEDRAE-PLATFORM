@@ -174,8 +174,7 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
   const { isSidebarOpen, toggleSidebar } = useSidebar();
 
   return (
-    <div className="flex min-h-screen w-screen bg-background">
-
+    <div className="flex h-screen w-screen overflow-hidden bg-background">
 
       <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
 
