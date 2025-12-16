@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-
+import { Link, useLocation } from "react-router-dom";
 
 import {
   Brain,
@@ -28,7 +27,6 @@ import {
   CalendarDays,
   PenTool,
   Network,
-  AlertCircle,
   Newspaper
 
 } from "lucide-react";
@@ -55,8 +53,6 @@ interface AppSidebarProps {
 export function AppSidebar({ userRole }: AppSidebarProps) {
   const { state, setState, toggleSidebar } = useSidebar();
   const location = useLocation();
-  const navigate = useNavigate();
-
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
 
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(0);
@@ -69,71 +65,14 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-  // ✅ At the top of your AppSidebar component
-  const [mistakeCount, setMistakeCount] = useState(0);
-
-  // ✅ Sync with localStorage and update in real-time
-  useEffect(() => {
-    const fetchCount = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Initial fetch
-      const { count, error } = await supabase
-        .from("user_mistakes")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("resolved", false);
-
-      if (!error) setMistakeCount(count || 0);
-
-      // Subscribe to changes for this user
-      const subscription = supabase
-        .channel(`user_mistakes_real_time_${user.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "user_mistakes",
-            filter: `user_id=eq.${user.id}`,
-          },
-          () => {
-            // Refetch count whenever a row is inserted, updated, or deleted
-            supabase
-              .from("user_mistakes")
-              .select("*", { count: "exact", head: true })
-              .eq("user_id", user.id)
-              .eq("resolved", false)
-              .then(({ count }) => setMistakeCount(count || 0));
-          }
-        )
-        .subscribe();
-
-      return () => supabase.removeChannel(subscription);
-    };
-
-    fetchCount();
-  }, []);
-
-
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-
-
   const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
 
-  const handleCollapse = () => {
-    // Collapse sidebar on mobile
-    if (windowWidth < 1024) toggleSidebar();
-  };
 
   const toggleGroup = (group: string) => {
     setOpenGroups(prev =>
@@ -157,28 +96,27 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   };
   const mainItems = [
     { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home },
-    { title: "Feed Page", url: "/feed", icon: Newspaper },
-    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? mistakeCount : undefined },
+    { title: "Feed", url: "/feed", icon: Newspaper },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
+    { title: "Chat Room", url: "/chat", icon: MessageCircle },
     { title: "Forum", url: "/forum", icon: MessageSquare },
-
   ];
 
 
   const learningItems = [
-    { title: "Assessment Tracker", url: "/calendar", icon: Calendar, badge: `${totalEvents}E` },
+    { title: "Assessment Calendar", url: "/calendar", icon: Calendar, badge: `${totalEvents}E` },
     { title: "Study Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★` },
-    { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
-    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
+    { title: "Medrae Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)} Questions` : "Loading..." },
+    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} Papers` : "Loading..." },
 
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
-    { title: "Resources Bank", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
+    { title: "Notes & Resources Bank", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)} Notes` : "Loading..." },
 
   ];
 
   const mediaItems = [
     { title: "MedTube", url: "/medtube", icon: Play, badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
-
+    { title: "Reels", url: "/reels", icon: Video },
   ];
 
   const otherItems = [
@@ -298,91 +236,40 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   }, []);
 
   // ----- TOTAL STARS -----
+  // ----- TOTAL STARS -----
   useEffect(() => {
-    let isMounted = true; // avoid state updates if unmounted
-
-    // 1️⃣ Load cached stars immediately
+    // Just read the same cache Progress saves
     const cached = localStorage.getItem("study_progress_cache");
     if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.totalStarsEarned !== undefined) setTotalStars(parsed.totalStarsEarned);
-      } catch (e) {
-        console.error("Error reading cached stars for sidebar:", e);
+      const parsed = JSON.parse(cached);
+      if (parsed.totalStarsEarned !== undefined) {
+        setTotalStars(parsed.totalStarsEarned);
       }
     }
 
-    // 2️⃣ Function to fetch latest stars from Supabase
-    const fetchStars = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        console.error("User not found or auth error in sidebar");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("quiz_results")
-        .select("unit, score, total_questions")
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("Error fetching quiz results for sidebar:", error.message);
-        return;
-      }
-
-      // Group results by unit
-      const grouped: Record<string, { count: number }> = {};
-      data?.forEach((res) => {
-        const key = res.unit || "Unknown";
-        if (!grouped[key]) grouped[key] = { count: 1 };
-        else grouped[key].count += 1;
-      });
-
-      // Only include units whose latest attempt > 0
-      const unitsToInclude = Object.keys(grouped).filter((unitName) => {
-        const attempts = data?.filter((r) => r.unit === unitName) || [];
-        const latestAttempt = attempts[attempts.length - 1]; // assume last is latest
-        return latestAttempt?.score && latestAttempt.score > 0;
-      });
-
-      const totalStars = unitsToInclude.length * 5;
-
-      if (isMounted) setTotalStars(totalStars);
-
-      // Update localStorage cache for other components
-      try {
-        const cached = JSON.parse(localStorage.getItem("study_progress_cache") || "{}");
-        localStorage.setItem(
-          "study_progress_cache",
-          JSON.stringify({ ...cached, totalStarsEarned: totalStars, userId: user.id })
-        );
-      } catch (e) {
-        console.error("Error saving sidebar stars to cache:", e);
-      }
-    };
-
-    fetchStars(); // initial fetch
-
-    // 3️⃣ Realtime subscription for updates
+    // ✅ Keep listening for realtime updates too
     const channel = supabase
       .channel("quiz_results_changes_sidebar")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "quiz_results" },
-        fetchStars
+        () => {
+          // When results change, Progress will refresh the cache → reload here
+          const updated = localStorage.getItem("study_progress_cache");
+          if (updated) {
+            const parsed = JSON.parse(updated);
+            if (parsed.totalStarsEarned !== undefined) {
+              setTotalStars(parsed.totalStarsEarned);
+            }
+          }
+        }
       )
       .subscribe();
 
     return () => {
-      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
-
 
 
   // Reset unread count when clicking Chat Room
@@ -441,10 +328,10 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
           {!isCollapsed && (
             <div>
               <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 relative inline-block">
-                MEDRAE
+                MEDRAE NURSING
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Kenya Nursing Network Platform (MKN)
+                Network Platform
               </p>
             </div>
 
@@ -471,13 +358,15 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   {mainItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <button
+                        <Link
+                          to={item.url}
                           className={getNavClass(item.url)}
                           onClick={() => {
+                            // vibrate on navigation
                             if (navigator.vibrate) navigator.vibrate(50);
-                            handleCollapse();
+
                             if (item.title === "Chat Room") handleChatClick();
-                            navigate(item.url);
+                            handleCollapse();
                           }}
                         >
                           <item.icon className="h-4 w-4" />
@@ -496,9 +385,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                               )}
                             </>
                           )}
-                        </button>
-
-
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -526,13 +413,15 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   {learningItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <button
+                        <Link
+                          to={item.url}
                           className={getNavClass(item.url)}
+
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
                             handleCollapse();
-                            navigate(item.url);
                           }}
+
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
@@ -545,8 +434,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                               )}
                             </>
                           )}
-                        </button>
-
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -558,45 +446,50 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
         {/* Media Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-            Media
-            {!isCollapsed && (
-              <ChevronDown className="ml-auto h-4 w-4" />
-            )}
-          </SidebarGroupLabel>
+          <Collapsible open={openGroups.includes('media')} onOpenChange={() => toggleGroup('media')}>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+                Media
+                {!isCollapsed && (
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {mediaItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <Link
+                          to={item.url}
+                          className={getNavClass(item.url)}
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            handleCollapse();
+                          }}
 
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mediaItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <button
-                      className={getNavClass(item.url)}
-                      onClick={() => {
-                        if (navigator.vibrate) navigator.vibrate(50);
-                        handleCollapse();
-                        navigate(item.url);
-                      }}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && (
-                        <>
-                          <span>{item.title}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                              {item.badge}
-                            </Badge>
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!isCollapsed && (
+                            <>
+                              <span>{item.title}</span>
+                              {item.badge && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </>
                           )}
-                        </>
-                      )}
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
         </SidebarGroup>
-
 
         {/* Tutor Section */}
         {tutorItems.length > 0 && (
@@ -616,18 +509,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     {tutorItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <button
+                          <Link
+                            to={item.url}
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              navigate(item.url);
                             }}
+
                           >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
-                          </button>
-
+                          </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}
@@ -656,18 +549,18 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                     {staffItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <button
+                          <Link
+                            to={item.url}
                             className={getNavClass(item.url)}
                             onClick={() => {
                               if (navigator.vibrate) navigator.vibrate(50);
                               handleCollapse();
-                              navigate(item.url);
                             }}
+
                           >
                             <item.icon className="h-4 w-4" />
                             {!isCollapsed && <span>{item.title}</span>}
-                          </button>
-
+                          </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}
@@ -685,13 +578,16 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
               {otherItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <button
+                    <Link
+                      to={item.url}
                       className={getNavClass(item.url)}
                       onClick={() => {
+                        // Vibrate device for 50ms on navigation
                         if (navigator.vibrate) navigator.vibrate(50);
 
-                        handleCollapse();
+                        handleCollapse(); // synchronous — collapses immediately on mobile
 
+                        // Announcement specific handling
                         if (item.title === "Announcements") {
                           (async () => {
                             setUnreadAnnouncements(0);
@@ -705,9 +601,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             );
                           })();
                         }
-
-                        navigate(item.url);
                       }}
+
+
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && (
@@ -720,8 +616,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           )}
                         </>
                       )}
-                    </button>
-
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
