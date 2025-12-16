@@ -69,7 +69,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const isMobile = windowWidth < 1024;
 
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
@@ -121,20 +120,21 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   }, []);
 
 
-
-
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const isCollapsed = !isMobile ? false : state === 'collapsed';
+
+
+  const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
 
   const handleCollapse = () => {
-    // Only collapse automatically on mobile
-    if (isMobile) toggleSidebar();
+    // Collapse sidebar on mobile
+    if (windowWidth < 1024) toggleSidebar();
   };
+
   const toggleGroup = (group: string) => {
     setOpenGroups(prev =>
       prev.includes(group)
