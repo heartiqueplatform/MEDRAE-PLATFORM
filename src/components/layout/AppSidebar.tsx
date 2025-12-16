@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-
+import { useLayoutEffect } from "react"; // add this at the top with your imports
 import {
   Brain,
   Heart,
@@ -68,7 +68,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalVideos, setTotalVideos] = useState<number | null>(null);
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [windowWidth, setWindowWidth] = useState(0); // start at 0 to hide initially
 
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
@@ -120,15 +120,19 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   }, []);
 
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Set initial width before painting
+    setWindowWidth(window.innerWidth);
+
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+  const isMobile = windowWidth > 0 && windowWidth < 1024;
 
+  // Only collapse on mobile if the sidebar state is 'collapsed'
+  const isCollapsed = isMobile ? state === 'collapsed' : state === 'collapsed';
 
-
-  const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
 
   const handleCollapse = () => {
     // Collapse sidebar on mobile
@@ -422,8 +426,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   return (
     <Sidebar
       className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300
-    ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
+  ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
     >
+
+
+
 
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
