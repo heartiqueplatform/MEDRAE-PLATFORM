@@ -131,9 +131,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
 
   const handleCollapse = () => {
-    if (windowWidth < 1024 && state !== 'collapsed') {
-      toggleSidebar();
-    }
+    // Collapse sidebar on mobile
+    if (windowWidth < 1024) toggleSidebar();
   };
 
   const toggleGroup = (group: string) => {
