@@ -69,6 +69,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const [totalStars, setTotalStars] = useState<number>(0);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const isMobile = windowWidth < 1024;
 
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
@@ -120,22 +121,20 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   }, []);
 
 
+
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-
-
-  const isCollapsed = state === "collapsed";
-
+  const isCollapsed = !isMobile ? false : state === 'collapsed';
 
   const handleCollapse = () => {
-    // Collapse sidebar on mobile
-    if (windowWidth < 1024) toggleSidebar();
+    // Only collapse automatically on mobile
+    if (isMobile) toggleSidebar();
   };
-
   const toggleGroup = (group: string) => {
     setOpenGroups(prev =>
       prev.includes(group)
@@ -243,7 +242,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     };
     fetchTotalSimulationPapers();
   }, []);
-
 
   // ----- TOTAL NOTES -----
   useEffect(() => {
@@ -477,20 +475,21 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-
-                            if (windowWidth < 1024) {
-                              toggleSidebar();
-                              setTimeout(() => navigate(item.url), 220);
-                            } else {
-                              navigate(item.url);
-                            }
+                            handleCollapse();
+                            if (item.title === "Chat Room") handleChatClick();
+                            navigate(item.url);
                           }}
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
                               <span>{item.title}</span>
-                              {item.badge && (
+                              {item.title === "Chat Room" && unreadCount > 0 && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {unreadCount}
+                                </Badge>
+                              )}
+                              {item.badge && item.title !== "Chat Room" && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
                                 </Badge>
@@ -498,7 +497,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             </>
                           )}
                         </button>
-
 
 
                       </SidebarMenuButton>
@@ -576,13 +574,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       className={getNavClass(item.url)}
                       onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
-
-                        if (windowWidth < 1024) {
-                          toggleSidebar();
-                          setTimeout(() => navigate(item.url), 220);
-                        } else {
-                          navigate(item.url);
-                        }
+                        handleCollapse();
+                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
@@ -597,7 +590,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         </>
                       )}
                     </button>
-
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -695,30 +687,26 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <button
                       className={getNavClass(item.url)}
-                      onClick={async () => {
+                      onClick={() => {
                         if (navigator.vibrate) navigator.vibrate(50);
 
-                        if (item.title === "Announcements") {
-                          setUnreadAnnouncements(0);
-                          const { data } = await supabase
-                            .from("announcements")
-                            .select("id")
-                            .eq("is_published", true);
+                        handleCollapse();
 
-                          if (data) {
-                            localStorage.setItem(
+                        if (item.title === "Announcements") {
+                          (async () => {
+                            setUnreadAnnouncements(0);
+                            const { data } = await supabase
+                              .from("announcements")
+                              .select("id")
+                              .eq("is_published", true);
+                            if (data) localStorage.setItem(
                               "readAnnouncements",
                               JSON.stringify(data.map(d => d.id))
                             );
-                          }
+                          })();
                         }
 
-                        if (windowWidth < 1024) {
-                          toggleSidebar();
-                          setTimeout(() => navigate(item.url), 220);
-                        } else {
-                          navigate(item.url);
-                        }
+                        navigate(item.url);
                       }}
                     >
                       <item.icon className="h-4 w-4" />
@@ -733,7 +721,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         </>
                       )}
                     </button>
-
 
                   </SidebarMenuButton>
                 </SidebarMenuItem>
