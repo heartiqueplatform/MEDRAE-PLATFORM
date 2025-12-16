@@ -127,14 +127,12 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   }, []);
 
 
-  // Sidebar is collapsed if user toggled it, or automatically on small screens
-  const isCollapsed = state === 'collapsed' || (windowWidth < 1024 && state !== 'expanded');
 
-  // Only toggle sidebar on small screens
+  const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
+
   const handleCollapse = () => {
-    if (windowWidth < 1024) {
-      toggleSidebar();
-    }
+    // Collapse sidebar on mobile
+    if (windowWidth < 1024) toggleSidebar();
   };
 
   const toggleGroup = (group: string) => {
@@ -477,21 +475,22 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           className={getNavClass(item.url)}
                           onClick={() => {
                             if (navigator.vibrate) navigator.vibrate(50);
-                            handleCollapse();
-                            if (item.title === "Chat Room") handleChatClick();
-                            navigate(item.url);
+
+                            if (windowWidth < 1024) {
+                              toggleSidebar();
+                              setTimeout(() => {
+                                navigate(item.url);
+                              }, 100);
+                            } else {
+                              navigate(item.url);
+                            }
                           }}
                         >
                           <item.icon className="h-4 w-4" />
                           {!isCollapsed && (
                             <>
                               <span>{item.title}</span>
-                              {item.title === "Chat Room" && unreadCount > 0 && (
-                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
-                                  {unreadCount}
-                                </Badge>
-                              )}
-                              {item.badge && item.title !== "Chat Room" && (
+                              {item.badge && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
                                 </Badge>
@@ -499,6 +498,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             </>
                           )}
                         </button>
+
 
 
                       </SidebarMenuButton>
