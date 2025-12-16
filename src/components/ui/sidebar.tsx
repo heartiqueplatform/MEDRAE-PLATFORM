@@ -1,6 +1,4 @@
 import * as React from "react"
-import { useLocation } from "react-router-dom"
-
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
@@ -68,8 +66,6 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile()
-    const location = useLocation()
-
     const [openMobile, setOpenMobile] = React.useState(false)
 
     // This is the internal state of the sidebar.
@@ -93,13 +89,6 @@ const SidebarProvider = React.forwardRef<
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
-      // 🔒 Close mobile sidebar immediately on route change
-      React.useEffect(() => {
-        if (isMobile && openMobile) {
-          setOpenMobile(false)
-        }
-      }, [location.pathname])
-
       return isMobile
         ? setOpenMobile((open) => !open)
         : setOpen((open) => !open)
