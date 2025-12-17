@@ -2,6 +2,18 @@
 import { Link } from "react-router-dom";
 import { Brain, Star, BookOpen, ListChecks, Settings, Bell } from "lucide-react";
 import { useEffect, useState } from "react";
+// 🔔 Haptic feedback helper (safe on all devices)
+// 🔔 Haptic feedback helper (true 50% feel)
+const vibrate = (strength: "full" | "half" = "half") => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        if (strength === "half") {
+            navigator.vibrate([8, 8, 8]); // TRUE ~50% pulse
+        } else {
+            navigator.vibrate(20); // full
+        }
+    }
+};
+
 
 const actions = [
     { href: "/ai-assistant", label: "AI Assistant", icon: Brain, bgLight: "bg-purple-500 hover:bg-purple-600", bgDark: "bg-purple-600 hover:bg-purple-700" },
@@ -42,8 +54,11 @@ export default function FloatingQuickActions() {
 
                         <Link
                             to={action.href}
+                            onPointerDown={() => vibrate("half")}
+
                             className={`${bgClass} h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center text-white shadow-lg transition hover:scale-105 active:scale-95`}
                         >
+
                             <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Link>
                     </div>

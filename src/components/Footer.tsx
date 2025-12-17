@@ -67,9 +67,9 @@ export function Footer() {
 
     const items = [
         { icon: Heart, label: "Quizzes", url: "/Medrae-quizzes" },
-        { icon: Home, label: "Dashboard", url: "/dashboard/student" },
-        { icon: AlertCircle, label: "My Mistakes", url: "/my-mistakes", badge: mistakeCount > 0 ? mistakeCount : undefined },
-        { title: "Study Progress", url: "/progress", icon: TrendingUp },
+        { icon: Home, label: "Home", url: "/dashboard/student" },
+        { icon: AlertCircle, label: "Mistakes", url: "/my-mistakes", badge: mistakeCount > 0 ? mistakeCount : undefined },
+        { title: "Progress", url: "/progress", icon: TrendingUp },
     ];
 
 
