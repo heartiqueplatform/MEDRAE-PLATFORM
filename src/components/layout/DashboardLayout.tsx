@@ -174,7 +174,8 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
   const { isSidebarOpen, toggleSidebar } = useSidebar();
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+
 
       <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
 
@@ -186,7 +187,7 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
         <main
           className={`
     flex-1 box-border
-    px-0 md:px-6
+    px-0
     py-4 pb-14
     overflow-auto
     scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
@@ -194,6 +195,10 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
   `}
         >
           {children}
+
+          {/* Footer spacer — prevents overlap */}
+          <div className="h-20 shrink-0" />
+
         </main>
 
         {!isSidebarOpen && (

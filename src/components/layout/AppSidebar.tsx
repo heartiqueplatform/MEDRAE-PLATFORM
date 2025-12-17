@@ -468,8 +468,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         </div>
       </div>
 
-      <SidebarContent className="px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-800">
-
+      <SidebarContent className="px-2 overflow-y-auto custom-scrollbar">
         {/* Main Navigation */}
         <SidebarGroup>
           <Collapsible open={openGroups.includes('main')} onOpenChange={() => toggleGroup('main')}>

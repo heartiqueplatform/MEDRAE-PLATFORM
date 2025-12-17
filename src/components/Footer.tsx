@@ -13,7 +13,7 @@ export function Footer() {
     const location = useLocation();
     const { toggleSidebar } = useSidebar();
     // 🔔 Haptic feedback (mobile vibration)
-    const vibrate = (duration = 30) => {
+    const vibrate = (duration = 50) => {
         if (navigator.vibrate) navigator.vibrate(duration);
     };
 
@@ -92,19 +92,20 @@ export function Footer() {
 
             {items.map((item) => (
                 <button
-                    key={item.label}
+                    key={item.url}   // ← use URL as a unique key
                     onClick={() => {
-                        vibrate();          // 👈 added
+                        vibrate();
                         navigate(item.url);
                     }}
-
                     className={`flex flex-col items-center justify-center relative text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 ${isActive(item.url) ? "text-blue-500 dark:text-blue-400" : ""
                         }`}
                 >
                     <item.icon className="h-6 w-6" />
-                    <span className="text-xs">{item.label}</span>
+                    <span className="text-xs">{item.label || item.title}</span>
                     {item.badge && (
-                        <Badge className="absolute -top-1 -right-1 h-4 w-4 text-[10px]">{item.badge}</Badge>
+                        <Badge className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 text-[10px] flex items-center justify-center bg-green-500 text-white">
+                            {item.badge}
+                        </Badge>
                     )}
                 </button>
             ))}

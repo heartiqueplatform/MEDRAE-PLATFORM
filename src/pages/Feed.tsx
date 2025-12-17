@@ -23,7 +23,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 import Confetti from "react-confetti";
-
 const safeParse = (key, fallback) => {
   try {
     return JSON.parse(localStorage.getItem(key)) || fallback;
@@ -39,7 +38,7 @@ const SkeletonCard = () => (
     <div className="h-[260px] w-full flex flex-col justify-between">
 
       {/* User row placeholder */}
-      <div className="flex items-center gap-3">
+      <div className="flex iems-center gap-3">
         <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
         <div className="w-32 h-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
       </div>
@@ -52,6 +51,13 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
+const enrichQuestions = async (questions: any[]) => {
+  // Example enrichment — you can expand with real logic
+  return questions.map(q => ({
+    ...q,
+    enriched: true, // placeholder field
+  }));
+};
 
 
 export default function Feed() {
@@ -62,6 +68,7 @@ export default function Feed() {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [answers, setAnswers] = useState({});
   const [page, setPage] = useState(0); // start from page 0, no localStorage
+  const uploadControllers = useRef<AbortController[]>([]);
 
   const savedQuestions = JSON.parse(localStorage.getItem("questions")) || [];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -70,6 +77,10 @@ export default function Feed() {
 
   const [questions, setQuestions] = useState(savedQuestions);
   const [loading, setLoading] = useState(savedQuestions.length === 0);
+  // At the top of your Feed.tsx or component
+  // Preload a single sound
+  const tapAudio = typeof Audio !== "undefined" ? new Audio("/sounds/tap1.mp3") : null;
+
 
   const { width, height } = useWindowSize();
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -117,21 +128,25 @@ export default function Feed() {
   const handleImageUpload = async () => {
     if (!uploadFiles || uploadFiles.length === 0 || !user)
       return alert("Select one or more images first.");
+
     setUploading(true);
+    uploadControllers.current = []; // reset previous controllers
 
     try {
       const uploadedImages = [];
 
-      // Loop through all selected images
       for (const file of uploadFiles) {
+        const controller = new AbortController();
+        uploadControllers.current.push(controller); // store controller
+
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`; // ✅ store inside user folder
+        const filePath = `${user.id}/${fileName}`;
 
-        // 1️⃣ Upload to storage with folder path
+        // 1️⃣ Upload to storage with signal for cancellation
         const { error: uploadError } = await supabase.storage
           .from("qfeed-images")
-          .upload(filePath, file);
+          .upload(filePath, file, { signal: controller.signal });
 
         if (uploadError) throw uploadError;
 
@@ -156,17 +171,23 @@ export default function Feed() {
         uploadedImages.push(insertedData);
       }
 
-      // 4️⃣ Update UI once after all uploads
       setFeedImages((prev) => [...uploadedImages, ...prev]);
       setUploadFiles([]);
-      alert("Images uploaded! Thank you for your contribution");
-    } catch (err) {
-      console.error("Upload failed:", err);
-      alert("Some uploads may have failed. Please try again.");
+      alert("Images uploaded! Thank you for your contribution.");
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        alert("Upload cancelled by user.");
+      } else {
+        console.error("Upload failed:", err);
+        alert("Some uploads may have failed. Please try again.");
+      }
     } finally {
       setUploading(false);
+      uploadControllers.current = [];
     }
   };
+
+
 
 
   const handleDeleteImage = async (img) => {
@@ -263,6 +284,18 @@ export default function Feed() {
     }
   }, [correctStreak, wrongStreak]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (uploading) {
+        e.preventDefault();
+        e.returnValue = "Uploads are in progress. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [uploading]);
 
   useEffect(() => {
     if (!feedbackMessage) return;
@@ -389,58 +422,45 @@ export default function Feed() {
       // 🚀 FAST FIRST FETCH (NON-BLOCKING)
       // 🚀 INITIAL LOAD — ONLY 10 QUESTIONS
       const INITIAL_LIMIT = 10;
-
-      const fast = await fetchQuestionsFast(0, INITIAL_LIMIT);
+      // NEW
+      const fast = await fetchQuestions(0, INITIAL_LIMIT);
       setQuestions(fast);
       setLoading(false);
 
-
-      // 🧠 BACKGROUND ENRICHMENT
+      // Enrich background
       enrichQuestions(fast).then((enriched) => {
         setQuestions((prev) => {
           const map = new Map(prev.map((q) => [q.id, q]));
           enriched.forEach((q) => map.set(q.id, q));
           return Array.from(map.values());
         });
-      });
+      })
+      // Remove background streaming entirely
+      // Manual fetch only when needed
 
-      // 🧵 BACKGROUND PREFETCH (STREAM MODE)
-      let page = 1;
+      // Example: fetch initial questions once
+      const initQuestions = async () => {
+        if (!user) return;
 
-      const backgroundFetch = async () => {
-        const batch = await fetchQuestionsFast(page, 10);
-        if (!batch.length) return;
+        const INITIAL_LIMIT = 10;
+        const fresh = await fetchQuestions(0, INITIAL_LIMIT);
+        setQuestions(fresh);
+        setLoading(false);
 
-        setQuestions((prev) => {
-          const seen = new Set(prev.map((q) => q.id));
-          const merged = [...prev, ...batch.filter((q) => !seen.has(q.id))];
+        // Save to localStorage
+        localStorage.setItem(
+          `feed_questions_${user.id}`,
+          JSON.stringify(fresh)
+        );
 
-          if (saveTimer) clearTimeout(saveTimer);
-          saveTimer = setTimeout(() => {
-            localStorage.setItem(
-              storageKey,
-              JSON.stringify({ questions: merged, lastSaved: Date.now() })
-            );
-          }, 4000);
-
-          return merged;
+        // Optional: enrich questions
+        enrichQuestions(fresh).then((enriched) => {
+          setQuestions(enriched);
         });
-
-        enrichQuestions(batch).then((enriched) => {
-          setQuestions((prev) => {
-            const map = new Map(prev.map((q) => [q.id, q]));
-            enriched.forEach((q) => map.set(q.id, q));
-            return Array.from(map.values());
-          });
-        });
-
-        page += 1;
       };
 
-      // Start background streaming
-      const interval = setInterval(backgroundFetch, 5000);
+      initQuestions();
 
-      return () => clearInterval(interval);
     };
 
     init();
@@ -497,12 +517,12 @@ export default function Feed() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [user, answers]);
 
-
-  // Fetch questions with likes/comments (optimized but preserved)
+  // Place this inside Feed.tsx, above the component or at the top of the component
   const fetchQuestions = async (page = 0, limit = 25) => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    // 1️⃣ Fetch seen questions (only IDs)
+    // Get already seen question IDs
     const { data: seenData, error: seenError } = await supabase
       .from("qfeed_seen")
       .select("question_id")
@@ -515,146 +535,57 @@ export default function Feed() {
 
     const seenList = seenData?.map((s) => s.question_id) || [];
 
-    // 2️⃣ Fetch questions
-    const { data: questions, error } = await supabase
+    // Fetch questions excluding seen ones
+    const { data: questions, error: questionsError } = await supabase
       .from("quiz_questions")
       .select(
-        "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, created_at"
+        "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation"
       )
-      .not(
-        "id",
-        "in",
-        `(${seenList.join(",") || "00000000-0000-0000-0000-000000000000"})`
-      )
+      .not("id", "in", `(${seenList.join(",") || "00000000-0000-0000-0000-000000000000"})`)
       .range(page * limit, page * limit + limit - 1);
 
-    if (error) {
-      console.error("Questions fetch error:", error);
+    if (questionsError) {
+      console.error("Questions fetch error:", questionsError);
       return [];
     }
 
     if (!questions?.length) return [];
 
-    // 3️⃣ Shuffle (preserved behavior)
+    // Shuffle
     const shuffled = [...questions].sort(() => Math.random() - 0.5);
-
     const ids = shuffled.map((q) => q.id);
     const quizIds = [...new Set(shuffled.map((q) => q.quiz_id))];
 
-    // 4️⃣ Fetch likes, comments, quizzes IN PARALLEL 🚀
+    // Fetch likes, comments, quizzes in parallel
     const [
       { data: likes },
       { data: commentsData },
       { data: quizzes },
     ] = await Promise.all([
-      supabase
-        .from("qfeed_likes")
-        .select("question_id, user_id")
-        .in("question_id", ids),
-
-      supabase
-        .from("qfeed_comments")
-        .select("id, question_id")
-        .in("question_id", ids),
-
-      supabase
-        .from("quizzes")
-        .select("id, title")
-        .in("id", quizIds),
+      supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
+      supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
+      supabase.from("quizzes").select("id, title").in("id", quizIds),
     ]);
 
-    // 5️⃣ Normalize for O(1) lookup
+    // Map for likes
     const likesMap = new Map<string, any[]>();
     likes?.forEach((l) => {
       if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
       likesMap.get(l.question_id)!.push(l);
     });
 
+    // Map for comments count
     const commentsCountMap = new Map<string, number>();
     commentsData?.forEach((c) => {
-      commentsCountMap.set(
-        c.question_id,
-        (commentsCountMap.get(c.question_id) || 0) + 1
-      );
+      commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
     });
 
+    // Map for quiz titles
     const quizTitleMap = new Map<string, string>();
     quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
 
-    // 6️⃣ Final merge (same output shape as before)
+    // Merge and return
     return shuffled.map((q) => ({
-      ...q,
-      qfeed_likes: likesMap.get(q.id) || [],
-      comments_count: commentsCountMap.get(q.id) || 0,
-      quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
-    }));
-  };
-  // 🔹 FAST QUESTION FETCH (NO HEAVY JOINS)
-  const fetchQuestionsFast = async (page = 0, limit = 25) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data, error } = await supabase
-      .from("quiz_questions")
-      .select(
-        "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation"
-      )
-      .range(page * limit, page * limit + limit - 1);
-
-    if (error) {
-      console.error("fetchQuestionsFast error:", error);
-      return [];
-    }
-
-    return data || [];
-  };
-  // 🔹 Enrich questions with likes, comments & quiz title
-  const enrichQuestions = async (questions: any[]) => {
-    if (!questions.length) return [];
-
-    const ids = questions.map((q) => q.id);
-    const quizIds = [...new Set(questions.map((q) => q.quiz_id))];
-
-    const [
-      { data: likes },
-      { data: comments },
-      { data: quizzes },
-    ] = await Promise.all([
-      supabase
-        .from("qfeed_likes")
-        .select("question_id, user_id")
-        .in("question_id", ids),
-
-      supabase
-        .from("qfeed_comments")
-        .select("id, question_id")
-        .in("question_id", ids),
-
-      supabase
-        .from("quizzes")
-        .select("id, title")
-        .in("id", quizIds),
-    ]);
-
-    // Normalize
-    const likesMap = new Map<string, any[]>();
-    likes?.forEach((l) => {
-      if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
-      likesMap.get(l.question_id)!.push(l);
-    });
-
-    const commentsCountMap = new Map<string, number>();
-    comments?.forEach((c) => {
-      commentsCountMap.set(
-        c.question_id,
-        (commentsCountMap.get(c.question_id) || 0) + 1
-      );
-    });
-
-    const quizTitleMap = new Map<string, string>();
-    quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
-
-    return questions.map((q) => ({
       ...q,
       qfeed_likes: likesMap.get(q.id) || [],
       comments_count: commentsCountMap.get(q.id) || 0,
@@ -733,19 +664,30 @@ export default function Feed() {
     setAnswers(newAnswers);
 
     // Increment count only the first time answering this question
+    // Increment count only the first time answering this question
     setQuestionCount((prev) => {
       const newCount = prev + 1;
       localStorage.setItem(`feed_count_${user.id}`, newCount);
       return newCount;
     });
 
+    // ✅ Fetch questions safely from localStorage
+    const freshData = JSON.parse(localStorage.getItem(`feed_questions_${user.id}`) || '[]');
+
+    // ✅ Ensure it's an array before using .filter
+    const fresh = Array.isArray(freshData) ? freshData : [];
+
+    // ✅ Filter out answered questions
+    const unansweredFresh = fresh.filter(q => !newAnswers[q.id]); // use newAnswers, not old answers
+
+    // ✅ Save back to localStorage
     localStorage.setItem(
-      `feed_answers_${user.id}`,
-      JSON.stringify(newAnswers)
+      `feed_questions_${user.id}`,
+      JSON.stringify(unansweredFresh)
     );
+
+
   };
-
-
   // Toggle like question
   const toggleLike = async (questionId, liked) => {
     if (!user) return alert("Login first!");
@@ -1012,7 +954,7 @@ export default function Feed() {
           ref={scrollContainerRef}   // ✅ add this
           className="p-4 max-w-2xl mx-auto space-y-4
              h-[80vh] overflow-y-auto overflow-x-hidden
-             scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-transparent scroll-container"
+             scrollbar-thin scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent scroll-container"
         >
 
 
@@ -1096,26 +1038,39 @@ export default function Feed() {
                   <Button
                     className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
                     variant="ghost"
-
                     onClick={async () => {
+                      // ✅ Detailed confirmation message
+                      const confirmed = window.confirm(
+                        "Are you absolutely sure you want to reset all your seen images? " +
+                        "This action cannot be undone. Once reset, you will be able to see all " +
+                        "images you have viewed before, as if you are seeing them for the first time. " +
+                        "Your history of seen images will be completely cleared."
+                      );
+                      if (!confirmed) return; // Stop if user cancels
+
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) return;
 
-                      await supabase.from("seen_images").delete().eq("user_id", user.id);
+                      try {
+                        await supabase.from("seen_images").delete().eq("user_id", user.id);
 
-                      const { data: newImages, error } = await supabase
-                        .from("qfeed_images")
-                        .select("*")
-                        .order("created_at", { ascending: true });
+                        const { data: newImages, error } = await supabase
+                          .from("qfeed_images")
+                          .select("*")
+                          .order("created_at", { ascending: true });
 
-                      if (error) {
-                        console.error(" Failed to reload images:", error);
-                        alert(" Failed to reload images.");
-                        return;
+                        if (error) {
+                          console.error("Failed to reload images:", error);
+                          alert("Failed to reload images.");
+                          return;
+                        }
+
+                        setFeedImages(newImages);
+                        alert("Reset complete! You can now see all images again.");
+                      } catch (err) {
+                        console.error("Reset images failed:", err);
+                        alert("Failed to reset images. Check console for details.");
                       }
-
-                      setFeedImages(newImages);
-                      alert("Reset complete! Images refreshed silently.");
                     }}
                   >
                     <RotateCcw size={20} />
@@ -1125,18 +1080,24 @@ export default function Feed() {
                   <p>Reset images</p>
                 </TooltipContent>
               </Tooltip>
+
               {/*  Reset My Seen Questions Button (mobile + desktop friendly) */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
                     variant="ghost"
-
                     onClick={async () => {
-                      console.log(" Starting reset...");
+                      // ✅ Ask for confirmation
+                      const confirmed = window.confirm(
+                        "Are you sure you want to reset? This will clear all your history and cannot be undone. You will see all previously attempted questions again."
+                      );
+                      if (!confirmed) return; // Stop if user cancels
+
+                      console.log("Starting reset...");
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) {
-                        console.warn(" No user found!");
+                        console.warn("No user found!");
                         alert("Please log in first!");
                         return;
                       }
@@ -1148,7 +1109,7 @@ export default function Feed() {
                           .eq("user_id", user.id);
 
                         if (error) throw error;
-                        console.log(" qfeed_seen cleared for user:", user.id);
+                        console.log("qfeed_seen cleared for user:", user.id);
 
                         localStorage.removeItem(`feed_questions_${user.id}`);
                         localStorage.removeItem(`feed_answers_${user.id}`);
@@ -1160,7 +1121,7 @@ export default function Feed() {
                         setQuestionCount(0);
                         alert("All seen questions have been reset!");
                       } catch (err) {
-                        console.error(" Reset failed:", err);
+                        console.error("Reset failed:", err);
                         alert("Failed to reset. Check console for details.");
                       }
                     }}
@@ -1173,6 +1134,8 @@ export default function Feed() {
                   <p>Reset questions</p>
                 </TooltipContent>
               </Tooltip>
+
+
               <Tooltip>
                 <TooltipTrigger asChild>
 
@@ -1297,7 +1260,8 @@ export default function Feed() {
                 ref={index === questions.length - 1 ? loaderRef : null}
 
               >
-                <Card className="relative bg-white/40 dark:bg-gray-800/60 backdrop-blur-md border border-gray-300/30 dark:border-gray-700/30 shadow-lg rounded-2xl overflow-hidden transition-all hover:shadow-xl hover:border-gray-400/50">
+                <Card className="relative bg-transparent dark:bg-transparent border-0 shadow-none rounded-2xl overflow-hidden transition-all hover:shadow-none">
+
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (
                     <>
@@ -1501,18 +1465,30 @@ export default function Feed() {
               cards.push(
                 <div key={`load-more-${index}`} className="flex justify-center py-6">
                   <Button
-                    onClick={loadMore}
+                    onClick={() => {
+                      // Vibrate 60ms
+                      if (navigator.vibrate) navigator.vibrate(60);
+
+                      // Play tap sound
+                      if (tapAudio) {
+                        tapAudio.currentTime = 0; // restart if already playing
+                        tapAudio.play().catch((err) => console.warn("Audio play failed", err));
+                      }
+
+                      // Original loadMore function
+                      loadMore();
+                    }}
                     disabled={loading}
                     className="
-          px-8 py-3
-          text-base font-semibold
-          rounded-full
-          bg-blue-600 hover:bg-blue-700
-          text-white
-          shadow-md
-          transition
-          flex items-center gap-2
-        "
+    px-8 py-3
+    text-base font-semibold
+    rounded-full
+    bg-blue-600 hover:bg-blue-700
+    text-white
+    shadow-md
+    transition
+    flex items-center gap-2
+  "
                   >
                     {loading ? (
                       <>
@@ -1541,6 +1517,7 @@ export default function Feed() {
                       "Load more questions"
                     )}
                   </Button>
+
                 </div>
               );
             }
@@ -1723,14 +1700,47 @@ export default function Feed() {
                         </label>
 
                         {/* Upload button */}
-                        <Button
-                          onClick={handleImageUpload}
-                          disabled={uploading || uploadFiles.length === 0}
-                          variant="ghost"
-                          className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          <Upload className="w-5 h-5 text-gray-700 dark:text-gray-200" />
-                        </Button>
+                        <div className="relative w-full flex flex-col items-center">
+                          {/* Upload button */}
+                          <Button
+                            onClick={handleImageUpload}
+                            disabled={uploading || uploadFiles.length === 0}
+                            variant="ghost"
+                            className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {uploading ? (
+                              <>
+                                <svg
+                                  className="animate-spin w-5 h-5 text-gray-700 dark:text-gray-200"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                  ></path>
+                                </svg>
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+                                Upload
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
 
                         {/* Subtitle */}
                         <p className="mt-2 text-gray-600 dark:text-gray-400 text-xs sm:text-sm text-center">
@@ -1823,8 +1833,7 @@ export default function Feed() {
                   Comments
                 </DialogTitle>
               </DialogHeader>
-
-              <div className="overflow-y-auto scrollbar scrollbar-thumb-blue-500/60 dark:scrollbar-thumb-blue-400/50 scrollbar-track-transparent">
+              <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent">
 
                 {comments.map((c) => {
                   const isReply = !!c.parent_id;
@@ -1897,7 +1906,7 @@ export default function Feed() {
 
               <div
                 id="leaderboard-desc"
-                className="overflow-y-auto scrollbar scrollbar-thumb-blue-500/60 dark:scrollbar-thumb-blue-400/50 scrollbar-track-transparent">
+                className="overflow-y-auto scrollbar scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent">
 
 
                 <AnimatePresence>
@@ -1982,6 +1991,45 @@ export default function Feed() {
             </DialogContent>
           </Dialog>
         </div>
+        {uploading && (
+          <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm text-white">
+            <svg
+              className="animate-spin w-12 h-12 mb-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+            <p className="text-lg font-semibold text-center mb-4">
+              Uploading images…<br />
+              Do not leave the page or close the browser.
+            </p>
+            <button
+              onClick={() => {
+                // Abort all ongoing uploads
+                uploadControllers.current.forEach((c) => c.abort());
+                setUploading(false);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+            >
+              Leave
+            </button>
+          </div>
+        )}
+
 
       </PullToRefresh >
     </>

@@ -224,7 +224,7 @@ export default function MyMistakes() {
                 <h1 className="text-2xl font-bold mb-2">My Mistakes</h1>
                 <p className="text-gray-600 dark:text-gray-300">
                     Review questions you answered incorrectly. Green highlights the correct
-                    answer, red shows what you chose. Mark as “understood” when you’ve mastered it.
+                    answer, answers with "your choice" shows what you chose. Mark as “understood” when you’ve mastered it.
                 </p>
                 <p className="text-gray-500 dark:text-gray-400 mt-1">
                     You have {mistakeCount} unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
@@ -240,8 +240,10 @@ export default function MyMistakes() {
                         exit={{ opacity: 0, x: -300, transition: { duration: 0.4, type: "spring", stiffness: 150 } }}
                         layout
                     >
-                        <Card className="overflow-hidden">
-                            <CardHeader>
+                        <Card className="overflow-visible bg-transparent border-0 shadow-none rounded-none">
+
+                            <CardHeader className="p-0">
+
                                 <CardTitle className="text-base sm:text-lg">
                                     Q{i + 1}: {m.questions.question_text}
                                 </CardTitle>
@@ -264,10 +266,9 @@ export default function MyMistakes() {
                                     return (
                                         <div
                                             key={letter}
-                                            className={`px-3 py-2 rounded-md border ${isCorrect
-                                                ? "bg-green-100 dark:bg-green-800 border-green-500"
-                                                : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                                                } flex justify-between items-center`}
+                                            className={`px-3 py-2 flex justify-between items-center
+                ${isCorrect ? "bg-green-100 dark:bg-green-800" : "bg-gray-100 dark:bg-gray-700"}
+            `}
                                         >
                                             <span>
                                                 <strong>{letter}.</strong> {optionText}
@@ -285,6 +286,7 @@ export default function MyMistakes() {
                                         </div>
                                     );
                                 })}
+
 
                                 {m.mistake_reason && (
                                     <div className={`mt-2 px-3 py-2 rounded-md border ${getReasonClass(m.mistake_reason)} text-black dark:text-white`}>

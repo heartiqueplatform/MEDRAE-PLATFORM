@@ -51,6 +51,9 @@ export default function QuizPage() {
   const location = useLocation();
   const QUESTIONS_PER_BATCH = 20;
   const [visibleCount, setVisibleCount] = useState(QUESTIONS_PER_BATCH);
+  // keeps answered questions visible while filter is ON
+  const [lockedVisible, setLockedVisible] = useState<Record<string, boolean>>({});
+  const [resetting, setResetting] = useState(false); // ✅ added
 
   const params = new URLSearchParams(location.search);
   const unit = params.get("unit");
@@ -578,18 +581,42 @@ export default function QuizPage() {
     // Save entire unit answers offline
     saveAnswersOffline(unit, updatedAnswers);
 
-    // Save individual question answer offline
-    saveNoteOffline(questionId, "You have answered this question before"); // just a flag, note_text can be used for actual notes
+    // Prepare a new note entry (encouraging note)
+    const now = new Date();
+    const date = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
+    const newEntry = `Hey! Great job! You answered this question on ${date} at ${time}. Keep up the good work! #Medrae`;
 
+    // Merge with existing note if any
+    const existingNote = notes[questionId] || "";
+    const updatedNote = existingNote ? existingNote + "\n" + newEntry : newEntry;
+
+    // Save individual question note offline
+    saveNoteOffline(questionId, updatedNote); // your offline storage function
+    localStorage.setItem(`note-${questionId}`, updatedNote);
+
+    // Update React state so panel shows immediately
+    setNotes(prev => ({ ...prev, [questionId]: updatedNote }));
+
+    // Update answers and feedback
     setAnswers(updatedAnswers);
-
     setRecentlyAnsweredId(questionId);
+    setFeedbackShown(prev => ({ ...prev, [questionId]: true }));
 
-    setFeedbackShown((prev) => ({ ...prev, [questionId]: true }));
+    // Save unit answers to localStorage
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
-    setQuestionStartTime(Date.now());
 
+    setQuestionStartTime(Date.now());
+    // 🔒 Keep this question visible when filter is ON
+    if (showUnansweredOnly) {
+      setLockedVisible(prev => ({
+        ...prev,
+        [questionId]: true,
+      }));
+    }
   };
+
+
 
   const handleReportQuestion = async (question: Question) => {
     // Single alert before opening overlay
@@ -703,18 +730,41 @@ Please provide a detailed discussion and guidance.`;
     setTimerEnd(newEnd);
     localStorage.setItem(`quiz-${quizId}-end`, newEnd.toString());
   };
+  const handleReset = async () => {
+    if (!quizId || resetting) return;
 
-  const handleReset = () => {
-    if (!quizId) return;
-    if (!window.confirm("Are you sure you want to reset this quiz? All your answers will be lost.")) {
-      return;
-    }
-    localStorage.removeItem(`quiz-${quizId}-answers`);
-    setAnswers({});
-    setFeedbackShown({});
-    setQuizFinished(false);
-    setFinalScore(0);
+    const confirmed = window.confirm(
+      "Reset & Restart Quiz\n\n" +
+      "This will:\n" +
+      "• Clear all your answers for this quiz\n" +
+      "• Remove explanations and feedback\n" +
+      "• Restart the quiz from the beginning\n\n" +
+      "This will NOT:\n" +
+      "• Delete your account\n" +
+      "• Affect other units or quizzes\n" +
+      "• Remove saved notes\n\n" +
+      "Do you want to continue?"
+    );
+
+    if (!confirmed) return;
+
+    setResetting(true); // 🔄 start animation
+
+    // small delay so user SEES animation
+    setTimeout(() => {
+      localStorage.removeItem(`quiz-${quizId}-answers`);
+      localStorage.removeItem(`quiz-${quizId}-end`);
+
+      setAnswers({});
+      setFeedbackShown({});
+      setLockedVisible({});
+      setQuizFinished(false);
+      setFinalScore(0);
+
+      setResetting(false); // ✅ stop animation
+    }, 600);
   };
+
 
   if (loading && questions.length === 0) {
     return <GlobalLoader message="Medrae is Loading quiz..." />;
@@ -723,13 +773,13 @@ Please provide a detailed discussion and guidance.`;
   if (questions.length === 0) return <p className="p-4">No questions found for: {unit}</p>;
   const filteredQuestions = showUnansweredOnly
     ? questions.filter(
-      q => !answers[q.id] || q.id === recentlyAnsweredId
+      q => !answers[q.id] || lockedVisible[q.id]
     )
     : questions;
 
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-10 max-w-7xl mx-auto px-0 sm:px-6 lg:px-8">
 
 
 
@@ -812,23 +862,54 @@ Please provide a detailed discussion and guidance.`;
           {/* Reset Quiz button */}
           <button
             onClick={handleReset}
-            className="relative group p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition flex items-center gap-1"
+            disabled={resetting}
+            className={`relative group p-2 rounded-full transition flex items-center gap-2
+    ${resetting ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95"}
+  `}
           >
-            <RotateCcw className="w-5 h-5 text-gray-800 dark:text-gray-200" />
+            {resetting ? (
+              // 🔄 SPINNER (YOUR SVG – UNCHANGED)
+              <svg
+                className="animate-spin h-4 w-4 text-gray-700 dark:text-gray-200"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
+              </svg>
+            ) : (
+              <RotateCcw className="w-5 h-5 text-gray-800 dark:text-gray-200" />
+            )}
+
             <span className="text-sm text-gray-800 dark:text-gray-200">
-              Reset Quiz
+              {resetting ? "Resetting…" : "Reset & Restart"}
             </span>
 
             {/* Tooltip */}
-            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-      opacity-0 group-hover:opacity-100
-      pointer-events-none
-      bg-gray-900 text-white text-[10px]
-      px-2 py-1 rounded-md whitespace-nowrap
-      transition shadow-lg z-50">
-              Reset Quiz
+            <span
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+    opacity-0 group-hover:opacity-100
+    pointer-events-none
+    bg-gray-900 text-white text-[10px]
+    px-2 py-1 rounded-md whitespace-nowrap
+    transition shadow-lg z-50"
+            >
+              {resetting ? "Resetting quiz…" : "Reset & restart this quiz"}
             </span>
           </button>
+
 
         </div>
 
@@ -862,17 +943,28 @@ Please provide a detailed discussion and guidance.`;
 
               {/* Question Card */}
               <div
-                className={`flex-1 p-4 border rounded-none sm:rounded-md shadow-none border-0 text-black dark:text-white transition-colors
-${understood[q.id]
+                className={`
+    flex-1
+     px-1.5 py-2      /* tiny horizontal padding for text breathing */
+    rounded-none
+    shadow-none
+    border-0
+    text-black dark:text-white
+    transition-colors
+    ${understood[q.id]
                     ? "bg-green-300 dark:bg-green-800"
                     : notUnderstood[q.id]
                       ? "bg-[#FF4C4C] dark:bg-[#800000]"
-                      : "bg-white dark:bg-gray-800"
-                  }`}
+                      : "bg-transparent dark:bg-transparent"
+                  }
+    sm:px-4 sm:py-4 sm:rounded-md sm:shadow-none sm:border-0
+  `}
               >
+
                 <p className="font-bold mb-2">Q{i + 1}: {q.question_text}</p>
 
-                <div className="ml-4 space-y-2 text-sm">
+                <div className="space-y-2 text-sm">
+
                   {["A", "B", "C", "D"].map((letter) => {
                     const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
                     const isSelected = selectedAnswer === letter;
@@ -881,14 +973,16 @@ ${understood[q.id]
                     return (
                       <button
                         key={letter}
-                        disabled={!!selectedAnswer || quizFinished}
-                        className={`w-full text-left px-3 py-2 rounded-none sm:rounded-md font-semibold border-0 transition-all duration-150
+                        className={`w-full text-left px-4 py-3 rounded-none sm:rounded-md font-semibold
+border-l-4 transition-all duration-150
 ${isSelected
                             ? correct
-                              ? "bg-green-500 dark:bg-green-600 border-green-700 dark:border-green-500 text-black dark:text-white"
-                              : "bg-red-500 dark:bg-red-600 border-red-700 dark:border-red-500 text-black dark:text-white"
-                            : "bg-yellow-400 dark:bg-amber-700 border-yellow-600 dark:border-amber-600 text-black dark:text-white dark:drop-shadow-md hover:bg-blue-500 dark:hover:bg-blue-800"
-                          } ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
+                              ? "bg-green-500 dark:bg-green-600 border-l-green-800 text-black dark:text-white"
+                              : "bg-red-500 dark:bg-red-600 border-l-red-800 text-black dark:text-white"
+                            : "bg-yellow-400 dark:bg-amber-700 border-l-yellow-600 text-black dark:text-white hover:bg-blue-500 dark:hover:bg-blue-800"
+                          }
+${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
+
                         onClick={async () => {
                           if (!!selectedAnswer || quizFinished) return;
 
@@ -899,6 +993,10 @@ ${isSelected
                           }
 
                           const correct = q.correct_answer === letter;
+                          // ✅ SHOW REASON BOX IMMEDIATELY (NO DELAY)
+                          if (!correct) {
+                            setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
+                          }
                           // ✅ VIBRATION
                           if (navigator.vibrate) {
                             if (correct) {
@@ -939,9 +1037,17 @@ ${isSelected
                           handleAnswer(q.id, letter);
 
                           // 5️⃣ RECORD MISTAKE IF WRONG
+                          // 5️⃣ RECORD MISTAKE IF WRONG
                           if (!correct) {
-                            const { data: { user } } = await supabase.auth.getUser();
-                            if (user) {
+
+                            // ✅ SHOW REASON BOX IMMEDIATELY (NO WAIT)
+                            setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
+
+                            // 🔄 SAVE TO SUPABASE IN BACKGROUND (PRESERVES TAGGING)
+                            (async () => {
+                              const { data: { user } } = await supabase.auth.getUser();
+                              if (!user) return;
+
                               try {
                                 // Upsert first attempt
                                 await supabase.from("user_mistakes").upsert(
@@ -963,14 +1069,12 @@ ${isSelected
                                   selected_option: letter,
                                 });
 
-                                // ✅ SHOW REASON BOX FOR THIS QUESTION
-                                setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
-
                               } catch (error) {
                                 console.error("Error recording mistake:", error);
                               }
-                            }
+                            })();
                           }
+
                         }}
                       >
                         <div className="flex justify-between items-center relative">
@@ -1158,9 +1262,10 @@ Please provide a detailed discussion and guidance.`;
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
                           Additional Explanation
                         </h3>
-                        <pre className="text-base font-sans bg-gray-100 dark:bg-gray-700 p-4 whitespace-pre-wrap rounded-3xl">
+                        <pre className="text-base font-sans p-0 m-0 whitespace-pre-wrap text-black dark:text-white">
                           {q.additional}
                         </pre>
+
                       </div>
                     )}
 
@@ -1173,21 +1278,56 @@ Please provide a detailed discussion and guidance.`;
                 {i === visibleCount - 1 && visibleCount < filteredQuestions.length && (
                   <div className="flex justify-center mt-8">
                     <button
-                      onClick={() =>
-                        setVisibleCount(prev => prev + QUESTIONS_PER_BATCH)
-                      }
-                      className="mt-4 px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all" >
+                      id="loadMoreBtn"
+                      className="mt-4 px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      onClick={async (e) => {
+                        const button = e.currentTarget as HTMLButtonElement;
+                        button.disabled = true;
+
+                        // Show spinner inside button
+                        const originalContent = button.innerHTML;
+                        button.innerHTML = `
+          <span class="flex items-center gap-1">
+            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            Loading...
+          </span>
+        `;
+
+                        // Vibrate device (60-70ms)
+                        if (navigator.vibrate) {
+                          const duration = Math.floor(Math.random() * (70 - 60 + 1) + 60);
+                          navigator.vibrate(duration);
+                        }
+
+                        // Play sound
+                        const audio = new Audio('/sounds/tap1.mp3');
+                        await audio.play();
+
+                        // Load more questions
+                        setVisibleCount(prev => prev + QUESTIONS_PER_BATCH);
+
+                        // Restore button content and enable
+                        button.innerHTML = originalContent;
+                        button.disabled = false;
+                      }}
+                    >
                       Load more questions
                     </button>
                   </div>
                 )}
+
               </div>
 
               {/* Small Note Card */}
-              <div className="w-full lg:w-1/3 p-4 border rounded-none sm:rounded-md shadow-none bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-black dark:text-white flex flex-col">
+              {/* Small Note Card */}
+              <div className="w-full lg:w-1/3 p-1.5 sm:px-4 sm:py-4 rounded-md shadow-none border-0 bg-transparent dark:bg-transparent text-black dark:text-white flex flex-col">
 
                 {/* Header */}
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-2 px-2 lg:px-0">
+
                   <h2 className="font-bold">Notes Evaluation Panel</h2>
                 </div>
 
@@ -1206,7 +1346,8 @@ Please provide a detailed discussion and guidance.`;
                     saveNoteOffline(q.id, value).catch(err => console.error(err));
                   }}
 
-                  className="w-full flex-1 p-2 border rounded-none sm:rounded-md resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-2 h-32"
+                  className="w-full flex-1 p-2 border-0 resize-none bg-transparent text-black dark:text-white mb-2 min-h-[200px]"
+
                   placeholder="Take notes here..."
                 />
 
@@ -1418,7 +1559,7 @@ Please provide a detailed discussion and guidance.`;
                     onClick={async () => {
                       if (!userId || helpOthersDisabled[q.id]) return;
 
-                      const phone = prompt("Enter your WhatsApp number (with country code, e.g., +254712345678):");
+                      const phone = prompt("To help others in this question, Kindly Enter your WhatsApp number (with country code, e.g., +254712345678):");
                       if (!phone) return;
 
                       await saveNoteOffline(q.id, notes[q.id] || "");
@@ -1494,12 +1635,12 @@ Please provide a detailed discussion and guidance.`;
 
                   {notesOverlay === q.id && (
                     <div
-                      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-0"
                       onClick={() => setNotesOverlay(null)} // clicking the overlay closes it
                     >
 
                       <div
-                        className="bg-gray-50 dark:bg-gray-900 w-full max-w-4xl h-[90vh] rounded-none sm:rounded-md shadow-lg flex flex-col p-4 overflow-auto"
+                        className="bg-gray-50 dark:bg-gray-900 w-full h-[90vh] rounded-none sm:rounded-none shadow-lg flex flex-col p-4 overflow-auto"
                         onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
                       >
 
@@ -1524,9 +1665,9 @@ Please provide a detailed discussion and guidance.`;
                         {/* ============================
            GUIDE / INSTRUCTION SECTION
       ============================ */}
-                        <div className="mb-4 p-3 border rounded-none sm:rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
-                          <p className="font-semibold mb-1">How to Use This Panel:</p>
-                          <ul className="list-disc ml-5 space-y-1">
+                        <div className="w-full mb-4 border-0 bg-transparent text-black dark:text-white text-sm">
+                          <p className="font-semibold mb-1 pt-1">How to Use This Panel:</p>
+                          <ul className="list-disc ml-5 mb-4">
                             <li><strong>Take deeper notes</strong> about why you got it wrong/right.</li>
                             <li>Mark the question as <strong>Understood</strong> or <strong>Not Understood</strong>.</li>
                             <li>Track how many times you have <strong>Attempted</strong> it.</li>
@@ -1534,6 +1675,8 @@ Please provide a detailed discussion and guidance.`;
                             <li>Everything is auto-synced online and stored offline.</li>
                           </ul>
                         </div>
+
+
 
                         {/* ============================
            NOTES TEXTAREA
@@ -1547,8 +1690,9 @@ Please provide a detailed discussion and guidance.`;
                             // Save offline immediately
                             await saveNoteOffline(q.id, value);
                           }}
+                          className="w-full flex-1 p-2 border-0 resize-none bg-transparent text-black dark:text-white mb-2 min-h-[200px]"
+
                           placeholder="Take notes here..."
-                          className="w-full flex-1 p-3 border rounded-none sm:rounded-md resize-none bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-black dark:text-white mb-4"
                         />
 
                         {/* ============================

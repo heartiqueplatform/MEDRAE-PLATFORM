@@ -109,12 +109,13 @@ Keep practicing to improve your scores and reach your best results!`
         <div
             onClick={() => navigate("/progress")}
             className={`
-        rounded-3xl p-6 shadow-lg border
-        cursor-pointer hover:shadow-2xl transition-all active:scale-[0.97] select-none
-        flex flex-col md:flex-row items-start md:items-center gap-5 mt-4
-        bg-[${userTheme.background}] border-[${userTheme.border}]
-      `}
+    rounded-none p-6 shadow-none border-0
+    cursor-pointer hover:shadow-none transition-all active:scale-[0.97] select-none
+    flex flex-col md:flex-row items-start md:items-center gap-5 mt-4
+    bg-[${userTheme.background}]
+  `}
         >
+
             {/* Icon + Progress Ring */}
             <div className="flex-shrink-0 relative">
                 <div className={`p-4 bg-[${userTheme.iconBg}] rounded-full shadow-md flex items-center justify-center`}>

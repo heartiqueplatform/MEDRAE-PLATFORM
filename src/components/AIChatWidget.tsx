@@ -151,23 +151,23 @@ export default function AIChatWidget() {
     ]);
 
     try {
-const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
-  body: { message: input, user_id: currentUser?.id },
-});
+      const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+        body: { message: input, user_id: currentUser?.id },
+      });
 
       if (error) throw error;
 
       // Replace typing with AI response
-  setMessages((prev) =>
-  prev.map((msg) =>
-    msg.content === "<TypingBubbles />"
-      ? {
-          ...msg,
-          content: data?.reply || "Oops! Could not generate a response. Check your connection.",
-        }
-      : msg
-  )
-);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.content === "<TypingBubbles />"
+            ? {
+              ...msg,
+              content: data?.reply || "Oops! Could not generate a response. Check your connection.",
+            }
+            : msg
+        )
+      );
 
 
       // Save AI response to Supabase
@@ -185,9 +185,9 @@ const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
         prev.map((msg) =>
           msg.content === "<TypingBubbles />"
             ? {
-                ...msg,
-                content: "Oops! You seem offline. Connect to the internet first.",
-              }
+              ...msg,
+              content: "Oops! You seem offline. Connect to the internet first.",
+            }
             : msg
         )
       );
@@ -214,142 +214,152 @@ const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
       alert("Failed to delete messages.");
     }
   };
-{isHistoryLoading && (
-  <div className="absolute bottom-6 right-6">
-    <GlobalLoader message="Loading chat history..." />
-  </div>
-)}
+  {
+    isHistoryLoading && (
+      <div className="absolute bottom-6 right-6">
+        <GlobalLoader message="Loading chat history..." />
+      </div>
+    )
+  }
 
 
   return (
     <>
       {!open && (
         <Button
-          className="fixed bottom-6 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white animate-bounce"
+          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white animate-bounce"
           onClick={() => setOpen(true)}
         >
           <MessageCircle size={48} className="drop-shadow-xl text-white" />
         </Button>
       )}
 
-{open && (
-  <div
-    className="fixed inset-0 z-50 bg-black/50 flex items-end justify-end p-6"
-  >
-    <Card
-      className={`w-80 shadow-2xl border rounded-2xl pointer-events-auto
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-end justify-end px-0 pb-24"
+
+
+        >
+          <Card
+            className={`w-full sm:w-96 shadow-2xl border rounded-2xl pointer-events-auto
+
         ${isDarkTheme ? "bg-gray-900 border-gray-800" : "bg-white border-gray-300"}`}
-    >
+          >
 
 
-<CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
-  <div className="flex items-center gap-2">
-    <Stethoscope size={20} />
-    <h3 className="font-semibold">Medrae AI Assistance</h3>
-  </div>
+            <CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
+              <div className="flex items-center gap-2">
+                <Stethoscope size={20} />
+                <h3 className="font-semibold">Medrae AI Assistance</h3>
+              </div>
 
-  <div className="flex gap-2">
-    <Button
-      variant="ghost"
-      size="icon"
-      className="text-red-600 hover:bg-red-100"
-      onClick={deleteChat}
-    >
-      <Trash2 size={20} />
-    </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-red-600 hover:bg-red-100"
+                  onClick={deleteChat}
+                >
+                  <Trash2 size={20} />
+                </Button>
 
-    <Button
-      variant="ghost"
-      size="icon"
-      className="text-white hover:bg-gray-200"
-      onClick={() => setOpen(false)}
-    >
-      <X size={20} />
-    </Button>
-  </div>
-</CardHeader>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-gray-200"
+                  onClick={() => setOpen(false)}
+                >
+                  <X size={20} />
+                </Button>
+              </div>
+            </CardHeader>
 
-<CardContent
-  className={`flex flex-col h-96 p-2 overflow-hidden rounded-xl ${
-    isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"
-  }`}
->
+            <CardContent
+              className={`flex flex-col h-96 p-2 overflow-hidden rounded-xl ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"
+                }`}
+            >
 
-          <div
-  ref={scrollRef}
-  className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
+              <div
+                ref={scrollRef}
+                className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
              scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
->
-
-              {messages.map((msg, idx) => {
-                const formattedTime = new Date(msg.timestamp).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                });
-
-                const isTyping = msg.content === "<TypingBubbles />";
-
-                return (
-                  <div key={idx}>
-                    {msg.role === "user" ? (
-                      <div className="flex flex-col items-end">
-                        <div className="flex items-end gap-2">
-                          <div className="p-2 bg-blue-500 text-white rounded-full">
-                            <MessageCircle size={24} className="text-white drop-shadow-xl" />
-                          </div>
-                          <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-500 text-white">
-                            {stripMarkdown(msg.content)}
-                          </div>
-                        </div>
-                        <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
-                          {formattedTime}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-start gap-1">
-                        <div className="flex items-start gap-2">
-                          <div className="p-2 bg-teal-600 text-white rounded-full">
-                            <Stethoscope size={24} className="text-white drop-shadow-xl" />
-                          </div>
-                          <div className="p-2 rounded-xl max-w-[95%] shadow bg-teal-100 text-teal-900">
-                            {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
-                          </div>
-                        </div>
-                        <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
-                          {formattedTime}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex space-x-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about Nursing..."
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                className="border-blue-300 focus:ring-blue-500"
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <Send size={24} className="text-white drop-shadow-lg" />
-              </Button>
-            </div>
-          </CardContent>
-          </Card>
-  </div>
-)}
 
-      
+                {messages.map((msg, idx) => {
+                  const formattedTime = new Date(msg.timestamp).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  });
+
+                  const isTyping = msg.content === "<TypingBubbles />";
+
+                  return (
+                    <div key={idx}>
+                      {msg.role === "user" ? (
+                        <div className="flex flex-col items-end">
+                          <div className="flex items-end gap-2">
+                            <div className="p-2 bg-blue-500 text-white rounded-full">
+                              <MessageCircle size={24} className="text-white drop-shadow-xl" />
+                            </div>
+                            <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-500 text-white">
+                              {stripMarkdown(msg.content)}
+                            </div>
+                          </div>
+                          <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
+                            {formattedTime}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-start gap-1">
+                          <div className="flex items-start gap-2">
+                            <div className="p-2 bg-teal-600 text-white rounded-full">
+                              <Stethoscope size={24} className="text-white drop-shadow-xl" />
+                            </div>
+                            <div className="p-2 rounded-xl max-w-[95%] shadow bg-teal-100 text-teal-900">
+                              {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
+                            </div>
+                          </div>
+                          <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
+                            {formattedTime}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex space-x-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask about Nursing..."
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                  className="
+  bg-white text-gray-900 placeholder-gray-400
+  dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400
+  border border-blue-300 dark:border-gray-700
+  focus:ring-2 focus:ring-blue-500 dark:focus:ring-teal-500
+"
+
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Send size={24} className="text-white drop-shadow-lg" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+
     </>
   );
 }

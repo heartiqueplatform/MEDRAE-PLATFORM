@@ -258,7 +258,8 @@ export const DailyTriviaCard = () => {
         <div className="relative">
 
 
-            <Card className="rounded-3xl overflow-hidden border border-blue-300 dark:border-blue-800 relative">
+            <Card className="rounded-none overflow-hidden border-0 relative bg-white dark:bg-gray-900 shadow-none">
+
                 <CardHeader className="bg-blue-50 dark:bg-blue-900/40">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -292,13 +293,18 @@ export const DailyTriviaCard = () => {
                     ) : (
                         <div className="w-full min-h-[200px]">
                             <motion.div>
-                                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow">
-                                    <p className="font-semibold mb-2">{questions[currentIndex]?.question_text}</p>
+                                <div className="w-full bg-gray-50 dark:bg-gray-900 text-black dark:text-white rounded-3xl">
 
-                                    <div
-                                        className="flex flex-col gap-2 max-h-[250px] overflow-hidden select-none"
-                                        style={{ overscrollBehavior: "contain" }} // prevent overscroll scrolling
-                                    >
+                                    {/* Question number */}
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                        Question {currentIndex + 1} of {questions.length}
+                                    </p>
+
+                                    {/* Question text */}
+                                    <p className="font-semibold text-lg mb-6">{questions[currentIndex]?.question_text}</p>
+
+                                    {/* Answers */}
+                                    <div className="flex flex-col gap-4">
                                         {(["A", "B", "C", "D"] as const).map((letter) => {
                                             const text =
                                                 letter === "A"
@@ -313,44 +319,37 @@ export const DailyTriviaCard = () => {
 
                                             const handleClick = () => {
                                                 if (!started || completed) return;
-
                                                 if (navigator.vibrate) navigator.vibrate(50);
-                                                const audio = new Audio("/sounds/tap1.mp3");
-                                                audio.play().catch(() => { });
-
+                                                new Audio("/sounds/tap1.mp3").play().catch(() => { });
                                                 setAnswers((prev) => ({ ...prev, [questions[currentIndex].id]: letter }));
-
                                                 setTimeout(() => {
-                                                    if (currentIndex === questions.length - 1) {
-                                                        finishTrivia({ ...answers, [questions[currentIndex].id]: letter });
-                                                    } else {
-                                                        setCurrentIndex((i) => i + 1);
-                                                    }
-                                                }, 500);
+                                                    if (currentIndex === questions.length - 1) finishTrivia({ ...answers, [questions[currentIndex].id]: letter });
+                                                    else setCurrentIndex((i) => i + 1);
+                                                }, 300);
                                             };
 
                                             return (
                                                 <motion.div
                                                     key={letter}
-                                                    whileTap={{ scale: 1.05, y: -2 }}
+                                                    whileTap={{ scale: 1.2 }}
                                                     transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                                                    className="flex items-start gap-4 cursor-pointer"
+                                                    onClick={handleClick}
                                                 >
-                                                    <Button
-                                                        variant={isSelected ? "default" : "outline"}
-                                                        disabled={completed}
-                                                        className={`w-full px-4 py-3 justify-start text-left whitespace-normal break-words transition-colors duration-300 ${isSelected ? "bg-blue-600 text-white" : ""
-                                                            }`}
-                                                        onClick={handleClick}
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center
+              ${isSelected ? "bg-blue-600 border-blue-600" : "border-gray-400 bg-white dark:bg-gray-800"}`}
                                                     >
-                                                        {text}
-                                                    </Button>
+                                                        {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                                    </div>
+                                                    <p className="text-sm break-words">{text}</p>
                                                 </motion.div>
                                             );
                                         })}
                                     </div>
-
                                 </div>
                             </motion.div>
+
+
                         </div>
                     )}
                     <div className="flex flex-col md:flex-row justify-between items-start mt-4">

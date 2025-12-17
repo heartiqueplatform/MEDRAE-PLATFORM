@@ -348,7 +348,8 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
 
 
   return (
-    <div className="fixed bottom-4 right-4 flex flex-col gap-2 items-end z-50">
+    <div className="fixed bottom-24 right-4 flex flex-col gap-2 items-end z-50">
+
       <div className="relative">
         {/* Toggle Chat Icon */}
         <Button
@@ -380,7 +381,7 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
             {/* Panel Header with Title and Close */}
             <div className="flex justify-between items-center mb-1">
               <div className="text-xs font-medium text-muted-foreground">
-                Select a unit
+                Select a unit to join
               </div>
               <Button
                 size="icon"

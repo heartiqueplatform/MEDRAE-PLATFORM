@@ -7,6 +7,7 @@ import { Bell, Moon, Sun, User, Menu, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useSidebar } from "@/components/ui/sidebar";
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
@@ -39,6 +40,8 @@ export function Header({
 
   const navigate = useNavigate();
   const authUser = useUser();
+  const { toggleSidebar } = useSidebar();
+
   const [streak, setStreak] = useState(propStreak);
   const isOnline = useOnlineStatus();
   const [notificationCount, setNotificationCount] = useState(0);
@@ -189,6 +192,14 @@ export function Header({
 
       <div className="flex items-center flex-1 justify-between">
 
+        {/* Desktop Sidebar Toggle */}
+        <button
+          onClick={toggleSidebar}
+          className="hidden lg:flex flex-col items-center justify-center px-3 py-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
+        >
+          <Menu className="h-5 w-5" />
+          <span className="text-[11px] font-medium mt-0.5">Menu</span>
+        </button>
 
         {/* Center scrolling text */}
         <div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">
@@ -200,6 +211,8 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-2 xl:gap-6">
+
+
         <div className="flex flex-col items-center space-y-1">
           {isOnline ? (
             <>

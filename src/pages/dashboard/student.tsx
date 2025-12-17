@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast as sonnerToast } from "sonner"; // ✅ renamed
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import FriendlyProgressCard from "@/components/FriendlyProgressCard";
-
+import FloatingQuickActions from "@/components/FloatingQuickActions";
 import MistakeCard from "@/components/MistakeCard";
 
 import { Badge } from "@/components/ui/badge";
@@ -915,10 +915,11 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-6 min-h-screen md:min-h-auto bg-gray-100 dark:bg-gray-900 rounded-none sm:rounded-md">
+    <div className="min-h-screen md:min-h-auto rounded-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+
 
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-3xl p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-none p-6 text-white">
         <h1 className="text-2xl md:text-3xl font-bold mb-2">
           {name ? (() => {
             const now = new Date();
@@ -1022,7 +1023,49 @@ export default function StudentDashboard() {
           })()}
         </p>
       </div>
-
+      {/* Upcoming Redletter Dates / Revision Schedule Card */}
+      <Card
+        className="rounded-md bg-white/5 dark:bg-gray-800 p-4 mt-4 cursor-pointer hover:bg-white/10 dark:hover:bg-gray-700/30 transition-colors"
+        onClick={() => navigate("/calendar")}
+      >
+        <CardHeader className="flex items-center space-x-2">
+          <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
+          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+            Your Upcoming Revision Schedule
+          </CardTitle>
+        </CardHeader>
+        <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
+          Stay on track! Visit your calendar to plan and adjust your study timeline.
+        </CardDescription>
+        <CardContent className="space-y-2 mt-2">
+          {calendarEvents.length > 0 ? (
+            <div className="space-y-2">
+              {calendarEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
+                >
+                  <div className="truncate">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {event.title}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                      {event.type}
+                    </p>
+                  </div>
+                  <Badge className={getPriorityColor(event.priority)}>
+                    {new Date(event.start_time).toLocaleDateString()}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              You have no upcoming revisions. Visit your calendar to plan your schedule.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
 
       {/* Quick Stats */}
@@ -1031,7 +1074,7 @@ export default function StudentDashboard() {
         {/* Study Progress */}
         <Card
           className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none-lg"
+ shadow-none"
           style={{
             backgroundImage: "url('/background06.jpg')",
             backgroundSize: "cover",
@@ -1050,8 +1093,8 @@ export default function StudentDashboard() {
             <CardContent>
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-16 bg-white/30 rounded"></div>
-                  <div className="h-2 bg-white/30 rounded w-full mt-1"></div>
+                  <div className="h-8 w-16 bg-white/40/30 rounded"></div>
+                  <div className="h-2 bg-white/40/30 rounded w-full mt-1"></div>
                 </div>
               ) : (
                 <>
@@ -1066,7 +1109,7 @@ export default function StudentDashboard() {
         {/* Quizzes Completed */}
         <Card
           className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none-lg"
+ shadow-none"
           style={{
             backgroundImage: "url('/indexbackground7.jpg')",
             backgroundSize: "cover",
@@ -1085,8 +1128,8 @@ export default function StudentDashboard() {
             <CardContent>
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-16 bg-white/30 rounded"></div>
-                  <div className="h-2 w-12 bg-white/30 rounded"></div>
+                  <div className="h-8 w-16 bg-white/40/30 rounded"></div>
+                  <div className="h-2 w-12 bg-white/40/30 rounded"></div>
                 </div>
               ) : (
                 <>
@@ -1100,7 +1143,7 @@ export default function StudentDashboard() {
 
         {/* Average Score */}
         <Card className="relative cursor-pointer overflow-hidden rounded-none sm:rounded-md
- shadow-none-lg">
+ shadow-none">
           <div
             className="absolute inset-0"
             style={{
@@ -1120,8 +1163,8 @@ export default function StudentDashboard() {
             <CardContent>
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-16 bg-white/30 rounded"></div>
-                  <div className="h-2 w-20 bg-white/30 rounded"></div>
+                  <div className="h-8 w-16 bg-white/40/30 rounded"></div>
+                  <div className="h-2 w-20 bg-white/40/30 rounded"></div>
                 </div>
               ) : (
                 <>
@@ -1138,7 +1181,7 @@ export default function StudentDashboard() {
         {/* Current Streak */}
         <Card
           className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none-lg"
+ shadow-none"
           style={{
             backgroundImage: "url('/indexbackground5.jpg')",
             backgroundSize: "cover",
@@ -1155,8 +1198,8 @@ export default function StudentDashboard() {
             <CardContent>
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-20 bg-white/30 rounded"></div>
-                  <div className="h-2 w-16 bg-white/30 rounded"></div>
+                  <div className="h-8 w-20 bg-white/40/30 rounded"></div>
+                  <div className="h-2 w-16 bg-white/40/30 rounded"></div>
                 </div>
               ) : (
                 <>
@@ -1171,7 +1214,7 @@ export default function StudentDashboard() {
         {/* Best Streak */}
         <Card
           className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none-lg"
+ shadow-none"
           style={{
             backgroundImage: "url('/indexbackground2.jpg')",
             backgroundSize: "cover",
@@ -1188,8 +1231,8 @@ export default function StudentDashboard() {
             <CardContent>
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-20 bg-white/30 rounded"></div>
-                  <div className="h-2 w-16 bg-white/30 rounded"></div>
+                  <div className="h-8 w-20 bg-white/40/30 rounded"></div>
+                  <div className="h-2 w-16 bg-white/40/30 rounded"></div>
                 </div>
               ) : (
                 <>
@@ -1209,8 +1252,8 @@ export default function StudentDashboard() {
       <DailyTriviaCard />
 
       {/* 🏆 Top Students Leaderboard */}
-      <Card className="rounded-none sm:rounded-md
- shadow-none-lg w-full max-w-full overflow-hidden">
+      <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-white dark:bg-gray-900 border-0">
+
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Trophy className="h-5 w-5 text-yellow-500" />
@@ -1239,7 +1282,8 @@ export default function StudentDashboard() {
               {loadingTopStudents ? (
                 <div className="flex gap-4 animate-pulse">
                   {Array.from({ length: 4 }).map((_, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-none sm:rounded-md border-0 shadow-none-none bg-gray-200 dark:bg-gray-700">
+                    <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-md bg-gray-200 dark:bg-gray-700">
+
                       <div className="flex flex-col items-center text-center">
                         <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
                         <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
@@ -1269,13 +1313,14 @@ export default function StudentDashboard() {
                   return (
                     <div
                       key={s.userId}
-                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl border shadow-none bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
+                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
+
                     >
                       <div className="flex flex-col items-center text-center">
                         <img
                           src={s.avatar_url || "/UsersAvatar.jpg"}
                           alt={s.name}
-                          className="w-12 h-12 rounded-full mb-2 object-cover border border-white shadow-none"
+                          className="w-12 h-12 rounded-full mb-2 object-cover border-none shadow-none"
                         />
 
                         <h3
@@ -1316,23 +1361,21 @@ export default function StudentDashboard() {
             </div>
           </div>
         </CardContent>
-
         <Card
-          className="relative cursor-pointer hover:shadow-none-lg transition-shadow-none col-span-1 md:col-span-2 max-w-xl mx-auto rounded-none sm:rounded-md
- overflow-hidden"
+          className="relative cursor-pointer hover:shadow-none transition-shadow-none col-span-1 md:col-span-2 max-w-xl mx-auto rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-white dark:bg-gray-900"
           onClick={() => {
             if (navigator.vibrate) navigator.vibrate(50);
             navigate("/feed");
           }}
           style={{
-            backgroundColor: "var(--card-bg)",
+            backgroundColor: "inherit", // inherit from the bg-white / dark:bg-gray-900
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         >
+
           {/* Overlay */}
-          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-none sm:rounded-md
-"></div>
+          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-md sm:rounded-md"></div>
 
           <div className="relative z-20 p-4 flex flex-col justify-between h-full">
             {/* Card Heading */}
@@ -1347,10 +1390,11 @@ export default function StudentDashboard() {
             </CardHeader>
 
             <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
-              <p className="text-gray-700 dark:text-white/90 truncate">
+              <p className="text-gray-700 dark:text-white/90">
                 Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
                 The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
               </p>
+
 
               {/* Stats Row */}
               <div className="flex flex-col sm:flex-row justify-start items-center sm:items-start gap-6">
@@ -1409,8 +1453,8 @@ export default function StudentDashboard() {
 
               {/* Centered Button */}
               <div className="flex justify-center mt-3">
-                <Button
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-none-md transition-all transform hover:scale-105 hover:shadow-none-lg"
+                <div
+                  className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (navigator.vibrate) navigator.vibrate(50);
@@ -1428,17 +1472,20 @@ export default function StudentDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
                   </svg>
-                </Button>
+                  <span className="text-sm font-medium">Feed Page</span>
+                </div>
+
+
               </div>
             </CardContent>
           </div>
-        </Card>
+        </Card >
 
 
-      </Card>
+      </Card >
 
 
-      <Card className="lg:col-span-3 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none sm:rounded-md
+      <Card className="lg:col-span-3 w-full bg-white/40 dark:bg-gray-900 border-none rounded-none sm:rounded-md
  overflow-hidden">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
@@ -1451,11 +1498,12 @@ export default function StudentDashboard() {
           {/* Daily Thought Textarea */}
           <textarea
             className="w-full p-3 rounded-none sm:rounded-md
- bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
             placeholder="Write today's thought..."
             value={dailyContent}
             onChange={(e) => setDailyContent(e.target.value)}
           />
+
 
           {/* Visibility Selector */}
           <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
@@ -1484,7 +1532,7 @@ export default function StudentDashboard() {
           <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
             <label
               htmlFor="dailyImageUpload"
-              className="w-10 h-10 flex items-center justify-center cursor-pointer rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-none-md"
+              className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -1494,17 +1542,30 @@ export default function StudentDashboard() {
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z"
+                />
               </svg>
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                Choose Image
+              </span>
             </label>
 
-            <Button
+            {/* Send Button as rectangle tab */}
+            <div
               onClick={handlePostClick}
-              className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-none-md disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={uploading}
+              className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md
+      ${uploading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"}`}
             >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+              ) : (
+                <Send className="w-4 h-4 text-white" />
+              )}
+              <span className="text-sm font-medium text-white">Send</span>
+            </div>
           </div>
 
           {/* Daily Posts */}
@@ -1552,7 +1613,7 @@ export default function StudentDashboard() {
 
                       {/* Tiny Tooltip Overlay */}
                       {openProfileId === post.id && (
-                        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white dark:bg-gray-800 shadow-none-md text-center text-xs z-20">
+                        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white/40 dark:bg-gray-800 shadow-none-md text-center text-xs z-20">
                           <span className="font-semibold text-gray-900 dark:text-white block truncate">
                             {post.profiles?.full_name}
                           </span>
@@ -1627,7 +1688,8 @@ export default function StudentDashboard() {
       </Card>
 
       {/* Simulation Papers Section */}
-      <Card className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+      <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900">
+
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">
             Self Test SimuProctor Papers V1
@@ -1647,14 +1709,16 @@ export default function StudentDashboard() {
           </p>
 
           {/* Warning for users */}
-          <div className="mt-2 p-3 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm font-semibold">
+          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-red-800 dark:text-red-200 text-sm font-semibold shadow-none border-0">
             For the best experience and smoothest interaction, we recommend using a desktop or laptop. While some phones can run the simulation, using a larger device ensures optimal comfort and engagement.
           </div>
 
+
           {/* Extra Tip Box */}
-          <div className="mt-2 p-3 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs italic">
+          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-blue-800 dark:text-blue-200 text-xs italic shadow-none border-0">
             Tip: Treat each simulation as if it’s the real exam  no distractions, no breaks.
           </div>
+
         </CardHeader>
 
         <CardContent>
@@ -1664,10 +1728,10 @@ export default function StudentDashboard() {
               {Array.from({ length: 8 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 animate-pulse p-4 rounded-none sm:rounded-md
-"
+                  className="flex flex-col justify-between rounded-none sm:rounded-md bg-white dark:bg-gray-900 animate-pulse p-4 shadow-none border-0"
                   style={{ minHeight: "250px" }}
                 >
+
                   <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
                   <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-full mb-1"></div>
                   <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-5/6 mb-1"></div>
@@ -1682,8 +1746,8 @@ export default function StudentDashboard() {
                 simulationPapers.map((paper) => (
                   <Card
                     key={paper.id}
-                    className="flex flex-col justify-between cursor-pointer hover:shadow-none-lg transition-shadow-none border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-none sm:rounded-md
-"
+                    className="flex flex-col justify-between cursor-pointer hover:scale-105 transform transition-all rounded-none sm:rounded-md bg-white dark:bg-gray-900 shadow-none border border-gray-200 dark:border-gray-700"
+
                     onClick={async () => {
                       navigate(`/simulation/${paper.id}`);
                       const { data: userData } = await supabase.auth.getUser();
@@ -1763,7 +1827,8 @@ export default function StudentDashboard() {
         </CardContent>
       </Card>
       {/* New Unit Question Counts Section */}
-      <Card>
+      <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900">
+
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>QUIZZES NCK UNIT BREAKDOWN & NCLEX CLIENT NEEDS CATEGORY</CardTitle>
@@ -1773,7 +1838,7 @@ export default function StudentDashboard() {
           </div>
           <Button
             asChild
-            className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-none-md hover:shadow-none-lg"
+            className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-none-md hover:shadow-none"
           >
             <Link to="/Medrae-quizzes">Quizzes</Link>
           </Button>
@@ -1799,10 +1864,10 @@ export default function StudentDashboard() {
                 .map((unit) => (
                   <div
                     key={unit.unit_code}
-                    className="p-4 border-2 border-purple-500 rounded-none sm:rounded-md
- flex items-center justify-between bg-white dark:bg-gray-900 shadow-none-md hover:shadow-none-lg transform hover:scale-105 cursor-pointer"
+                    className="p-4 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
                     onClick={() => navigate('/Medrae-quizzes')}
                   >
+
                     <div>
                       {/* Text neutral colors */}
                       <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -1835,10 +1900,10 @@ export default function StudentDashboard() {
                 .map((unit) => (
                   <div
                     key={unit.unit_code}
-                    className="p-4 border rounded-none sm:rounded-md
- flex items-center justify-between hover:shadow-none-md transition-shadow-none cursor-pointer"
+                    className="p-4 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
                     onClick={() => navigate('/Medrae-quizzes')}
                   >
+
                     <div>
                       <p className="text-sm font-medium">{unit.unit}</p>
                       <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
@@ -1852,9 +1917,9 @@ export default function StudentDashboard() {
             Array.from({ length: 6 }).map((_, idx) => (
               <div
                 key={idx}
-                className="p-4 border rounded-none sm:rounded-md
- flex flex-col justify-between animate-pulse bg-gray-50 dark:bg-gray-800 min-h-[80px]"
+                className="p-4 rounded-none sm:rounded-md flex flex-col justify-between animate-pulse bg-white dark:bg-gray-900 min-h-[80px] shadow-none border-0"
               >
+
                 <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
                 <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>
               </div>
@@ -1871,7 +1936,7 @@ export default function StudentDashboard() {
 
         {/* Share App Card */}
         <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white dark:bg-gray-900">
+ shadow-none-md border bg-white/40 dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
             <CardDescription>
@@ -1924,7 +1989,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* WhatsApp Channel Card */}
         <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white dark:bg-gray-900">
+ shadow-none-md border bg-white/40 dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-primary" />
@@ -1954,7 +2019,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* WhatsApp Group Card */}
         <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white dark:bg-gray-900">
+ shadow-none-md border bg-white/40 dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-green-600" />
@@ -1984,7 +2049,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
 
         {/* Telegram Channel Card */}
         <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white dark:bg-gray-900">
+ shadow-none-md border bg-white/40 dark:bg-gray-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Send className="w-5 h-5 text-blue-600" />
@@ -2013,165 +2078,9 @@ Join the Medrae community today: https://medrae.vercel.app`;
         </Card>
 
         {/* Quick Actions Card */}
-        <Card
-          className="rounded-none sm:rounded-md
- shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64"
-          style={{
-            backgroundImage: loading ? "" : "url('/background04.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <CardHeader>
-            <CardTitle className="text-white">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
- h-10 w-full mx-auto"></div>
-            ) : (
-              <Button className="w-full justify-start rounded-none sm:rounded-md
-" variant="outline" asChild>
-                <Link to="/ai-assistant">
-                  <Brain className="mr-2 h-4 w-4" />
-                  Ask AI Assistant
-                </Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Redletter Dates Card */}
-        <Card
-          className="rounded-none sm:rounded-md
- shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
-          style={{
-            backgroundImage: "url('/background05.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <CardHeader>
-            <CardTitle className="text-white text-lg">UPCOMING REDLETTER DATES</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
- h-10 w-full"></div>
-                ))}
-              </div>
-            ) : calendarEvents.length > 0 ? (
-              calendarEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex flex-col sm:flex-row items-center justify-between p-2 rounded-none sm:rounded-md
- bg-white/20 backdrop-blur-sm w-full"
-                >
-                  <div className="truncate">
-                    <p className="text-sm font-medium text-white truncate">{event.title}</p>
-                    <p className="text-xs text-white/80 truncate">{event.type}</p>
-                  </div>
-                  <Badge className={getPriorityColor(event.priority)}>
-                    {new Date(event.start_time).toLocaleDateString()}
-                  </Badge>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-white/70">No upcoming assessments.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Premium / Subscription Card */}
-        <Card
-          className="rounded-none sm:rounded-md
- shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
-          style={{
-            backgroundImage: "url('/background03.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <CardHeader>
-            <CardTitle className="text-white text-lg">Go Premium / Subscription</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center">
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
- h-10 w-64"></div>
-            ) : (
-              <Button asChild className="w-full sm:w-64 bg-purple-500 hover:bg-purple-600 text-white rounded-none sm:rounded-md
-">
-                <Link to="/subscription">
-                  <Star className="mr-2 h-4 w-4" />
-                  Subscribe Now
-                </Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Candidate Simulation Card */}
-        <Card
-          className="rounded-none sm:rounded-md
- shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
-          style={{
-            backgroundImage: "url('/background02.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <CardHeader>
-            <CardTitle className="text-white text-lg">Candidate Simulation</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center">
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
- h-10 w-64"></div>
-            ) : (
-              <Button asChild className="w-full sm:w-64 bg-green-500 hover:bg-green-600 text-white rounded-none sm:rounded-md
-">
-                <Link to="/simulation/candidate">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Go to Simulation
-                </Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Resources Card */}
-        <Card
-          className="rounded-none sm:rounded-md
- shadow-none-md border cursor-pointer hover:shadow-none-lg transition-shadow-none h-64 overflow-hidden"
-          style={{
-            backgroundImage: "url('/background1.jpeg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <CardHeader>
-            <CardTitle className="text-white text-lg">Resources</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center">
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
- h-10 w-64"></div>
-            ) : (
-              <Button asChild className="w-full sm:w-64 bg-blue-500 hover:bg-blue-600 text-white rounded-none sm:rounded-md
-">
-                <Link to="/resources">
-                  <ListChecks className="mr-2 h-4 w-4" />
-                  Access Resources
-                </Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <FloatingQuickActions />
 
       </div>
-    </div>
+    </div >
   );
 }

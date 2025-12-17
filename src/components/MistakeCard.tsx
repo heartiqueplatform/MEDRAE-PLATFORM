@@ -95,8 +95,8 @@ export default function MistakeCard() {
     }, []);
 
     const baseCardClass =
-        "cursor-pointer rounded-xl p-4 shadow-md border flex flex-col sm:flex-row items-start sm:items-center justify-between hover:shadow-lg transition-all select-none";
-    const themedCardClass = `${baseCardClass} bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700`;
+        "cursor-pointer rounded-none p-4 shadow-none border-0 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:shadow-none transition-all select-none";
+    const themedCardClass = `${baseCardClass} bg-white dark:bg-gray-900`;
 
     const handleAnimationEnd = () => setAnimate(false);
 

@@ -171,33 +171,15 @@ body,
   }
 }
 
-/* ✅ Custom slim, themed scrollbar */
+/* ✅ Hide scrollbar but keep scrolling */
 .custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) transparent;
+  -ms-overflow-style: none;
+  /* IE & Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
-/* WebKit (Chrome, Edge, Safari) */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--scroll-thumb);
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* 🌞 Light mode */
-:root {
-  --scroll-thumb: rgba(100, 100, 100, 0.3);
-}
-
-/* 🌙 Dark mode */
-.dark {
-  --scroll-thumb: rgba(255, 255, 255, 0.25);
+  display: none;
+  /* Chrome, Safari, Opera */
 }
