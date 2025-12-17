@@ -20,7 +20,7 @@ export default function FloatingQuickActions() {
     }, []);
 
     return (
-        <div className="fixed top-24 right-2 sm:right-4 z-50 flex flex-col gap-5">
+        <div className="fixed top-16 right-2 sm:right-4 z-50 flex flex-col gap-4">
             {actions.map((action) => {
                 const Icon = action.icon;
                 const bgClass = theme === "dark" ? action.bgDark : action.bgLight;
@@ -44,7 +44,7 @@ export default function FloatingQuickActions() {
                             to={action.href}
                             className={`${bgClass} h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center text-white shadow-lg transition hover:scale-105 active:scale-95`}
                         >
-                            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Link>
                     </div>
                 );

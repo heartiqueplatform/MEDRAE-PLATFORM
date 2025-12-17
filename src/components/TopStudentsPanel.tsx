@@ -410,7 +410,8 @@ export const DailyTriviaCard = () => {
                         </Button>
                     )}
                     {completed && (
-                        <div className="mt-4 p-4 bg-green-50 dark:bg-gray-800 rounded-xl text-center font-semibold animate-fade-in">
+                        <div className="mt-4 p-4 bg-transparent dark:bg-transparent text-center font-semibold animate-fade-in">
+
                             <span className="text-lg font-bold">Congratulations! You finished today's trivia!</span>
                             <br />
 
