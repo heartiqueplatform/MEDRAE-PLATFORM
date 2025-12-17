@@ -2,18 +2,6 @@
 import { Link } from "react-router-dom";
 import { Brain, Star, BookOpen, ListChecks, Settings, Bell } from "lucide-react";
 import { useEffect, useState } from "react";
-// 🔔 Haptic feedback helper (safe on all devices)
-// 🔔 Haptic feedback helper (true 50% feel)
-const vibrate = (strength: "full" | "half" = "half") => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        if (strength === "half") {
-            navigator.vibrate([8, 8, 8]); // TRUE ~50% pulse
-        } else {
-            navigator.vibrate(20); // full
-        }
-    }
-};
-
 
 const actions = [
     { href: "/ai-assistant", label: "AI Assistant", icon: Brain, bgLight: "bg-purple-500 hover:bg-purple-600", bgDark: "bg-purple-600 hover:bg-purple-700" },
@@ -23,8 +11,15 @@ const actions = [
     { href: "/announcements", label: "Announcements", icon: Bell, bgLight: "bg-pink-500 hover:bg-pink-600", bgDark: "bg-pink-600 hover:bg-pink-700" },
 ];
 
+function vibrateTap(duration = 50) {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(duration);
+    }
+}
+
 export default function FloatingQuickActions() {
     const [theme, setTheme] = useState<"light" | "dark">("light");
+    // Safe vibration helper (works only on supported phones)
 
     useEffect(() => {
         const storedTheme = (localStorage.getItem("theme") as "light" | "dark") || "light";
@@ -51,11 +46,9 @@ export default function FloatingQuickActions() {
                             {action.label}
                         </span>
 
-
                         <Link
                             to={action.href}
-                            onPointerDown={() => vibrate("half")}
-
+                            onClick={() => vibrateTap(30)}
                             className={`${bgClass} h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center text-white shadow-lg transition hover:scale-105 active:scale-95`}
                         >
 
