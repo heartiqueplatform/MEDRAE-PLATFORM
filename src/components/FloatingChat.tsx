@@ -58,6 +58,12 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
 
   // Track which message user is replying to per unit
   const [replyingTo, setReplyingTo] = useState<Record<string, Message | null>>({});
+  // Vibrate device for short feedback
+  const vibrate = (duration: number = 50) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(duration);
+    }
+  };
 
   // Load all units
   const loadUserUnits = async () => {
@@ -356,10 +362,14 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
           ref={chatButtonRef}
           size="icon"
           className="rounded-full h-12 w-12 shadow-lg"
-          onClick={() => setShowUnitSelector((prev) => !prev)}
+          onClick={() => {
+            vibrate(50); // ✅ vibrate
+            setShowUnitSelector((prev) => !prev);
+          }}
         >
           <MessageCircle className="h-6 w-6" />
         </Button>
+
 
 
         {/* Floating Unit Panel */}
@@ -823,14 +833,14 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
                   size="icon"
                   variant="ghost"
                   className="ml-1"
-                  onClick={() =>
-                    setActiveEmojiUnit((prev) =>
-                      prev === unit_code ? null : unit_code
-                    )
-                  }
+                  onClick={() => {
+                    vibrate(50); // ✅ vibrate
+                    setActiveEmojiUnit((prev) => (prev === unit_code ? null : unit_code));
+                  }}
                 >
                   😊
                 </Button>
+
 
 
                 {/* Floating Emoji Picker */}
@@ -863,9 +873,16 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
 
 
                 {/* Send Button */}
-                <Button onClick={() => handleSend(unit_code)} disabled={!input.trim()}>
+                <Button
+                  onClick={() => {
+                    vibrate(50); // ✅ vibrate
+                    handleSend(unit_code);
+                  }}
+                  disabled={!input.trim()}
+                >
                   <Send className="h-4 w-4" />
                 </Button>
+
               </div>
 
 

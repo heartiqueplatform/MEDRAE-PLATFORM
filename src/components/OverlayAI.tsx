@@ -123,8 +123,8 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   }, []);
 
   const handleClose = () => {
-  onClose();
-};
+    onClose();
+  };
 
 
   const confirmClose = () => {
@@ -170,52 +170,52 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, typingMessage]);
-try {
-  const userResponse = await supabase.auth.getUser();
-  const currentUser = userResponse.data.user;
-
-  const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
-    body: { message: inputMessage, user_id: currentUser?.id }, // updated
-  });
-
-  if (error) throw error;
-
-  setTimeout(async () => {
-    const aiContent = data?.reply || "Oops! Could not generate response.";
-
-    setMessages(prev =>
-      prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
-    );
-
-    // Save AI reply to Supabase
     try {
-      if (currentUser?.id) {
-        await supabase.from("Aimessages").insert([{
-          content: aiContent,
+      const userResponse = await supabase.auth.getUser();
+      const currentUser = userResponse.data.user;
+
+      const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+        body: { message: inputMessage, user_id: currentUser?.id }, // updated
+      });
+
+      if (error) throw error;
+
+      setTimeout(async () => {
+        const aiContent = data?.reply || "Oops! Could not generate response.";
+
+        setMessages(prev =>
+          prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
+        );
+
+        // Save AI reply to Supabase
+        try {
+          if (currentUser?.id) {
+            await supabase.from("Aimessages").insert([{
+              content: aiContent,
+              sender: "ai",
+              timestamp: new Date(),
+              user_id: currentUser.id, // updated
+            }]);
+          }
+        } catch (err) {
+          console.error("Supabase insert AI message error:", err);
+        }
+      }, 1200);
+
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 2).toString(),
+          content: "Error: Unable to connect to server.",
           sender: "ai",
           timestamp: new Date(),
-          user_id: currentUser.id, // updated
-        }]);
-      }
-    } catch (err) {
-      console.error("Supabase insert AI message error:", err);
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
     }
-  }, 1200);
-
-} catch (error) {
-  console.error(error);
-  setMessages(prev => [
-    ...prev,
-    {
-      id: (Date.now() + 2).toString(),
-      content: "Error: Unable to connect to server.",
-      sender: "ai",
-      timestamp: new Date(),
-    },
-  ]);
-} finally {
-  setIsLoading(false);
-}
   };
   if (!isOpen) return null;
 
@@ -225,41 +225,37 @@ try {
   const userBubbleClass = isDarkTheme ? "bg-blue-600 text-white" : "bg-blue-500 text-white";
 
   return (
-  <div className="fixed top-0 right-0 bottom-0 z-50 flex items-center justify-center bg-black bg-opacity-50
-  lg:left-[250px] lg:w-[calc(100%-250px)]">
-
-      <Card className="w-[95%] max-w-lg h-[80%] flex flex-col relative">
-      <button
-  onClick={handleClose}
-  className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"
->
-  <X className="w-5 h-5" />
-</button>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+      <Card className="w-[95%] max-w-2xl h-[75vh] flex flex-col relative">
+        <button
+          onClick={handleClose}
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         <div className="flex items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-600">
           <Brain className="h-5 w-5 text-green-600" />
           <h2 className="text-lg font-bold text-black dark:text-white">Medrae AI Assistant</h2>
         </div>
 
-    <div
-  ref={scrollRef}
-  className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
              scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
->
+        >
 
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex items-end gap-2 ${
-                msg.sender === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"
+                }`}
             >
               <div
-                className={`h-8 w-8 rounded-full flex items-center justify-center shadow ${
-                  msg.sender === "user"
-                    ? "bg-blue-200 dark:bg-blue-700"
-                    : "bg-green-200 dark:bg-green-700"
-                }`}
+                className={`h-8 w-8 rounded-full flex items-center justify-center shadow ${msg.sender === "user"
+                  ? "bg-blue-200 dark:bg-blue-700"
+                  : "bg-green-200 dark:bg-green-700"
+                  }`}
               >
                 {msg.sender === "user" ? (
                   <User className="w-5 h-5 text-blue-600 dark:text-blue-300" />
@@ -268,9 +264,8 @@ try {
                 )}
               </div>
               <div
-                className={`rounded-2xl px-3 py-2 max-w-[80%] break-words ${
-                  msg.sender === "user" ? userBubbleClass : aiBubbleClass
-                } ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}`}
+                className={`rounded-2xl px-3 py-2 max-w-[80%] break-words ${msg.sender === "user" ? userBubbleClass : aiBubbleClass
+                  } ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}`}
               >
                 {msg.content === "<TypingBubbles />" ? (
                   <TypingBubbles isDarkTheme={isDarkTheme} />
@@ -288,13 +283,14 @@ try {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-            className={`flex-1 p-2 rounded resize-y break-words overflow-y-auto
-              ${isDarkTheme 
-                ? "border border-gray-600 bg-gray-800 text-white placeholder-gray-400" 
-                : "border border-gray-300 bg-white text-black placeholder-gray-700"}
-              focus:outline-none focus:ring-2 focus:ring-green-500`}
+            className="flex-1 p-2 rounded resize-y break-words overflow-y-auto
+             border border-gray-300 bg-white text-black placeholder-gray-700
+             dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400
+             focus:outline-none focus:ring-2 focus:ring-green-500
+             custom-scrollbar" // ✅ Add this
             rows={4}
           />
+
 
           <Button
             onClick={handleSendMessage}

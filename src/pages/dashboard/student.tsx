@@ -1688,7 +1688,7 @@ export default function StudentDashboard() {
       </Card>
 
       {/* Simulation Papers Section */}
-      <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900">
+      <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900 p-2">
 
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">
@@ -1721,9 +1721,9 @@ export default function StudentDashboard() {
 
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-[2px] w-full">
 
               {Array.from({ length: 8 }).map((_, idx) => (
                 <div
@@ -1864,7 +1864,7 @@ export default function StudentDashboard() {
                 .map((unit) => (
                   <div
                     key={unit.unit_code}
-                    className="p-4 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
+                    className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
                     onClick={() => navigate('/Medrae-quizzes')}
                   >
 
@@ -1900,7 +1900,7 @@ export default function StudentDashboard() {
                 .map((unit) => (
                   <div
                     key={unit.unit_code}
-                    className="p-4 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
+                    className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
                     onClick={() => navigate('/Medrae-quizzes')}
                   >
 

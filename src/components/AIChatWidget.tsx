@@ -59,6 +59,12 @@ export default function AIChatWidget() {
   const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Vibrate device for short feedback
+  const vibrate = (duration: number = 50) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(duration);
+    }
+  };
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -225,14 +231,21 @@ export default function AIChatWidget() {
 
   return (
     <>
+
       {!open && (
         <Button
-          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white animate-bounce"
-          onClick={() => setOpen(true)}
+          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white animate-bounce z-[9999]"
+          onClick={() => {
+            vibrate(50);
+            setOpen(true);
+          }}
         >
           <MessageCircle size={48} className="drop-shadow-xl text-white" />
         </Button>
+
       )}
+
+
 
       {open && (
         <div
@@ -258,7 +271,10 @@ export default function AIChatWidget() {
                   variant="ghost"
                   size="icon"
                   className="text-red-600 hover:bg-red-100"
-                  onClick={deleteChat}
+                  onClick={() => {
+                    vibrate(50); // ✅ vibrate
+                    deleteChat();
+                  }}
                 >
                   <Trash2 size={20} />
                 </Button>
@@ -267,10 +283,14 @@ export default function AIChatWidget() {
                   variant="ghost"
                   size="icon"
                   className="text-white hover:bg-gray-200"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    vibrate(50); // ✅ vibrate
+                    setOpen(false);
+                  }}
                 >
                   <X size={20} />
                 </Button>
+
               </div>
             </CardHeader>
 
@@ -347,12 +367,16 @@ export default function AIChatWidget() {
 
                 />
                 <Button
-                  onClick={sendMessage}
+                  onClick={() => {
+                    vibrate(50); // ✅ vibrate
+                    sendMessage();
+                  }}
                   disabled={loading}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Send size={24} className="text-white drop-shadow-lg" />
                 </Button>
+
               </div>
             </CardContent>
           </Card>
