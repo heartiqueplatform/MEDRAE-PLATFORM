@@ -779,7 +779,7 @@ Please provide a detailed discussion and guidance.`;
 
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-0 sm:px-6 lg:px-8">
+    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
 
 
@@ -945,7 +945,7 @@ Please provide a detailed discussion and guidance.`;
               <div
                 className={`
     flex-1
-     px-1.5 py-2      /* tiny horizontal padding for text breathing */
+     px-0 py-2      /* tiny horizontal padding for text breathing */
     rounded-none
     shadow-none
     border-0
