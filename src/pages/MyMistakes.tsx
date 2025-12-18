@@ -55,6 +55,7 @@ export default function MyMistakes() {
     const [mistakes, setMistakes] = useState<Mistake[]>(() => loadCachedMistakes());
     const [loading, setLoading] = useState(mistakes.length === 0); // Only show loader if nothing cached
     const [mistakeCount, setMistakeCount] = useState(mistakes.length);
+    const [syncing, setSyncing] = useState(false);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -74,6 +75,45 @@ export default function MyMistakes() {
 
     }, []);
 
+    useEffect(() => {
+        const syncOfflineQueue = async () => {
+            const queue = getOfflineQueue();
+            if (!queue.length) return;
+
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                for (const questionId of queue) {
+                    const { error } = await supabase
+                        .from("user_mistakes")
+                        .update({ resolved: true })
+                        .eq("user_id", user.id)
+                        .eq("question_id", questionId);
+
+                    if (!error) {
+                        // Remove from queue
+                        const updatedQueue = getOfflineQueue().filter(id => id !== questionId);
+                        localStorage.setItem("offlineResolved", JSON.stringify(updatedQueue));
+                    } else {
+                        console.error("Failed to sync question:", questionId, error);
+                    }
+                }
+            } catch (err) {
+                console.error("Sync offline queue failed:", err);
+            }
+        };
+
+        // Sync immediately if online
+        if (navigator.onLine) syncOfflineQueue();
+
+        // Listen for coming back online
+        window.addEventListener("online", syncOfflineQueue);
+
+        return () => {
+            window.removeEventListener("online", syncOfflineQueue);
+        };
+    }, []);
 
     // 🌟 Fetch mistakes from Supabase in background
     useEffect(() => {
@@ -134,6 +174,63 @@ export default function MyMistakes() {
             supabase.removeChannel(channel);
         };
     }, []);
+    const vibrateTap = (duration = 40) => {
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+            navigator.vibrate(duration);
+        }
+    };
+
+    // Get offline queue from localStorage
+    const getOfflineQueue = (): string[] => {
+        const stored = localStorage.getItem("offlineResolved");
+        if (!stored) return [];
+        try {
+            return JSON.parse(stored) as string[];
+        } catch (err) {
+            console.error("Failed to parse offline queue:", err);
+            return [];
+        }
+    };
+
+    // Save a questionId to offline queue
+    const saveToOfflineQueue = (questionId: string) => {
+        const queue = getOfflineQueue();
+        if (!queue.includes(questionId)) {
+            queue.push(questionId);
+            localStorage.setItem("offlineResolved", JSON.stringify(queue));
+        }
+    };
+
+    const syncOfflineQueue = async () => {
+        const queue = getOfflineQueue();
+        if (!queue.length) return;
+
+        setSyncing(true); // Start syncing
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            for (const questionId of queue) {
+                const { error } = await supabase
+                    .from("user_mistakes")
+                    .update({ resolved: true })
+                    .eq("user_id", user.id)
+                    .eq("question_id", questionId);
+
+                if (!error) {
+                    const updatedQueue = getOfflineQueue().filter(id => id !== questionId);
+                    localStorage.setItem("offlineResolved", JSON.stringify(updatedQueue));
+                } else {
+                    console.error("Failed to sync question:", questionId, error);
+                }
+            }
+        } catch (err) {
+            console.error("Sync offline queue failed:", err);
+        } finally {
+            setSyncing(false); // Done syncing
+        }
+    };
 
     const getReasonClass = (reason?: string) => {
         switch (reason) {
@@ -152,9 +249,6 @@ export default function MyMistakes() {
 
     const markAsResolved = (questionId: string) => {
         const updateMistakes = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
             // Optimistic update
             const updated = mistakes.filter((m) => m.questions.id !== questionId);
             setMistakes(updated);
@@ -165,15 +259,34 @@ export default function MyMistakes() {
             // Play tap sound
             new Audio("/sounds/tap1.mp3").play().catch((err) => console.error(err));
 
-            // Update Supabase in background
-            supabase
-                .from("user_mistakes")
-                .update({ resolved: true })
-                .eq("user_id", user.id)
-                .eq("question_id", questionId)
-                .then(({ error }) => {
-                    if (error) console.error("Error updating Supabase:", error);
-                });
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error("No user");
+
+                if (!navigator.onLine) {
+                    // Offline → save to local queue
+                    saveToOfflineQueue(questionId);
+                    console.log("Offline, saved to queue:", questionId);
+                    return;
+                }
+
+                // Online → update Supabase
+                const { error } = await supabase
+                    .from("user_mistakes")
+                    .update({ resolved: true })
+                    .eq("user_id", user.id)
+                    .eq("question_id", questionId);
+
+                if (error) {
+                    // If error, queue for later
+                    saveToOfflineQueue(questionId);
+                    console.error("Supabase error, queued:", questionId);
+                }
+            } catch (err) {
+                // On any error, queue for later
+                saveToOfflineQueue(questionId);
+                console.error("Error, queued:", questionId, err);
+            }
         };
         updateMistakes();
     };
@@ -219,7 +332,15 @@ export default function MyMistakes() {
         );
 
     return (
-        <div className="p-4 max-w-4xl mx-auto">
+
+
+        <div className="p-3 max-w-4xl mx-auto">
+            {syncing && (
+                <div className="fixed top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-lg shadow-md text-sm z-50">
+                    Syncing changes...
+                </div>
+            )}
+
             <div className="mb-6 text-center">
                 <h1 className="text-2xl font-bold mb-2">My Mistakes</h1>
                 <p className="text-gray-600 dark:text-gray-300">
@@ -257,7 +378,7 @@ export default function MyMistakes() {
                                 </CardDescription>
                             </CardHeader>
 
-                            <CardContent className="space-y-2 text-sm sm:text-base">
+                            <CardContent className="space-y-2 p-3 text-sm sm:text-base">
                                 {["A", "B", "C", "D"].map((letter) => {
                                     const optionText = m.questions[`option_${letter.toLowerCase()}` as keyof Question];
                                     const isCorrect = letter === m.questions.correct_answer;
@@ -266,13 +387,13 @@ export default function MyMistakes() {
                                     return (
                                         <div
                                             key={letter}
-                                            className={`px-3 py-2 flex justify-between items-center
-                ${isCorrect ? "bg-green-100 dark:bg-green-800" : "bg-gray-100 dark:bg-gray-700"}
-            `}
+                                            className="flex justify-between items-center py-2"
                                         >
-                                            <span>
+
+                                            <span className={isCorrect ? "font-semibold text-green-700 dark:text-green-400" : isUserChoice ? "font-semibold text-red-700 dark:text-red-400" : ""}>
                                                 <strong>{letter}.</strong> {optionText}
                                             </span>
+
                                             {isUserChoice && !isCorrect && (
                                                 <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 rounded-full">
                                                     Your Choice
@@ -300,11 +421,15 @@ export default function MyMistakes() {
 
                                 <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }}>
                                     <Button
-                                        onClick={() => markAsResolved(m.questions.id)}
+                                        onClick={() => {
+                                            vibrateTap(40);
+                                            markAsResolved(m.questions.id);
+                                        }}
                                         className="w-full sm:w-auto"
                                     >
                                         Mark as Understood
                                     </Button>
+
                                 </motion.div>
                             </CardContent>
                         </Card>

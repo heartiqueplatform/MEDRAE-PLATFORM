@@ -11,7 +11,7 @@ const actions = [
     { href: "/announcements", label: "Announcements", icon: Bell, bgLight: "bg-pink-500 hover:bg-pink-600", bgDark: "bg-pink-600 hover:bg-pink-700" },
 ];
 
-function vibrateTap(duration = 70) {
+function vibrateTap(duration = 40) {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(duration);
     }
@@ -48,7 +48,7 @@ export default function FloatingQuickActions() {
 
                         <Link
                             to={action.href}
-                            onClick={() => vibrateTap(70)}
+                            onClick={() => vibrateTap(40)}
                             className={`${bgClass} h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center text-white shadow-lg transition hover:scale-105 active:scale-95`}
                         >
 

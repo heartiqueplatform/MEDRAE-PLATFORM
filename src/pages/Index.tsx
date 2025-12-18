@@ -397,11 +397,11 @@ const Index = () => {
 
 
         {window.innerWidth < 768 ? (
-          <div className="flex flex-col gap-1 p-4">
+          <div className="flex flex-col gap-0">
             {heroStorySlides.map((slide, idx) => (
               <div
                 key={idx}
-                className="w-full bg-white rounded-3xl p-4 shadow-md border-2 border-blue-500"
+                className="w-full bg-white rounded-none p-4 shadow-none border-none"
               >
                 {typeof slide.text === "string"
                   ? <p className="text-gray-900 text-sm">{slide.text}</p>
