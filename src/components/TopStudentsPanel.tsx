@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, MessageCircle, Trophy } from "lucide-react";
 import confetti from "canvas-confetti";
+import { playSound } from "@/lib/soundManager";
+
 interface TriviaQuestion {
     id: string;
     question_text: string;
@@ -191,7 +193,8 @@ export const DailyTriviaCard = () => {
 
         // Play the last question sound AFTER showing the completed message
         setTimeout(() => {
-            const audio = new Audio("/sounds/Trivia.mp3");
+            playSound("tap-correct", false);
+
             audio.play().catch(() => { });
 
             const duration = 3000; // 3 seconds
@@ -320,7 +323,7 @@ export const DailyTriviaCard = () => {
                                             const handleClick = () => {
                                                 if (!started || completed) return;
                                                 if (navigator.vibrate) navigator.vibrate(50);
-                                                new Audio("/sounds/tap1.mp3").play().catch(() => { });
+                                                playSound("tap-correct", false);
                                                 setAnswers((prev) => ({ ...prev, [questions[currentIndex].id]: letter }));
                                                 setTimeout(() => {
                                                     if (currentIndex === questions.length - 1) finishTrivia({ ...answers, [questions[currentIndex].id]: letter });

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useSidebar } from "@/components/ui/sidebar";
+import { playSound } from "@/lib/soundManager";
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
@@ -146,10 +147,8 @@ export function Header({
           origin: { y: 0.6 },
           colors: ["#e11d48", "#22c55e"],
         });
-
-        // 🔊 Play the celebration sound
-        const audio = new Audio("/sounds/medrae.mp3");
-        audio.play();
+        // Play sound
+        playSound("medrae");
 
         //  Toast message with more detailed description
         toast({

@@ -24,6 +24,7 @@ import {
   Clock,
   Award,
 } from "lucide-react";
+import { playSound } from "@/lib/soundManager";
 
 import { allUnits } from "@/constants/units";
 
@@ -462,10 +463,8 @@ function SimulationAndTriviaSummary() {
   async function saveTarget() {
     if (!profile) return;
     setSavingTarget(true);
-
     // 🔊 Play sound immediately on user click
-    const audio = new Audio("/sounds/tap1.mp3");
-    audio.play().catch(err => console.error("Audio play failed:", err));
+    playSound("tap-correct", false);
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user || userError) {
@@ -549,10 +548,9 @@ function SimulationAndTriviaSummary() {
     if (!user) return;
 
     const todayKey = `alertShown-${new Date().toDateString()}`;
-    const playAlertOnce = (message) => {
+    const playAlertOnce = (message: string) => {
       if (!localStorage.getItem(todayKey)) {
-        const audio = new Audio("/tap2.mp3");
-        audio.play();
+        playSound("tap-wrong"); // uses the preloaded tap2.mp3 sound
         alert(message);
         localStorage.setItem(todayKey, "true");
       }

@@ -7,6 +7,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { playSound } from "@/lib/soundManager";
 
 export function Toaster() {
   const { toasts } = useToast()
@@ -15,9 +16,9 @@ export function Toaster() {
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         if (props.variant === "destructive") {
-          // Play destructive sound
-          new Audio("/sounds/tap2.mp3").play();
+          playSound("tap-wrong", false);
         }
+
 
         return (
           <Toast key={id} {...props}>

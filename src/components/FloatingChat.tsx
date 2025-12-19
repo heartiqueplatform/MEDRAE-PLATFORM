@@ -10,6 +10,7 @@ import { Send, Check, MessageCircle, X, Edit2, Trash2, CornerUpLeft, Maximize2, 
 // ✅ Add these two lines for the emoji picker
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
+import { playSound } from "@/lib/soundManager";
 
 
 interface Message {
@@ -339,8 +340,8 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
     }
     if (data && data.length > 0) {
       // Realtime will handle inserting the message into state
-      const audio = new Audio("/sounds/notification.mp3");
-      audio.play().catch(err => console.warn("Sound play failed:", err));
+      playSound("notification", false);
+
 
       // ✅ Clear input and reply after sending
       setInputMap((prev) => ({ ...prev, [unit_code]: "" }));

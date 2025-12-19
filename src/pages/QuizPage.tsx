@@ -1,5 +1,6 @@
 "use client";
 import { openDB } from "idb"; // updated
+import { playSound } from "@/lib/soundManager";
 
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 import { useLocation } from "react-router-dom";
@@ -988,8 +989,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
 
                           // ✅ PLAY SOUND IMMEDIATELY
                           if (!isMuted) {
-                            const audio = new Audio(q.correct_answer === letter ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
-                            audio.play().catch((err) => console.error("Audio play error:", err));
+                            playSound(q.correct_answer === letter ? "tap-correct" : "tap-wrong");
                           }
 
                           const correct = q.correct_answer === letter;
@@ -1303,8 +1303,7 @@ Please provide a detailed discussion and guidance.`;
                         }
 
                         // Play sound
-                        const audio = new Audio('/sounds/tap1.mp3');
-                        await audio.play();
+                        await playSound("tap-correct");
 
                         // Load more questions
                         setVisibleCount(prev => prev + QUESTIONS_PER_BATCH);

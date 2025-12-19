@@ -38,6 +38,8 @@ import { Notifications } from "./pages/Notifications";
 import { Profile } from "./pages/Profile";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
 import { useEffect, useState } from "react";
+import { initSound, loadSound } from "@/lib/soundManager";
+
 import SplashScreen from "./SplashScreen";
 import CandidateInfo from "@/pages/quiz-simulation/CandidateInfo";
 import InstructionPage from "@/pages/quiz-simulation/InstructionPage";
@@ -91,6 +93,19 @@ const BottomBarWrapper = () => {
 };
 
 const App = () => {
+  initSound();
+  loadSound("tap-correct", "/sounds/tap1.mp3");
+  loadSound("tap-wrong", "/sounds/tap2.mp3");
+
+  loadSound("medrae", "/sounds/medrae.mp3");
+  loadSound("medrae-study", "/sounds/MedraeStudy.mp3");
+  loadSound("medrae-voice", "/sounds/MedraeVoice.mp3");
+  loadSound("notification", "/sounds/notification.mp3");
+
+  // ✅ Trivia finish sound
+  loadSound("trivia-finish", "/sounds/Trivia.mp3");
+
+
   // Splash state for first-time visitors
   const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";

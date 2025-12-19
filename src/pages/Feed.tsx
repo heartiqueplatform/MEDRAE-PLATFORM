@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { playSound } from "@/lib/soundManager";
 
 import { Input } from "@/components/ui/input";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
@@ -952,7 +953,7 @@ export default function Feed() {
       >
         <div
           ref={scrollContainerRef}   // ✅ add this
-          className="p-4 max-w-2xl mx-auto space-y-4
+          className="p-0 max-w-2xl mx-auto space-y-4
              h-[80vh] overflow-y-auto overflow-x-hidden
              scrollbar-thin scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent scroll-container"
         >
@@ -1333,9 +1334,9 @@ export default function Feed() {
                               // 🔊 Sound feedback (same logic as other page)
                               // Play sound only if not muted
                               if (!isMuted) {
-                                const audio = new Audio(correct ? "/sounds/tap1.mp3" : "/sounds/tap2.mp3");
-                                audio.play().catch((err) => console.error("Audio play error:", err));
+                                playSound(correct ? "tap-correct" : "tap-wrong", false);
                               }
+
                               // ✅ VIBRATION
                               if (navigator.vibrate) {
                                 if (correct) {
@@ -1402,10 +1403,11 @@ export default function Feed() {
                           toggleLike(q.id, liked);
 
                           // Play tap sound only on adding a like
+                          // Play tap sound only on adding a like
                           if (!liked) {
-                            const audio = new Audio("/sounds/tap1.mp3");
-                            audio.play().catch((err) => console.error("Audio play error:", err));
+                            playSound("tap-correct", false);
                           }
+
                         }}
                       >
                         <Heart size={18} /> {q.qfeed_likes?.length || 0}

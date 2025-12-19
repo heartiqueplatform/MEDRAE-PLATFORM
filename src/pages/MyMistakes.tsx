@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
+import { playSound } from "@/lib/soundManager";
 
 interface Question {
     id: string;
@@ -257,7 +258,8 @@ export default function MyMistakes() {
             localStorage.setItem("mistakeCount", String(updated.length));
 
             // Play tap sound
-            new Audio("/sounds/tap1.mp3").play().catch((err) => console.error(err));
+            // Play tap sound
+            playSound("tap-correct", false);
 
             try {
                 const { data: { user } } = await supabase.auth.getUser();
