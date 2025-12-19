@@ -231,22 +231,25 @@ const Index = () => {
       bg: "/indexbackground6.jpg",
       text: (
         <div className="flex flex-col gap-4">
-          <Button
-            size="lg"
-            className="bg-white text-primary transition-all duration-300 hover:bg-blue-600 hover:text-white"
+          <div className="flex flex-col gap-4 items-center">
+            <Button
+              size="lg"
+              className="bg-blue-500 text-white font-bold text-2xl px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-600 hover:scale-105 transition-all duration-300"
+              onClick={() => navigate('/register')}
+            >
+              Create   Account
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-yellow-500 text-blue-500 font-bold text-lg px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-500 hover:text-white hover:scale-105 transition-all duration-300"
+              onClick={() => navigate('/login')}
+            >
+              Sign In to Continue
+            </Button>
+          </div>
 
-            onClick={() => navigate('/register')}
-          >
-            Join Medrae
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-white text-primary hover:bg-white/10"
-            onClick={() => navigate('/login')}
-          >
-            Sign In to Continue
-          </Button>
+
         </div>
       ),
     },
@@ -418,8 +421,11 @@ const Index = () => {
             <animated.div
               {...bind()}
               style={{ touchAction: "pan-y pinch-zoom" }}
-              className="relative w-full min-h-[70vh] flex justify-start items-center overflow-hidden touch-pan-y select-none z-10"
+
+              className="relative w-full min-h-[70vh] flex justify-start items-center overflow-x-auto custom-scrollbar touch-pan-y select-none z-10"
             >
+
+
               {heroStorySlides.map((slide, idx) => {
                 const offset = idx - activeHeroStory;
                 const absOffset = Math.abs(offset);
@@ -571,7 +577,7 @@ const Index = () => {
 
             {/* First Feature Card */}
             <Card
-              className="border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md  rounded-3xl hover:scale-105 cursor-pointer"
+              className="bg-white text-gray-900 border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md rounded-3xl hover:scale-105 cursor-pointer"
               onClick={() => navigate('/register')}
             >
               <CardHeader>
@@ -591,7 +597,7 @@ const Index = () => {
               return (
                 <Card
                   key={index + 1}
-                  className="border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md rounded-lg hover:scale-105 cursor-pointer"
+                  className="bg-white text-gray-900 border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md rounded-3xl hover:scale-105 cursor-pointer"
                   onClick={() => navigate('/register')}
                 >
                   <CardHeader>
@@ -756,7 +762,7 @@ const Index = () => {
         </div>
 
       </section >
-      <footer className="bg-card border-t py-12 px-6">
+      <footer className="bg-white text-gray-900 border-t py-12 px-6">
         <TooltipProvider>
           <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-10">
 
@@ -828,8 +834,9 @@ const Index = () => {
           <div className="max-w-7xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-10">
 
             {/* College & Licensing Prep */}
-            <div className="p-4 bg-white dark:bg-gray-900 rounded-3xl shadow-sm">
-              <h4 className="font-semibold mb-2 text-lg text-gray-900 dark:text-gray-100">
+            <div className="p-4 bg-white text-gray-900 rounded-3xl shadow-sm">
+
+              <h4 className="font-semibold mb-2 text-lg text-gray-900">
                 College & Licensing Prep
               </h4>
               <p className="text-sm text-muted-foreground mb-2">
@@ -846,8 +853,10 @@ const Index = () => {
             </div>
 
             {/* NCK Exam & Professional Guidance */}
-            <div className="p-4 bg-white dark:bg-gray-900 rounded-3xl shadow-sm">
-              <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">NCK Exam & Professional Guidance</h4>
+            <div className="p-4 bg-white text-gray-900 rounded-3xl shadow-sm">
+
+              <h4 className="font-semibold mb-2 text-gray-900">
+                NCK Exam & Professional Guidance</h4>
               <p className="text-sm text-muted-foreground mb-2">
                 Medrae helps nurses and midwives prepare for the NCK licensing exam by providing sample questions, exam tips, and professional guidance. Users can track progress and focus on areas that require more attention.
               </p>
@@ -862,8 +871,10 @@ const Index = () => {
             </div>
 
             {/* NCLEX Familiarity & Global Mobility */}
-            <div className="p-4 bg-white dark:bg-gray-900 rounded-3xl shadow-sm">
-              <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">NCLEX Familiarity & Global Mobility</h4>
+            <div className="p-4 bg-white text-gray-900 rounded-3xl shadow-sm">
+
+              <h4 className="font-semibold mb-2 text-gray-900">
+                NCLEX Familiarity & Global Mobility</h4>
               <p className="text-sm text-muted-foreground mb-2">
                 For users aiming to practice nursing internationally, Medrae introduces NCLEX exam content and preparation strategies. This includes practice questions, test-taking strategies, and guidance on international licensing requirements.
               </p>
@@ -882,9 +893,19 @@ const Index = () => {
         </TooltipProvider>
 
         {/* Bottom */}
-        <div className="mt-12 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Medrae. All rights reserved.
+        <div className="mt-12 text-center text-sm text-gray-700 space-y-2">
+          <p>© {new Date().getFullYear()} Medrae. All rights reserved.</p>
+          <p>
+            For inquiries, support, or partnership opportunities, please contact us at
+            <a href="mailto:heartiqueofficial@gmail.com" className="text-blue-500 underline ml-1">
+              heartiqueofficial@gmail.com
+            </a>
+          </p>
+          <p>
+            Medrae – Kenya’s Nursing Network Platform empowering students and professionals through learning, collaboration, and innovation.
+          </p>
         </div>
+
       </footer>
     </div >
   );
