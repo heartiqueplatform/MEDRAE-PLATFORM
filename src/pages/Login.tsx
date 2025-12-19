@@ -20,6 +20,8 @@ import { GraduationCap, UserCheck, Heart } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect } from "react";
+import { saveLoginInfo, getLoginInfo } from "@/lib/offlineAuth";
+import sha256 from "crypto-js/sha256"; // For hashing passwords offline
 
 export function Login() {
   useEffect(() => {
@@ -51,48 +53,66 @@ export function Login() {
     password: string
   ) => {
     setIsLoading(true);
+    const passwordHash = sha256(password).toString(); // <-- NEW
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (navigator.onLine) {
+        // Online login via Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (error || !data.user) {
-        throw new Error(error?.message || "Login failed.");
+        if (error || !data.user) {
+          throw new Error(error?.message || "Login failed.");
+        }
+
+        const userId = data.user.id;
+
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", userId)
+          .single();
+
+        if (userError || !userData) throw new Error("Profile not found.");
+        if (userData.role !== role) throw new Error("Access denied: role mismatch.");
+
+        // Save credentials for offline login
+        await saveLoginInfo(email, data.session?.access_token || "", passwordHash);
+
+        toast({
+          title: "Login successful!",
+          description: `Welcome back, ${userData.role}`,
+        });
+
+        localStorage.setItem("userRole", userData.role);
+        localStorage.setItem("hasLoggedInBefore", "true");
+
+        navigate(`/dashboard/${userData.role}`, { replace: true });
+      } else {
+        // Offline login
+        const saved = await getLoginInfo();
+        if (
+          saved &&
+          saved.username === email &&
+          saved.passwordHash === passwordHash
+        ) {
+          toast({
+            title: "Offline login successful!",
+            description: `Welcome back, ${role} (Offline Mode)`,
+          });
+
+          localStorage.setItem("userRole", role);
+          localStorage.setItem("hasLoggedInBefore", "true");
+
+          navigate(`/dashboard/${role}`, { replace: true });
+        } else {
+          throw new Error(
+            "Offline login failed: no cached credentials or wrong password"
+          );
+        }
       }
-
-      const userId = data.user.id;
-
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", userId)
-        .single();
-
-      if (userError || !userData) {
-        throw new Error("Profile not found.");
-      }
-
-      if (userData.role !== role) {
-        throw new Error("Access denied: role mismatch.");
-      }
-
-      toast({
-        title: "Login successful!",
-        description: `Welcome back, ${userData.role}`,
-      });
-
-
-
-      // Save role in localStorage (Supabase saves session automatically)
-      localStorage.setItem("userRole", userData.role);
-
-      localStorage.setItem("hasLoggedInBefore", "true");
-
-
-      // Navigate to role-based dashboard
-      navigate(`/dashboard/${userData.role}`, { replace: true });
-
     } catch (err: any) {
       console.error("Login error:", err);
       toast({
@@ -104,6 +124,7 @@ export function Login() {
       setIsLoading(false);
     }
   };
+
 
   const LoginForm = ({ role }: { role: "student" | "tutor" | "staff" }) => {
     const [email, setEmail] = useState("");
