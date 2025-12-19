@@ -23,25 +23,25 @@ import { useEffect } from "react";
 
 export function Login() {
   useEffect(() => {
-  document.documentElement.classList.remove("dark");
-}, []);
+    document.documentElement.classList.remove("dark");
+  }, []);
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-const handleForgotPassword = async (email: string) => {
-  if (!email) {
-    toast({
-      title: "Email required",
-      description: "Please enter your email to reset your password.",
-      variant: "destructive",
-    });
-    return;
-  }
+  const handleForgotPassword = async (email: string) => {
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email to reset your password.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  // Navigate to ResetPassword page with email pre-filled
-  navigate(`/reset-password?email=${encodeURIComponent(email)}`);
-};
+    // Navigate to ResetPassword page with email pre-filled
+    navigate(`/reset-password?email=${encodeURIComponent(email)}`);
+  };
 
 
 
@@ -85,13 +85,13 @@ const handleForgotPassword = async (email: string) => {
 
 
       // Save role in localStorage (Supabase saves session automatically)
-localStorage.setItem("userRole", userData.role);
+      localStorage.setItem("userRole", userData.role);
 
-localStorage.setItem("hasLoggedInBefore", "true");
+      localStorage.setItem("hasLoggedInBefore", "true");
 
 
-// Navigate to role-based dashboard
-navigate(`/dashboard/${userData.role}`, { replace: true });
+      // Navigate to role-based dashboard
+      navigate(`/dashboard/${userData.role}`, { replace: true });
 
     } catch (err: any) {
       console.error("Login error:", err);
@@ -131,24 +131,24 @@ navigate(`/dashboard/${userData.role}`, { replace: true });
         </Button>
 
         {/*Forgot Password link*/}
-{email && (
-  <p
-    className="text-sm text-blue-600 hover:underline cursor-pointer mt-2"
-    onClick={() => handleForgotPassword(email)}
-  >
-    Forgot Password?
-  </p>
-)}
+        {/*Forgot Password link always visible*/}
+        <p
+          className="text-sm text-blue-600 hover:underline cursor-pointer mt-2"
+          onClick={() => handleForgotPassword(email)}
+        >
+          Forgot Password?
+        </p>
+
 
       </div>
-      
+
     );
   };
 
-return (
-<div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden">
+  return (
+    <div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden">
 
-    <Card className="w-full max-w-xl bg-white shadow-lg rounded-2xl">
+      <Card className="w-full max-w-xl bg-white shadow-lg rounded-2xl">
 
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>

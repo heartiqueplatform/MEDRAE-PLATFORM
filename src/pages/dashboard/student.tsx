@@ -2064,7 +2064,7 @@ Join the Medrae community today: https://medrae.vercel.app`;
               <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
  h-10 w-full sm:w-64 mx-auto"></div>
             ) : (
-              <a href="https://t.me/Medraenursingnexusscholar" target="_blank" rel="noopener noreferrer">
+              <a href="https://t.me/heartiquenursingnexusscholar" target="_blank" rel="noopener noreferrer">
                 <div className="flex justify-center">
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-none sm:rounded-md
  flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
