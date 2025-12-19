@@ -529,7 +529,7 @@ export function MedraeQuizzes() {
                       <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
                         <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
                           <Play className="h-4 w-4 mr-1" />
-                          Start
+                          Start Quiz
                         </Button>
                       </Link>
                     ) : (
@@ -601,7 +601,7 @@ export function MedraeQuizzes() {
                       <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
                         <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
                           <Play className="h-4 w-4 mr-1" />
-                          Start
+                          Start Quiz
                         </Button>
                       </Link>
                     ) : (
@@ -688,7 +688,7 @@ export function MedraeQuizzes() {
                       <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
                         <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
                           <Play className="h-4 w-4 mr-1" />
-                          Start
+                          Start Quiz
                         </Button>
                       </Link>
                     ) : (

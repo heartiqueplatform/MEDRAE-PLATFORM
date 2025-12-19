@@ -53,11 +53,7 @@
 
   <!-- ✅ Load React app with offline-safe fallback -->
   <script type="module">
-    import("/src/main.tsx").catch((err) => {
-      console.error("Failed to load app. You may be offline.", err);
-      const root = document.getElementById("root");
-      if (root) root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
-    });
+    import("/src/main.tsx");
   </script>
   <!-- ✅ Lock theme and gradient splash BEFORE paint -->
   <script>
@@ -96,7 +92,6 @@
         `;
       document.head.appendChild(styleEl);
     }
-
     // Offline fallback: ensure UI shell visible immediately
     window.addEventListener("offline", () => {
       console.warn("You are offline. App shell is visible, network data won't load.");
