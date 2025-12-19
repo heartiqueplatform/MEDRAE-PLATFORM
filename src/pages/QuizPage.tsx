@@ -771,7 +771,23 @@ Please provide a detailed discussion and guidance.`;
     return <GlobalLoader message="Medrae is Loading quiz..." />;
   }
 
-  if (questions.length === 0) return <p className="p-4">No questions found for: {unit}</p>;
+  if (questions.length === 0) return <p className="p-4 text-gray-700 dark:text-gray-300">
+    No questions found for: <strong>{unit}</strong>. <br /><br />
+    This could be due to several reasons: <br />
+    1. The platform hasn’t updated questions for this unit yet. <br />
+    2. You’re visiting this page offline for the first time; to use it offline, please visit the page at least once while online. <br />
+    3. There may be a network issue  try reloading the app or checking your internet connection. <br /><br />
+    Want to suggest a new unit, request more questions, or suggest a feature?{" "}
+    <a
+      href="https://wa.me/254717517371"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 underline"
+    >
+      Click here to message us on WhatsApp
+    </a>.
+  </p>
+
   const filteredQuestions = showUnansweredOnly
     ? questions.filter(
       q => !answers[q.id] || lockedVisible[q.id]
@@ -1121,7 +1137,7 @@ ${confidenceLevels[q.id]?.startsWith("High confidence")
                 {/* Reason Box */}
                 {showReasonBox[q.id] && !selectedReason[q.id] && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <p className="text-sm font-medium">What went wrong?</p>
+                    <p className="text-lg font-medium">What went wrong!?</p>
                     {reasonOptions.map((reason) => (
                       <button
                         key={reason}
