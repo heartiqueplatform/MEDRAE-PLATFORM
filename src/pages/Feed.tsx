@@ -1703,8 +1703,8 @@ export default function Feed() {
                               {(img.helpful_count ?? 1)}
                             </span>{" "}
                             {(img.helpful_count ?? 1) === 1
-                              ? "student marked this not helpful.Thank you for your feedback"
-                              : "students marked this not helpful.Thank you for your feedback"}
+                              ? "student marked this helpful.Thank you for your feedback"
+                              : "students marked this helpful.Thank you for your feedback"}
                           </>
                         )}
                         {imageFeedback[img.id] === "not_helpful" && (
