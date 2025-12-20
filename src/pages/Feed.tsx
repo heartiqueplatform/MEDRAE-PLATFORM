@@ -2,7 +2,7 @@
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { useWindowSize } from "react-use";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload, Star, Heart, MessageCircle, Reply, ThumbsUp } from "lucide-react";
+import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload, Star, Heart, MessageCircle, Reply, ThumbsUp, ThumbsDown } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -75,6 +75,7 @@ export default function Feed() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [imageFeedback, setImageFeedback] = useState({});
 
   const [questions, setQuestions] = useState(savedQuestions);
   const [loading, setLoading] = useState(savedQuestions.length === 0);
@@ -82,7 +83,8 @@ export default function Feed() {
   // Preload a single sound
   const tapAudio = typeof Audio !== "undefined" ? new Audio("/sounds/tap1.mp3") : null;
 
-
+  // Track which counts should animate (zoom)
+  const [feedbackAnim, setFeedbackAnim] = useState({});
   const { width, height } = useWindowSize();
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -339,17 +341,20 @@ export default function Feed() {
         const { data: images, error: imgErr } = await supabase
           .from("qfeed_images")
           .select(`
-          id,
-          image_url,
-          description,
-          storage_path,
-          added_by,
-          created_at,
-          profiles (
-            name,
-            avatar_url
-          )
-        `)
+  id,
+  image_url,
+  description,
+  storage_path,
+  added_by,
+  created_at,
+  helpful_count,
+  not_helpful_count,
+  profiles (
+    name,
+    avatar_url
+  )
+`)
+
           .order("created_at", { ascending: true });
 
         if (imgErr) throw imgErr;
@@ -1261,7 +1266,7 @@ export default function Feed() {
                 ref={index === questions.length - 1 ? loaderRef : null}
 
               >
-                <Card className="relative bg-transparent dark:bg-transparent border-0 shadow-none rounded-2xl overflow-hidden transition-all hover:shadow-none">
+                <Card className="relative bg-transparent dark:bg-transparent border-0 shadow-none rounded-none overflow-hidden transition-all hover:shadow-none">
 
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (
@@ -1466,59 +1471,7 @@ export default function Feed() {
             ) {
               cards.push(
                 <div key={`load-more-${index}`} className="flex justify-center py-6">
-                  <Button
-                    onClick={() => {
-                      // Vibrate 60ms
-                      if (navigator.vibrate) navigator.vibrate(60);
 
-                      // Play tap sound
-                      if (tapAudio) {
-                        tapAudio.currentTime = 0; // restart if already playing
-                        tapAudio.play().catch((err) => console.warn("Audio play failed", err));
-                      }
-
-                      // Original loadMore function
-                      loadMore();
-                    }}
-                    disabled={loading}
-                    className="
-    px-8 py-3
-    text-base font-semibold
-    rounded-full
-    bg-blue-600 hover:bg-blue-700
-    text-white
-    shadow-md
-    transition
-    flex items-center gap-2
-  "
-                  >
-                    {loading ? (
-                      <>
-                        <svg
-                          className="animate-spin h-5 w-5"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            className="opacity-25"
-                          />
-                          <path
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8v8H4z"
-                            className="opacity-75"
-                          />
-                        </svg>
-                        Loading more…
-                      </>
-                    ) : (
-                      "Load more questions"
-                    )}
-                  </Button>
 
                 </div>
               );
@@ -1542,12 +1495,13 @@ export default function Feed() {
                 cards.push(
                   <motion.div
                     key={`image-${img.id}`}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1 }}
                     className="w-full max-w-screen-lg mx-auto mb-6"
                   >
-                    <Card className="rounded-2xl overflow-hidden bg-white/30 dark:bg-gray-800/50 border border-gray-200/30 shadow-md relative">
+                    <Card className="overflow-hidden bg-transparent border-0 shadow-none relative">
+
                       {/* updated: educational inspiration banner */}
-                      <div className="bg-gradient-to-r from-blue-700 to-cyan-600 text-white text-center py-2 text-sm font-medium">
+                      <div className="bg-gradient-to-r from-blue-700 to-cyan-600 text-white text-center py-2 text-sm  font-medium">
                         Visuals to enhance your knowledge and make learning memorable.
                       </div>
                       {/* uploader info */}
@@ -1568,7 +1522,7 @@ export default function Feed() {
                           </span>
                         </div>
                       </div>
-                      <div className="relative w-full h-[420px] sm:h-[520px] bg-black flex items-center justify-center overflow-hidden rounded-3xl">
+                      <div className="relative w-full h-[420px] sm:h-[520px] bg-black flex items-center justify-center overflow-hidden">
                         {/* Show loader while image is loading */}
                         {!loadedImages[img.id] && (
                           <div className="absolute inset-0 flex items-center justify-center scale-[0.45]">
@@ -1616,6 +1570,158 @@ export default function Feed() {
                           {img.description}
                         </p>
                       )}
+                      {/* 👍 Helpful / 👎 Not Helpful feedback */}
+                      <div className="flex gap-4 sm:gap-32 pb-4 ml-2 sm:ml-4">
+
+                        {/* Helpful Button */}
+                        <button
+                          onClick={async () => {
+                            const isAlreadyHelpful = imageFeedback[img.id] === "helpful";
+
+                            // Vibration
+                            if (navigator.vibrate) navigator.vibrate(50);
+
+                            // Sound
+                            playSound("tap-correct", false);
+
+                            // Update local feedback state
+                            setImageFeedback((prev) => ({
+                              ...prev,
+                              [img.id]: isAlreadyHelpful ? null : "helpful",
+                            }));
+
+                            // Trigger zoom animation
+                            setFeedbackAnim((prev) => ({ ...prev, [img.id]: true }));
+                            setTimeout(() => {
+                              setFeedbackAnim((prev) => ({ ...prev, [img.id]: false }));
+                            }, 300);
+
+                            // Optimistic count update
+                            setFeedImages((prev) =>
+                              prev.map((i) => {
+                                if (i.id !== img.id) return i;
+
+                                const helpfulChange = isAlreadyHelpful ? -1 : 1;
+                                const notHelpfulChange =
+                                  !isAlreadyHelpful && imageFeedback[img.id] === "not_helpful" ? -1 : 0;
+
+                                return {
+                                  ...i,
+                                  helpful_count: (i.helpful_count ?? 0) + helpfulChange,
+                                  not_helpful_count: (i.not_helpful_count ?? 0) + notHelpfulChange,
+                                };
+                              })
+                            );
+
+                            // Update Supabase counts
+                            if (isAlreadyHelpful) {
+                              await supabase.rpc("decrement_helpful_count", { image_id: img.id });
+                            } else {
+                              await supabase.rpc("increment_helpful_count", { image_id: img.id });
+                              if (imageFeedback[img.id] === "not_helpful") {
+                                await supabase.rpc("decrement_not_helpful_count", { image_id: img.id });
+                              }
+                            }
+                          }}
+                          className={`px-4 py-1.5 rounded-full text-sm border ${imageFeedback[img.id] === "helpful"
+                            ? "bg-green-500 text-white border-green-500"
+                            : "text-green-600 border-green-500 hover:bg-green-500 hover:text-white"
+                            } transition`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <ThumbsUp size={16} /> Helpful
+                          </span>
+                        </button>
+
+                        {/* Not Helpful Button */}
+                        <button
+                          onClick={async () => {
+                            const isAlreadyNotHelpful = imageFeedback[img.id] === "not_helpful";
+
+                            // Vibration (different pattern)
+                            if (navigator.vibrate) navigator.vibrate([80, 30, 50]);
+
+                            // Sound
+                            playSound("tap-wrong", false);
+
+                            // Update local feedback state
+                            setImageFeedback((prev) => ({
+                              ...prev,
+                              [img.id]: isAlreadyNotHelpful ? null : "not_helpful",
+                            }));
+
+                            // Trigger zoom animation
+                            setFeedbackAnim((prev) => ({ ...prev, [img.id]: true }));
+                            setTimeout(() => {
+                              setFeedbackAnim((prev) => ({ ...prev, [img.id]: false }));
+                            }, 300);
+
+                            // Optimistic count update
+                            setFeedImages((prev) =>
+                              prev.map((i) => {
+                                if (i.id !== img.id) return i;
+
+                                const notHelpfulChange = isAlreadyNotHelpful ? -1 : 1;
+                                const helpfulChange =
+                                  !isAlreadyNotHelpful && imageFeedback[img.id] === "helpful" ? -1 : 0;
+
+                                return {
+                                  ...i,
+                                  not_helpful_count: (i.not_helpful_count ?? 0) + notHelpfulChange,
+                                  helpful_count: (i.helpful_count ?? 0) + helpfulChange,
+                                };
+                              })
+                            );
+
+                            // Update Supabase counts
+                            if (isAlreadyNotHelpful) {
+                              await supabase.rpc("decrement_not_helpful_count", { image_id: img.id });
+                            } else {
+                              await supabase.rpc("increment_not_helpful_count", { image_id: img.id });
+                              if (imageFeedback[img.id] === "helpful") {
+                                await supabase.rpc("decrement_helpful_count", { image_id: img.id });
+                              }
+                            }
+                          }}
+                          className={`px-4 py-1.5 rounded-full text-sm border ${imageFeedback[img.id] === "not_helpful"
+                            ? "bg-red-500 text-white border-red-500"
+                            : "text-red-600 border-red-500 hover:bg-red-500 hover:text-white"
+                            } transition`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <ThumbsDown size={16} /> Not Helpful
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Dynamic feedback text below buttons */}
+                      <div className="text-center mt-2 text-sm text-gray-700 dark:text-gray-300">
+                        {imageFeedback[img.id] === "helpful" && (
+                          <>
+                            <ThumbsUp size={16} className="inline-block mr-1" />
+                            <span className={feedbackAnim[img.id] ? "animate-emoji-zoom" : ""}>
+                              {(img.helpful_count ?? 1)}
+                            </span>{" "}
+                            {(img.helpful_count ?? 1) === 1
+                              ? "student marked this not helpful.Thank you for your feedback"
+                              : "students marked this not helpful.Thank you for your feedback"}
+                          </>
+                        )}
+                        {imageFeedback[img.id] === "not_helpful" && (
+                          <>
+                            <ThumbsDown size={16} className="inline-block mr-1" />
+                            <span className={feedbackAnim[img.id] ? "animate-emoji-zoom" : ""}>
+                              {(img.not_helpful_count ?? 1)}
+                            </span>{" "}
+                            {(img.not_helpful_count ?? 1) === 1
+                              ? "student marked this not helpful.Thank you for your feedback"
+                              : "students marked this not helpful.Thank you for your feedback"}
+                          </>
+                        )}
+                      </div>
+
+
+
                     </Card>
                   </motion.div>
                 );
@@ -1624,7 +1730,7 @@ export default function Feed() {
               cards.push(
                 <motion.div
                   key="upload-card"
-                  className="relative flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl overflow-hidden shadow-lg w-full bg-white dark:bg-gray-900 mt-4 mx-auto max-w-md"
+                  className="relative flex flex-col items-center justify-center p-4 sm:p-6 w-full bg-transparent mt-4"
 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -1663,13 +1769,13 @@ export default function Feed() {
                     {/* Thin line button */}
                     <button
                       onClick={() => setShowUpload((prev) => !prev)} // updated
-                      className="text-gray-800 dark:text-gray-200 text-sm border-b border-gray-400 dark:border-gray-500 hover:border-gray-600 dark:hover:border-gray-300 transition-all duration-300 pb-1"
+                      className="text-gray-800 dark:text-gray-200 text-sm pb-1 hover:underline"
                     >
                       {showUpload ? "Hide Upload ▲" : "Upload Image ▼"}
                     </button>
                     {/* Dropdown upload card */}
                     {showUpload && (
-                      <div className="mt-3 flex flex-col items-center justify-center text-center w-full sm:w-auto border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 sm:p-5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 overflow-hidden"
+                      <div className="mt-3 flex flex-col items-center justify-center text-center w-full sm:w-auto p-4 sm:p-5 bg-transparent"
                       >
                         <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full">
                           {uploadFiles && uploadFiles.length > 0 ? (
@@ -1684,11 +1790,12 @@ export default function Feed() {
                               ))}
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center">
+                            <div className="flex flex-col items-start w-full">
                               <span className="text-gray-700 dark:text-gray-300 font-medium text-xs sm:text-sm">
                                 Tap or click to choose images
                               </span>
                             </div>
+
                           )}
 
                           <input
@@ -1702,7 +1809,8 @@ export default function Feed() {
                         </label>
 
                         {/* Upload button */}
-                        <div className="relative w-full flex flex-col items-center">
+                        <div className="relative w-full flex flex-col items-start">
+
                           {/* Upload button */}
                           <Button
                             onClick={handleImageUpload}
@@ -1745,17 +1853,67 @@ export default function Feed() {
 
 
                         {/* Subtitle */}
-                        <p className="mt-2 text-gray-600 dark:text-gray-400 text-xs sm:text-sm text-center">
+                        <p className="mt-2 text-gray-600 dark:text-gray-400 text-xs sm:text-sm text-left w-full">
                           Share your photos & inspire others
                         </p>
+
                       </div>
                     )}
                   </div>
+
+
+
                 </motion.div>);
             }
             return cards;
           })}
+          <Button
+            onClick={() => {
+              // Vibrate 60ms
+              if (navigator.vibrate) navigator.vibrate(60);
 
+              // Original loadMore function
+              loadMore();
+            }}
+            disabled={loading}
+            className="
+    px-8 py-3
+    text-base font-semibold
+    rounded-full
+    bg-blue-600 hover:bg-blue-700
+    text-white
+    shadow-md
+    transition
+    flex items-center gap-2
+  "
+          >
+            {loading ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    className="opacity-25"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                    className="opacity-75"
+                  />
+                </svg>
+                Loading more…
+              </>
+            ) : (
+              "Load more questions"
+            )}
+          </Button>
           <AnimatePresence>
             {viewerOpen && activeImage && (
               <motion.div
