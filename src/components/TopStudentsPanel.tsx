@@ -193,9 +193,7 @@ export const DailyTriviaCard = () => {
 
         // Play the last question sound AFTER showing the completed message
         setTimeout(() => {
-            playSound("tap-correct", false);
-
-            audio.play().catch(() => { });
+            playSound("trivia-finish", false);
 
             const duration = 3000; // 3 seconds
             const animationEnd = Date.now() + duration;
