@@ -23,20 +23,16 @@ interface Message {
 
 function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
   const bubbleColor = isDarkTheme ? "bg-green-400" : "bg-green-600";
+
   return (
     <div className="flex items-center gap-1">
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay200`}></span>
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay400`}></span>
-      <style jsx>{`
-        .animate-bounceDelay { animation: bounce 1.2s infinite; }
-        .animate-bounceDelay200 { animation: bounce 1.2s infinite 0.2s; }
-        .animate-bounceDelay400 { animation: bounce 1.2s infinite 0.4s; }
-        @keyframes bounce { 0%,80%,100% { transform: scale(0); } 40% { transform: scale(1); } }
-      `}</style>
     </div>
   );
 }
+
 
 export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayAIProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -138,16 +134,19 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
     if (!inputMessage.trim()) return;
     setIsLoading(true);
 
+    const timestamp = new Date();
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputMessage,
       sender: "user",
-      timestamp: new Date(),
+      timestamp,
     };
+
+    // 1️⃣ Add user message to UI
     setMessages(prev => [...prev, userMessage]);
     setInputMessage("");
 
-    // Save user message to Supabase
+    // 2️⃣ Save user message to Supabase
     try {
       const userResponse = await supabase.auth.getUser();
       const userId = userResponse.data.user?.id;
@@ -163,6 +162,7 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       console.error("Supabase insert user message error:", err);
     }
 
+    // 3️⃣ Add AI typing indicator
     const typingMessage: Message = {
       id: (Date.now() + 0.1).toString(),
       content: "<TypingBubbles />",
@@ -170,53 +170,103 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, typingMessage]);
+
     try {
       const userResponse = await supabase.auth.getUser();
       const currentUser = userResponse.data.user;
 
-      const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
-        body: { message: inputMessage, user_id: currentUser?.id }, // updated
-      });
+      // 4️⃣ Fetch user's presummary
+      const { data: presummaryData } = await supabase
+        .from("user_presummary")
+        .select("presummary_text")
+        .eq("user_id", currentUser?.id)
+        .single();
 
-      if (error) throw error;
+      const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
-      setTimeout(async () => {
-        const aiContent = data?.reply || "Oops! Could not generate response.";
+      // 5️⃣ Create systemMessage for AI
+      const systemMessage = `
+You are a personal AI assistant for the Medrae Medical Network.
 
-        setMessages(prev =>
-          prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
-        );
+The user has the following profile (presummary):
+${cachedSummary}
 
-        // Save AI reply to Supabase
-        try {
-          if (currentUser?.id) {
-            await supabase.from("Aimessages").insert([{
-              content: aiContent,
-              sender: "ai",
-              timestamp: new Date(),
-              user_id: currentUser.id, // updated
-            }]);
-          }
-        } catch (err) {
-          console.error("Supabase insert AI message error:", err);
-        }
-      }, 1200);
+Your instructions:
+1. Always greet the user by their name, extracted from the presummary.
+2. Use the presummary to answer any questions about the user, including:
+   - Calendar events, daily posts, notifications
+   - Progress records
+   - Questions answered (Qfeed_seen)
+   - Notes on questions (Question_notes)
+   - Quiz attempts and results
+   - Simulation results
+   - AI messages (Aimessages)
+   - Daily trivia attempts and latest score
+3. When responding, use the actual numbers and recent activity from the presummary.
+4. Provide personalized advice and encouragement based on user activity:
+   - Suggest reviewing weak quiz topics if Quiz_results are low
+   - Encourage daily trivia participation if attempts are low
+   - Highlight recent AIMessages or posts if relevant
+   - Guide user on their study streaks or notifications
+5. Never invent user-specific data; only use what's in the presummary.
+6. Respond naturally in a friendly, supportive, and helpful tone.
+7. Integrate platform knowledge when relevant, but prioritize presummary personalization.
+8. When the user asks about their achievements, summarize counts and results clearly.
+9. If giving suggestions, reference their course, block, institution, or subscription type when available.
+10. Always end your response in a positive, encouraging tone.
 
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: (Date.now() + 2).toString(),
-          content: "Error: Unable to connect to server.",
+User's message: ${inputMessage}
+`;
+
+      // 6️⃣ Call AI function with presummary
+      let aiContent = "";
+      try {
+        const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+          body: {
+            message: inputMessage,
+            user_id: currentUser?.id,
+            presummary: cachedSummary,
+            systemMessage, // ← send systemMessage too
+          },
+        });
+        if (error) throw error;
+
+        aiContent = data?.reply || "Oops! Could not generate a response.";
+      } catch (err) {
+        console.error("AI function failed, using systemMessage fallback:", err);
+        // Fallback: use systemMessage as AI content
+        aiContent = systemMessage;
+      }
+
+      // 7️⃣ Replace typing indicator with AI response
+      setMessages(prev =>
+        prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
+      );
+
+      // 8️⃣ Save AI response to Supabase
+      if (currentUser?.id) {
+        await supabase.from("Aimessages").insert([{
+          content: aiContent,
           sender: "ai",
           timestamp: new Date(),
-        },
-      ]);
+          user_id: currentUser.id,
+        }]);
+      }
+
+    } catch (err) {
+      console.error("Error sending AI message:", err);
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === typingMessage.id
+            ? { ...msg, content: "Error: Unable to connect to server." }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
   };
+
   if (!isOpen) return null;
 
   const aiBubbleClass = isDarkTheme

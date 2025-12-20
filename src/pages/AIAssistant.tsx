@@ -31,34 +31,22 @@ interface Message {
   content: string;
   sender: "user" | "ai";
   timestamp: Date;
+  typing?: boolean; // ← new flag
 }
 // 🔑 Supabase Project Keys
 import { supabase } from "@/lib/supabaseClient";
 function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
-  const bubbleColor = isDarkTheme ? "bg-green-400" : "bg-green-600"; // light/dark brand colors
+  const bubbleColor = isDarkTheme ? "bg-green-400" : "bg-green-600";
 
   return (
     <div className="flex items-center gap-1">
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay200`}></span>
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay400`}></span>
-      <style>
-        {`
-  @keyframes pulseOutline {
-    0% { transform: scale(1); opacity: 0.3; }
-    50% { transform: scale(1.05); opacity: 0.6; }
-    100% { transform: scale(1); opacity: 0.3; }
-  }
-
-  .animate-pulse-outline {
-    animation: pulseOutline 1s infinite;
-  }
-  `}
-      </style>
-
     </div>
   );
 }
+
 
 
 
@@ -116,7 +104,6 @@ export function AIAssistant() {
     "Explain infection control principles",
     "What are nursing assessment techniques?",
   ];
-
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -128,63 +115,111 @@ export function AIAssistant() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+
     // Save user message to Supabase
     const currentUser = (await supabase.auth.getUser()).data.user;
 
-    await supabase.from('Aimessages').insert([
+    await supabase.from("Aimessages").insert([
       {
         sender: userMessage.sender,
         content: userMessage.content,
         timestamp: userMessage.timestamp,
-        user_id: currentUser?.id, // ← ensure row belongs to current user
+        user_id: currentUser?.id, // ensure row belongs to current user
       },
     ]);
-
 
     setInputMessage("");
     setIsLoading(true);
 
+    // Typing animation bubble placeholder
     const typingMessage: Message = {
       id: (Date.now() + 0.1).toString(),
-      content: "<TypingBubbles />", // ⬅️ placeholder for bubble animation
+      content: "<TypingBubbles />",
       sender: "ai",
       timestamp: new Date(),
+      typing: true, // ← key
     };
     setMessages((prev) => [...prev, typingMessage]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
-        body: { message: inputMessage, user_id: currentUser?.id },
-      });
+      // 1️⃣ Fetch user's presummary
+      const { data: presummaryData } = await supabase
+        .from("user_presummary")
+        .select("presummary_text")
+        .eq("user_id", currentUser?.id)
+        .single();
 
-      if (error) throw error;
+      const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
+      // 2️⃣ Build systemMessage for AI context
+      const systemMessage = `
+You are a personal AI assistant for the Medrae Medical Network.
 
+The user has the following profile (presummary):
+${cachedSummary}
+
+Your instructions:
+1. Always greet the user by their name, extracted from the presummary.
+2. Use the presummary to answer any questions about the user, including:
+   - Calendar events, daily posts, notifications
+   - Progress records
+   - Questions answered (Qfeed_seen)
+   - Notes on questions (Question_notes)
+   - Quiz attempts and results
+   - Simulation results
+   - AI messages (Aimessages)
+   - Daily trivia attempts and latest score
+3. When responding, use the actual numbers and recent activity from the presummary.
+4. Provide personalized advice and encouragement based on user activity:
+   - Suggest reviewing weak quiz topics if Quiz_results are low
+   - Encourage daily trivia participation if attempts are low
+   - Highlight recent AIMessages or posts if relevant
+   - Guide user on their study streaks or notifications
+5. Never invent user-specific data; only use what's in the presummary.
+6. Respond naturally in a friendly, supportive, and helpful tone.
+7. Integrate platform knowledge when relevant, but prioritize presummary personalization.
+8. When the user asks about their achievements, summarize counts and results clearly.
+9. If giving suggestions, reference their course, block, institution, or subscription type when available.
+10. Always end your response in a positive, encouraging tone.
+
+User's message: ${inputMessage}
+`;
+
+      // 3️⃣ Call AI function with presummary and systemMessage
+      let aiContent = "";
+      try {
+        const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+          body: {
+            message: inputMessage,
+            user_id: currentUser?.id,
+            presummary: cachedSummary,
+            systemMessage, // ← always send systemMessage
+          },
+        });
+        if (error) throw error;
+
+        aiContent = data?.reply || "Ooops! Could not generate a response. Check your internet connection.";
+      } catch (err) {
+        console.error("AI function failed, using systemMessage fallback:", err);
+        aiContent = systemMessage; // fallback content
+      }
+
+      // 4️⃣ Replace typing indicator with AI response
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === typingMessage.id
-            ? {
-              ...msg,
-              content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again",
-            }
-            : msg
+          msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg
         )
       );
 
-      // Save AI message to Supabase
-      (async () => {
-        const currentUser = (await supabase.auth.getUser()).data.user;
-
-        await supabase.from('Aimessages').insert([
-          {
-            sender: 'ai',
-            content: data?.reply || "Ooops Sorry, I couldn't generate a response seems your offline.Connect to the internet and try again",
-            timestamp: new Date(),
-            user_id: currentUser?.id,
-          },
-        ]);
-      })();
-
+      // 5️⃣ Save AI message to Supabase
+      await supabase.from("Aimessages").insert([
+        {
+          sender: "ai",
+          content: aiContent,
+          timestamp: new Date(),
+          user_id: currentUser?.id,
+        },
+      ]);
 
     } catch (error) {
       console.error(error);
@@ -192,7 +227,7 @@ export function AIAssistant() {
         ...prev,
         {
           id: (Date.now() + 2).toString(),
-          content: "oops!! Error: Unable to connect to server check ur network connection.",
+          content: "Oops!! Error: Unable to connect to server. Check your network connection.",
           sender: "ai",
           timestamp: new Date(),
         },
@@ -201,6 +236,7 @@ export function AIAssistant() {
       setIsLoading(false);
     }
   };
+
   const handleQuickQuestion = (question: string) => {
     setInputMessage(question);
   };
@@ -377,8 +413,8 @@ export function AIAssistant() {
                 <div className="flex flex-col max-w-[95%]">
                   <div
                     className={`rounded-2xl px-4 py-2 shadow prose prose-sm max-w-[80%] break-words ${msg.sender === "user"
-                      ? `${userBubbleClass} text-left` // ← bubble on right, text starts left
-                      : `${aiBubbleClass} text-left`   // ← AI bubble also left-aligned text
+                      ? `${userBubbleClass} text-left`
+                      : `${aiBubbleClass} text-left`
                       }`}
                   >
                     {msg.content === "<TypingBubbles />" ? (
@@ -386,7 +422,9 @@ export function AIAssistant() {
                     ) : (
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     )}
+
                   </div>
+
 
                   <span className="text-xs text-gray-500 mt-1">
                     {new Date(msg.timestamp).toLocaleString("en-US", {

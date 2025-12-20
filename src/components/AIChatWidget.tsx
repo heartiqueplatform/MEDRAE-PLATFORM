@@ -15,24 +15,17 @@ type Message = {
 };
 
 function FloatingTypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
+  const bubbleColor = isDarkTheme ? "bg-teal-400" : "bg-teal-600";
+
   return (
     <div className="flex items-center gap-1">
-      <span className={`w-2 h-2 rounded-full ${isDarkTheme ? 'bg-teal-400' : 'bg-teal-600'} animate-float1`}></span>
-      <span className={`w-2 h-2 rounded-full ${isDarkTheme ? 'bg-teal-400' : 'bg-teal-600'} animate-float2`}></span>
-      <span className={`w-2 h-2 rounded-full ${isDarkTheme ? 'bg-teal-400' : 'bg-teal-600'} animate-float3`}></span>
-
-      <style jsx>{`
-        @keyframes float {
-          0%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-5px); }
-        }
-        .animate-float1 { animation: float 1.2s infinite; }
-        .animate-float2 { animation: float 1.2s infinite 0.2s; }
-        .animate-float3 { animation: float 1.2s infinite 0.4s; }
-      `}</style>
+      <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
+      <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay200`}></span>
+      <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay400`}></span>
     </div>
   );
 }
+
 
 function stripMarkdown(text: string): string {
   return text
@@ -136,6 +129,7 @@ export default function AIChatWidget() {
       timestamp: new Date().toISOString(),
     };
 
+    // Add user message to UI
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -157,30 +151,83 @@ export default function AIChatWidget() {
     ]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
-        body: { message: input, user_id: currentUser?.id },
-      });
+      // 1️⃣ Fetch user's presummary
+      const { data: presummaryData } = await supabase
+        .from("user_presummary")
+        .select("presummary_text")
+        .eq("user_id", currentUser?.id)
+        .single();
 
-      if (error) throw error;
+      const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
-      // Replace typing with AI response
+      // 2️⃣ Build systemMessage for AI context
+      const systemMessage = `
+You are a personal AI assistant for the Medrae Medical Network.
+
+The user has the following profile (presummary):
+${cachedSummary}
+
+Your instructions:
+1. Always greet the user by their name, extracted from the presummary.
+2. Use the presummary to answer any questions about the user, including:
+   - Calendar events, daily posts, notifications
+   - Progress records
+   - Questions answered (Qfeed_seen)
+   - Notes on questions (Question_notes)
+   - Quiz attempts and results
+   - Simulation results
+   - AI messages (Aimessages)
+   - Daily trivia attempts and latest score
+3. When responding, use the actual numbers and recent activity from the presummary.
+4. Provide personalized advice and encouragement based on user activity:
+   - Suggest reviewing weak quiz topics if Quiz_results are low
+   - Encourage daily trivia participation if attempts are low
+   - Highlight recent AIMessages or posts if relevant
+   - Guide user on their study streaks or notifications
+5. Never invent user-specific data; only use what's in the presummary.
+6. Respond naturally in a friendly, supportive, and helpful tone.
+7. Integrate platform knowledge when relevant, but prioritize presummary personalization.
+8. When the user asks about their achievements, summarize counts and results clearly.
+9. If giving suggestions, reference their course, block, institution, or subscription type when available.
+10. Always end your response in a positive, encouraging tone.
+
+User's message: ${input}
+`;
+
+      // 3️⃣ Call AI function with presummary and systemMessage
+      let aiContent = "";
+      try {
+        const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
+          body: {
+            message: input,
+            user_id: currentUser?.id,
+            presummary: cachedSummary,
+            systemMessage, // ← always send systemMessage
+          },
+        });
+        if (error) throw error;
+
+        aiContent = data?.reply || "Oops! Could not generate a response.";
+      } catch (err) {
+        console.error("AI function failed, using systemMessage fallback:", err);
+        // fallback: use systemMessage as content
+        aiContent = systemMessage;
+      }
+
+      // 4️⃣ Replace typing indicator with AI response
       setMessages((prev) =>
         prev.map((msg) =>
           msg.content === "<TypingBubbles />"
-            ? {
-              ...msg,
-              content: data?.reply || "Oops! Could not generate a response. Check your connection.",
-            }
+            ? { ...msg, content: aiContent }
             : msg
         )
       );
 
-
-      // Save AI response to Supabase
+      // 5️⃣ Save AI response to Supabase
       await supabase.from("Aimessages").insert([
         {
           sender: "assistant",
-          content: data?.reply || "Oops! Could not generate a response.",
+          content: aiContent,
           timestamp: new Date().toISOString(),
           user_id: currentUser?.id,
         },
@@ -190,18 +237,16 @@ export default function AIChatWidget() {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.content === "<TypingBubbles />"
-            ? {
-              ...msg,
-              content: "Oops! You seem offline. Connect to the internet first.",
-            }
+            ? { ...msg, content: "Oops! You seem offline. Connect to the internet first." }
             : msg
         )
       );
-
     } finally {
       setLoading(false);
     }
   };
+
+
 
   // Delete chat history
   const deleteChat = async () => {
@@ -234,7 +279,7 @@ export default function AIChatWidget() {
 
       {!open && (
         <Button
-          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white animate-bounce z-[9999]"
+          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white float-button z-[9999]"
           onClick={() => {
             vibrate(50);
             setOpen(true);
@@ -242,6 +287,7 @@ export default function AIChatWidget() {
         >
           <MessageCircle size={48} className="drop-shadow-xl text-white" />
         </Button>
+
 
       )}
 
