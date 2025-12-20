@@ -195,6 +195,7 @@ export const DailyTriviaCard = () => {
         setTimeout(() => {
             playSound("trivia-finish", false);
 
+
             const duration = 3000; // 3 seconds
             const animationEnd = Date.now() + duration;
             const defaults = { startVelocity: 20, spread: 600, ticks: 120, zIndex: 999 }; // slower, wider, longer

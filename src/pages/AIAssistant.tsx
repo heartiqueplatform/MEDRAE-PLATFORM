@@ -152,8 +152,12 @@ export function AIAssistant() {
       const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
       // 2️⃣ Build systemMessage for AI context
+      const now = new Date();
       const systemMessage = `
 You are a personal AI assistant for the Medrae Medical Network.
+Current date and time: ${now.toUTCString()}
+IMPORTANT: Always start every response by addressing the user by their name, extracted from the presummary.
+Even for the very first message, the AI must greet the user by name and never wait for additional prompts.
 
 The user has the following profile (presummary):
 ${cachedSummary}
@@ -412,7 +416,7 @@ User's message: ${inputMessage}
                 {/* Message Bubble */}
                 <div className="flex flex-col max-w-[95%]">
                   <div
-                    className={`rounded-2xl px-4 py-2 shadow prose prose-sm max-w-[80%] break-words ${msg.sender === "user"
+                    className={`rounded-2xl px-4 py-2 shadow max-w-[80%] break-words whitespace-pre-wrap ${msg.sender === "user"
                       ? `${userBubbleClass} text-left`
                       : `${aiBubbleClass} text-left`
                       }`}
@@ -422,10 +426,7 @@ User's message: ${inputMessage}
                     ) : (
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     )}
-
                   </div>
-
-
                   <span className="text-xs text-gray-500 mt-1">
                     {new Date(msg.timestamp).toLocaleString("en-US", {
                       month: "short",

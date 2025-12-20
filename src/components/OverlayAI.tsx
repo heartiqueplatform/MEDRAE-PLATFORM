@@ -185,8 +185,12 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
       const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
       // 5️⃣ Create systemMessage for AI
+      const now = new Date();
       const systemMessage = `
 You are a personal AI assistant for the Medrae Medical Network.
+Current date and time: ${now.toUTCString()}
+IMPORTANT: Always start every response by addressing the user by their name, extracted from the presummary.
+Even for the very first message, the AI must greet the user by name and never wait for additional prompts.
 
 The user has the following profile (presummary):
 ${cachedSummary}
