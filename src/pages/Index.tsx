@@ -12,7 +12,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { playSound } from "@/lib/soundManager";
+
 
 // ✅ Skeleton loader for hero cards (image/video replacement)
 const HeroSkeleton = () => {
@@ -98,11 +98,12 @@ const Index = () => {
 
   useEffect(() => {
     // Initialize audios
-    playSound("medrae-voice", false);
+    welcomeAudioRef.current = new Audio("/sounds/MedraeVoice.mp3");
 
     welcomeAudioRef.current.volume = 1;
     welcomeAudioRef.current.muted = true; // start muted
-    playSound("medrae-study", false);
+    studyAudioRef.current = new Audio("/sounds/MedraeStudy.mp3");
+
 
     studyAudioRef.current.volume = 0.3;
     studyAudioRef.current.loop = true;
