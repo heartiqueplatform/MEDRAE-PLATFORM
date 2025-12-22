@@ -15,7 +15,7 @@ import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import FriendlyProgressCard from "@/components/FriendlyProgressCard";
 import FloatingQuickActions from "@/components/FloatingQuickActions";
 import MistakeCard from "@/components/MistakeCard";
-
+import { UnitBreakdown } from "@/components/UnitBreakdown";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "date-fns";
@@ -1826,109 +1826,11 @@ export default function StudentDashboard() {
           </p>
         </CardContent>
       </Card>
-      {/* New Unit Question Counts Section */}
-      <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900">
 
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>QUIZZES NCK UNIT BREAKDOWN & NCLEX CLIENT NEEDS CATEGORY</CardTitle>
-            <CardDescription>
-              All units and their available question counts. Click the tab to start practicing instantly.
-            </CardDescription>
-          </div>
-          <Button
-            asChild
-            className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-none-md hover:shadow-none"
-          >
-            <Link to="/Medrae-quizzes">Quizzes</Link>
-          </Button>
-        </CardHeader>
-
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {unitCounts.length > 0 ? (
-            <>
-              {/* NCLEX Units */}
-              {unitCounts
-                .filter(u =>
-                  [
-                    "HNX3-001",
-                    "HNX3-002",
-                    "HNX3-003",
-                    "HNX3-004",
-                    "HNX3-005",
-                    "HNX3-006",
-                    "HNX3-007",
-                    "HNX3-008"
-                  ].includes(u.unit_code?.trim() || "")
-                )
-                .map((unit) => (
-                  <div
-                    key={unit.unit_code}
-                    className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
-                    onClick={() => navigate('/Medrae-quizzes')}
-                  >
-
-                    <div>
-                      {/* Text neutral colors */}
-                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                        {unit.unit}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
-                    </div>
-                    {/* Badge neutral or subtle color */}
-                    <Badge className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                      {unit.count} Qs
-                    </Badge>
-                  </div>
-
-                ))}
-
-              {/* Other Units */}
-              {unitCounts
-                .filter(u =>
-                  ![
-                    "HNX3-001",
-                    "HNX3-002",
-                    "HNX3-003",
-                    "HNX3-004",
-                    "HNX3-005",
-                    "HNX3-006",
-                    "HNX3-007",
-                    "HNX3-008"
-                  ].includes(u.unit_code?.trim() || "")
-                )
-                .map((unit) => (
-                  <div
-                    key={unit.unit_code}
-                    className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
-                    onClick={() => navigate('/Medrae-quizzes')}
-                  >
-
-                    <div>
-                      <p className="text-sm font-medium">{unit.unit}</p>
-                      <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
-                    </div>
-                    <Badge>{unit.count} Qs</Badge>
-                  </div>
-                ))}
-            </>
-          ) : loading ? (
-            // Skeleton loader for units
-            Array.from({ length: 6 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-none sm:rounded-md flex flex-col justify-between animate-pulse bg-white dark:bg-gray-900 min-h-[80px] shadow-none border-0"
-              >
-
-                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground">No unit data available.</p>
-          )}
-        </CardContent>
-      </Card>
+      <UnitBreakdown nclexUnitCodes={[
+        "HNX3-001", "HNX3-002", "HNX3-003", "HNX3-004",
+        "HNX3-005", "HNX3-006", "HNX3-007", "HNX3-008"
+      ]} />
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">

@@ -92,14 +92,7 @@
         `;
       document.head.appendChild(styleEl);
     }
-    // Offline fallback: ensure UI shell visible immediately
-    window.addEventListener("offline", () => {
-      console.warn("You are offline. App shell is visible, network data won't load.");
-      const root = document.getElementById("root");
-      if (root && !root.innerHTML) {
-        root.innerHTML = "<h2 style='color:white; text-align:center; margin-top:20%;'>Medrae App (Offline Mode)</h2>";
-      }
-    });
+
   </script>
 
 </body>

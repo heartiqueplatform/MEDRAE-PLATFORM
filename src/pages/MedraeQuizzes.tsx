@@ -703,7 +703,9 @@ export function MedraeQuizzes() {
           ))}
         </div>
       </div>
+
       <DailyTriviaCard />
+
       {/* Progress */}
       <Card>
         <CardHeader>
