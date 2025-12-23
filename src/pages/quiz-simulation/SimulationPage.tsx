@@ -864,7 +864,8 @@ export default function SimulationPage() {
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
       <div className="md:col-span-2 space-y-4">
 
-        <Card className="min-h-[400px]">
+        <Card className="min-h-[400px] bg-transparent shadow-none border-none">
+
 
           <CardHeader>
             <CardTitle>
@@ -873,19 +874,33 @@ export default function SimulationPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-base">{currentQuestion.question_text}</p>
-            <div className="space-y-2">
-              {["A", "B", "C", "D"].map((opt) => (
-                <Button
-                  key={opt}
-                  variant={answers[currentQuestion.id] === opt ? "default" : "outline"}
-                  className="w-full justify-start whitespace-normal"
-                  onClick={() => handleSelect(opt)}
-                >
-                  {currentQuestion[`option_${opt.toLowerCase()}`]}
-                </Button>
+            <div className="flex flex-col gap-3">
+              {["A", "B", "C", "D"].map((opt) => {
+                const isSelected = answers[currentQuestion.id] === opt;
 
-              ))}
+                return (
+                  <div
+                    key={opt}
+                    onClick={() => handleSelect(opt)}
+                    className="flex items-start gap-3 cursor-pointer"
+                  >
+                    {/* Empty circle */}
+                    <div
+                      className={`
+            w-5 h-5 flex-shrink-0 rounded-full border-2 mt-1
+            transition-colors duration-200
+            ${isSelected ? "bg-blue-500 border-blue-500" : "bg-white border-gray-400 dark:bg-black dark:border-gray-500"}
+            hover:${!isSelected ? "bg-gray-200 dark:bg-gray-700" : ""}
+          `}
+                    ></div>
+
+                    {/* Answer text */}
+                    <span className="whitespace-normal">{currentQuestion[`option_${opt.toLowerCase()}`]}</span>
+                  </div>
+                );
+              })}
             </div>
+
           </CardContent>
         </Card>
 
@@ -1008,7 +1023,8 @@ export default function SimulationPage() {
       </div>
 
       <div className="space-y-4">
-        <Card className="bg-white text-black dark:bg-gray-800 dark:text-white">
+        <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none p-2">
+
           <CardHeader className="flex justify-between items-center">
             <CardTitle>Time Left</CardTitle>
             {/* Light/Dark toggle */}
@@ -1037,8 +1053,7 @@ export default function SimulationPage() {
           </CardContent>
         </Card>
 
-        <Card className="max-h-[400px] overflow-y-auto pr-2 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
-
+        <Card className="max-h-[400px] overflow-y-auto pr-2 bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none overflow-y-auto custom-scrollbar">
 
           <CardHeader className="flex justify-between items-center sticky top-0 bg-background z-10">
             <CardTitle>Questions</CardTitle>
