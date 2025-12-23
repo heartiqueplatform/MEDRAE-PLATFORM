@@ -231,7 +231,12 @@ export default function SimulationPage() {
     }
 
     // Check which papers are done
-    const { data: results } = await supabase.from("simulation_results").select("paper_id");
+    // updated ✅ only fetch results for THIS user
+    const { data: results } = await supabase
+      .from("simulation_results")
+      .select("paper_id")
+      .eq("user_id", userData.user.id);
+
     const donePaperIds = results?.map((r) => r.paper_id) || [];
 
     const papersWithStatus = papers.map((p) => ({
