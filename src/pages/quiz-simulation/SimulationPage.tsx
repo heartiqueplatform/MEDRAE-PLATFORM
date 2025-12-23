@@ -478,7 +478,7 @@ export default function SimulationPage() {
   const generatePDF = async () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text("Heatique nursing nexus scholar Simulation Results", 14, 20);
+    doc.text("Medrae Kenya Nursing Platform (MKN) Simulation Results", 14, 20);
 
     // NEW: Candidate Details Section
 
