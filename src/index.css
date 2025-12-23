@@ -251,3 +251,24 @@ body,
 .float-button {
   animation: float-button 2s ease-in-out infinite;
 }
+
+.zoom-popup {
+  animation: zoomInOut 0.7s ease forwards;
+}
+
+@keyframes zoomInOut {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

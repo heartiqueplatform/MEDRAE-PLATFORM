@@ -400,6 +400,8 @@ function SimulationAndTriviaSummary() {
   const [targetInput, setTargetInput] = useState(50);
   const [savingTarget, setSavingTarget] = useState(false);
   const [isBelowTarget, setIsBelowTarget] = useState(false);
+  const [simLow, setSimLow] = useState(false);
+  const [triviaLow, setTriviaLow] = useState(false);
 
   // 🔹 Load saved targetInput from localStorage on mount
   useEffect(() => {
@@ -502,9 +504,10 @@ function SimulationAndTriviaSummary() {
     Organized Learning. Confident Exams.
   `;
     inner.className = `
-    px-6 py-4 rounded-xl shadow-lg text-center
-    bg-white dark:bg-gray-800 text-lg font-bold animate-bounce
-  `;
+  px-6 py-4 rounded-xl shadow-lg text-center
+  bg-white dark:bg-gray-800 text-lg font-bold zoom-popup
+`;
+
     popup.appendChild(inner);
     document.body.appendChild(popup);
 
@@ -609,9 +612,10 @@ function SimulationAndTriviaSummary() {
     // inside fetchSummary()
     // inside fetchSummary()
     const targetScore = profile?.target_score ?? Number(localStorage.getItem("target_score")) ?? 50;
-    const belowTarget = simLow || triviaLow;
+    setSimLow(simLow);       // for simulation card
+    setTriviaLow(triviaLow); // for trivia card
+    setIsBelowTarget(simLow || triviaLow); // for overall
 
-    setIsBelowTarget(belowTarget);
 
     if (belowTarget) {
       playAlertOnce(`Your latest score is below your target of ${targetScore}. Focus and try again!`);
@@ -619,7 +623,7 @@ function SimulationAndTriviaSummary() {
 
   }
 
-  const getMessage = (summary) => {
+  const getMessage = (summary, belowTarget) => {
     if (!summary || summary === "empty") return { text: "", warning: false };
     const { latest, average } = summary;
 
@@ -627,17 +631,23 @@ function SimulationAndTriviaSummary() {
       return { text: "Outstanding! You're mastering these topics!", warning: false };
     if (latest >= 70)
       return { text: "Great work! You’re improving steadily.", warning: false };
-    if (isBelowTarget)
+    if (belowTarget)
       return {
-        text: `Your latest score is below your target of ${profile?.target_score ?? 50}. Focus and try again!`,
+        text: `Heads up! Your latest score (${latest}%) is below your target of ${profile?.target_score ?? 50}%. Don't be discouraged every attempt is a chance to learn and improve. Take a moment to review the questions you missed, focus on your weak areas, and try again. You’ve got this! Keep pushing and you’ll reach your goal.`,
         warning: true,
       };
-
     if (latest > average)
-      return { text: "Nice! Your latest score is above your average. You're on the right track.", warning: false };
+      return {
+        text: `Nice job! Your latest score (${latest}%) is above your average (${average}%). 🎉 You're improving steadily and on the right track toward your target of ${profile?.target_score ?? 50}%. Keep this momentum going! 💪`,
+        warning: false
+      };
 
-    return { text: "Keep practicing to improve your results.", warning: false };
+    return {
+      text: `Keep going! Your latest score (${latest}%) is a step in your learning journey. Focus, review, and aim for your target of ${profile?.target_score ?? 50}%. Every attempt gets you closer you're capable of reaching it! 🌟`,
+      warning: false
+    };
   };
+
 
 
   const ProgressRing = ({ value }) => {
@@ -752,9 +762,10 @@ function SimulationAndTriviaSummary() {
                   <SummaryItem label="Average" value={`${simSummary.average}%`} />
                   <SummaryItem label="Attempts" value={simSummary.attempts} />
                 </div>
-                <p className={`mt-4 text-center text-sm font-medium ${getMessage(simSummary).warning ? "text-red-600" : "text-primary"}`}>
-                  {getMessage(simSummary).text}
+                <p className={`mt-4 text-center text-sm font-medium ${getMessage(simSummary, simLow).warning ? "text-red-600" : "text-primary"}`}>
+                  {getMessage(simSummary, simLow).text}
                 </p>
+
               </>
             }
           </CardContent>
@@ -776,9 +787,10 @@ function SimulationAndTriviaSummary() {
                   <SummaryItem label="Average" value={`${triviaSummary.average}%`} />
                   <SummaryItem label="Attempts" value={triviaSummary.attempts} />
                 </div>
-                <p className={`mt-4 text-center text-sm font-medium ${getMessage(triviaSummary).warning ? "text-red-600" : "text-primary"}`}>
-                  {getMessage(triviaSummary).text}
+                <p className={`mt-4 text-center text-sm font-medium ${getMessage(triviaSummary, triviaLow).warning ? "text-red-600" : "text-primary"}`}>
+                  {getMessage(triviaSummary, triviaLow).text}
                 </p>
+
               </>
             }
           </CardContent>
