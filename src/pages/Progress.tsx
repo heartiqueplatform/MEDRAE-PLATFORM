@@ -399,6 +399,7 @@ function SimulationAndTriviaSummary() {
   const [triviaSummary, setTriviaSummary] = useState(null);
   const [targetInput, setTargetInput] = useState(50);
   const [savingTarget, setSavingTarget] = useState(false);
+  const [isBelowTarget, setIsBelowTarget] = useState(false);
 
   // 🔹 Load saved targetInput from localStorage on mount
   useEffect(() => {
@@ -607,25 +608,31 @@ function SimulationAndTriviaSummary() {
 
     // inside fetchSummary()
     // inside fetchSummary()
-    if (simLow || triviaLow) {
-      const targetScore = profile?.target_score ?? Number(localStorage.getItem("target_score")) ?? 50;
+    const targetScore = profile?.target_score ?? Number(localStorage.getItem("target_score")) ?? 50;
+    const belowTarget = simLow || triviaLow;
+
+    setIsBelowTarget(belowTarget);
+
+    if (belowTarget) {
       playAlertOnce(`Your latest score is below your target of ${targetScore}. Focus and try again!`);
     }
-
 
   }
 
   const getMessage = (summary) => {
     if (!summary || summary === "empty") return { text: "", warning: false };
     const { latest, average } = summary;
-    const target = profile?.target_score ?? Number(localStorage.getItem("target_score")) ?? 50;
 
     if (latest >= 85)
       return { text: "Outstanding! You're mastering these topics!", warning: false };
     if (latest >= 70)
       return { text: "Great work! You’re improving steadily.", warning: false };
-    if (latest < target)
-      return { text: `Your latest score is below your target of ${target}. Focus and try again!`, warning: true };
+    if (isBelowTarget)
+      return {
+        text: `Your latest score is below your target of ${profile?.target_score ?? 50}. Focus and try again!`,
+        warning: true,
+      };
+
     if (latest > average)
       return { text: "Nice! Your latest score is above your average. You're on the right track.", warning: false };
 
@@ -641,9 +648,19 @@ function SimulationAndTriviaSummary() {
       <div className="flex justify-center mb-4">
         <svg width="120" height="120">
           <circle stroke="#e5e7eb" fill="transparent" strokeWidth="10" r={radius} cx="60" cy="60" />
-          <circle stroke="#3b82f6" fill="transparent" strokeWidth="10" r={radius} cx="60" cy="60"
-            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-            style={{ transition: "stroke-dashoffset 1s ease" }} />
+          <circle
+            stroke={isBelowTarget ? "#ef4444" : "#3b82f6"}
+            fill="transparent"
+            strokeWidth="10"
+            r={radius}
+            cx="60"
+            cy="60"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 1s ease" }}
+          />
+
           <text
             x="50%"
             y="52%"

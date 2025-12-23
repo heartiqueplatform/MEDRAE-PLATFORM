@@ -459,7 +459,7 @@ const Index = () => {
               {...bind()}
               style={{ touchAction: "pan-y pinch-zoom" }}
 
-              className="relative w-full min-h-[70vh] flex justify-start items-center overflow-y-auto custom-scrollbar touch-pan-y select-none z-10"
+              className="relative w-full min-h-[70vh] flex justify-start items-center overflow-x-auto custom-scrollbar touch-pan-y select-none z-10"
             >
               {heroStorySlides.map((slide, idx) => {
                 const offset = idx - activeHeroStory;
