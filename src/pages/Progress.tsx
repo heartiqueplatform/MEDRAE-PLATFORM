@@ -627,10 +627,6 @@ function SimulationAndTriviaSummary() {
     if (!summary || summary === "empty") return { text: "", warning: false };
     const { latest, average } = summary;
 
-    if (latest >= 85)
-      return { text: "Outstanding! You're mastering these topics!", warning: false };
-    if (latest >= 70)
-      return { text: "Great work! You’re improving steadily.", warning: false };
     if (belowTarget)
       return {
         text: `Heads up! Your latest score (${latest}%) is below your target of ${profile?.target_score ?? 50}%. Don't be discouraged every attempt is a chance to learn and improve. Take a moment to review the questions you missed, focus on your weak areas, and try again. You’ve got this! Keep pushing and you’ll reach your goal.`,
