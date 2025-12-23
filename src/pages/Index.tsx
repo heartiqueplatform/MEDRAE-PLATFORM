@@ -9,10 +9,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useDrag } from '@use-gesture/react';
 import { useSpring, animated } from '@react-spring/web';
 import { supabase } from "@/lib/supabaseClient";
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-
 
 // ✅ Skeleton loader for hero cards (image/video replacement)
 const HeroSkeleton = () => {
@@ -42,13 +38,53 @@ const Index = () => {
   const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
   const studyAudioRef = useRef<HTMLAudioElement | null>(null);
 
+
   const [isMuted, setIsMuted] = useState(false); // always start unmuted
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+  // 1️⃣ Define handleUserScroll first
+  const handleUserScroll = () => {
+    if (welcomeAudioRef.current && studyAudioRef.current) {
+      welcomeAudioRef.current.muted = false;
+      studyAudioRef.current.muted = false;
+
+      welcomeAudioRef.current.play().catch(() => { });
+      studyAudioRef.current.play().catch(() => { });
+
+      // Remove listener after first trigger
+      window.removeEventListener("scroll", handleUserScroll);
+      window.removeEventListener("wheel", handleUserScroll);
+      window.removeEventListener("touchmove", handleUserScroll);
+    }
+  };
+
+  // 2️⃣ Now define triggerAudioOnInteraction
+  const triggerAudioOnInteraction = () => {
+    handleUserScroll(); // ✅ safely calls the defined function
+  };
+
+  // 3️⃣ Add the listeners in useEffect
+  useEffect(() => {
+    window.addEventListener("scroll", handleUserScroll, { passive: true });
+    window.addEventListener("wheel", handleUserScroll, { passive: true });
+    window.addEventListener("touchmove", handleUserScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleUserScroll);
+      window.removeEventListener("wheel", handleUserScroll);
+      window.removeEventListener("touchmove", handleUserScroll);
+    };
+  }, []);
 
 
 
   const navigate = useNavigate();
   useEffect(() => {
     const preloadMedia = async () => {
+      if (!heroStorySlides?.length) return;
       const mediaUrls = heroStorySlides.flatMap(slide => (slide.video ? [slide.video] : [slide.bg]));
 
       const loadPromises = mediaUrls.map(url => {
@@ -80,6 +116,7 @@ const Index = () => {
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        if (!navigate) return;
         if (session?.user) {
           navigate("/redirect", { replace: true });
           return;
@@ -180,7 +217,7 @@ const Index = () => {
       window.removeEventListener("wheel", handleUserScroll);
       window.removeEventListener("touchmove", handleUserScroll);
     };
-  }, [isMuted]);
+  }, []);
 
 
   useEffect(() => {
@@ -286,29 +323,28 @@ const Index = () => {
   const [spring, api] = useSpring(() => ({ x: 0 }));
   const bind = useDrag(
     ({ down, movement: [mx], direction: [xDir], cancel, event }) => {
-      event.preventDefault(); // prevent scroll/selection
+      // Only preventDefault if it's a touch or pointer event
+      if (event?.type?.startsWith("touch") || event?.type?.startsWith("pointer")) {
+        event.preventDefault();
+      }
 
       // Move slide while dragging
       api.start({ x: mx });
 
-      // On release, decide if we change slide
       if (!down) {
         if (mx < -100) {
-          // dragged left → next slide
           setActiveHeroStory(prev => Math.min(prev + 1, heroStorySlides.length - 1));
         } else if (mx > 100) {
-          // dragged right → previous slide
           setActiveHeroStory(prev => Math.max(prev - 1, 0));
         }
-
-        // reset spring position
         api.start({ x: 0 });
       }
     },
     {
       axis: "x",
       filterTaps: true,
-      pointer: { touch: true, mouse: true }, // enable both
+      pointer: { touch: true, mouse: true },
+      passive: false // ensures preventDefault works for actual drag events
     }
   );
 
@@ -336,7 +372,6 @@ const Index = () => {
     window.addEventListener("wheel", handleWheel, { passive: false });
     return () => window.removeEventListener("wheel", handleWheel);
   }, []);
-
 
   const features = [
     {
@@ -402,7 +437,7 @@ const Index = () => {
         </button>
 
 
-        {window.innerWidth < 768 ? (
+        {isMobile ? (
           <div className="flex flex-col gap-0">
             {heroStorySlides.map((slide, idx) => (
               <div
@@ -419,7 +454,6 @@ const Index = () => {
           </div>
         ) : (
           <>
-
             {/* Desktop / Laptop view: keep current hero slides */}
             <animated.div
               {...bind()}
@@ -427,8 +461,6 @@ const Index = () => {
 
               className="relative w-full min-h-[70vh] flex justify-start items-center overflow-x-auto custom-scrollbar touch-pan-y select-none z-10"
             >
-
-
               {heroStorySlides.map((slide, idx) => {
                 const offset = idx - activeHeroStory;
                 const absOffset = Math.abs(offset);
@@ -457,7 +489,6 @@ const Index = () => {
                           <HeroSkeleton />
                         </div>
                       )}
-
                       {slide.video ? (
                         <video
                           className="w-full h-full max-h-screen object-cover rounded-2xl transition-opacity duration-500"
@@ -499,22 +530,27 @@ const Index = () => {
                       <>
                         <button
                           className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
-                          onClick={() => setActiveHeroStory((prev) => Math.max(prev - 1, 0))}
+                          onClick={() => {
+                            setActiveHeroStory((prev) => Math.max(prev - 1, 0));
+                            triggerAudioOnInteraction(); // ✅ play audio on click
+                          }}
                         >
                           &#60;
                         </button>
                         <button
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
-                          onClick={() =>
+                          onClick={() => {
                             setActiveHeroStory((prev) =>
                               Math.min(prev + 1, heroStorySlides.length - 1)
-                            )
-                          }
+                            );
+                            triggerAudioOnInteraction(); // ✅ play audio on click
+                          }}
                         >
                           &#62;
                         </button>
                       </>
                     )}
+
                   </div>
                 );
               })}
@@ -554,7 +590,7 @@ const Index = () => {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Innovative Tools for Nursing Excellence
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
               Medrae integrates modern technology with evidence-based education. Access structured medical content, detailed progress analytics, and interactive video lessons—all designed to support continuous professional growth and mastery in healthcare practice.
             </p>
           </div>
@@ -775,7 +811,7 @@ const Index = () => {
                 <img src="/pwa-192x192.jpeg" className="h-7 w-7 rounded-3xl" alt="Medrae" />
                 <span className="text-xl font-bold">Medrae</span>
               </div>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <p className="text-gray-700 text-sm leading-relaxed">
                 Kenya’s Nursing Network Platform  empowering students and professionals through learning, collaboration, and innovation.We make sure you Learn. Practice. Advance.
               </p>
             </div>
@@ -783,7 +819,7 @@ const Index = () => {
             {/* Platform */}
             <div>
               <h3 className="font-semibold mb-3">Platform</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-gray-700">
                 {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Announcements"].map((item) => (
                   <li key={item}>
                     <Tooltip>
@@ -800,7 +836,7 @@ const Index = () => {
             {/* Learning Tools */}
             <div>
               <h3 className="font-semibold mb-3">Learning</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-gray-700">
                 {["Assessment Notes", "Quiz Units", "Simulation Mode", "Calendar", "Study Progress", "Resources"].map((item) => (
                   <li key={item}>
                     <Tooltip>
@@ -817,7 +853,7 @@ const Index = () => {
             {/* Account & Support */}
             <div>
               <h3 className="font-semibold mb-3">Support</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-gray-700">
                 {["Login", "Register", "Subscription", "Notifications", "Feedback", "Settings"].map((item) => (
                   <li key={item}>
                     <Tooltip>
@@ -842,13 +878,13 @@ const Index = () => {
               <h4 className="font-semibold mb-2 text-lg text-gray-900">
                 College & Licensing Prep
               </h4>
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-gray-700 mb-2">
                 Medrae provides structured support for students completing their college final exams, including NCK licensing exams. The platform offers study materials, practice tests, and guidance to ensure students are well-prepared for their professional assessments.
               </p>
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-gray-700 mb-2">
                 Through interactive tutorials and exam simulations, users gain confidence in clinical skills, theoretical knowledge, and practical application. Medrae’s tools align with Ministry of Health standards and NCK regulations to ensure high-quality exam preparation.
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-700">
                 Learn more about your exam requirements and preparation tips via official resources: <a href="https://www.kmtc.ac.ke" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
                   KMTC & Ministry Resources
                 </a>
@@ -860,13 +896,13 @@ const Index = () => {
 
               <h4 className="font-semibold mb-2 text-gray-900">
                 NCK Exam & Professional Guidance</h4>
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-gray-700 mb-2">
                 Medrae helps nurses and midwives prepare for the NCK licensing exam by providing sample questions, exam tips, and professional guidance. Users can track progress and focus on areas that require more attention.
               </p>
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-gray-700 mb-2">
                 The platform also explains regulatory policies in Kenya, including registration, licensing, and ethical standards, helping users comply with all statutory requirements.
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-700">
                 Access online resources for NCK exam updates and professional registration: <a href="https://www.nckenya.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
                   NCK Official Website
                 </a>
@@ -878,13 +914,13 @@ const Index = () => {
 
               <h4 className="font-semibold mb-2 text-gray-900">
                 NCLEX Familiarity & Global Mobility</h4>
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-gray-700 mb-2">
                 For users aiming to practice nursing internationally, Medrae introduces NCLEX exam content and preparation strategies. This includes practice questions, test-taking strategies, and guidance on international licensing requirements.
               </p>
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-sm text-gray-700 mb-2">
                 While focused on Kenyan regulations and licensing, the platform also supports nurses in understanding global pathways, enabling smoother transitions for work abroad.
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-700">
                 Learn more about NCLEX and international nursing licensure via official resources: <a href="https://www.ncsbn.org/nclex.htm" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
                   NCLEX Official Website
                 </a>
