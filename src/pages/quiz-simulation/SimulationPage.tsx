@@ -518,7 +518,7 @@ export default function SimulationPage() {
 
     // Add advisory paragraph
     doc.setFontSize(11);
-    const advisoryText = `Dear Student, these results are for your personal review and learning. Always cross-check answers with your study notes and seek clarification for any doubts. Remember, consistent practice improves retention and exam performance. For more detailed resources, practice questions, and interactive learning, visit Medrae NURSING NEXUS at https://Medrae-nurses.com.`;
+    const advisoryText = `Dear Student, these results are for your personal review and learning. Always cross-check answers with your study notes and seek clarification for any doubts. Remember, consistent practice improves retention and exam performance. For more detailed resources, practice questions, and interactive learning, visit Medrae ,https://medrae.vercel.app/ or call us through 0717517371.`;
 
     // Wrap text to fit PDF width
     doc.setFont(undefined, "normal");
