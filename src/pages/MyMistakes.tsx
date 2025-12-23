@@ -59,24 +59,6 @@ export default function MyMistakes() {
     const [syncing, setSyncing] = useState(false);
 
     useEffect(() => {
-        if (typeof window === "undefined") return;
-
-        const savedTheme = localStorage.getItem("theme");
-        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-        const theme = savedTheme || (systemPrefersDark ? "dark" : "light");
-
-        // Remove any previous theme class
-        document.documentElement.classList.remove("light", "dark");
-        document.documentElement.classList.add(theme);
-
-        // Set background
-        document.documentElement.style.backgroundColor = theme === "dark" ? "#000" : "#fff";
-        document.body.style.backgroundColor = theme === "dark" ? "#000" : "#fff";
-
-    }, []);
-
-    useEffect(() => {
         const syncOfflineQueue = async () => {
             const queue = getOfflineQueue();
             if (!queue.length) return;
