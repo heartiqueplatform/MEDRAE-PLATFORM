@@ -1362,129 +1362,130 @@ export default function StudentDashboard() {
             </div>
           </div>
         </CardContent>
-        <Card
-          className="relative cursor-pointer hover:shadow-none transition-shadow-none col-span-1 md:col-span-2 max-w-xl mx-auto rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-white dark:bg-gray-900"
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(50);
-            navigate("/feed");
-          }}
-          style={{
-            backgroundColor: "inherit", // inherit from the bg-white / dark:bg-gray-900
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
+      </Card >
 
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-md sm:rounded-md"></div>
+      <Card
+        className="relative cursor-pointer hover:shadow-none transition-shadow-none col-span-1 md:col-span-2 max-w-full rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-white dark:bg-gray-900"
+        onClick={() => {
+          if (navigator.vibrate) navigator.vibrate(50);
+          navigate("/feed");
+        }}
+        style={{
+          backgroundColor: "inherit", // inherit from the bg-white / dark:bg-gray-900
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
 
-          <div className="relative z-20 p-4 flex flex-col justify-between h-full">
-            {/* Card Heading */}
-            <div className="mb-2">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-                Feed & Leaderboard
-              </h2>
-            </div>
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-md sm:rounded-md"></div>
 
-            <CardHeader className="flex items-center justify-between pb-2">
-              <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
-            </CardHeader>
+        <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+          {/* Card Heading */}
+          <div className="mb-2">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+              Feed & Leaderboard
+            </h2>
+          </div>
 
-            <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
-              <p className="text-gray-700 dark:text-white/90">
-                Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
-                The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
-              </p>
+          <CardHeader className="flex items-center justify-between pb-2">
+            <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
+          </CardHeader>
+
+          <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
+            <p className="text-gray-700 dark:text-white/90">
+              Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
+              The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
+            </p>
 
 
-              {/* Stats Row */}
-              <div className="flex flex-col sm:flex-row justify-start items-center sm:items-start gap-6">
-                {/* Questions Attempted */}
-                <div className="flex flex-col items-center sm:items-start">
-                  <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
-                  {feedsAttemptCount === undefined ? (
-                    <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
-                  ) : (
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
-                  )}
-                </div>
+            {/* Stats Row */}
+            <div className="flex flex-col sm:flex-row justify-start items-start gap-6">
 
-                {/* Leader Student */}
-                {topStudents.length > 0 ? (
-                  <div
-                    className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (navigator.vibrate) navigator.vibrate(50);
-                      navigate("/feed");
-                    }}
-                  >
-                    <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
-                    <img
-                      src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                      alt={topStudents[0].name}
-                      className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
-                    />
-                    <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
-                      {topStudents[0].name}
-                    </p>
-                    {topStudents[0].answeredCount !== undefined ? (
-                      <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-none-none text-center">
-                        {topStudents[0].answeredCount} answered
-                      </p>
-                    ) : (
-                      <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-1"></div>
-                    )}
-                  </div>
+              {/* Questions Attempted */}
+              <div className="flex flex-col items-start sm:items-start">
+
+                <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
+                {feedsAttemptCount === undefined ? (
+                  <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
                 ) : (
-                  <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
-                    <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-                    <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                  </div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
                 )}
               </div>
 
-              {topStudents.length > 0 && topStudents[0].answeredCount && (
-                <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-none sm:rounded-md
- font-semibold text-sm shadow-none-none truncate">
-                  Top student has attempted {topStudents[0].answeredCount} questions!
-                </div>
-              )}
-
-              {/* Centered Button */}
-              <div className="flex justify-center mt-3">
+              {/* Leader Student */}
+              {topStudents.length > 0 ? (
                 <div
-                  className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
+                  className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (navigator.vibrate) navigator.vibrate(50);
                     navigate("/feed");
                   }}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
-                  </svg>
-                  <span className="text-sm font-medium">Feed Page</span>
+                  <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
+                  <img
+                    src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                    alt={topStudents[0].name}
+                    className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
+                  />
+                  <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
+                    {topStudents[0].name}
+                  </p>
+                  {topStudents[0].answeredCount !== undefined ? (
+                    <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-none-none text-center">
+                      {topStudents[0].answeredCount} answered
+                    </p>
+                  ) : (
+                    <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-1"></div>
+                  )}
                 </div>
+              ) : (
+                <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
+                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                  <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+              )}
+            </div>
 
-
+            {topStudents.length > 0 && topStudents[0].answeredCount && (
+              <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-none sm:rounded-md
+ font-semibold text-sm shadow-none-none truncate">
+                Top student has attempted {topStudents[0].answeredCount} questions!
               </div>
-            </CardContent>
-          </div>
-        </Card >
+            )}
+
+            {/* Centered Button */}
+            <div className="flex justify-start mt-3">
+
+              <div
+                className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (navigator.vibrate) navigator.vibrate(50);
+                  navigate("/feed");
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
+                </svg>
+                <span className="text-sm font-medium">Feed Page</span>
+              </div>
 
 
+            </div>
+          </CardContent>
+        </div>
       </Card >
-
 
       <Card className="lg:col-span-3 w-full bg-white/40 dark:bg-gray-900 border-none rounded-none sm:rounded-md
  overflow-hidden">

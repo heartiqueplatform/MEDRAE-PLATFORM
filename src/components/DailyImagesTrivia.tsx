@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { ChevronLeft, ChevronRight, Maximize, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, Eye, X } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
 
 type ImageItem = {
@@ -33,12 +33,16 @@ export default function DailyImagesTrivia() {
     const [topUsers, setTopUsers] = useState<SeenUser[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
     const autoplayRef = useRef<NodeJS.Timeout | null>(null);
-    const AUTOPLAY_DELAY = 10000;
+    const AUTOPLAY_DELAY = 100000;
 
     const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const localImagesKey = `dailyImages_${todayKey}`;
 
     const localLoaderKey = `dailyLoader_${todayKey}`;
+    // Add this inside your component
+    const openFullscreen = (url: string) => {
+        setActiveImage(url); // ✅ This triggers the fullscreen overlay
+    };
 
     const quickComments = [
         "Amazing! 😍",
@@ -111,48 +115,7 @@ export default function DailyImagesTrivia() {
         };
     }, [images]);
 
-    // Swipe & mouse drag
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        let startX: number | null = null;
-        const onTouchStart = (e: TouchEvent) => (startX = e.touches[0].clientX);
-        const onTouchEnd = (e: TouchEvent) => {
-            if (startX === null) return;
-            const diff = e.changedTouches[0].clientX - startX;
-            if (diff > 50) prev();
-            else if (diff < -50) next();
-            startX = null;
-        };
-
-        let isMouseDown = false;
-        let mouseStartX: number | null = null;
-        const onMouseDown = (e: MouseEvent) => {
-            isMouseDown = true;
-            mouseStartX = e.clientX;
-        };
-        const onMouseUp = (e: MouseEvent) => {
-            if (!isMouseDown || mouseStartX === null) return;
-            const diff = e.clientX - mouseStartX;
-            if (diff > 50) prev();
-            else if (diff < -50) next();
-            isMouseDown = false;
-            mouseStartX = null;
-        };
-
-        container.addEventListener("touchstart", onTouchStart);
-        container.addEventListener("touchend", onTouchEnd);
-        container.addEventListener("mousedown", onMouseDown);
-        container.addEventListener("mouseup", onMouseUp);
-
-        return () => {
-            container.removeEventListener("touchstart", onTouchStart);
-            container.removeEventListener("touchend", onTouchEnd);
-            container.removeEventListener("mousedown", onMouseDown);
-            container.removeEventListener("mouseup", onMouseUp);
-        };
-    }, [images]);
+    // Swipe & mouse drag was here
 
     const prev = () => setActiveIndex((i) => (i === 0 ? images.length - 1 : i - 1));
     const next = () => setActiveIndex((i) => (i === images.length - 1 ? 0 : i + 1));
@@ -278,7 +241,7 @@ export default function DailyImagesTrivia() {
             {/* Card Heading & Description */}
             <div className="w-full max-w-5xl mx-auto text-center mb-4 px-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Daily Visual Trivia
+                    Daily 3Ree Visual Trivia
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Swipe through today’s images to enhance your memory and learn new concepts!
@@ -309,66 +272,87 @@ export default function DailyImagesTrivia() {
                     ))}
                 </div>
 
-                {/* Left arrow */}
-                <button
-                    onClick={prev}
-                    className="absolute left-2 top-1/2 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-                >
-                    <ChevronLeft size={24} />
-                </button>
 
                 {/* Images */}
-                <div className="relative w-full h-[460px] flex items-center justify-center">
-                    {images.map((img, index) => {
-                        const offset = index - activeIndex;
-                        if (Math.abs(offset) > 1) return null; // only render active + one neighbor
-
-                        // Adjust spacing for big screens
-                        const spacing = isLargeScreen ? 250 : 180;
-
-                        return (
+                <div
+                    className="relative w-full h-[460px] flex items-center justify-center overflow-hidden"
+                    ref={containerRef}
+                >
+                    {isLargeScreen ? (
+                        // === Big screens: multi-layered style with translate + tap left/right ===
+                        <div
+                            className="flex transition-transform duration-500 ease-out"
+                            style={{
+                                transform: `translateX(-${activeIndex * 100}%)`,
+                                width: `${images.length * 100}%`,
+                            }}
+                            onClick={(e) => {
+                                const { left, width } = e.currentTarget.getBoundingClientRect();
+                                const clickX = e.clientX - left;
+                                if (clickX < width / 2) prev();
+                                else next();
+                            }}
+                        >
+                            {images.map((img) => (
+                                <div
+                                    key={img.id}
+                                    className="w-full flex-shrink-0 flex items-center justify-center cursor-pointer px-2 relative"
+                                >
+                                    <img
+                                        src={img.image_url}
+                                        alt="Story"
+                                        className="w-[320px] h-[420px] object-cover rounded-xl shadow-lg"
+                                        loading="lazy"
+                                    />
+                                    {/* Fullscreen button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent parent click
+                                            openFullscreen(img.image_url);
+                                        }}
+                                        className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
+                                    >
+                                        <Maximize className="w-8 h-8 text-black" />
+                                        <span className="text-xs font-medium text-black">View Image</span>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        // === Small screens: one image at a time, tap left/right to navigate ===
+                        images[activeIndex] && (
                             <div
-                                key={img.id}
-                                onClick={() => setActiveImage(img.image_url)}
-                                className="absolute transition-all duration-500 ease-out cursor-pointer"
-                                style={{
-                                    width: "320px",
-                                    height: "420px",
-                                    transform: `translateX(${offset * spacing}px) scale(${offset === 0 ? 1 : 0.82})`,
-                                    zIndex: offset === 0 ? 10 : 5 - Math.abs(offset),
-                                    opacity: offset === 0 ? 1 : 0.2, // Active image fully visible, neighbor slightly transparent
+                                className="w-[80vw] max-w-[320px] h-[60vh] max-h-[420px] cursor-pointer relative"
+                                onClick={(e) => {
+                                    const { left, width } = e.currentTarget.getBoundingClientRect();
+                                    const clickX = e.clientX - left;
+                                    if (clickX < width / 2) prev();
+                                    else next();
                                 }}
                             >
                                 <img
-                                    src={img.image_url}
+                                    src={images[activeIndex].image_url}
                                     alt="Story"
-                                    className="w-full h-full object-cover rounded-xl shadow-lg"
+                                    className="w-full h-full object-cover rounded-xl shadow-lg transition-transform duration-300"
                                     loading="lazy"
                                 />
-
                                 {/* Fullscreen button */}
-                                {offset === 0 && (
-                                    <button
-                                        onClick={() => openFullscreen(img.image_url)}
-                                        className="absolute bottom-3 right-3 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg"
-                                    >
-                                        <Maximize className="w-5 h-5 text-black" />
-                                    </button>
-                                )}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // ✅ Prevent image tap from triggering prev/next
+                                        openFullscreen(images[activeIndex].image_url);
+                                    }}
+                                    className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
+                                >
+                                    <Maximize className="w-8 h-8 text-black" />
+                                    <span className="text-xs font-medium text-black">View Image</span>
+                                </button>
                             </div>
-                        );
-                    })}
-
+                        )
+                    )}
                 </div>
 
 
-                {/* Right arrow */}
-                <button
-                    onClick={next}
-                    className="absolute right-2 top-1/2 z-20 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
-                >
-                    <ChevronRight size={24} />
-                </button>
 
 
                 {/* Mark Seen button inside the card */}
@@ -392,9 +376,7 @@ export default function DailyImagesTrivia() {
                             <Eye className="w-5 h-5" />
                             Mark Seen
                         </button>
-
                     )}
-
                     {/* Quick comment modal */}
                     {showComments && (
                         <div
@@ -424,8 +406,6 @@ export default function DailyImagesTrivia() {
                         </div>
                     )}
                 </div>
-
-                {/* Top 10 students panel inside the card */}
                 {/* Top 10 students panel inside the card */}
                 <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mt-6">
                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
@@ -466,18 +446,30 @@ export default function DailyImagesTrivia() {
 
 
             {/* Fullscreen view */}
+
             {activeImage && (
                 <div
-                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-                    onClick={() => setActiveImage(null)}
+                    className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center transition-opacity duration-300"
+                    onClick={() => setActiveImage(null)} // click outside closes
                 >
+                    {/* Close Button */}
+                    <button
+                        onClick={() => setActiveImage(null)}
+                        className="absolute top-4 right-4 z-[10000] p-2 rounded-full bg-white/80 hover:bg-white text-black transition-transform duration-200 hover:scale-110"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+
+                    {/* Fullscreen Image */}
                     <img
                         src={activeImage}
                         alt="Fullscreen"
-                        className="max-w-full max-h-full object-contain"
+                        className="max-w-full max-h-full object-contain transition-transform duration-300 transform scale-90 animate-scale-up"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking the image
                     />
                 </div>
             )}
+
         </>
     );
 }

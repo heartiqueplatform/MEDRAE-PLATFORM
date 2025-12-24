@@ -136,13 +136,17 @@ export default {
           "100%": { transform: "scale(1) rotate(0deg)", opacity: "1" },
         },
 
-
+        "scale-up": {
+          "0%": { transform: "scale(0.9)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
 
       /* ----------------------------- */
       /* ⭐ COMBINED ANIMATIONS         */
       /* ----------------------------- */
       animation: {
+
         ecg: "ecg 3s linear infinite",
 
         spinMotor: "spinMotor 0.5s linear infinite",
@@ -154,6 +158,8 @@ export default {
         "marquee-reverse": "marquee-reverse 20s linear infinite",
         pop: "pop 0.6s ease forwards",
         "emoji-zoom": "emoji-zoom-bounce 0.8s ease-out forwards",
+        "scale-up": "scale-up 0.3s ease-out forwards",
+
       },
     },
   },

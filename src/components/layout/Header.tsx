@@ -199,7 +199,32 @@ export function Header({
           <Menu className="h-5 w-5" />
           <span className="text-[11px] font-medium mt-0.5">Menu</span>
         </button>
+        <div className="flex items-center gap-3 order-1 lg:hidden">
+          {/* Online Status */}
+          <div className="flex flex-col items-start space-y-1">
+            {isOnline ? (
+              <>
+                <span className="inline-block h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-sm"></span>
+                <span className="text-xs font-semibold text-green-600 dark:text-green-400">Online</span>
+              </>
+            ) : (
+              <>
+                <span className="inline-block h-3 w-3 rounded-full bg-red-500 shadow-sm"></span>
+                <span className="text-xs font-semibold text-red-600 dark:text-red-400">Offline</span>
+              </>
+            )}
+          </div>
 
+          {/* Streak (mobile only) */}
+          {streak > 0 && isOnline && (
+            <div className="flex flex-col items-start space-y-1">
+              <span className="text-xs font-semibold text-yellow-600 dark:text-yellow-400">
+                Streak 🔥 {streak} day{streak !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
+
+        </div>
         {/* Center scrolling text */}
         <div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">
           <div className="whitespace-nowrap animate-marquee text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
@@ -210,9 +235,7 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-2 xl:gap-6">
-
-
-        <div className="flex flex-col items-center space-y-1">
+        <div className="hidden sm:flex flex-col items-center space-y-1">
           {isOnline ? (
             <>
               <span className="inline-block h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-sm"></span>
@@ -225,6 +248,7 @@ export function Header({
             </>
           )}
         </div>
+
 
         <div className="hidden md:block">
           <Badge

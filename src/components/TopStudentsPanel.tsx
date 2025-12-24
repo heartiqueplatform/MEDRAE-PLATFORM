@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, MessageCircle, Trophy } from "lucide-react";
 import confetti from "canvas-confetti";
 import { playSound } from "@/lib/soundManager";
+import { useNavigate } from "react-router-dom";
 
 interface TriviaQuestion {
     id: string;
@@ -26,6 +27,8 @@ interface TopStudent {
     institution?: string | null;
 }
 export const DailyTriviaCard = () => {
+    const navigate = useNavigate();
+
     const [selfUserId, setSelfUserId] = useState<string | null>(null);
     useEffect(() => {
         supabase.auth.getSession().then(({ data }) => {
@@ -412,10 +415,12 @@ export const DailyTriviaCard = () => {
                         </Button>
                     )}
                     {completed && (
-                        <div className="mt-4 p-4 bg-transparent dark:bg-transparent text-center font-semibold animate-fade-in">
+                        <div className="mt-4 p-2 bg-transparent dark:bg-transparent text-left font-semibold animate-fade-in">
+
 
                             <span className="text-lg font-bold">Congratulations! You finished today's trivia!</span>
                             <br />
+
 
                             {/* Score display */}
                             {savedScore
@@ -511,7 +516,13 @@ export const DailyTriviaCard = () => {
                                 if (score >= Math.ceil(questions.length * 0.5)) return "🙂 Nice work! Keep practicing and you'll improve!";
                                 return "👍 Good effort! Remember, every answer helps you learn more!";
                             })()}
-
+                            <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                                Every day, our trivia questions are carefully selected from different units across the app, giving you a mix of topics to challenge your knowledge.
+                                Here on the <span className="text-blue-600 underline font-medium cursor-pointer" onClick={() => navigate("/Medrae-quizzes")}>
+                                    Medrae Quizzes page
+                                </span>, you'll find all units fully organized with similar questions.
+                                It’s like a showcase of the learning product explore, practice, and strengthen your skills at your own pace!
+                            </p>
                             <br /><br />
                             <span className="text-sm text-gray-700 dark:text-gray-300 italic">
                                 Remember: Medrae helps you <strong>Organized Learning. Confident Exams.</strong>
