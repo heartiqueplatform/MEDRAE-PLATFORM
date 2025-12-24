@@ -24,7 +24,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Trash2 } from "lucide-react"; // make sure this import is at the top } from "lucide-react";
-import { GlobalLoader } from "@/components/GlobalLoader";
+import DailyImagesTrivia from "@/components/DailyImagesTrivia";
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
@@ -1251,6 +1251,7 @@ export default function StudentDashboard() {
 
       <DailyTriviaCard />
 
+      <DailyImagesTrivia />
       {/* 🏆 Top Students Leaderboard */}
       <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-white dark:bg-gray-900 border-0">
 

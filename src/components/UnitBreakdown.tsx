@@ -115,15 +115,15 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                                         onClick={() => navigate("/Medrae-quizzes")}
                                     >
                                         <div className="flex flex-col">
-                                            <p className="text-sm font-medium flex items-center gap-2">
+                                            <div className="text-sm font-medium flex items-center gap-2">
                                                 <Badge
-                                                    className={`text-white text-xs ${paper === "P1" ? "bg-blue-500" : "bg-purple-500"
-                                                        }`}
+                                                    className={`text-white text-xs ${paper === "P1" ? "bg-blue-500" : "bg-purple-500"}`}
                                                 >
                                                     {paper === "P1" ? "P1 NCK" : "P2 NCK"}
                                                 </Badge>
                                                 {unit.unit}
-                                            </p>
+                                            </div>
+
                                             <p className="text-xs text-muted-foreground">{unit.unit_code}</p>
                                         </div>
                                         <Badge
