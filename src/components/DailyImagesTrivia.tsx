@@ -43,6 +43,13 @@ export default function DailyImagesTrivia() {
     const openFullscreen = (url: string) => {
         setActiveImage(url); // ✅ This triggers the fullscreen overlay
     };
+    const vibrateSafe = (duration: number = 100) => {
+        // Check if vibration API is supported
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+            // Only vibrate on user gesture (click/tap)
+            navigator.vibrate(duration);
+        }
+    };
 
     const quickComments = [
         "Amazing! 😍",
@@ -369,9 +376,10 @@ export default function DailyImagesTrivia() {
                         <button
                             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
                             onClick={() => {
-                                if (navigator.vibrate) navigator.vibrate(100); // vibrate on click
+                                vibrateSafe(100);  // ✅ safe vibration
                                 setShowComments(true);
                             }}
+
                         >
                             <Eye className="w-5 h-5" />
                             Mark Seen
@@ -395,6 +403,7 @@ export default function DailyImagesTrivia() {
                                         key={c}
                                         className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                                         onClick={() => {
+                                            vibrateSafe(50);  // tiny vibration on comment selection
                                             markSeen(c);
                                             setShowComments(false);
                                         }}

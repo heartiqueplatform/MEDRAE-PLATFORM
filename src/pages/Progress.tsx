@@ -616,11 +616,6 @@ function SimulationAndTriviaSummary() {
     setTriviaLow(triviaLow); // for trivia card
     setIsBelowTarget(simLow || triviaLow); // for overall
 
-
-    if (belowTarget) {
-      playAlertOnce(`Your latest score is below your target of ${targetScore}. Focus and try again!`);
-    }
-
   }
 
   const getMessage = (summary, belowTarget) => {
