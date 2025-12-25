@@ -16,7 +16,8 @@ type SeenUser = {
     avatar_url?: string | null;
     name: string;
     institution?: string | null;
-    comment: string;
+    comment?: string;          // optional single comment
+    comments?: string[];       // optional array of comments
 };
 
 export default function DailyImagesTrivia() {
@@ -69,34 +70,86 @@ export default function DailyImagesTrivia() {
 
     // Load images (with daily persistence)
     useEffect(() => {
-        const loadImages = async () => {
+        const loadDailyImages = async () => {
             setDataLoading(true);
 
+            const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            const localImagesKey = `dailyImages_${todayKey}`;
+
+            // 1️⃣ Check localStorage cache first
             const storedImages = localStorage.getItem(localImagesKey);
             if (storedImages) {
-                setImages(JSON.parse(storedImages));
+                const cachedImages: ImageItem[] = JSON.parse(storedImages);
+
+                // 2️⃣ Filter out already seen images if user exists
+                const { data: { user } } = await supabase.auth.getUser();
+                let filteredImages = cachedImages;
+
+                if (user) {
+                    const { data: seenRows } = await supabase
+                        .from("qfeed_seen_comments")
+                        .select("image_id")
+                        .eq("user_id", user.id)
+                        .gte("created_at", `${todayKey}T00:00:00`)
+                        .lt("created_at", `${todayKey}T23:59:59`);
+
+                    const seenIds = seenRows?.map(r => r.image_id) || [];
+                    filteredImages = cachedImages.filter(img => !seenIds.includes(img.id));
+
+                    // If all images are seen, reset to full daily set
+                    if (filteredImages.length === 0) filteredImages = cachedImages;
+                }
+
+                setImages(filteredImages);
                 setDataLoading(false);
                 return;
             }
 
-            const { data } = await supabase
+            // 3️⃣ Fetch all images from Supabase
+            const { data, error } = await supabase
                 .from("qfeed_images")
-                .select("id, image_url, description")
-                .order("created_at", { ascending: false })
-                .limit(20);
+                .select("id, image_url, description");
 
-            if (data && data.length > 0) {
-                const shuffled = [...data].sort(() => 0.5 - Math.random());
-                const dailyImages = shuffled.slice(0, 3);
-                setImages(dailyImages);
-                localStorage.setItem(localImagesKey, JSON.stringify(dailyImages));
+            if (error) {
+                console.error("Failed to load images:", error.message);
+                setImages([]);
+                setDataLoading(false);
+                return;
             }
+
+            if (!data || data.length === 0) {
+                setImages([]);
+                setDataLoading(false);
+                return;
+            }
+
+            // 4️⃣ Deterministic shuffle based on today's date
+            let seed = 0;
+            for (let i = 0; i < todayKey.length; i++) {
+                seed = todayKey.charCodeAt(i) + ((seed << 5) - seed);
+            }
+
+            let value = Math.abs(seed);
+            const random = () => {
+                value = (value * 9301 + 49297) % 233280;
+                return value / 233280;
+            };
+
+            const shuffled = [...data].sort(() => random() - 0.5);
+
+            // 5️⃣ Pick first 3 images
+            const dailyImages = shuffled.slice(0, 3);
+
+            // 6️⃣ Save in state and cache
+            setImages(dailyImages);
+            localStorage.setItem(localImagesKey, JSON.stringify(dailyImages));
 
             setDataLoading(false);
         };
 
-        loadImages();
+        loadDailyImages();
     }, []);
+
 
     // Loader: show only once per day
 
@@ -133,33 +186,63 @@ export default function DailyImagesTrivia() {
 
     // ✅ Load Top 10 students directly from DB view
     useEffect(() => {
-        // ✅ SAME LOGIC YOU HAD — PRESERVED EXACTLY
         const loadTopUsers = async () => {
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+            // Fetch today's seen comments with user info
             const { data, error } = await supabase
-                .from("daily_top_students")
-                .select("*");
+                .from('qfeed_seen_comments') // ✅ table name only
+                .select(`
+    user_id,
+    comment,
+    created_at,
+    profiles!inner(name, avatar_url, institution)
+  `)
+                .gte('created_at', `${today}T00:00:00`)
+                .lt('created_at', `${today}T23:59:59`);
 
             if (error) {
-                console.error("Failed to load top students:", error.message);
+                console.error("Failed to load top student:", error.message);
                 setTopUsers([]);
                 return;
             }
 
-            setTopUsers(
-                (data || []).map((u: any) => ({
-                    id: u.user_id,
-                    name: u.name,
-                    avatar_url: u.avatar_url,
-                    institution: u.institution,
-                    comment: "Completed all images today 🎉",
-                }))
-            );
+            if (!data || data.length === 0) {
+                setTopUsers([]);
+                return;
+            }
+
+            // Group by user
+            const userMap: { [key: string]: { rows: any[], firstCompleted: string } } = {};
+            data.forEach((row: any) => {
+                if (!userMap[row.user_id]) {
+                    userMap[row.user_id] = { rows: [], firstCompleted: row.created_at };
+                }
+                userMap[row.user_id].rows.push(row);
+            });
+
+            // Users who have seen all 3 images
+            const completedUsers = Object.values(userMap)
+                .filter(u => u.rows.length >= 3)
+                .sort((a, b) => new Date(a.firstCompleted).getTime() - new Date(b.firstCompleted).getTime());
+            if (completedUsers.length > 0) {
+                const topUsersList: SeenUser[] = completedUsers.slice(0, 10).map(u => ({
+                    id: u.rows[0].user_id,
+                    name: u.rows[0].profiles.name,
+                    avatar_url: u.rows[0].profiles.avatar_url,
+                    institution: u.rows[0].profiles.institution,
+                    comments: u.rows.map(row => row.comment) || [],
+                    comment: "Completed all 3 images today 🎉",
+                }));
+                setTopUsers(topUsersList);
+            } else {
+                setTopUsers([]);
+            }
         };
 
-        // ✅ Initial load (replaces deleted useEffect)
         loadTopUsers();
 
-        // ✅ Realtime: listen to REAL table (not the view)
+        // Real-time updates
         const subscription = supabase
             .channel("top-students-channel")
             .on(
@@ -169,9 +252,12 @@ export default function DailyImagesTrivia() {
                     schema: "public",
                     table: "qfeed_seen_comments",
                 },
-                async () => {
-                    // 🔄 Re-fetch the VIEW when base table changes
-                    await loadTopUsers();
+                async (payload) => {
+                    const createdAt = new Date(payload.new.created_at).toISOString().slice(0, 10);
+                    const today = new Date().toISOString().slice(0, 10);
+                    if (createdAt === today) {
+                        await loadTopUsers();
+                    }
                 }
             )
             .subscribe();
@@ -180,6 +266,7 @@ export default function DailyImagesTrivia() {
             supabase.removeChannel(subscription);
         };
     }, []);
+
 
     // Load seen data for the current user from Supabase
     useEffect(() => {
@@ -190,11 +277,15 @@ export default function DailyImagesTrivia() {
             try {
                 // Get all seen comments by this user for today's images
                 const imageIds = images.map(img => img.id);
+                const today = new Date().toISOString().slice(0, 10);
+
                 const { data, error } = await supabase
                     .from("qfeed_seen_comments")
                     .select("image_id, comment")
                     .eq("user_id", user.id)
-                    .in("image_id", imageIds);
+                    .in("image_id", imageIds)
+                    .gte("created_at", `${today}T00:00:00`)
+                    .lt("created_at", `${today}T23:59:59`);
 
                 if (error) throw error;
 
@@ -215,7 +306,6 @@ export default function DailyImagesTrivia() {
 
 
     // Mark Seen + Save Comment
-    // Mark Seen + Save Comment
     const markSeen = async (comment: string) => {
         if (!images[activeIndex]) return;
         const image_id = images[activeIndex].id;
@@ -231,11 +321,83 @@ export default function DailyImagesTrivia() {
                 comment,
             });
 
-            // 2️⃣ Update local state
+            // 2️⃣ Update local state immediately
             setSeenData(prev => ({ ...prev, [image_id]: comment }));
 
-            // 3️⃣ Call the SQL function to update daily top students
-            await supabase.rpc("update_daily_top_students");
+            // 3️⃣ Check if user has now seen all 3 images today
+            const today = new Date().toISOString().slice(0, 10);
+            const imageIds = images.map(img => img.id);
+
+            const { data: seenRows, error } = await supabase
+                .from("qfeed_seen_comments")
+                .select("image_id")
+                .eq("user_id", user.id)
+                .in("image_id", imageIds)
+                .gte("created_at", `${today}T00:00:00`)
+                .lt("created_at", `${today}T23:59:59`);
+
+            if (error) throw error;
+
+            // 4️⃣ If user has seen all 3 images, refresh top user list
+            // 4️⃣ If user has seen all 3 images, refresh top user list
+            if (seenRows && seenRows.length >= 3) {
+                // Trigger reloading of topUsers useEffect
+                const loadTopUsers = async () => {
+                    const today = new Date().toISOString().slice(0, 10);
+
+                    const { data, error } = await supabase
+                        .from('qfeed_seen_comments')
+                        .select(`
+                user_id,
+                comment,
+                created_at,
+                profiles!inner(name, avatar_url, institution)
+            `)
+                        .gte('created_at', `${today}T00:00:00`)
+                        .lt('created_at', `${today}T23:59:59`);
+
+                    if (error) {
+                        console.error("Failed to load top students:", error.message);
+                        setTopUsers([]);
+                        return;
+                    }
+
+                    if (!data || data.length === 0) {
+                        setTopUsers([]);
+                        return;
+                    }
+
+                    // Group rows by user_id
+                    const userMap: { [key: string]: { rows: any[], firstCompleted: string } } = {};
+                    data.forEach((row: any) => {
+                        if (!userMap[row.user_id]) {
+                            userMap[row.user_id] = { rows: [], firstCompleted: row.created_at };
+                        }
+                        userMap[row.user_id].rows.push(row);
+                    });
+
+                    // Only include users who completed all 3 images
+                    const completedUsers = Object.values(userMap)
+                        .filter(u => u.rows.length >= 3)
+                        .sort(
+                            (a, b) => new Date(a.firstCompleted).getTime() - new Date(b.firstCompleted).getTime()
+                        );
+
+                    // Map to SeenUser format, max 10 users
+                    const topUsersList: SeenUser[] = completedUsers.slice(0, 10).map(u => ({
+                        id: u.rows[0].user_id,
+                        name: u.rows[0].profiles.name,
+                        avatar_url: u.rows[0].profiles.avatar_url,
+                        institution: u.rows[0].profiles.institution,
+                        comments: u.rows.map(row => row.comment) || [],
+                        comment: "Completed all 3 images today 🎉",
+                    }));
+
+                    setTopUsers(topUsersList);
+                };
+
+                await loadTopUsers();
+            }
 
         } catch (err) {
             console.error(err);
@@ -416,6 +578,7 @@ export default function DailyImagesTrivia() {
                     )}
                 </div>
                 {/* Top 10 students panel inside the card */}
+                {/* Top 10 students panel inside the card */}
                 <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mt-6">
                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
                         Top 10 Students Who Marked Seen
@@ -428,7 +591,7 @@ export default function DailyImagesTrivia() {
                     ) : (
                         <ul className="flex flex-col gap-2">
                             {topUsers.map((u, index) => (
-                                <li key={u.id} className="flex items-center gap-2">
+                                <li key={u.id} className="flex items-start gap-2">
                                     <span className="font-semibold w-5 text-gray-700 dark:text-gray-300">
                                         #{index + 1}
                                     </span>
@@ -437,19 +600,29 @@ export default function DailyImagesTrivia() {
                                         alt={u.name}
                                         className="w-8 h-8 rounded-full object-cover"
                                     />
-                                    <div>
+                                    <div className="flex-1">
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                                             {u.name} {u.institution && `(${u.institution})`}
                                         </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            {u.comment}
-                                        </p>
+                                        {/* Safely render user comments */}
+                                        {u.comments?.length > 0 && (
+                                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                {u.comments.map((c, i) => (
+                                                    <span key={i}>
+                                                        User commented: {c}
+                                                        {i < u.comments.length - 1 && <br />}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </li>
                             ))}
+
                         </ul>
                     )}
                 </div>
+
 
             </div>
 
