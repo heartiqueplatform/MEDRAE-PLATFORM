@@ -58,7 +58,8 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
 
     return (
         <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="p-2 flex flex-row items-center justify-between">
+
                 <div>
                     <CardTitle>QUIZZES NCK UNIT BREAKDOWN & NCLEX CLIENT NEEDS CATEGORY</CardTitle>
                     <CardDescription>

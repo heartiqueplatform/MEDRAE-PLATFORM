@@ -239,7 +239,6 @@ export default function DailyImagesTrivia() {
                 setTopUsers([]);
             }
         };
-
         loadTopUsers();
 
         // Real-time updates
@@ -593,7 +592,7 @@ export default function DailyImagesTrivia() {
                             {topUsers.map((u, index) => (
                                 <li key={u.id} className="flex items-start gap-2">
                                     <span className="font-semibold w-5 text-gray-700 dark:text-gray-300">
-                                        #{index + 1}
+                                        {index + 1}
                                     </span>
                                     <img
                                         src={u.avatar_url || "/default-avatar.png"}

@@ -1025,9 +1025,10 @@ export default function StudentDashboard() {
       </div>
       {/* Upcoming Redletter Dates / Revision Schedule Card */}
       <Card
-        className="rounded-md bg-white/5 dark:bg-gray-800 p-4 mt-4 cursor-pointer hover:bg-white/10 dark:hover:bg-gray-700/30 transition-colors"
+        className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
         onClick={() => navigate("/calendar")}
       >
+
         <CardHeader className="flex items-center space-x-2">
           <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
           <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -1141,9 +1142,8 @@ export default function StudentDashboard() {
           </div>
         </Card>
 
-        {/* Average Score */}
-        <Card className="relative cursor-pointer overflow-hidden rounded-none sm:rounded-md
- shadow-none">
+        <Card className="relative cursor-pointer overflow-hidden rounded-none sm:rounded-md shadow-none">
+          {/* Background image */}
           <div
             className="absolute inset-0"
             style={{
@@ -1152,31 +1152,49 @@ export default function StudentDashboard() {
               backgroundPosition: "center",
             }}
           />
+          {/* Overlay */}
           <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
 
-          <div className="relative z-20 p-4">
+          <div className="relative z-20 p-2 flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-white">My Target Score</CardTitle>
               <Target className="h-4 w-4 text-white/80" />
-
             </CardHeader>
-            <CardContent>
+
+            <CardContent className="flex flex-col gap-2">
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-16 bg-white/40/30 rounded"></div>
-                  <div className="h-2 w-20 bg-white/40/30 rounded"></div>
+                  <div className="h-8 w-16 bg-white/30 rounded"></div>
+                  <div className="h-2 w-20 bg-white/30 rounded"></div>
                 </div>
               ) : (
                 <>
-
                   <div className="text-2xl font-bold text-white">{targetScore}%</div>
                   <p className="text-xs text-white/80 truncate">Your personal target</p>
                 </>
-
               )}
+
+              {/* Divider line */}
+              <div className="border-t border-white/30 my-2 w-full" />
+
+              {/* Small instruction, lighter and italic */}
+              <p className="text-xs text-white/50 italic mb-1">
+                Visit your progress page to adjust your target.
+              </p>
+
+              {/* Button aligned right */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => navigate("/progress")}
+                  className="px-3 py-1 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded transition"
+                >
+                  Visit
+                </button>
+              </div>
             </CardContent>
           </div>
         </Card>
+
 
         {/* Current Streak */}
         <Card
@@ -1487,189 +1505,193 @@ export default function StudentDashboard() {
         </div>
       </Card >
 
-      <Card className="lg:col-span-3 w-full bg-white/40 dark:bg-gray-900 border-none rounded-none sm:rounded-md
+      <Card className="lg:col-span-3  w-full bg-white/40 dark:bg-gray-900 border-none rounded-none sm:rounded-md
  overflow-hidden">
-        <CardHeader>
+        <CardHeader className="p-2">
+
           <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
           <CardDescription className="text-gray-700 dark:text-gray-300">
             This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          {/* Daily Thought Textarea */}
-          <textarea
-            className="w-full p-3 rounded-none sm:rounded-md
+        <CardContent className="p-2">
+          <div className="space-y-4 px-3 sm:px-4">
+
+            {/* Daily Thought Textarea */}
+            <textarea
+              className="w-full p-3 rounded-none sm:rounded-md
     bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
-            placeholder="Write today's thought..."
-            value={dailyContent}
-            onChange={(e) => setDailyContent(e.target.value)}
-          />
+              placeholder="Write today's thought..."
+              value={dailyContent}
+              onChange={(e) => setDailyContent(e.target.value)}
+            />
 
 
-          {/* Visibility Selector */}
-          <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
-            <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
-            <select
-              value={dailyDuration}
-              onChange={(e) => setDailyDuration(e.target.value as any)}
-              className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-none sm:rounded-md
+            {/* Visibility Selector */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
+              <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
+              <select
+                value={dailyDuration}
+                onChange={(e) => setDailyDuration(e.target.value as any)}
+                className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-none sm:rounded-md
  w-full sm:w-40"
-            >
-              <option value="24h">24 Hours</option>
-              <option value="1w">1 Week</option>
-              <option value="1m">1 Month</option>
-              <option value="3m">3 Months</option>
-            </select>
-          </div>
-
-          {/* Image Upload */}
-          <input
-            id="dailyImageUpload"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
-            className="hidden"
-          />
-          <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
-            <label
-              htmlFor="dailyImageUpload"
-              className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z"
-                />
-              </svg>
-              <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Choose Image
-              </span>
-            </label>
-
-            {/* Send Button as rectangle tab */}
-            <div
-              onClick={handlePostClick}
-              className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md
-      ${uploading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"}`}
-            >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-white" />
-              ) : (
-                <Send className="w-4 h-4 text-white" />
-              )}
-              <span className="text-sm font-medium text-white">Send</span>
+                <option value="24h">24 Hours</option>
+                <option value="1w">1 Week</option>
+                <option value="1m">1 Month</option>
+                <option value="3m">3 Months</option>
+              </select>
             </div>
-          </div>
 
-          {/* Daily Posts */}
-          <div className="space-y-3 mt-4">
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-3 rounded-none sm:rounded-md
- bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
-                ))}
-              </div>
-            ) : dailyPosts.length > 0 ? (
-              dailyPosts.map((post) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 border rounded-none sm:rounded-md
- bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+            {/* Image Upload */}
+            <input
+              id="dailyImageUpload"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
+              className="hidden"
+            />
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
+              <label
+                htmlFor="dailyImageUpload"
+                className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5 text-green-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
                 >
-                  <div className="flex flex-col sm:flex-row gap-4 items-start">
-                    {/* User Info */}
-                    {/* User Info */}
-                    <div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setOpenProfileId(openProfileId === post.id ? null : post.id)
-                        }
-                        className="flex flex-col items-center focus:outline-none"
-                      >
-                        {/* Avatar */}
-                        {post.profiles?.avatar_url ? (
-                          <img
-                            src={post.profiles.avatar_url}
-                            alt={post.profiles.username}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
-                            {post.profiles?.username?.charAt(0).toUpperCase()}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  Choose Image
+                </span>
+              </label>
+
+              {/* Send Button as rectangle tab */}
+              <div
+                onClick={handlePostClick}
+                className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md
+      ${uploading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"}`}
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : (
+                  <Send className="w-4 h-4 text-white" />
+                )}
+                <span className="text-sm font-medium text-white">Send</span>
+              </div>
+            </div>
+
+            {/* Daily Posts */}
+            <div className="space-y-3 mt-4">
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-3 rounded-none sm:rounded-md
+ bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
+                  ))}
+                </div>
+              ) : dailyPosts.length > 0 ? (
+                dailyPosts.map((post) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 border rounded-none sm:rounded-md
+ bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+                  >
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {/* User Info */}
+                      {/* User Info */}
+                      <div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenProfileId(openProfileId === post.id ? null : post.id)
+                          }
+                          className="flex flex-col items-center focus:outline-none"
+                        >
+                          {/* Avatar */}
+                          {post.profiles?.avatar_url ? (
+                            <img
+                              src={post.profiles.avatar_url}
+                              alt={post.profiles.username}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
+                              {post.profiles?.username?.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </button>
+
+                        {/* Tiny Tooltip Overlay */}
+                        {openProfileId === post.id && (
+                          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white/40 dark:bg-gray-800 shadow-none-md text-center text-xs z-20">
+                            <span className="font-semibold text-gray-900 dark:text-white block truncate">
+                              {post.profiles?.full_name}
+                            </span>
+                            <span className="text-gray-700 dark:text-gray-300 block truncate">
+                              @{post.profiles?.username}
+                            </span>
+                            <span className="text-gray-700 dark:text-gray-300 block truncate">
+                              {post.profiles?.institution}
+                            </span>
+                            <span className="text-gray-700 dark:text-gray-300 block truncate">
+                              {post.profiles?.county}
+                            </span>
                           </div>
                         )}
-                      </button>
-
-                      {/* Tiny Tooltip Overlay */}
-                      {openProfileId === post.id && (
-                        <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white/40 dark:bg-gray-800 shadow-none-md text-center text-xs z-20">
-                          <span className="font-semibold text-gray-900 dark:text-white block truncate">
-                            {post.profiles?.full_name}
-                          </span>
-                          <span className="text-gray-700 dark:text-gray-300 block truncate">
-                            @{post.profiles?.username}
-                          </span>
-                          <span className="text-gray-700 dark:text-gray-300 block truncate">
-                            {post.profiles?.institution}
-                          </span>
-                          <span className="text-gray-700 dark:text-gray-300 block truncate">
-                            {post.profiles?.county}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                      </div>
 
 
-                    {/* Post Content & Image */}
-                    <div className="flex-1 flex flex-col gap-2">
-                      {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
+                      {/* Post Content & Image */}
+                      <div className="flex-1 flex flex-col gap-2">
+                        {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
 
-                      {post.image_url && (
-                        <img
-                          src={post.image_url}
-                          alt="daily"
-                          className="rounded-none sm:rounded-md
+                        {post.image_url && (
+                          <img
+                            src={post.image_url}
+                            alt="daily"
+                            className="rounded-none sm:rounded-md
  w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
-                          onClick={() => setFullscreenImage(post.image_url)}
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
+                            onClick={() => setFullscreenImage(post.image_url)}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Delete Button */}
+                      {user?.id === post.user_id && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="mt-2 sm:mt-0 p-2 flex items-center justify-center"
+                          onClick={() => handleDeletePost(post.id, post.user_id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       )}
                     </div>
-
-                    {/* Delete Button */}
-                    {user?.id === post.user_id && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="mt-2 sm:mt-0 p-2 flex items-center justify-center"
-                        onClick={() => handleDeletePost(post.id, post.user_id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                    {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} •
-                    Expires on {new Date(post.expires_at).toLocaleString()}
-                  </p>
-                </motion.div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
-            )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} •
+                      Expires on {new Date(post.expires_at).toLocaleString()}
+                    </p>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
+              )}
+            </div>
           </div>
         </CardContent>
 
@@ -1692,7 +1714,8 @@ export default function StudentDashboard() {
       {/* Simulation Papers Section */}
       <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900 p-2">
 
-        <CardHeader>
+        <CardHeader className="p-2">
+
           <CardTitle className="text-gray-900 dark:text-white">
             Self Test SimuProctor Papers V1
             <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">

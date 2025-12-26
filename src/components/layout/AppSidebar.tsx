@@ -440,8 +440,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300
     ${isCollapsed ? "-translate-x-full" : "translate-x-0"} w-64 overflow-y-auto`}
     >
+      <div className="p-4">
 
-      <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
           {/* Icon with gradient */}
           <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">

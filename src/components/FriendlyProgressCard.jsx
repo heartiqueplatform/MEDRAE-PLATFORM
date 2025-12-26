@@ -109,7 +109,7 @@ Keep practicing to improve your scores and reach your best results!`
         <div
             onClick={() => navigate("/progress")}
             className={`
-    rounded-none p-6 shadow-none border-0
+    rounded-none p-2 shadow-none border-0
     cursor-pointer hover:shadow-none transition-all active:scale-[0.97] select-none
     flex flex-col md:flex-row items-start md:items-center gap-5 mt-4
     bg-[${userTheme.background}]

@@ -290,7 +290,7 @@ export const DailyTriviaCard = () => {
                         )}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4">
+                <CardContent className="p-2">
                     {loading ? (
                         <p className="text-center text-sm text-muted-foreground">Loading trivia…</p>
                     ) : questions.length === 0 ? (
@@ -442,10 +442,9 @@ export const DailyTriviaCard = () => {
 
                             {/* Progress bars */}
                             <div className="mt-2 space-y-4">
-
                                 {/* Correct answers bar */}
                                 <div className="flex flex-col items-start">
-                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4 relative">
+                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
                                         <div
                                             className={`h-4 rounded-full transition-all duration-500 ${savedScore
                                                 ? savedScore.correct_answers < 8
@@ -460,23 +459,22 @@ export const DailyTriviaCard = () => {
                                                     ? `${(savedScore.correct_answers / savedScore.total_questions) * 100}%`
                                                     : "0%",
                                             }}
-                                        >
-                                            {/* Tooltip with exact value */}
-                                            {savedScore && (
-                                                <span className="absolute right-1 top-[-1.5rem] text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                    {savedScore.correct_answers}/{savedScore.total_questions}
-                                                </span>
-                                            )}
-                                        </div>
+                                        ></div>
                                     </div>
-                                    <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                                        Correct answers
-                                    </span>
+                                    <div className="flex items-center justify-between w-full mt-1">
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Correct answers</span>
+                                        {savedScore && (
+                                            <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                                {savedScore.correct_answers}/{savedScore.total_questions}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
+
 
                                 {/* Time used bar */}
                                 <div className="flex flex-col items-start">
-                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4 relative">
+                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
                                         <div
                                             className={`h-4 rounded-full transition-all duration-500 ${timeUsedToday !== null
                                                 ? timeUsedToday < 150
@@ -491,22 +489,19 @@ export const DailyTriviaCard = () => {
                                                     ? `${Math.min((timeUsedToday / 300) * 100, 100)}%`
                                                     : "0%",
                                             }}
-                                        >
-                                            {/* Tooltip with formatted time */}
-                                            {timeUsedToday !== null && (
-                                                <span className="absolute right-1 top-[-1.5rem] text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                    {Math.floor(timeUsedToday / 60)
-                                                        .toString()
-                                                        .padStart(2, "0")}:
-                                                    {(timeUsedToday % 60).toString().padStart(2, "0")} min
-                                                </span>
-                                            )}
-                                        </div>
+                                        ></div>
                                     </div>
-                                    <span className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                                        Time used
-                                    </span>
+                                    <div className="flex items-center justify-between w-full mt-1">
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Time used</span>
+                                        {timeUsedToday !== null && (
+                                            <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                                {Math.floor(timeUsedToday / 60).toString().padStart(2, "0")}:
+                                                {(timeUsedToday % 60).toString().padStart(2, "0")} min
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
+
                             </div>
                             <br />
                             {(() => {
