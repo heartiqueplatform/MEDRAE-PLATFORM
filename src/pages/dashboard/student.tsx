@@ -919,7 +919,7 @@ export default function StudentDashboard() {
 
 
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-none p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-none p-2 text-white">
         <h1 className="text-2xl md:text-3xl font-bold mb-2">
           {name ? (() => {
             const now = new Date();
@@ -1272,8 +1272,8 @@ export default function StudentDashboard() {
       <DailyImagesTrivia />
       {/* 🏆 Top Students Leaderboard */}
       <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-white dark:bg-gray-900 border-0">
+        <CardHeader className="p-2">
 
-        <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Trophy className="h-5 w-5 text-yellow-500" />
             Top Students
@@ -1398,15 +1398,17 @@ export default function StudentDashboard() {
         {/* Overlay */}
         <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-md sm:rounded-md"></div>
 
-        <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+        <div className="relative z-20 p-2 flex flex-col justify-between h-full">
           {/* Card Heading */}
-          <div className="mb-2">
+          <div className="mb-2 px-4 pt-4">
+
             <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
               Feed & Leaderboard
             </h2>
           </div>
 
-          <CardHeader className="flex items-center justify-between pb-2">
+          <CardHeader className="p- px-4 flex items-center justify-between pb-2">
+
             <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
           </CardHeader>
 
