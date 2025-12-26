@@ -272,3 +272,52 @@ body,
     opacity: 1;
   }
 }
+
+/* ================================
+   Floating Quick Actions Animation
+   ================================ */
+
+@keyframes quickActionsDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes quickActionsFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+/* Container animation */
+.quick-actions-dropdown {
+  animation: quickActionsDrop 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top right;
+  will-change: transform, opacity;
+}
+
+/* Individual icon stagger */
+.quick-actions-item {
+  animation: quickActionsDrop 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+  .quick-actions-dropdown,
+  .quick-actions-item {
+    animation: none;
+  }
+}

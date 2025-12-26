@@ -18,6 +18,11 @@ export default function InstructionPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationIdRef = useRef<number | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0); // 0-100%
+  const [scanningMic, setScanningMic] = useState(false);
+  const [scanProgressMic, setScanProgressMic] = useState(0);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingPage(false);
@@ -43,6 +48,7 @@ export default function InstructionPage() {
       setCanStart(true);
     }
   }, [secondsLeft]);
+
 
   // Start quiz
   const handleStartQuiz = () => {
@@ -176,71 +182,166 @@ export default function InstructionPage() {
       <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
         {/* Camera */}
         <div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-64 relative flex flex-col">
-          <div className="flex-1">
-            {cameraReady ? (
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                autoPlay
-                muted
-                playsInline
-              />
-            ) : (
-              <p className="text-center text-sm text-gray-500 mt-20">
+          <div className="flex-1 relative">
+            {/* Video feed always visible */}
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              playsInline
+            />
+
+            {/* Scanning overlay */}
+            {scanning && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke="#e5e7eb"
+                      strokeWidth="10"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke="#10b981"
+                      strokeWidth="10"
+                      fill="none"
+                      strokeDasharray={2 * Math.PI * 45}
+                      strokeDashoffset={2 * Math.PI * 45 * (1 - scanProgress / 100)}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="absolute text-sm font-bold text-white">Scanning...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Message when camera not enabled */}
+            {!scanning && !cameraReady && (
+              <p className="absolute inset-0 flex items-center justify-center text-center text-sm text-gray-500">
                 Camera not enabled
               </p>
             )}
           </div>
+
+          {/* Camera button */}
           <Button
             onDoubleClick={async () => {
-              if (!cameraReady) {
-                // disable while waiting
-                setCameraReady("loading");
-                try {
-                  await enableCamera();
-                  setCameraReady(true);
-                } catch (err) {
-                  console.error("Camera error:", err);
-                  setCameraReady(false);
-                }
+              if (!cameraReady && !scanning) {
+                // start overlay only
+                setScanning(true);
+                setScanProgress(0);
+                let progress = 0;
+                const interval = setInterval(() => {
+                  progress += 1;
+                  setScanProgress(progress);
+                  if (progress >= 100) {
+                    clearInterval(interval);
+                    setScanning(false); // just hide overlay
+                  }
+                }, 150);
+
+                // call original camera enable function (starts countdown as before)
+                await enableCamera();
               }
             }}
-            disabled={cameraReady === "loading"}
-            className="w-full rounded-none"
+            disabled={cameraReady === "loading" || scanning}
+            className="w-full rounded-none mt-2"
             variant="secondary"
           >
-            {cameraReady === true
+            {cameraReady
               ? "Camera Enabled"
-              : cameraReady === "loading"
-                ? "Enabling..."
+              : scanning
+                ? "Scanning..."
                 : "Double-click to Enable Camera"}
           </Button>
-
         </div>
 
+
+        {/* Audio visualizer */}
         {/* Audio visualizer */}
         <div className="border border-gray-300 rounded-lg overflow-hidden w-64 h-64 relative flex flex-col">
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 relative flex items-center justify-center">
+            {/* Canvas always visible */}
             <canvas
               ref={canvasRef}
               width={256}
               height={192}
               className="w-full h-full"
             />
+
+            {/* Loud warning */}
             {loudWarning && (
               <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
                 Loud noise detected
               </span>
             )}
+
+            {/* Audio scanning overlay (visual-only) */}
+            {scanningMic && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke="#e5e7eb"
+                      strokeWidth="10"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke="#3b82f6"
+                      strokeWidth="10"
+                      fill="none"
+                      strokeDasharray={2 * Math.PI * 45}
+                      strokeDashoffset={2 * Math.PI * 45 * (1 - scanProgressMic / 100)}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="absolute text-sm font-bold text-white">Calibrating Mic...</span>
+                </div>
+              </div>
+            )}
           </div>
+
           <Button
-            onClick={enableMic}
+            onClick={async () => {
+              if (!micReady && !scanningMic) {
+                // Start visual-only mic overlay
+                setScanningMic(true);
+                setScanProgressMic(0);
+                let progress = 0;
+                const interval = setInterval(() => {
+                  progress += 1;
+                  setScanProgressMic(progress);
+                  if (progress >= 100) {
+                    clearInterval(interval);
+                    setScanningMic(false); // hide overlay after done
+                  }
+                }, 150);
+
+                // Call original mic enable function
+                await enableMic();
+              }
+            }}
             className="w-full rounded-none"
             variant="secondary"
+            disabled={micReady || scanningMic}
           >
-            {micReady ? "Mic Enabled" : "Enable Mic"}
+            {micReady ? "Mic Enabled" : scanningMic ? "Calibrating..." : "Enable Mic"}
           </Button>
         </div>
+
       </div>
       {/* Enriched Environment Warning */}
       <div className="mt-6 text-sm text-gray-600">

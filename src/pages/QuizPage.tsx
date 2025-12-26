@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI";
-import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, TimerReset, RotateCcw, Save, Users, MessageCircle, X, Cpu, AlertTriangle, Volume, VolumeX, Filter } from "lucide-react";
+import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, ChevronDown, ChevronUp, TimerReset, RotateCcw, Save, Users, MessageCircle, X, Cpu, AlertTriangle, Volume, VolumeX, Filter } from "lucide-react";
 import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
@@ -34,6 +34,7 @@ const TIMER_DURATION = 10_800_000; // 3 hours
 export default function QuizPage() {
   const location = useLocation();
   const QUESTIONS_PER_BATCH = 20;
+  const [progressOpen, setProgressOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(QUESTIONS_PER_BATCH);
   const [lockedVisible, setLockedVisible] = useState<Record<string, boolean>>({});
   const [resetting, setResetting] = useState(false); // ✅ added
@@ -794,12 +795,44 @@ Please provide a detailed discussion and guidance.`;
                     </span>
                   </div>
                 </div>
+
+
               </div>
 
             )}
           />
         )}
 
+      </div>
+
+      {/* Floating Answer Progress Panel */}
+      {/* ========================================= */}
+      {/* This panel is sticky inside the question scroll area */}
+
+
+      <div className="sticky top-0 self-start z-50">
+        <button
+          onClick={() => setProgressOpen(!progressOpen)}
+          className={`flex items-center gap-2 px-3 h-8 rounded-full text-white shadow-lg transition
+      ${Object.keys(answers).length / questions.length < 0.5 ? 'bg-red-600 hover:bg-red-700' :
+              Object.keys(answers).length / questions.length < 0.7 ? 'bg-yellow-500 hover:bg-yellow-600' :
+                'bg-green-600 hover:bg-green-700'}
+    `}
+          title="Click to expand"
+        >
+          <span className="font-bold">{Object.keys(answers).length}/{questions.length}</span>
+          <span className="font-medium">Questions Answered</span>
+          {progressOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+
+        {progressOpen && (
+          <div className="mt-2 p-3 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg text-sm text-gray-800 dark:text-gray-200">
+            <p className="font-semibold mb-1">Quiz Progress</p>
+            <p>Answered: {Object.keys(answers).length}</p>
+            <p>Unanswered: {questions.length - Object.keys(answers).length}</p>
+            <p>Total Questions: {questions.length}</p>
+          </div>
+        )}
       </div>
       <div className="mt-2 flex justify-between items-center w-full gap-4">
         {/* Left side: Question actions */}
@@ -1254,6 +1287,9 @@ Please provide a detailed discussion and guidance.`;
                     </button>
                   </div>
                 )}
+
+
+
               </div>
 
               {/* Small Note Card */}
@@ -1738,8 +1774,6 @@ Please provide a detailed discussion and guidance.`;
                     </div>
                   )}
 
-
-
                   {/* Help Me Overlay */}
                   {helpMeOverlayOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2">
@@ -1898,6 +1932,7 @@ Please provide a detailed discussion and guidance.`;
           <FloatingChat currentUserId={userId} isOpen={false} />
         )
       }
+
     </div >
   );
 }

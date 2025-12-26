@@ -1022,8 +1022,21 @@ export default function SimulationPage() {
 
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
+
         <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none p-2">
+
+          {/* App Title inside the card with logo */}
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <img
+              src="/pwa-192x192.jpeg"
+              alt="Medrae Logo"
+              className="h-6 w-6 rounded-sm object-contain"
+            />
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+              Medrae  Self Test SimuProctor
+            </p>
+          </div>
 
           <CardHeader className="flex justify-between items-center">
             <CardTitle>Time Left</CardTitle>
