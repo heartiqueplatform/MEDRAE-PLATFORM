@@ -1461,9 +1461,6 @@ export default function StudentDashboard() {
 
       <MistakeCard />
 
-
-
-
       {/* Upcoming Redletter Dates / Revision Schedule Card */}
       <Card
         className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
