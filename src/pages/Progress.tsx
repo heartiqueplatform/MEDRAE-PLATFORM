@@ -467,7 +467,7 @@ function SimulationAndTriviaSummary() {
     if (!profile) return;
     setSavingTarget(true);
     // 🔊 Play sound immediately on user click
-    playSound("tap-correct", false);
+    playSound("tap", false);
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user || userError) {

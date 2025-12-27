@@ -1,6 +1,6 @@
 // components/MobileDrawer.tsx
 "use client";
-
+import { playSound } from "@/lib/soundManager";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -42,7 +42,13 @@ interface DrawerItem {
 export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps) {
     const navigate = useNavigate();
     const drawerRef = useRef<HTMLDivElement>(null);
-
+    // Load sound once
+    const tapFeedback = () => {
+        playSound("tap"); // Play the tap sound using your sound manager
+        if (navigator.vibrate) {
+            navigator.vibrate(50); // Vibrate for 50ms on supported devices
+        }
+    };
     // Close drawer when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -75,7 +81,7 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                 { title: "Tracker", url: "/calendar", icon: Calendar },
                 { title: "Progress", url: "/progress", icon: TrendingUp },
                 { title: "Quizzes", url: "/Medrae-quizzes", icon: Heart },
-                { title: "Simulation", url: "/simulation/candidate", icon: Play },
+                { title: "SimuProctor", url: "/simulation/candidate", icon: Play },
                 { title: "Notes", url: "/assessment-notes", icon: BookOpen },
                 { title: "Resources", url: "/resources", icon: FileText },
             ],
@@ -153,13 +159,16 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                                     key={item.title}
                                     className="flex flex-col items-center justify-center text-xs text-gray-700 dark:text-gray-200"
                                     onClick={() => {
-                                        navigate(item.url);
-                                        setIsOpen(false);
+                                        tapFeedback();      // 🔊 Sound + vibration
+                                        navigate(item.url); // Navigate
+                                        setIsOpen(false);   // Close drawer
                                     }}
                                 >
                                     <item.icon className="h-5 w-5 mb-1" />
                                     <span>{item.title}</span>
                                 </button>
+
+
                             ))}
                         </div>
                     </div>

@@ -59,7 +59,7 @@ export default function FloatingQuickActions() {
     function feedback() {
         vibrateTap(40);
         if (!isMuted) {
-            playSound("tap-correct", false);
+            playSound("tap", false);
         }
     }
 
