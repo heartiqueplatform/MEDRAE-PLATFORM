@@ -413,10 +413,14 @@ export function MedraeQuizzes() {
             <br />For engaging explanations, visuals, and deeper understanding, visit our Medtube Learning Sections.
           </p>
           <Link to="/medtube" className="inline-block mt-4">
-            <Button variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-50">
+            <Button
+              variant="outline"
+              className="border-blue-500 !text-blue-900 hover:bg-blue-50 active:!text-blue-900 focus:!text-blue-500"
+            >
               Visit Medtube Learning Sections
             </Button>
           </Link>
+
         </div>
       </div>
 
