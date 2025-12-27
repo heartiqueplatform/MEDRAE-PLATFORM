@@ -1933,6 +1933,61 @@ export default function Feed() {
                   transition={{ duration: 0.3 }}
                   className="max-w-[90%] max-h-[80vh] object-contain rounded-xl shadow-lg"
                 />
+                <div className="flex gap-2 mt-3 justify-center">
+                  {/* Helpful */}
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const isAlreadyHelpful = imageFeedback[activeImage.id] === "helpful";
+
+                      if (navigator.vibrate) navigator.vibrate(40);
+                      playSound("tap-correct", false);
+
+                      setImageFeedback((prev) => ({
+                        ...prev,
+                        [activeImage.id]: isAlreadyHelpful ? null : "helpful",
+                      }));
+
+                      setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
+                      setTimeout(() => {
+                        setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
+                      }, 200);
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs border ${imageFeedback[activeImage.id] === "helpful"
+                      ? "bg-green-500 text-white border-green-500"
+                      : "text-green-600 border-green-500 hover:bg-green-500 hover:text-white"
+                      } transition`}
+                  >
+                    <ThumbsUp size={14} />
+                  </button>
+
+                  {/* Not Helpful */}
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const isAlreadyNotHelpful = imageFeedback[activeImage.id] === "not_helpful";
+
+                      if (navigator.vibrate) navigator.vibrate([60, 20, 40]);
+                      playSound("tap-wrong", false);
+
+                      setImageFeedback((prev) => ({
+                        ...prev,
+                        [activeImage.id]: isAlreadyNotHelpful ? null : "not_helpful",
+                      }));
+
+                      setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
+                      setTimeout(() => {
+                        setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
+                      }, 200);
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs border ${imageFeedback[activeImage.id] === "not_helpful"
+                      ? "bg-red-500 text-white border-red-500"
+                      : "text-red-600 border-red-500 hover:bg-red-500 hover:text-white"
+                      } transition`}
+                  >
+                    <ThumbsDown size={14} />
+                  </button>
+                </div>
 
                 {/* description */}
                 {activeImage.description && (
