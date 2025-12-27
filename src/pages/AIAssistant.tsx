@@ -422,7 +422,7 @@ User's message: ${inputMessage}
                   </div>
 
                   {/* Message Bubble */}
-                  <div className="flex flex-col max-w-[80%]">
+                  <div className="flex flex-col max-w-[95%]">
                     <div
                       className={`rounded-2xl px-4 py-2  max-w-[75%] break-words  ${msg.sender === "user"
                         ? `${userBubbleClass} text-left`

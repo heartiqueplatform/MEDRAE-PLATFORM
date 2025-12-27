@@ -283,7 +283,10 @@ User's message: ${input}
 
       {!open && (
         <Button
-          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg bg-blue-600 hover:bg-blue-700 text-white float-button z-[9999]"
+          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg
+    bg-blue-600 hover:bg-blue-700 text-white
+    z-30" // ✅ lower, safe z-index
+
           onClick={() => {
             vibrate(50);
             setOpen(true);

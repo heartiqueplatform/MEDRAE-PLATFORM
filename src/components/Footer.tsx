@@ -5,19 +5,19 @@ import { useEffect, useState } from "react";
 import { Home, Heart, AlertCircle, TrendingUp, Menu } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useSidebar } from "@/components/ui/sidebar";
 import { supabase } from "@/lib/supabaseClient";
+import { MobileDrawer } from "@/components/MobileDrawer";
 
 export function Footer() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { toggleSidebar } = useSidebar();
     // 🔔 Haptic feedback (mobile vibration)
     const vibrate = (duration = 50) => {
         if (navigator.vibrate) navigator.vibrate(duration);
     };
 
     const [mistakeCount, setMistakeCount] = useState<number>(0);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     useEffect(() => {
         let subscription: any;
@@ -26,7 +26,6 @@ export function Footer() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // Initial fetch
             const { count, error } = await supabase
                 .from("user_mistakes")
                 .select("*", { count: "exact", head: true })
@@ -35,7 +34,6 @@ export function Footer() {
 
             if (!error) setMistakeCount(count || 0);
 
-            // Subscribe for real-time updates
             subscription = supabase
                 .channel(`user_mistakes_footer_${user.id}`)
                 .on(
@@ -72,43 +70,55 @@ export function Footer() {
         { title: "Progress", url: "/progress", icon: TrendingUp },
     ];
 
-
     const isActive = (url: string) => location.pathname === url;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex justify-around items-center h-16 shadow-md z-50 md:hidden">
-
-            {/* Menu button */}
-            <button
-                onClick={() => {
-                    vibrate();      // 👈 added
-                    toggleSidebar();
-                }}
-                className="flex flex-col items-center justify-center text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
+        <>
+            <div
+                className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex justify-around items-center h-16 shadow-md z-50 md:hidden
+  ${isDrawerOpen ? "pointer-events-none" : ""}`}
             >
-                <Menu className="h-6 w-6" />
-                <span className="text-xs">Menu</span>
-            </button>
 
-            {items.map((item) => (
+                {/* Menu button */}
                 <button
-                    key={item.url}   // ← use URL as a unique key
                     onClick={() => {
                         vibrate();
-                        navigate(item.url);
+                        setIsDrawerOpen(prev => !prev);
+
                     }}
-                    className={`flex flex-col items-center justify-center relative text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 ${isActive(item.url) ? "text-blue-500 dark:text-blue-400" : ""
-                        }`}
+                    className="flex flex-col items-center justify-center text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
                 >
-                    <item.icon className="h-6 w-6" />
-                    <span className="text-xs">{item.label || item.title}</span>
-                    {item.badge && (
-                        <Badge className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 text-[10px] flex items-center justify-center bg-green-500 text-white">
-                            {item.badge}
-                        </Badge>
-                    )}
+                    <Menu className="h-6 w-6" />
+                    <span className="text-xs">Menu</span>
                 </button>
-            ))}
-        </div>
+
+                {items.map((item) => (
+                    <button
+                        key={item.url}
+                        onClick={() => {
+                            vibrate();
+                            navigate(item.url);
+                        }}
+                        className={`flex flex-col items-center justify-center relative text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 ${isActive(item.url) ? "text-blue-500 dark:text-blue-400" : ""
+                            }`}
+                    >
+                        <item.icon className="h-6 w-6" />
+                        <span className="text-xs">{item.label || item.title}</span>
+                        {item.badge && (
+                            <Badge className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 text-[10px] flex items-center justify-center bg-green-500 text-white">
+                                {item.badge}
+                            </Badge>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* Mobile Drawer */}
+            <MobileDrawer
+                userRole="student" // update dynamically if needed
+                isOpen={isDrawerOpen}
+                setIsOpen={setIsDrawerOpen}
+            />
+        </>
     );
 }

@@ -12,26 +12,26 @@ export function Subscription() {
   const [message, setMessage] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
 
-const studentPlans = [
-  {
-    id: "pro",
-    name: "Pro",
-    price: 99,
-    description: "Perfect for serious learners",
-    features: ["Unlimited quizzes","Advanced progress tracking","Priority support","Download study materials","AI study assistant"],
-    popular: true,
-    period: "month"  // <-- add this
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 450,
-    description: "For committed learners",
-    features: ["Everything in Pro","Offline access","Video content library","Advanced analytics","Certificate programs"],
-    popular: false,
-    period: "year"  // <-- add this
-  }
-];
+  const studentPlans = [
+    {
+      id: "pro",
+      name: "Pro",
+      price: 99,
+      description: "Perfect for serious learners",
+      features: ["Unlimited quizzes", "Advanced progress tracking", "Priority support", "Download study materials", "AI study assistant"],
+      popular: true,
+      period: "month"  // <-- add this
+    },
+    {
+      id: "premium",
+      name: "Premium",
+      price: 450,
+      description: "For committed learners",
+      features: ["Everything in Pro", "Offline access", "Video content library", "Advanced analytics", "Certificate programs"],
+      popular: false,
+      period: "year"  // <-- add this
+    }
+  ];
 
   const tutorPlans = [
     {
@@ -39,7 +39,7 @@ const studentPlans = [
       name: "Tutor Plan",
       price: 500,
       description: "Start teaching with essential tools",
-      features: ["Create and share content","Student progress tracking","Basic analytics","Community access"]
+      features: ["Create and share content", "Student progress tracking", "Basic analytics", "Community access"]
     }
   ];
 
@@ -84,21 +84,21 @@ const studentPlans = [
   }, []);
 
   return (
-   <div className="relative space-y-6">
+    <div className="relative space-y-6">
 
       {/* Free Trial Overlay (only over subscription page content) */}
-<div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg z-50">
-  <div className="bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700 p-8 rounded-2xl shadow-2xl text-center max-w-md text-white">
-    <h2 className="text-3xl font-extrabold mb-3">Free Trial Active</h2>
-    <p className="text-blue-100 mb-6 leading-relaxed">
-      You are currently on a <span className="font-semibold text-white">3-month free trial</span>.  
-      Payments are disabled while we finalize subscriptions.
-    </p>
-    <Badge className="bg-green-500 text-white px-4 py-1 rounded-full text-sm tracking-wide shadow-md">
-      Free Mode
-    </Badge>
-  </div>
-</div>
+      <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg z-30">
+        <div className="bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700 p-8 rounded-2xl shadow-2xl text-center max-w-md text-white">
+          <h2 className="text-3xl font-extrabold mb-3">Free Trial Active</h2>
+          <p className="text-blue-100 mb-6 leading-relaxed">
+            You are currently on a <span className="font-semibold text-white">3-month free trial</span>.
+            Payments are disabled while we finalize subscriptions.
+          </p>
+          <Badge className="bg-green-500 text-white px-4 py-1 rounded-full text-sm tracking-wide shadow-md">
+            Free Mode
+          </Badge>
+        </div>
+      </div>
 
 
       {/* Header */}
@@ -139,7 +139,7 @@ const studentPlans = [
                     <CardDescription>{plan.description}</CardDescription>
                     <div className="mt-4">
                       <span className="text-3xl font-bold">KSh {plan.price}</span>
-                     <span className="text-muted-foreground">/{plan.period}</span>
+                      <span className="text-muted-foreground">/{plan.period}</span>
 
                     </div>
                   </div>
@@ -153,7 +153,7 @@ const studentPlans = [
                       </li>
                     ))}
                   </ul>
-                  <Button 
+                  <Button
                     className="w-full"
                     onClick={() => handleMpesapayment(plan.id, plan.price)}
                     disabled={loading}
@@ -191,7 +191,7 @@ const studentPlans = [
                       </li>
                     ))}
                   </ul>
-                  <Button 
+                  <Button
                     className="w-full"
                     onClick={() => handleMpesapayment(plan.id, plan.price)}
                     disabled={loading}
