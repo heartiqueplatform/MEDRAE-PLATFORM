@@ -545,7 +545,7 @@ export default function QuizPage() {
     const now = new Date();
     const date = now.toLocaleDateString();
     const time = now.toLocaleTimeString();
-    const newEntry = `Hey! Great job! You answered this question on ${date} at ${time}. Keep up the good work! #Medrae`;
+    const newEntry = `Hey! Great job! You answered this question on ${date} at ${time}. Keep up the good work!`;
 
     // Merge with existing note if any
     const existingNote = notes[questionId] || "";
