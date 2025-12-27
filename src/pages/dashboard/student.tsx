@@ -1023,51 +1023,6 @@ export default function StudentDashboard() {
           })()}
         </p>
       </div>
-      {/* Upcoming Redletter Dates / Revision Schedule Card */}
-      <Card
-        className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
-        onClick={() => navigate("/calendar")}
-      >
-
-        <CardHeader className="flex items-center space-x-2">
-          <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
-          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-            Your Upcoming Revision Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
-          Stay on track! Visit your calendar to plan and adjust your study timeline.
-        </CardDescription>
-        <CardContent className="space-y-2 mt-2">
-          {calendarEvents.length > 0 ? (
-            <div className="space-y-2">
-              {calendarEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
-                >
-                  <div className="truncate">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {event.title}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                      {event.type}
-                    </p>
-                  </div>
-                  <Badge className={getPriorityColor(event.priority)}>
-                    {new Date(event.start_time).toLocaleDateString()}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              You have no upcoming revisions. Visit your calendar to plan your schedule.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
@@ -1263,13 +1218,7 @@ export default function StudentDashboard() {
         </Card>
 
       </div>
-      <FriendlyProgressCard userTheme={userTheme} name={name} />
 
-      <MistakeCard />
-
-      <DailyTriviaCard />
-
-      <DailyImagesTrivia />
       {/* 🏆 Top Students Leaderboard */}
       <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-white dark:bg-gray-900 border-0">
         <CardHeader className="p-2">
@@ -1506,6 +1455,60 @@ export default function StudentDashboard() {
           </CardContent>
         </div>
       </Card >
+      <DailyTriviaCard />
+      <DailyImagesTrivia />
+      <FriendlyProgressCard userTheme={userTheme} name={name} />
+
+      <MistakeCard />
+
+
+
+
+      {/* Upcoming Redletter Dates / Revision Schedule Card */}
+      <Card
+        className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
+        onClick={() => navigate("/calendar")}
+      >
+
+        <CardHeader className="flex items-center space-x-2">
+          <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
+          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+            Your Upcoming Revision Schedule
+          </CardTitle>
+        </CardHeader>
+        <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
+          Stay on track! Visit your calendar to plan and adjust your study timeline.
+        </CardDescription>
+        <CardContent className="space-y-2 mt-2">
+          {calendarEvents.length > 0 ? (
+            <div className="space-y-2">
+              {calendarEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
+                >
+                  <div className="truncate">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {event.title}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                      {event.type}
+                    </p>
+                  </div>
+                  <Badge className={getPriorityColor(event.priority)}>
+                    {new Date(event.start_time).toLocaleDateString()}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              You have no upcoming revisions. Visit your calendar to plan your schedule.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
 
       <Card className="lg:col-span-3  w-full bg-white/40 dark:bg-gray-900 border-none rounded-none sm:rounded-md
  overflow-hidden">
