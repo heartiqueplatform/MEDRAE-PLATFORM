@@ -67,6 +67,20 @@ export default function DailyImagesTrivia() {
         "Can't wait to see the next one! 🚀",
     ];
 
+    useEffect(() => {
+        if (showComments) {
+            // Lock background scroll
+            document.body.style.overflow = "hidden";
+        } else {
+            // Restore scroll
+            document.body.style.overflow = "";
+        }
+
+        // Cleanup (safety)
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [showComments]);
 
     // Load images (with daily persistence)
     useEffect(() => {
@@ -549,11 +563,13 @@ export default function DailyImagesTrivia() {
                     {/* Quick comment modal */}
                     {showComments && (
                         <div
-                            className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center"
+                            className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center animate-overlay"
+
                             onClick={() => setShowComments(false)}
                         >
                             <div
-                                className="bg-white dark:bg-gray-800 rounded-lg p-4 flex flex-col gap-2"
+                                className="bg-white dark:bg-gray-800 rounded-lg p-4 flex flex-col gap-2 animate-slide-up"
+
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">

@@ -22,7 +22,7 @@ interface Message {
 }
 
 function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
-  const bubbleColor = isDarkTheme ? "bg-green-400" : "bg-green-600";
+  const bubbleColor = isDarkTheme ? "bg-gray-500" : "bg-gray-400"; // AI grey
 
   return (
     <div className="flex items-center gap-1">
@@ -34,23 +34,24 @@ function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
 }
 
 
+
 export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayAIProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState(prefillQuestion || "");
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Supabase: Load chat history when overlay opens
+  // Supabase: Load chat history when overlay opens with loader
   useEffect(() => {
     if (!isOpen) return;
 
     const fetchHistory = async () => {
+      setLoadingHistory(true); // start loader
       try {
         const userResponse = await supabase.auth.getUser();
         const userId = userResponse.data.user?.id;
-
         if (!userId) return;
 
         const { data, error } = await supabase
@@ -94,11 +95,14 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
         }
       } catch (err) {
         console.error("Supabase fetch error:", err);
+      } finally {
+        setLoadingHistory(false); // stop loader
       }
     };
 
     fetchHistory();
   }, [isOpen]);
+
 
   // Update input when prefill changes
   useEffect(() => setInputMessage(prefillQuestion || ""), [prefillQuestion]);
@@ -274,9 +278,12 @@ User's message: ${inputMessage}
   if (!isOpen) return null;
 
   const aiBubbleClass = isDarkTheme
-    ? "bg-green-700 text-white"
-    : "bg-green-100 text-green-900";
-  const userBubbleClass = isDarkTheme ? "bg-blue-600 text-white" : "bg-blue-500 text-white";
+    ? "bg-gray-700 text-white"   // AI dark: dark grey background
+    : "bg-gray-100 text-gray-900"; // AI light: light grey background
+  const userBubbleClass = isDarkTheme
+    ? "bg-blue-100 text-blue-900"   // dark mode: dark blue
+    : "bg-blue-900 text-blue-900"; // light mode: very light blue with dark text
+
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
@@ -296,40 +303,46 @@ User's message: ${inputMessage}
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
-             scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+     scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
         >
-
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"
-                }`}
-            >
-              <div
-                className={`h-8 w-8 rounded-full flex items-center justify-center shadow ${msg.sender === "user"
-                  ? "bg-blue-200 dark:bg-blue-700"
-                  : "bg-green-200 dark:bg-green-700"
-                  }`}
-              >
-                {msg.sender === "user" ? (
-                  <User className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-                ) : (
-                  <Stethoscope className="w-5 h-5 text-green-600 dark:text-green-300" />
-                )}
-              </div>
-              <div
-                className={`rounded-2xl px-3 py-2 max-w-[80%] break-words ${msg.sender === "user" ? userBubbleClass : aiBubbleClass
-                  } ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}`}
-              >
-                {msg.content === "<TypingBubbles />" ? (
-                  <TypingBubbles isDarkTheme={isDarkTheme} />
-                ) : (
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                )}
-              </div>
+          {loadingHistory ? (
+            <div className="flex justify-center items-center w-full h-full">
+              <TypingBubbles isDarkTheme={isDarkTheme} />
             </div>
-          ))}
+
+          ) : (
+            messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`h-8 w-8 rounded-full flex items-center justify-center shadow ${msg.sender === "user"
+                    ? "bg-blue-100 dark:bg-blue-700"
+                    : "bg-gray-200 dark:bg-gray-700"
+                    }`}
+                >
+                  {msg.sender === "user" ? (
+                    <User className="w-5 h-5 text-blue-900 dark:text-white" />
+                  ) : (
+                    <Stethoscope className="w-5 h-5 text-green-600 dark:text-green-300" />
+                  )}
+                </div>
+
+                <div
+                  className={`rounded-2xl px-4 py-2 max-w-[80%] break-words ${msg.sender === "user" ? userBubbleClass : aiBubbleClass} ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}`}
+                >
+                  {msg.content === "<TypingBubbles />" ? (
+                    <TypingBubbles isDarkTheme={isDarkTheme} />
+                  ) : (
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
+
 
         <div className="flex gap-2 p-2 border-t border-gray-300 dark:border-gray-600">
           <textarea

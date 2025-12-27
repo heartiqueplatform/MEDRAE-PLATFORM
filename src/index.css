@@ -321,3 +321,39 @@ body,
     animation: none;
   }
 }
+
+/* ================================
+   Modal Overlay Fade In
+================================ */
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-overlay {
+  animation: overlayFadeIn 0.25s ease-out forwards;
+}
+
+/* ================================
+   Modal Slide Up + Fade
+================================ */
+@keyframes slideUpFade {
+  from {
+    transform: translateY(40px) scale(0.96);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUpFade 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

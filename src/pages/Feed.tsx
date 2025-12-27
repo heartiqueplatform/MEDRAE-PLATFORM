@@ -1388,7 +1388,7 @@ export default function Feed() {
                     </div>
 
                     {selected && (
-                      <div className="mt-3 space-y-1 bg-gray-50/60 dark:bg-gray-800/40 p-3 rounded-lg border border-gray-200/30">
+                      <div className="mt-2">
                         <p className="font-semibold text-emerald-600 dark:text-emerald-400">
                           Correct Answer: {q.correct_answer}
                         </p>

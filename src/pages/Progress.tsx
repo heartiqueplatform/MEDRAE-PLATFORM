@@ -499,8 +499,8 @@ function SimulationAndTriviaSummary() {
 
     const inner = document.createElement("div");
     inner.innerHTML = `
-    🔥 <strong>New target saved: ${targetInput}%!</strong><br/>
-    Keep pushing, work hard, and you’ll reach your goal! 💪<br/>
+     <strong>New target saved: ${targetInput}%!</strong><br/>
+    Keep pushing, work hard, and you’ll reach your goal! <br/>
     Organized Learning. Confident Exams.
   `;
     inner.className = `
@@ -615,6 +615,12 @@ function SimulationAndTriviaSummary() {
     setSimLow(simLow);       // for simulation card
     setTriviaLow(triviaLow); // for trivia card
     setIsBelowTarget(simLow || triviaLow); // for overall
+    if (simLow || triviaLow) {
+      playAlertOnce(
+        ` Your latest score is below your target of ${targetScore}%.
+Take a moment to review your mistakes and try again — improvement comes fast when you stay consistent. `
+      );
+    }
 
   }
 

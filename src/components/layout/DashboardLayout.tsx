@@ -1,4 +1,5 @@
 "use client";
+import { useLocation } from "react-router-dom";
 
 import { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -21,6 +22,8 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
   const authUser = useUser();
   const navigate = useNavigate();
   const { isLoading } = useSessionContext();
+  const location = useLocation();
+  const isForum = location.pathname === "/forum";
 
   // ------------------------------
   // Auth redirect
@@ -158,10 +161,12 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
         isDarkMode={isDarkMode}
         toggleDarkMode={toggleDarkMode}
         streak={streak}
+        isForum={isForum}   // ✅ pass it here
       >
         {children}
       </DashboardContent>
     </SidebarProvider>
+
   );
 }
 
@@ -170,8 +175,9 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
 // -------------------------------------------------------------
 import { useSidebar } from "@/components/ui/sidebar";
 
-function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, children }: any) {
+function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, children, isForum }: any) {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
+
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -188,7 +194,8 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
           className={`
     flex-1 box-border
     px-0
-    py-4 pb-14
+    py-4
+    ${!isForum ? "pb-14" : ""}   /* Only add bottom padding on non-forum pages */
     overflow-auto
     scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
     dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
@@ -196,10 +203,10 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
         >
           {children}
 
-          {/* Footer spacer — prevents overlap */}
-          <div className="h-20 shrink-0" />
-
+          {/* Footer spacer — only on non-forum pages */}
+          {!isForum && <div className="h-20 shrink-0" />}
         </main>
+
 
         {!isSidebarOpen && (
           <BottomBar

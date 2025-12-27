@@ -345,61 +345,64 @@ User's message: ${input}
             </CardHeader>
 
             <CardContent
-              className={`flex flex-col h-96 p-2 overflow-hidden rounded-xl ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"
-                }`}
+              className={`flex flex-col h-96 p-2 overflow-hidden rounded-xl ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
             >
-
               <div
                 ref={scrollRef}
                 className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
-             scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+     scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent relative"
               >
+                {isHistoryLoading ? (
+                  <div className="absolute inset-0 flex justify-center items-center">
+                    <FloatingTypingBubbles isDarkTheme={isDarkTheme} />
+                  </div>
+                ) : (
+                  messages.map((msg, idx) => {
+                    const formattedTime = new Date(msg.timestamp).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    });
 
-                {messages.map((msg, idx) => {
-                  const formattedTime = new Date(msg.timestamp).toLocaleString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  });
+                    const isTyping = msg.content === "<TypingBubbles />";
 
-                  const isTyping = msg.content === "<TypingBubbles />";
-
-                  return (
-                    <div key={idx}>
-                      {msg.role === "user" ? (
-                        <div className="flex flex-col items-end">
-                          <div className="flex items-end gap-2">
-                            <div className="p-2 bg-blue-500 text-white rounded-full">
-                              <MessageCircle size={24} className="text-white drop-shadow-xl" />
+                    return (
+                      <div key={idx}>
+                        {msg.role === "user" ? (
+                          <div className="flex flex-col items-end">
+                            <div className="flex items-end gap-2">
+                              <div className="p-2 bg-blue-500 text-white rounded-full">
+                                <MessageCircle size={24} className="text-white drop-shadow-xl" />
+                              </div>
+                              <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-100 text-blue-900">
+                                {stripMarkdown(msg.content)}
+                              </div>
                             </div>
-                            <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-500 text-white">
-                              {stripMarkdown(msg.content)}
-                            </div>
+                            <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
+                              {formattedTime}
+                            </span>
                           </div>
-                          <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
-                            {formattedTime}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-start gap-1">
-                          <div className="flex items-start gap-2">
-                            <div className="p-2 bg-teal-600 text-white rounded-full">
-                              <Stethoscope size={24} className="text-white drop-shadow-xl" />
+                        ) : (
+                          <div className="flex flex-col items-start gap-1">
+                            <div className="flex items-start gap-2">
+                              <div className="p-2 bg-teal-600 text-white rounded-full">
+                                <Stethoscope size={24} className="text-white drop-shadow-xl" />
+                              </div>
+                              <div className="p-2 rounded-xl max-w-[95%] shadow bg-gray-100 text-gray-900">
+                                {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
+                              </div>
                             </div>
-                            <div className="p-2 rounded-xl max-w-[95%] shadow bg-teal-100 text-teal-900">
-                              {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
-                            </div>
+                            <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
+                              {formattedTime}
+                            </span>
                           </div>
-                          <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
-                            {formattedTime}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
               <div className="flex space-x-2">
@@ -409,16 +412,15 @@ User's message: ${input}
                   placeholder="Ask about Nursing..."
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                   className="
-  bg-white text-gray-900 placeholder-gray-400
-  dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400
-  border border-blue-300 dark:border-gray-700
-  focus:ring-2 focus:ring-blue-500 dark:focus:ring-teal-500
-"
-
+        bg-white text-gray-900 placeholder-gray-400
+        dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400
+        border border-blue-300 dark:border-gray-700
+        focus:ring-2 focus:ring-blue-500 dark:focus:ring-teal-500
+      "
                 />
                 <Button
                   onClick={() => {
-                    vibrate(50); // ✅ vibrate
+                    vibrate(50);
                     sendMessage();
                   }}
                   disabled={loading}
@@ -426,9 +428,9 @@ User's message: ${input}
                 >
                   <Send size={24} className="text-white drop-shadow-lg" />
                 </Button>
-
               </div>
             </CardContent>
+
           </Card>
         </div>
       )}

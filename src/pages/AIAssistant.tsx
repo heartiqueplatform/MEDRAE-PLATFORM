@@ -36,7 +36,8 @@ interface Message {
 // 🔑 Supabase Project Keys
 import { supabase } from "@/lib/supabaseClient";
 function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
-  const bubbleColor = isDarkTheme ? "bg-green-400" : "bg-green-600";
+  const bubbleColor = isDarkTheme ? "bg-gray-400" : "bg-gray-500";
+
 
   return (
     <div className="flex items-center gap-1">
@@ -319,8 +320,14 @@ User's message: ${inputMessage}
     return () => media.removeEventListener("change", listener);
   }, []);
 
-  const aiBubbleClass = isDarkTheme ? "bg-green-700 text-white" : "bg-green-100 text-green-900";
-  const userBubbleClass = "bg-blue-500 text-white";
+  // AI = neutral grey
+  const aiBubbleClass = isDarkTheme
+    ? "bg-gray-700 text-gray-100"
+    : "bg-gray-100 text-gray-900";
+
+  // User = light blue
+  const userBubbleClass = "bg-blue-100 text-blue-900";
+
   if (isHistoryLoading) {
     return <GlobalLoader message="Loading chat history..." />;
   }
@@ -392,54 +399,57 @@ User's message: ${inputMessage}
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
-             scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+   scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent relative"
           >
-
-
-            {messages.map((msg, index) => (
-
-
-              <div
-                key={index}
-                className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end text-right" : "justify-start"
-                  }`}
-              >
-                {/* Avatar */}
-                <div className="h-8 w-8 rounded-full flex items-center justify-center bg-gray-200 shadow">
-                  {msg.sender === "user" ? (
-                    <User className="w-5 h-5 text-blue-600" />
-                  ) : (
-                    <Stethoscope className="w-5 h-5 text-green-600" />
-                  )}
-                </div>
-
-                {/* Message Bubble */}
-                <div className="flex flex-col max-w-[95%]">
-                  <div
-                    className={`rounded-2xl px-4 py-2 shadow max-w-[80%] break-words whitespace-pre-wrap ${msg.sender === "user"
-                      ? `${userBubbleClass} text-left`
-                      : `${aiBubbleClass} text-left`
-                      }`}
-                  >
-                    {msg.content === "<TypingBubbles />" ? (
-                      <TypingBubbles isDarkTheme={isDarkTheme} />
+            {isHistoryLoading ? (
+              <div className="absolute inset-0 flex justify-center items-center">
+                <TypingBubbles isDarkTheme={isDarkTheme} />
+              </div>
+            ) : (
+              messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end text-right" : "justify-start"
+                    }`}
+                >
+                  {/* Avatar */}
+                  <div className="h-8 w-8 rounded-full flex items-center justify-center bg-gray-200 shadow">
+                    {msg.sender === "user" ? (
+                      <User className="w-5 h-5 text-blue-600" />
                     ) : (
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <Stethoscope className="w-5 h-5 text-green-600" />
                     )}
                   </div>
-                  <span className="text-xs text-gray-500 mt-1">
-                    {new Date(msg.timestamp).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
-                  </span>
+
+                  {/* Message Bubble */}
+                  <div className="flex flex-col max-w-[80%]">
+                    <div
+                      className={`rounded-2xl px-4 py-2  max-w-[75%] break-words  ${msg.sender === "user"
+                        ? `${userBubbleClass} text-left`
+                        : `${aiBubbleClass} text-left`
+                        }`}
+                    >
+                      {msg.content === "<TypingBubbles />" ? (
+                        <TypingBubbles isDarkTheme={isDarkTheme} />
+                      ) : (
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500 mt-1">
+                      {new Date(msg.timestamp).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
+
 
           {/* Input */}
           <div className="flex items-center gap-2 p-4 border-t bg-background flex-shrink-0">
