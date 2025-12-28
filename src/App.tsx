@@ -93,23 +93,24 @@ const BottomBarWrapper = () => {
 };
 
 const App = () => {
-  initSound();
-  loadSound("tap-correct", "/sounds/tap1.mp3");
-  loadSound("tap-wrong", "/sounds/tap2.mp3");
-  loadSound("tap", "/sounds/tap0.mp3");
-  loadSound("start", "/sounds/start.mp3");
-  loadSound("medrae", "/sounds/medrae.mp3");
-  loadSound("medrae-study", "/sounds/MedraeStudy.mp3");
-  loadSound("medrae-voice", "/sounds/MedraeVoice.mp3");
-  loadSound("notification", "/sounds/notification.mp3");
-
-  // ✅ Trivia finish sound
-  loadSound("trivia-finish", "/sounds/Trivia.mp3");
 
 
   // Splash state for first-time visitors
   const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
+  // 🔹 NEW useEffect for sounds
+  useEffect(() => {
+    initSound();
+    loadSound("tap-correct", "/sounds/tap1.mp3");
+    loadSound("tap-wrong", "/sounds/tap2.mp3");
+    loadSound("tap", "/sounds/tap0.mp3");
+    loadSound("start", "/sounds/start.mp3");
+    loadSound("medrae", "/sounds/medrae.mp3");
+    loadSound("medrae-study", "/sounds/MedraeStudy.mp3");
+    loadSound("medrae-voice", "/sounds/MedraeVoice.mp3");
+    loadSound("notification", "/sounds/notification.mp3");
+    loadSound("trivia-finish", "/sounds/Trivia.mp3");
+  }, []); // ✅ empty dependency array so it runs only once
 
   useEffect(() => {
     if (!loading) return;

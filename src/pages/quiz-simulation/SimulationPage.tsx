@@ -31,10 +31,10 @@ const getStatusVariant = (status: string) => {
 
 export default function SimulationPage() {
   const navigate = useNavigate();
+  const [dismissed, setDismissed] = useState(false);
   // 🚫 Block mobile screens completely
   if (typeof window !== "undefined") {
     const isLaptop = window.innerWidth >= 1000; // adjust size if needed
-    const [dismissed, setDismissed] = useState(false);
 
     if (!isLaptop && !dismissed) {
       return (
@@ -727,16 +727,16 @@ export default function SimulationPage() {
         <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
         {/* Dashboard Button */}
         <div className="mb-4">
-          <Button
-            size="sm"
-            asChild
-            variant="outline"
-            className="text-foreground hover:bg-green-500 hover:text-white dark:hover:text-white transition-colors"
-          >
-            <Link to="/dashboard">
+          <Link to="/dashboard">
+            <motion.button
+              initial={false}
+              whileHover={{ scale: 1.05 }}
+              className="px-4 py-2 border border-gray-400 rounded-xl text-foreground dark:text-white hover:bg-green-500 hover:text-white dark:hover:text-white transition-all duration-300"
+            >
               Home
-            </Link>
-          </Button>
+            </motion.button>
+          </Link>
+
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paperList.map((paper) => {
@@ -1234,7 +1234,7 @@ export default function SimulationPage() {
                 disabled={!cameraStream || !audioStream}
                 onClick={() => {
                   // Play sound
-                  const audio = new Audio("/sounds/medrae.mp3");
+                  const audio = new Audio("/sounds/start.mp3");
                   audio.play().catch(err => console.log("Audio play blocked", err));
 
 

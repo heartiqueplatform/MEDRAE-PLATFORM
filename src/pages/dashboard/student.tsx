@@ -473,10 +473,22 @@ export default function StudentDashboard() {
   }, [latestPostId]);
 
   // New: unit question counts from view
+  // New: unit question counts from view
   const [unitCounts, setUnitCounts] = useState<any[]>([]);
 
+  // Simulation papers state
   const [simulationPapers, setSimulationPapers] = useState<any[]>([]);
   const [simulationProgress, setSimulationProgress] = useState<Record<string, number>>({});
+
+  // ✅ Cached simulation papers for instant UI render
+  const [cachedSimulationPapers, setCachedSimulationPapers] = useState<any[]>(() => {
+    const cached = localStorage.getItem("simulationPapers");
+    return cached ? JSON.parse(cached) : [];
+  });
+
+  // ✅ Skeleton display control: only show skeleton if no cached papers
+  const showSkeleton = loading && cachedSimulationPapers.length === 0;
+
   /// 🏆 Top students state
   const [topStudents, setTopStudents] = useState<any[]>(() => {
     // ✅ initialize from localStorage to avoid initial loader flash
@@ -614,8 +626,11 @@ export default function StudentDashboard() {
       // 1️⃣ Fetch cached simulation papers first
       const cachedPapers = localStorage.getItem("simulationPapers");
       if (cachedPapers) {
-        setSimulationPapers(JSON.parse(cachedPapers));
+        const parsed = JSON.parse(cachedPapers);
+        setSimulationPapers(parsed);
+        setCachedSimulationPapers(parsed); // update cached state too
       }
+
 
       // 2️⃣ Fetch active simulation papers from Supabase
       const { data: papers, error: paperError } = await supabase
@@ -678,7 +693,9 @@ export default function StudentDashboard() {
       const newIds = papersWithVisits.map((p) => p.id).join(",");
       if (cachedIds !== newIds) {
         setSimulationPapers(papersWithVisits);
+        setCachedSimulationPapers(papersWithVisits); // update cached state for instant UI
         localStorage.setItem("simulationPapers", JSON.stringify(papersWithVisits));
+
       }
     } catch (error: any) {
       console.error("Error fetching simulation papers:", error.message);
@@ -1651,13 +1668,11 @@ export default function StudentDashboard() {
 
       {/* Simulation Papers Section */}
       <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900 p-2">
-
         <CardHeader className="p-2">
-
           <CardTitle className="text-gray-900 dark:text-white">
             Self Test SimuProctor Papers V1
             <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-              ({simulationPapers.length} Papers)
+              ({cachedSimulationPapers.length} Papers)
             </span>
           </CardTitle>
           <CardDescription className="text-gray-700 dark:text-gray-300">
@@ -1666,35 +1681,28 @@ export default function StudentDashboard() {
             Students who regularly use simulations perform better by identifying weak areas early and training their mind to stay calm under pressure.
           </CardDescription>
 
-          {/* Show total available papers below description */}
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {simulationPapers.length} simulation papers available — start practicing today!
+            {cachedSimulationPapers.length} simulation papers available — start practicing today!
           </p>
 
-          {/* Warning for users */}
           <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-red-800 dark:text-red-200 text-sm font-semibold shadow-none border-0">
             For the best experience and smoothest interaction, we recommend using a desktop or laptop. While some phones can run the simulation, using a larger device ensures optimal comfort and engagement.
           </div>
 
-
-          {/* Extra Tip Box */}
           <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-blue-800 dark:text-blue-200 text-xs italic shadow-none border-0">
-            Tip: Treat each simulation as if it’s the real exam  no distractions, no breaks.
+            Tip: Treat each simulation as if it’s the real exam — no distractions, no breaks.
           </div>
-
         </CardHeader>
 
         <CardContent className="p-0">
-          {loading ? (
+          {(!cachedSimulationPapers.length && loading) ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-[2px] w-full">
-
               {Array.from({ length: 8 }).map((_, idx) => (
                 <div
                   key={idx}
                   className="flex flex-col justify-between rounded-none sm:rounded-md bg-white dark:bg-gray-900 animate-pulse p-4 shadow-none border-0"
                   style={{ minHeight: "250px" }}
                 >
-
                   <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
                   <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-full mb-1"></div>
                   <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-5/6 mb-1"></div>
@@ -1704,13 +1712,11 @@ export default function StudentDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
-
-              {simulationPapers.length > 0 ? (
-                simulationPapers.map((paper) => (
+              {cachedSimulationPapers.length > 0 ? (
+                cachedSimulationPapers.map((paper) => (
                   <Card
                     key={paper.id}
                     className="flex flex-col justify-between cursor-pointer hover:scale-105 transform transition-all rounded-none sm:rounded-md bg-white dark:bg-gray-900 shadow-none border border-gray-200 dark:border-gray-700"
-
                     onClick={async () => {
                       navigate(`/simulation/${paper.id}`);
                       const { data: userData } = await supabase.auth.getUser();
@@ -1782,8 +1788,6 @@ export default function StudentDashboard() {
             </div>
           )}
 
-
-          {/* Motivational CTA */}
           <p className="mt-6 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
             Every simulation you complete brings you one step closer to exam success!
           </p>
