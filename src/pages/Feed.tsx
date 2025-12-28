@@ -960,7 +960,7 @@ export default function Feed() {
           ref={scrollContainerRef}   // ✅ add this
           className="p-0 max-w-2xl mx-auto space-y-4
              h-[80vh] overflow-y-auto overflow-x-hidden
-             scrollbar-thin scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent scroll-container"
+             custom-scrollbar"
         >
 
 
@@ -1571,40 +1571,32 @@ export default function Feed() {
                         </p>
                       )}
                       {/* 👍 Helpful / 👎 Not Helpful feedback */}
-                      <div className="flex gap-4 sm:gap-32 pb-4 ml-2 sm:ml-4">
+                      <div className="flex gap-4 sm:gap-8 pb-4 ml-2 sm:ml-4">
 
                         {/* Helpful Button */}
                         <button
                           onClick={async () => {
                             const isAlreadyHelpful = imageFeedback[img.id] === "helpful";
 
-                            // Vibration
                             if (navigator.vibrate) navigator.vibrate(50);
-
-                            // Sound
                             playSound("tap-correct", false);
 
-                            // Update local feedback state
                             setImageFeedback((prev) => ({
                               ...prev,
                               [img.id]: isAlreadyHelpful ? null : "helpful",
                             }));
 
-                            // Trigger zoom animation
                             setFeedbackAnim((prev) => ({ ...prev, [img.id]: true }));
                             setTimeout(() => {
                               setFeedbackAnim((prev) => ({ ...prev, [img.id]: false }));
                             }, 300);
 
-                            // Optimistic count update
                             setFeedImages((prev) =>
                               prev.map((i) => {
                                 if (i.id !== img.id) return i;
-
                                 const helpfulChange = isAlreadyHelpful ? -1 : 1;
                                 const notHelpfulChange =
                                   !isAlreadyHelpful && imageFeedback[img.id] === "not_helpful" ? -1 : 0;
-
                                 return {
                                   ...i,
                                   helpful_count: (i.helpful_count ?? 0) + helpfulChange,
@@ -1613,7 +1605,6 @@ export default function Feed() {
                               })
                             );
 
-                            // Update Supabase counts
                             if (isAlreadyHelpful) {
                               await supabase.rpc("decrement_helpful_count", { image_id: img.id });
                             } else {
@@ -1623,14 +1614,13 @@ export default function Feed() {
                               }
                             }
                           }}
-                          className={`px-4 py-1.5 rounded-full text-sm border ${imageFeedback[img.id] === "helpful"
+                          className={`px-4 py-1.5 rounded-full text-sm border flex items-center gap-2 ${imageFeedback[img.id] === "helpful"
                             ? "bg-green-500 text-white border-green-500"
                             : "text-green-600 border-green-500 hover:bg-green-500 hover:text-white"
                             } transition`}
                         >
-                          <span className="flex items-center gap-2">
-                            <ThumbsUp size={16} /> Helpful
-                          </span>
+                          <ThumbsUp size={16} />
+                          <span>{img.helpful_count ?? 0}</span>
                         </button>
 
                         {/* Not Helpful Button */}
@@ -1638,33 +1628,25 @@ export default function Feed() {
                           onClick={async () => {
                             const isAlreadyNotHelpful = imageFeedback[img.id] === "not_helpful";
 
-                            // Vibration (different pattern)
                             if (navigator.vibrate) navigator.vibrate([80, 30, 50]);
-
-                            // Sound
                             playSound("tap-wrong", false);
 
-                            // Update local feedback state
                             setImageFeedback((prev) => ({
                               ...prev,
                               [img.id]: isAlreadyNotHelpful ? null : "not_helpful",
                             }));
 
-                            // Trigger zoom animation
                             setFeedbackAnim((prev) => ({ ...prev, [img.id]: true }));
                             setTimeout(() => {
                               setFeedbackAnim((prev) => ({ ...prev, [img.id]: false }));
                             }, 300);
 
-                            // Optimistic count update
                             setFeedImages((prev) =>
                               prev.map((i) => {
                                 if (i.id !== img.id) return i;
-
                                 const notHelpfulChange = isAlreadyNotHelpful ? -1 : 1;
                                 const helpfulChange =
                                   !isAlreadyNotHelpful && imageFeedback[img.id] === "helpful" ? -1 : 0;
-
                                 return {
                                   ...i,
                                   not_helpful_count: (i.not_helpful_count ?? 0) + notHelpfulChange,
@@ -1673,7 +1655,6 @@ export default function Feed() {
                               })
                             );
 
-                            // Update Supabase counts
                             if (isAlreadyNotHelpful) {
                               await supabase.rpc("decrement_not_helpful_count", { image_id: img.id });
                             } else {
@@ -1683,43 +1664,15 @@ export default function Feed() {
                               }
                             }
                           }}
-                          className={`px-4 py-1.5 rounded-full text-sm border ${imageFeedback[img.id] === "not_helpful"
+                          className={`px-4 py-1.5 rounded-full text-sm border flex items-center gap-2 ${imageFeedback[img.id] === "not_helpful"
                             ? "bg-red-500 text-white border-red-500"
                             : "text-red-600 border-red-500 hover:bg-red-500 hover:text-white"
                             } transition`}
                         >
-                          <span className="flex items-center gap-2">
-                            <ThumbsDown size={16} /> Not Helpful
-                          </span>
+                          <ThumbsDown size={16} />
+                          <span>{img.not_helpful_count ?? 0}</span>
                         </button>
                       </div>
-
-                      {/* Dynamic feedback text below buttons */}
-                      <div className="text-center mt-2 text-sm text-gray-700 dark:text-gray-300">
-                        {imageFeedback[img.id] === "helpful" && (
-                          <>
-                            <ThumbsUp size={16} className="inline-block mr-1" />
-                            <span className={feedbackAnim[img.id] ? "animate-emoji-zoom" : ""}>
-                              {(img.helpful_count ?? 1)}
-                            </span>{" "}
-                            {(img.helpful_count ?? 1) === 1
-                              ? "student marked this helpful.Thank you for your feedback"
-                              : "students marked this helpful.Thank you for your feedback"}
-                          </>
-                        )}
-                        {imageFeedback[img.id] === "not_helpful" && (
-                          <>
-                            <ThumbsDown size={16} className="inline-block mr-1" />
-                            <span className={feedbackAnim[img.id] ? "animate-emoji-zoom" : ""}>
-                              {(img.not_helpful_count ?? 1)}
-                            </span>{" "}
-                            {(img.not_helpful_count ?? 1) === 1
-                              ? "student marked this not helpful.Thank you for your feedback"
-                              : "students marked this not helpful.Thank you for your feedback"}
-                          </>
-                        )}
-                      </div>
-
 
 
                     </Card>
@@ -1934,59 +1887,122 @@ export default function Feed() {
                   className="max-w-[90%] max-h-[80vh] object-contain rounded-xl shadow-lg"
                 />
                 <div className="flex gap-2 mt-3 justify-center">
-                  {/* Helpful */}
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      const isAlreadyHelpful = imageFeedback[activeImage.id] === "helpful";
+                  {/* Helpful / Not Helpful for active image */}
+                  <div className="flex gap-4 items-center">
 
-                      if (navigator.vibrate) navigator.vibrate(40);
-                      playSound("tap-correct", false);
+                    {/* Helpful */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const isAlreadyHelpful = imageFeedback[activeImage.id] === "helpful";
 
-                      setImageFeedback((prev) => ({
-                        ...prev,
-                        [activeImage.id]: isAlreadyHelpful ? null : "helpful",
-                      }));
+                        if (navigator.vibrate) navigator.vibrate(40);
+                        playSound("tap-correct", false);
 
-                      setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
-                      setTimeout(() => {
-                        setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
-                      }, 200);
-                    }}
-                    className={`px-3 py-1 rounded-full text-xs border ${imageFeedback[activeImage.id] === "helpful"
-                      ? "bg-green-500 text-white border-green-500"
-                      : "text-green-600 border-green-500 hover:bg-green-500 hover:text-white"
-                      } transition`}
-                  >
-                    <ThumbsUp size={14} />
-                  </button>
+                        // Update feedback
+                        setImageFeedback((prev) => ({
+                          ...prev,
+                          [activeImage.id]: isAlreadyHelpful ? null : "helpful",
+                        }));
 
-                  {/* Not Helpful */}
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      const isAlreadyNotHelpful = imageFeedback[activeImage.id] === "not_helpful";
+                        // Animation
+                        setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
+                        setTimeout(() => {
+                          setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
+                        }, 200);
 
-                      if (navigator.vibrate) navigator.vibrate([60, 20, 40]);
-                      playSound("tap-wrong", false);
+                        // ✅ Update activeImage counts locally
+                        setActiveImage((prev) => {
+                          if (!prev) return prev;
 
-                      setImageFeedback((prev) => ({
-                        ...prev,
-                        [activeImage.id]: isAlreadyNotHelpful ? null : "not_helpful",
-                      }));
+                          const helpfulChange = isAlreadyHelpful ? -1 : 1;
+                          const notHelpfulChange =
+                            !isAlreadyHelpful && imageFeedback[prev.id] === "not_helpful" ? -1 : 0;
 
-                      setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
-                      setTimeout(() => {
-                        setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
-                      }, 200);
-                    }}
-                    className={`px-3 py-1 rounded-full text-xs border ${imageFeedback[activeImage.id] === "not_helpful"
-                      ? "bg-red-500 text-white border-red-500"
-                      : "text-red-600 border-red-500 hover:bg-red-500 hover:text-white"
-                      } transition`}
-                  >
-                    <ThumbsDown size={14} />
-                  </button>
+                          return {
+                            ...prev,
+                            helpful_count: (prev.helpful_count ?? 0) + helpfulChange,
+                            not_helpful_count: (prev.not_helpful_count ?? 0) + notHelpfulChange,
+                          };
+                        });
+
+                        // Persist changes to Supabase
+                        if (isAlreadyHelpful) {
+                          await supabase.rpc("decrement_helpful_count", { image_id: activeImage.id });
+                        } else {
+                          await supabase.rpc("increment_helpful_count", { image_id: activeImage.id });
+                          if (imageFeedback[activeImage.id] === "not_helpful") {
+                            await supabase.rpc("decrement_not_helpful_count", { image_id: activeImage.id });
+                          }
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs border flex items-center gap-1 ${imageFeedback[activeImage.id] === "helpful"
+                        ? "bg-green-500 text-white border-green-500"
+                        : "text-green-600 border-green-500 hover:bg-green-500 hover:text-white"
+                        } transition`}
+                    >
+                      <ThumbsUp size={14} />
+                      <span>{activeImage.helpful_count ?? 0}</span>
+                    </button>
+
+                    {/* Not Helpful */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const isAlreadyNotHelpful = imageFeedback[activeImage.id] === "not_helpful";
+
+                        if (navigator.vibrate) navigator.vibrate([60, 20, 40]);
+                        playSound("tap-wrong", false);
+
+                        // Update feedback
+                        setImageFeedback((prev) => ({
+                          ...prev,
+                          [activeImage.id]: isAlreadyNotHelpful ? null : "not_helpful",
+                        }));
+
+                        // Animation
+                        setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
+                        setTimeout(() => {
+                          setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
+                        }, 200);
+
+                        // ✅ Update activeImage counts locally
+                        setActiveImage((prev) => {
+                          if (!prev) return prev;
+
+                          const notHelpfulChange = isAlreadyNotHelpful ? -1 : 1;
+                          const helpfulChange =
+                            !isAlreadyNotHelpful && imageFeedback[prev.id] === "helpful" ? -1 : 0;
+
+                          return {
+                            ...prev,
+                            not_helpful_count: (prev.not_helpful_count ?? 0) + notHelpfulChange,
+                            helpful_count: (prev.helpful_count ?? 0) + helpfulChange,
+                          };
+                        });
+
+                        // Persist changes to Supabase
+                        if (isAlreadyNotHelpful) {
+                          await supabase.rpc("decrement_not_helpful_count", { image_id: activeImage.id });
+                        } else {
+                          await supabase.rpc("increment_not_helpful_count", { image_id: activeImage.id });
+                          if (imageFeedback[activeImage.id] === "helpful") {
+                            await supabase.rpc("decrement_helpful_count", { image_id: activeImage.id });
+                          }
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs border flex items-center gap-1 ${imageFeedback[activeImage.id] === "not_helpful"
+                        ? "bg-red-500 text-white border-red-500"
+                        : "text-red-600 border-red-500 hover:bg-red-500 hover:text-white"
+                        } transition`}
+                    >
+                      <ThumbsDown size={14} />
+                      <span>{activeImage.not_helpful_count ?? 0}</span>
+                    </button>
+
+                  </div>
+
+
                 </div>
 
                 {/* description */}

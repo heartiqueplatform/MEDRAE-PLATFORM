@@ -13,17 +13,23 @@ type Mistake = {
 
 export default function MistakeCard() {
     const navigate = useNavigate();
-    const [mistakeCount, setMistakeCount] = useState<number>(() => {
-        const stored = localStorage.getItem("mistakeCount");
-        return stored ? parseInt(stored, 10) : 0;
+
+    const [mistakes, setMistakes] = useState<Mistake[]>(() => {
+        const stored = localStorage.getItem("mistakes");
+        const storedDate = localStorage.getItem("mistakesDate");
+        const today = new Date().toDateString();
+
+        if (stored && storedDate === today) {
+            return JSON.parse(stored);
+        }
+        return [];
     });
 
-    const [mistakes, setMistakes] = useState<Mistake[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [mistakeCount, setMistakeCount] = useState<number>(() => mistakes.length);
+    const [loading, setLoading] = useState(mistakes.length === 0);
     const [animate, setAnimate] = useState(false);
     const prevCountRef = useRef<number>(mistakeCount);
 
-    // Rich, friendly insight sentences
     const getInsightSentence = (m: Mistake) => {
         if (!m.mistake_reason) {
             return "Kindly select a reason for each mistake  this helps you learn faster and gives clear guidance.";
@@ -51,39 +57,43 @@ export default function MistakeCard() {
                 return "Reflect on this mistake to improve next time you’re learning!";
         }
     };
+
     const getProgressSignal = (m: Mistake) => {
         if (m.resolved) return "Resolved quickly";
         if (m.times_wrong >= 2) return "Repeated mistake";
         return "Needs review";
     };
 
+    const fetchMistakes = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+            .from("user_mistakes")
+            .select("id, mistake_reason, times_wrong, resolved")
+            .eq("user_id", user.id)
+            .eq("resolved", false)
+            .order("last_wrong_at", { ascending: false });
+
+        if (error) console.error("Error fetching mistakes:", error);
+        else {
+            const count = data?.length || 0;
+            if (count !== prevCountRef.current) setAnimate(true);
+            prevCountRef.current = count;
+            setMistakes(data || []);
+            setMistakeCount(count);
+            localStorage.setItem("mistakes", JSON.stringify(data || []));
+            localStorage.setItem("mistakesDate", new Date().toDateString());
+        }
+
+        setLoading(false);
+    };
+
     useEffect(() => {
-        const fetchMistakes = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data, error } = await supabase
-                .from("user_mistakes")
-                .select("id, mistake_reason, times_wrong, resolved")
-                .eq("user_id", user.id)
-                .eq("resolved", false)
-                .order("last_wrong_at", { ascending: false });
-
-            if (error) console.error("Error fetching mistakes:", error);
-            else {
-                const count = data?.length || 0;
-                if (count !== prevCountRef.current) setAnimate(true);
-                prevCountRef.current = count;
-                setMistakeCount(count);
-                setMistakes(data || []);
-                localStorage.setItem("mistakeCount", String(count));
-            }
-
-            setLoading(false);
-        };
-
+        // Load fresh data in the background
         fetchMistakes();
 
+        // Real-time updates
         const channel = supabase
             .channel("public:user_mistakes")
             .on("postgres_changes", { event: "*", schema: "public", table: "user_mistakes" }, () => {
@@ -97,14 +107,10 @@ export default function MistakeCard() {
     const baseCardClass =
         "cursor-pointer rounded-none p-2 shadow-none border-0 flex flex-col sm:flex-row items-start sm:items-center justify-between hover:shadow-none transition-all select-none";
     const themedCardClass = `${baseCardClass} bg-white dark:bg-gray-900`;
-
     const handleAnimationEnd = () => setAnimate(false);
 
     return (
-        <div
-            onClick={() => navigate("/my-mistakes")}
-            className={themedCardClass}
-        >
+        <div onClick={() => navigate("/my-mistakes")} className={themedCardClass}>
             <div className="flex-1">
                 {mistakeCount === 0 ? (
                     <>
@@ -139,7 +145,9 @@ export default function MistakeCard() {
                     </>
                 )}
             </div>
-            <div className="ml-4 mt-2 sm:mt-0 text-gray-700 dark:text-gray-300 font-bold text-xl">➔</div>
+            <div className="ml-0 mt-2 sm:mt-0 text-gray-700 dark:text-gray-300 font-bold text-xl">
+                Review
+            </div>
 
             <style>
                 {`

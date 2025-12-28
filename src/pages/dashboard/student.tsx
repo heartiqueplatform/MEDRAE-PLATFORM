@@ -9,6 +9,7 @@ import {
   Card, CardContent, CardDescription,
   CardHeader, CardTitle
 } from "@/components/ui/card";
+import GreetingsCard from "@/components/GreetingsCard"; // adjust path if needed
 import { Button } from "@/components/ui/button";
 import { toast as sonnerToast } from "sonner"; // ✅ renamed
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
@@ -917,112 +918,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen md:min-h-auto rounded-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
 
-
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-none p-2 text-white">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">
-          {name ? (() => {
-            const now = new Date();
-            const hour = now.getHours();
-
-            // ✅ Determine time of day correctly around midnight
-            let timeGreeting: string;
-            if (hour >= 5 && hour < 12) timeGreeting = "Good morning";
-            else if (hour >= 12 && hour < 17) timeGreeting = "Good afternoon";
-            else if (hour >= 17 && hour < 21) timeGreeting = "Good evening";
-            else timeGreeting = "Good night";
-
-            // Daily messages (preserve all guides)
-            const dailyMessage: { [key: string]: { morning: string; afternoon: string; evening: string; night: string } } = {
-              Sunday: {
-                morning: `Welcome to a new week of professional growth. Reflect on your achievements and prepare for a week full of learning and skill development.`,
-                afternoon: `Keep building momentum today. Take time to consolidate your learning and plan for the week ahead.`,
-                evening: `Wrap up your Sunday with reflection and preparation. Celebrate small wins and set goals for a productive week.`,
-                night: `Hope your Sunday winds down peacefully. Take a moment to rest and recharge for the week ahead.`
-              },
-              Monday: {
-                morning: `Welcome to the start of a productive week. Review your notes and practice essential skills with focus and confidence.`,
-                afternoon: `Keep pushing forward and apply what you've learned so far. Every effort counts towards mastery.`,
-                evening: `Reflect on what you accomplished today and plan your next steps. Your dedication sets the tone for a successful week.`,
-                night: `Hope your Monday winds down smoothly. Rest well and prepare for continued growth tomorrow.`
-              },
-              Tuesday: {
-                morning: `Welcome to another day of advancement. Stay curious and continue building your clinical expertise.`,
-                afternoon: `Keep progressing and challenging yourself. Every step brings you closer to mastery.`,
-                evening: `Review today's achievements and consider areas for improvement. Growth is built daily.`,
-                night: `Hope your Tuesday concludes positively. Rest and recharge to continue your learning journey.`
-              },
-              Wednesday: {
-                morning: `Welcome to midweek. Celebrate your progress so far and stay motivated for the remainder of the week.`,
-                afternoon: `Continue applying your skills and reflect on your learning. Midweek is perfect for focus and refinement.`,
-                evening: `Wrap up your Wednesday with reflection and planning. Your consistent effort is impressive.`,
-                night: `Hope your Wednesday evening is relaxing. Recharge and prepare for the rest of the week.`
-              },
-              Thursday: {
-                morning: `Welcome to a new day of professional growth. Embrace every learning opportunity and refine your skills.`,
-                afternoon: `Keep applying knowledge in practice. Small consistent steps lead to mastery.`,
-                evening: `Reflect on what you learned today and celebrate progress made.`,
-                night: `Hope your Thursday winds down well. Rest and get ready to finish the week strong.`
-              },
-              Friday: {
-                morning: `Welcome to the final stretch of the week. Focus on consolidating knowledge and practicing skills.`,
-                afternoon: `Keep moving forward and apply lessons learned this week.`,
-                evening: `Reflect on the week’s accomplishments and plan for next week’s growth.`,
-                night: `Hope your Friday evening is peaceful. Take time to rest and recharge for the weekend.`
-              },
-              Saturday: {
-                morning: `Welcome to a day for reflection and skill refinement. Review your progress and deepen your understanding.`,
-                afternoon: `Continue exploring new concepts and applying knowledge practically.`,
-                evening: `Wrap up Saturday with reflection and acknowledge your achievements.`,
-                night: `Hope your Saturday concludes positively. Rest well and prepare for the week ahead.`
-              }
-            };
-
-            const today = now.toLocaleDateString('en-US', { weekday: 'long' });
-
-            // ✅ Determine time of day key
-            let timeOfDay: "morning" | "afternoon" | "evening" | "night";
-            if (hour >= 5 && hour < 12) timeOfDay = "morning";
-            else if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
-            else if (hour >= 17 && hour < 21) timeOfDay = "evening";
-            else timeOfDay = "night";
-
-            // ✅ Build the welcome message
-            const welcomeMessage = `${timeGreeting}, ${name} 👋! ${dailyMessage[today][timeOfDay]}`;
-
-            // ✅ Cache in localStorage for instant load next time
-            localStorage.setItem("welcomeMessage", welcomeMessage);
-
-            return welcomeMessage;
-          })() : localStorage.getItem("welcomeMessage") || "Loading..."}
-          {loading && (
-            <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
-              Updating…
-            </span>
-          )}
-        </h1>
-
-        <p className="text-white/90">
-          {(() => {
-            const nursingMessages = {
-              Sunday: " Sunday reset: Rest up, future nurse! Take today to recharge, reflect on your progress, and plan for the week ahead. Your patients will appreciate your energy and dedication tomorrow!",
-              Monday: " Motivated Monday! A fresh week to sharpen your nursing skills, tackle challenging concepts, and set new goals. Remember, every step today brings you closer to becoming the nurse you aspire to be.",
-              Tuesday: "Triage Tuesday! Keep organizing your notes, practicing procedures, and building your knowledge. Focus on consistency and small victories—they add up to big success in your nursing journey.",
-              Wednesday: " Wellness Wednesday! Halfway through the week—keep your energy high and your mind sharp. Take a moment to celebrate your wins so far, and remember that persistence is key to mastery.",
-              Thursday: " Thriving Thursday! Your dedication to learning and improving as a nurse is inspiring. Push through, review what you’ve learned, and keep challenging yourself—you’re making amazing progress!",
-              Friday: "Fantastic Friday! End the week strong by consolidating your knowledge, practicing skills, and reflecting on your achievements. Celebrate your growth and get ready to recharge for an even better week ahead.",
-              Saturday: " Study Saturday! Use today to review, practice, and deepen your understanding. Whether it’s theory or hands-on skills, every effort counts. Your future patients and colleagues will thank you for your commitment."
-            };
-            const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-
-            // ✅ Cache nursing message too
-            const message = nursingMessages[today] || "Keep pushing—you’re doing amazing! Every effort you make today brings you closer to your dream nursing career.";
-            localStorage.setItem("nursingMessage", message);
-
-            return message;
-          })()}
-        </p>
-      </div>
+      <GreetingsCard />
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
@@ -1233,14 +1129,54 @@ export default function StudentDashboard() {
           </CardDescription>
 
           {/* 🔽 Explanation Dropdown (scrolls internally) */}
+          {/* 🔽 Explanation Dropdown (scrolls internally) */}
           <details className="mt-2 text-sm">
             <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
               How winners are chosen?
             </summary>
             <div className="mt-2 max-h-44 overflow-y-auto pr-2 space-y-3 text-gray-600 dark:text-gray-300 custom-scrollbar">
-              {/* Existing explanation content preserved */}
+              {/* ⭐ How stars are calculated */}
+              <div>
+                <h4 className="font-semibold">1. How stars are calculated</h4>
+                <ul className="list-disc ml-5 mt-1 space-y-1">
+                  <li>90%+ average → ⭐⭐⭐⭐⭐</li>
+                  <li>75–89% → ⭐⭐⭐⭐</li>
+                  <li>60–74% → ⭐⭐⭐</li>
+                  <li>40–59% → ⭐⭐</li>
+                  <li>1–39% → ⭐</li>
+                </ul>
+                <p className="mt-1 text-xs italic">
+                  Stars come from the average quiz performance across all attempts.
+                </p>
+              </div>
+
+              {/* Ranking rules */}
+              <div>
+                <h4 className="font-semibold">2. Ranking rules</h4>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Students are ranked by <strong>total stars earned</strong>.</li>
+                  <li>If stars are equal → compare <strong>average quiz scores</strong>.</li>
+                  <li>If still tied → the student with <strong>more quizzes attempted</strong> wins.</li>
+                </ul>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
+                  This ensures there is always one clear winner at the top.
+                </p>
+              </div>
+
+              {/* Tip + Button */}
+              <p className="text-sm">
+                Want to improve your ranking? Attempt more units and submit results on the quizzes page.
+              </p>
+
+              <Button
+                asChild
+                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
+              >
+                <Link to="/Medrae-quizzes">Go to Quizzes</Link>
+              </Button>
             </div>
           </details>
+
         </CardHeader>
 
         {/* 🧑‍🎓 Leaderboard Section */}
