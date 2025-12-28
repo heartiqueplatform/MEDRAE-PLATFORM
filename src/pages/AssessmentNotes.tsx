@@ -360,7 +360,7 @@ export default function AssessmentNotes() {
   );
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-10 w-full px-2 sm:px-4">
 
 
       <div className="flex flex-col">
@@ -538,7 +538,8 @@ export default function AssessmentNotes() {
                         <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
 
                           {subNotes.map((note) => (
-                            <Card key={note.id} className="min-w-[300px] max-w-[300px]">
+                            <Card key={note.id} className="w-full">
+
                               <CardHeader>
                                 <div className="flex items-center gap-2">
                                   {getTypeIcon(note.file_type)}

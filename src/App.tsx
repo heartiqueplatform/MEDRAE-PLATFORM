@@ -97,6 +97,7 @@ const App = () => {
   loadSound("tap-correct", "/sounds/tap1.mp3");
   loadSound("tap-wrong", "/sounds/tap2.mp3");
   loadSound("tap", "/sounds/tap0.mp3");
+  loadSound("start", "/sounds/start.mp3");
   loadSound("medrae", "/sounds/medrae.mp3");
   loadSound("medrae-study", "/sounds/MedraeStudy.mp3");
   loadSound("medrae-voice", "/sounds/MedraeVoice.mp3");

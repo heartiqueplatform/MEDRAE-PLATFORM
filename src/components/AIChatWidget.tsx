@@ -375,33 +375,24 @@ User's message: ${input}
                       <div key={idx}>
                         {msg.role === "user" ? (
                           <div className="flex flex-col items-end">
-                            <div className="flex items-end gap-2">
-                              <div className="p-2 bg-blue-500 text-white rounded-full">
-                                <MessageCircle size={24} className="text-white drop-shadow-xl" />
-                              </div>
-                              <div className="p-2 rounded-xl max-w-[95%] shadow bg-blue-100 text-blue-900">
-                                {stripMarkdown(msg.content)}
-                              </div>
+                            <div className="p-2 rounded-xl max-w-[80%] break-words shadow bg-blue-100 text-blue-900">
+                              {stripMarkdown(msg.content)}
                             </div>
                             <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
                               {formattedTime}
                             </span>
                           </div>
                         ) : (
-                          <div className="flex flex-col items-start gap-1">
-                            <div className="flex items-start gap-2">
-                              <div className="p-2 bg-teal-600 text-white rounded-full">
-                                <Stethoscope size={24} className="text-white drop-shadow-xl" />
-                              </div>
-                              <div className="p-2 rounded-xl max-w-[95%] shadow bg-gray-100 text-gray-900">
-                                {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
-                              </div>
+                          <div className="flex flex-col items-start w-full">
+                            <div className="p-2 rounded-xl w-full sm:max-w-[80%] break-words shadow bg-gray-100 text-gray-900">
+                              {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
                             </div>
                             <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
                               {formattedTime}
                             </span>
                           </div>
                         )}
+
                       </div>
                     );
                   })

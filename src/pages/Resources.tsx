@@ -4,6 +4,8 @@ import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if need
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+import "../styles/pdfOverrides.css";
+
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -13,8 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-import MistakeCard from "@/components/MistakeCard";
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import { Button } from "@/components/ui/button";
@@ -668,7 +668,8 @@ export function Resources() {
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-10 w-full px-2 sm:px-4">
+
 
       <div className="flex items-center justify-between">
         <div>
@@ -689,12 +690,14 @@ export function Resources() {
         </div>
 
       </div>
-      <MistakeCard />
+
       <DailyTriviaCard />
       {showUploadForm && (
-        <div className="p-4 border rounded-lg space-y-4 bg-muted/10">
+        <div className="p-4 border rounded-lg space-y-4 bg-muted/10 px-2 sm:px-4">
+
           <h2 className="text-xl font-semibold">Upload New Resource</h2>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 px-0">
+
             <Input
               placeholder="Course (optional)"
               value={uploadForm.course}
@@ -804,14 +807,16 @@ export function Resources() {
         </div>
       )}
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-        <div className="relative flex-1">
+        <div className="relative flex-1 px-2 sm:px-0">
+
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search resources..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full"
           />
+
         </div>
 
         <Button
@@ -826,7 +831,8 @@ export function Resources() {
 
 
       {/* Static Block Selector Below Search */}
-      <div className="relative mt-4 w-full flex justify-center">
+      <div className="relative mt-4 w-full flex justify-center px-2 sm:px-0">
+
 
         {/* ✅ Screen Overlay */}
         {floatingBlockOpen && (
@@ -844,13 +850,15 @@ export function Resources() {
         <Button
           onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
           className="
-      relative z-50
-      bg-gray-100 text-gray-900
-      dark:bg-gray-800 dark:text-gray-100
-      hover:bg-gray-200 dark:hover:bg-gray-700
-      transition-colors
-    "
+  relative z-50
+  bg-gray-100 text-gray-900
+  dark:bg-gray-800 dark:text-gray-100
+  hover:bg-gray-200 dark:hover:bg-gray-700
+  transition-colors
+  w-full sm:w-auto
+"
         >
+
           Choose Block OR Semester here
         </Button>
 
@@ -858,15 +866,17 @@ export function Resources() {
         {floatingBlockOpen && (
           <div
             className="
-        absolute top-full mt-2 z-50
-        w-56
-        bg-white dark:bg-gray-800
-        shadow-xl rounded-lg
-        origin-top
-        animate-in slide-in-from-top-2 fade-in
-        duration-200
-      "
+  absolute top-full mt-2 z-50
+  left-0 right-0 sm:w-56
+  bg-white dark:bg-gray-800
+  shadow-xl rounded-lg
+  origin-top
+  animate-in slide-in-from-top-2 fade-in
+  duration-200
+  mx-2 sm:mx-0
+"
           >
+
             {blockCategories.map((cat) => (
               <button
                 key={cat.id}
@@ -890,7 +900,8 @@ export function Resources() {
 
 
       {/* Tabs content controlled by selectedBlock */}
-      <div className="space-y-4 mt-2">
+      <div className="space-y-4 mt-2 px-2 sm:px-0">
+
         {/* Dynamic Heading for Selected Block */}
         <h2 className="text-2xl font-bold mb-4">
           {blockCategories.find((cat) => cat.id === selectedBlock)?.name.split("/").pop()}
@@ -900,7 +911,7 @@ export function Resources() {
           .filter((cat) => cat.id === selectedBlock)
           .map((cat) => (
             <div key={cat.id}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 w-full">
                 {loadingNotes ? (
                   <div className="flex flex-col items-center justify-center py-20 col-span-full">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -932,10 +943,11 @@ export function Resources() {
                     .map((note) => (
                       <Card
                         key={note.id}
-                        className="transition-all hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full"
+                        className="transition-all hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
                       >
+
                         <CardHeader>
-                          <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0">
+                          <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 sm:gap-2 px-2 sm:px-0">
                             <div className="space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 {getTypeIcon(note.file_type)}
@@ -998,7 +1010,7 @@ export function Resources() {
                           </div>
                         </CardHeader>
 
-                        <CardContent className="space-y-2">
+                        <CardContent className="space-y-2 px-2 sm:px-0">
                           {note.file_type === "pdf" && (
                             <div className="flex flex-wrap gap-2">
                               <Button
@@ -1105,6 +1117,7 @@ export function Resources() {
           </div>
           {fullscreenNote.file_type === 'pdf' ? (
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+
               <Viewer
                 fileUrl={fullscreenNote.file_url}
                 plugins={[defaultLayoutPluginInstance]}

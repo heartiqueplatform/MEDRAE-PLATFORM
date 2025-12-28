@@ -314,23 +314,17 @@ User's message: ${inputMessage}
             messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center shadow ${msg.sender === "user"
-                    ? "bg-blue-100 dark:bg-blue-700"
-                    : "bg-gray-200 dark:bg-gray-700"
-                    }`}
-                >
-                  {msg.sender === "user" ? (
-                    <User className="w-5 h-5 text-blue-900 dark:text-white" />
-                  ) : (
-                    <Stethoscope className="w-5 h-5 text-green-600 dark:text-green-300" />
-                  )}
-                </div>
-
-                <div
-                  className={`rounded-2xl px-4 py-2 max-w-[80%] break-words ${msg.sender === "user" ? userBubbleClass : aiBubbleClass} ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}`}
+                  className={`
+        rounded-2xl px-4 py-2 break-words
+        ${msg.sender === "user"
+                      ? "max-w-[80%] " + userBubbleClass
+                      : "w-full sm:max-w-[80%] " + aiBubbleClass
+                    }
+        ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}
+      `}
                 >
                   {msg.content === "<TypingBubbles />" ? (
                     <TypingBubbles isDarkTheme={isDarkTheme} />
@@ -340,6 +334,7 @@ User's message: ${inputMessage}
                 </div>
               </div>
             ))
+
           )}
         </div>
 

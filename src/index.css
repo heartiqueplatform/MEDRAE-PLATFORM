@@ -357,3 +357,48 @@ body,
 .animate-slide-up {
   animation: slideUpFade 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+/* Pulse animation for sentences */
+@keyframes pulse-sentence {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-sentence {
+  display: inline-block;
+  animation: pulse-sentence 1.2s ease-in-out infinite;
+}
+
+/* Pop animation for numbers */
+@keyframes number-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.3);
+    color: #f87171;
+  }
+
+  100% {
+    transform: scale(1);
+    color: inherit;
+  }
+}
+
+.animate-number-pop {
+  animation: number-pop 0.6s ease-in-out;
+  display: inline-block;
+}
+
+/* Optional: fade effect for replacing sentences */
+.fade-transition {
+  transition: opacity 0.4s;
+}

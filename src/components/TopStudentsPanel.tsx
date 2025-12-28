@@ -404,10 +404,22 @@ export const DailyTriviaCard = () => {
                         <Button
                             className="w-full mt-4"
                             disabled={loading || attemptedToday || !selfUserId}
-                            onClick={startTrivia}
+                            onClick={() => {
+                                // Play tap sound
+                                playSound("start");
+
+                                // Strong vibration (200ms)
+                                if (navigator.vibrate) {
+                                    navigator.vibrate(200);
+                                }
+
+                                // Call the original start function
+                                startTrivia();
+                            }}
                         >
                             Start Daily Trivia
                         </Button>
+
                     )}
                     {started && !completed && (
                         <Button className="w-full mt-4" disabled>

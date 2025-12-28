@@ -206,7 +206,7 @@ export function StudyProgress() {
     ));
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-10 w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
       <div>
         <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
           Study Progress Tracker
@@ -222,8 +222,10 @@ export function StudyProgress() {
       </div>
 
       {/* Overall Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-4 w-full">
+
+        <Card className="w-full sm:w-auto hover:shadow-lg hover:scale-105 transition-all duration-300">
+
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-8 w-8 text-primary" />
@@ -234,7 +236,8 @@ export function StudyProgress() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="w-full sm:w-auto hover:shadow-lg hover:scale-105 transition-all duration-300">
+
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <Clock className="h-8 w-8 text-blue-500" />
@@ -245,7 +248,8 @@ export function StudyProgress() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="w-full sm:w-auto hover:shadow-lg hover:scale-105 transition-all duration-300">
+
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <BookOpen className="h-8 w-8 text-green-500" />
@@ -256,7 +260,8 @@ export function StudyProgress() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="w-full sm:w-auto hover:shadow-lg hover:scale-105 transition-all duration-300">
+
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <Star className="h-8 w-8 text-yellow-500" />
@@ -283,7 +288,8 @@ export function StudyProgress() {
               <GlobalLoader />
             </div>
           ) : (
-            <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(250px,1fr))]">
+            <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
+
               {subjects.map((subject) => (
                 <Card key={subject.id} className="transition-all hover:shadow-lg hover:scale-105 duration-300">
                   <CardHeader>
@@ -332,7 +338,8 @@ export function StudyProgress() {
         </TabsContent>
 
         <TabsContent value="timeline">
-          <Card>
+          <Card className="w-full sm:w-auto hover:shadow-lg hover:scale-105 transition-all duration-300">
+
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5" />
@@ -356,7 +363,8 @@ export function StudyProgress() {
 
 
         <TabsContent value="timeline">
-          <Card>
+          <Card className="w-full sm:w-auto hover:shadow-lg hover:scale-105 transition-all duration-300">
+
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5" />
@@ -721,7 +729,7 @@ Take a moment to review your mistakes and try again — improvement comes fast w
                 : "bg-blue-600 hover:opacity-80"
                 } transition`}
             >
-              {savingTarget ? "Saving..." : "Save"}
+              {savingTarget ? "..." : "Save"}
             </button>
           </div>
 
@@ -742,7 +750,7 @@ Take a moment to review your mistakes and try again — improvement comes fast w
 
 
       {/* CARD GRID */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 w-full">
         {/* SIMULATION CARD */}
         <Card className="hover:shadow-lg hover:-translate-y-1 transition-all">
           <CardHeader>

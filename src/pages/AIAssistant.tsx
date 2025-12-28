@@ -333,10 +333,12 @@ User's message: ${inputMessage}
   }
 
   return (
-    <div className="h-screen flex flex-col max-w-6xl mx-auto">
+    <div className="h-screen flex flex-col w-full">
+
 
       {/* Header */}
-      <div className="mb-4 flex items-center gap-3">
+      <div className="w-full flex items-center gap-3 p-4 bg-background border-b shadow-sm">
+
         <div className="h-10 w-10 bg-gradient-medical rounded-full flex items-center justify-center">
           <Brain className="h-5 w-5 text-white" />
         </div>
@@ -353,7 +355,8 @@ User's message: ${inputMessage}
 
 
         {/* Chat */}
-        <Card className="flex-1 flex flex-col h-full w-full overflow-hidden relative">
+        <Card className="flex-1 flex flex-col h-full w-full overflow-hidden relative rounded-none">
+
           {/* Quick Topics Dropdown (inside chat card, below heading) */}
           <div
             className={`px-4 py-2 border-b bg-background shadow-sm mb-2 flex justify-start relative`}
@@ -398,8 +401,7 @@ User's message: ${inputMessage}
           </div>
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
-   scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent relative"
+            className="flex-1 overflow-y-auto space-y-3 mb-2 p-2 custom-scrollbar relative"
           >
             {isHistoryLoading ? (
               <div className="absolute inset-0 flex justify-center items-center">
@@ -412,21 +414,13 @@ User's message: ${inputMessage}
                   className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end text-right" : "justify-start"
                     }`}
                 >
-                  {/* Avatar */}
-                  <div className="h-8 w-8 rounded-full flex items-center justify-center bg-gray-200 shadow">
-                    {msg.sender === "user" ? (
-                      <User className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <Stethoscope className="w-5 h-5 text-green-600" />
-                    )}
-                  </div>
-
                   {/* Message Bubble */}
-                  <div className="flex flex-col max-w-[95%]">
+                  <div className="flex flex-col w-full">
                     <div
-                      className={`rounded-2xl px-4 py-2  max-w-[75%] break-words  ${msg.sender === "user"
-                        ? `${userBubbleClass} text-left`
-                        : `${aiBubbleClass} text-left`
+                      className={`rounded-2xl px-6 py-3 break-words
+      ${msg.sender === "user"
+                          ? `${userBubbleClass} ml-auto inline-block max-w-full lg:max-w-[70%]` // user on right
+                          : `${aiBubbleClass} inline-block max-w-full lg:max-w-[70%]`            // AI on left
                         }`}
                     >
                       {msg.content === "<TypingBubbles />" ? (
@@ -435,7 +429,10 @@ User's message: ${inputMessage}
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       )}
                     </div>
-                    <span className="text-xs text-gray-500 mt-1">
+                    <span
+                      className={`text-xs text-gray-500 mt-1
+      ${msg.sender === "user" ? "text-right" : "text-left"}`}
+                    >
                       {new Date(msg.timestamp).toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -445,6 +442,9 @@ User's message: ${inputMessage}
                       })}
                     </span>
                   </div>
+
+
+
                 </div>
               ))
             )}
@@ -452,7 +452,8 @@ User's message: ${inputMessage}
 
 
           {/* Input */}
-          <div className="flex items-center gap-2 p-4 border-t bg-background flex-shrink-0">
+          <div className="flex items-center gap-2 p-4 border-t bg-background w-full">
+
             <Input
               placeholder="Ask me anything about nursing..."
               value={inputMessage}

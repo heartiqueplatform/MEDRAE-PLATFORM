@@ -195,10 +195,9 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
     flex-1 box-border
     px-0
     py-4
-    ${!isForum ? "pb-14" : ""}   /* Only add bottom padding on non-forum pages */
+    ${!isForum ? "pb-14" : ""}
     overflow-auto
-    scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-400
-    dark:scrollbar-thumb-gray-600 scrollbar-track-transparent
+custom-scrollbar
   `}
         >
           {children}

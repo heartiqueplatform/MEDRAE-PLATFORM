@@ -18,9 +18,8 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
-import { DailyTriviaCard } from "@/components/TopStudentsPanel";
+import { playSound } from "@/lib/soundManager";
 
-import MistakeCard from "@/components/MistakeCard";
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -31,6 +30,18 @@ const PopupMessage = ({ message, onClose }: { message: string; onClose: () => vo
       </button>
     </div>
   );
+};
+const hasStartedQuiz = (unitCode: string) => {
+  const startedUnits = JSON.parse(localStorage.getItem("startedUnits") || "[]");
+  return startedUnits.includes(unitCode);
+};
+
+const markUnitStarted = (unitCode: string) => {
+  const startedUnits = JSON.parse(localStorage.getItem("startedUnits") || "[]");
+  if (!startedUnits.includes(unitCode)) {
+    startedUnits.push(unitCode);
+    localStorage.setItem("startedUnits", JSON.stringify(startedUnits));
+  }
 };
 
 const paperOneUnits = [
@@ -385,7 +396,8 @@ export function MedraeQuizzes() {
 
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-10 w-full px-2 sm:px-4">
+
       {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
 
       <div className="flex items-center justify-between">
@@ -423,9 +435,6 @@ export function MedraeQuizzes() {
 
         </div>
       </div>
-
-
-      <MistakeCard />
 
       <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
         <input
@@ -483,7 +492,8 @@ export function MedraeQuizzes() {
         <h2 className="text-2xl font-semibold text-yellow-500">
           NCK PP1 UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
         </h2>
-        <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+
 
           {(loading && !hasLocalCache ? paperOneUnits : paperOneUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -530,12 +540,27 @@ export function MedraeQuizzes() {
                     </div>
 
                     {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                      <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
+                      <Link
+                        to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                        onClick={() => {
+                          // Mark the unit as started
+                          markUnitStarted(unit.code);
+
+                          // Play start sound
+                          playSound("start"); // just call it by name
+
+                          // Vibrate device (50ms)
+                          if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                          }
+                        }}
+                      >
                         <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
                           <Play className="h-4 w-4 mr-1" />
-                          Start Quiz
+                          {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
                         </Button>
                       </Link>
+
                     ) : (
                       <Button className="w-full mt-4" variant="outline" disabled>
                         Premium/Pro Only
@@ -555,8 +580,7 @@ export function MedraeQuizzes() {
         <h2 className="text-2xl font-semibold text-blue-600">
           NCK PP2 UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
         </h2>
-        <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
-
+        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
           {(loading && !hasLocalCache ? paperTwoUnits : paperTwoUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             unit.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -603,10 +627,28 @@ export function MedraeQuizzes() {
 
                     {isPremium || freeUnits.includes(unit.code.trim()) ? (
                       <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-                        <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
-                          <Play className="h-4 w-4 mr-1" />
-                          Start Quiz
-                        </Button>
+                        <Link
+                          to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                          onClick={() => {
+                            // Mark the unit as started
+                            markUnitStarted(unit.code);
+
+                            // Play start sound
+                            playSound("start"); // just call it by name
+
+                            // Vibrate device (50ms)
+                            if (navigator.vibrate) {
+                              navigator.vibrate(50);
+                            }
+                          }}
+                        >
+
+                          <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                            <Play className="h-4 w-4 mr-1" />
+                            {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
+                          </Button>
+                        </Link>
+
                       </Link>
                     ) : (
                       <Button className="w-full mt-4" variant="outline" disabled>
@@ -626,7 +668,8 @@ export function MedraeQuizzes() {
         <h2 className="text-2xl font-semibold text-purple-600">
           NCLEX Mastery Units <span className="text-sm text-gray-500">({totalPaperThree} Questions)</span>
         </h2>
-        <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(200px,1fr))]">
+        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+
 
           {(loading && !hasLocalCache ? paperThreeUnits : paperThreeUnits.filter((unit) =>
             unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -690,10 +733,27 @@ export function MedraeQuizzes() {
 
                     {isPremium || freeUnits.includes(unit.code.trim()) ? (
                       <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-                        <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
-                          <Play className="h-4 w-4 mr-1" />
-                          Start Quiz
-                        </Button>
+                        <Link
+                          to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                          onClick={() => {
+                            // Mark the unit as started
+                            markUnitStarted(unit.code);
+
+                            // Play start sound
+                            playSound("start"); // just call it by name
+
+                            // Vibrate device (50ms)
+                            if (navigator.vibrate) {
+                              navigator.vibrate(50);
+                            }
+                          }}
+                        >
+                          <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                            <Play className="h-4 w-4 mr-1" />
+                            {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
+                          </Button>
+                        </Link>
+
                       </Link>
                     ) : (
                       <Button className="w-full mt-4" variant="outline" disabled>
@@ -707,9 +767,6 @@ export function MedraeQuizzes() {
           ))}
         </div>
       </div>
-
-      <DailyTriviaCard />
-
       {/* Progress */}
       <Card>
         <CardHeader>
