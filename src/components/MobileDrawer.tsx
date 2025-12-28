@@ -44,6 +44,14 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
     const navigate = useNavigate();
     const drawerRef = useRef<HTMLDivElement>(null);
 
+    // --------------------------
+    // Helper: set state + cache
+    // --------------------------
+    const setAndCache = (key: string, value: number, setter: (v: number) => void) => {
+        setter(value);
+        localStorage.setItem(key, String(value));
+    };
+
     // Counts
     const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
     const [totalSimulationPapers, setTotalSimulationPapers] = useState<number | null>(null);
@@ -71,9 +79,37 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
     }, [isOpen, setIsOpen]);
 
     // --------------------------
-    // Fetch all counts (like AppSidebar)
+    // Load cached counts instantly
     // --------------------------
+    useEffect(() => {
+        const cachedQuestions = localStorage.getItem("totalQuestions");
+        if (cachedQuestions) setTotalQuestions(Number(cachedQuestions));
 
+        const cachedSimPapers = localStorage.getItem("totalSimulationPapers");
+        if (cachedSimPapers) setTotalSimulationPapers(Number(cachedSimPapers));
+
+        const cachedNotes = localStorage.getItem("totalNotes");
+        if (cachedNotes) setTotalNotes(Number(cachedNotes));
+
+        const cachedVideos = localStorage.getItem("totalVideos");
+        if (cachedVideos) setTotalVideos(Number(cachedVideos));
+
+        const cachedStars = localStorage.getItem("totalStars");
+        if (cachedStars) setTotalStars(Number(cachedStars));
+
+        const cachedEvents = localStorage.getItem("totalEvents");
+        if (cachedEvents) setTotalEvents(Number(cachedEvents));
+
+        const cachedMistakes = localStorage.getItem("mistakeCount");
+        if (cachedMistakes) setMistakeCount(Number(cachedMistakes));
+
+        const cachedAnnouncements = localStorage.getItem("unreadAnnouncements");
+        if (cachedAnnouncements) setUnreadAnnouncements(Number(cachedAnnouncements));
+    }, []);
+
+    // --------------------------
+    // Fetch counts from Supabase & cache
+    // --------------------------
     useEffect(() => {
         const fetchCounts = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -85,48 +121,47 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                 .select("*", { count: "exact", head: true })
                 .eq("user_id", user.id)
                 .eq("resolved", false);
-            setMistakeCount(mistakesCount || 0);
+            setAndCache("mistakeCount", mistakesCount || 0, setMistakeCount);
 
             // Questions
             const { count: questionsCount } = await supabase
                 .from("quiz_questions")
                 .select("*", { count: "exact", head: true });
-            setTotalQuestions(questionsCount || 0);
+            setAndCache("totalQuestions", questionsCount || 0, setTotalQuestions);
 
             // Simulation Papers
             const { count: simCount } = await supabase
                 .from("simulation_papers")
                 .select("*", { count: "exact", head: true });
-            setTotalSimulationPapers(simCount || 0);
+            setAndCache("totalSimulationPapers", simCount || 0, setTotalSimulationPapers);
 
             // Notes
             const { count: notesCount } = await supabase
                 .from("notes")
                 .select("*", { count: "exact", head: true });
-            setTotalNotes(notesCount || 0);
+            setAndCache("totalNotes", notesCount || 0, setTotalNotes);
 
             // Videos
             const { count: videosCount } = await supabase
                 .from("medtube_videos")
                 .select("*", { count: "exact", head: true });
-            setTotalVideos(videosCount || 0);
+            setAndCache("totalVideos", videosCount || 0, setTotalVideos);
 
             // Events
             const { count: eventsCount } = await supabase
                 .from("calendar_events")
                 .select("*", { count: "exact", head: true });
-            setTotalEvents(eventsCount || 0);
+            setAndCache("totalEvents", eventsCount || 0, setTotalEvents);
 
-            // Stars (simplified: 5 stars per unit with score > 0)
+            // Stars
             const { data: quizResults } = await supabase
                 .from("quiz_results")
                 .select("unit, score")
                 .eq("user_id", user.id);
-
             const unitsWithScore = new Set(
                 quizResults?.filter(r => r.score && r.score > 0).map(r => r.unit)
             );
-            setTotalStars(unitsWithScore.size * 5);
+            setAndCache("totalStars", unitsWithScore.size * 5, setTotalStars);
 
             // Announcements
             const { data: announcements } = await supabase
@@ -134,9 +169,49 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                 .select("id")
                 .eq("is_published", true);
             const readIds = JSON.parse(localStorage.getItem("readAnnouncements") || "[]");
-            setUnreadAnnouncements((announcements?.length || 0) - readIds.length);
+            setAndCache("unreadAnnouncements", (announcements?.length || 0) - readIds.length, setUnreadAnnouncements);
         };
+
         fetchCounts();
+    }, []);
+
+    // --------------------------
+    // Listen for localStorage changes to update badges in real-time
+    // --------------------------
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (!e.key) return;
+
+            switch (e.key) {
+                case "totalQuestions":
+                    setTotalQuestions(Number(e.newValue));
+                    break;
+                case "totalSimulationPapers":
+                    setTotalSimulationPapers(Number(e.newValue));
+                    break;
+                case "totalNotes":
+                    setTotalNotes(Number(e.newValue));
+                    break;
+                case "totalVideos":
+                    setTotalVideos(Number(e.newValue));
+                    break;
+                case "totalStars":
+                    setTotalStars(Number(e.newValue));
+                    break;
+                case "totalEvents":
+                    setTotalEvents(Number(e.newValue));
+                    break;
+                case "mistakeCount":
+                    setMistakeCount(Number(e.newValue));
+                    break;
+                case "unreadAnnouncements":
+                    setUnreadAnnouncements(Number(e.newValue));
+                    break;
+            }
+        };
+
+        window.addEventListener("storage", handleStorageChange);
+        return () => window.removeEventListener("storage", handleStorageChange);
     }, []);
 
     const formatNumber = (num: number | null) => {
@@ -248,8 +323,6 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
 
                                             <span>{item.title}</span>
                                         </button>
-
-
                                     </div>
                                 ))}
                             </div>
