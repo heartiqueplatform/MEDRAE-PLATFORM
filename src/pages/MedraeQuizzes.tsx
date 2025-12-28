@@ -284,8 +284,26 @@ export function MedraeQuizzes() {
   }, []);
 
   const { data: unitCounts, loading, incrementCount } = useUnitQuestionCount();
+  // ✅ Stable cached question counts (single source of truth for UI)
+  const [cachedCounts, setCachedCounts] = useState<Record<string, number>>({});
+
   // ✅ Check if question counts already exist locally
   const [hasLocalCache, setHasLocalCache] = useState(false);
+
+  // ✅ Load cached question counts ONCE on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("cachedCounts");
+
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setCachedCounts(parsed);
+        setHasLocalCache(true);
+      } catch {
+        console.warn("Invalid cachedCounts in localStorage");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const cachedCounts = localStorage.getItem("cachedCounts");
@@ -295,6 +313,7 @@ export function MedraeQuizzes() {
   }, []);
 
   // 🔴 Realtime subscription for question count updates
+  // ✅ Lightweight realtime: just trigger refresh (no local writes here)
   useEffect(() => {
     const channel = supabase
       .channel("question_changes_channel")
@@ -305,16 +324,9 @@ export function MedraeQuizzes() {
           schema: "public",
           table: "questions",
         },
-        async () => {
-          const newCounts = await incrementCount("");
-
-          // Save all refreshed counts to localStorage
-          const saveObj = {};
-          newCounts?.forEach((u) => {
-            saveObj[u.unit_code] = u.count;
-          });
-
-          localStorage.setItem("cachedCounts", JSON.stringify(saveObj));
+        () => {
+          // Let the hook update unitCounts → Step 3 will diff + persist
+          incrementCount("");
         }
       )
       .subscribe();
@@ -324,31 +336,42 @@ export function MedraeQuizzes() {
     };
   }, [incrementCount]);
 
-
   const [refreshing, setRefreshing] = useState(false);
   const [popup, setPopup] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // ✅ PURE reader — safe during render
   const getQuestionCount = (code: string) => {
-    // 1) try live data first
-    if (unitCounts && unitCounts.length > 0) {
-      const count =
-        unitCounts.find(
-          (u) => u.unit_code?.trim().toLowerCase() === code.trim().toLowerCase()
-        )?.count || 0;
-
-      // save to localStorage for offline use
-      const cached = JSON.parse(localStorage.getItem("cachedCounts") || "{}");
-      cached[code] = count;
-      localStorage.setItem("cachedCounts", JSON.stringify(cached));
-
-      return count;
-    }
-
-    // 2) fallback to localStorage if offline
-    const cached = JSON.parse(localStorage.getItem("cachedCounts") || "{}");
-    return cached[code] || 0;
+    return cachedCounts[code] ?? 0;
   };
+
+  // ✅ Background sync: Supabase → state → localStorage (ONLY if changed)
+  useEffect(() => {
+    if (!unitCounts || unitCounts.length === 0) return;
+
+    setCachedCounts((prev) => {
+      const next: Record<string, number> = { ...prev };
+      let changed = false;
+
+      for (const u of unitCounts) {
+        const code = u.unit_code?.trim();
+        if (!code) continue;
+
+        const newCount = u.count ?? 0;
+        if (next[code] !== newCount) {
+          next[code] = newCount;
+          changed = true;
+        }
+      }
+
+      // 🚫 Nothing changed → do NOTHING
+      if (!changed) return prev;
+
+      // ✅ Persist only when something actually changed
+      localStorage.setItem("cachedCounts", JSON.stringify(next));
+      return next;
+    });
+  }, [unitCounts]);
 
 
   const totalPaperOne = paperOneUnits.reduce((sum, unit) => sum + getQuestionCount(unit.code), 0);
