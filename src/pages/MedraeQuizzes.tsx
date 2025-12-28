@@ -626,29 +626,18 @@ export function MedraeQuizzes() {
                     </div>
 
                     {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                      <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-                        <Link
-                          to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                          onClick={() => {
-                            // Mark the unit as started
-                            markUnitStarted(unit.code);
-
-                            // Play start sound
-                            playSound("start"); // just call it by name
-
-                            // Vibrate device (50ms)
-                            if (navigator.vibrate) {
-                              navigator.vibrate(50);
-                            }
-                          }}
-                        >
-
-                          <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
-                            <Play className="h-4 w-4 mr-1" />
-                            {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
-                          </Button>
-                        </Link>
-
+                      <Link
+                        to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                        onClick={() => {
+                          markUnitStarted(unit.code);
+                          playSound("start");
+                          if (navigator.vibrate) navigator.vibrate(50);
+                        }}
+                      >
+                        <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                          <Play className="h-4 w-4 mr-1" />
+                          {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
+                        </Button>
                       </Link>
                     ) : (
                       <Button className="w-full mt-4" variant="outline" disabled>
@@ -732,30 +721,21 @@ export function MedraeQuizzes() {
                     </div>
 
                     {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                      <Link to={`/quiz?unit=${encodeURIComponent(unit.title)}`}>
-                        <Link
-                          to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                          onClick={() => {
-                            // Mark the unit as started
-                            markUnitStarted(unit.code);
-
-                            // Play start sound
-                            playSound("start"); // just call it by name
-
-                            // Vibrate device (50ms)
-                            if (navigator.vibrate) {
-                              navigator.vibrate(50);
-                            }
-                          }}
-                        >
-                          <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
-                            <Play className="h-4 w-4 mr-1" />
-                            {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
-                          </Button>
-                        </Link>
-
+                      <Link
+                        to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                        onClick={() => {
+                          markUnitStarted(unit.code);
+                          playSound("start");
+                          if (navigator.vibrate) navigator.vibrate(50);
+                        }}
+                      >
+                        <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                          <Play className="h-4 w-4 mr-1" />
+                          {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
+                        </Button>
                       </Link>
                     ) : (
+
                       <Button className="w-full mt-4" variant="outline" disabled>
                         Premium/Pro Only
                       </Button>
