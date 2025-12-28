@@ -276,7 +276,8 @@ export default function MyMistakes() {
     };
 
     const getOptionClass = (letter: string, mistake: Mistake) => {
-        const correct = mistake.questions.correct_answer;
+        const correct = mistake.questions?.correct_answer;
+
         const selected = mistake.user_selected;
 
         if (letter === correct && letter === selected)
@@ -350,7 +351,8 @@ export default function MyMistakes() {
                             <CardHeader className="p-0">
 
                                 <CardTitle className="text-base sm:text-lg">
-                                    Q{i + 1}: {m.questions.question_text}
+                                    Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}
+
                                 </CardTitle>
                                 <CardDescription className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                                     <span>
@@ -364,8 +366,10 @@ export default function MyMistakes() {
 
                             <CardContent className="space-y-2 p-3 text-sm sm:text-base">
                                 {["A", "B", "C", "D"].map((letter) => {
-                                    const optionText = m.questions[`option_${letter.toLowerCase()}` as keyof Question];
-                                    const isCorrect = letter === m.questions.correct_answer;
+                                    const optionText =
+                                        m.questions?.[`option_${letter.toLowerCase()}` as keyof Question] ?? "—";
+                                    const isCorrect = letter === m.questions?.correct_answer;
+
                                     const isUserChoice = letter === m.user_selected;
 
                                     return (
@@ -400,14 +404,18 @@ export default function MyMistakes() {
                                 )}
 
                                 <p>
-                                    <strong>Explanation:</strong> {m.questions.explanation}
+                                    <strong>Explanation:</strong>{" "}
+                                    {m.questions?.explanation ?? "No explanation available."}
                                 </p>
 
                                 <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }}>
                                     <Button
                                         onClick={() => {
                                             vibrateTap(40);
-                                            markAsResolved(m.questions.id);
+                                            if (m.questions?.id) {
+                                                markAsResolved(m.questions.id);
+                                            }
+
                                         }}
                                         className="w-full sm:w-auto"
                                     >
