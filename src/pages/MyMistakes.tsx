@@ -46,12 +46,14 @@ export default function MyMistakes() {
         const cached = localStorage.getItem("mistakes");
         if (!cached) return [];
         try {
-            return JSON.parse(cached);
+            const parsed = JSON.parse(cached);
+            return parsed.filter((m: Mistake) => m.questions && Object.keys(m.questions).length > 0);
         } catch (e) {
             console.error("Failed to parse cached mistakes:", e);
             return [];
         }
     };
+
 
     const [mistakes, setMistakes] = useState<Mistake[]>(() => loadCachedMistakes());
     const [loading, setLoading] = useState(mistakes.length === 0); // Only show loader if nothing cached
@@ -132,15 +134,18 @@ export default function MyMistakes() {
                 .eq("resolved", false)
                 .order("last_wrong_at", { ascending: false });
 
-            if (error) console.error(error);
-            else if (isMounted) {
-                const userMistakes = (data || []).filter((m) => m.questions);
+            if (error) {
+                console.error(error);
+            }
+            if (isMounted) {
+                const userMistakes = (data || []).filter((m) => m.questions && Object.keys(m.questions).length > 0);
                 setMistakes(userMistakes);
                 setMistakeCount(userMistakes.length);
                 localStorage.setItem("mistakes", JSON.stringify(userMistakes));
                 localStorage.setItem("mistakeCount", String(userMistakes.length));
-                setLoading(false);
+                setLoading(false); // ← Always stop loading, even if no mistakes
             }
+
         };
 
         fetchMistakes();
