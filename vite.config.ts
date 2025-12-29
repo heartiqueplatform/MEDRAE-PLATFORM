@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
 
         registerType: "autoUpdate",
         devOptions: { enabled: true },
-        includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.jpeg", "pwa-512x512.jpeg"],
+        includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.jpeg", "pwa-512x512.jpeg", "offline.html"],
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
@@ -39,15 +39,41 @@ export default defineConfig(({ mode }) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ["**/*.{html,js,css,ico,png,svg,jpg,jpeg,webp,json}"],
+
+          // App shell fallback for offline navigation
           navigateFallback: "/index.html",
           navigateFallbackAllowlist: [/^\/(?!api\/).*/],
-
           navigateFallbackDenylist: [/^\/api\//],
+
           runtimeCaching: [
-            { urlPattern: ({ request }) => request.destination === "script" || request.destination === "style", handler: "CacheFirst", options: { cacheName: "js-css-cache", expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 } } },
-            { urlPattern: ({ request }) => request.destination === "image", handler: "CacheFirst", options: { cacheName: "images", expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 } } },
-            { urlPattern: ({ url }) => url.pathname.startsWith("/api"), handler: "NetworkFirst", options: { cacheName: "api-cache", networkTimeoutSeconds: 5, expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 6 } } }
+            {
+              urlPattern: ({ request }) =>
+                request.destination === "script" || request.destination === "style",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "js-css-cache",
+                expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 }
+              }
+            },
+            {
+              urlPattern: ({ request }) => request.destination === "image",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "images",
+                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }
+              }
+            },
+            {
+              urlPattern: ({ url }) => url.pathname.startsWith("/api"),
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "api-cache",
+                networkTimeoutSeconds: 5,
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 6 }
+              }
+            }
           ],
+
           cleanupOutdatedCaches: true
         }
       })
