@@ -2,7 +2,13 @@
 import { useState, useEffect } from "react";
 
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && "__APP_OFFLINE__" in window) {
+      return !(window as any).__APP_OFFLINE__;
+    }
+    return navigator.onLine;
+  });
+
 
   // Function to test actual internet connectivity
   const checkInternetConnection = async () => {
