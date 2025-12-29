@@ -51,50 +51,25 @@
 <body style="margin:0; height:100%;">
   <div id="root" style="height:100%;"></div>
 
-  <!-- ✅ Load React app with offline-safe fallback -->
+  <!-- ✅ Load React app -->
   <script type="module">
     import("/src/main.tsx");
   </script>
-  <!-- ✅ Lock theme and gradient splash BEFORE paint -->
+
+  <!-- ✅ Lock theme BEFORE first paint to prevent flash -->
   <script>
-    // Determine user theme immediately
+    // Determine theme immediately
     let userTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
     document.documentElement.classList.add(userTheme);
 
-    // Default background to prevent flash
+    // Set fallback background immediately
     const bgColor = userTheme === 'dark' ? '#000' : '#fff';
     document.documentElement.style.backgroundColor = bgColor;
     document.body.style.backgroundColor = bgColor;
-
-    // Show animated gradient for first-time visitors
-    const firstVisit = !localStorage.getItem('hasVisited');
-    if (firstVisit) {
-      localStorage.setItem('hasVisited', 'true');
-      const gradient = userTheme === 'dark'
-        ? 'linear-gradient(135deg, #003366, #0059b3, #0a1f2e)'
-        : 'linear-gradient(135deg, #1e90ff, #4dd2ff, #00aaff)';
-      const styleEl = document.createElement('style');
-      styleEl.innerHTML = `
-          html, body, #root {
-            height: 100%;
-            margin: 0;
-            background: ${gradient};
-            background-size: 400% 400%;
-            animation: glow 6s ease-in-out infinite alternate;
-          }
-          @keyframes glow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-        `;
-      document.head.appendChild(styleEl);
-    }
-
   </script>
-
 </body>
+
 
 </html>

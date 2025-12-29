@@ -15,18 +15,20 @@ export default function SplashScreen() {
   useEffect(() => {
     if (firstVisit) {
       localStorage.setItem("splashShown", "true");
-      const timer = setTimeout(() => setShowSplash(false), 2000);
-      return () => clearTimeout(timer);
     }
+    const timer = setTimeout(() => setShowSplash(false), 2000);
+    return () => clearTimeout(timer);
   }, [firstVisit]);
+
 
   if (!showSplash) return null;
 
   return (
     <div
-      className={`fixed inset-0 flex flex-col items-center justify-center z-50 ${theme === "dark" ? "bg-black" : "bg-white"
-        }`}
+      className={`fixed inset-0 flex flex-col items-center justify-center z-50 transition-opacity duration-500 ${theme === "dark" ? "bg-black" : "bg-white"
+        } ${showSplash ? "opacity-100" : "opacity-0 pointer-events-none"}`}
     >
+
       {/* Logo */}
       <img src="/icon-512.jpg" alt="App Logo" className="w-32 h-32 mb-6" />
 
