@@ -18,7 +18,8 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         devOptions: { enabled: true },
-        includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.jpeg", "pwa-512x512.jpeg"],
+        includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.jpeg", "pwa-512x512.jpeg", "index.html"], // <- new line
+
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
