@@ -37,6 +37,7 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ["**/*.{html,js,css,ico,png,svg,jpg,jpeg,webp,json}"],
           navigateFallback: "/index.html",
+          navigateFallbackAllowlist: [/^\/(?!api\/).*/],
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [
             { urlPattern: ({ request }) => request.destination === "script" || request.destination === "style", handler: "CacheFirst", options: { cacheName: "js-css-cache", expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 } } },
