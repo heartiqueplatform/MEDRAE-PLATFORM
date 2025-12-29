@@ -3,7 +3,7 @@ const urlsToCache = [
     "/", // SPA index
     "/index.html",
     "/index.css",
-    "/main.js", // Vite compiled JS
+    "/main.js", // your compiled JS filename from Vite
     "/pwa-192x192.jpeg",
     "/pwa-512x512.jpeg",
     "/UsersAvatar.jpg",
@@ -32,8 +32,9 @@ const urlsToCache = [
     "/videos/Medrae1.mp4",
     "/videos/Medrae2.mp4",
     "/videos/Medrae3.mp4",
+    // Add other videos if needed
 
-    // SPA routes (for reference, still fallback to index.html)
+    // SPA routes (from App.tsx)
     "/dashboard/student",
     "/dashboard/tutor",
     "/dashboard/staff",
@@ -60,65 +61,65 @@ const urlsToCache = [
     "/feed"
 ];
 
-// Install: cache everything
+// Install: cache app shell + SPA routes + gradient splash style
 self.addEventListener("install", (event) => {
     console.log("[SW] Install");
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(urlsToCache);
+        })
     );
     self.skipWaiting();
 });
 
-// Activate: remove old caches
+// Activate: clean old caches if needed & claim clients
 self.addEventListener("activate", (event) => {
     console.log("[SW] Activate");
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
-                keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+                keys
+                    .filter((key) => key !== CACHE_NAME)
+                    .map((key) => caches.delete(key))
             );
         }).then(() => self.clients.claim())
     );
 });
 
-// Fetch: robust offline handling
+// Fetch: cache-first with SPA fallback & offline image fallback
 self.addEventListener("fetch", (event) => {
     const request = event.request;
 
-    // 1️⃣ SPA navigation: fallback to cached index.html
+    // SPA navigation fallback
     if (request.mode === "navigate") {
         event.respondWith(
-            caches.match("/index.html").then((cached) => {
-                return cached || fetch("/index.html").catch(() => {
-                    // Offline HTML fallback
-                    return new Response(
-                        `<html><body><h1>Offline</h1><p>You are offline. Please check your connection.</p></body></html>`,
-                        { headers: { "Content-Type": "text/html" } }
-                    );
-                });
-            })
+            caches.match("/index.html").then((cached) => cached || fetch("/index.html"))
         );
         return;
     }
 
-    // 2️⃣ Other requests: cache-first, then network, fallback for images
+    // Other requests: cache-first then network
     event.respondWith(
         caches.match(request).then((cached) => {
             if (cached) return cached;
 
             return fetch(request)
                 .then((response) => {
+                    // Cache same-origin requests except large media
                     if (
                         request.url.startsWith(self.location.origin) &&
-                        !request.url.includes("/videos/") &&
-                        !request.url.includes("/medtube_videos/")
+                        !request.url.includes("/medtube_videos/") &&
+                        !request.url.includes("/videos/")
                     ) {
                         const responseClone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+                        caches.open(CACHE_NAME).then((cache) =>
+                            cache.put(request, responseClone)
+                        );
                     }
                     return response;
                 })
                 .catch(() => {
+                    // Offline fallback for images
                     if (request.destination === "image") {
                         return caches.match("/pwa-192x192.jpeg");
                     }
@@ -127,7 +128,7 @@ self.addEventListener("fetch", (event) => {
     );
 });
 
-// Optional: skip waiting on new SW
+// Optional: listen for skip waiting message to immediately activate new SW
 self.addEventListener("message", (event) => {
     if (event.data && event.data.type === "SKIP_WAITING") {
         self.skipWaiting();
