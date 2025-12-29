@@ -4,7 +4,7 @@ import "./index.css";
 import AuthGate from "@/auth/AuthGate";
 
 // ✅ App version for cache control
-const APP_VERSION = "5"; // increment this with each deployment
+const APP_VERSION = "6"; // increment this with each deployment
 const storedVersion = localStorage.getItem("appVersion");
 
 // Update app version safely without clearing all storage
