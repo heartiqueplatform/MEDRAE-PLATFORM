@@ -7,11 +7,12 @@ import AuthGate from "@/auth/AuthGate";
 const APP_VERSION = "5"; // increment this with each deployment
 const storedVersion = localStorage.getItem("appVersion");
 
+// Update app version safely without clearing all storage
 if (storedVersion !== APP_VERSION) {
-    // Clear old localStorage and set new version
-    localStorage.clear();
     localStorage.setItem("appVersion", APP_VERSION);
-    console.log("🔄 App version changed, clearing cache and reloading...");
+    console.log("🔄 App version changed, updated version key only.");
+    // Optional: reload to pick up new SW/assets
+    // window.location.reload(); // Only if necessary
 }
 
 // Prefetch Vite route chunks for offline navigation
@@ -42,9 +43,8 @@ if ("serviceWorker" in navigator) {
                         newWorker.addEventListener("statechange", () => {
                             if (newWorker.state === "installed") {
                                 console.log("🟢 New Service Worker installed and ready.");
-                                if (storedVersion !== APP_VERSION) {
-                                    window.location.reload();
-                                }
+                                // Optional: reload to pick up new SW
+                                // window.location.reload();
                             }
                         });
                     }
@@ -55,6 +55,7 @@ if ("serviceWorker" in navigator) {
             });
     });
 }
+
 // 🔌 Detect offline BEFORE React renders
 if (typeof window !== "undefined") {
     (window as any).__APP_OFFLINE__ = !navigator.onLine;

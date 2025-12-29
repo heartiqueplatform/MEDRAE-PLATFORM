@@ -1,17 +1,20 @@
-const CACHE_NAME = "medrae-app-shell-5";
+// ===== Service Worker =====
+
+// Cache names
+const CACHE_NAME = "medrae-app-shell-v03";       // Static assets cache
+const DYNAMIC_CACHE_NAME = "medrae-dynamic-v01"; // Optional for dynamic media
+
+// Files to pre-cache (static assets only)
 const urlsToCache = [
-    "/", // SPA index
+    "/",
     "/index.html",
     "/index.css",
-    "/main.js", // your compiled JS filename from Vite
+    "/main.js",
     "/pwa-192x192.jpeg",
     "/pwa-512x512.jpeg",
     "/UsersAvatar.jpg",
     "/indexbackground7.jpg",
     "/indexbackground6.jpg",
-    "/indexbackground5.jpg",
-    "/indexbackground3.jpg",
-    "/indexbackground2.jpg",
     "/icon-512.jpg",
     "/background06.jpg",
     "/background05.jpg",
@@ -28,65 +31,37 @@ const urlsToCache = [
     "/sounds/tap1.mp3",
     "/sounds/tap2.mp3",
 
-    // Videos
+    // Videos (optional if small)
     "/videos/Medrae1.mp4",
     "/videos/Medrae2.mp4",
-    "/videos/Medrae3.mp4",
-    // Add other videos if needed
-
-    // SPA routes (from App.tsx)
-    "/dashboard/student",
-    "/dashboard/tutor",
-    "/dashboard/staff",
-    "/ai-assistant",
-    "/calendar",
-    "/progress",
-    "/resources",
-    "/medtube",
-    "/announcements",
-    "/feedback",
-    "/settings",
-    "/subscription",
-    "/notifications",
-    "/profile",
-    "/quiz-units/student",
-    "/quiz-units/tutor",
-    "/quiz-units/staff",
-    "/quiz",
-    "/assessment-notes",
-    "/simulation/candidate",
-    "/quiz-simulation/instructions",
-    "/forum",
-    "/Medrae-quizzes",
-    "/feed"
+    "/videos/Medrae3.mp4"
 ];
 
-// Install: cache app shell + SPA routes + gradient splash style
+// ===== Install =====
 self.addEventListener("install", (event) => {
     console.log("[SW] Install");
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(urlsToCache);
-        })
+        caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
     );
     self.skipWaiting();
 });
 
-// Activate: clean old caches if needed & claim clients
+// ===== Activate =====
 self.addEventListener("activate", (event) => {
     console.log("[SW] Activate");
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
                 keys
-                    .filter((key) => key !== CACHE_NAME)
+                    // Delete only old static caches, preserve dynamic cache
+                    .filter((key) => key !== CACHE_NAME && key !== DYNAMIC_CACHE_NAME)
                     .map((key) => caches.delete(key))
             );
         }).then(() => self.clients.claim())
     );
 });
 
-// Fetch: cache-first with SPA fallback & offline image fallback
+// ===== Fetch =====
 self.addEventListener("fetch", (event) => {
     const request = event.request;
 
@@ -98,23 +73,20 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // Other requests: cache-first then network
+    // Other requests: cache-first for static assets, network-first for dynamic
     event.respondWith(
         caches.match(request).then((cached) => {
             if (cached) return cached;
 
             return fetch(request)
                 .then((response) => {
-                    // Cache same-origin requests except large media
+                    // Only cache same-origin static assets (not API responses / user data)
                     if (
                         request.url.startsWith(self.location.origin) &&
-                        !request.url.includes("/medtube_videos/") &&
-                        !request.url.includes("/videos/")
+                        !request.url.includes("/api/") // Skip user data APIs
                     ) {
                         const responseClone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) =>
-                            cache.put(request, responseClone)
-                        );
+                        caches.open(DYNAMIC_CACHE_NAME).then((cache) => cache.put(request, responseClone));
                     }
                     return response;
                 })
@@ -128,7 +100,7 @@ self.addEventListener("fetch", (event) => {
     );
 });
 
-// Optional: listen for skip waiting message to immediately activate new SW
+// ===== Optional: Skip waiting immediately =====
 self.addEventListener("message", (event) => {
     if (event.data && event.data.type === "SKIP_WAITING") {
         self.skipWaiting();
