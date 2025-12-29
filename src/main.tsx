@@ -4,7 +4,7 @@ import "./index.css";
 import AuthGate from "@/auth/AuthGate";
 
 // ✅ App version for cache control
-const APP_VERSION = "2"; // increment this with each deployment
+const APP_VERSION = "3"; // increment this with each deployment
 const storedVersion = localStorage.getItem("appVersion");
 
 if (storedVersion !== APP_VERSION) {
@@ -53,13 +53,11 @@ if ("serviceWorker" in navigator) {
             .catch((err) => {
                 console.error("❌ Service Worker registration failed:", err);
             });
-
-        // Reload page when new SW takes control
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-            console.log("🔄 Service Worker controller changed, reloading page...");
-            window.location.reload();
-        });
     });
+}
+// 🔌 Detect offline BEFORE React renders
+if (typeof window !== "undefined") {
+    (window as any).__APP_OFFLINE__ = !navigator.onLine;
 }
 
 // 🚫 Nothing renders until auth state is known
