@@ -583,7 +583,12 @@ export function MedraeQuizzes() {
                               }
                             }}
                           >
-                            <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                            <Button
+                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+    ${hasStartedQuiz(unit.code)
+                                  ? "bg-green-600 text-white hover:bg-green-700"
+                                  : ""}`}
+                            >
                               <Play className="h-4 w-4 mr-1" />
                               {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
                             </Button>
@@ -667,7 +672,12 @@ export function MedraeQuizzes() {
                               if (navigator.vibrate) navigator.vibrate(50);
                             }}
                           >
-                            <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                            <Button
+                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+    ${hasStartedQuiz(unit.code)
+                                  ? "bg-green-600 text-white hover:bg-green-700"
+                                  : ""}`}
+                            >
                               <Play className="h-4 w-4 mr-1" />
                               {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
                             </Button>
@@ -767,7 +777,12 @@ export function MedraeQuizzes() {
                               if (navigator.vibrate) navigator.vibrate(50);
                             }}
                           >
-                            <Button className="w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm">
+                            <Button
+                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+    ${hasStartedQuiz(unit.code)
+                                  ? "bg-green-600 text-white hover:bg-green-700"
+                                  : ""}`}
+                            >
                               <Play className="h-4 w-4 mr-1" />
                               {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
                             </Button>

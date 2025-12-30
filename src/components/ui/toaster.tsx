@@ -16,7 +16,7 @@ export function Toaster() {
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         if (props.variant === "destructive") {
-          playSound("tap-wrong", false);
+          playSound("start", false);
         }
 
 

@@ -311,9 +311,11 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                                             <item.icon className="h-5 w-5 mb-1" />
 
                                             {/* Fake dot for Assessment Notes */}
-                                            {item.title === "A.Notes" && (
+                                            {/* Fake dot for Assessment Notes & Feed */}
+                                            {(item.title === "A.Notes" || item.title === "Feed") && (
                                                 <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full -translate-x-1/2 -translate-y-3/4" />
                                             )}
+
 
                                             {item.badge && (
                                                 <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full -translate-x-1/2 -translate-y-3/4">

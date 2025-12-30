@@ -27,6 +27,9 @@ const HeroSkeleton = () => {
 };
 
 const Index = () => {
+  const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
+
+
   const [ready, setReady] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
 
@@ -41,45 +44,14 @@ const Index = () => {
 
   const [isMuted, setIsMuted] = useState(false); // always start unmuted
   const [isMobile, setIsMobile] = useState(false);
+  const [welcomeAudioReady, setWelcomeAudioReady] = useState(false);
+  const [studyAudioReady, setStudyAudioReady] = useState(false);
+
+
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 768);
   }, []);
-  // 1️⃣ Define handleUserScroll first
-  const handleUserScroll = () => {
-    if (welcomeAudioRef.current && studyAudioRef.current) {
-      welcomeAudioRef.current.muted = false;
-      studyAudioRef.current.muted = false;
-
-      welcomeAudioRef.current.play().catch(() => { });
-      studyAudioRef.current.play().catch(() => { });
-
-      // Remove listener after first trigger
-      window.removeEventListener("scroll", handleUserScroll);
-      window.removeEventListener("wheel", handleUserScroll);
-      window.removeEventListener("touchmove", handleUserScroll);
-    }
-  };
-
-  // 2️⃣ Now define triggerAudioOnInteraction
-  const triggerAudioOnInteraction = () => {
-    handleUserScroll(); // ✅ safely calls the defined function
-  };
-
-  // 3️⃣ Add the listeners in useEffect
-  useEffect(() => {
-    window.addEventListener("scroll", handleUserScroll, { passive: true });
-    window.addEventListener("wheel", handleUserScroll, { passive: true });
-    window.addEventListener("touchmove", handleUserScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleUserScroll);
-      window.removeEventListener("wheel", handleUserScroll);
-      window.removeEventListener("touchmove", handleUserScroll);
-    };
-  }, []);
-
-
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -135,27 +107,32 @@ const Index = () => {
 
   useEffect(() => {
     // Initialize audios
-    welcomeAudioRef.current = new Audio("/sounds/MedraeVoice.mp3");
+    const welcomeAudio = new Audio("/sounds/MedraeVoice.mp3");
+    welcomeAudio.volume = 1;
+    welcomeAudio.muted = true; // start muted
+    welcomeAudio.oncanplaythrough = () => setWelcomeAudioReady(true);
 
-    welcomeAudioRef.current.volume = 1;
-    welcomeAudioRef.current.muted = true; // start muted
-    studyAudioRef.current = new Audio("/sounds/MedraeStudy.mp3");
+    const studyAudio = new Audio("/sounds/MedraeStudy.mp3");
+    studyAudio.volume = 0.3;
+    studyAudio.loop = true;
+    studyAudio.muted = true; // start muted
+    studyAudio.oncanplaythrough = () => setStudyAudioReady(true);
 
-
-    studyAudioRef.current.volume = 0.3;
-    studyAudioRef.current.loop = true;
-    studyAudioRef.current.muted = true; // start muted
+    // Assign to refs
+    welcomeAudioRef.current = welcomeAudio;
+    studyAudioRef.current = studyAudio;
 
     let replayTimeout: NodeJS.Timeout;
 
-    const playVoice = async () => {
-      if (!welcomeAudioRef.current) return;
-      welcomeAudioRef.current.currentTime = 0;
+    // Play audio with fallback for user interaction
+    const playAudio = async (audio: HTMLAudioElement | null) => {
+      if (!audio) return;
+      audio.currentTime = 0;
       try {
-        await welcomeAudioRef.current.play();
+        await audio.play();
       } catch {
         const resumeOnInteraction = () => {
-          welcomeAudioRef.current?.play().catch(() => { });
+          audio.play().catch(() => { });
           window.removeEventListener("click", resumeOnInteraction);
           window.removeEventListener("keydown", resumeOnInteraction);
         };
@@ -164,58 +141,25 @@ const Index = () => {
       }
     };
 
-    const playStudy = async () => {
-      if (!studyAudioRef.current) return;
-      try {
-        await studyAudioRef.current.play();
-      } catch {
-        const resumeOnInteraction = () => {
-          studyAudioRef.current?.play().catch(() => { });
-          window.removeEventListener("click", resumeOnInteraction);
-          window.removeEventListener("keydown", resumeOnInteraction);
-        };
-        window.addEventListener("click", resumeOnInteraction);
-        window.addEventListener("keydown", resumeOnInteraction);
-      }
-    };
+    const playVoice = () => playAudio(welcomeAudioRef.current);
+    const playStudy = () => playAudio(studyAudioRef.current);
 
-    // Voice ended → replay after 30s
+    // Welcome audio replay logic
     const handleVoiceEnd = () => {
       replayTimeout = setTimeout(() => {
         playVoice();
       }, 30000);
     };
-    welcomeAudioRef.current.addEventListener("ended", handleVoiceEnd);
+    welcomeAudio.addEventListener("ended", handleVoiceEnd);
 
-    // Scroll/drag trigger
-    const handleUserScroll = () => {
-      if (welcomeAudioRef.current && studyAudioRef.current) {
-        welcomeAudioRef.current.muted = false;
-        studyAudioRef.current.muted = false;
-        playStudy();
-        playVoice();
-        // Remove listener after first trigger
-        window.removeEventListener("scroll", handleUserScroll);
-        window.removeEventListener("wheel", handleUserScroll);
-        window.removeEventListener("touchmove", handleUserScroll);
-      }
-    };
-
-    window.addEventListener("scroll", handleUserScroll, { passive: true });
-    window.addEventListener("wheel", handleUserScroll, { passive: true });
-    window.addEventListener("touchmove", handleUserScroll, { passive: true });
-
+    // Cleanup
     return () => {
-      welcomeAudioRef.current?.pause();
-      studyAudioRef.current?.pause();
-      welcomeAudioRef.current?.removeEventListener("ended", handleVoiceEnd);
+      welcomeAudio.pause();
+      studyAudio.pause();
+      welcomeAudio.removeEventListener("ended", handleVoiceEnd);
       clearTimeout(replayTimeout);
       welcomeAudioRef.current = null;
       studyAudioRef.current = null;
-
-      window.removeEventListener("scroll", handleUserScroll);
-      window.removeEventListener("wheel", handleUserScroll);
-      window.removeEventListener("touchmove", handleUserScroll);
     };
   }, []);
 
@@ -402,7 +346,65 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden relative">
-      {/* Hero Section */}
+      {showWelcomeOverlay && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        >
+          <div className="bg-white rounded-3xl p-8 w-[90%] max-w-lg text-center space-y-6 shadow-2xl">
+            {/* Logo */}
+            <img
+              src="/pwa-192x192.jpeg"
+              alt="Medrae Logo"
+              className="mx-auto h-16 w-16 rounded-lg"
+            />
+
+            {/* Welcome Message */}
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+              Welcome to MEDRAE!
+            </h2>
+
+            {/* Marketing Question */}
+            <p className="text-lg text-gray-700">
+              Ready to join Kenya’s No.1 Nursing Network and boost your skills, career, and confidence? Don’t miss this exclusive chance to connect with thousands of peers and professionals!
+            </p>
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
+              <button
+                className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-2xl transition-all ${!(welcomeAudioReady && studyAudioReady) ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                disabled={!(welcomeAudioReady && studyAudioReady)}
+                onClick={async () => {
+                  // Hide overlay immediately
+                  setShowWelcomeOverlay(false);
+
+                  // Vibrate strongly
+                  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+                  // Play welcome audio if ready
+                  if (welcomeAudioRef.current && welcomeAudioReady) {
+                    welcomeAudioRef.current.currentTime = 0;
+                    welcomeAudioRef.current.muted = false;
+                    welcomeAudioRef.current.play().catch(() => { });
+                  }
+
+                  // Play study audio if ready
+                  if (studyAudioRef.current && studyAudioReady) {
+                    studyAudioRef.current.currentTime = 0;
+                    studyAudioRef.current.muted = false;
+                    studyAudioRef.current.play().catch(() => { });
+                  }
+                }}
+              >
+                {welcomeAudioReady && studyAudioReady ? "Yes, I want to join!" : "Loading..."}
+              </button>
+
+
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       {/* Hero Section */}
       <div

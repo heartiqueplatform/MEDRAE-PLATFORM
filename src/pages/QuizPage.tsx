@@ -755,7 +755,7 @@ Please provide a detailed discussion and guidance.`;
 
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
 
 
 
@@ -859,7 +859,7 @@ Please provide a detailed discussion and guidance.`;
       transition shadow-lg z-50"
             >
               {showUnansweredOnly
-                ? "Showing: Unanswered Questions"
+                ? "Showing: Unanswered"
                 : "Showing: All Questions"}
             </span>
           </button>
@@ -1870,12 +1870,20 @@ Please provide a detailed discussion and guidance.`;
 
       {quizFinished && (
         <>
-          <div className="mt-6 p-4 bg-green-100 dark:bg-green-900 rounded-none sm:rounded-md text-green-800 dark:text-green-200 font-semibold">
-            You got {finalScore} out of {questions.length} correct!
+          <div className="mt-6 p-3 bg-green-100 dark:bg-green-900 rounded-none sm:rounded-md text-green-800 dark:text-green-200 font-semibold">
+            Well done! You answered {finalScore} out of {questions.length} questions correctly.
+            Keep practicing to strengthen your understanding and improve your score.
           </div>
 
           <button
             onClick={() => {
+              // 🔊 Play tap sound
+              playSound("tap");
+
+              // 📳 Strong vibration (200ms)
+              if (navigator.vibrate) {
+                navigator.vibrate(200);
+              }
               alert(
                 ` Amazing effort! You scored ${finalScore} out of ${questions.length} questions.\n\n` +
                 (finalScore === questions.length
