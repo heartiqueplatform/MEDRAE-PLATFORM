@@ -402,3 +402,18 @@ body,
 .fade-transition {
   transition: opacity 0.4s;
 }
+
+/* Hide vertical scrollbar for the whole page but keep scrolling */
+html,
+body {
+  overflow-y: scroll;
+  /* keep scroll functional */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
+}

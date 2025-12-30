@@ -47,6 +47,45 @@ const Index = () => {
   const [welcomeAudioReady, setWelcomeAudioReady] = useState(false);
   const [studyAudioReady, setStudyAudioReady] = useState(false);
 
+  // Add these states for media tracking
+  const [totalMedia, setTotalMedia] = useState(0);
+  const [loadedMedia, setLoadedMedia] = useState(0);
+  const [allMediaReady, setAllMediaReady] = useState(false);
+  const handleMediaLoad = () => {
+    setLoadedMedia(prev => prev + 1);
+  };
+  useEffect(() => {
+    if (totalMedia > 0 && loadedMedia >= totalMedia) {
+      setAllMediaReady(true);
+    }
+  }, [loadedMedia, totalMedia]);
+  useEffect(() => {
+    const mediaUrls = [
+      ...heroStorySlides.flatMap(s => s.video ? [s.video] : [s.bg]),
+      "/sounds/MedraeVoice.mp3",
+      "/sounds/MedraeStudy.mp3",
+    ];
+
+    setTotalMedia(mediaUrls.length);
+
+    mediaUrls.forEach(url => {
+      if (url.endsWith(".mp3")) {
+        const audio = new Audio(url);
+        audio.oncanplaythrough = handleMediaLoad;
+        audio.onerror = handleMediaLoad;
+      } else if (url.endsWith(".mp4")) {
+        const video = document.createElement("video");
+        video.src = url;
+        video.onloadeddata = handleMediaLoad;
+        video.onerror = handleMediaLoad;
+      } else {
+        const img = new Image();
+        img.src = url;
+        img.onload = handleMediaLoad;
+        img.onerror = handleMediaLoad;
+      }
+    });
+  }, []);
 
 
   useEffect(() => {
@@ -109,59 +148,33 @@ const Index = () => {
     // Initialize audios
     const welcomeAudio = new Audio("/sounds/MedraeVoice.mp3");
     welcomeAudio.volume = 1;
-    welcomeAudio.muted = true; // start muted
-    welcomeAudio.oncanplaythrough = () => setWelcomeAudioReady(true);
+    welcomeAudio.loop = false;
+    welcomeAudio.muted = true; // initially muted to allow preload
+    welcomeAudio.preload = "auto";
 
     const studyAudio = new Audio("/sounds/MedraeStudy.mp3");
     studyAudio.volume = 0.3;
     studyAudio.loop = true;
-    studyAudio.muted = true; // start muted
-    studyAudio.oncanplaythrough = () => setStudyAudioReady(true);
+    studyAudio.muted = true; // initially muted
+    studyAudio.preload = "auto";
 
     // Assign to refs
     welcomeAudioRef.current = welcomeAudio;
     studyAudioRef.current = studyAudio;
 
-    let replayTimeout: NodeJS.Timeout;
-
-    // Play audio with fallback for user interaction
-    const playAudio = async (audio: HTMLAudioElement | null) => {
-      if (!audio) return;
-      audio.currentTime = 0;
-      try {
-        await audio.play();
-      } catch {
-        const resumeOnInteraction = () => {
-          audio.play().catch(() => { });
-          window.removeEventListener("click", resumeOnInteraction);
-          window.removeEventListener("keydown", resumeOnInteraction);
-        };
-        window.addEventListener("click", resumeOnInteraction);
-        window.addEventListener("keydown", resumeOnInteraction);
-      }
-    };
-
-    const playVoice = () => playAudio(welcomeAudioRef.current);
-    const playStudy = () => playAudio(studyAudioRef.current);
-
-    // Welcome audio replay logic
-    const handleVoiceEnd = () => {
-      replayTimeout = setTimeout(() => {
-        playVoice();
-      }, 30000);
-    };
-    welcomeAudio.addEventListener("ended", handleVoiceEnd);
+    // Mark audios ready when can play through
+    welcomeAudio.oncanplaythrough = () => setWelcomeAudioReady(true);
+    studyAudio.oncanplaythrough = () => setStudyAudioReady(true);
 
     // Cleanup
     return () => {
       welcomeAudio.pause();
       studyAudio.pause();
-      welcomeAudio.removeEventListener("ended", handleVoiceEnd);
-      clearTimeout(replayTimeout);
       welcomeAudioRef.current = null;
       studyAudioRef.current = null;
     };
   }, []);
+
 
 
   useEffect(() => {
@@ -342,8 +355,6 @@ const Index = () => {
 
 
   if (!ready) return null;
-
-
   return (
     <div className="min-h-screen w-full overflow-x-hidden relative">
       {showWelcomeOverlay && (
@@ -369,43 +380,87 @@ const Index = () => {
             </p>
 
             {/* Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
+            {/* Buttons */}
+            <div className="flex flex-col justify-center items-center gap-4 mt-4">
               <button
-                className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-2xl transition-all ${!(welcomeAudioReady && studyAudioReady) ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                disabled={!(welcomeAudioReady && studyAudioReady)}
-                onClick={async () => {
-                  // Hide overlay immediately
+                className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-2xl transition-all ${!allMediaReady ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={!allMediaReady}
+                onClick={() => {
                   setShowWelcomeOverlay(false);
 
-                  // Vibrate strongly
                   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-                  // Play welcome audio if ready
-                  if (welcomeAudioRef.current && welcomeAudioReady) {
-                    welcomeAudioRef.current.currentTime = 0;
-                    welcomeAudioRef.current.muted = false;
-                    welcomeAudioRef.current.play().catch(() => { });
-                  }
+                  const playAudioSafely = (audio: HTMLAudioElement | null) => {
+                    if (!audio) return;
+                    audio.muted = false;
+                    audio.currentTime = 0;
+                    audio.play().catch(() => { console.warn("Audio blocked"); });
+                  };
 
-                  // Play study audio if ready
-                  if (studyAudioRef.current && studyAudioReady) {
-                    studyAudioRef.current.currentTime = 0;
-                    studyAudioRef.current.muted = false;
-                    studyAudioRef.current.play().catch(() => { });
-                  }
+                  playAudioSafely(welcomeAudioRef.current);
+                  playAudioSafely(studyAudioRef.current);
                 }}
               >
-                {welcomeAudioReady && studyAudioReady ? "Yes, I want to join!" : "Loading..."}
+                {allMediaReady ? "Yes, I want to join!" : "Downloading..."}
               </button>
 
-
+              {/* Progress bar */}
+              {/* Circular Progress */}
+              <div className="flex flex-col justify-center items-center mt-4">
+                <svg className="w-20 h-20" viewBox="0 0 36 36">
+                  {/* Background circle */}
+                  <circle
+                    className="text-gray-300"
+                    strokeWidth="3"
+                    stroke="currentColor"
+                    fill="none"
+                    cx="18"
+                    cy="18"
+                    r="16"
+                  />
+                  {/* Progress circle */}
+                  <circle
+                    strokeWidth="3"
+                    fill="none"
+                    cx="18"
+                    cy="18"
+                    r="16"
+                    stroke={
+                      allMediaReady
+                        ? "green"
+                        : loadedMedia / totalMedia <= 0.25
+                          ? "red"
+                          : loadedMedia / totalMedia <= 0.75
+                            ? "blue"
+                            : "yellow"
+                    }
+                    strokeDasharray="100"
+                    strokeDashoffset={allMediaReady ? 0 : 100 - (loadedMedia / totalMedia) * 100}
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                    className="transition-all duration-300"
+                  />
+                  {/* Center text */}
+                  <text
+                    x="18"
+                    y="20"
+                    textAnchor="middle"
+                    fontSize="6"
+                    fill="#333"
+                    className="font-bold"
+                  >
+                    {allMediaReady ? "100%" : `${Math.floor((loadedMedia / totalMedia) * 100)}%`}
+                  </text>
+                </svg>
+                <p className="text-sm text-gray-600 mt-2">
+                  Progress: {loadedMedia} / {totalMedia}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Hero Section */}
       {/* Hero Section */}
       <div
         className="relative w-full overflow-hidden"
@@ -586,14 +641,14 @@ const Index = () => {
 
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-white text-gray-900">
+      <section className="py-20 px-3 bg-white text-gray-900">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-xl mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Innovative Tools for Nursing Excellence
             </h2>
             <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-              Medrae integrates modern technology with evidence-based education. Access structured medical content, detailed progress analytics, and interactive video lessons—all designed to support continuous professional growth and mastery in healthcare practice.
+              Medrae integrates modern technology with evidence-based education. Access structured medical content, detailed progress analytics, and interactive video lessons all designed to support continuous professional growth and mastery in healthcare practice.
             </p>
           </div>
 
@@ -631,7 +686,7 @@ const Index = () => {
                 <CardDescription>{features[0].description}</CardDescription>
               </CardContent>
             </Card>
-            {/* Remaining Feature Cards */}
+
             {/* Remaining Feature Cards */}
             {features.slice(1).map((feature, index) => {
               const IconComponent = feature.icon; // assign to capitalized variable
@@ -653,25 +708,23 @@ const Index = () => {
                 </Card>
               );
             })}
-
-
           </div>
         </div>
       </section>
 
       {/* Mission & Vision with Video Section */}
-      <section className="py-16 px-4 bg-gradient-to-tr from-purple-100 to-pink-500">
+      <section className="py-16 px-1 bg-gradient-to-tr from-purple-100 to-pink-500">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-10">
 
           {/* Text Side */}
 
 
           {/* Container */}
-          <div className="lg:w-1/2 space-y-12 p-6 lg:p-10">
+          <div className="lg:w-1/2 space-y-12 p-2 lg:p-10">
 
             {/* Mission */}
             <div>
-              <h3 className="text-3xl lg:text-4xl font-extrabold mb-3 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
+              <h3 className="text-3xl lg:text-4xl font-extrabold mb-2 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c1.657 0 3-1.343 3-3S13.657 2 12 2 9 3.343 9 5s1.343 3 3 3zM12 14v8m0 0h-3m3 0h3" />
                 </svg>
@@ -684,7 +737,7 @@ const Index = () => {
 
             {/* Vision */}
             <div>
-              <h3 className="text-3xl lg:text-4xl font-extrabold mb-3 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
+              <h3 className="text-3xl lg:text-4xl font-extrabold mb-2 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -697,7 +750,7 @@ const Index = () => {
 
             {/* Slogan */}
             <div>
-              <h3 className="text-3xl lg:text-4xl font-extrabold mb-3 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
+              <h3 className="text-3xl lg:text-4xl font-extrabold mb-2 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -767,11 +820,11 @@ const Index = () => {
 
       {/* CTA Section */}
       < section className="py-20 px-4 bg-gradient-to-tr from-blue-500 to-blue-200 text-gray-900" >
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+        <div className="max-w-4xl mx-auto text-xl">
+          <h2 className="text-3xl md:text-4xl font-bold mb-2">
             Elevate Your Nursing Career with Medrae
           </h2>
-          <p className="text-xl text-white mb-8">
+          <p className="text-xl text-white mb-2">
             Medrae unites learners and professionals in one advanced medical ecosystem. Harness AI-driven insights, structured clinical learning, and collaborative tools to transform how you study, train, and grow in healthcare.
           </p>
 
@@ -785,10 +838,10 @@ const Index = () => {
           </Button>
         </div>
         {/* Special Video Card 2 */}
-        <div className="w-full my-8 flex justify-center">
+        <div className="w-full my-2 flex justify-center">
           <div className="w-full max-w-md bg-gray-800  rounded-3xl shadow-lg overflow-hidden">
             <video
-              className="w-full h-[200px] md:h-[250px] lg:h-[300px] object-cover"
+              className="w-full h-[250px] md:h-[250px] lg:h-[300px] object-cover"
               autoPlay
               muted
               loop
@@ -803,13 +856,13 @@ const Index = () => {
         </div>
 
       </section >
-      <footer className="bg-white text-gray-900 border-t py-12 px-6">
+      <footer className="bg-white text-gray-900 border-t py-12 px-3">
         <TooltipProvider>
           <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-10">
 
             {/* Brand */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-2">
                 <img src="/pwa-192x192.jpeg" className="h-7 w-7 rounded-3xl" alt="Medrae" />
                 <span className="text-xl font-bold">Medrae</span>
               </div>
@@ -820,7 +873,7 @@ const Index = () => {
 
             {/* Platform */}
             <div>
-              <h3 className="font-semibold mb-3">Platform</h3>
+              <h3 className="font-semibold mb-2">Platform</h3>
               <ul className="space-y-2 text-sm text-gray-700">
                 {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Announcements"].map((item) => (
                   <li key={item}>
@@ -837,7 +890,7 @@ const Index = () => {
 
             {/* Learning Tools */}
             <div>
-              <h3 className="font-semibold mb-3">Learning</h3>
+              <h3 className="font-semibold mb-2">Learning</h3>
               <ul className="space-y-2 text-sm text-gray-700">
                 {["Assessment Notes", "Quiz Units", "Simulation Mode", "Calendar", "Study Progress", "Resources"].map((item) => (
                   <li key={item}>
@@ -854,7 +907,7 @@ const Index = () => {
 
             {/* Account & Support */}
             <div>
-              <h3 className="font-semibold mb-3">Support</h3>
+              <h3 className="font-semibold mb-2">Support</h3>
               <ul className="space-y-2 text-sm text-gray-700">
                 {["Login", "Register", "Subscription", "Notifications", "Feedback", "Settings"].map((item) => (
                   <li key={item}>
@@ -875,12 +928,12 @@ const Index = () => {
           <div className="max-w-7xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-10">
 
             {/* College & Licensing Prep */}
-            <div className="p-4 bg-white text-gray-900 rounded-3xl shadow-sm">
+            <div className="p-2 bg-white text-gray-900 rounded-3xl shadow-sm">
 
-              <h4 className="font-semibold mb-2 text-lg text-gray-900">
+              <h4 className="font-semibold mb-1 text-lg text-gray-900">
                 College & Licensing Prep
               </h4>
-              <p className="text-sm text-gray-700 mb-2">
+              <p className="text-sm text-gray-700 mb-1">
                 Medrae provides structured support for students completing their college final exams, including NCK licensing exams. The platform offers study materials, practice tests, and guidance to ensure students are well-prepared for their professional assessments.
               </p>
               <p className="text-sm text-gray-700 mb-2">
@@ -894,14 +947,14 @@ const Index = () => {
             </div>
 
             {/* NCK Exam & Professional Guidance */}
-            <div className="p-4 bg-white text-gray-900 rounded-3xl shadow-sm">
+            <div className="p-2 bg-white text-gray-900 rounded-3xl shadow-sm">
 
-              <h4 className="font-semibold mb-2 text-gray-900">
+              <h4 className="font-semibold mb-1 text-gray-900">
                 NCK Exam & Professional Guidance</h4>
-              <p className="text-sm text-gray-700 mb-2">
+              <p className="text-sm text-gray-700 mb-1">
                 Medrae helps nurses and midwives prepare for the NCK licensing exam by providing sample questions, exam tips, and professional guidance. Users can track progress and focus on areas that require more attention.
               </p>
-              <p className="text-sm text-gray-700 mb-2">
+              <p className="text-sm text-gray-700 mb-1">
                 The platform also explains regulatory policies in Kenya, including registration, licensing, and ethical standards, helping users comply with all statutory requirements.
               </p>
               <p className="text-sm text-gray-700">
@@ -912,11 +965,11 @@ const Index = () => {
             </div>
 
             {/* NCLEX Familiarity & Global Mobility */}
-            <div className="p-4 bg-white text-gray-900 rounded-3xl shadow-sm">
+            <div className="p-2 bg-white text-gray-900 rounded-3xl shadow-sm">
 
-              <h4 className="font-semibold mb-2 text-gray-900">
+              <h4 className="font-semibold mb-1 text-gray-900">
                 NCLEX Familiarity & Global Mobility</h4>
-              <p className="text-sm text-gray-700 mb-2">
+              <p className="text-sm text-gray-700 mb-1">
                 For users aiming to practice nursing internationally, Medrae introduces NCLEX exam content and preparation strategies. This includes practice questions, test-taking strategies, and guidance on international licensing requirements.
               </p>
               <p className="text-sm text-gray-700 mb-2">
@@ -943,7 +996,7 @@ const Index = () => {
             </a>
           </p>
           <p>
-            Medrae – Kenya’s Nursing Network Platform empowering students and professionals through learning, collaboration, and innovation.
+            Medrae  Kenya’s Nursing Network Platform empowering students and professionals through learning, collaboration, and innovation.
           </p>
         </div>
 
