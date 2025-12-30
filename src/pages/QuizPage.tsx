@@ -1273,7 +1273,7 @@ Please provide a detailed discussion and guidance.`;
                         }
 
                         // Play sound
-                        await playSound("tap-correct");
+                        await playSound("tap");
 
                         // Load more questions
                         setVisibleCount(prev => prev + QUESTIONS_PER_BATCH);
