@@ -611,7 +611,7 @@ export default function DailyImagesTrivia() {
                                         {index + 1}
                                     </span>
                                     <img
-                                        src={u.avatar_url || "/default-avatar.png"}
+                                        src={u.avatar_url || "/UsersAvatar.jpg"}
                                         alt={u.name}
                                         className="w-8 h-8 rounded-full object-cover"
                                     />
