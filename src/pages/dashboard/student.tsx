@@ -1460,8 +1460,8 @@ export default function StudentDashboard() {
       </Card>
 
 
-      <Card className="lg:col-span-3  w-full bg-white/40 dark:bg-gray-900 border-none rounded-none sm:rounded-md
- overflow-hidden">
+      <Card className="lg:col-span-3 w-screen max-w-none bg-white dark:bg-gray-900 border-none rounded-none overflow-hidden -mx-4 sm:mx-0">
+
         <CardHeader className="p-2">
 
           <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
@@ -1591,7 +1591,8 @@ export default function StudentDashboard() {
 
                         {/* Tiny Tooltip Overlay */}
                         {openProfileId === post.id && (
-                          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 max-w-[200px] p-2 rounded-lg bg-white/40 dark:bg-gray-800 shadow-none-md text-center text-xs z-20">
+                          <div className="absolute top-1/2 left-full ml-2 transform -translate-y-1/2 max-w-[220px] p-3 rounded-lg bg-white dark:bg-gray-900 shadow-lg text-left text-xs z-30 border border-gray-200 dark:border-gray-700">
+
                             <span className="font-semibold text-gray-900 dark:text-white block truncate">
                               {post.profiles?.full_name}
                             </span>

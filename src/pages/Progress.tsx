@@ -562,7 +562,7 @@ function SimulationAndTriviaSummary() {
     const todayKey = `alertShown-${new Date().toDateString()}`;
     const playAlertOnce = (message: string) => {
       if (!localStorage.getItem(todayKey)) {
-        playSound("tap-wrong"); // uses the preloaded tap2.mp3 sound
+        playSound("start"); // uses the preloaded tap2.mp3 sound
         alert(message);
         localStorage.setItem(todayKey, "true");
       }
