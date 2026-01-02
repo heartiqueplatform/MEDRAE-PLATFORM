@@ -1459,8 +1459,7 @@ export default function StudentDashboard() {
         </CardContent>
       </Card>
 
-
-      <Card className="lg:col-span-3 w-screen max-w-none bg-white dark:bg-gray-900 border-none rounded-none overflow-hidden -mx-4 sm:mx-0">
+      <Card className="lg:col-span-3 w-full max-w-none bg-white dark:bg-gray-900 border-none rounded-none overflow-hidden sm:-mx-1">
 
         <CardHeader className="p-2">
 
