@@ -417,3 +417,33 @@ body::-webkit-scrollbar {
   display: none;
   /* Chrome, Safari, Opera */
 }
+
+/* 🔒 Disable text selection for dashboard pages */
+.dashboard-no-select,
+.dashboard-no-select * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* 🔒 Disable text selection globally for all pages */
+html,
+body,
+#root,
+#root * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* ✅ Allow selection for interactive elements */
+input,
+textarea,
+select,
+button,
+code,
+pre {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -ms-user-select: text !important;
+}

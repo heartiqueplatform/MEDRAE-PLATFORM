@@ -626,7 +626,7 @@ function SimulationAndTriviaSummary() {
     if (simLow || triviaLow) {
       playAlertOnce(
         ` Your latest score is below your target of ${targetScore}%.
-Take a moment to review your mistakes and try again — improvement comes fast when you stay consistent. `
+Take a moment to review your mistakes and try again improvement comes fast when you stay consistent. `
       );
     }
 

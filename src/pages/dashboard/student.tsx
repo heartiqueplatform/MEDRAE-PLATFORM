@@ -933,7 +933,7 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="min-h-screen md:min-h-auto rounded-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+    <div className="dashboard-no-select min-h-screen md:min-h-auto rounded-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
 
       <GreetingsCard />
 

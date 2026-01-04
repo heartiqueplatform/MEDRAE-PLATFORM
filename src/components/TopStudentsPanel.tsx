@@ -260,7 +260,8 @@ export const DailyTriviaCard = () => {
     const fmt = (sec: number) => `${Math.floor(sec / 60).toString().padStart(2, "0")}:${(sec % 60).toString().padStart(2, "0")}`;
 
     return (
-        <div className="relative">
+        <div className="relative select-none">
+
 
 
             <Card className="rounded-none overflow-hidden border-0 relative bg-white dark:bg-gray-900 shadow-none">
