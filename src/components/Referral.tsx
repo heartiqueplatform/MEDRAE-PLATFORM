@@ -4,9 +4,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Gift, UserPlus, Star } from "lucide-react"; // <-- add Star for coin
-
+import { Gift, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
+import { playSound, loadSound } from "@/lib/soundManager";
+
+// Load sound once
+loadSound("start", "/sounds/start.mp3");
 
 interface Scenario {
     id: number;
@@ -30,30 +33,15 @@ const Referral: React.FC = () => {
     const WHATSAPP_TOKENS = 5;
     const TELEGRAM_TOKENS = 10;
     const today = new Date().toDateString();
+
     const Coin = () => (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-4 h-4 inline-block"
-            fill="gold"
-            viewBox="0 0 24 24"
-            stroke="none"
-        >
-            <circle cx="12" cy="12" r="10" stroke="goldenrod" strokeWidth="2" fill="gold" />
-            <text
-                x="12"
-                y="16"
-                textAnchor="middle"
-                fontSize="12"
-                fontWeight="bold"
-                fill="white"
-                fontFamily="Arial, Helvetica, sans-serif"
-            >
-                $
-            </text>
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24" stroke="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="currentColor" />
+            <text x="12" y="16" textAnchor="middle" fontSize="12" fontWeight="bold" fill="white" fontFamily="Arial, Helvetica, sans-serif">$</text>
         </svg>
     );
 
-    // Load user and tokens, and determine if popup should show today
+    // Load user and tokens
     useEffect(() => {
         const loadUser = async () => {
             const { data: sessionData } = await supabase.auth.getSession();
@@ -61,32 +49,22 @@ const Referral: React.FC = () => {
             if (!id) return;
             setUserId(id);
 
-            const { data: profile, error } = await supabase
-                .from("profiles")
-                .select("tokens")
-                .eq("user_id", id)
-                .single();
+            const { data: profile, error } = await supabase.from("profiles").select("tokens").eq("user_id", id).single();
             if (error) console.error("Error fetching tokens:", error);
             else setTokens(profile?.tokens ?? 0);
 
-            // Show popup only if not already shown today
             const lastShown = localStorage.getItem(`referral_popup_${id}`);
             if (lastShown !== today) setShowPopup(true);
         };
         loadUser();
     }, []);
 
-    // Fetch a random scenario
+    // Fetch random scenario
     useEffect(() => {
         const fetchScenario = async () => {
-            const { data, error } = await supabase
-                .from<Scenario>("referral_scenarios")
-                .select("*");
+            const { data, error } = await supabase.from<Scenario>("referral_scenarios").select("*");
             if (error) console.error("Error fetching scenarios:", error);
-            else if (data && data.length > 0) {
-                const random = Math.floor(Math.random() * data.length);
-                setScenario(data[random]);
-            }
+            else if (data && data.length > 0) setScenario(data[Math.floor(Math.random() * data.length)]);
         };
         fetchScenario();
     }, []);
@@ -95,55 +73,41 @@ const Referral: React.FC = () => {
 
     const giveInviteTokens = async (amount: number, vibrationStrong = false) => {
         if (!userId) return;
-
         const newTokens = tokens + amount;
         const newTokensToday = tokensToday + amount;
-
-        const { error } = await supabase
-            .from("profiles")
-            .update({ tokens: newTokens })
-            .eq("user_id", userId);
-
-        if (error) console.error("Error adding tokens:", error);
-        else {
+        const { error } = await supabase.from("profiles").update({ tokens: newTokens }).eq("user_id", userId);
+        if (!error) {
             setTokens(newTokens);
             setTokensToday(newTokensToday);
         }
-
         if (navigator.vibrate) navigator.vibrate(vibrationStrong ? 200 : 50);
     };
 
     const openAndReward = (url: string, amount: number, vibrationStrong = false) => {
         const win = window.open(url, "_blank");
         if (!win) return;
-
         const handleFocus = () => {
             giveInviteTokens(amount, vibrationStrong);
             window.removeEventListener("focus", handleFocus);
         };
-
         window.addEventListener("focus", handleFocus);
     };
 
     const shareOnWhatsApp = () => {
-        const message = encodeURIComponent(
-            `I found this cool medical study challenge! Earn tokens and challenge your friends: ${referralLink}`
-        );
+        const message = encodeURIComponent(`I found this cool medical study challenge! Earn tokens and challenge your friends: ${referralLink}`);
         openAndReward(`https://wa.me/?text=${message}`, WHATSAPP_TOKENS, false);
     };
 
     const shareOnTelegram = () => {
-        const message = encodeURIComponent(
-            `I found this cool medical study challenge! Earn tokens and challenge your friends: ${referralLink}`
-        );
+        const message = encodeURIComponent(`I found this cool medical study challenge! Earn tokens and challenge your friends: ${referralLink}`);
         openAndReward(`https://t.me/share/url?url=${referralLink}&text=${message}`, TELEGRAM_TOKENS, true);
     };
 
     const handleScenarioAnswer = (answerIndex: number) => {
         setSelectedAnswer(answerIndex);
-
         if (scenario && answerIndex === scenario.correct_option) {
             setScenarioAnswered(true);
+            playSound("start"); // play sound on correct
         } else {
             alert("Incorrect! You cannot proceed until tomorrow.");
         }
@@ -154,89 +118,76 @@ const Referral: React.FC = () => {
         if (userId) localStorage.setItem(`referral_popup_${userId}`, today);
     };
 
-    // FULL SCREEN LOCKER STYLE
     return (
         <>
             {showPopup && userId && scenario && (
                 <motion.div
-                    initial={{ opacity: 0, y: -50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -50 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-2 sm:p-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4"
                 >
-                    <Card className="w-full max-w-full rounded-none shadow-lg overflow-hidden">
-                        <CardHeader className="bg-blue-50 dark:bg-blue-900/30">
-                            <div className="flex items-center gap-2">
-                                <Gift className="w-6 h-6 text-blue-600" />
-                                <CardTitle>Daily Medical Scenario</CardTitle>
-                            </div>
-                            <CardDescription>
-                                {scenarioAnswered ? (
-                                    <span className="flex items-center gap-1">
-                                        Great! You have earned {tokensToday} <Coin /> today.
-                                        Total tokens: {tokens} <Coin />.
-                                    </span>
-                                ) : (
-                                    "You have a patient scenario today. Choose the correct referral:"
-                                )}
-                            </CardDescription>
+                    {/* subtle dramatic background */}
+                    <motion.div
+                        initial={{ scale: 0, rotateY: -45, rotateX: 30 }}
+                        animate={{ scale: 1, rotateY: 0, rotateX: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="relative w-full max-w-lg rounded-xl shadow-2xl overflow-hidden bg-gray-900 text-white"
+                    >
+                        <Card className="bg-transparent shadow-none">
+                            <CardHeader className="bg-blue-800/70">
+                                <div className="flex items-center gap-2">
+                                    <Gift className="w-6 h-6 text-white" />
+                                    <CardTitle className="text-white">Daily 1One Medical Scenario</CardTitle>
+                                </div>
+                                <CardDescription className="text-gray-300 text-sm">
+                                    {scenarioAnswered ? (
+                                        <span className="flex items-center gap-1">
+                                            Great! You have earned {tokensToday} <Coin /> today. Total tokens: {tokens} <Coin />.
+                                        </span>
+                                    ) : (
+                                        <span className="text-gray-300 font-medium">
+                                            You have a patient scenario today. Choose the correct referral:
+                                        </span>
+                                    )}
+                                </CardDescription>
 
-                        </CardHeader>
-                        <CardContent>
-                            {!scenarioAnswered ? (
-                                <div className="flex flex-col gap-3">
-                                    <p className="font-semibold">{scenario.question}</p>
-                                    {[scenario.option_1, scenario.option_2, scenario.option_3, scenario.option_4].map(
-                                        (opt, idx) => (
-                                            <Button
+                            </CardHeader>
+                            <CardContent>
+                                {!scenarioAnswered ? (
+                                    <div className="flex flex-col gap-3">
+                                        <p className="font-semibold text-white text-lg">{scenario.question}</p>
+
+                                        {[scenario.option_1, scenario.option_2, scenario.option_3, scenario.option_4].map((opt, idx) => (
+                                            <motion.div
                                                 key={idx}
-                                                variant="outline"
-                                                className="w-full text-left"
+                                                whileHover={{ scale: 1.03 }}
+                                                whileTap={{ scale: 0.97 }}
                                                 onClick={() => handleScenarioAnswer(idx + 1)}
+                                                className="cursor-pointer border-b border-gray-600 py-2 px-3 rounded-md hover:bg-blue-700 text-white transition"
                                             >
                                                 {opt}
-                                            </Button>
-                                        )
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-2">
-                                    <p className="text-sm">
-                                        😉 You answered correctly! Challenge a friend today and earn more tokens:
-                                    </p>
-                                    <div className="flex flex-col gap-2 mt-2">
-                                        <Button
-                                            className="flex-1 bg-green-500 text-white hover:bg-green-600"
-                                            onClick={shareOnWhatsApp}
-                                        >
-                                            <UserPlus className="w-4 h-4 mr-2" /> Invite via WhatsApp (+5 tokens)
-                                        </Button>
-                                        <Button
-                                            className="flex-1 bg-blue-500 text-white hover:bg-blue-600"
-                                            onClick={shareOnTelegram}
-                                        >
-                                            <UserPlus className="w-4 h-4 mr-2" /> Invite via Telegram (+10 tokens)
-                                        </Button>
+                                            </motion.div>
+                                        ))}
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        className="mt-2 text-sm text-gray-500"
-                                        onClick={closePopup}
-                                    >
-                                        Mybe Tommorow
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        className="mt-2 text-sm text-gray-500"
-                                        onClick={closePopup}
-                                    >
-                                        Done
-                                    </Button>
-
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        <p className="text-gray-300 text-sm">😉 You answered correctly! Challenge a friend today and earn more tokens:</p>
+                                        <div className="flex flex-col gap-2 mt-2">
+                                            <Button className="flex-1 bg-green-500 text-white hover:bg-green-600" onClick={shareOnWhatsApp}>
+                                                <UserPlus className="w-4 h-4 mr-2" /> Invite via WhatsApp (+5 tokens)
+                                            </Button>
+                                            <Button className="flex-1 bg-blue-500 text-white hover:bg-blue-600" onClick={shareOnTelegram}>
+                                                <UserPlus className="w-4 h-4 mr-2" /> Invite via Telegram (+10 tokens)
+                                            </Button>
+                                        </div>
+                                        <Button variant="ghost" className="mt-2 text-sm text-gray-300" onClick={closePopup}>Maybe Tomorrow</Button>
+                                        <Button variant="ghost" className="mt-2 text-sm text-gray-300" onClick={closePopup}>Done</Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 </motion.div>
             )}
         </>
