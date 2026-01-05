@@ -91,7 +91,7 @@ const Referral: React.FC = () => {
         fetchScenario();
     }, []);
 
-    const referralLink = `${window.location.origin}/signup?ref=${userId}`;
+    const referralLink = `https://medrae.vercel.app/`;
 
     const giveInviteTokens = async (amount: number, vibrationStrong = false) => {
         if (!userId) return;
