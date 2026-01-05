@@ -26,6 +26,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Trash2 } from "lucide-react"; // make sure this import is at the top } from "lucide-react";
 import DailyImagesTrivia from "@/components/DailyImagesTrivia";
+
+import Referral from "@/components/Referral";
+
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
@@ -936,7 +939,7 @@ export default function StudentDashboard() {
     <div className="dashboard-no-select min-h-screen md:min-h-auto rounded-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
 
       <GreetingsCard />
-
+      <Referral />
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
 
