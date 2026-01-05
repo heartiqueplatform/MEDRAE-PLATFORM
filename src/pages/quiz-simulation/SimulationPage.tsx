@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion } from "framer-motion";
-const totalDuration = 30 * 60;
+const totalDuration = 60 * 60;
 
 const getStatusVariant = (status: string) => {
   switch (status.toLowerCase()) {
@@ -80,6 +80,8 @@ export default function SimulationPage() {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const localKey = selectedPaper?.id ? `sim-answers-${selectedPaper.id}` : "";
+  const timerKey = selectedPaper?.id ? `sim-timer-${selectedPaper.id}` : "";
+
   const currentQuestion = questions?.[currentIndex] ?? null;
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -345,7 +347,14 @@ export default function SimulationPage() {
       setQuestions(unanswered);
       setAnswers(saved);
       setCurrentIndex(0);
-      setTimeLeft(totalDuration);
+      const savedTime = localStorage.getItem(timerKey);
+
+      if (savedTime) {
+        setTimeLeft(parseInt(savedTime, 10));
+      } else {
+        setTimeLeft(totalDuration);
+      }
+
     };
     fetchQuestions();
   }, [selectedPaper]);
@@ -360,7 +369,10 @@ export default function SimulationPage() {
           alert("Time's up! Auto-submitting...");
           confirmSubmit();
         }
-        return prev - 1;
+        const newTime = prev - 1;
+        localStorage.setItem(timerKey, newTime.toString());
+        return newTime;
+
       });
     }, 1000);
     return () => clearInterval(interval);
@@ -435,6 +447,8 @@ export default function SimulationPage() {
   const resetNow = () => {
     if (!selectedPaper) return;
     localStorage.removeItem(localKey);
+    localStorage.removeItem(timerKey);
+
     setAnswers({});
     setFlags([]);
     setSkipped([]);
@@ -472,6 +486,7 @@ export default function SimulationPage() {
     setSelectedPaper(null);
     setShowDonePanel(false);
     setPendingAction(null);
+    localStorage.removeItem(timerKey);
 
     //  No manual refresh needed, realtime will update the paper list
   };
