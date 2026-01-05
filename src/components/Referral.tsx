@@ -35,11 +35,12 @@ const Referral: React.FC = () => {
     const today = new Date().toDateString();
 
     const Coin = () => (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24" stroke="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="currentColor" />
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 inline-block" viewBox="0 0 24 24" stroke="none">
+            <circle cx="12" cy="12" r="10" stroke="#FFD700" strokeWidth="2" fill="#FFD700" />
             <text x="12" y="16" textAnchor="middle" fontSize="12" fontWeight="bold" fill="white" fontFamily="Arial, Helvetica, sans-serif">$</text>
         </svg>
     );
+
 
     // Load user and tokens
     useEffect(() => {
