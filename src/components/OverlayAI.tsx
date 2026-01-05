@@ -150,34 +150,26 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
     setMessages(prev => [...prev, userMessage]);
     setInputMessage("");
 
-    // 2️⃣ Save user message to Supabase
     try {
       const userResponse = await supabase.auth.getUser();
-      const userId = userResponse.data.user?.id;
-      if (userId) {
+      const currentUser = userResponse.data.user;
+
+      // 2️⃣ Save user message to Supabase
+      if (currentUser?.id) {
         await supabase.from("Aimessages").insert([{
           content: userMessage.content,
           sender: "user",
           timestamp: userMessage.timestamp,
-          user_id: userId,
+          user_id: currentUser.id,
         }]);
       }
-    } catch (err) {
-      console.error("Supabase insert user message error:", err);
-    }
 
-    // 3️⃣ Add AI typing indicator
-    const typingMessage: Message = {
-      id: (Date.now() + 0.1).toString(),
-      content: "<TypingBubbles />",
-      sender: "ai",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, typingMessage]);
-
-    try {
-      const userResponse = await supabase.auth.getUser();
-      const currentUser = userResponse.data.user;
+      // 3️⃣ Add AI typing indicator
+      const typingMessageId = (Date.now() + 0.1).toString();
+      setMessages(prev => [
+        ...prev,
+        { id: typingMessageId, content: "<TypingBubbles />", sender: "ai", timestamp: new Date() }
+      ]);
 
       // 4️⃣ Fetch user's presummary
       const { data: presummaryData } = await supabase
@@ -188,7 +180,7 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
 
       const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
-      // 5️⃣ Create systemMessage for AI
+      // 5️⃣ Keep all instructions exactly
       const now = new Date();
       const systemMessage = `
 You are a personal AI assistant for the Medrae Medical Network.
@@ -226,32 +218,37 @@ Your instructions:
 User's message: ${inputMessage}
 `;
 
-      // 6️⃣ Call AI function with presummary
-      let aiContent = "";
-      try {
-        const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
-          body: {
-            message: inputMessage,
-            user_id: currentUser?.id,
-            presummary: cachedSummary,
-            systemMessage, // ← send systemMessage too
-          },
-        });
-        if (error) throw error;
-
-        aiContent = data?.reply || "Oops! Could not generate a response.";
-      } catch (err) {
-        console.error("AI function failed, using systemMessage fallback:", err);
-        // Fallback: use systemMessage as AI content
-        aiContent = systemMessage;
-      }
-
-      // 7️⃣ Replace typing indicator with AI response
-      setMessages(prev =>
-        prev.map(msg => msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg)
+      // 6️⃣ Streaming AI function call
+      const response = await fetch(
+        "https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/medrae-ai-chat-stream",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: inputMessage, presummary: cachedSummary, systemMessage })
+        }
       );
 
-      // 8️⃣ Save AI response to Supabase
+      if (!response.body) throw new Error("No response body from AI stream");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiContent = "";
+
+      // 7️⃣ Stream tokens live
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        aiContent += chunk;
+
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === typingMessageId ? { ...msg, content: aiContent } : msg
+          )
+        );
+      }
+
+      // 8️⃣ Save final AI response to Supabase
       if (currentUser?.id) {
         await supabase.from("Aimessages").insert([{
           content: aiContent,
@@ -262,10 +259,10 @@ User's message: ${inputMessage}
       }
 
     } catch (err) {
-      console.error("Error sending AI message:", err);
+      console.error("Streaming AI error:", err);
       setMessages(prev =>
         prev.map(msg =>
-          msg.id === typingMessage.id
+          msg.content === "<TypingBubbles />"
             ? { ...msg, content: "Error: Unable to connect to server." }
             : msg
         )
@@ -286,8 +283,14 @@ User's message: ${inputMessage}
 
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="w-[95%] max-w-2xl h-[75vh] flex flex-col relative">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50"
+      onClick={handleClose} // ✅ clicking the overlay triggers close
+    >
+      <Card
+        className="w-[95%] max-w-2xl h-[75vh] flex flex-col relative"
+        onClick={(e) => e.stopPropagation()} // ✅ prevent clicks inside card from closing
+      >
         <button
           onClick={handleClose}
           className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"
@@ -318,13 +321,13 @@ User's message: ${inputMessage}
               >
                 <div
                   className={`
-        rounded-2xl px-4 py-2 break-words
-        ${msg.sender === "user"
-                      ? "max-w-[80%] " + userBubbleClass
-                      : "w-full sm:max-w-[80%] " + aiBubbleClass
+    break-words
+    ${msg.sender === "user"
+                      ? "max-w-[80%] px-4 py-2 rounded-lg " + userBubbleClass
+                      : "w-full sm:max-w-[80%] text-gray-900"
                     }
-        ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}
-      `}
+    ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}
+  `}
                 >
                   {msg.content === "<TypingBubbles />" ? (
                     <TypingBubbles isDarkTheme={isDarkTheme} />
@@ -332,6 +335,7 @@ User's message: ${inputMessage}
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                   )}
                 </div>
+
               </div>
             ))
 

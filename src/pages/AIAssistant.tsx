@@ -115,35 +115,36 @@ export function AIAssistant() {
       timestamp: new Date(),
     };
 
+    // 1️⃣ Add user message to UI immediately
     setMessages((prev) => [...prev, userMessage]);
-
-    // Save user message to Supabase
-    const currentUser = (await supabase.auth.getUser()).data.user;
-
-    await supabase.from("Aimessages").insert([
-      {
-        sender: userMessage.sender,
-        content: userMessage.content,
-        timestamp: userMessage.timestamp,
-        user_id: currentUser?.id, // ensure row belongs to current user
-      },
-    ]);
-
     setInputMessage("");
     setIsLoading(true);
 
-    // Typing animation bubble placeholder
-    const typingMessage: Message = {
-      id: (Date.now() + 0.1).toString(),
-      content: "<TypingBubbles />",
-      sender: "ai",
-      timestamp: new Date(),
-      typing: true, // ← key
-    };
-    setMessages((prev) => [...prev, typingMessage]);
-
+    // Save user message to Supabase
     try {
-      // 1️⃣ Fetch user's presummary
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      if (currentUser?.id) {
+        await supabase.from("Aimessages").insert([
+          {
+            sender: userMessage.sender,
+            content: userMessage.content,
+            timestamp: userMessage.timestamp,
+            user_id: currentUser.id,
+          },
+        ]);
+      }
+
+      // 2️⃣ Typing bubble placeholder
+      const typingMessage: Message = {
+        id: (Date.now() + 0.1).toString(),
+        content: "<TypingBubbles />",
+        sender: "ai",
+        timestamp: new Date(),
+        typing: true,
+      };
+      setMessages((prev) => [...prev, typingMessage]);
+
+      // 3️⃣ Fetch user's presummary
       const { data: presummaryData } = await supabase
         .from("user_presummary")
         .select("presummary_text")
@@ -152,7 +153,7 @@ export function AIAssistant() {
 
       const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
-      // 2️⃣ Build systemMessage for AI context
+      // 4️⃣ Build hand-coded systemMessage (exactly preserved)
       const now = new Date();
       const systemMessage = `
 You are a personal AI assistant for the Medrae Medical Network.
@@ -190,57 +191,81 @@ Your instructions:
 User's message: ${inputMessage}
 `;
 
-      // 3️⃣ Call AI function with presummary and systemMessage
+      // 5️⃣ Stream AI response like OverlayAI
       let aiContent = "";
       try {
-        const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
-          body: {
-            message: inputMessage,
-            user_id: currentUser?.id,
-            presummary: cachedSummary,
-            systemMessage, // ← always send systemMessage
-          },
-        });
-        if (error) throw error;
+        const response = await fetch(
+          "https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/medrae-ai-chat-stream",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: inputMessage,
+              user_id: currentUser?.id,
+              presummary: cachedSummary,
+              systemMessage,
+            }),
+          }
+        );
 
-        aiContent = data?.reply || "Ooops! Could not generate a response. Check your internet connection.";
+        if (!response.body) throw new Error("No response body from AI stream");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        // Live token streaming
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          aiContent += chunk;
+
+          // Update typing placeholder
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg
+            )
+          );
+        }
       } catch (err) {
-        console.error("AI function failed, using systemMessage fallback:", err);
-        aiContent = systemMessage; // fallback content
+        console.error("Streaming AI error, using systemMessage fallback:", err);
+        aiContent = systemMessage; // fallback preserves all instructions
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg
+          )
+        );
       }
 
-      // 4️⃣ Replace typing indicator with AI response
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === typingMessage.id ? { ...msg, content: aiContent } : msg
-        )
-      );
-
-      // 5️⃣ Save AI message to Supabase
-      await supabase.from("Aimessages").insert([
-        {
-          sender: "ai",
-          content: aiContent,
-          timestamp: new Date(),
-          user_id: currentUser?.id,
-        },
-      ]);
-
+      // 6️⃣ Save AI response to Supabase
+      if (currentUser?.id) {
+        await supabase.from("Aimessages").insert([
+          {
+            sender: "ai",
+            content: aiContent,
+            timestamp: new Date(),
+            user_id: currentUser.id,
+          },
+        ]);
+      }
     } catch (error) {
       console.error(error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 2).toString(),
-          content: "Oops!! Error: Unable to connect to server. Check your network connection.",
-          sender: "ai",
-          timestamp: new Date(),
-        },
-      ]);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.content === "<TypingBubbles />"
+            ? {
+              ...msg,
+              content:
+                "Oops!! Error: Unable to connect to server. Check your network connection.",
+            }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const handleQuickQuestion = (question: string) => {
     setInputMessage(question);
@@ -417,12 +442,13 @@ User's message: ${inputMessage}
                   {/* Message Bubble */}
                   <div className="flex flex-col w-full">
                     <div
-                      className={`rounded-2xl px-6 py-3 break-words
-      ${msg.sender === "user"
-                          ? `${userBubbleClass} ml-auto inline-block max-w-full lg:max-w-[70%]` // user on right
-                          : `${aiBubbleClass} inline-block max-w-full lg:max-w-[70%]`            // AI on left
+
+                      className={`break-words ${msg.sender === "user"
+                        ? `${userBubbleClass} ml-auto px-4 py-2 rounded-lg inline-block max-w-full lg:max-w-[70%]`
+                        : "inline-block max-w-full lg:max-w-[70%] text-gray-900"
                         }`}
                     >
+
                       {msg.content === "<TypingBubbles />" ? (
                         <TypingBubbles isDarkTheme={isDarkTheme} />
                       ) : (
