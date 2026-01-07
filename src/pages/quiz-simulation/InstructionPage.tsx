@@ -11,6 +11,8 @@ export default function InstructionPage() {
   const navigate = useNavigate();
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [canStart, setCanStart] = useState(false);
+  const [setupSkipped, setSetupSkipped] = useState(false);
+
   const [cameraReady, setCameraReady] = useState(false);
   const [micReady, setMicReady] = useState(false);
   const [loudWarning, setLoudWarning] = useState(false);
@@ -44,10 +46,14 @@ export default function InstructionPage() {
   }, [secondsLeft]);
 
   useEffect(() => {
-    if (secondsLeft !== null && secondsLeft <= 15) {
+    if (
+      setupSkipped ||
+      (secondsLeft !== null && secondsLeft <= 15)
+    ) {
       setCanStart(true);
     }
-  }, [secondsLeft]);
+  }, [secondsLeft, setupSkipped]);
+
 
   // Start quiz
   const handleStartQuiz = () => {
@@ -151,42 +157,80 @@ export default function InstructionPage() {
           })}
         </p>
 
-        {/* Countdown + Button side by side */}
-        <div className="flex items-center gap-4">
-          <span
-            className={`inline-block px-4 py-2 rounded-full font-bold text-white transition-colors duration-300 ${canStart ? "bg-green-600" : "bg-red-600"
-              }`}
-          >
-            {secondsLeft === null
-              ? "Waiting for camera & mic..."
-              : secondsLeft > 0
-                ? `Preparing... ${secondsLeft}s`
-                : "Ready!"}
-          </span>
+        {/* Countdown + Button + Skip */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-4">
+            <span
+              className={`inline-block px-4 py-2 rounded-full font-bold text-white transition-colors duration-300 ${canStart ? "bg-green-600" : "bg-red-600"
+                }`}
+            >
+              {setupSkipped
+                ? "Setup skipped"
+                : secondsLeft === null
+                  ? "Waiting for camera & mic..."
+                  : secondsLeft > 0
+                    ? `Preparing... ${secondsLeft}s`
+                    : "Ready!"}
+            </span>
 
-          <Button
-            className={`text-white font-bold ${canStart
-              ? "bg-green-600 hover:bg-green-700"
-              : "bg-red-600 cursor-not-allowed"
-              }`}
-            onClick={handleStartQuiz}
-            disabled={!canStart}
-          >
-            {canStart ? "Begin Simulation" : "Please wait..."}
-          </Button>
+            <Button
+              className={`text-white font-bold ${canStart
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-red-600 cursor-not-allowed"
+                }`}
+              onClick={handleStartQuiz}
+              disabled={!canStart}
+            >
+              {canStart ? "Begin Simulation" : "Please wait..."}
+            </Button>
+          </div>
+
+          {!canStart && !setupSkipped && (
+            <Button
+              variant="outline"
+              className="text-xs border-orange-500 text-orange-600 animate-pulse shadow-[0_0_12px_rgba(249,115,22,0.6)] hover:shadow-[0_0_18px_rgba(249,115,22,0.9)] transition"
+              onClick={() => {
+                setSetupSkipped(true);
+                setCanStart(true);
+              }}
+            >
+              Skip setup & continue
+            </Button>
+
+          )}
+
+          {setupSkipped && (
+            <p className="text-xs text-orange-600 text-center max-w-sm">
+              You skipped the camera and microphone setup for now. The simulation will
+              continue normally, but camera and audio monitoring are turned off.
+              You can enable them later if needed.
+
+            </p>
+          )}
         </div>
+
       </div>
       {/* Enriched Environment Warning */}
       <div className="mt-6 text-sm text-gray-600">
         <strong>Note: This will work only on desktop.</strong>
         <br /><br />
+
         You may see your face on the screen, notice your motor activity being monitored,
         and hear audio playback. This simulates a real NCK-like exam environment.
+        <br /><br />
+
+        <strong>If this setup feels confusing or takes too long:</strong>
         <br />
-        Please remember to <strong>double-click</strong> the Camera & Mic buttons to enable them.
+        You can safely <strong>skip the setup</strong> and start the simulation immediately.
+        Camera and microphone can be enabled later during the session if needed.
+        <br /><br />
+
+        Please remember to <strong>double-click</strong> the Camera button if you choose to enable it.
         <br />
+
         These monitoring features are for simulation only and are not fully automated.
       </div>
+
       {/* Camera + Mic Preview */}
       <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
         {/* Camera */}
