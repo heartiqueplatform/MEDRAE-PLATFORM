@@ -430,8 +430,8 @@ export function MedraeQuizzes() {
             Medrae Quizzes Bank
           </h1>
           <p className="text-muted-foreground mt-3 text-base leading-relaxed">
-            Explore NCK-aligned quizzes for all core nursing units. Each quiz has been
-            carefully curated to reflect the Nursing Council of Kenya (NCK) syllabus, with
+            Explore NCK/NCLEX-aligned quizzes for all core nursing units. Each quiz has been
+            carefully curated to reflect the NCLEX and Nursing Council of Kenya (NCK) syllabus, with
             questions thoughtfully selected to avoid unnecessary repetition. This ensures
             broad topic coverage and mirrors the structure of actual NCK assessments.
             Remember  these quizzes are not just for memorizing; they are designed to help

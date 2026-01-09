@@ -445,7 +445,8 @@ User's message: ${inputMessage}
 
                       className={`break-words ${msg.sender === "user"
                         ? `${userBubbleClass} ml-auto px-4 py-2 rounded-lg inline-block max-w-full lg:max-w-[70%]`
-                        : "inline-block max-w-full lg:max-w-[70%] text-gray-900"
+                        : `${aiBubbleClass} px-4 py-2 rounded-lg inline-block max-w-full lg:max-w-[70%]`
+
                         }`}
                     >
 

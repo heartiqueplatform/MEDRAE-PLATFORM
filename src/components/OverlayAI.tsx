@@ -324,7 +324,8 @@ User's message: ${inputMessage}
     break-words
     ${msg.sender === "user"
                       ? "max-w-[80%] px-4 py-2 rounded-lg " + userBubbleClass
-                      : "w-full sm:max-w-[80%] text-gray-900"
+                      : "w-full sm:max-w-[80%] px-4 py-2 rounded-lg " + aiBubbleClass
+
                     }
     ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}
   `}

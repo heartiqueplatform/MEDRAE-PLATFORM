@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-import { DailyTriviaCard } from "@/components/TopStudentsPanel";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -691,7 +691,7 @@ export function Resources() {
 
       </div>
 
-      <DailyTriviaCard />
+
       {showUploadForm && (
         <div className="p-4 border rounded-lg space-y-4 bg-muted/10 px-2 sm:px-4">
 

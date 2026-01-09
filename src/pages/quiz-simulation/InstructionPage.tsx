@@ -204,7 +204,6 @@ export default function InstructionPage() {
               You skipped the camera and microphone setup for now. The simulation will
               continue normally, but camera and audio monitoring are turned off.
               You can enable them later if needed.
-
             </p>
           )}
         </div>
