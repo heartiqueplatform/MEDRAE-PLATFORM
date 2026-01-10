@@ -280,8 +280,8 @@ User's message: ${inputMessage}
     ? "bg-gray-700 text-white"   // AI dark: dark grey background
     : "bg-gray-100 text-gray-900"; // AI light: light grey background
   const userBubbleClass = isDarkTheme
-    ? "bg-blue-100 text-blue-900"   // dark mode: dark blue
-    : "bg-blue-900 text-blue-900"; // light mode: very light blue with dark text
+    ? "bg-blue-600 text-white"
+    : "bg-blue-600 text-white";
 
 
   return (
