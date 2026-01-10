@@ -110,8 +110,10 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   // Auto-scroll
   useEffect(() => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
 
   // Detect theme
   useEffect(() => {
@@ -333,7 +335,10 @@ User's message: ${inputMessage}
                   {msg.content === "<TypingBubbles />" ? (
                     <TypingBubbles isDarkTheme={isDarkTheme} />
                   ) : (
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown className="prose prose-sm max-w-none text-inherit [&_a]:text-inherit [&_a]:underline">
+                      {msg.content}
+                    </ReactMarkdown>
+
                   )}
                 </div>
 
