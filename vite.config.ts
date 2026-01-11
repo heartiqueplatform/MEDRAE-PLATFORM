@@ -17,11 +17,15 @@ export default defineConfig(({ mode }) => {
       mode === "development" && componentTagger(),
       VitePWA({
         strategies: "generateSW",
+        injectManifest: false,
+        useCredentials: false,
+
         injectRegister: "auto",
 
         registerType: "autoUpdate",
         devOptions: { enabled: true },
-        includeAssets: ["favicon.svg", "robots.txt", "pwa-192x192.jpeg", "pwa-512x512.jpeg", "offline.html"],
+        includeAssets: ["robots.txt", "offline.html"],
+
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
