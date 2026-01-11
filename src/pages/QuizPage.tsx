@@ -12,7 +12,7 @@ import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
 
-import VoiceButton from "@/components/VoiceButton";
+
 ;
 interface Question {
   id: string;
@@ -1201,8 +1201,6 @@ Please provide a detailed discussion and guidance.`;
                       AI Assistance
                     </span>
                   </button>
-                  <VoiceButton prefillQuestion={aiPrefillQuestion} isDark={isDarkMode} />
-
 
                   <button
                     onClick={toggleMute}
