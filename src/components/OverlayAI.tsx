@@ -335,9 +335,11 @@ User's message: ${inputMessage}
                   {msg.content === "<TypingBubbles />" ? (
                     <TypingBubbles isDarkTheme={isDarkTheme} />
                   ) : (
-                    <ReactMarkdown className="prose prose-sm max-w-none text-inherit [&_a]:text-inherit [&_a]:underline">
-                      {msg.content}
-                    </ReactMarkdown>
+                    <div className="prose prose-sm max-w-none text-inherit [&_a]:text-inherit [&_a]:underline">
+                      <ReactMarkdown>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
 
                   )}
                 </div>
