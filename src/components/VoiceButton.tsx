@@ -1,30 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 // Typing bubbles
 function TypingBubbles({ isDark = false }: { isDark?: boolean }) {
     const bubbleColor = isDark ? "bg-gray-500" : "bg-gray-400";
     return (
         <div className="flex items-center gap-1">
-            <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
-            <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay200`}></span>
-            <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay400`}></span>
+            <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`} />
+            <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay200`} />
+            <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay400`} />
         </div>
     );
 }
 
-// TTS function
-function speakText(text: string) {
-    if (!window.speechSynthesis) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
+// Clean text for TTS
+function cleanForSpeech(text: string) {
+    return text
+        .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
+        .replace(/[*_`~>#]/g, "")
+        .replace(/https?:\/\/\S+/g, "")
+        .replace(/[\r\n]+/g, ". ")
+        .replace(/[-–—]{2,}/g, ", ")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\b([A-Z]{3,})\b/g, word => {
+            const acronyms = ["HIV", "WHO", "FDA", "CDC"];
+            if (acronyms.includes(word)) return word.split("").join(" ");
+            if (word.length > 6) return word.slice(0, 3) + "-" + word.slice(3).toLowerCase();
+            return word.charAt(0) + word.slice(1).toLowerCase();
+        })
+        .trim();
 }
 
-import { supabase } from "@/lib/supabaseClient";
+// TTS with start/stop control
+let currentUtterance: SpeechSynthesisUtterance | null = null;
+function speakText(text: string, onEnd?: () => void) {
+    if (!("speechSynthesis" in window)) return;
+
+    window.speechSynthesis.cancel();
+
+    const cleaned = cleanForSpeech(text).replace(/\bOption\s+([A-D])\b/gi, "Option $1,").replace(/,/g, ", ");
+    const utterance = new SpeechSynthesisUtterance(cleaned);
+    currentUtterance = utterance;
+
+    const voices = window.speechSynthesis.getVoices();
+    utterance.voice = voices.find(v => v.lang === "en-US" && v.name.toLowerCase().includes("google"))
+        || voices.find(v => v.lang === "en-US")
+        || voices[0];
+
+    utterance.lang = "en-US";
+    utterance.rate = cleaned.length < 80 ? 1.12 : 1.05;
+    utterance.pitch = 1;
+
+    utterance.onend = () => {
+        currentUtterance = null;
+        if (onEnd) onEnd();
+    };
+
+    window.speechSynthesis.speak(utterance);
+}
 
 interface VoiceButtonProps {
     prefillQuestion: string;
@@ -34,57 +69,59 @@ interface VoiceButtonProps {
 export default function VoiceButton({ prefillQuestion, isDark = false }: VoiceButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [showBubbles, setShowBubbles] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    // Fetch current user on mount to make button independent
+    useEffect(() => {
+        const getUser = async () => {
+            const resp = await supabase.auth.getUser();
+            setCurrentUserId(resp.data.user?.id || null);
+        };
+        getUser();
+    }, []);
 
     const handleClick = async () => {
-        if (!prefillQuestion.trim()) return;
+        if (!prefillQuestion.trim() || !currentUserId) return;
 
         setIsLoading(true);
         setShowBubbles(true);
+        setIsSpeaking(true);
 
         try {
-            // Get current user
-            const userResponse = await supabase.auth.getUser();
-            const currentUser = userResponse.data.user;
+            // 1️⃣ Save user message
+            await supabase.from("Aimessages").insert([{
+                content: prefillQuestion,
+                sender: "user",
+                timestamp: new Date(),
+                user_id: currentUserId,
+            }]);
 
-            // Save user message to Supabase
-            if (currentUser?.id) {
-                await supabase.from("Aimessages").insert([{
-                    content: prefillQuestion,
-                    sender: "user",
-                    timestamp: new Date(),
-                    user_id: currentUser.id,
-                }]);
-            }
-
-            // Fetch presummary
+            // 2️⃣ Fetch presummary
             const { data: presummaryData } = await supabase
                 .from("user_presummary")
                 .select("presummary_text")
-                .eq("user_id", currentUser?.id)
+                .eq("user_id", currentUserId)
                 .single();
 
             const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
 
-            // Build system prompt (same as OverlayAI)
+            // 3️⃣ Build system message
             const now = new Date();
             const systemMessage = `
-You are a personal AI assistant for the Medrae Medical Network.
-Current date and time: ${now.toUTCString()}
-IMPORTANT: Always start every response by addressing the user by their name, extracted from the presummary.
-The user has the following profile (presummary):
+You are a personal AI assistant.
+Current date: ${now.toUTCString()}
+User presummary:
 ${cachedSummary}
 
-Your instructions:
-1. Always greet the user by their name.
-2. Use the presummary to answer any questions about the user, including calendar, posts, progress, quiz results, notes.
-3. Respond naturally in a friendly, supportive, and helpful tone.
-4. Never invent user-specific data; only use what's in the presummary.
-5. Always end your response in a positive, encouraging tone.
-
+Instructions:
+- Always greet the user by name
+- Answer based on presummary
+- Friendly and encouraging
 User's message: ${prefillQuestion}
 `;
 
-            // AI streaming call
+            // 4️⃣ Stream AI response
             const response = await fetch(
                 "https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/medrae-ai-chat-stream",
                 {
@@ -103,42 +140,49 @@ User's message: ${prefillQuestion}
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value);
-                aiContent += chunk;
+                aiContent += decoder.decode(value);
             }
 
-            // Save AI message
-            if (currentUser?.id) {
-                await supabase.from("Aimessages").insert([{
-                    content: aiContent,
-                    sender: "ai",
-                    timestamp: new Date(),
-                    user_id: currentUser.id,
-                }]);
-            }
+            // 5️⃣ Save AI message
+            await supabase.from("Aimessages").insert([{
+                content: aiContent,
+                sender: "ai",
+                timestamp: new Date(),
+                user_id: currentUserId,
+            }]);
 
-            // Done typing → hide bubbles
             setShowBubbles(false);
 
-            // Speak AI response
-            speakText(aiContent);
+            // 6️⃣ Speak AI response
+            speakText(aiContent, () => setIsSpeaking(false));
 
         } catch (err) {
             console.error(err);
             setShowBubbles(false);
+            setIsSpeaking(false);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleStop = () => {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+    };
+
     return (
         <div className="relative inline-flex items-center gap-2">
             <button
-                onClick={handleClick}
-                disabled={isLoading}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                onClick={isSpeaking ? handleStop : handleClick}
+                disabled={isLoading && !isSpeaking}
+                className={`
+                    px-4 py-2 rounded text-white font-semibold transition-all duration-300
+                    ${isSpeaking
+                        ? "bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 animate-pulse"
+                        : "bg-green-600 hover:bg-green-700"}
+                `}
             >
-                🎙 Ask & Listen
+                {isSpeaking ? "🛑 Stop" : "🎙 Ask & Listen"}
             </button>
 
             {showBubbles && <TypingBubbles isDark={isDark} />}
