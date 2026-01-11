@@ -495,16 +495,17 @@ export default function DailyImagesTrivia() {
                                         className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
                                     >
                                         <Maximize className="w-8 h-8 text-black" />
-                                        <span className="text-xs font-medium text-black">View Image</span>
+                                        <span className="text-xs font-medium text-black">View</span>
                                     </button>
                                 </div>
                             ))}
                         </div>
                     ) : (
                         // === Small screens: one image at a time, tap left/right to navigate ===
+                        // === Small screens: full-width image, tap left/right to navigate ===
                         images[activeIndex] && (
                             <div
-                                className="w-[80vw] max-w-[320px] h-[60vh] max-h-[420px] cursor-pointer relative"
+                                className="w-screen h-[80vh] cursor-pointer relative overflow-hidden"
                                 onClick={(e) => {
                                     const { left, width } = e.currentTarget.getBoundingClientRect();
                                     const clickX = e.clientX - left;
@@ -515,22 +516,23 @@ export default function DailyImagesTrivia() {
                                 <img
                                     src={images[activeIndex].image_url}
                                     alt="Story"
-                                    className="w-full h-full object-cover rounded-xl shadow-lg transition-transform duration-300"
+                                    className="w-full h-full object-cover transition-transform duration-300"
                                     loading="lazy"
                                 />
                                 {/* Fullscreen button */}
                                 <button
                                     onClick={(e) => {
-                                        e.stopPropagation(); // ✅ Prevent image tap from triggering prev/next
+                                        e.stopPropagation(); // prevent tap navigation
                                         openFullscreen(images[activeIndex].image_url);
                                     }}
-                                    className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
+                                    className="absolute bottom-32 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
                                 >
-                                    <Maximize className="w-8 h-8 text-black" />
-                                    <span className="text-xs font-medium text-black">View Image</span>
+                                    <Maximize className="w-4 h-4 text-black" />
+                                    <span className="text-xs font-medium text-black">View</span>
                                 </button>
                             </div>
                         )
+
                     )}
                 </div>
 

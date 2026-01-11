@@ -26,7 +26,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Trash2 } from "lucide-react"; // make sure this import is at the top } from "lucide-react";
 import DailyImagesTrivia from "@/components/DailyImagesTrivia";
-
+import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
 
 export default function StudentDashboard() {
@@ -1287,6 +1287,8 @@ export default function StudentDashboard() {
         </CardContent>
       </Card >
 
+
+      <FeedSeenTop10 />
       <Card
         className="relative cursor-pointer hover:shadow-none transition-shadow-none col-span-1 md:col-span-2 max-w-full rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-white dark:bg-gray-900"
         onClick={() => {
@@ -1330,7 +1332,7 @@ export default function StudentDashboard() {
               {/* Questions Attempted */}
               <div className="flex flex-col items-start sm:items-start">
 
-                <p className="text-xs text-gray-500 dark:text-white/70">Questions Attempted</p>
+                <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
                 {feedsAttemptCount === undefined ? (
                   <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
                 ) : (
@@ -1357,13 +1359,6 @@ export default function StudentDashboard() {
                   <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
                     {topStudents[0].name}
                   </p>
-                  {topStudents[0].answeredCount !== undefined ? (
-                    <p className="text-[11px] mt-1 px-2 py-1 rounded-md text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 font-semibold shadow-none-none text-center">
-                      {topStudents[0].answeredCount} answered
-                    </p>
-                  ) : (
-                    <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mt-1"></div>
-                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
@@ -1374,12 +1369,6 @@ export default function StudentDashboard() {
               )}
             </div>
 
-            {topStudents.length > 0 && topStudents[0].answeredCount && (
-              <div className="mt-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-center py-2 px-3 rounded-none sm:rounded-md
- font-semibold text-sm shadow-none-none truncate">
-                Top student has attempted {topStudents[0].answeredCount} questions!
-              </div>
-            )}
 
             {/* Centered Button */}
             <div className="flex justify-start mt-3">
@@ -1409,6 +1398,7 @@ export default function StudentDashboard() {
 
             </div>
           </CardContent>
+
         </div>
       </Card >
       <DailyTriviaCard />
@@ -1418,49 +1408,52 @@ export default function StudentDashboard() {
       <MistakeCard />
 
       {/* Upcoming Redletter Dates / Revision Schedule Card */}
-      <Card
-        className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
-        onClick={() => navigate("/calendar")}
-      >
+      {calendarEvents.length > 0 && (
 
-        <CardHeader className="flex items-center space-x-2">
-          <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
-          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-            Your Upcoming Revision Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
-          Stay on track! Visit your calendar to plan and adjust your study timeline.
-        </CardDescription>
-        <CardContent className="space-y-2 mt-2">
-          {calendarEvents.length > 0 ? (
-            <div className="space-y-2">
-              {calendarEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
-                >
-                  <div className="truncate">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {event.title}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                      {event.type}
-                    </p>
+        <Card
+          className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
+          onClick={() => navigate("/calendar")}
+        >
+
+          <CardHeader className="flex items-center space-x-2">
+            <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+              Your Upcoming Revision Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
+            Stay on track! Visit your calendar to plan and adjust your study timeline.
+          </CardDescription>
+          <CardContent className="space-y-2 mt-2">
+            {calendarEvents.length > 0 ? (
+              <div className="space-y-2">
+                {calendarEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
+                  >
+                    <div className="truncate">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {event.title}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                        {event.type}
+                      </p>
+                    </div>
+                    <Badge className={getPriorityColor(event.priority)}>
+                      {new Date(event.start_time).toLocaleDateString()}
+                    </Badge>
                   </div>
-                  <Badge className={getPriorityColor(event.priority)}>
-                    {new Date(event.start_time).toLocaleDateString()}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              You have no upcoming revisions. Visit your calendar to plan your schedule.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                You have no upcoming revisions. Visit your calendar to plan your schedule.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="lg:col-span-3 w-full max-w-none bg-white dark:bg-gray-900 border-none rounded-none overflow-hidden sm:-mx-1">
 
