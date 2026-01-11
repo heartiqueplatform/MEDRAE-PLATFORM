@@ -1201,7 +1201,8 @@ Please provide a detailed discussion and guidance.`;
                       AI Assistance
                     </span>
                   </button>
-                  <VoiceButton prefillQuestion={aiPrefillQuestion} isDark={isDarkMode} />
+
+
 
                   <button
                     onClick={toggleMute}
