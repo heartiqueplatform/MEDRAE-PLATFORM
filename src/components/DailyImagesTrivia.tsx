@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { ChevronLeft, ChevronRight, Maximize, Eye, X } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
-
+import { motion, AnimatePresence } from "framer-motion";
 type ImageItem = {
     id: string;
     image_url: string;
@@ -26,6 +26,7 @@ export default function DailyImagesTrivia() {
     const [activeImage, setActiveImage] = useState<string | null>(null);
     const [dataLoading, setDataLoading] = useState(true);
     const [uiLoading, setUiLoading] = useState(true);
+    const [isCollapsed, setIsCollapsed] = useState(true); // Desktop collapsed by default
 
     const [showComments, setShowComments] = useState(false);
     const [seenData, setSeenData] = useState<{ [key: string]: string }>({});
@@ -38,6 +39,8 @@ export default function DailyImagesTrivia() {
 
     const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const localImagesKey = `dailyImages_${todayKey}`;
+    const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
+    const INACTIVITY_DELAY = 10000; // 10 seconds
 
     const localLoaderKey = `dailyLoader_${todayKey}`;
     // Add this inside your component
@@ -49,6 +52,18 @@ export default function DailyImagesTrivia() {
         if (typeof navigator !== "undefined" && navigator.vibrate) {
             // Only vibrate on user gesture (click/tap)
             navigator.vibrate(duration);
+        }
+    };
+
+    const resetInactivityTimer = () => {
+        // Clear existing timer
+        if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+
+        // Only start timer for large screens
+        if (isLargeScreen && !isCollapsed) {
+            inactivityTimer.current = setTimeout(() => {
+                setIsCollapsed(true); // Collapse card after 10s
+            }, INACTIVITY_DELAY);
         }
     };
 
@@ -66,6 +81,22 @@ export default function DailyImagesTrivia() {
         "Super fun! 🎈",
         "Can't wait to see the next one! 🚀",
     ];
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || !isLargeScreen) return;
+
+        const activityEvents = ["mousemove", "mousedown", "keydown", "touchstart"];
+        activityEvents.forEach(evt => container.addEventListener(evt, resetInactivityTimer));
+
+        // Start timer initially if expanded
+        resetInactivityTimer();
+
+        return () => {
+            activityEvents.forEach(evt => container.removeEventListener(evt, resetInactivityTimer));
+            if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+        };
+    }, [isCollapsed, isLargeScreen]);
 
     useEffect(() => {
         if (showComments) {
@@ -418,257 +449,255 @@ export default function DailyImagesTrivia() {
     };
 
 
+
     return (
         <>
-            {/* Card Heading & Description */}
-            <div className="w-full max-w-5xl mx-auto text-center mb-4 px-4">
+            {/* Card Header */}
+            <div
+                className="w-full max-w-5xl mx-auto text-center mb-4 px-4 cursor-pointer"
+                onClick={() => {
+                    if (isLargeScreen) setIsCollapsed(!isCollapsed);
+                }}
+            >
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Daily 3Ree Visual Trivia
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Swipe through today’s images to enhance your memory and learn new concepts!
                 </p>
-            </div>
-            <div
-                ref={containerRef}
-                className="relative w-full py-6 flex flex-col items-center justify-center overflow-visible max-w-5xl mx-auto"
-            >
-
-                {/* Loader */}
-                {(dataLoading || uiLoading) && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <GlobalLoader />
-                    </div>
+                {isLargeScreen && (
+                    <span className="mt-2 inline-block text-gray-600 dark:text-gray-300">
+                        {isCollapsed ? "▼ Click to expand" : "▲ Click to collapse"}
+                    </span>
                 )}
-
-                {/* Status bars */}
-                <div className="absolute top-4 left-4 right-4 flex gap-2 z-20 px-2">
-                    {images.map((_, idx) => (
-                        <div
-                            key={idx}
-                            className={`h-1 rounded-full transition-all duration-500 ${idx === activeIndex
-                                ? "bg-blue-500 flex-1"
-                                : "bg-gray-300 dark:bg-gray-600 flex-1"
-                                }`}
-                        />
-                    ))}
-                </div>
-
-
-                {/* Images */}
-                <div
-                    className="relative w-full h-[460px] flex items-center justify-center overflow-hidden"
-                    ref={containerRef}
-                >
-                    {isLargeScreen ? (
-                        // === Big screens: multi-layered style with translate + tap left/right ===
-                        <div
-                            className="flex transition-transform duration-500 ease-out"
-                            style={{
-                                transform: `translateX(-${activeIndex * 100}%)`,
-                                width: `${images.length * 100}%`,
-                            }}
-                            onClick={(e) => {
-                                const { left, width } = e.currentTarget.getBoundingClientRect();
-                                const clickX = e.clientX - left;
-                                if (clickX < width / 2) prev();
-                                else next();
-                            }}
-                        >
-                            {images.map((img) => (
-                                <div
-                                    key={img.id}
-                                    className="w-full flex-shrink-0 flex items-center justify-center cursor-pointer px-2 relative"
-                                >
-                                    <img
-                                        src={img.image_url}
-                                        alt="Story"
-                                        className="w-[320px] h-[420px] object-cover rounded-xl shadow-lg"
-                                        loading="lazy"
-                                    />
-                                    {/* Fullscreen button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Prevent parent click
-                                            openFullscreen(img.image_url);
-                                        }}
-                                        className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
-                                    >
-                                        <Maximize className="w-8 h-8 text-black" />
-                                        <span className="text-xs font-medium text-black">View</span>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        // === Small screens: one image at a time, tap left/right to navigate ===
-                        // === Small screens: full-width image, tap left/right to navigate ===
-                        images[activeIndex] && (
-                            <div
-                                className="w-screen h-[80vh] cursor-pointer relative overflow-hidden"
-                                onClick={(e) => {
-                                    const { left, width } = e.currentTarget.getBoundingClientRect();
-                                    const clickX = e.clientX - left;
-                                    if (clickX < width / 2) prev();
-                                    else next();
-                                }}
-                            >
-                                <img
-                                    src={images[activeIndex].image_url}
-                                    alt="Story"
-                                    className="w-full h-full object-cover transition-transform duration-300"
-                                    loading="lazy"
-                                />
-                                {/* Fullscreen button */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // prevent tap navigation
-                                        openFullscreen(images[activeIndex].image_url);
-                                    }}
-                                    className="absolute bottom-32 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
-                                >
-                                    <Maximize className="w-4 h-4 text-black" />
-                                    <span className="text-xs font-medium text-black">View</span>
-                                </button>
-                            </div>
-                        )
-
-                    )}
-                </div>
-
-
-
-
-                {/* Mark Seen button inside the card */}
-                <div className="w-full flex flex-col items-center gap-2 mb-4">
-                    {images[activeIndex] && seenData[images[activeIndex].id] ? (
-                        <button
-                            className="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed flex items-center gap-2"
-                            disabled
-                        >
-                            <Eye className="w-5 h-5" />
-                            <span>Seen: {seenData[images[activeIndex].id]}</span>
-                        </button>
-                    ) : (
-                        <button
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-                            onClick={() => {
-                                vibrateSafe(100);  // ✅ safe vibration
-                                setShowComments(true);
-                            }}
-
-                        >
-                            <Eye className="w-5 h-5" />
-                            Mark Seen
-                        </button>
-                    )}
-                    {/* Quick comment modal */}
-                    {showComments && (
-                        <div
-                            className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center animate-overlay"
-
-                            onClick={() => setShowComments(false)}
-                        >
-                            <div
-                                className="bg-white dark:bg-gray-800 rounded-lg p-4 flex flex-col gap-2 animate-slide-up"
-
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
-                                    Select a comment
-                                </h3>
-                                {quickComments.map((c) => (
-                                    <button
-                                        key={c}
-                                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                                        onClick={() => {
-                                            vibrateSafe(50);  // tiny vibration on comment selection
-                                            markSeen(c);
-                                            setShowComments(false);
-                                        }}
-                                    >
-                                        {c}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-                {/* Top 10 students panel inside the card */}
-                {/* Top 10 students panel inside the card */}
-                <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mt-6">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                        Top 10 Students Who Marked Seen
-                    </h3>
-
-                    {topUsers.length === 0 ? (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            No students marked seen yet. Mark all seen to appear here.
-                        </p>
-                    ) : (
-                        <ul className="flex flex-col gap-2">
-                            {topUsers.map((u, index) => (
-                                <li key={u.id} className="flex items-start gap-2">
-                                    <span className="font-semibold w-5 text-gray-700 dark:text-gray-300">
-                                        {index + 1}
-                                    </span>
-                                    <img
-                                        src={u.avatar_url || "/UsersAvatar.jpg"}
-                                        alt={u.name}
-                                        className="w-8 h-8 rounded-full object-cover"
-                                    />
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                            {u.name} {u.institution && `(${u.institution})`}
-                                        </p>
-                                        {/* Safely render user comments */}
-                                        {u.comments?.length > 0 && (
-                                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                {u.comments.map((c, i) => (
-                                                    <span key={i}>
-                                                        User commented: {c}
-                                                        {i < u.comments.length - 1 && <br />}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
-                            ))}
-
-                        </ul>
-                    )}
-                </div>
-
-
             </div>
 
+            {/* Collapsible Card Body */}
+            <AnimatePresence initial={false}>
+                {(!isLargeScreen || !isCollapsed) && (
+                    <motion.div
+                        key="card-body"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        ref={containerRef}
+                        className="relative w-full py-6 flex flex-col items-center justify-center overflow-visible max-w-5xl mx-auto"
+                    >
 
-            {/* Fullscreen view */}
+                        {/* Loader */}
+                        {(dataLoading || uiLoading) && (
+                            <div className="absolute inset-0 flex items-center justify-center z-10">
+                                <GlobalLoader />
+                            </div>
+                        )}
 
+                        {/* Status Bars */}
+                        <div className="absolute top-4 left-4 right-4 flex gap-2 z-20 px-2">
+                            {images.map((_, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`h-1 rounded-full transition-all duration-500 ${idx === activeIndex
+                                        ? "bg-blue-500 flex-1"
+                                        : "bg-gray-300 dark:bg-gray-600 flex-1"
+                                        }`}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Images */}
+                        <div className="relative w-full h-[460px] flex items-center justify-center overflow-hidden">
+                            {isLargeScreen ? (
+                                <div
+                                    className="flex transition-transform duration-500 ease-out"
+                                    style={{
+                                        transform: `translateX(-${activeIndex * 100}%)`,
+                                        width: `${images.length * 100}%`,
+                                    }}
+                                    onClick={(e) => {
+                                        const { left, width } = e.currentTarget.getBoundingClientRect();
+                                        const clickX = e.clientX - left;
+                                        if (clickX < width / 2) prev();
+                                        else next();
+                                    }}
+                                >
+                                    {images.map((img) => (
+                                        <div
+                                            key={img.id}
+                                            className="w-full flex-shrink-0 flex items-center justify-center cursor-pointer px-2 relative"
+                                        >
+                                            <img
+                                                src={img.image_url}
+                                                alt="Story"
+                                                className="w-[320px] h-[420px] object-cover rounded-xl shadow-lg"
+                                                loading="lazy"
+                                            />
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openFullscreen(img.image_url);
+                                                }}
+                                                className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
+                                            >
+                                                <Maximize className="w-8 h-8 text-black" />
+                                                <span className="text-xs font-medium text-black">View</span>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                images[activeIndex] && (
+                                    <div
+                                        className="w-screen h-[80vh] cursor-pointer relative overflow-hidden"
+                                        onClick={(e) => {
+                                            const { left, width } = e.currentTarget.getBoundingClientRect();
+                                            const clickX = e.clientX - left;
+                                            if (clickX < width / 2) prev();
+                                            else next();
+                                        }}
+                                    >
+                                        <img
+                                            src={images[activeIndex].image_url}
+                                            alt="Story"
+                                            className="w-full h-full object-cover transition-transform duration-300"
+                                            loading="lazy"
+                                        />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openFullscreen(images[activeIndex].image_url);
+                                            }}
+                                            className="absolute bottom-32 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
+                                        >
+                                            <Maximize className="w-4 h-4 text-black" />
+                                            <span className="text-xs font-medium text-black">View</span>
+                                        </button>
+                                    </div>
+                                )
+                            )}
+                        </div>
+
+                        {/* Mark Seen Button */}
+                        <div className="w-full flex flex-col items-center gap-2 mb-4">
+                            {images[activeIndex] && seenData[images[activeIndex].id] ? (
+                                <button
+                                    className="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed flex items-center gap-2"
+                                    disabled
+                                >
+                                    <Eye className="w-5 h-5" />
+                                    <span>Seen: {seenData[images[activeIndex].id]}</span>
+                                </button>
+                            ) : (
+                                <button
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                                    onClick={() => {
+                                        vibrateSafe(100);
+                                        setShowComments(true);
+                                    }}
+                                >
+                                    <Eye className="w-5 h-5" />
+                                    Mark Seen
+                                </button>
+                            )}
+
+                            {showComments && (
+                                <div
+                                    className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center animate-overlay"
+                                    onClick={() => setShowComments(false)}
+                                >
+                                    <div
+                                        className="bg-white dark:bg-gray-800 rounded-lg p-4 flex flex-col gap-2 animate-slide-up"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
+                                            Select a comment
+                                        </h3>
+                                        {quickComments.map((c) => (
+                                            <button
+                                                key={c}
+                                                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                                                onClick={() => {
+                                                    vibrateSafe(50);
+                                                    markSeen(c);
+                                                    setShowComments(false);
+                                                }}
+                                            >
+                                                {c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Top 10 Students Panel */}
+                        <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mt-6">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                                Top 10 Students Who Marked Seen
+                            </h3>
+
+                            {topUsers.length === 0 ? (
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    No students marked seen yet. Mark all seen to appear here.
+                                </p>
+                            ) : (
+                                <ul className="flex flex-col gap-2">
+                                    {topUsers.map((u, index) => (
+                                        <li key={u.id} className="flex items-start gap-2">
+                                            <span className="font-semibold w-5 text-gray-700 dark:text-gray-300">
+                                                {index + 1}
+                                            </span>
+                                            <img
+                                                src={u.avatar_url || "/UsersAvatar.jpg"}
+                                                alt={u.name}
+                                                className="w-8 h-8 rounded-full object-cover"
+                                            />
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {u.name} {u.institution && `(${u.institution})`}
+                                                </p>
+                                                {u.comments?.length > 0 && (
+                                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                        {u.comments.map((c, i) => (
+                                                            <span key={i}>
+                                                                User commented: {c}
+                                                                {i < u.comments.length - 1 && <br />}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Fullscreen View */}
             {activeImage && (
                 <div
                     className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center transition-opacity duration-300"
-                    onClick={() => setActiveImage(null)} // click outside closes
+                    onClick={() => setActiveImage(null)}
                 >
-                    {/* Close Button */}
                     <button
                         onClick={() => setActiveImage(null)}
                         className="absolute top-4 right-4 z-[10000] p-2 rounded-full bg-white/80 hover:bg-white text-black transition-transform duration-200 hover:scale-110"
                     >
                         <X className="w-6 h-6" />
                     </button>
-
-                    {/* Fullscreen Image */}
                     <img
                         src={activeImage}
                         alt="Fullscreen"
                         className="max-w-full max-h-full object-contain transition-transform duration-300 transform scale-90 animate-scale-up"
-                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking the image
+                        onClick={(e) => e.stopPropagation()}
                     />
                 </div>
             )}
-
         </>
     );
+
 }

@@ -12,7 +12,6 @@ import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
 
-
 ;
 interface Question {
   id: string;
@@ -1201,6 +1200,8 @@ Please provide a detailed discussion and guidance.`;
                       AI Assistance
                     </span>
                   </button>
+
+
 
                   <button
                     onClick={toggleMute}
