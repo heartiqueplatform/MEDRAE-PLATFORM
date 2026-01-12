@@ -547,15 +547,22 @@ export default function SimulationPage() {
     doc.setFont(undefined, "normal");
     let y = 38;
 
-    if (profile) {
-      doc.text(`Name: ${profile.name || "N/A"}`, 14, y); y += 6;
-      doc.text(`Email: ${profile.email || "N/A"}`, 14, y); y += 6;
-      doc.text(`Institution: ${profile.institution || "N/A"}`, 14, y); y += 6;
-      doc.text(`Course: ${profile.course || "N/A"}`, 14, y); y += 6;
-      doc.text(`County: ${profile.county || "N/A"}`, 14, y); y += 6;
-      doc.text(`Phone: ${profile.phone || "N/A"}`, 14, y); y += 6;
-      doc.text(`Subscription: ${profile.subscription || "N/A"}`, 14, y); y += 6;
-      doc.text(`Role: ${profile.role || "N/A"}`, 14, y); y += 6;
+    // ✅ Fetch from state or fallback to localStorage
+    const profileData =
+      profile ||
+      (typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("profile") || "null")
+        : null);
+
+    if (profileData) {
+      doc.text(`Name: ${profileData.name || "N/A"}`, 14, y); y += 6;
+      doc.text(`Email: ${profileData.email || "N/A"}`, 14, y); y += 6;
+      doc.text(`Institution: ${profileData.institution || "N/A"}`, 14, y); y += 6;
+      doc.text(`Course: ${profileData.course || "N/A"}`, 14, y); y += 6;
+      doc.text(`County: ${profileData.county || "N/A"}`, 14, y); y += 6;
+      doc.text(`Phone: ${profileData.phone || "N/A"}`, 14, y); y += 6;
+      doc.text(`Subscription: ${profileData.subscription || "N/A"}`, 14, y); y += 6;
+      doc.text(`Role: ${profileData.role || "N/A"}`, 14, y); y += 6;
     } else {
       doc.text("Candidate Profile: Not Available", 14, y);
       y += 6;
@@ -613,33 +620,6 @@ export default function SimulationPage() {
           doc.setFont(undefined, "normal");
         });
     */
-
-
-    // 🔒 Full exam content intentionally hidden
-    // This will be enabled in the future for Premium users only
-
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.setFont(undefined, "bold");
-    doc.text("Detailed Exam Review", 14, 30);
-
-    doc.setFontSize(11);
-    doc.setFont(undefined, "normal");
-    doc.text(
-      "Thank you for completing your simulation.\n\n" +
-      "Your effort, focus, and commitment to learning truly matter.\n" +
-      "Every question you attempted is a step toward confidence and mastery.\n\n" +
-      "Take pride in your progress today, reflect on your performance, " +
-      "and keep showing up for yourself. Growth happens one session at a time.\n\n" +
-      "We’re proud to be part of your learning journey.\n\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "📞 Platform Support\n" +
-      "WhatsApp: 0717 517 371\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━",
-      14,
-      45
-    );
-
 
     //  Footer + page numbers AFTER all content
     const pageCount = doc.internal.getNumberOfPages();
