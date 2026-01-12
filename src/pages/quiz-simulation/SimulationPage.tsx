@@ -1,6 +1,6 @@
 "use client";
 import { Link } from "react-router-dom";
-import { Sun, Moon, RefreshCw, ChevronLeft, ChevronRight, CornerRightDown, Flag } from "lucide-react";
+import { Sun, Moon, RefreshCw, ChevronLeft, ChevronRight, CornerRightDown, Flag, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -113,12 +113,8 @@ export default function SimulationPage() {
 
   // 1️⃣ Add this state at the top of your component
   const [resettingPaper, setResettingPaper] = useState<string | null>(null);
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") === "dark";
-    }
-    return false;
-  });
+  const [isDark, setIsDark] = useState(false);
+
   const initMedia = useCallback(async (force = false) => {
     try {
       if (force) {
@@ -280,9 +276,7 @@ export default function SimulationPage() {
     } else {
       document.documentElement.classList.remove("dark");
     }
-
-    // Save the preference so next visit remembers it
-    localStorage.setItem("theme", isDark ? "dark" : "light");
+    ;
   }, [isDark]);
 
 
@@ -1101,16 +1095,10 @@ export default function SimulationPage() {
 
           <CardHeader className="flex justify-between items-center">
             <CardTitle>Time Left</CardTitle>
-            {/* Light/Dark toggle */}
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            >
-              {isDark ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-700" />
-              )}
+
+
+            <button className="p-1 rounded hover:bg-green-100 transition">
+              <Clock className="w-5 h-5 text-green-600" />
             </button>
           </CardHeader>
           <CardContent className="text-center space-y-2">
