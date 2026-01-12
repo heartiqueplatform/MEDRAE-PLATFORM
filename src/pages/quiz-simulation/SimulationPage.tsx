@@ -101,7 +101,14 @@ export default function SimulationPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [loudWarning, setLoudWarning] = useState(false);
   const [mediaAllowed, setMediaAllowed] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  // State
+  const [profile, setProfile] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      const cachedProfile = localStorage.getItem("profile");
+      return cachedProfile ? JSON.parse(cachedProfile) : null;
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true); // new
 
   // 1️⃣ Add this state at the top of your component
@@ -223,27 +230,27 @@ export default function SimulationPage() {
       return;
     }
 
-    //  Fetch logged-in user profile
+    // Fetch profile
     const { data: userData } = await supabase.auth.getUser();
     if (userData?.user?.id) {
       const profileData = await fetchProfile(userData.user.id);
-      setProfile(profileData);
 
-      // Fetch active subscription for this user
+      // Fetch subscription
       const { data: subData } = await supabase
         .from("subscriptions")
         .select("plan_type, is_active")
         .eq("user_id", userData.user.id)
-        .eq("is_active", true)
+        .eq("is_active", true);
 
+      const fullProfile = {
+        ...profileData,
+        subscription: subData?.[0]?.plan_type || null,
+        subscription_active: subData?.[0]?.is_active || false,
+      };
 
-      if (subData) {
-        setProfile((prev: any) => ({
-          ...prev,
-          subscription: subData.plan_type,
-          subscription_active: subData.is_active,
-        }));
-      }
+      // ✅ Save in state AND localStorage
+      setProfile(fullProfile);
+      localStorage.setItem("profile", JSON.stringify(fullProfile));
     }
 
     // Check which papers are done
@@ -516,6 +523,7 @@ export default function SimulationPage() {
     setShowDonePanel(false);
     setPendingAction(null);
     localStorage.removeItem(timerKey);
+    navigate("/dashboard");
 
     //  No manual refresh needed, realtime will update the paper list
   };
@@ -575,34 +583,63 @@ export default function SimulationPage() {
     yPos = yPos + splitText.length * 6 + 4; // continue after advisory
 
 
+    /*
 
-    questions.forEach((q, i) => {
-      if (yPos > 260) {
-        doc.addPage();
-        yPos = 20;
-      }
+        questions.forEach((q, i) => {
+          if (yPos > 260) {
+            doc.addPage();
+            yPos = 20;
+          }
 
-      doc.setFont(undefined, "bold");
-      doc.text(`Q${i + 1}: ${q.question_text}`, 14, yPos);
-
-      yPos += 6;
-      ["A", "B", "C", "D"].forEach((opt) => {
-        const text = `${opt}. ${q[`option_${opt.toLowerCase()}`]}`;
-        if (q.correct_answer === opt) {
-          doc.setTextColor(0, 128, 0);
           doc.setFont(undefined, "bold");
-        } else {
+          doc.text(`Q${i + 1}: ${q.question_text}`, 14, yPos);
+
+          yPos += 6;
+          ["A", "B", "C", "D"].forEach((opt) => {
+            const text = `${opt}. ${q[`option_${opt.toLowerCase()}`]}`;
+            if (q.correct_answer === opt) {
+              doc.setTextColor(0, 128, 0);
+              doc.setFont(undefined, "bold");
+            } else {
+              doc.setTextColor(0, 0, 0);
+              doc.setFont(undefined, "normal");
+            }
+            doc.text(text, 20, yPos);
+            yPos += 6;
+          });
+
+          yPos += 4;
           doc.setTextColor(0, 0, 0);
           doc.setFont(undefined, "normal");
-        }
-        doc.text(text, 20, yPos);
-        yPos += 6;
-      });
+        });
+    */
 
-      yPos += 4;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, "normal");
-    });
+
+    // 🔒 Full exam content intentionally hidden
+    // This will be enabled in the future for Premium users only
+
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.setFont(undefined, "bold");
+    doc.text("Detailed Exam Review", 14, 30);
+
+    doc.setFontSize(11);
+    doc.setFont(undefined, "normal");
+    doc.text(
+      "Thank you for completing your simulation.\n\n" +
+      "Your effort, focus, and commitment to learning truly matter.\n" +
+      "Every question you attempted is a step toward confidence and mastery.\n\n" +
+      "Take pride in your progress today, reflect on your performance, " +
+      "and keep showing up for yourself. Growth happens one session at a time.\n\n" +
+      "We’re proud to be part of your learning journey.\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━\n" +
+      "📞 Platform Support\n" +
+      "WhatsApp: 0717 517 371\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━",
+      14,
+      45
+    );
+
 
     //  Footer + page numbers AFTER all content
     const pageCount = doc.internal.getNumberOfPages();
