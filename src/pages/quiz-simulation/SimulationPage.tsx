@@ -571,7 +571,24 @@ export default function SimulationPage() {
 
     // Add advisory paragraph
     doc.setFontSize(11);
-    const advisoryText = `Dear Student, these results are for your personal review and learning. Always cross-check answers with your study notes and seek clarification for any doubts. Remember, consistent practice improves retention and exam performance. For more detailed resources, practice questions, and interactive learning, visit Medrae ,https://medrae.vercel.app/ or call us through 0717517371.`;
+    const advisoryText = `Dear Student,
+
+These results are for your personal review and learning. To maximize your nursing exam preparation and improve clinical knowledge, consider the following tips:
+
+• Review your answers carefully – Cross-check with your lecture notes, textbooks, and clinical guidelines.
+• Identify weak areas – Focus on topics where mistakes were made or answers were skipped.
+• Practice consistently – Regular self-testing improves retention and builds confidence for real exams.
+• Use active recall & spaced repetition – Quiz yourself repeatedly over intervals to reinforce learning.
+• Simulate exam conditions – Practice under timed conditions to improve time management skills.
+• Seek clarification – Ask peers, instructors, or online resources when uncertain about a topic.
+• Apply clinical reasoning – Relate theoretical knowledge to real patient scenarios for deeper understanding.
+• Take care of yourself – Rest, hydrate, and maintain focus; a healthy mind improves performance.
+• Join study groups – Collaborate with classmates to discuss cases and share insights.
+• Review NCK/NCLEX-style questions – Familiarize yourself with exam formats and tricky scenarios.
+
+For more detailed resources, practice questions, and interactive learning, visit MEDRAE : https://medrae.vercel.app/ or call us at 0717517371.
+
+Keep striving each step you take strengthens your nursing expertise and prepares you for success!`;
 
     // Wrap text to fit PDF width
     doc.setFont(undefined, "normal");
@@ -618,7 +635,7 @@ export default function SimulationPage() {
     //  Footer + page numbers AFTER all content
     const pageCount = doc.internal.getNumberOfPages();
     const footerLine1 = "MEDRAE";
-    const footerLine2 = "Keep pushing, your dedication shapes the future of care!";
+    const footerLine2 = "Organized Learning = Confident Exams";
 
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
