@@ -30,6 +30,20 @@ const getStatusVariant = (status: string) => {
 
 
 export default function SimulationPage() {
+  // ===== Fullscreen helpers =====
+  const enterFullscreen = () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen();
+    }
+  };
+
+  const exitFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  };
+
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
   // 🚫 Block mobile screens completely
@@ -265,6 +279,21 @@ export default function SimulationPage() {
   }, [isDark]);
 
 
+  // ===== Auto-submit if fullscreen is exited (ESC, swipe, system) =====
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (selectedPaper && !document.fullscreenElement) {
+        // User exited fullscreen → submit exam
+        confirmSubmit();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [selectedPaper]);
 
   useEffect(() => {
     fetchPapers();
@@ -1138,8 +1167,11 @@ export default function SimulationPage() {
           <div className="text-center space-y-6">
             <h2 className="text-white text-2xl font-bold">Camera & Mic Disabled</h2>
             <p className="text-gray-300">
-              Double Click below to enable camera and microphone to start your simulation
+              Double Click below to enable camera and microphone to start your simulation.
+              <br />
+              ⚠️ Pressing <strong>ESC</strong> at any time will immediately end and submit the simulation.
             </p>
+
 
             <div className="flex flex-col gap-4">
               {/* Camera Button */}
@@ -1248,14 +1280,17 @@ export default function SimulationPage() {
                 transition={{ repeat: Infinity, duration: 2 }}
                 disabled={!cameraStream || !audioStream}
                 onClick={() => {
-                  // Play sound
+                  // Play start sound
                   const audio = new Audio("/sounds/start.mp3");
-                  audio.play().catch(err => console.log("Audio play blocked", err));
+                  audio.play().catch(() => { });
 
+                  // Enter fullscreen (user gesture required)
+                  enterFullscreen();
 
-                  // Proceed with allowing media
+                  // Allow exam to start
                   setMediaAllowed(true);
                 }}
+
                 className={`block mx-auto w-64 px-3 rounded-3xl py-1.5 font-semibold shadow-lg transition-colors
     ${cameraStream && audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
               >
