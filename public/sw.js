@@ -8,8 +8,6 @@ const DYNAMIC_CACHE_NAME = "medrae-dynamic-v03"; // Optional for dynamic media
 const urlsToCache = [
     "/",
     "/index.html",
-    "/index.css",
-    "/main.js",
     "/pwa-192x192.jpeg",
     "/pwa-512x512.jpeg",
     "/UsersAvatar.jpg",

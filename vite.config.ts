@@ -16,8 +16,11 @@ export default defineConfig(({ mode }) => {
       react(),
       mode === "development" && componentTagger(),
       VitePWA({
-        strategies: "generateSW",
-        injectManifest: false,
+        strategies: "injectManifest",
+        injectManifest: {
+          swSrc: "public/sw.js"
+        },
+
         useCredentials: false,
 
         injectRegister: "auto",
