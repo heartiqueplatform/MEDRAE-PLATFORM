@@ -1316,7 +1316,7 @@ export default function StudentDashboard() {
 
           <CardContent className="flex flex-col gap-3 text-xm italic ">
             <p className="text-gray-700 dark:text-white/90">
-              Keep practicing random questions in the feed page and climb the leaderboard!
+              Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
             </p>
 
 
@@ -1325,7 +1325,7 @@ export default function StudentDashboard() {
 
 
               {/* Questions Attempted */}
-              <div className="flex flex-col sm:flex-row justify-start items-center gap-2">
+              <div className="flex flex-col sm:flex-row justify-start items-center gap-">
 
 
 
