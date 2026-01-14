@@ -1,8 +1,8 @@
 // ===== Service Worker =====
 
 // Cache names
-const CACHE_NAME = "medrae-app-shell-v15";       // Static assets cache
-const DYNAMIC_CACHE_NAME = "medrae-dynamic-v03"; // Optional for dynamic media
+const CACHE_NAME = "medrae-app-shell-v16";       // Static assets cache
+const DYNAMIC_CACHE_NAME = "medrae-dynamic-v04"; // Optional for dynamic media
 
 // Files to pre-cache (static assets only)
 const urlsToCache = [
