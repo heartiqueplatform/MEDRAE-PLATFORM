@@ -48,7 +48,7 @@ export default function FloatingQuickActions() {
         // Auto-close after 15 seconds (15000 ms)
         const initialTimer = setTimeout(() => {
             setOpen(false);
-        }, 15000);
+        }, 5000);
 
         // Cleanup
         return () => clearTimeout(initialTimer);

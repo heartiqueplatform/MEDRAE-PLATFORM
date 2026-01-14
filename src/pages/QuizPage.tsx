@@ -70,6 +70,13 @@ export default function QuizPage() {
   const [recentlyAnsweredId, setRecentlyAnsweredId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const CHECKPOINT_SIZE = 25; // <-- add this here at the top of the component
+  const [checkpointOverlay, setCheckpointOverlay] = useState<{
+    visible: boolean;
+    reached: number;
+    total: number;
+  } | null>(null);
+
   const [showReasonBox, setShowReasonBox] = useState<{ [key: string]: boolean }>(() => {
     const saved = localStorage.getItem("showReasonBox");
     return saved ? JSON.parse(saved) : {};
@@ -84,6 +91,15 @@ export default function QuizPage() {
     "Rushed",
     "Guess"
   ];
+  const getLastCheckpointSaved = (unit: string) => {
+    const saved = localStorage.getItem(`checkpoint-${unit}`);
+    return saved ? JSON.parse(saved) : 0;
+  };
+
+  const saveLastCheckpoint = (unit: string, value: number) => {
+    localStorage.setItem(`checkpoint-${unit}`, JSON.stringify(value));
+  };
+
   useEffect(() => {
     localStorage.setItem("showReasonBox", JSON.stringify(showReasonBox));
   }, [showReasonBox]);
@@ -92,6 +108,7 @@ export default function QuizPage() {
     localStorage.setItem("selectedReason", JSON.stringify(selectedReason));
   }, [selectedReason]);
 
+  const [lastCheckpoint, setLastCheckpoint] = useState(0);
 
   // State to control overlay visibility and selected question helpers
   const [helpMeOverlayOpen, setHelpMeOverlayOpen] = useState(false);
@@ -561,6 +578,35 @@ export default function QuizPage() {
 
     // Update answers and feedback
     setAnswers(updatedAnswers);
+    // checkpoint size
+    // checkpoint size
+    const CHECKPOINT_SIZE = 25;
+    const nextCount = Object.keys(updatedAnswers).length;
+
+    // only trigger checkpoint when enough answers since last checkpoint
+    if (nextCount - lastCheckpoint >= CHECKPOINT_SIZE) {
+      // get the IDs of the current checkpoint questions
+      const checkpointQuestionIds = Object.keys(updatedAnswers).slice(lastCheckpoint, lastCheckpoint + CHECKPOINT_SIZE);
+
+      // count correct answers in this checkpoint
+      const correctInCheckpoint = checkpointQuestionIds.reduce((count, qid) => {
+        const q = questions.find(q => q.id === qid);
+        return q && updatedAnswers[qid] === q.correct_answer ? count + 1 : count;
+      }, 0);
+
+      const percentCompleted = Math.round((correctInCheckpoint / CHECKPOINT_SIZE) * 100);
+
+      setLastCheckpoint(nextCount);
+
+      setCheckpointOverlay({
+        visible: true,
+        reached: correctInCheckpoint,    // ✅ number correct
+        total: CHECKPOINT_SIZE,          // checkpoint size
+        percentCompleted,                // correct % in this checkpoint
+      });
+    }
+
+
     setRecentlyAnsweredId(questionId);
     setFeedbackShown(prev => ({ ...prev, [questionId]: true }));
 
@@ -803,8 +849,75 @@ Please provide a detailed discussion and guidance.`;
             )}
           />
         )}
-
       </div>
+      {checkpointOverlay?.visible && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-80 text-white p-4">
+          <div className="bg-gray-900 dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full text-center shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">Checkpoint Reached!</h2>
+            <p className="mb-4 text-lg">
+              You completed {checkpointOverlay.reached} / {checkpointOverlay.total} questions in this checkpoint.
+            </p>
+            <p className="mb-4 text-lg">
+              Progress in this checkpoint: {checkpointOverlay.percentCompleted}%
+            </p>
+            <p className="mb-6 text-base text-gray-300">
+              Submit your answers for this batch, or continue if you want to review more questions.
+            </p>
+
+            <div className="flex justify-center gap-4">
+              {/* Submit button */}
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-md transition"
+                onClick={async () => {
+                  if (!quizId || !userId || !checkpointOverlay) return;
+
+                  // --- Strong vibration ---
+                  if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200]); // vibrate pattern: 200ms, pause 100ms, 200ms
+                  }
+                  // --- SOUND ---
+                  playSound("start"); // ⚡ reuse the same sound used for "Load More"
+
+                  // Calculate the IDs for this checkpoint batch
+                  const startIndex = lastCheckpoint - checkpointOverlay.total;
+                  const checkpointQuestionIds = Object.keys(answers).slice(startIndex, startIndex + checkpointOverlay.total);
+
+                  // Count correct answers in this checkpoint
+                  const correctInCheckpoint = checkpointQuestionIds.reduce((count, qid) => {
+                    const q = questions.find(q => q.id === qid);
+                    return q && answers[qid] === q.correct_answer ? count + 1 : count;
+                  }, 0);
+
+                  // Insert into quiz_results
+                  await supabase.from("quiz_results").insert([{
+                    quiz_id: quizId,
+                    user_id: userId,
+                    unit: unit,
+                    score: correctInCheckpoint,
+                    total_questions: checkpointOverlay.total
+                  }]);
+
+                  // Close overlay
+                  setCheckpointOverlay(null);
+                }}
+              >
+                Submit Results
+              </button>
+
+              {/* Cancel / Continue button */}
+              <button
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded-md transition"
+                onClick={() => {
+                  setCheckpointOverlay(null); // just close overlay
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Floating Answer Progress Panel */}
       {/* ========================================= */}
@@ -1912,9 +2025,20 @@ Please provide a detailed discussion and guidance.`;
             <h2 className="text-lg font-bold mb-2">Past Attempts</h2>
             <ul className="space-y-2 text-sm text-gray-800">
               {attempts.map((attempt) => (
-                <li key={attempt.id} className="p-2 border rounded-none sm:rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white">
-                  🗓 {new Date(attempt.submitted_at).toLocaleString()} — Score: {attempt.score}
+                <li
+                  key={attempt.id}
+                  className="p-2 border rounded-none sm:rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white"
+                >
+                  Your attempt on {new Date(attempt.submitted_at).toLocaleString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })} has been recorded. You scored {attempt.score} points for this checkpoint.
                 </li>
+
               ))}
             </ul>
           </div>
@@ -1926,6 +2050,7 @@ Please provide a detailed discussion and guidance.`;
         prefillQuestion={aiPrefillQuestion}
         isDarkTheme={isDarkMode} // Pass theme flag
       />
+
       {
         showScrollTop && (
           <button

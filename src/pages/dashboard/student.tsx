@@ -1290,13 +1290,12 @@ export default function StudentDashboard() {
 
       <FeedSeenTop10 />
       <Card
-        className="relative cursor-pointer hover:shadow-none transition-shadow-none col-span-1 md:col-span-2 max-w-full rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-white dark:bg-gray-900"
+        className="relative cursor-pointer col-span-1 md:col-span-2 max-w-full rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]"
         onClick={() => {
           if (navigator.vibrate) navigator.vibrate(50);
           navigate("/feed");
         }}
         style={{
-          backgroundColor: "inherit", // inherit from the bg-white / dark:bg-gray-900
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -1307,30 +1306,28 @@ export default function StudentDashboard() {
 
         <div className="relative z-20 p-2 flex flex-col justify-between h-full">
           {/* Card Heading */}
-          <div className="mb-2 px-4 pt-4">
+          <div className="mb-0 px-2 pt-0">
 
             <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
               Feed & Leaderboard
             </h2>
           </div>
 
-          <CardHeader className="p- px-4 flex items-center justify-between pb-2">
 
-            <Brain className="h-5 w-5 text-gray-700 dark:text-white/80" />
-          </CardHeader>
-
-          <CardContent className="flex flex-col gap-3 text-xs md:text-sm">
+          <CardContent className="flex flex-col gap-3 text-xm italic ">
             <p className="text-gray-700 dark:text-white/90">
-              Scroll through random questions endlessly. Use your free time productively by attempting questions continuously.
-              The more questions you attempt, the higher your chances of becoming the top student and leading the leaderboard.
+              Keep practicing random questions in the feed page and climb the leaderboard!
             </p>
 
 
             {/* Stats Row */}
-            <div className="flex flex-col sm:flex-row justify-start items-start gap-6">
+            <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
+
 
               {/* Questions Attempted */}
-              <div className="flex flex-col items-start sm:items-start">
+              <div className="flex flex-col sm:flex-row justify-start items-center gap-2">
+
+
 
                 <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
                 {feedsAttemptCount === undefined ? (
@@ -1356,9 +1353,25 @@ export default function StudentDashboard() {
                     alt={topStudents[0].name}
                     className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
                   />
-                  <p className="text-xs mt-1 truncate text-center text-gray-700 dark:text-white/90 font-medium">
-                    {topStudents[0].name}
-                  </p>
+                  <div className="flex flex-col items-center">
+                    <p className="text-xl mt-1 truncate text-center text-gray-700 dark:text-white/90 font-bold">
+                      {topStudents[0].name}
+                    </p>
+
+                    {/* Professional Badge */}
+                    <div className="mt-1 flex items-center gap-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-3 w-3"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M10 15l-5.878 3.09 1.123-6.545L.49 6.91l6.572-.955L10 0l2.938 5.955 6.572.955-4.755 4.635 1.123 6.545z" />
+                      </svg>
+                      <span>Top Performer</span>
+                    </div>
+                  </div>
+
                 </div>
               ) : (
                 <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
@@ -1371,7 +1384,7 @@ export default function StudentDashboard() {
 
 
             {/* Centered Button */}
-            <div className="flex justify-start mt-3">
+            <div className="flex justify-center mt-3">
 
               <div
                 className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
@@ -1401,6 +1414,7 @@ export default function StudentDashboard() {
 
         </div>
       </Card >
+
       <DailyTriviaCard />
       <DailyImagesTrivia />
       <FriendlyProgressCard userTheme={userTheme} name={name} />
@@ -1461,8 +1475,9 @@ export default function StudentDashboard() {
 
           <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
           <CardDescription className="text-gray-700 dark:text-gray-300">
-            This section is a space for nursing and medical professionals to share insights, reflections, and practical experiences. Contributions should be educational, thought-provoking, and meaningful, helping yourself and peers grow in knowledge and professional awareness. By sharing responsibly, you inspire others, spark discussions, and build a supportive learning community.
+            Share insights and experiences to educate, inspire, and grow together as a learning community.
           </CardDescription>
+
         </CardHeader>
 
         <CardContent className="p-2">
@@ -1682,8 +1697,9 @@ export default function StudentDashboard() {
           </p>
 
           <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-red-800 dark:text-red-200 text-sm font-semibold shadow-none border-0">
-            For the best experience and smoothest interaction, we recommend using a desktop or laptop. While some phones can run the simulation, using a larger device ensures optimal comfort and engagement.
+            For the best experience, use a desktop or laptop. Simulations may work on some phones, but a larger screen ensures smoother interaction.
           </div>
+
 
           <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-blue-800 dark:text-blue-200 text-xs italic shadow-none border-0">
             Tip: Treat each simulation as if it’s the real exam — no distractions, no breaks.

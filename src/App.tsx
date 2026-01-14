@@ -100,17 +100,35 @@ const App = () => {
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
   // 🔹 NEW useEffect for sounds
   useEffect(() => {
+    // Set up unlock on first click/tap
     initSound();
-    loadSound("tap-correct", "/sounds/tap1.mp3");
-    loadSound("tap-wrong", "/sounds/tap2.mp3");
-    loadSound("tap", "/sounds/tap0.mp3");
-    loadSound("start", "/sounds/start.mp3");
-    loadSound("medrae", "/sounds/medrae.mp3");
-    loadSound("medrae-study", "/sounds/MedraeStudy.mp3");
-    loadSound("medrae-voice", "/sounds/MedraeVoice.mp3");
-    loadSound("notification", "/sounds/notification.mp3");
-    loadSound("trivia-finish", "/sounds/Trivia.mp3");
-  }, []); // ✅ empty dependency array so it runs only once
+
+    // List of all sounds
+    const soundFiles: [string, string][] = [
+      ["tap-correct", "/sounds/tap1.mp3"],
+      ["tap-wrong", "/sounds/tap2.mp3"],
+      ["tap", "/sounds/tap0.mp3"],
+      ["start", "/sounds/start.mp3"],
+      ["medrae", "/sounds/medrae.mp3"],
+      ["medrae-study", "/sounds/MedraeStudy.mp3"],
+      ["medrae-voice", "/sounds/MedraeVoice.mp3"],
+      ["notification", "/sounds/notification.mp3"],
+      ["trivia-finish", "/sounds/Trivia.mp3"]
+    ];
+
+    // Load and force preload each sound
+    soundFiles.forEach(([name, src]) => {
+      const audio = loadSound(name, src); // <- modified loadSound returns the Audio object
+
+      if (audio) {
+        // Force load into memory so it works offline
+        audio.play().catch(() => { });
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+  }, []);
+
 
   useEffect(() => {
     if (!loading) return;
