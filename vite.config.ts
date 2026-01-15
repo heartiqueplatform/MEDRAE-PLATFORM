@@ -25,7 +25,8 @@ export default defineConfig(({ mode }) => {
         useCredentials: false,
         injectRegister: "auto",
         registerType: "autoUpdate",
-        devOptions: { enabled: true },
+        devOptions: { enabled: false },
+
 
 
         manifest: {
@@ -44,10 +45,21 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          globPatterns: [], // don’t pre-cache anything
-          runtimeCaching: [], // no runtime caching
-          navigateFallback: null, // let browser handle offline
+          globPatterns: [],
+          runtimeCaching: [],
+          navigateFallback: null,
+
+          // 🔒 prevent IndexedDB expiration writes
+          cleanupOutdatedCaches: false,
+
+          // 🛑 avoid preload race conditions
+          navigationPreload: false,
+
+          // 🔁 stable SW lifecycle
+          skipWaiting: true,
+          clientsClaim: true,
         }
+
       })
     ].filter(Boolean),
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },

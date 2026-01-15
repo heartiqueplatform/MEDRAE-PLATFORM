@@ -405,57 +405,47 @@ const Index = () => {
               </button>
 
               {/* Progress bar */}
-              {/* Circular Progress */}
-              <div className="flex flex-col justify-center items-center mt-4">
-                <svg className="w-20 h-20" viewBox="0 0 36 36">
-                  {/* Background circle */}
-                  <circle
-                    className="text-gray-300"
-                    strokeWidth="3"
-                    stroke="currentColor"
-                    fill="none"
-                    cx="18"
-                    cy="18"
-                    r="16"
-                  />
-                  {/* Progress circle */}
-                  <circle
-                    strokeWidth="3"
-                    fill="none"
-                    cx="18"
-                    cy="18"
-                    r="16"
-                    stroke={
-                      allMediaReady
+
+              {/* Progress bar */}
+              <div className="flex flex-col mt-4 w-full max-w-xs">
+                {/* Percentage text */}
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-700">
+                    Loading media
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {allMediaReady
+                      ? "100%"
+                      : `${Math.floor((loadedMedia / totalMedia) * 100)}%`}
+                  </span>
+                </div>
+
+                {/* Bar background */}
+                <div className="w-full bg-gray-300 rounded-full h-3 overflow-hidden">
+                  {/* Bar fill */}
+                  <div
+                    className="h-3 rounded-full transition-all duration-300"
+                    style={{
+                      width: allMediaReady
+                        ? "100%"
+                        : `${(loadedMedia / totalMedia) * 100}%`,
+                      backgroundColor: allMediaReady
                         ? "green"
                         : loadedMedia / totalMedia <= 0.25
                           ? "red"
                           : loadedMedia / totalMedia <= 0.75
                             ? "blue"
-                            : "yellow"
-                    }
-                    strokeDasharray="100"
-                    strokeDashoffset={allMediaReady ? 0 : 100 - (loadedMedia / totalMedia) * 100}
-                    strokeLinecap="round"
-                    transform="rotate(-90 18 18)"
-                    className="transition-all duration-300"
+                            : "yellow",
+                    }}
                   />
-                  {/* Center text */}
-                  <text
-                    x="18"
-                    y="20"
-                    textAnchor="middle"
-                    fontSize="6"
-                    fill="#333"
-                    className="font-bold"
-                  >
-                    {allMediaReady ? "100%" : `${Math.floor((loadedMedia / totalMedia) * 100)}%`}
-                  </text>
-                </svg>
-                <p className="text-sm text-gray-600 mt-2">
+                </div>
+
+                {/* Count text */}
+                <p className="text-sm text-gray-600 mt-2 text-center">
                   Progress: {loadedMedia} / {totalMedia}
                 </p>
               </div>
+
             </div>
           </div>
         </div>
