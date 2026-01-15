@@ -1,6 +1,10 @@
+// public/sw.js
+import { precacheAndRoute } from 'workbox-precaching';
+self.__WB_MANIFEST = self.__WB_MANIFEST || [];
+precacheAndRoute(self.__WB_MANIFEST);
 // ===== Service Worker =====
 // ===== Workbox injection point (REQUIRED) =====
-self.__WB_MANIFEST;
+
 
 // Cache names
 const CACHE_NAME = "medrae-app-shell-v16";       // Static assets cache
