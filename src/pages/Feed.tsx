@@ -1578,21 +1578,16 @@ export default function Feed() {
                           onClick={async () => {
                             const isAlreadyHelpful = imageFeedback[img.id] === "helpful";
 
-                            if (navigator.vibrate) navigator.vibrate(50);
+                            if (navigator.vibrate) navigator.vibrate(40);
                             playSound("tap-correct", false);
 
-                            setImageFeedback((prev) => ({
+                            setImageFeedback(prev => ({
                               ...prev,
                               [img.id]: isAlreadyHelpful ? null : "helpful",
                             }));
 
-                            setFeedbackAnim((prev) => ({ ...prev, [img.id]: true }));
-                            setTimeout(() => {
-                              setFeedbackAnim((prev) => ({ ...prev, [img.id]: false }));
-                            }, 300);
-
-                            setFeedImages((prev) =>
-                              prev.map((i) => {
+                            setFeedImages(prev =>
+                              prev.map(i => {
                                 if (i.id !== img.id) return i;
                                 const helpfulChange = isAlreadyHelpful ? -1 : 1;
                                 const notHelpfulChange =
@@ -1606,18 +1601,32 @@ export default function Feed() {
                             );
 
                             if (isAlreadyHelpful) {
+                              await supabase
+                                .from("user_image_feedback")
+                                .delete()
+                                .eq("user_id", user.id)
+                                .eq("image_id", img.id);
+
                               await supabase.rpc("decrement_helpful_count", { image_id: img.id });
                             } else {
+                              await supabase
+                                .from("user_image_feedback")
+                                .upsert(
+                                  { user_id: user.id, image_id: img.id, feedback: "helpful" },
+                                  { onConflict: ["user_id", "image_id"] }
+                                );
+
                               await supabase.rpc("increment_helpful_count", { image_id: img.id });
+
                               if (imageFeedback[img.id] === "not_helpful") {
                                 await supabase.rpc("decrement_not_helpful_count", { image_id: img.id });
                               }
                             }
                           }}
-                          className={`px-4 py-1.5 rounded-full text-sm border flex items-center gap-2 ${imageFeedback[img.id] === "helpful"
+                          className={`flex items-center gap-1 px-2 py-1 rounded-full border text-xs transition ${imageFeedback[img.id] === "helpful"
                             ? "bg-green-500 text-white border-green-500"
                             : "text-green-600 border-green-500 hover:bg-green-500 hover:text-white"
-                            } transition`}
+                            }`}
                         >
                           <ThumbsUp size={16} />
                           <span>{img.helpful_count ?? 0}</span>
@@ -1628,21 +1637,16 @@ export default function Feed() {
                           onClick={async () => {
                             const isAlreadyNotHelpful = imageFeedback[img.id] === "not_helpful";
 
-                            if (navigator.vibrate) navigator.vibrate([80, 30, 50]);
+                            if (navigator.vibrate) navigator.vibrate([60, 20, 40]);
                             playSound("tap-wrong", false);
 
-                            setImageFeedback((prev) => ({
+                            setImageFeedback(prev => ({
                               ...prev,
                               [img.id]: isAlreadyNotHelpful ? null : "not_helpful",
                             }));
 
-                            setFeedbackAnim((prev) => ({ ...prev, [img.id]: true }));
-                            setTimeout(() => {
-                              setFeedbackAnim((prev) => ({ ...prev, [img.id]: false }));
-                            }, 300);
-
-                            setFeedImages((prev) =>
-                              prev.map((i) => {
+                            setFeedImages(prev =>
+                              prev.map(i => {
                                 if (i.id !== img.id) return i;
                                 const notHelpfulChange = isAlreadyNotHelpful ? -1 : 1;
                                 const helpfulChange =
@@ -1656,22 +1660,37 @@ export default function Feed() {
                             );
 
                             if (isAlreadyNotHelpful) {
+                              await supabase
+                                .from("user_image_feedback")
+                                .delete()
+                                .eq("user_id", user.id)
+                                .eq("image_id", img.id);
+
                               await supabase.rpc("decrement_not_helpful_count", { image_id: img.id });
                             } else {
+                              await supabase
+                                .from("user_image_feedback")
+                                .upsert(
+                                  { user_id: user.id, image_id: img.id, feedback: "not_helpful" },
+                                  { onConflict: ["user_id", "image_id"] }
+                                );
+
                               await supabase.rpc("increment_not_helpful_count", { image_id: img.id });
+
                               if (imageFeedback[img.id] === "helpful") {
                                 await supabase.rpc("decrement_helpful_count", { image_id: img.id });
                               }
                             }
                           }}
-                          className={`px-4 py-1.5 rounded-full text-sm border flex items-center gap-2 ${imageFeedback[img.id] === "not_helpful"
+                          className={`flex items-center gap-1 px-2 py-1 rounded-full border text-xs transition ${imageFeedback[img.id] === "not_helpful"
                             ? "bg-red-500 text-white border-red-500"
                             : "text-red-600 border-red-500 hover:bg-red-500 hover:text-white"
-                            } transition`}
+                            }`}
                         >
                           <ThumbsDown size={16} />
                           <span>{img.not_helpful_count ?? 0}</span>
                         </button>
+
                       </div>
 
 
@@ -1899,19 +1918,16 @@ export default function Feed() {
                         if (navigator.vibrate) navigator.vibrate(40);
                         playSound("tap-correct", false);
 
-                        // Update feedback
                         setImageFeedback((prev) => ({
                           ...prev,
                           [activeImage.id]: isAlreadyHelpful ? null : "helpful",
                         }));
 
-                        // Animation
                         setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
                         setTimeout(() => {
                           setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
                         }, 200);
 
-                        // ✅ Update activeImage counts locally
                         setActiveImage((prev) => {
                           if (!prev) return prev;
 
@@ -1926,11 +1942,24 @@ export default function Feed() {
                           };
                         });
 
-                        // Persist changes to Supabase
                         if (isAlreadyHelpful) {
+                          await supabase
+                            .from("user_image_feedback")
+                            .delete()
+                            .eq("user_id", user.id)
+                            .eq("image_id", activeImage.id);
+
                           await supabase.rpc("decrement_helpful_count", { image_id: activeImage.id });
                         } else {
+                          await supabase
+                            .from("user_image_feedback")
+                            .upsert(
+                              { user_id: user.id, image_id: activeImage.id, feedback: "helpful" },
+                              { onConflict: ["user_id", "image_id"] }
+                            );
+
                           await supabase.rpc("increment_helpful_count", { image_id: activeImage.id });
+
                           if (imageFeedback[activeImage.id] === "not_helpful") {
                             await supabase.rpc("decrement_not_helpful_count", { image_id: activeImage.id });
                           }
@@ -1954,19 +1983,16 @@ export default function Feed() {
                         if (navigator.vibrate) navigator.vibrate([60, 20, 40]);
                         playSound("tap-wrong", false);
 
-                        // Update feedback
                         setImageFeedback((prev) => ({
                           ...prev,
                           [activeImage.id]: isAlreadyNotHelpful ? null : "not_helpful",
                         }));
 
-                        // Animation
                         setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: true }));
                         setTimeout(() => {
                           setFeedbackAnim((prev) => ({ ...prev, [activeImage.id]: false }));
                         }, 200);
 
-                        // ✅ Update activeImage counts locally
                         setActiveImage((prev) => {
                           if (!prev) return prev;
 
@@ -1981,11 +2007,24 @@ export default function Feed() {
                           };
                         });
 
-                        // Persist changes to Supabase
                         if (isAlreadyNotHelpful) {
+                          await supabase
+                            .from("user_image_feedback")
+                            .delete()
+                            .eq("user_id", user.id)
+                            .eq("image_id", activeImage.id);
+
                           await supabase.rpc("decrement_not_helpful_count", { image_id: activeImage.id });
                         } else {
+                          await supabase
+                            .from("user_image_feedback")
+                            .upsert(
+                              { user_id: user.id, image_id: activeImage.id, feedback: "not_helpful" },
+                              { onConflict: ["user_id", "image_id"] }
+                            );
+
                           await supabase.rpc("increment_not_helpful_count", { image_id: activeImage.id });
+
                           if (imageFeedback[activeImage.id] === "helpful") {
                             await supabase.rpc("decrement_helpful_count", { image_id: activeImage.id });
                           }
@@ -1999,6 +2038,7 @@ export default function Feed() {
                       <ThumbsDown size={14} />
                       <span>{activeImage.not_helpful_count ?? 0}</span>
                     </button>
+
 
                   </div>
 
