@@ -49,22 +49,10 @@ export default defineConfig(({ mode }) => {
           globPatterns: ["**/*.{html,js,css,png,svg,jpg,jpeg,webp,json}"],
 
           // ✅ SPA routing fallback
-          navigateFallback: "/index.html",
+          navigateFallback: "/dashboard",
           navigateFallbackDenylist: [/^\/api\//], // allow all other routes to fallback
 
           runtimeCaching: [
-            // ✅ Handle SPA page navigation requests
-            {
-              urlPattern: ({ request }) => request.mode === "navigate",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "pages-cache",
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-                }
-              }
-            },
 
             {
               urlPattern: ({ request }) =>
@@ -95,7 +83,6 @@ export default defineConfig(({ mode }) => {
           ],
           cleanupOutdatedCaches: true
         }
-
       })
     ].filter(Boolean),
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
