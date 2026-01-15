@@ -50,6 +50,15 @@ export default defineConfig(({ mode }) => {
           navigateFallback: "/index.html",
           runtimeCaching: [
             {
+              urlPattern: ({ url }) => url.pathname === "/", // dashboard root
+              handler: "CacheFirst",
+              options: {
+                cacheName: "dashboard-cache",
+                expiration: { maxEntries: 1, maxAgeSeconds: 24 * 60 * 60 } // 1 day
+              }
+            },
+
+            {
               urlPattern: ({ request }) =>
                 request.destination === "script" || request.destination === "style",
               handler: "CacheFirst",

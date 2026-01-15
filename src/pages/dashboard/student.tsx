@@ -139,8 +139,17 @@ export default function StudentDashboard() {
   }, [quizCount]);
 
   const loadDashboardData = async () => {
-
     if (!user?.id) return;
+
+    // ✅ Offline shortcut
+    if (!navigator.onLine) {
+      setLoading(false);
+      setDashboardLoaded(true);
+      return;
+    }
+
+    // ...rest of fetches
+    n;
 
     // Only show spinner if no cached data or first time loading
     if (!cachedDashboard) setLoading(true); // Only show spinner if no cached data
