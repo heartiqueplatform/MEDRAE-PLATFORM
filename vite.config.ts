@@ -46,11 +46,8 @@ export default defineConfig(({ mode }) => {
 
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-
           globPatterns: ["**/*.{html,js,css,png,svg,jpg,jpeg,webp,json}"],
           navigateFallback: "/index.html",
-          navigateFallbackDenylist: [/^\/api\//],
-
           runtimeCaching: [
             {
               urlPattern: ({ request }) =>
@@ -58,10 +55,7 @@ export default defineConfig(({ mode }) => {
               handler: "CacheFirst",
               options: {
                 cacheName: "js-css-cache",
-                expiration: {
-                  maxEntries: 300,
-                  maxAgeSeconds: 60 * 60 * 24 * 30
-                }
+                expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 }
               }
             },
             {
@@ -69,10 +63,7 @@ export default defineConfig(({ mode }) => {
               handler: "CacheFirst",
               options: {
                 cacheName: "images",
-                expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 60 * 60 * 24 * 30
-                }
+                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }
               }
             },
             {
@@ -81,17 +72,12 @@ export default defineConfig(({ mode }) => {
               options: {
                 cacheName: "api-cache",
                 networkTimeoutSeconds: 5,
-                expiration: {
-                  maxEntries: 60,
-                  maxAgeSeconds: 60 * 60 * 6
-                }
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 6 }
               }
             }
           ],
-
           cleanupOutdatedCaches: true
         }
-
       })
     ].filter(Boolean),
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
