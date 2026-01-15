@@ -17,10 +17,8 @@ export default defineConfig(({ mode }) => {
       mode === "development" && componentTagger(),
       VitePWA({
         strategies: "injectManifest",
-        injectManifest: {
-          swSrc: "public/sw.js",
-          swDest: "sw.js"
-        },
+        srcDir: "public",
+        filename: "sw.js",
 
         useCredentials: false,
 
