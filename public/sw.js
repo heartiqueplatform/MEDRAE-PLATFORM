@@ -1,4 +1,6 @@
 // ===== Service Worker =====
+// ===== Workbox injection point (REQUIRED) =====
+self.__WB_MANIFEST;
 
 // Cache names
 const CACHE_NAME = "medrae-app-shell-v16";       // Static assets cache

@@ -18,7 +18,8 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         strategies: "injectManifest",
         injectManifest: {
-          swSrc: "public/sw.js"
+          swSrc: "public/sw.js",
+          swDest: "sw.js"
         },
 
         useCredentials: false,
