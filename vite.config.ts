@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+
           globPatterns: ["**/*.{html,js,css,png,svg,jpg,jpeg,webp,json}"],
 
           // App shell fallback for offline navigation
@@ -80,7 +80,11 @@ export default defineConfig(({ mode }) => {
             }
           ],
 
-          cleanupOutdatedCaches: true
+        },
+
+        // <- maximumFileSizeToCacheInBytes goes here, top-level under injectManifest
+        injectManifest: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
         }
       })
     ].filter(Boolean),
