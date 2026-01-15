@@ -1,7 +1,8 @@
 // public/sw.js
 import { precacheAndRoute } from 'workbox-precaching';
-self.__WB_MANIFEST = self.__WB_MANIFEST || [];
-precacheAndRoute(self.__WB_MANIFEST);
+
+precacheAndRoute(self.__WB_MANIFEST); // ← this line MUST appear exactly once
+
 // ===== Service Worker =====
 // ===== Workbox injection point (REQUIRED) =====
 
