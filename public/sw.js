@@ -1,118 +1,156 @@
-// public/sw.js
-import { precacheAndRoute } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst } from 'workbox-strategies';
+// ===== Service Worker =====
 
-// =======================
-// 1️⃣ Precache build assets + offline fallback
-// =======================
-precacheAndRoute([
-    ...self.__WB_MANIFEST,          // injected by Vite at build time
-    { url: '/offline.html', revision: 'v1' },
-    // Optional: keep other static assets not part of build
-    { url: '/pwa-192x192.jpeg', revision: 'v1' },
-    { url: '/pwa-512x512.jpeg', revision: 'v1' },
-    { url: '/UsersAvatar.jpg', revision: 'v1' },
-    { url: '/indexbackground7.jpg', revision: 'v1' },
-    { url: '/indexbackground6.jpg', revision: 'v1' },
-    { url: '/icon-512.jpg', revision: 'v1' },
-    { url: '/background06.jpg', revision: 'v1' },
-    { url: '/background05.jpg', revision: 'v1' },
-    { url: '/background04.jpg', revision: 'v1' },
-    { url: '/background03.jpg', revision: 'v1' },
-    { url: '/background02.jpg', revision: 'v1' },
-    { url: '/background1.jpg', revision: 'v1' },
+// Cache names
+const CACHE_NAME = "medrae-app-shell-v21";       // Static assets cache
+const DYNAMIC_CACHE_NAME = "medrae-dynamic-v03"; // Optional for dynamic media
+
+// Files to pre-cache (static assets only)
+const urlsToCache = [
+    "/",
+    "/index.html",
+    "/pwa-192x192.jpeg",
+    "/pwa-512x512.jpeg",
+    "/UsersAvatar.jpg",
+    "/indexbackground7.jpg",
+    "/indexbackground6.jpg",
+    "/icon-512.jpg",
+    "/background06.jpg",
+    "/background05.jpg",
+    "/background04.jpg",
+    "/background03.jpg",
+    "/background02.jpg",
+    "/background1.jpg",
+    "/offline.html",
+    "/sw.js",
+
     // Sounds
-    { url: '/sounds/medrae.mp3', revision: 'v1' },
-    { url: '/sounds/MedraeStudy.mp3', revision: 'v1' },
-    { url: '/sounds/MedraeVoice.mp3', revision: 'v1' },
-    { url: '/sounds/notification.mp3', revision: 'v1' },
-    { url: '/sounds/tap1.mp3', revision: 'v1' },
-    { url: '/sounds/tap2.mp3', revision: 'v1' },
-    { url: '/sounds/tap0.mp3', revision: 'v1' },
-    { url: '/sounds/Trivia.mp3', revision: 'v1' },
-    // Videos (if small)
-    { url: '/videos/Medrae1.mp4', revision: 'v1' },
-    { url: '/videos/Medrae2.mp4', revision: 'v1' },
-    { url: '/videos/Medrae3.mp4', revision: 'v1' }
-]);
+    "/sounds/medrae.mp3",
+    "/sounds/MedraeStudy.mp3",
+    "/sounds/MedraeVoice.mp3",
+    "/sounds/notification.mp3",
+    "/sounds/tap1.mp3",
+    "/sounds/tap2.mp3",
+    "/sounds/tap0.mp3",
+    "/sounds/Trivia.mp3",
 
-// =======================
-// 2️⃣ SPA navigation fallback
-// =======================
-registerRoute(
-    ({ request }) => request.mode === 'navigate',
-    new NetworkFirst({
-        cacheName: 'pages-cache',
-        networkTimeoutSeconds: 3,
-        plugins: [],
-    })
-);
+    // Videos (optional if small)
+    "/videos/Medrae1.mp4",
+    "/videos/Medrae2.mp4",
+    "/videos/Medrae3.mp4"
+];
 
-// =======================
-// 3️⃣ Runtime caching for images
-// =======================
-registerRoute(
-    ({ request }) => request.destination === 'image',
-    new CacheFirst({
-        cacheName: 'images-cache',
-        plugins: [],
-    })
-);
-
-// =======================
-// 4️⃣ Runtime caching for API requests (optional)
-// =======================
-registerRoute(
-    ({ url }) => url.pathname.startsWith('/api'),
-    new NetworkFirst({
-        cacheName: 'api-cache',
-        networkTimeoutSeconds: 5,
-    })
-);
-
-// =======================
-// 5️⃣ Skip waiting & claim clients
-// =======================
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+// ===== Install =====
+self.addEventListener("install", (event) => {
+    console.log("[SW] Install");
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+    );
+    self.skipWaiting();
 });
-self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
-// =======================
-// 6️⃣ Push notifications
-// =======================
-self.addEventListener('push', (event) => {
+// ===== Activate =====
+self.addEventListener("activate", (event) => {
+    console.log("[SW] Activate");
+    event.waitUntil(
+        caches.keys().then((keys) => {
+            return Promise.all(
+                keys
+                    // Delete only old static caches, preserve dynamic cache
+                    .filter((key) => key !== CACHE_NAME && key !== DYNAMIC_CACHE_NAME)
+                    .map((key) => caches.delete(key))
+            );
+        }).then(() => self.clients.claim())
+    );
+});
+
+// ===== Fetch =====
+self.addEventListener("fetch", (event) => {
+    const request = event.request;
+
+    // SPA navigation fallback
+    if (request.mode === "navigate") {
+        event.respondWith(
+            caches.match("/index.html").then((cached) => cached || fetch("/index.html"))
+        );
+        return;
+    }
+
+    // Other requests: cache-first for static assets, network-first for dynamic
+    event.respondWith(
+        caches.match(request).then((cached) => {
+            if (cached) return cached;
+
+            return fetch(request)
+                .then((response) => {
+                    // Only cache same-origin static assets (not API responses / user data)
+                    if (
+                        request.url.startsWith(self.location.origin) &&
+                        !request.url.includes("/api/") // Skip user data APIs
+                    ) {
+                        const responseClone = response.clone();
+                        caches.open(DYNAMIC_CACHE_NAME).then((cache) => cache.put(request, responseClone));
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    // Offline fallback for images
+                    if (request.destination === "image") {
+                        return caches.match("/pwa-192x192.jpeg");
+                    }
+                });
+        })
+    );
+});
+
+// ===== Optional: Skip waiting immediately =====
+self.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SKIP_WAITING") {
+        self.skipWaiting();
+    }
+});
+// ===== Push Notifications =====
+self.addEventListener("push", (event) => {
     if (!event.data) return;
 
     let data = {};
     try {
         data = event.data.json();
     } catch {
-        data = { title: 'Medrae', body: event.data.text() };
+        data = { title: "Medrae", body: event.data.text() };
     }
 
-    const title = data.title || 'Medrae';
+    const title = data.title || "Medrae";
     const options = {
-        body: data.body || 'New update available!',
-        icon: '/pwa-192x192.jpeg',
-        badge: '/pwa-192x192.jpeg',
-        data: { url: data.url || '/' }
+        body: data.body || "New update available!",
+        icon: "/pwa-192x192.jpeg",
+        badge: "/pwa-192x192.jpeg",
+        data: {
+            url: data.url || "/"
+        }
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
 });
 
-self.addEventListener('notificationclick', (event) => {
+// ===== Notification Click =====
+self.addEventListener("notificationclick", (event) => {
     event.notification.close();
-    const targetUrl = event.notification.data?.url || '/';
+
+    const targetUrl = event.notification.data?.url || "/";
 
     event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            for (const client of clientList) {
-                if (client.url === targetUrl && 'focus' in client) return client.focus();
-            }
-            if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
-        })
+        self.clients.matchAll({ type: "window", includeUncontrolled: true })
+            .then((clientList) => {
+                for (const client of clientList) {
+                    if (client.url === targetUrl && "focus" in client) {
+                        return client.focus();
+                    }
+                }
+                if (self.clients.openWindow) {
+                    return self.clients.openWindow(targetUrl);
+                }
+            })
     );
 });
