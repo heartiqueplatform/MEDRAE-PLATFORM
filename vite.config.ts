@@ -43,45 +43,10 @@ export default defineConfig(({ mode }) => {
             { src: "/pwa-512x512.jpeg", sizes: "512x512", type: "image/jpeg" }
           ]
         },
-
         workbox: {
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: ["**/*.{html,js,css,png,svg,jpg,jpeg,webp,json}"],
-
-          // ✅ SPA routing fallback
-          navigateFallback: "/dashboard",
-          navigateFallbackDenylist: [/^\/api\//], // allow all other routes to fallback
-
-          runtimeCaching: [
-
-            {
-              urlPattern: ({ request }) =>
-                request.destination === "script" || request.destination === "style",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "js-css-cache",
-                expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 }
-              }
-            },
-            {
-              urlPattern: ({ request }) => request.destination === "image",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "images",
-                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 }
-              }
-            },
-            {
-              urlPattern: ({ url }) => url.pathname.startsWith("/api"),
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "api-cache",
-                networkTimeoutSeconds: 5,
-                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 6 }
-              }
-            }
-          ],
-          cleanupOutdatedCaches: true
+          globPatterns: [], // don’t pre-cache anything
+          runtimeCaching: [], // no runtime caching
+          navigateFallback: null, // let browser handle offline
         }
       })
     ].filter(Boolean),
