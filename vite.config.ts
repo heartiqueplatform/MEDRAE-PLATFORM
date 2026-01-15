@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
         injectRegister: "auto",
         registerType: "autoUpdate",
         devOptions: { enabled: true },
-        includeAssets: ["robots.txt", "offline.html"],
+
 
         manifest: {
           name: "MEDRAE",
@@ -49,6 +49,18 @@ export default defineConfig(({ mode }) => {
           globPatterns: ["**/*.{html,js,css,png,svg,jpg,jpeg,webp,json}"],
           navigateFallback: "/index.html",
           runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === "navigate",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "pages-cache",
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 30
+                }
+              }
+            },
+
             {
               urlPattern: ({ request }) =>
                 request.destination === "script" || request.destination === "style",
