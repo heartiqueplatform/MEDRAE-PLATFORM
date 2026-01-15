@@ -110,11 +110,36 @@ self.addEventListener("fetch", (event) => {
 });
 
 // ===== Optional: Skip waiting immediately =====
+// ===== Optional: Skip waiting immediately and auto-update =====
 self.addEventListener("message", (event) => {
     if (event.data && event.data.type === "SKIP_WAITING") {
         self.skipWaiting();
     }
 });
+
+// ===== Activate new SW and clear old caches automatically =====
+self.addEventListener("activate", (event) => {
+    console.log("[SW] Activate");
+    event.waitUntil(
+        caches.keys().then((keys) => {
+            return Promise.all(
+                keys
+                    // Delete all caches except current version
+                    .filter((key) => key !== CACHE_NAME && key !== DYNAMIC_CACHE_NAME)
+                    .map((key) => caches.delete(key))
+            );
+        }).then(() => {
+            // Claim clients immediately so new SW controls pages
+            self.clients.claim();
+
+            // Force reload all controlled pages to pick up new SW
+            self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
+                clients.forEach((client) => client.navigate(client.url));
+            });
+        })
+    );
+});
+
 // ===== Push Notifications =====
 self.addEventListener("push", (event) => {
     if (!event.data) return;
