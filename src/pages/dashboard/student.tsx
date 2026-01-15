@@ -149,8 +149,6 @@ export default function StudentDashboard() {
     }
 
     // ...rest of fetches
-    n;
-
     // Only show spinner if no cached data or first time loading
     if (!cachedDashboard) setLoading(true); // Only show spinner if no cached data
 

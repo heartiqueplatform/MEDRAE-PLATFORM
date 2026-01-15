@@ -18,6 +18,11 @@ if (storedVersion !== APP_VERSION) {
 // 🔌 Detect offline BEFORE React renders
 if (typeof window !== "undefined") {
     (window as any).__APP_OFFLINE__ = !navigator.onLine;
+
+    // ✅ Force dashboard route if offline but app shell cached
+    if ((window as any).__APP_OFFLINE__ && storedVersion) {
+        window.history.replaceState(null, "", "/dashboard/student");
+    }
 }
 
 // 🚫 Nothing renders until auth state is known
