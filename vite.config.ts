@@ -47,8 +47,13 @@ export default defineConfig(({ mode }) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ["**/*.{html,js,css,png,svg,jpg,jpeg,webp,json}"],
+
+          // ✅ SPA routing fallback
           navigateFallback: "/index.html",
+          navigateFallbackDenylist: [/^\/api\//], // allow all other routes to fallback
+
           runtimeCaching: [
+            // ✅ Handle SPA page navigation requests
             {
               urlPattern: ({ request }) => request.mode === "navigate",
               handler: "CacheFirst",
@@ -56,7 +61,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: "pages-cache",
                 expiration: {
                   maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 * 30
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
                 }
               }
             },
@@ -90,6 +95,7 @@ export default defineConfig(({ mode }) => {
           ],
           cleanupOutdatedCaches: true
         }
+
       })
     ].filter(Boolean),
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
