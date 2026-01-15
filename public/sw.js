@@ -1,14 +1,7 @@
-// public/sw.js
-import { precacheAndRoute } from 'workbox-precaching';
-
-precacheAndRoute(self.__WB_MANIFEST); // ← this line MUST appear exactly once
-
-// ===== Service Worker =====
-// ===== Workbox injection point (REQUIRED) =====
 
 // Cache names
 const CACHE_NAME = "medrae-app-shell-v20";       // Static assets cache
-const DYNAMIC_CACHE_NAME = "medrae-dynamic-v05"; // Optional for dynamic media
+const DYNAMIC_CACHE_NAME = "medrae-dynamic-v04"; // Optional for dynamic media
 
 // Files to pre-cache (static assets only)
 const urlsToCache = [
@@ -28,6 +21,7 @@ const urlsToCache = [
     "/background1.jpg",
     "/offline.html",
     "/sw.js",
+
     // Sounds
     "/sounds/medrae.mp3",
     "/sounds/MedraeStudy.mp3",
@@ -37,7 +31,8 @@ const urlsToCache = [
     "/sounds/tap2.mp3",
     "/sounds/tap0.mp3",
     "/sounds/Trivia.mp3",
-    // Videos
+
+    // Videos (optional if small)
     "/videos/Medrae1.mp4",
     "/videos/Medrae2.mp4",
     "/videos/Medrae3.mp4"
@@ -52,23 +47,18 @@ self.addEventListener("install", (event) => {
     self.skipWaiting();
 });
 
-// ===== Activate (merged) =====
+// ===== Activate =====
 self.addEventListener("activate", (event) => {
     console.log("[SW] Activate");
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
                 keys
+                    // Delete only old static caches, preserve dynamic cache
                     .filter((key) => key !== CACHE_NAME && key !== DYNAMIC_CACHE_NAME)
                     .map((key) => caches.delete(key))
             );
-        }).then(() => {
-            self.clients.claim(); // New SW takes control immediately
-            // Reload all controlled pages to pick up new SW/assets
-            self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
-                clients.forEach((client) => client.navigate(client.url));
-            });
-        })
+        }).then(() => self.clients.claim())
     );
 });
 
@@ -76,6 +66,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
     const request = event.request;
 
+    // SPA navigation fallback
     if (request.mode === "navigate") {
         event.respondWith(
             caches.match("/index.html").then((cached) => cached || fetch("/index.html"))
@@ -83,15 +74,17 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
+    // Other requests: cache-first for static assets, network-first for dynamic
     event.respondWith(
         caches.match(request).then((cached) => {
             if (cached) return cached;
 
             return fetch(request)
                 .then((response) => {
+                    // Only cache same-origin static assets (not API responses / user data)
                     if (
                         request.url.startsWith(self.location.origin) &&
-                        !request.url.includes("/api/")
+                        !request.url.includes("/api/") // Skip user data APIs
                     ) {
                         const responseClone = response.clone();
                         caches.open(DYNAMIC_CACHE_NAME).then((cache) => cache.put(request, responseClone));
@@ -99,6 +92,7 @@ self.addEventListener("fetch", (event) => {
                     return response;
                 })
                 .catch(() => {
+                    // Offline fallback for images
                     if (request.destination === "image") {
                         return caches.match("/pwa-192x192.jpeg");
                     }
@@ -107,13 +101,12 @@ self.addEventListener("fetch", (event) => {
     );
 });
 
-// ===== Message =====
+// ===== Optional: Skip waiting immediately =====
 self.addEventListener("message", (event) => {
     if (event.data && event.data.type === "SKIP_WAITING") {
         self.skipWaiting();
     }
 });
-
 // ===== Push Notifications =====
 self.addEventListener("push", (event) => {
     if (!event.data) return;
@@ -130,23 +123,33 @@ self.addEventListener("push", (event) => {
         body: data.body || "New update available!",
         icon: "/pwa-192x192.jpeg",
         badge: "/pwa-192x192.jpeg",
-        data: { url: data.url || "/" }
+        data: {
+            url: data.url || "/"
+        }
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
 });
 
 // ===== Notification Click =====
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
+
     const targetUrl = event.notification.data?.url || "/";
+
     event.waitUntil(
         self.clients.matchAll({ type: "window", includeUncontrolled: true })
             .then((clientList) => {
                 for (const client of clientList) {
-                    if (client.url === targetUrl && "focus" in client) return client.focus();
+                    if (client.url === targetUrl && "focus" in client) {
+                        return client.focus();
+                    }
                 }
-                if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+                if (self.clients.openWindow) {
+                    return self.clients.openWindow(targetUrl);
+                }
             })
     );
 });
