@@ -11,17 +11,19 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: { host: "::", port: 8080 },
-    build: { target: "esnext", outDir: "dist", sourcemap: mode === "development", chunkSizeWarningLimit: 1500 },
+    build: {
+      target: "esnext",
+      outDir: "dist",
+      sourcemap: mode === "development",
+      chunkSizeWarningLimit: 1500
+    },
     plugins: [
       react(),
       mode === "development" && componentTagger(),
       VitePWA({
         strategies: "generateSW",
-        injectManifest: false,
         useCredentials: false,
-
         injectRegister: "auto",
-
         registerType: "autoUpdate",
         devOptions: { enabled: true },
         includeAssets: ["robots.txt", "offline.html"],
@@ -29,7 +31,8 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
-          description: "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools.",
+          description:
+            "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools.",
           theme_color: "#4ade80",
           background_color: "#ffffff",
           display: "standalone",
@@ -40,15 +43,11 @@ export default defineConfig(({ mode }) => {
             { src: "/pwa-512x512.jpeg", sizes: "512x512", type: "image/jpeg" }
           ]
         },
+
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ["**/*.{html,js,css,png,svg,jpg,jpeg,webp,json}"],
-
-          // App shell fallback for offline navigation
           navigateFallback: "/index.html",
-          navigateFallbackAllowlist: [/^\/(?!api\/).*/],
-          navigateFallbackDenylist: [/^\/api\//],
-
           runtimeCaching: [
             {
               urlPattern: ({ request }) =>
@@ -77,7 +76,6 @@ export default defineConfig(({ mode }) => {
               }
             }
           ],
-
           cleanupOutdatedCaches: true
         }
       })
