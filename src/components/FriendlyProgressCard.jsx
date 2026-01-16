@@ -61,11 +61,17 @@ Keep practicing to improve your scores and reach your best results!`
         checkScores();
     }, [name]);
 
-    // ⭐ Progress Ring Component
+    // ⭐ Progress Ring Component (fixed)
     const ProgressRing = ({ value }) => {
         const radius = 40;
         const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (value / 100) * circumference;
+
+        // Ensure 'value' is a valid number between 0 and 100
+        const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
+
+        // Calculate offset safely
+        const offset = circumference - (safeValue / 100) * circumference;
+
         const bgColor = userTheme.iconBg || (userTheme.isDark ? "#2d2d2d" : "#e5e7eb");
         const fgColor = warning ? "#ff4d4f" : userTheme.iconColor;
 
@@ -87,7 +93,7 @@ Keep practicing to improve your scores and reach your best results!`
                     cx="50"
                     cy="50"
                     strokeDasharray={circumference}
-                    strokeDashoffset={offset}
+                    strokeDashoffset={offset} // ✅ always a valid number
                     strokeLinecap="round"
                     style={{ transition: "stroke-dashoffset 1s ease" }}
                 />
@@ -99,11 +105,12 @@ Keep practicing to improve your scores and reach your best results!`
                     className="text-xl font-bold"
                     style={{ fill: "currentColor" }}
                 >
-                    {value}%
+                    {safeValue}%
                 </text>
             </svg>
         );
     };
+
 
     return (
         <div

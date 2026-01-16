@@ -1220,8 +1220,12 @@ export default function StudentDashboard() {
                         <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
                         <div className="flex justify-center mt-2 gap-1">
                           {Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="h-4 w-4 bg-yellow-300 dark:bg-yellow-500 rounded-full"></div>
+                            <div
+                              key={`skeleton-star-${i}`}
+                              className="h-4 w-4 bg-yellow-300 rounded-full"
+                            />
                           ))}
+
                         </div>
                         <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded-full mt-2"></div>
                       </div>
@@ -1272,8 +1276,9 @@ export default function StudentDashboard() {
                         </p>
                         <div className="flex justify-center mt-2 text-yellow-500">
                           {Array.from({ length: s.stars }).map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-yellow-400" />
+                            <Star key={`${s.userId}-star-${i}`} className="h-4 w-4 fill-yellow-400" />
                           ))}
+
                         </div>
                         {idx < 3 && (
                           <p className="text-xs mt-2 font-semibold text-white bg-black/50 px-2 py-1 rounded-full whitespace-nowrap">

@@ -27,8 +27,9 @@ export default function FeedSeenTop10() {
             setLoading(true);
 
             const { data, error } = await supabase
-                .from("qfeed_seen")
-                .select(`user_id, profiles(username, name, avatar_url, institution)`);
+                .from("qfeed_seen_with_profiles")
+                .select("*");
+
 
             if (error) throw error;
             if (!data) return;
@@ -44,10 +45,11 @@ export default function FeedSeenTop10() {
                 new Map(
                     data.map(row => [row.user_id, {
                         user_id: row.user_id,
-                        username: row.profiles?.username || "",
-                        name: row.profiles?.name || "",
-                        avatar_url: row.profiles?.avatar_url || "",
-                        institution: row.profiles?.institution || "",
+                        username: row.username || "",
+                        name: row.name || "",
+                        avatar_url: row.avatar_url || "",
+                        institution: row.institution || "",
+
                         seen_count: seenCounts[row.user_id] || 0
                     }])
                 ).values()

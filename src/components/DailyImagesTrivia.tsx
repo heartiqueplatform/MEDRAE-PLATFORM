@@ -232,78 +232,78 @@ export default function DailyImagesTrivia() {
     // ✅ Load Top 10 students directly from DB view
     useEffect(() => {
         const loadTopUsers = async () => {
-            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            try {
+                const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
-            // Fetch today's seen comments with user info
-            const { data, error } = await supabase
-                .from('qfeed_seen_comments') // ✅ table name only
-                .select(`
+                // Fetch today's seen comments with correct relationship
+                const { data, error } = await supabase
+                    .from('qfeed_seen_comments')
+                    .select(`
     user_id,
     comment,
+     image_id,
     created_at,
-    profiles!inner(name, avatar_url, institution)
+    fk_qfeed_seen_comments_user!inner(name, avatar_url, institution)
   `)
-                .gte('created_at', `${today}T00:00:00`)
-                .lt('created_at', `${today}T23:59:59`);
 
-            if (error) {
-                console.error("Failed to load top student:", error.message);
-                setTopUsers([]);
-                return;
-            }
+                    .gte('created_at', `${today}T00:00:00`)
+                    .lt('created_at', `${today}T23:59:59`);
 
-            if (!data || data.length === 0) {
-                setTopUsers([]);
-                return;
-            }
+                if (error) throw error;
 
-            // Group by user
-            const userMap: { [key: string]: { rows: any[], firstCompleted: string } } = {};
-            data.forEach((row: any) => {
-                if (!userMap[row.user_id]) {
-                    userMap[row.user_id] = { rows: [], firstCompleted: row.created_at };
+                if (!data || data.length === 0) {
+                    setTopUsers([]);
+                    return;
                 }
-                userMap[row.user_id].rows.push(row);
-            });
 
-            // Users who have seen all 3 images
-            const completedUsers = Object.values(userMap)
-                .filter(u => u.rows.length >= 3)
-                .sort((a, b) => new Date(a.firstCompleted).getTime() - new Date(b.firstCompleted).getTime());
-            if (completedUsers.length > 0) {
+                // Group by user_id
+                const userMap: { [key: string]: { rows: any[], firstCompleted: string } } = {};
+                data.forEach((row: any) => {
+                    if (!userMap[row.user_id]) {
+                        userMap[row.user_id] = { rows: [], firstCompleted: row.created_at };
+                    }
+                    userMap[row.user_id].rows.push(row);
+                });
+
+                // Only include users who have seen all 3 UNIQUE images
+                const completedUsers = Object.values(userMap)
+                    .filter(u => new Set(u.rows.map(r => r.image_id)).size >= 3)
+                    .sort(
+                        (a, b) => new Date(a.firstCompleted).getTime() - new Date(b.firstCompleted).getTime()
+                    );
+
                 const topUsersList: SeenUser[] = completedUsers.slice(0, 10).map(u => ({
                     id: u.rows[0].user_id,
-                    name: u.rows[0].profiles.name,
-                    avatar_url: u.rows[0].profiles.avatar_url,
-                    institution: u.rows[0].profiles.institution,
+                    name: u.rows[0].fk_qfeed_seen_comments_user.name,
+                    avatar_url: u.rows[0].fk_qfeed_seen_comments_user.avatar_url,
+                    institution: u.rows[0].fk_qfeed_seen_comments_user.institution,
                     comments: u.rows.map(row => row.comment) || [],
                     comment: "Completed all 3 images today 🎉",
                 }));
+
+
                 setTopUsers(topUsersList);
-            } else {
+
+            } catch (err) {
+                console.error("Error loading top students:", err);
                 setTopUsers([]);
             }
         };
+
         loadTopUsers();
 
-        // Real-time updates
+        // Real-time subscription
         const subscription = supabase
             .channel("top-students-channel")
-            .on(
-                "postgres_changes",
-                {
-                    event: "INSERT",
-                    schema: "public",
-                    table: "qfeed_seen_comments",
-                },
-                async (payload) => {
-                    const createdAt = new Date(payload.new.created_at).toISOString().slice(0, 10);
-                    const today = new Date().toISOString().slice(0, 10);
-                    if (createdAt === today) {
-                        await loadTopUsers();
-                    }
-                }
-            )
+            .on("postgres_changes", {
+                event: "INSERT",
+                schema: "public",
+                table: "qfeed_seen_comments",
+            }, async (payload) => {
+                const createdAt = new Date(payload.new.created_at).toISOString().slice(0, 10);
+                const today = new Date().toISOString().slice(0, 10);
+                if (createdAt === today) await loadTopUsers();
+            })
             .subscribe();
 
         return () => {
@@ -393,6 +393,7 @@ export default function DailyImagesTrivia() {
                         .from('qfeed_seen_comments')
                         .select(`
                 user_id,
+
                 comment,
                 created_at,
                 profiles!inner(name, avatar_url, institution)

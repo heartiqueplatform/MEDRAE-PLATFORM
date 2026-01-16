@@ -652,13 +652,15 @@ Take a moment to review your mistakes and try again improvement comes fast when 
       warning: false
     };
   };
-
-
-
   const ProgressRing = ({ value }) => {
     const radius = 45;
     const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (value / 100) * circumference;
+
+    // ✅ Ensure value is a valid number
+    const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
+
+    const offset = circumference - (safeValue / 100) * circumference;
+
     return (
       <div className="flex justify-center mb-4">
         <svg width="120" height="120">
@@ -671,7 +673,7 @@ Take a moment to review your mistakes and try again improvement comes fast when 
             cx="60"
             cy="60"
             strokeDasharray={circumference}
-            strokeDashoffset={offset}
+            strokeDashoffset={offset} // ✅ safe numeric value
             strokeLinecap="round"
             style={{ transition: "stroke-dashoffset 1s ease" }}
           />
@@ -684,12 +686,13 @@ Take a moment to review your mistakes and try again improvement comes fast when 
             className="text-xl font-bold"
             style={{ fill: "currentColor" }}
           >
-            {value}%
+            {safeValue}%
           </text>
         </svg>
       </div>
     );
   };
+
 
   return (
     <div>
