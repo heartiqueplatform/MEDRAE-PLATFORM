@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          globPatterns: [],
+          globPatterns: ["**/*.{js,css,ts,tsx,mp3,mp4,html,png,jpeg,svg,ico}"], // precache these
           runtimeCaching: [],
           navigateFallback: "/index.html",
 
@@ -58,7 +58,11 @@ export default defineConfig(({ mode }) => {
           // 🔁 stable SW lifecycle
           skipWaiting: true,
           clientsClaim: true,
+
+          // ✅ Increase max file size to cache (default 2 MiB)
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB, adjust as needed
         }
+
 
       })
     ].filter(Boolean),
