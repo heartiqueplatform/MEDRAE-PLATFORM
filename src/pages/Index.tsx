@@ -375,9 +375,10 @@ const Index = () => {
             </h2>
 
             {/* Marketing Question */}
-            <p className="text-lg text-gray-700">
+            <p className="text-lg text-gray-700 text-left">
               Ready to join Kenya’s No.1 Nursing Network and boost your skills, career, and confidence? Don’t miss this exclusive chance to connect with thousands of peers and professionals!
             </p>
+
 
             {/* Buttons */}
             {/* Buttons */}
