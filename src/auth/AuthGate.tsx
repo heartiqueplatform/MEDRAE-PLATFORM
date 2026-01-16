@@ -2,50 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { WifiOff, HeartPulse } from "lucide-react";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-    const isOffline =
-        typeof window !== "undefined" && !navigator.onLine;
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
 
-    const cachedUser =
-        typeof window !== "undefined"
-            ? localStorage.getItem("supabaseUser")
-            : null;
 
-    const [loading, setLoading] = useState(!isOffline);
-    const [user, setUser] = useState<any>(
-        isOffline && cachedUser ? JSON.parse(cachedUser) : null
-    );
 
-    // 🔐 ONLINE: Normal auth flow (unchanged, just guarded)
+    // 🔐 ONLINE: Normal auth flow
     useEffect(() => {
-        if (!navigator.onLine) return; // ✅ skip Supabase when offline
-
         let mounted = true;
 
         supabase.auth.getUser().then(({ data }) => {
             if (!mounted) return;
             setUser(data.user);
             setLoading(false);
-
-            if (data.user) {
-                localStorage.setItem("supabaseUser", JSON.stringify(data.user));
-            }
         });
 
         const { data: listener } = supabase.auth.onAuthStateChange(
             (_event, session) => {
-                const sessionUser = session?.user ?? null;
-                setUser(sessionUser);
-
-                if (sessionUser) {
-                    localStorage.setItem(
-                        "supabaseUser",
-                        JSON.stringify(sessionUser)
-                    );
-                } else {
-                    localStorage.removeItem("supabaseUser");
-                }
+                setUser(session?.user ?? null);
             }
         );
 
@@ -55,7 +32,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
-    // ⏳ Wait for auth only when online
+    // ⏳ Wait for auth
     if (loading) return null;
 
     return <>{children}</>;
