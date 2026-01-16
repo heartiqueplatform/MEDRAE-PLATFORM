@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: [],
           runtimeCaching: [],
-          navigateFallback: "/public/offline.html",
+          navigateFallback: null,
 
           // 🔒 prevent IndexedDB expiration writes
           cleanupOutdatedCaches: false,
