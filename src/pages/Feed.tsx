@@ -75,7 +75,7 @@ export default function Feed() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const [imageFeedback, setImageFeedback] = useState({});
+
 
   const [questions, setQuestions] = useState(savedQuestions);
   const [loading, setLoading] = useState(savedQuestions.length === 0);
@@ -84,7 +84,7 @@ export default function Feed() {
   const tapAudio = typeof Audio !== "undefined" ? new Audio("/sounds/tap1.mp3") : null;
 
   // Track which counts should animate (zoom)
-  const [feedbackAnim, setFeedbackAnim] = useState({});
+
   const { width, height } = useWindowSize();
   const overlayRef = useRef<HTMLDivElement>(null);
 
