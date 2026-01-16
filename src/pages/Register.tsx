@@ -16,6 +16,7 @@ export function Register() {
   useEffect(() => {
     document.documentElement.classList.remove("dark");
   }, []);
+  const [usernameEdited, setUsernameEdited] = useState(false); // NEW
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -179,8 +180,28 @@ export function Register() {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Full Name *</Label><Input placeholder="John Doe" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} /></div>
-          <div><Label>Username *</Label><Input placeholder="johndoe123" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} /></div>
+          <div><Label>Full Name *</Label><Input
+            placeholder="John Doe"
+            value={formData.fullName}
+            onChange={e => {
+              const fullName = e.target.value;
+              setFormData({
+                ...formData,
+                fullName,
+                username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
+              });
+            }}
+          />
+          </div>
+          <div><Label>Username *</Label><Input
+            placeholder="johndoe123"
+            value={formData.username}
+            onChange={e => {
+              setUsernameEdited(true); // NEW: stop auto-fill after manual edit
+              setFormData({ ...formData, username: e.target.value });
+            }}
+          />
+          </div>
         </div>
 
         <Label>Email *</Label>
@@ -403,8 +424,28 @@ export function Register() {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Full Name *</Label><Input placeholder="Jane Smith" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} /></div>
-          <div><Label>Username *</Label><Input placeholder="janesmith" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} /></div>
+          <div><Label>Full Name *</Label><Input
+            placeholder="John Doe"
+            value={formData.fullName}
+            onChange={e => {
+              const fullName = e.target.value;
+              setFormData({
+                ...formData,
+                fullName,
+                username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
+              });
+            }}
+          />
+          </div>
+          <div><Label>Username *</Label><Input
+            placeholder="johndoe123"
+            value={formData.username}
+            onChange={e => {
+              setUsernameEdited(true); // NEW: stop auto-fill after manual edit
+              setFormData({ ...formData, username: e.target.value });
+            }}
+          />
+          </div>
         </div>
 
         <Label>Email *</Label>
@@ -577,11 +618,18 @@ export function Register() {
     <div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden">
 
       <Card className="w-full max-w-4xl bg-white rounded-2xl shadow-lg">
-        <CardHeader>
+        <CardHeader className="flex justify-between items-center">
           <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>
-          <CardDescription>Register as a Student, Tutor or Staff</CardDescription>
+          <Link
+            to="/login"
+            className="text-blue-600 hover:underline font-medium text-sm"
+          >
+            I have an account, login in
+          </Link>
         </CardHeader>
-        <CardContent>
+        <CardDescription>Register as a Student, Tutor or Staff</CardDescription>
+
+        <CardContent className="pb-8 md:pb-6">
           <Tabs defaultValue="student">
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="student"><GraduationCap className="mr-2" /> Student</TabsTrigger>
@@ -591,7 +639,7 @@ export function Register() {
 
             <TabsContent value="student"><StudentForm /></TabsContent>
             <TabsContent value="tutor">
-              <div className="p-8 text-center text-lg font-semibold text-gray-700 space-y-4">
+              <div className="p-0 text-left text-lg font-semibold text-gray-700 space-y-4">
                 <p>
                   Our Tutor registration portal is currently under development as we work to provide a comprehensive and seamless experience for educators.
                 </p>
@@ -604,7 +652,7 @@ export function Register() {
               </div>
             </TabsContent>
             <TabsContent value="staff">
-              <div className="p-8 text-center text-lg font-semibold text-gray-700 space-y-4">
+              <div className="p-0 text-left text-lg font-semibold text-gray-700 space-y-4">
                 <p>
                   Our Staff registration portal is currently under development as we work to create a seamless and robust experience for our administrative and support team.
                 </p>
@@ -618,7 +666,7 @@ export function Register() {
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 mb-4 text-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link to="/login" className="text-blue-600 hover:underline font-medium">Log in here</Link>
