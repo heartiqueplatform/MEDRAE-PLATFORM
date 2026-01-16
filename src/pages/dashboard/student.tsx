@@ -521,7 +521,12 @@ export default function StudentDashboard() {
       // 2️⃣ Calculate stars + stats for each user
       const userMap: Record<string, { total: number; count: number }> = {};
       results.forEach((r) => {
-        if (!userMap[r.user_id]) userMap[r.user_id] = { total: 0, count: 0 };
+        if (!r.user_id) return; // 🔑 skip null user_id rows
+
+        if (!userMap[r.user_id]) {
+          userMap[r.user_id] = { total: 0, count: 0 };
+        }
+
         if (r.total_questions > 0) {
           userMap[r.user_id].total += (r.score / r.total_questions) * 100;
           userMap[r.user_id].count += 1;
