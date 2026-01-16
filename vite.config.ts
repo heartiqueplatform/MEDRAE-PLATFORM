@@ -46,7 +46,18 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,ts,tsx,mp3,mp4,html,png,jpeg,svg,ico}"], // precache these
-          runtimeCaching: [],
+          runtimeCaching: [
+            {
+              // handle all navigation routes
+              urlPattern: /\/.*/,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "pages-cache",
+                networkTimeoutSeconds: 5, // optional: fallback quickly to cache
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+          ],
           navigateFallback: "/index.html",
 
           // 🔒 prevent IndexedDB expiration writes
