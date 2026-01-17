@@ -3,12 +3,9 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
-
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
-
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-
   return {
     server: { host: "::", port: 8080 },
     build: {
@@ -26,9 +23,6 @@ export default defineConfig(({ mode }) => {
         injectRegister: "auto",
         registerType: "autoUpdate",
         devOptions: { enabled: false },
-
-
-
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
@@ -48,18 +42,11 @@ export default defineConfig(({ mode }) => {
           globPatterns: [],
           runtimeCaching: [],
           navigateFallback: null,
-
-          // 🔒 prevent IndexedDB expiration writes
           cleanupOutdatedCaches: false,
-
-          // 🛑 avoid preload race conditions
           navigationPreload: false,
-
-          // 🔁 stable SW lifecycle
           skipWaiting: true,
           clientsClaim: true,
         }
-
       })
     ].filter(Boolean),
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },

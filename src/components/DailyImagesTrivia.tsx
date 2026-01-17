@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { ChevronLeft, ChevronRight, Maximize, Eye, X } from "lucide-react";
@@ -10,16 +9,14 @@ type ImageItem = {
     image_url: string;
     description?: string | null;
 };
-
 type SeenUser = {
     id: string;
     avatar_url?: string | null;
     name: string;
     institution?: string | null;
-    comment?: string;          // optional single comment
-    comments?: string[];       // optional array of comments
+    comment?: string;
+    comments?: string[];
 };
-
 export default function DailyImagesTrivia() {
     const [images, setImages] = useState<ImageItem[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -27,21 +24,17 @@ export default function DailyImagesTrivia() {
     const [dataLoading, setDataLoading] = useState(true);
     const [uiLoading, setUiLoading] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(true); // Desktop collapsed by default
-
     const [showComments, setShowComments] = useState(false);
     const [seenData, setSeenData] = useState<{ [key: string]: string }>({});
     const [isLargeScreen, setIsLargeScreen] = useState(false);
-
     const [topUsers, setTopUsers] = useState<SeenUser[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
     const autoplayRef = useRef<NodeJS.Timeout | null>(null);
     const AUTOPLAY_DELAY = 100000;
-
     const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     const localImagesKey = `dailyImages_${todayKey}`;
     const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
     const INACTIVITY_DELAY = 10000; // 10 seconds
-
     const localLoaderKey = `dailyLoader_${todayKey}`;
     // Add this inside your component
     const openFullscreen = (url: string) => {
@@ -54,7 +47,6 @@ export default function DailyImagesTrivia() {
             navigator.vibrate(duration);
         }
     };
-
     const resetInactivityTimer = () => {
         // Clear existing timer
         if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
@@ -66,22 +58,18 @@ export default function DailyImagesTrivia() {
             }, INACTIVITY_DELAY);
         }
     };
-
     const quickComments = [
-        "Amazing! 😍",
-        "I knew this one! 💡",
-        "Wow, so cool! 🎉",
-        "Didn't expect that! 🤯",
-        "Fun visual! 😎",
-        "Mind blown! 🤯",
-        "Love this! ❤️",
-        "Wow, so interesting! 👀",
-        "I learned something new! 📚",
-        "Absolutely awesome! 🌟",
-        "Super fun! 🎈",
-        "Can't wait to see the next one! 🚀",
+        "Very helpful for revision.",
+        "This makes the concept easier to remember.",
+        "Good visual explanation.",
+        "Helpful for clinical exams.",
+        "This clarifies the topic well.",
+        "Supports practical nursing skills.",
+        "Useful learning resource.",
+        "Well structured visual content.",
+        "This aids clinical reasoning.",
+        "Relevant for patient care practice.",
     ];
-
     useEffect(() => {
         const container = containerRef.current;
         if (!container || !isLargeScreen) return;

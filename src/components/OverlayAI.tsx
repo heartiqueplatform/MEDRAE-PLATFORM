@@ -135,6 +135,10 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   };
 
   const cancelClose = () => setShowCloseConfirm(false);
+  //  Check if chat has real messages (ignore pinned)
+  const hasRealMessages = messages.some(
+    (m) => !m.pinned
+  );
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -276,9 +280,9 @@ User's message: ${inputMessage}
 
   if (!isOpen) return null;
 
-  const aiBubbleClass = isDarkTheme
-    ? "bg-gray-700 text-white"   // AI dark: dark grey background
-    : "bg-gray-100 text-gray-900"; // AI light: light grey background
+  const aiBubbleClass =
+    "bg-transparent text-gray-900 dark:text-gray-100";
+
   const userBubbleClass = isDarkTheme
     ? "bg-blue-600 text-white"
     : "bg-blue-600 text-white";
@@ -314,9 +318,26 @@ User's message: ${inputMessage}
             <div className="flex justify-center items-center w-full h-full">
               <TypingBubbles isDarkTheme={isDarkTheme} />
             </div>
+          ) : !hasRealMessages ? (
+            /* 🧠 EMPTY CHAT STATE */
+            <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground px-4">
+              <img
+                src="/icon-512.jpg"
+                alt="Chat Icon"
+                className="w-12 h-12 mb-3 object-contain"
+              />
 
+              <h2 className="text-lg font-semibold mb-1">
+                Chat with your Medrae AI
+              </h2>
+              <p className="text-sm max-w-sm">
+                Ask anything about nursing concepts, medications, exams,
+                or clinical practice. I’m ready when you are
+              </p>
+            </div>
           ) : (
             messages.map((msg) => (
+
               <div
                 key={msg.id}
                 className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +6,16 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader"; // loader for history
 import { MessageCircle, Send, X, Stethoscope, Trash2 } from "lucide-react";
-
 type Message = {
   role: string;
   content: string;
   timestamp: string;
 };
-
+type AIChatWidgetProps = {
+  isDarkTheme: boolean;
+};
 function FloatingTypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
   const bubbleColor = isDarkTheme ? "bg-teal-400" : "bg-teal-600";
-
   return (
     <div className="flex items-center gap-1">
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
@@ -25,8 +24,6 @@ function FloatingTypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
     </div>
   );
 }
-
-
 function stripMarkdown(text: string): string {
   return text
     .replace(/(\*\*|__)(.*?)\1/g, "$2")
@@ -42,32 +39,19 @@ function stripMarkdown(text: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
-
-export default function AIChatWidget() {
+export default function AIChatWidget({ isDarkTheme }: AIChatWidgetProps) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
-
   const scrollRef = useRef<HTMLDivElement>(null);
-  // Vibrate device for short feedback
   const vibrate = (duration: number = 50) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(duration);
     }
   };
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDarkTheme(media.matches);
-    const listener = (e: MediaQueryListEvent) => setIsDarkTheme(e.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, []);
-
-  // Load chat history
+  const bubbleColor = isDarkTheme ? "bg-teal-400" : "bg-teal-600";
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -106,8 +90,6 @@ export default function AIChatWidget() {
     };
     fetchMessages();
   }, []);
-
-  // Auto-scroll whenever messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -116,25 +98,17 @@ export default function AIChatWidget() {
       });
     }
   }, [messages, loading]);
-
-  // Send message to backend and save to Supabase
   const sendMessage = async () => {
     if (!input.trim()) return;
-
     const currentUser = (await supabase.auth.getUser()).data.user;
-
     const userMessage: Message = {
       role: "user",
       content: input,
       timestamp: new Date().toISOString(),
     };
-
-    // Add user message to UI
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
-
-    // Save user message to Supabase
     await supabase.from("Aimessages").insert([
       {
         sender: userMessage.role,
@@ -143,24 +117,17 @@ export default function AIChatWidget() {
         user_id: currentUser?.id,
       },
     ]);
-
-    // Typing animation
     setMessages((prev) => [
       ...prev,
       { role: "assistant", content: "<TypingBubbles />", timestamp: new Date().toISOString() },
     ]);
-
     try {
-      // 1️⃣ Fetch user's presummary
       const { data: presummaryData } = await supabase
         .from("user_presummary")
         .select("presummary_text")
         .eq("user_id", currentUser?.id)
         .single();
-
       const cachedSummary = presummaryData?.presummary_text || "No user summary available.";
-
-      // 2️⃣ Build systemMessage for AI context
       const now = new Date();
       const systemMessage = `
 You are a personal AI assistant for the Medrae Medical Network.
@@ -170,7 +137,6 @@ Even for the very first message, the AI must greet the user by name and never wa
 
 The user has the following profile (presummary):
 ${cachedSummary}
-
 Your instructions:
 1. Always greet the user by their name, extracted from the presummary.
 2. Use the presummary to answer any questions about the user, including:
@@ -196,9 +162,7 @@ Your instructions:
 10. Always end your response in a positive, encouraging tone.
 
 User's message: ${input}
-`;
-
-      // 3️⃣ Call AI function with presummary and systemMessage
+`
       let aiContent = "";
       try {
         const { data, error } = await supabase.functions.invoke("medrae-ai-chat", {
@@ -206,7 +170,7 @@ User's message: ${input}
             message: input,
             user_id: currentUser?.id,
             presummary: cachedSummary,
-            systemMessage, // ← always send systemMessage
+            systemMessage,
           },
         });
         if (error) throw error;
@@ -249,9 +213,6 @@ User's message: ${input}
       setLoading(false);
     }
   };
-
-
-
   // Delete chat history
   const deleteChat = async () => {
     const confirmDelete = window.confirm(
@@ -276,11 +237,8 @@ User's message: ${input}
       </div>
     )
   }
-
-
   return (
     <>
-
       {!open && (
         <Button
           className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg
@@ -295,31 +253,24 @@ User's message: ${input}
           <MessageCircle size={48} className="drop-shadow-xl text-white" />
         </Button>
 
-
       )}
-
-
-
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-end justify-end px-0 pb-24"
-
-
+          className={`fixed inset-0 z-50 flex items-end justify-end px-0 pb-24
+    ${isDarkTheme ? "bg-black/40" : "bg-black/10"}`}
         >
           <Card
-            className={`w-full sm:w-96 shadow-2xl border rounded-2xl pointer-events-auto
-
-        ${isDarkTheme ? "bg-gray-900 border-gray-800" : "bg-white border-gray-300"}`}
+            className={`w-full sm:w-96 shadow-2xl rounded-2xl border-0
+    ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"}
+  `}
           >
-
-
-            <CardHeader className="flex justify-between items-center p-3 bg-blue-600 text-white rounded-t-2xl">
-              <div className="flex items-center gap-2">
+            <CardHeader className={`flex justify-between items-center p-3 rounded-t-2xl ${isDarkTheme ? "bg-gray-800 text-white" : "bg-blue-600 text-white"}`}
+            >
+              <div className="flex items-center gap-0">
                 <Stethoscope size={20} />
                 <h3 className="font-semibold">Medrae AI Assistance</h3>
               </div>
-
-              <div className="flex gap-2">
+              <div className="flex gap-0">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -346,9 +297,8 @@ User's message: ${input}
 
               </div>
             </CardHeader>
-
             <CardContent
-              className={`flex flex-col h-96 p-2 overflow-hidden rounded-xl ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
+              className={`flex flex-col h-96 p-1 overflow-hidden rounded-xl ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}
             >
               <div
                 ref={scrollRef}
@@ -375,7 +325,8 @@ User's message: ${input}
                       <div key={idx}>
                         {msg.role === "user" ? (
                           <div className="flex flex-col items-end">
-                            <div className="p-2 rounded-xl max-w-[80%] break-words shadow bg-blue-100 text-blue-900">
+                            <div className={`p-2 rounded-xl max-w-[80%] break-words shadow
+  ${isDarkTheme ? "bg-blue-900 text-blue-100" : "bg-blue-100 text-blue-900"}`}>
                               {stripMarkdown(msg.content)}
                             </div>
                             <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
@@ -384,7 +335,8 @@ User's message: ${input}
                           </div>
                         ) : (
                           <div className="flex flex-col items-start w-full">
-                            <div className="p-2 rounded-xl w-full sm:max-w-[80%] break-words shadow bg-gray-100 text-gray-900">
+                            <div className={`p-2 rounded-xl w-full sm:max-w-[100%] break-words shadow
+  ${isDarkTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"} font-medium text-sm`}>
                               {isTyping ? <FloatingTypingBubbles isDarkTheme={isDarkTheme} /> : stripMarkdown(msg.content)}
                             </div>
                             <span className="text-xs text-green-400 font-semibold drop-shadow-[0_0_4px_#22c55e] mt-1">
@@ -398,19 +350,16 @@ User's message: ${input}
                   })
                 )}
               </div>
-
               <div className="flex space-x-2">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about Nursing..."
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  className="
-        bg-white text-gray-900 placeholder-gray-400
-        dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400
-        border border-blue-300 dark:border-gray-700
-        focus:ring-2 focus:ring-blue-500 dark:focus:ring-teal-500
-      "
+                  className={`${isDarkTheme
+                    ? "bg-gray-800 text-white placeholder-gray-400 border-gray-700 focus:ring-teal-500"
+                    : "bg-white text-gray-900 placeholder-gray-400 border-blue-300 focus:ring-blue-500"
+                    }`}
                 />
                 <Button
                   onClick={() => {
@@ -418,18 +367,14 @@ User's message: ${input}
                     sendMessage();
                   }}
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
+                  className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Send size={24} className="text-white drop-shadow-lg" />
                 </Button>
               </div>
             </CardContent>
-
           </Card>
         </div>
       )}
-
-
     </>
   );
 }

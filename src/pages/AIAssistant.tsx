@@ -2,25 +2,8 @@
 import { GlobalLoader } from "@/components/GlobalLoader"; // ⬅️ adjust path if needed
 
 import { useState, useRef, useEffect } from "react";
-import {
-  Send,
-  User,
-  Sparkles,
-  Trash2,
-  BookOpen,
-  Pill,
-  Heart,
-  ShoppingBag,
-  Brain,
-  Stethoscope,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
+import { Send, User, Sparkles, Trash2, BookOpen, Pill, Heart, ShoppingBag, Brain, Stethoscope, } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,8 +20,6 @@ interface Message {
 import { supabase } from "@/lib/supabaseClient";
 function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
   const bubbleColor = isDarkTheme ? "bg-gray-400" : "bg-gray-500";
-
-
   return (
     <div className="flex items-center gap-1">
       <span className={`w-2 h-2 ${bubbleColor} rounded-full animate-bounceDelay`}></span>
@@ -47,10 +28,6 @@ function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
     </div>
   );
 }
-
-
-
-
 export function AIAssistant() {
   const pinnedMessage: Message = {
     id: "pinned",
@@ -72,8 +49,6 @@ export function AIAssistant() {
         .from('Aimessages')
         .delete()
         .eq('user_id', currentUser?.id); // ← only delete messages of current user
-
-
       // Clear local state (keep pinned message visible)
       setMessages([]);
       alert("All chat messages have been deleted.");
@@ -82,21 +57,16 @@ export function AIAssistant() {
       alert(" Failed to delete messages. Check your connection.");
     }
   };
-
-
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Key for localStorage
   const localKey = "aiChatHistory";
-
   // Load cached messages if available (safe for browser)
   const cached = typeof window !== "undefined" ? localStorage.getItem(localKey) : null;
-
   // Initialize state using cache
   const [messages, setMessages] = useState<Message[]>(cached ? JSON.parse(cached) : []);
   const [isHistoryLoading, setIsHistoryLoading] = useState(!cached);
-
   const quickQuestions = [
     "Explain hypertension pathophysiology",
     "What are the 5 rights of medication administration?",
@@ -107,19 +77,16 @@ export function AIAssistant() {
   ];
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
-
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputMessage,
       sender: "user",
       timestamp: new Date(),
     };
-
     // 1️⃣ Add user message to UI immediately
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsLoading(true);
-
     // Save user message to Supabase
     try {
       const currentUser = (await supabase.auth.getUser()).data.user;
@@ -133,7 +100,6 @@ export function AIAssistant() {
           },
         ]);
       }
-
       // 2️⃣ Typing bubble placeholder
       const typingMessage: Message = {
         id: (Date.now() + 0.1).toString(),
@@ -143,7 +109,6 @@ export function AIAssistant() {
         typing: true,
       };
       setMessages((prev) => [...prev, typingMessage]);
-
       // 3️⃣ Fetch user's presummary
       const { data: presummaryData } = await supabase
         .from("user_presummary")
@@ -160,10 +125,8 @@ You are a personal AI assistant for the Medrae Medical Network.
 Current date and time: ${now.toUTCString()}
 IMPORTANT: Always start every response by addressing the user by their name, extracted from the presummary.
 Even for the very first message, the AI must greet the user by name and never wait for additional prompts.
-
 The user has the following profile (presummary):
 ${cachedSummary}
-
 Your instructions:
 1. Always greet the user by their name, extracted from the presummary.
 2. Use the presummary to answer any questions about the user, including:
@@ -190,7 +153,6 @@ Your instructions:
 
 User's message: ${inputMessage}
 `;
-
       // 5️⃣ Stream AI response like OverlayAI
       let aiContent = "";
       try {
@@ -265,32 +227,24 @@ User's message: ${inputMessage}
       setIsLoading(false);
     }
   };
-
-
   const handleQuickQuestion = (question: string) => {
     setInputMessage(question);
   };
-
   // Autoscroll
   useEffect(() => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
-
   // AI bubble color (light/dark theme aware)
   const [isDarkTheme, setIsDarkTheme] = useState(false);
-  // Load chat history from Supabase
-  // Load chat history from Supabase with localStorage caching
   useEffect(() => {
     const localKey = "aiChatHistory";
-
     // 1️⃣ Load from localStorage first
     const cached = localStorage.getItem(localKey);
     if (cached) {
       setMessages(JSON.parse(cached));
       setIsHistoryLoading(false); // hide loader immediately if we have cached history
     }
-
     // 2️⃣ Fetch latest from Supabase silently
     const fetchMessages = async () => {
       try {
@@ -298,9 +252,7 @@ User's message: ${inputMessage}
           .from('Aimessages')
           .select('*')
           .order('timestamp', { ascending: true });
-
         if (error) throw error;
-
         let finalMessages =
           data?.map(msg => ({
             id: msg.id,
@@ -308,7 +260,6 @@ User's message: ${inputMessage}
             sender: msg.sender,
             timestamp: new Date(msg.timestamp),
           })) || [];
-
         // Only add pinned message if no messages exist
         const pinnedMessage: Message = {
           id: "pinned",
@@ -317,13 +268,11 @@ User's message: ${inputMessage}
             "❤️Hello! I'm your AI Study Assistant. I'm here to help with nursing concepts, drug info, study tips, and answer any questions you have about your coursework. How can I assist you today?",
           timestamp: new Date(0),
         };
-
         if (finalMessages.length === 0) {
           finalMessages = [pinnedMessage];
         } else if (!finalMessages.find(msg => msg.id === "pinned")) {
           finalMessages = [pinnedMessage, ...finalMessages];
         }
-
         // Update state AND localStorage
         setMessages(finalMessages);
         localStorage.setItem(localKey, JSON.stringify(finalMessages));
@@ -333,10 +282,8 @@ User's message: ${inputMessage}
       // Don't set isHistoryLoading here if we already loaded from localStorage
       if (!cached) setIsHistoryLoading(false);
     };
-
     fetchMessages();
   }, []);
-
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     setIsDarkTheme(media.matches);
@@ -344,26 +291,20 @@ User's message: ${inputMessage}
     media.addEventListener("change", listener);
     return () => media.removeEventListener("change", listener);
   }, []);
-
   // AI = neutral grey
-  const aiBubbleClass = isDarkTheme
-    ? "bg-gray-700 text-gray-100"
-    : "bg-gray-100 text-gray-900";
+  const aiBubbleClass =
+    "bg-transparent text-gray-900 dark:text-gray-100";
 
-  // User = light blue
-  const userBubbleClass = "bg-blue-100 text-blue-900";
+  const userBubbleClass =
+    "bg-blue-100 text-blue-900 text-left";
 
   if (isHistoryLoading) {
     return <GlobalLoader message="Loading chat history..." />;
   }
-
   return (
     <div className="h-screen flex flex-col w-full">
-
-
       {/* Header */}
       <div className="w-full flex items-center gap-3 p-4 bg-background border-b shadow-sm">
-
         <div className="h-10 w-10 bg-gradient-medical rounded-full flex items-center justify-center">
           <Brain className="h-5 w-5 text-white" />
         </div>
@@ -372,16 +313,11 @@ User's message: ${inputMessage}
           <p className="text-muted-foreground">Your personal nursing education companion</p>
         </div>
         <Badge className="ml-auto">Powered by AI</Badge>
-
       </div>
-
       {/* Layout: Sidebar + Chat */}
       <div className="flex flex-1 gap-4 overflow-hidden">
-
-
         {/* Chat */}
         <Card className="flex-1 flex flex-col h-full w-full overflow-hidden relative rounded-none">
-
           {/* Quick Topics Dropdown (inside chat card, below heading) */}
           <div
             className={`px-4 py-2 border-b bg-background shadow-sm mb-2 flex justify-start relative`}
@@ -390,7 +326,6 @@ User's message: ${inputMessage}
               className={`absolute inset-0 rounded-md border-2 border-blue-400 pointer-events-none
       ${isLoading ? 'animate-pulse-outline' : 'opacity-0'}`}
             ></div>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg transform transition-transform duration-300 hover:scale-105 w-10 h-10 p-0 relative">
@@ -436,8 +371,11 @@ User's message: ${inputMessage}
               messages.map((msg, index) => (
                 <div
                   key={index}
-                  className={`flex items-end gap-2 ${msg.sender === "user" ? "justify-end text-right" : "justify-start"
+                  className={`flex items-end gap-2 ${msg.sender === "user"
+                    ? "justify-end"
+                    : "justify-start"
                     }`}
+
                 >
                   {/* Message Bubble */}
                   <div className="flex flex-col w-full">
@@ -469,18 +407,12 @@ User's message: ${inputMessage}
                       })}
                     </span>
                   </div>
-
-
-
                 </div>
               ))
             )}
           </div>
-
-
           {/* Input */}
           <div className="flex items-center gap-2 p-4 border-t bg-background w-full">
-
             <Input
               placeholder="Ask me anything about nursing..."
               value={inputMessage}

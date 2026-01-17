@@ -6,10 +6,9 @@ function FriendlyProgressCard({ userTheme, name }) {
     const navigate = useNavigate();
     const [warning, setWarning] = useState(false);
     const [message, setMessage] = useState(
-        `Take a moment to check your progress page
-Track your quiz history, achievements, and see how close you are to mastering your topics!
-Keep practicing to improve your scores and reach your best results!`
+        "View your progress, track your quizzes, and keep improving."
     );
+
     const [latestScore, setLatestScore] = useState(null); // for progress ring
     const [targetScore, setTargetScore] = useState(50); // user's actual target
 

@@ -61,8 +61,6 @@ const queryClient = new QueryClient();
 const getRole = (): "student" | "tutor" | "staff" => {
   return (localStorage.getItem("userRole") as "student" | "tutor" | "staff") || "student";
 };
-
-// ✅ Wrapper to show AI widget only on specific pages
 const AIWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const allowedPaths = [
@@ -74,16 +72,26 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     "/resources",
     "/calendar",
   ];
-  const showChatWidget = allowedPaths.some((path) => location.pathname.startsWith(path));
+  const showChatWidget = allowedPaths.some((path) =>
+    location.pathname.startsWith(path)
+  );
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDarkTheme(media.matches);
+
+    const listener = (e: MediaQueryListEvent) => setIsDarkTheme(e.matches);
+    media.addEventListener("change", listener);
+
+    return () => media.removeEventListener("change", listener);
+  }, []);
   return (
     <>
       {children}
-      {showChatWidget && <AIChatWidget />}
+      {showChatWidget && <AIChatWidget isDarkTheme={isDarkTheme} />}
     </>
   );
 };
-
-// ✅ BottomBar Wrapper
 const BottomBarWrapper = () => {
   const location = useLocation();
   const publicPaths = ["/", "/login", "/register"];
@@ -93,17 +101,10 @@ const BottomBarWrapper = () => {
 };
 
 const App = () => {
-
-
-  // Splash state for first-time visitors
   const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
-  // 🔹 NEW useEffect for sounds
   useEffect(() => {
-    // Set up unlock on first click/tap
     initSound();
-
-    // List of all sounds
     const soundFiles: [string, string][] = [
       ["tap-correct", "/sounds/tap1.mp3"],
       ["tap-wrong", "/sounds/tap2.mp3"],
@@ -115,13 +116,9 @@ const App = () => {
       ["notification", "/sounds/notification.mp3"],
       ["trivia-finish", "/sounds/Trivia.mp3"]
     ];
-
-    // Load and force preload each sound
     soundFiles.forEach(([name, src]) => {
-      const audio = loadSound(name, src); // <- modified loadSound returns the Audio object
-
+      const audio = loadSound(name, src);
       if (audio) {
-        // Force load into memory so it works offline
         audio.play().catch(() => { });
         audio.pause();
         audio.currentTime = 0;
@@ -129,24 +126,17 @@ const App = () => {
     });
   }, []);
 
-
   useEffect(() => {
     if (!loading) return;
-
     const timer = setTimeout(() => {
       setLoading(false);
-      localStorage.setItem("splashShown", "true"); // mark splash as shown
-    }, 2000); // 2 seconds duration
-
+      localStorage.setItem("splashShown", "true");
+    }, 2000);
     return () => clearTimeout(timer);
   }, [loading]);
-
-  // App badge real-time logic
   useEffect(() => {
     if (!("setAppBadge" in navigator)) return;
-
     let subscription: any;
-
     const updateBadge = (count: number) => {
       if (count > 0) {
         navigator.setAppBadge(count).catch(() => { });
@@ -164,9 +154,7 @@ const App = () => {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("resolved", false);
-
       if (!error) updateBadge(count || 0);
-
       subscription = supabase
         .channel(`user_mistakes_real_time_${user.id}`)
         .on(
@@ -208,27 +196,18 @@ const App = () => {
                   <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
                   <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
                   <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-
                   <Route path="/redirect" element={<RedirectToRoleDashboard />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-
-                  {/* Redirect to role dashboard */}
                   <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
-
-                  {/* Role Dashboards */}
                   <Route path="/dashboard/student" element={<PrivateRoute><DashboardLayout userRole="student"><StudentDashboard /></DashboardLayout></PrivateRoute>} />
                   <Route path="/dashboard/tutor" element={<PrivateRoute><DashboardLayout userRole="tutor"><TutorDashboard /></DashboardLayout></PrivateRoute>} />
                   <Route path="/dashboard/staff" element={<PrivateRoute><DashboardLayout userRole="staff"><StaffDashboard /></DashboardLayout></PrivateRoute>} />
-
                   <Route path="/my-mistakes" element={<DashboardLayout userRole={getRole()}><MyMistakes /></DashboardLayout>} />
-
-                  {/* Authenticated Pages */}
                   <Route path="/ai-assistant" element={<DashboardLayout userRole={getRole()}><AIAssistant /></DashboardLayout>} />
                   <Route path="/calendar" element={<DashboardLayout userRole={getRole()}><Calendar /></DashboardLayout>} />
                   <Route path="/progress" element={<DashboardLayout userRole={getRole()}><StudyProgress /></DashboardLayout>} />
                   <Route path="/resources" element={<DashboardLayout userRole={getRole()}><Resources /></DashboardLayout>} />
                   <Route path="/medtube" element={<DashboardLayout userRole={getRole()}><MedTube /></DashboardLayout>} />
-
                   <Route path="/announcements" element={<DashboardLayout userRole={getRole()}><Announcements /></DashboardLayout>} />
                   <Route path="/feedback" element={<DashboardLayout userRole={getRole()}><Feedback /></DashboardLayout>} />
                   <Route path="/settings" element={<DashboardLayout userRole={getRole()}><Settings /></DashboardLayout>} />
@@ -243,14 +222,9 @@ const App = () => {
                   <Route path="/simulation/:paper_id" element={<SimulationPage />} />
                   <Route path="/Medrae-quizzes" element={<DashboardLayout userRole={getRole()}><MedraeQuizzes /></DashboardLayout>} />
                   <Route path="/feed" element={<DashboardLayout userRole={getRole()}><Feed /></DashboardLayout>} />
-
-                  {/* Catch-all 404 */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-
-                {/* BottomBar */}
                 <BottomBarWrapper />
-
               </AIWrapper>
             </BrowserRouter>
           </SidebarProvider>
@@ -259,5 +233,4 @@ const App = () => {
     </SessionContextProvider>
   );
 };
-
 export default App;
