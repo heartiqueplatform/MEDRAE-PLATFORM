@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -7,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Gift, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { playSound, loadSound } from "@/lib/soundManager";
-
-// Load sound once
 loadSound("start", "/sounds/start.mp3");
-
 interface Scenario {
     id: number;
     question: string;
@@ -20,7 +16,6 @@ interface Scenario {
     option_4: string;
     correct_option: number;
 }
-
 const Referral: React.FC = () => {
     const [showPopup, setShowPopup] = useState(false);
     const [scenario, setScenario] = useState<Scenario | null>(null);
@@ -40,9 +35,6 @@ const Referral: React.FC = () => {
             <text x="12" y="16" textAnchor="middle" fontSize="12" fontWeight="bold" fill="white" fontFamily="Arial, Helvetica, sans-serif">$</text>
         </svg>
     );
-
-
-    // Load user and tokens
     useEffect(() => {
         const loadUser = async () => {
             const { data: sessionData } = await supabase.auth.getSession();
@@ -59,7 +51,6 @@ const Referral: React.FC = () => {
         };
         loadUser();
     }, []);
-
     // Fetch random scenario
     useEffect(() => {
         const fetchScenario = async () => {
@@ -69,9 +60,7 @@ const Referral: React.FC = () => {
         };
         fetchScenario();
     }, []);
-
     const referralLink = `https://medrae.vercel.app/`;
-
     const giveInviteTokens = async (amount: number, vibrationStrong = false) => {
         if (!userId) return;
         const newTokens = tokens + amount;
@@ -93,24 +82,21 @@ const Referral: React.FC = () => {
         };
         window.addEventListener("focus", handleFocus);
     };
-
     const shareOnWhatsApp = () => {
         const message = encodeURIComponent(`I found this cool medical study challenge! Earn tokens and challenge your friends: ${referralLink}`);
         openAndReward(`https://wa.me/?text=${message}`, WHATSAPP_TOKENS, false);
     };
-
     const shareOnTelegram = () => {
         const message = encodeURIComponent(`I found this cool medical study challenge! Earn tokens and challenge your friends: ${referralLink}`);
         openAndReward(`https://t.me/share/url?url=${referralLink}&text=${message}`, TELEGRAM_TOKENS, true);
     };
-
     const handleScenarioAnswer = (answerIndex: number) => {
         setSelectedAnswer(answerIndex);
         if (scenario && answerIndex === scenario.correct_option) {
             setScenarioAnswered(true);
             playSound("start"); // play sound on correct
         } else {
-            alert("Incorrect! You cannot proceed until tomorrow.");
+            alert("Incorrect! Try again.");
         }
     };
 
@@ -126,9 +112,9 @@ const Referral: React.FC = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-0 sm:p-4
+"
                 >
-                    {/* subtle dramatic background */}
                     <motion.div
                         initial={{ scale: 0, rotateY: -45, rotateX: 30 }}
                         animate={{ scale: 1, rotateY: 0, rotateX: 0 }}
@@ -143,16 +129,16 @@ const Referral: React.FC = () => {
                                 </div>
                                 <CardDescription className="text-gray-300 text-sm">
                                     {scenarioAnswered ? (
-                                        <span className="flex items-center gap-1">
-                                            Great! You have earned {tokensToday} <Coin /> today. Total tokens: {tokens} <Coin />.
+                                        <span className="flex flex-wrap items-center gap-1 text-sm leading-snug break-words">
+                                            Great! You have earned {tokensToday} <Coin /> today. Total tokens: {tokens} <Coin />
                                         </span>
+
                                     ) : (
                                         <span className="text-gray-300 font-medium">
                                             You have a patient scenario today. Choose the correct referral:
                                         </span>
                                     )}
                                 </CardDescription>
-
                             </CardHeader>
                             <CardContent>
                                 {!scenarioAnswered ? (
@@ -183,7 +169,7 @@ const Referral: React.FC = () => {
                                             </Button>
                                         </div>
                                         <Button variant="ghost" className="mt-2 text-sm text-gray-300" onClick={closePopup}>Maybe Tomorrow</Button>
-                                        <Button variant="ghost" className="mt-2 text-sm text-gray-300" onClick={closePopup}>Done</Button>
+                                        <Button variant="ghost" className="mt-2 text-sm text-gray-300" onClick={closePopup}>All Done</Button>
                                     </div>
                                 )}
                             </CardContent>
