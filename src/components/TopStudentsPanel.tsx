@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageCircle, Trophy } from "lucide-react";
+import { Brain, MessageCircle, Trophy, Stethoscope, Book, Eye } from "lucide-react";
 import confetti from "canvas-confetti";
 import { playSound } from "@/lib/soundManager";
 import { useNavigate } from "react-router-dom";
@@ -354,192 +354,223 @@ export const DailyTriviaCard = () => {
                                     </div>
                                 </div>
                             </motion.div>
-
-
                         </div>
                     )}
-                    <div className="flex flex-col md:flex-row justify-between items-start mt-4">
-                        {/* Students attempted info */}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 md:mb-0">
-                            <MessageCircle className="w-4 h-4" />
-                            {topStudents.length} students attempted today
-                        </div>
-
-                        {/* Top students */}
-                        <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
-                            <div className="flex items-center gap-2">
-                                <Trophy className="w-4 h-4 text-yellow-500" />
-                                Daily Top Students
+                    {/* Students attempted info */}
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-8 mb-3 px-0">
+                        <Eye className="w-4 h-4" />
+                        {topStudents.length} students attempted today
+                    </div>
+                    {/* Daily Top Students Heading */}
+                    <div className="flex items-center gap-2 mb-2 px-0">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        <span className="font-semibold">Daily Top Students</span>
+                    </div>
+                    {/* Scrollable Top Students Cards */}
+                    <div className="w-full overflow-x-auto flex gap-4 py-2 custom-scrollbar">
+                        {topStudents.length === 0 ? (
+                            <div className="flex gap-4 animate-pulse">
+                                {Array.from({ length: 4 }).map((_, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-md bg-gray-200 dark:bg-gray-700"
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
+                                        <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                                        <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                                        <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                                    </div>
+                                ))}
                             </div>
-
-                            <div className="ml-1 mt-1 text-sm w-full md:w-auto">
-                                {topStudents.map((s, idx) => (
-                                    <div key={s.user_id} className="flex justify-between items-center gap-2 py-1">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <img
-                                                src={s.avatar_url || "/UsersAvatar.jpg"}
-                                                alt={s.name}
-                                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        ) : (
+                            topStudents.map((s, idx) => (
+                                <motion.div
+                                    key={s.user_id}
+                                    className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-md ${idx === 0 ? "bg-yellow-100 dark:bg-yellow-800"
+                                        : idx === 1 ? "bg-gray-100 dark:bg-gray-700"
+                                            : idx === 2 ? "bg-orange-100 dark:bg-orange-800"
+                                                : "bg-gray-100 dark:bg-gray-800"
+                                        }`}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.05, type: "spring", stiffness: 120 }}
+                                    whileHover={{ scale: 1.05 }}
+                                >
+                                    <div className="flex flex-col items-center text-center">
+                                        {/* Top 3 Icon */}
+                                        {idx <= 2 && (
+                                            <Stethoscope
+                                                className={`w-5 h-5 mb-1 animate-bounce ${idx === 0 ? "text-yellow-500"
+                                                    : idx === 1 ? "text-gray-500"
+                                                        : "text-orange-500"
+                                                    }`}
                                             />
-                                            <div className="flex flex-col text-sm truncate min-w-0">
-                                                <span className="font-medium truncate">{s.name}</span>
-                                                {s.institution && (
-                                                    <span className="text-xs text-muted-foreground truncate">{s.institution}</span>
-                                                )}
-                                            </div>
+                                        )}
+
+                                        <img
+                                            src={s.avatar_url || "/UsersAvatar.jpg"}
+                                            alt={s.name || s.username}
+                                            className="w-12 h-12 rounded-full mb-2 object-cover"
+                                        />
+
+                                        <div className="font-semibold text-sm text-gray-800 dark:text-white break-words">
+                                            {s.name || s.username}
                                         </div>
 
-                                        <div className="flex items-center gap-1 text-sm flex-shrink-0 text-right">
-                                            <span className="whitespace-nowrap">{s.score} pts</span>
+                                        <div className="text-xs text-gray-500 dark:text-gray-300 truncate">
+                                            {s.institution || "No Institution"}
+                                        </div>
+
+                                        <div className="mt-2 font-bold text-blue-600 dark:text-blue-400">
+                                            {s.score} pts
+                                        </div>
+
+                                        {/* Top 3 badges */}
+                                        <div className="mt-1">
                                             {idx === 0 && <Badge variant="destructive">🥇</Badge>}
                                             {idx === 1 && <Badge variant="secondary">🥈</Badge>}
                                             {idx === 2 && <Badge variant="warning">🥉</Badge>}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                </motion.div>
+                            ))
+                        )}
                     </div>
+                    {
+                        !started && !completed && (
+                            <Button
+                                className="w-full mt-4"
+                                disabled={loading || attemptedToday || !selfUserId}
+                                onClick={() => {
+                                    // Play tap sound
+                                    playSound("start");
 
-                    {!started && !completed && (
-                        <Button
-                            className="w-full mt-4"
-                            disabled={loading || attemptedToday || !selfUserId}
-                            onClick={() => {
-                                // Play tap sound
-                                playSound("start");
+                                    // Strong vibration (200ms)
+                                    if (navigator.vibrate) {
+                                        navigator.vibrate(200);
+                                    }
 
-                                // Strong vibration (200ms)
-                                if (navigator.vibrate) {
-                                    navigator.vibrate(200);
-                                }
-
-                                // Call the original start function
-                                startTrivia();
-                            }}
-                        >
-                            Start Daily Trivia
-                        </Button>
-
-                    )}
-                    {started && !completed && (
-                        <Button className="w-full mt-4" disabled>
-                            Trivia in Progress
-                        </Button>
-                    )}
-                    {completed && (
-                        <div className="mt-4 p-2 bg-transparent dark:bg-transparent text-left font-semibold animate-fade-in">
-
-
-                            <span className="text-lg font-bold">Congratulations! You finished today's trivia!</span>
-                            <br />
-
-
-                            {/* Score display */}
-                            {savedScore
-                                ? `${savedScore.correct_answers}/${savedScore.total_questions} correct! 🌟`
-                                : "0/0 correct! 🌟"}
-                            <br />
-
-                            {/* Time spent display */}
-                            {timeUsedToday !== null ? `${timeUsedToday}s spent ⏱` : "0s spent ⏱"}
-                            <br /><br />
-
-                            {/* Description for bars */}
-                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                Bars show your performance: <strong>green</strong> is good, <strong>yellow</strong> is average, <strong>red</strong> is below expectations.
+                                    // Call the original start function
+                                    startTrivia();
+                                }}
+                            >
+                                Start Daily Trivia
+                            </Button>
+                        )
+                    }
+                    {
+                        started && !completed && (
+                            <Button className="w-full mt-4" disabled>
+                                Trivia in Progress
+                            </Button>
+                        )
+                    }
+                    {
+                        completed && (
+                            <div className="mt-4 p-2 bg-transparent dark:bg-transparent text-left font-semibold animate-fade-in">
+                                <span className="text-lg font-bold">Congratulations! You finished today's trivia!</span>
                                 <br />
-                                Correct answers bar: how many questions you got right. <br />
-                                Time used bar: how fast you completed the quiz.
-                            </div>
-
-                            {/* Progress bars */}
-                            <div className="mt-2 space-y-4">
-                                {/* Correct answers bar */}
-                                <div className="flex flex-col items-start">
-                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
-                                        <div
-                                            className={`h-4 rounded-full transition-all duration-500 ${savedScore
-                                                ? savedScore.correct_answers < 8
-                                                    ? "bg-red-500"
-                                                    : savedScore.correct_answers <= 12
-                                                        ? "bg-yellow-400"
-                                                        : "bg-green-500"
-                                                : "bg-gray-400"
-                                                }`}
-                                            style={{
-                                                width: savedScore
-                                                    ? `${(savedScore.correct_answers / savedScore.total_questions) * 100}%`
-                                                    : "0%",
-                                            }}
-                                        ></div>
-                                    </div>
-                                    <div className="flex items-center justify-between w-full mt-1">
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">Correct answers</span>
-                                        {savedScore && (
-                                            <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                {savedScore.correct_answers}/{savedScore.total_questions}
-                                            </span>
-                                        )}
-                                    </div>
+                                {/* Score display */}
+                                {savedScore
+                                    ? `${savedScore.correct_answers}/${savedScore.total_questions} correct! 🌟`
+                                    : "0/0 correct! 🌟"}
+                                <br />
+                                {/* Time spent display */}
+                                {timeUsedToday !== null ? `${timeUsedToday}s spent ⏱` : "0s spent ⏱"}
+                                <br /><br />
+                                {/* Description for bars */}
+                                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                    Bars show your performance: <strong>green</strong> is good, <strong>yellow</strong> is average, <strong>red</strong> is below expectations.
+                                    <br />
+                                    Correct answers bar: how many questions you got right. <br />
+                                    Time used bar: how fast you completed the quiz.
                                 </div>
-
-
-                                {/* Time used bar */}
-                                <div className="flex flex-col items-start">
-                                    <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
-                                        <div
-                                            className={`h-4 rounded-full transition-all duration-500 ${timeUsedToday !== null
-                                                ? timeUsedToday < 150
-                                                    ? "bg-green-500"
-                                                    : timeUsedToday <= 210
-                                                        ? "bg-yellow-400"
-                                                        : "bg-red-500"
-                                                : "bg-gray-400"
-                                                }`}
-                                            style={{
-                                                width: timeUsedToday
-                                                    ? `${Math.min((timeUsedToday / 300) * 100, 100)}%`
-                                                    : "0%",
-                                            }}
-                                        ></div>
+                                {/* Progress bars */}
+                                <div className="mt-2 space-y-4">
+                                    {/* Correct answers bar */}
+                                    <div className="flex flex-col items-start">
+                                        <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
+                                            <div
+                                                className={`h-4 rounded-full transition-all duration-500 ${savedScore
+                                                    ? savedScore.correct_answers < 8
+                                                        ? "bg-red-500"
+                                                        : savedScore.correct_answers <= 12
+                                                            ? "bg-yellow-400"
+                                                            : "bg-green-500"
+                                                    : "bg-gray-400"
+                                                    }`}
+                                                style={{
+                                                    width: savedScore
+                                                        ? `${(savedScore.correct_answers / savedScore.total_questions) * 100}%`
+                                                        : "0%",
+                                                }}
+                                            ></div>
+                                        </div>
+                                        <div className="flex items-center justify-between w-full mt-1">
+                                            <span className="text-sm text-gray-700 dark:text-gray-300">Correct answers</span>
+                                            {savedScore && (
+                                                <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                                    {savedScore.correct_answers}/{savedScore.total_questions}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between w-full mt-1">
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">Time used</span>
-                                        {timeUsedToday !== null && (
-                                            <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                {Math.floor(timeUsedToday / 60).toString().padStart(2, "0")}:
-                                                {(timeUsedToday % 60).toString().padStart(2, "0")} min
-                                            </span>
-                                        )}
+                                    {/* Time used bar */}
+                                    <div className="flex flex-col items-start">
+                                        <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
+                                            <div
+                                                className={`h-4 rounded-full transition-all duration-500 ${timeUsedToday !== null
+                                                    ? timeUsedToday < 150
+                                                        ? "bg-green-500"
+                                                        : timeUsedToday <= 210
+                                                            ? "bg-yellow-400"
+                                                            : "bg-red-500"
+                                                    : "bg-gray-400"
+                                                    }`}
+                                                style={{
+                                                    width: timeUsedToday
+                                                        ? `${Math.min((timeUsedToday / 300) * 100, 100)}%`
+                                                        : "0%",
+                                                }}
+                                            ></div>
+                                        </div>
+                                        <div className="flex items-center justify-between w-full mt-1">
+                                            <span className="text-sm text-gray-700 dark:text-gray-300">Time used</span>
+                                            {timeUsedToday !== null && (
+                                                <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
+                                                    {Math.floor(timeUsedToday / 60).toString().padStart(2, "0")}:
+                                                    {(timeUsedToday % 60).toString().padStart(2, "0")} min
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
+
                                 </div>
+                                <br />
+                                {(() => {
+                                    const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
+                                    if (score === questions.length) return "🔥 Incredible! You aced it today!";
+                                    if (score >= Math.ceil(questions.length * 0.8)) return "💪 Great job! You're getting stronger every day!";
+                                    if (score >= Math.ceil(questions.length * 0.5)) return "🙂 Nice work! Keep practicing and you'll improve!";
+                                    return "👍 Good effort! Remember, every answer helps you learn more!";
+                                })()}
+                                <p className="mt-4 text-sm text-gray-700 dark:text-gray-300">
+                                    Every day, our trivia questions are carefully selected from different units across the app, giving you a mix of topics to challenge your knowledge.
+                                    Here on the <span className="text-blue-600 underline font-medium cursor-pointer" onClick={() => navigate("/Medrae-quizzes")}>
+                                        Medrae Quizzes page
+                                    </span>, you'll find all units fully organized with similar questions.
+                                    It’s like a showcase of the learning product explore, practice, and strengthen your skills at your own pace!
+                                </p>
 
+                                <span className="mt-3 text-sm text-gray-700 dark:text-gray-300 italic">
+                                    Remember: Medrae helps you <strong>Organized Learning. Confident Exams.</strong>
+                                </span>
+
+                                <br />
+                                Come back tomorrow for a new challenge!
                             </div>
-                            <br />
-                            {(() => {
-                                const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
-                                if (score === questions.length) return "🔥 Incredible! You aced it today!";
-                                if (score >= Math.ceil(questions.length * 0.8)) return "💪 Great job! You're getting stronger every day!";
-                                if (score >= Math.ceil(questions.length * 0.5)) return "🙂 Nice work! Keep practicing and you'll improve!";
-                                return "👍 Good effort! Remember, every answer helps you learn more!";
-                            })()}
-                            <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                                Every day, our trivia questions are carefully selected from different units across the app, giving you a mix of topics to challenge your knowledge.
-                                Here on the <span className="text-blue-600 underline font-medium cursor-pointer" onClick={() => navigate("/Medrae-quizzes")}>
-                                    Medrae Quizzes page
-                                </span>, you'll find all units fully organized with similar questions.
-                                It’s like a showcase of the learning product explore, practice, and strengthen your skills at your own pace!
-                            </p>
-                            <br /><br />
-                            <span className="text-sm text-gray-700 dark:text-gray-300 italic">
-                                Remember: Medrae helps you <strong>Organized Learning. Confident Exams.</strong>
-                            </span>
-
-                            <br />
-                            Come back tomorrow for a new challenge!
-                        </div>
-                    )}
+                        )
+                    }
 
                     <div className="flex justify-center">
                         <Button
@@ -562,8 +593,8 @@ export const DailyTriviaCard = () => {
                             <span>Share to groups</span>
                         </Button>
                     </div>
-                </CardContent>
-            </Card>
-        </div>
+                </CardContent >
+            </Card >
+        </div >
     );
 };

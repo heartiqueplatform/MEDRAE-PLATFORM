@@ -1296,9 +1296,8 @@ export default function StudentDashboard() {
           </div>
         </CardContent>
       </Card >
-
-
       <FeedSeenTop10 />
+      <DailyTriviaCard />
       <Card
         className="relative cursor-pointer col-span-1 md:col-span-2 max-w-full rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]"
         onClick={() => {
@@ -1310,7 +1309,6 @@ export default function StudentDashboard() {
           backgroundPosition: "center",
         }}
       >
-
         {/* Overlay */}
         <div className="absolute inset-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  z-10 rounded-md sm:rounded-md"></div>
 
@@ -1322,23 +1320,14 @@ export default function StudentDashboard() {
               Feed & Leaderboard
             </h2>
           </div>
-
-
           <CardContent className="flex flex-col gap-3 text-xm italic ">
             <p className="text-gray-700 dark:text-white/90">
               Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
             </p>
-
-
             {/* Stats Row */}
             <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
-
-
               {/* Questions Attempted */}
               <div className="flex flex-col sm:flex-row justify-start items-center gap-">
-
-
-
                 <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
                 {feedsAttemptCount === undefined ? (
                   <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
@@ -1346,7 +1335,6 @@ export default function StudentDashboard() {
                   <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
                 )}
               </div>
-
               {/* Leader Student */}
               {topStudents.length > 0 ? (
                 <div
@@ -1425,7 +1413,6 @@ export default function StudentDashboard() {
         </div>
       </Card >
 
-      <DailyTriviaCard />
       <DailyImagesTrivia />
       <FriendlyProgressCard userTheme={userTheme} name={name} />
 
