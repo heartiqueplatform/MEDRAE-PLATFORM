@@ -1140,8 +1140,6 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
 
                           // 4️⃣ ORIGINAL ANSWER LOGIC
                           handleAnswer(q.id, letter);
-
-                          // 5️⃣ RECORD MISTAKE IF WRONG
                           // 5️⃣ RECORD MISTAKE IF WRONG
                           if (!correct) {
                             // ✅ SHOW REASON BOX IMMEDIATELY (NO WAIT)
@@ -1637,7 +1635,6 @@ Please provide a detailed discussion and guidance.`;
                       {helpOthersDisabled[q.id] ? "Already shared" : "Help Others"}
                     </span>
                   </button>
-
                   {/* ------------------------------Help Me Button------------------------------ */}
                   <button
                     onClick={async () => {
@@ -1672,7 +1669,6 @@ Please provide a detailed discussion and guidance.`;
                       Help Me
                     </span>
                   </button>
-
                   {notesOverlay === q.id && (
                     <div
                       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-0"
@@ -1708,9 +1704,6 @@ Please provide a detailed discussion and guidance.`;
                             <li>Everything is auto-synced online and stored offline.</li>
                           </ul>
                         </div>
-
-
-
                         {/* ============================NOTES TEXTAREA ============================ */}
                         <textarea
                           value={notes[q.id] || ""}
@@ -1926,7 +1919,6 @@ Please provide a detailed discussion and guidance.`;
                               Close
                             </span>
                           </button>
-
                         </div>
 
                         {/* List of Helpers */}
@@ -1973,7 +1965,6 @@ Please provide a detailed discussion and guidance.`;
           );
         })}
       </div>
-
       {!quizFinished && Object.keys(answers).length === questions.length && (
         <button
           onClick={() => handleSubmit(false)}

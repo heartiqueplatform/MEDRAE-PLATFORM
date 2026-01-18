@@ -32,9 +32,6 @@ function TypingBubbles({ isDarkTheme }: { isDarkTheme: boolean }) {
     </div>
   );
 }
-
-
-
 export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayAIProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState(prefillQuestion || "");
@@ -127,8 +124,6 @@ export default function OverlayAI({ isOpen, onClose, prefillQuestion }: OverlayA
   const handleClose = () => {
     onClose();
   };
-
-
   const confirmClose = () => {
     onClose();
     setShowCloseConfirm(false);
@@ -293,8 +288,7 @@ User's message: ${inputMessage}
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50"
       onClick={handleClose} // ✅ clicking the overlay triggers close
     >
-      <Card
-        className="w-[95%] max-w-2xl h-[75vh] flex flex-col relative"
+      <Card className="w-full sm:w-[95%] max-w-2xl h-[75vh] flex flex-col relative"
         onClick={(e) => e.stopPropagation()} // ✅ prevent clicks inside card from closing
       >
         <button
@@ -378,12 +372,12 @@ User's message: ${inputMessage}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-            className="flex-1 p-2 rounded resize-y break-words overflow-y-auto
+            className="flex-1 p-1 sm:p-2 rounded resize-y break-words overflow-y-auto
              border border-gray-300 bg-white text-black placeholder-gray-700
              dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400
              focus:outline-none focus:ring-2 focus:ring-green-500
-             custom-scrollbar" // ✅ Add this
-            rows={4}
+             custom-scrollbar"
+            rows={2}  // smaller height on mobile
           />
 
 
