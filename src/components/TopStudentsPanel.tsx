@@ -264,7 +264,7 @@ export const DailyTriviaCard = () => {
 
 
 
-            <Card className="rounded-none overflow-hidden border-0 relative bg-white dark:bg-gray-900 shadow-none">
+            <Card className="rounded-none overflow-hidden border-0 relative bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  shadow-none">
 
                 <CardHeader className="bg-blue-50 dark:bg-blue-900/40">
                     <div className="flex items-center justify-between">
@@ -299,7 +299,7 @@ export const DailyTriviaCard = () => {
                     ) : (
                         <div className="w-full min-h-[200px]">
                             <motion.div>
-                                <div className="w-full bg-gray-50 dark:bg-gray-900 text-black dark:text-white rounded-3xl">
+                                <div className="w-full bg-gray-50 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] 0 text-black dark:text-white rounded-3xl">
 
                                     {/* Question number */}
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">

@@ -57,7 +57,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
     };
 
     return (
-        <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900">
+        <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] ">
             <CardHeader className="p-2 flex flex-row items-center justify-between">
 
                 <div>

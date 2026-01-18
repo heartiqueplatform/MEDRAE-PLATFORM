@@ -1141,7 +1141,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* 🏆 Top Students Leaderboard */}
-      <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-white dark:bg-gray-900 border-0">
+      <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-0">
         <CardHeader className="p-2">
 
           <CardTitle className="flex items-center gap-2 text-lg font-semibold">
@@ -1312,7 +1312,7 @@ export default function StudentDashboard() {
       >
 
         {/* Overlay */}
-        <div className="absolute inset-0 bg-white/10 dark:bg-gray-800/30 z-10 rounded-md sm:rounded-md"></div>
+        <div className="absolute inset-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  z-10 rounded-md sm:rounded-md"></div>
 
         <div className="relative z-20 p-2 flex flex-col justify-between h-full">
           {/* Card Heading */}
@@ -1479,7 +1479,7 @@ export default function StudentDashboard() {
         </Card>
       )}
 
-      <Card className="lg:col-span-3 w-full max-w-none bg-white dark:bg-gray-900 border-none rounded-none overflow-hidden sm:-mx-1">
+      <Card className="lg:col-span-3 w-full max-w-nonebg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-none rounded-none overflow-hidden sm:-mx-1">
 
         <CardHeader className="p-2">
 
@@ -1496,7 +1496,7 @@ export default function StudentDashboard() {
             {/* Daily Thought Textarea */}
             <textarea
               className="w-full p-3 rounded-none sm:rounded-md
-    bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
+bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
               placeholder="Write today's thought..."
               value={dailyContent}
               onChange={(e) => setDailyContent(e.target.value)}
@@ -1688,7 +1688,7 @@ export default function StudentDashboard() {
       </Card>
 
       {/* Simulation Papers Section */}
-      <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-white dark:bg-gray-900 p-2">
+      <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  p-2">
         <CardHeader className="p-2">
           <CardTitle className="text-gray-900 dark:text-white">
             Self Test SimuProctor Papers V1
@@ -1706,12 +1706,12 @@ export default function StudentDashboard() {
             {cachedSimulationPapers.length} simulation papers available — start practicing today!
           </p>
 
-          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-red-800 dark:text-red-200 text-sm font-semibold shadow-none border-0">
+          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-red-800 dark:text-red-200 text-sm font-semibold shadow-none border-0">
             For the best experience, use a desktop or laptop. Simulations may work on some phones, but a larger screen ensures smoother interaction.
           </div>
 
 
-          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-white dark:bg-gray-900 text-blue-800 dark:text-blue-200 text-xs italic shadow-none border-0">
+          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-blue-800 dark:text-blue-200 text-xs italic shadow-none border-0">
             Tip: Treat each simulation as if it’s the real exam — no distractions, no breaks.
           </div>
         </CardHeader>

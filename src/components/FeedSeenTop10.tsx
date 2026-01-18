@@ -91,7 +91,7 @@ export default function FeedSeenTop10() {
     }, []);
 
     return (
-        <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-white dark:bg-gray-900 border-0">
+        <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hiddenbg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-0">
             <CardHeader className="p-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                     <Trophy className="h-5 w-5 text-yellow-500" />
