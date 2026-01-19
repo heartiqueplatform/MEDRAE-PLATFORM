@@ -129,9 +129,18 @@ const Referral: React.FC = () => {
                                 </div>
                                 <CardDescription className="text-gray-300 text-sm">
                                     {scenarioAnswered ? (
-                                        <span className="flex flex-wrap items-center gap-1 text-sm leading-snug break-words">
-                                            Great! You have earned {tokensToday} <Coin /> today. Total tokens: {tokens} <Coin />
-                                        </span>
+                                        <div className="text-sm leading-snug">
+                                            {/* Line 1 */}
+                                            <div className="flex items-center gap-1 break-words">
+                                                Great! You have earned {tokensToday} <Coin />Study Tokens today.
+                                            </div>
+
+                                            {/* Line 2 */}
+                                            <div className="flex items-center gap-1 break-words">
+                                                Total tokens: {tokens} <Coin /> Study Tokens.
+                                            </div>
+                                        </div>
+
 
                                     ) : (
                                         <span className="text-gray-300 font-medium">
