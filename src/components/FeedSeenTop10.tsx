@@ -25,42 +25,21 @@ export default function FeedSeenTop10() {
     const fetchTop10 = async () => {
         try {
             setLoading(true);
-
             const { data, error } = await supabase
-                .from("qfeed_seen_with_profiles")
-                .select("*");
+                .from("qfeed_seen_leaderboard")
+                .select("*")
+                .order("seen_count", { ascending: false })
+                .limit(10);
+
 
 
             if (error) throw error;
             if (!data) return;
 
-            // Count seen per user
-            const seenCounts: Record<string, number> = {};
-            data.forEach(row => {
-                seenCounts[row.user_id] = (seenCounts[row.user_id] || 0) + 1;
-            });
-
-            // Merge unique users
-            const uniqueUsers: TopStudent[] = Array.from(
-                new Map(
-                    data.map(row => [row.user_id, {
-                        user_id: row.user_id,
-                        username: row.username || "",
-                        name: row.name || "",
-                        avatar_url: row.avatar_url || "",
-                        institution: row.institution || "",
-
-                        seen_count: seenCounts[row.user_id] || 0
-                    }])
-                ).values()
-            );
-
-            // Sort descending
-            uniqueUsers.sort((a, b) => b.seen_count - a.seen_count);
-            const top10 = uniqueUsers.slice(0, 10);
 
             // Check for rank changes
-            top10.forEach((user, idx) => {
+            data.forEach((user, idx) => {
+
                 const prevIdx = prevTopStudents.current.findIndex(u => u.user_id === user.user_id);
                 if (prevIdx !== -1 && prevIdx !== idx) {
                     // rank changed
@@ -69,11 +48,10 @@ export default function FeedSeenTop10() {
                 }
             });
 
-            setTopStudents(top10);
-            prevTopStudents.current = top10;
+            setTopStudents(data);
+            prevTopStudents.current = data;
+            localStorage.setItem("topStudents", JSON.stringify(data));
 
-            // Save locally
-            localStorage.setItem("topStudents", JSON.stringify(top10));
         } catch (err) {
             console.error("Error fetching top 10 feedseen students:", err);
         } finally {
@@ -85,10 +63,16 @@ export default function FeedSeenTop10() {
         // Load from localStorage first
         const cached = localStorage.getItem("topStudents");
         if (cached) setTopStudents(JSON.parse(cached));
-
-        // Fetch fresh data in background
+        // Fetch fresh data immediately
         fetchTop10();
+        // 🔁 Auto-refresh every 15 seconds
+        const interval = setInterval(() => {
+            fetchTop10();
+        }, 15000);
+        // Cleanup on unmount
+        return () => clearInterval(interval);
     }, []);
+
 
     return (
         <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hiddenbg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-0">
