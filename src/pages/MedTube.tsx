@@ -38,8 +38,8 @@ export function MedTube() {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [overlayVideo, setOverlayVideo] = useState<{ id: string; url: string } | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
-  const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -381,91 +381,103 @@ export function MedTube() {
     if (days < 30) return `${Math.ceil(days / 7)} weeks ago`;
     return `${Math.ceil(days / 30)} months ago`;
   };
-
   const handleUpload = async () => {
-    if (!file || !title || !user || !category) return alert("Login and fill in all fields");
-    setUploading(true);
-
-    const filename = `${Date.now()}_${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
-
-    // Step 1: Get a signed URL from Supabase for direct upload
-    const { data: signedUrl, error: signedError } = await supabase.storage
-      .from("videos")
-      .createSignedUploadUrl(filename);
-
-    if (signedError || !signedUrl) {
-      console.error("Signed URL error:", signedError);
-      alert("Upload failed");
-      setUploading(false);
-      return;
+    if (files.length === 0 || !title || !user || !category) {
+      return alert("Login and fill in all fields");
     }
 
-    // Step 2: Upload with XMLHttpRequest to track progress
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      uploadXhrRef.current = xhr; // ✅ store reference so we can cancel later
-      xhr.open("PUT", signedUrl.signedUrl, true);
+    setUploading(true);
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percent);
+    try {
+      for (const file of files) {
+        setUploadProgress(0);
+
+        const filename = `${Date.now()}_${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
+
+        // 1️⃣ Get signed upload URL
+        const { data: signedUrl, error: signedError } =
+          await supabase.storage
+            .from("videos")
+            .createSignedUploadUrl(filename);
+
+        if (signedError || !signedUrl) {
+          throw signedError;
         }
-      };
-      xhr.onload = () => {
-        if (xhr.status === 200) {
-          resolve();
-        } else {
-          reject(new Error("Upload failed"));
+
+        // 2️⃣ Upload video with progress
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          uploadXhrRef.current = xhr;
+
+          xhr.open("PUT", signedUrl.signedUrl, true);
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress(percent);
+            }
+          };
+
+          xhr.onload = () => {
+            xhr.status === 200 ? resolve() : reject(new Error("Upload failed"));
+          };
+          xhr.onerror = () => reject(new Error("Upload failed"));
+          xhr.onabort = () => reject(new Error("Upload cancelled"));
+
+          xhr.send(file);
+        });
+
+        // 3️⃣ Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from("videos")
+          .getPublicUrl(filename);
+
+        // 4️⃣ Insert DB record (ONE PER VIDEO)
+        const { error: insertError } = await supabase
+          .from("medtube_videos")
+          .insert({
+            title,
+            description,
+            video_url: publicUrlData.publicUrl,
+            uploaded_by: user.id,
+            tags: tags.split(",").map((t) => t.trim()),
+            duration,
+            is_visible: true,
+            category,
+          });
+
+        if (insertError) {
+          throw insertError;
         }
-      };
-      xhr.onerror = () => reject(new Error("Upload failed"));
-      xhr.onabort = () => reject(new Error("Upload cancelled"));
+      }
 
-      xhr.send(file);
-    });
+      alert("All videos uploaded successfully");
 
-    // Step 3: Get public URL for DB insert
-    const { data: publicUrlData } = supabase.storage
-      .from("videos")
-      .getPublicUrl(filename);
-
-    const videoUrl = publicUrlData?.publicUrl;
-    const userId = user.id;
-
-    const { error: insertError } = await supabase.from("medtube_videos").insert({
-      title,
-      description,
-      video_url: videoUrl,
-      uploaded_by: userId,
-      tags: tags.split(",").map((t) => t.trim()),
-      duration,
-      is_visible: true,
-      category,
-    });
-
-    if (insertError) {
-      console.error("Database Insert Error:", insertError);
-      alert("Database error");
-    } else {
-      alert("Upload successful");
+      // Reset form
       setTitle("");
       setDescription("");
       setTags("");
-      setFile(null);
       setCategory("");
+      setFiles([]);
       setPreviewUrl(null);
       setDuration("00:00");
       setShowUploadForm(false);
-    }
 
-    setUploading(false);
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Upload failed");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   useEffect(() => {
-    if (file) {
-      const url = URL.createObjectURL(file);
+    if (files.length > 0) {
+      const firstFile = files[0];
+      const url = URL.createObjectURL(firstFile);
       setPreviewUrl(url);
+
       const video = document.createElement("video");
       video.src = url;
       video.onloadedmetadata = () => {
@@ -474,7 +486,7 @@ export function MedTube() {
         setDuration(`${mins}:${secs}`);
       };
     }
-  }, [file]);
+  }, [files]);
 
   const filteredVideos = videos.filter((video) =>
     video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -501,7 +513,47 @@ export function MedTube() {
 
       {showUploadForm && (
         <div className="space-y-4 border rounded-lg p-4">
-          <Input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <Input
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={(e) => {
+              const selectedFiles = Array.from(e.target.files ?? []);
+              setFiles(selectedFiles);
+
+              if (selectedFiles.length > 0) {
+                const firstFile = selectedFiles[0];
+
+                // Prefill title: file name without extension
+                const nameWithoutExt = firstFile.name.replace(/\.[^/.]+$/, "");
+                setTitle(nameWithoutExt);
+
+                // Prefill description: file type
+                setDescription(`Video type: ${firstFile.type || "unknown"}`);
+
+                // Optionally prefill category based on file type or leave empty
+                // setCategory("clinical"); // example default
+              }
+            }}
+
+          />
+          {files.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm font-medium">Selected videos:</p>
+
+              <ul className="text-sm text-gray-700 dark:text-gray-300">
+                {files.map((file, index) => (
+                  <li key={index} className="flex justify-between">
+                    <span className="truncate">{file.name}</span>
+                    <span className="ml-2 text-xs text-gray-500">
+                      {(file.size / (1024 * 1024)).toFixed(1)} MB
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <Input placeholder="Video Title" value={title} onChange={(e) => setTitle(e.target.value)} />
           <Textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
           <Input placeholder="Tags (comma separated)" value={tags} onChange={(e) => setTags(e.target.value)} />
@@ -548,10 +600,10 @@ export function MedTube() {
               {/* Percentage + MB display */}
               <div className="flex justify-between text-sm text-gray-600">
                 <span>{uploadProgress}%</span>
-                {file && (
+                {files.length > 0 && (
                   <span>
-                    {((file.size * uploadProgress) / 100 / (1024 * 1024)).toFixed(2)} MB /{" "}
-                    {(file.size / (1024 * 1024)).toFixed(2)} MB
+                    {((files[0].size * uploadProgress) / 100 / (1024 * 1024)).toFixed(2)} MB /{" "}
+                    {(files[0].size / (1024 * 1024)).toFixed(2)} MB
                   </span>
                 )}
               </div>
@@ -853,7 +905,7 @@ export function MedTube() {
             {/* Small watermark with text below */}
             <div className="absolute bottom-16 right-4 flex flex-col items-center pointer-events-none">
               <img
-                src="/icon-512.jpg"
+                src="/pwa-192x192.jpeg"
                 alt="App Icon"
                 className="w-6 h-6 opacity-60"
               />
@@ -870,6 +922,49 @@ export function MedTube() {
         </div>
       )}
 
+      {uploading && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex flex-col items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-sm shadow-lg flex flex-col items-center">
+            <h2 className="text-lg font-semibold mb-4 text-center text-gray-800 dark:text-gray-200">
+              Uploading {files.length} video{files.length > 1 ? "s" : ""}...
+            </h2>
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+              <div
+                className="bg-blue-600 h-4 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+
+            {/* Percentage + MB display */}
+            {files.length > 0 && (
+              <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300 w-full mb-4">
+                <span>{uploadProgress}%</span>
+                <span>
+                  {((files[0].size * uploadProgress) / 100 / (1024 * 1024)).toFixed(2)} MB /{" "}
+                  {(files[0].size / (1024 * 1024)).toFixed(2)} MB
+                </span>
+              </div>
+            )}
+
+            {/* Optional Cancel button */}
+            <button
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+              onClick={() => {
+                if (window.confirm("Cancel upload?")) {
+                  if (uploadXhrRef.current) uploadXhrRef.current.abort();
+                  setUploading(false);
+                  setUploadProgress(0);
+                  alert("Upload cancelled");
+                }
+              }}
+            >
+              Cancel Upload
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

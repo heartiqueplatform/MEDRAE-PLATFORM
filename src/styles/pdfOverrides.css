@@ -1,13 +1,9 @@
 .rpv-core__inner-pages::-webkit-scrollbar {
     width: 0px;
-    /* hide vertical scrollbar */
     background: transparent;
-    /* optional: make scrollbar track transparent */
 }
 
 .rpv-core__inner-pages {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
 }

@@ -73,7 +73,6 @@ export default function FeedSeenTop10() {
         return () => clearInterval(interval);
     }, []);
 
-
     return (
         <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hiddenbg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-0">
             <CardHeader className="p-2">
