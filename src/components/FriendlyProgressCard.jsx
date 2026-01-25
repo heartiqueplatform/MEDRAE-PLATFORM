@@ -60,9 +60,11 @@ function FriendlyProgressCard({ userTheme, name }) {
         checkScores();
     }, [name]);
 
-    // ⭐ Progress Ring Component (fixed)
+
+    // ⭐ Progress Ring Component (updated for 70 radius)
     const ProgressRing = ({ value }) => {
-        const radius = 40;
+        const radius = 70; // updated size
+        const strokeWidth = 10; // keep the ring thickness same
         const circumference = 2 * Math.PI * radius;
 
         // Ensure 'value' is a valid number between 0 and 100
@@ -74,25 +76,28 @@ function FriendlyProgressCard({ userTheme, name }) {
         const bgColor = userTheme.iconBg || (userTheme.isDark ? "#2d2d2d" : "#e5e7eb");
         const fgColor = warning ? "#ff4d4f" : userTheme.iconColor;
 
+        // SVG size must fit the circle plus stroke
+        const svgSize = radius * 2 + strokeWidth;
+
         return (
-            <svg width="100" height="100">
+            <svg width={svgSize} height={svgSize}>
                 <circle
                     stroke={bgColor}
                     fill="transparent"
-                    strokeWidth="10"
+                    strokeWidth={strokeWidth}
                     r={radius}
-                    cx="50"
-                    cy="50"
+                    cx={radius + strokeWidth / 2}
+                    cy={radius + strokeWidth / 2}
                 />
                 <circle
                     stroke={fgColor}
                     fill="transparent"
-                    strokeWidth="10"
+                    strokeWidth={strokeWidth}
                     r={radius}
-                    cx="50"
-                    cy="50"
+                    cx={radius + strokeWidth / 2}
+                    cy={radius + strokeWidth / 2}
                     strokeDasharray={circumference}
-                    strokeDashoffset={offset} // ✅ always a valid number
+                    strokeDashoffset={offset}
                     strokeLinecap="round"
                     style={{ transition: "stroke-dashoffset 1s ease" }}
                 />
@@ -117,34 +122,32 @@ function FriendlyProgressCard({ userTheme, name }) {
             className={`
     rounded-none p-2 shadow-none border-0
     cursor-pointer hover:shadow-none transition-all active:scale-[0.97] select-none
-    flex flex-col md:flex-row items-start md:items-center gap-5 mt-4
-    bg-[${userTheme.background}]
+    flex flex-col items-center justify-center gap-5 mt-4    bg-[${userTheme.background}]
   `}
         >
 
-            {/* Icon + Progress Ring */}
-            <div className="flex-shrink-0 relative">
+            <div
+                onClick={() => navigate("/progress")}
+                className={`flex flex-col items-center gap-4 mt-4 p-2 rounded-none bg-[${userTheme.background}] cursor-pointer`}
+            >
+                {/* Circle */}
                 <div className={`p-4 bg-[${userTheme.iconBg}] rounded-full shadow-md flex items-center justify-center`}>
                     <ProgressRing value={latestScore} />
                 </div>
-            </div>
 
-            {/* Greeting & Message */}
-            <div className="flex-1">
-                <h2 className={`text-lg md:text-xl font-bold ${userTheme.textColor}`}>
-                    {name ? `Hi ${name}!` : "Hello!"}
-                </h2>
-                <p
-                    className={`mt-2 text-sm md:text-base ${warning ? "animate-blink" : userTheme.textColorSecondary}`}
-                    style={{ whiteSpace: "pre-line", color: warning ? "#ff4d4f" : userTheme.textColorSecondary }}
-                >
-                    {message}
-                </p>
-            </div>
+                {/* Greeting & Message */}
+                <div className="text-center">
+                    <h2 className={`text-xl md:text-xl font-bold ${userTheme.textColor}`}>
+                        {name ? `Hi ${name}!` : "Hello!"}
+                    </h2>
+                    <p className={`mt-2 text-xl md:text-base ${warning ? "animate-blink" : userTheme.textColorSecondary}`}
+                        style={{ color: warning ? "#ff4d4f" : userTheme.textColorSecondary }}>
+                        {message}
+                    </p>
+                </div>
 
-            {/* Action Label */}
-            <div className="mt-3 md:mt-0 md:ml-auto">
-                <span className={`px-5 py-2 rounded-2xl font-semibold text-sm md:text-base bg-[${userTheme.buttonBg}] ${userTheme.buttonTextColor}`}>
+                {/* Action Button */}
+                <span className={`px-5 py-2 rounded-2xl font-semibold text-xl md:text-base bg-[${userTheme.buttonBg}] ${userTheme.buttonTextColor} text-center`}>
                     View Progress
                 </span>
             </div>

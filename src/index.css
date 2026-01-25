@@ -447,3 +447,19 @@ pre {
   -webkit-user-select: text !important;
   -ms-user-select: text !important;
 }
+
+@keyframes slowBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.slow-blink {
+  animation: slowBlink 2s ease-in-out infinite;
+}

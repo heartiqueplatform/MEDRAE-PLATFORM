@@ -241,9 +241,10 @@ User's message: ${input}
     <>
       {!open && (
         <Button
-          className="fixed bottom-24 right-6 rounded-full p-6 shadow-lg
-    bg-blue-600 hover:bg-blue-700 text-white
-    z-30" // ✅ lower, safe z-index
+          className="fixed bottom-20 right-3 w-12 h-12 rounded-full shadow-lg
+           bg-blue-600 hover:bg-blue-700 text-white
+           flex items-center justify-center z-30"
+          // ✅ lower, safe z-index
 
           onClick={() => {
             vibrate(50);

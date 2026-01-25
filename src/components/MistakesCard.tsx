@@ -14,7 +14,14 @@ import { formatDistanceToNow } from "date-fns";
 const PAGE_SIZE = 10;
 
 export function MistakesCard() {
-    const [data, setData] = useState<any[]>([]);
+    const [data, setData] = useState<any[]>(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("mistakesData");
+            return saved ? JSON.parse(saved) : [];
+        }
+        return [];
+    });
+
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
@@ -103,15 +110,28 @@ export function MistakesCard() {
         localStorage.setItem("studentCounts", JSON.stringify(counts));
 
         // 5️⃣ Apply pagination
+        // 5️⃣ Apply pagination and merge with existing data
         const start = page * PAGE_SIZE;
         const end = start + PAGE_SIZE;
-        const paginated = merged.slice(start, end);
+        const newQuestions = merged.slice(start, end);
 
-        if (page === 0) {
-            setData(paginated);
-        } else {
-            setData((prev) => [...prev, ...paginated]);
-        }
+        setData((prev) => {
+            // Avoid duplicates
+            const mergedData = [...prev];
+            newQuestions.forEach((q) => {
+                if (!mergedData.some((item) => item.question_id === q.question_id)) {
+                    mergedData.push(q);
+                }
+            });
+
+            // Save updated data to localStorage
+            if (typeof window !== "undefined") {
+                localStorage.setItem("mistakesData", JSON.stringify(mergedData));
+            }
+
+            return mergedData;
+        });
+
 
         setLoading(false);
     };
@@ -119,6 +139,11 @@ export function MistakesCard() {
     useEffect(() => {
         fetchMistakes();
     }, [page]);
+    useEffect(() => {
+        const interval = setInterval(fetchMistakes, 10000); // fetch every 10s in background
+        return () => clearInterval(interval);
+    }, []);
+
 
     const openDetails = async (questionId: string) => {
         // 1️⃣ get mistake rows
@@ -182,7 +207,7 @@ export function MistakesCard() {
                         return (
                             <motion.div key={i} whileHover={{ scale: 1.03 }} className="min-w-[320px]">
                                 <Card onClick={() => openDetails(item.question_id)} className="cursor-pointer bg-white dark:bg-gray-900">
-                                    <CardContent className="p-3 flex flex-col h-[520px]">
+                                    <CardContent className="p-1 flex flex-col h-[520px]">
                                         {/* Question */}
                                         <p className="text-sm font-semibold mb-1">{q.question_text}</p>
 

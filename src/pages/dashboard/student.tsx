@@ -13,7 +13,7 @@ import GreetingsCard from "@/components/GreetingsCard"; // adjust path if needed
 import { Button } from "@/components/ui/button";
 import { toast as sonnerToast } from "sonner"; // ✅ renamed
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
-import FriendlyProgressCard from "@/components/FriendlyProgressCard";
+
 import FloatingQuickActions from "@/components/FloatingQuickActions";
 import MistakeCard from "@/components/MistakeCard";
 import { UnitBreakdown } from "@/components/UnitBreakdown";
@@ -29,7 +29,7 @@ import DailyImagesTrivia from "@/components/DailyImagesTrivia";
 import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
 import { MistakesCard } from "@/components/MistakesCard";
-
+import FloatingHearts from "@/components/ui/FloatingHearts";
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
@@ -64,8 +64,12 @@ export default function StudentDashboard() {
   const [dashboardLoaded, setDashboardLoaded] = useState(false); // track first load
 
   const [previousRank, setPreviousRank] = useState(null); // updated
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
 
+  const [position, setPosition] = useState({ x: 24, y: 400 }); // initial bottom-left
+  const [dragging, setDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const fetchFeedsAttemptCount = async () => {
     if (!user?.id) return;
 
@@ -1287,6 +1291,7 @@ export default function StudentDashboard() {
                           </p>
                         )}
                       </div>
+
                     </div>
                   );
                 })
@@ -1299,124 +1304,183 @@ export default function StudentDashboard() {
       </Card >
       <FeedSeenTop10 />
       <DailyTriviaCard />
-      <Card
-        className="relative cursor-pointer col-span-1 md:col-span-2 max-w-full rounded-none sm:rounded-md overflow-hidden shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]"
-        onClick={() => {
-          if (navigator.vibrate) navigator.vibrate(50);
-          navigate("/feed");
-        }}
-        style={{
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  z-10 rounded-md sm:rounded-md"></div>
+      <MistakesCard />
+      {/* Floating Button showing top student's avatar */}
+      {/* Floating Avatar Button with Crown Outside */}
+      <div className="fixed bottom-36 right-2 rounded-full  p-0 z-30 ">
 
-        <div className="relative z-20 p-2 flex flex-col justify-between h-full">
-          {/* Card Heading */}
-          <div className="mb-0 px-2 pt-0">
-
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-              Feed & Leaderboard
-            </h2>
-          </div>
-          <CardContent className="flex flex-col gap-3 text-xm italic ">
-            <p className="text-gray-700 dark:text-white/90">
-              Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
-            </p>
-            {/* Stats Row */}
-            <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
-              {/* Questions Attempted */}
-              <div className="flex flex-col sm:flex-row justify-start items-center gap-">
-                <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
-                {feedsAttemptCount === undefined ? (
-                  <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
-                ) : (
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
-                )}
-              </div>
-              {/* Leader Student */}
-              {topStudents.length > 0 ? (
-                <div
-                  className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (navigator.vibrate) navigator.vibrate(50);
-                    navigate("/feed");
-                  }}
-                >
-                  <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
+        <FloatingHearts trigger="hover" bubbleCount={10}>
+          <button
+            className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700 slow-blink"
+            onClick={() => setOverlayOpen(true)}
+          >
+            {topStudents.length > 0 ? (
+              <>
+                {/* Avatar Circle */}
+                <div className="w-full h-full rounded-full overflow-hidden">
                   <img
                     src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
                     alt={topStudents[0].name}
-                    className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="flex flex-col items-center">
-                    <p className="text-xl mt-1 truncate text-center text-gray-700 dark:text-white/90 font-bold">
-                      {topStudents[0].name}
-                    </p>
+                </div>
 
-                    {/* Professional Badge */}
-                    <div className="mt-1 flex items-center gap-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-3 w-3"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path d="M10 15l-5.878 3.09 1.123-6.545L.49 6.91l6.572-.955L10 0l2.938 5.955 6.572.955-4.755 4.635 1.123 6.545z" />
-                      </svg>
-                      <span>Top Performer</span>
+                {/* Crown Badge Floating Outside */}
+                <div className="absolute -top-3 -right-3 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-700">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-4 h-4 text-white"
+                  >
+                    <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" />
+                    <path d="M5 16H19V19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V16Z" />
+                  </svg>
+                </div>
+              </>
+            ) : (
+              <div className="w-full h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                <span className="text-white font-bold text-xl">?</span>
+              </div>
+            )}
+          </button>
+        </FloatingHearts>
+      </div>
+
+
+
+      {overlayOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-0 "
+          onClick={() => setOverlayOpen(false)} // closes overlay when clicking outside
+        >
+          <div
+            className="relative w-full max-w-3xl bg-white dark:bg-gray-900 rounded-md shadow-lg overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+
+            {/* Close Button */}
+            <button
+              type="button"
+              className="absolute top-3 right-3 z-50 text-gray-700 dark:text-white/90 hover:text-red-500 text-2xl font-bold"
+              onClick={(e) => {
+                e.stopPropagation(); // prevent overlay click from triggering
+                setOverlayOpen(false); // close overlay
+              }}
+            >
+              ✕
+            </button>
+
+
+            {/* Card Content */}
+            <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+              {/* Paste your entire CardContent JSX here */}
+
+              <div className="relative z-20 p-2 flex flex-col justify-between h-full">
+                {/* Card Heading */}
+                <div className="mb-0 px-2 pt-0">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate text-center">
+                    Feed & Leaderboard
+                  </h2>
+                </div>
+                <CardContent className="flex flex-col gap-8 text-xm italic ">
+                  <p className="text-gray-700 dark:text-white/90">
+                    Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
+                  </p>
+                  {/* Stats Row */}
+                  <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
+                    {/* Questions Attempted */}
+                    <div className="flex flex-col sm:flex-row justify-start items-center gap-4">
+                      <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
+                      {feedsAttemptCount === undefined ? (
+                        <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                      ) : (
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+                      )}
                     </div>
+                    {/* Leader Student */}
+                    {topStudents.length > 0 ? (
+                      <div
+                        className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (navigator.vibrate) navigator.vibrate(50);
+                          navigate("/feed");
+                        }}
+                      >
+                        <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
+                        <img
+                          src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                          alt={topStudents[0].name}
+                          className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
+                        />
+                        <div className="flex flex-col items-center">
+                          <p className="text-xl mt-1 truncate text-center text-gray-700 dark:text-white/90 font-bold">
+                            {topStudents[0].name}
+                          </p>
+
+                          {/* Professional Badge */}
+                          <div className="mt-1 flex items-center gap-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path d="M10 15l-5.878 3.09 1.123-6.545L.49 6.91l6.572-.955L10 0l2.938 5.955 6.572.955-4.755 4.635 1.123 6.545z" />
+                            </svg>
+                            <span>Top Performer</span>
+                          </div>
+                        </div>
+
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
+                        <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                        <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      </div>
+                    )}
                   </div>
 
-                </div>
-              ) : (
-                <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
-                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
-                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-                  <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                </div>
-              )}
-            </div>
+
+                  {/* Centered Button */}
+                  <div className="flex justify-center mt-3">
+
+                    <div
+                      className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        navigate("/feed");
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
+                      </svg>
+                      <span className="text-sm font-medium">Feed Page</span>
+                    </div>
 
 
-            {/* Centered Button */}
-            <div className="flex justify-center mt-3">
+                  </div>
+                </CardContent>
 
-              <div
-                className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (navigator.vibrate) navigator.vibrate(50);
-                  navigate("/feed");
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
-                </svg>
-                <span className="text-sm font-medium">Feed Page</span>
               </div>
-
-
             </div>
-          </CardContent>
-
+          </div>
         </div>
-      </Card >
-      <MistakesCard />
+      )}
 
       <DailyImagesTrivia />
-      <FriendlyProgressCard userTheme={userTheme} name={name} />
+
 
       <MistakeCard />
 
