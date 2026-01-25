@@ -27,7 +27,7 @@ import {
     AlertCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-
+import FloatingHearts from "@/components/ui/FloatingHearts";
 interface MobileDrawerProps {
     userRole: "student" | "tutor" | "staff";
     isOpen: boolean;
@@ -269,10 +269,10 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
 
             <div
                 ref={drawerRef}
-                className={`fixed bottom-0 left-0 w-full bg-background shadow-xl transition-transform duration-300 rounded-t-xl z-40 ${isOpen ? "translate-y-0" : "translate-y-full"
-                    }`}
+                className={`fixed bottom-0 left-0 w-full bg-background shadow-xl transition-transform duration-300 rounded-t-xl z-40 md:hidden ${isOpen ? "translate-y-0" : "translate-y-full"}`}
                 style={{ maxHeight: "75vh", bottom: "4rem" }}
             >
+
                 {/* Header */}
                 <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700 bg-background z-10">
                     <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
