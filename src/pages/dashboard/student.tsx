@@ -28,6 +28,7 @@ import { Send, Trash2 } from "lucide-react"; // make sure this import is at the 
 import DailyImagesTrivia from "@/components/DailyImagesTrivia";
 import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
+import { MistakesCard } from "@/components/MistakesCard";
 
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
@@ -1412,6 +1413,7 @@ export default function StudentDashboard() {
 
         </div>
       </Card >
+      <MistakesCard />
 
       <DailyImagesTrivia />
       <FriendlyProgressCard userTheme={userTheme} name={name} />
