@@ -27,7 +27,7 @@ import {
     AlertCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import FloatingHearts from "@/components/ui/FloatingHearts";
+
 interface MobileDrawerProps {
     userRole: "student" | "tutor" | "staff";
     isOpen: boolean;
