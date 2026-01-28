@@ -288,7 +288,7 @@ export function Header({
 
           {/* Label below */}
           <span className="text-xs font-semibold text-gray-800 dark:text-white">
-            {rotating ? "Refreshing..." : "Refresh"}
+            {rotating ? "Updating..." : "Update"}
           </span>
         </button>
 
