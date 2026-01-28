@@ -142,7 +142,7 @@ export default function FloatingQuickActions() {
 
             {/* 🔘 TOGGLE BUTTON */}
             <div className="flex flex-col items-center">
-                <FloatingHearts trigger="hover" bubbleCount={10}>
+                <FloatingHearts trigger="hover" bubbleCount={5}>
                     <button
                         onClick={() => {
                             feedback();

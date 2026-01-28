@@ -1309,7 +1309,7 @@ export default function StudentDashboard() {
       {/* Floating Avatar Button with Crown Outside */}
       <div className="fixed bottom-36 right-2 rounded-full  p-0 z-30 ">
 
-        <FloatingHearts trigger="hover" bubbleCount={10}>
+        <FloatingHearts trigger="hover" bubbleCount={5}>
           <button
             className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700 slow-blink"
             onClick={() => setOverlayOpen(true)}
