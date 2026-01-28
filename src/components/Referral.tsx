@@ -41,6 +41,16 @@ const Referral: React.FC = () => {
             const id = sessionData?.session?.user?.id;
             if (!id) return;
             setUserId(id);
+            // 🔒 Referral Weekend check (Saturday only)
+            const todayDate = new Date();
+            const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 6 = Saturday
+
+            // If NOT Saturday, do not show referral popup
+            // Weekend only: Saturday (6) or Sunday (0)
+            if (dayOfWeek !== 6 && dayOfWeek !== 0) {
+                return;
+            }
+
 
             const { data: profile, error } = await supabase.from("profiles").select("tokens").eq("user_id", id).single();
             if (error) console.error("Error fetching tokens:", error);
@@ -125,7 +135,8 @@ const Referral: React.FC = () => {
                             <CardHeader className="bg-blue-800/70">
                                 <div className="flex items-center gap-2">
                                     <Gift className="w-6 h-6 text-white" />
-                                    <CardTitle className="text-white">Daily 1One Medical Scenario</CardTitle>
+                                    <CardTitle className="text-white"> Referral Weekend Challenge</CardTitle>
+
                                 </div>
                                 <CardDescription className="text-gray-300 text-sm">
                                     {scenarioAnswered ? (
@@ -144,7 +155,8 @@ const Referral: React.FC = () => {
 
                                     ) : (
                                         <span className="text-gray-300 font-medium">
-                                            You have a patient scenario today. Choose the correct referral:
+                                            It’s Referral Weekend! Answer correctly and earn bonus tokens:
+
                                         </span>
                                     )}
                                 </CardDescription>
