@@ -326,12 +326,11 @@ export default function CountdownCards() {
         </div>
     );
     return (
-        <div className="space-y-6 w-full px-2 sm:px-2">
+        <div className="space-y-2 w-full px-2 sm:px-2">
             <div className="flex justify-end space-x-2">
                 <button
                     onClick={resetHidden}
-                    className="flex items-center space-x-1 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600"
-                >
+                    className="flex items-center space-x-1 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
                     <RefreshCw className="w-4 h-4" />
                     <span>Reset Hidden Exams</span>
                 </button>
@@ -341,7 +340,6 @@ export default function CountdownCards() {
             {!loading &&
                 visibleExams.map((exam) => {
                     const status = getExamStatus(exam.id, exam.exam_date);
-
                     return (
                         <div
                             key={exam.id}
@@ -349,8 +347,7 @@ export default function CountdownCards() {
         ${exam.id === nextExamId ? "border-red-500" : ""}
         ${status === "in-progress"
                                     ? "bg-green-100 dark:bg-green-900 border-green-500"
-                                    : "bg-white dark:bg-gray-900"}
-      `}
+                                    : "bg-white dark:bg-gray-900"}`}
                         >
                             <div className="flex-1 mb-3 md:mb-0">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between">
@@ -393,7 +390,7 @@ export default function CountdownCards() {
                                         ["days", "hours", "minutes", "seconds"].map((unit, index) => (
                                             <div key={unit} className="flex items-center">
                                                 <div className="flex flex-col items-center">
-                                                    <span className="text-4xl">
+                                                    <span className="text-2xl">
                                                         {String(
                                                             countdowns[exam.id]?.[unit as keyof typeof countdowns[exam.id]] ?? 0
                                                         ).padStart(2, "0")}
@@ -414,7 +411,6 @@ export default function CountdownCards() {
                         </div>
                     )
                 }
-
                 )}
             < button
                 className="flex items-center space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
@@ -423,7 +419,6 @@ export default function CountdownCards() {
                 <Plus className="w-5 h-5" />
                 <span>Add your Upcoming Exams</span>
             </button>
-
             {
                 showForm && (
                     <div className="space-y-2 mt-2 border-t pt-4">
