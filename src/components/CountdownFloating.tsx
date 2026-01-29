@@ -136,7 +136,7 @@ export default function CountdownCards() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-10 w-full px-2 sm:px-2">
             {loading && <p>Loading countdowns...</p>}
             {plans.length === 0 && !loading && <p>No active countdown plans.</p>}
 
