@@ -13,7 +13,7 @@ import GreetingsCard from "@/components/GreetingsCard"; // adjust path if needed
 import { Button } from "@/components/ui/button";
 import { toast as sonnerToast } from "sonner"; // ✅ renamed
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
-
+import CountdownFloating from "@/components/CountdownFloating";
 import FloatingQuickActions from "@/components/FloatingQuickActions";
 import MistakeCard from "@/components/MistakeCard";
 import { UnitBreakdown } from "@/components/UnitBreakdown";
@@ -1144,7 +1144,7 @@ export default function StudentDashboard() {
         </Card>
 
       </div>
-
+      <CountdownFloating />
       {/* 🏆 Top Students Leaderboard */}
       <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-0">
         <CardHeader className="p-2">

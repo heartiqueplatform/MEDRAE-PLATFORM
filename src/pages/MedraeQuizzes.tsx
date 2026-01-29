@@ -19,7 +19,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
 import { playSound } from "@/lib/soundManager";
-
+import CountdownFloating from "@/components/CountdownFloating";
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -508,7 +508,7 @@ export function MedraeQuizzes() {
         </Button>
 
       </div>
-
+      <CountdownFloating />
 
       {/* PAPER ONE */}
       <div className="space-y-4">
