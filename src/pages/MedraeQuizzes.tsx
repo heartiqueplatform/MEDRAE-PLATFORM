@@ -586,7 +586,7 @@ export function MedraeQuizzes() {
                                   : ""}`}
                             >
                               <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
+                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
                             </Button>
                           </Link>
 
@@ -675,7 +675,7 @@ export function MedraeQuizzes() {
                                   : ""}`}
                             >
                               <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
+                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
                             </Button>
                           </Link>
                         ) : (
@@ -780,7 +780,7 @@ export function MedraeQuizzes() {
                                   : ""}`}
                             >
                               <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Quiz" : "Start Quiz"}
+                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
                             </Button>
                           </Link>
                         ) : (
