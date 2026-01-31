@@ -1320,9 +1320,11 @@ export default function StudentDashboard() {
                   return (
                     <div
                       key={s.userId}
-                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900`}
+                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900
+           transform transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 hover:shadow-xl`}
 
                     >
+
                       <div className="flex flex-col items-center text-center">
                         <img
                           src={s.avatar_url || "/UsersAvatar.jpg"}

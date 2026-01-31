@@ -69,7 +69,7 @@ export default function FeedSeenTop10() {
         // 🔁 Auto-refresh every 15 seconds
         const interval = setInterval(() => {
             fetchTop10();
-        }, 15000);
+        }, 30000);
         // Cleanup on unmount
         return () => clearInterval(interval);
     }, []);
@@ -103,58 +103,62 @@ export default function FeedSeenTop10() {
                             </div>
                         ) : (
                             topStudents.map((s, idx) => (
-                                <FloatingHearts key={s.user_id} trigger="click" bubbleCount={5}>
-                                    <motion.div
-                                        key={s.user_id}
-                                        className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-md ${idx === 0 ? "bg-yellow-100 dark:bg-yellow-800" :
+                                <motion.div
+                                    key={s.user_id}
+                                    className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-md
+    ${idx === 0 ? "bg-yellow-100 dark:bg-yellow-800" :
                                             idx === 1 ? "bg-gray-100 dark:bg-gray-700" :
                                                 idx === 2 ? "bg-orange-100 dark:bg-orange-800" :
                                                     "bg-gray-100 dark:bg-gray-800"
-                                            }`}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{
-                                            opacity: 1,
-                                            y: rankChangedUser === s.user_id ? [0, -10, 0] : 0
-                                        }}
-                                        transition={{
-                                            delay: idx * 0.05,
-                                            type: "spring",
-                                            stiffness: 120,
-                                            duration: rankChangedUser === s.user_id ? 0.5 : 0.3
-                                        }}
-                                        whileHover={{ scale: 1.05 }}
-                                    >
-                                        <div className="flex flex-col items-center text-center">
-                                            {/* Top 3 Stethoscope banner */}
-                                            {idx <= 2 && (
-                                                <Stethoscope
-                                                    className={`w-5 h-5 mb-1 animate-bounce ${idx === 0 ? "text-yellow-500" :
-                                                        idx === 1 ? "text-gray-500" :
-                                                            "text-orange-500"
-                                                        }`}
-                                                />
-                                            )}
+                                        }
+    transform transition-transform duration-300 ease-in-out
+    hover:shadow-xl`}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{
+                                        opacity: 1,
+                                        y: rankChangedUser === s.user_id ? [0, -10, 0] : 0 // wave/bounce for rank changes
+                                    }}
+                                    transition={{
+                                        delay: idx * 0.05,
+                                        type: "spring",
+                                        stiffness: 120,
+                                        duration: rankChangedUser === s.user_id ? 0.5 : 0.3
+                                    }}
+                                    whileHover={{ scale: 1.05 }} // zoom on hover
+                                    whileTap={{ scale: 0.95 }}   // tap feedback on mobile
+                                >
 
-                                            <img
-                                                src={s.avatar_url || "/UsersAvatar.jpg"}
-                                                alt={s.name || s.username}
-                                                className="w-12 h-12 rounded-full mb-2 object-cover"
+                                    <div className="flex flex-col items-center text-center">
+                                        {/* Top 3 Stethoscope banner */}
+                                        {idx <= 2 && (
+                                            <Stethoscope
+                                                className={`w-5 h-5 mb-1 animate-bounce ${idx === 0 ? "text-yellow-500" :
+                                                    idx === 1 ? "text-gray-500" :
+                                                        "text-orange-500"
+                                                    }`}
                                             />
+                                        )}
 
-                                            <div className="font-semibold text-sm text-gray-800 dark:text-white break-words text-center">
-                                                {s.name || s.username}
-                                            </div>
+                                        <img
+                                            src={s.avatar_url || "/UsersAvatar.jpg"}
+                                            alt={s.name || s.username}
+                                            className="w-12 h-12 rounded-full mb-2 object-cover"
+                                        />
 
-                                            <div className="text-xs text-gray-500 dark:text-gray-300 truncate">
-                                                {s.institution || "No Institution"}
-                                            </div>
-
-                                            <div className="mt-2 font-bold text-yellow-600 dark:text-yellow-400">
-                                                Done {s.seen_count} Questions in Feed Page
-                                            </div>
+                                        <div className="font-semibold text-sm text-gray-800 dark:text-white break-words text-center">
+                                            {s.name || s.username}
                                         </div>
-                                    </motion.div>
-                                </FloatingHearts>
+
+                                        <div className="text-xs text-gray-500 dark:text-gray-300 truncate">
+                                            {s.institution || "No Institution"}
+                                        </div>
+
+                                        <div className="mt-2 font-bold text-yellow-600 dark:text-yellow-400">
+                                            Done {s.seen_count} Questions in Feed Page
+                                        </div>
+                                    </div>
+                                </motion.div>
+
                             ))
                         )}
                     </div>
