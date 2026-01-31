@@ -27,6 +27,7 @@ export default function CountdownCards() {
     }>({});
     const [nextExamId, setNextExamId] = useState<string | null>(null);
     const [hiddenAfterEnd, setHiddenAfterEnd] = useState<string[]>([]);
+    const [selectedExam, setSelectedExam] = useState<CountdownPlan | null>(null);
 
     const [examName, setExamName] = useState("");
     const [examType, setExamType] = useState("");
@@ -41,15 +42,24 @@ export default function CountdownCards() {
         const cached = localStorage.getItem("allExams");
         if (cached) {
             const parsed: CountdownPlan[] = JSON.parse(cached);
-            setPlans(parsed.filter(e => e.user_id));
-            setUniversalExams(parsed.filter(e => !e.user_id));
+            const userExams = parsed.filter(e => e.user_id);
+            const universal = parsed.filter(e => !e.user_id);
+
+            setPlans(userExams);
+            setUniversalExams(universal);
+
+            // Auto-select first visible user exam
+            const hidden = localStorage.getItem("hiddenExams");
+            const hiddenExamsList = hidden ? JSON.parse(hidden) : [];
+            if (hiddenExamsList.length > 0) setHiddenExams(hiddenExamsList);
+
+            const firstVisibleUserExam = userExams.find(e => !hiddenExamsList.includes(e.id));
+            if (firstVisibleUserExam) setSelectedExam(firstVisibleUserExam);
+
             setLoading(false);
+        } else {
+            fetchInitialExams();
         }
-
-        const hidden = localStorage.getItem("hiddenExams");
-        if (hidden) setHiddenExams(JSON.parse(hidden));
-
-        fetchInitialExams();
     }, []);
 
     // --- Realtime subscription ---
@@ -287,6 +297,137 @@ export default function CountdownCards() {
         if (all.length > 0) localStorage.setItem("allExams", JSON.stringify(all));
         setLoading(false);
     }
+
+    function CountdownRectCard({
+        exam,
+        countdown,
+        onClick,
+        selected = false,
+    }: {
+        exam: CountdownPlan;
+        countdown?: { days: number; hours: number; minutes: number; seconds: number };
+        onClick: () => void;
+        selected?: boolean;
+    }) {
+        return (
+            <div
+
+                onClick={onClick}
+                className={`
+        flex flex-col justify-between items-center
+        w-32 sm:w-40 md:w-44 lg:w-48 h-48 sm:h-56 md:h-64
+        p-4 rounded-xl cursor-pointer
+        flex-shrink-0 transition-transform duration-300
+        border border-gray-300/30 dark:border-gray-600/50
+        ${selected
+                        ? "scale-105 border-blue-400 shadow-[0_0_25px_8px_rgba(59,130,246,0.8)] bg-dashboard dark:bg-dashboard-dark"
+                        : "border-gray-300/30 dark:border-gray-600/50 bg-dashboard dark:bg-dashboard-dark"
+                    }
+    `}
+            >
+
+                {/* Exam Name */}
+                <span className={`text-center font-semibold text-sm sm:text-base ${selected ? "text-blue-900 dark:text-white" : "text-gray-900 dark:text-white"}`}>
+                    {exam.exam_name}
+                </span>
+
+                {/* Countdown Numbers */}
+                <div className="flex flex-col items-center justify-center mt-2 space-y-1">
+                    <span className={`font-mono text-lg sm:text-xl ${selected ? "glow-text" : ""}`}>
+                        {String(countdown?.days ?? 0).padStart(2, "0")}d
+                    </span>
+                    <span className={`font-mono text-base sm:text-lg ${selected ? "glow-text" : ""}`}>
+                        {String(countdown?.hours ?? 0).padStart(2, "0")}:
+                        {String(countdown?.minutes ?? 0).padStart(2, "0")}:
+                        {String(countdown?.seconds ?? 0).padStart(2, "0")}
+                    </span>
+                </div>
+
+                {/* Exam Date */}
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-300 mt-2 text-center">
+                    {formatDate(exam.exam_date)}
+                </span>
+            </div>
+        );
+    }
+
+    function ExamCard({
+        exam,
+        countdown,
+        showHideButton = true,
+        onHide,
+        highlightNext = false,
+    }: {
+        exam: CountdownPlan;
+        countdown?: { days: number; hours: number; minutes: number; seconds: number };
+        showHideButton?: boolean;
+        onHide?: () => void;
+        highlightNext?: boolean;
+    }) {
+        const status = getExamStatus(exam.id, exam.exam_date);
+
+        return (
+            <div
+                className={`relative border rounded-lg shadow-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center transition
+      ${highlightNext ? "border-red-500" : ""}
+      ${status === "in-progress"
+                        ? "bg-green-100 dark:bg-green-900 border-green-500"
+                        : "bg-white dark:bg-gray-900"}`}
+            >
+                <div className="flex-1 mb-3 md:mb-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+                        <p className="text-lg font-semibold mb-2 sm:mb-0">{exam.exam_name}</p>
+                        {showHideButton && onHide && (
+                            <button
+                                onClick={onHide}
+                                className="flex items-center space-x-1 px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition"
+                            >
+                                <span>Hide Irrelevant</span>
+                                <X className="w-3 h-3 text-gray-500" />
+                            </button>
+                        )}
+                    </div>
+                    <p className="text-sm text-gray-500">Type: {exam.exam_type}</p>
+                    <p className="text-sm text-gray-500">Date: {formatDate(exam.exam_date)}</p>
+                    {exam.papers?.length > 0 && (
+                        <p className="text-sm text-gray-500">Papers: {exam.papers.join(", ")}</p>
+                    )}
+                    {exam.notes && <p className="text-xs text-gray-400">{exam.notes}</p>}
+                    {!exam.user_id && (
+                        <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-white bg-green-500 rounded-full">
+                            Official
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center space-x-2">
+                    {highlightNext && <Bell className="text-red-500 w-6 h-6 animate-bounce" />}
+                    <div className="font-mono bg-gray-100 dark:bg-gray-800 rounded-lg p-3 flex items-center justify-center shadow-inner">
+                        {status === "in-progress" ? (
+                            <div className="flex flex-col items-center justify-center px-6">
+                                <span className="text-green-700 dark:text-green-300 font-bold text-xl animate-pulse">
+                                    Exam in Progress
+                                </span>
+                                <span className="text-xs text-gray-500 mt-1">Happening today</span>
+                            </div>
+                        ) : (
+                            ["days", "hours", "minutes", "seconds"].map((unit, index) => (
+                                <div key={unit} className="flex items-center">
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-2xl">
+                                            {String(countdown?.[unit as keyof typeof countdown] ?? 0).padStart(2, "0")}
+                                        </span>
+                                        <span className="text-xs text-gray-500">{unit}</span>
+                                    </div>
+                                    {index < 3 && <span className="text-4xl mx-1">:</span>}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // --- Update exams from realtime payload ---
     function updateExamsFromPayload(type: "user" | "universal", payload: any) {
         const exam: CountdownPlan = payload.new;
@@ -325,8 +466,12 @@ export default function CountdownCards() {
             ))}
         </div>
     );
+
     return (
+
+
         <div className="space-y-2 w-full px-2 sm:px-2">
+
             <div className="flex justify-end space-x-2">
                 <button
                     onClick={resetHidden}
@@ -335,83 +480,37 @@ export default function CountdownCards() {
                     <span>Reset Hidden Exams</span>
                 </button>
             </div>
-            {loading && renderSkeleton()}
-            {!loading && allExams.length === 0 && <p>No active countdown plans.</p>}
-            {!loading &&
-                visibleExams.map((exam) => {
-                    const status = getExamStatus(exam.id, exam.exam_date);
-                    return (
-                        <div
-                            key={exam.id}
-                            className={`relative border rounded-lg shadow-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center transition
-        ${exam.id === nextExamId ? "border-red-500" : ""}
-        ${status === "in-progress"
-                                    ? "bg-green-100 dark:bg-green-900 border-green-500"
-                                    : "bg-white dark:bg-gray-900"}`}
-                        >
-                            <div className="flex-1 mb-3 md:mb-0">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                                    <p className="text-lg font-semibold mb-2 sm:mb-0">{exam.exam_name}</p>
-                                    <div className="flex">
-                                        <button
-                                            onClick={() => hideExam(exam.id)}
-                                            className="flex items-center space-x-1 px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition"
-                                        >
-                                            <span>Hide Irrelevant</span>
-                                            <X className="w-3 h-3 text-gray-500" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <p className="text-sm text-gray-500">Type: {exam.exam_type}</p>
-                                <p className="text-sm text-gray-500">Date: {formatDate(exam.exam_date)}</p>
-                                {exam.papers?.length > 0 && (
-                                    <p className="text-sm text-gray-500">Papers: {exam.papers.join(", ")}</p>
-                                )}
-                                {exam.notes && <p className="text-xs text-gray-400">{exam.notes}</p>}
-                                {!exam.user_id && (
-                                    <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-white bg-green-500 rounded-full">
-                                        Official
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                {exam.id === nextExamId && <Bell className="text-red-500 w-6 h-6 animate-bounce" />}
-                                <div className="font-mono bg-gray-100 dark:bg-gray-800 rounded-lg p-3 flex items-center justify-center shadow-inner">
-                                    {status === "in-progress" ? (
-                                        <div className="flex flex-col items-center justify-center px-6">
-                                            <span className="text-green-700 dark:text-green-300 font-bold text-xl animate-pulse">
-                                                Exam in Progress
-                                            </span>
-                                            <span className="text-xs text-gray-500 mt-1">
-                                                Happening today
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        ["days", "hours", "minutes", "seconds"].map((unit, index) => (
-                                            <div key={unit} className="flex items-center">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-2xl">
-                                                        {String(
-                                                            countdowns[exam.id]?.[unit as keyof typeof countdowns[exam.id]] ?? 0
-                                                        ).padStart(2, "0")}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {unit.charAt(0).toUpperCase() + unit.slice(1)}
-                                                    </span>
-                                                </div>
-                                                {index < 3 && <span className="text-4xl mx-1">:</span>}
-                                            </div>
-                                        ))
-                                    )}
+            {/* Analog Clock Grid */}
+            <div className="flex gap-4 overflow-y-auto custom-scrollbar  py-2 px-2 snap-x snap-mandatory scrollbar-hide">
+                {visibleExams.map((exam) => (
+                    <CountdownRectCard
+                        key={exam.id}
+                        exam={exam}
+                        countdown={countdowns[exam.id]}
+                        onClick={() => setSelectedExam(exam)}
+                        selected={selectedExam?.id === exam.id}
+                    />
 
-                                </div>
+                ))}
+            </div>
 
-                            </div>
+            {
+                selectedExam && (
+                    <div className="mt-4">
+                        <ExamCard
+                            exam={selectedExam}
+                            countdown={countdowns[selectedExam.id]}
+                            showHideButton={true} // now the Hide Irrelevant button will appear
+                            onHide={() => hideExam(selectedExam.id)}
+                            highlightNext={selectedExam.id === nextExamId}
+                        />
 
-                        </div>
-                    )
-                }
-                )}
+                    </div>
+                )
+            }
+
+
+
             < button
                 className="flex items-center space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
                 onClick={() => setShowForm(!showForm)}
@@ -425,37 +524,38 @@ export default function CountdownCards() {
                         <input
                             type="text"
                             placeholder="Exam Name"
-                            className="w-full border rounded p-2"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             value={examName}
                             onChange={(e) => setExamName(e.target.value)}
                         />
                         <input
                             type="text"
                             placeholder="Exam Type"
-                            className="w-full border rounded p-2"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             value={examType}
                             onChange={(e) => setExamType(e.target.value)}
                         />
                         <input
                             type="date"
-                            className="w-full border rounded p-2"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             value={examDate}
                             onChange={(e) => setExamDate(e.target.value)}
                         />
                         <input
                             type="text"
                             placeholder="Papers (comma separated)"
-                            className="w-full border rounded p-2"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             value={papers}
                             onChange={(e) => setPapers(e.target.value)}
                         />
                         <button
                             onClick={addPlan}
-                            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         >
                             Add Exam
                         </button>
                     </div>
+
                 )
             }
         </div >

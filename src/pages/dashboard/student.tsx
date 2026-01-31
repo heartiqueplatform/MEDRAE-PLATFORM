@@ -951,12 +951,34 @@ export default function StudentDashboard() {
       <GreetingsCard />
       <Referral />
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
+      <div
+        className="
+    flex gap-4   mt-2 overflow-y-auto custom-scrollbar pb-2 snap-x snap-mandatory
+    sm:grid sm:grid-cols-2
+    md:grid-cols-3
+    lg:grid-cols-4
+    xl:grid-cols-5
+    w-full
+    scrollbar-hide
+    h-[260px] sm:h-auto
+  "
+      >
+
 
         {/* Study Progress */}
         <Card
-          className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none"
+          className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px] max-w-[220px]
+    sm:min-w-0 sm:max-w-none
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+"
+
+
+
           style={{
             backgroundImage: "url('/background06.jpg')",
             backgroundSize: "cover",
@@ -966,13 +988,15 @@ export default function StudentDashboard() {
           <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
 
           <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
               <CardTitle className="text-sm font-medium text-white">
                 Study Progress
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-white" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
                   <div className="h-8 w-16 bg-white/40/30 rounded"></div>
@@ -990,24 +1014,34 @@ export default function StudentDashboard() {
 
         {/* Quizzes Completed */}
         <Card
-          className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none"
+          className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px] max-w-[220px]
+    sm:min-w-0 sm:max-w-none
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+"
+
           style={{
             backgroundImage: "url('/indexbackground7.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
 
           <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
               <CardTitle className="text-sm font-medium text-white">
                 Quizzes Completed
               </CardTitle>
               <Target className="h-4 w-4 text-white" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
                   <div className="h-8 w-16 bg-white/40/30 rounded"></div>
@@ -1023,7 +1057,18 @@ export default function StudentDashboard() {
           </div>
         </Card>
 
-        <Card className="relative cursor-pointer overflow-hidden rounded-none sm:rounded-md shadow-none">
+        <Card
+          className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px] max-w-[220px]
+    sm:min-w-0 sm:max-w-none
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+"
+
+        >
           {/* Background image */}
           <div
             className="absolute inset-0"
@@ -1037,12 +1082,14 @@ export default function StudentDashboard() {
           <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
 
           <div className="relative z-20 p-2 flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
               <CardTitle className="text-sm font-medium text-white">My Target Score</CardTitle>
               <Target className="h-4 w-4 text-white/80" />
             </CardHeader>
 
-            <CardContent className="flex flex-col gap-2">
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
                   <div className="h-8 w-16 bg-white/30 rounded"></div>
@@ -1079,22 +1126,34 @@ export default function StudentDashboard() {
 
         {/* Current Streak */}
         <Card
-          className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none"
+          className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px] max-w-[220px]
+    sm:min-w-0 sm:max-w-none
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+"
+
+
           style={{
             backgroundImage: "url('/indexbackground5.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
+
 
           <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
               <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
               <Clock className="h-4 w-4 text-white" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
                   <div className="h-8 w-20 bg-white/40/30 rounded"></div>
@@ -1112,22 +1171,32 @@ export default function StudentDashboard() {
 
         {/* Best Streak */}
         <Card
-          className="relative overflow-hidden rounded-none sm:rounded-md
- shadow-none"
+          className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px] max-w-[220px]
+    sm:min-w-0 sm:max-w-none
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+"
+
           style={{
             backgroundImage: "url('/indexbackground2.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
+
 
           <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
               <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
               <Trophy className="h-4 w-4 text-yellow-500" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
               {loadingStats ? (
                 <div className="animate-pulse space-y-2">
                   <div className="h-8 w-20 bg-white/40/30 rounded"></div>
