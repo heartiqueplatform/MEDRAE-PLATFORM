@@ -350,7 +350,6 @@ export default function CountdownCards() {
             </div>
         );
     }
-
     function ExamCard({
         exam,
         countdown,

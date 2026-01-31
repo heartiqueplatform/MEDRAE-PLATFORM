@@ -30,6 +30,8 @@ import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
 import { MistakesCard } from "@/components/MistakesCard";
 import FloatingHearts from "@/components/ui/FloatingHearts";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
   const user = useUser();
@@ -1380,7 +1382,7 @@ export default function StudentDashboard() {
       {/* Floating Avatar Button with Crown Outside */}
       <div className="fixed bottom-36 right-2 rounded-full  p-0 z-30 ">
 
-        <FloatingHearts trigger="hover" bubbleCount={5}>
+        <FloatingHearts trigger="hover" bubbleCount={3}>
           <button
             className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700 slow-blink"
             onClick={() => setOverlayOpen(true)}
@@ -1420,188 +1422,179 @@ export default function StudentDashboard() {
 
 
 
-      {overlayOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-0 "
-          onClick={() => setOverlayOpen(false)} // closes overlay when clicking outside
-        >
-          <div
-            className="relative w-full max-w-3xl bg-white dark:bg-gray-900 rounded-md shadow-lg overflow-auto"
-            onClick={(e) => e.stopPropagation()}
+
+      <Dialog open={overlayOpen} onOpenChange={setOverlayOpen}>
+        <DialogContent className="max-w-3xl p-0">
+
+          {/* Close button is already handled by Dialog, but we keep yours */}
+          <button
+            type="button"
+            className="absolute top-10 right-4 z-50 text-sm font-semibold text-gray-600 dark:text-white/80 hover:text-red-500 tracking-wide"
+            onClick={() => setOverlayOpen(false)}
           >
-
-            {/* Close Button */}
-            <button
-              type="button"
-              className="absolute top-3 right-3 z-50 text-gray-700 dark:text-white/90 hover:text-red-500 text-2xl font-bold"
-              onClick={(e) => {
-                e.stopPropagation(); // prevent overlay click from triggering
-                setOverlayOpen(false); // close overlay
-              }}
-            >
-              ✕
-            </button>
+            Close
+          </button>
 
 
-            {/* Card Content */}
-            <div className="relative z-20 p-4 flex flex-col justify-between h-full">
-              {/* Paste your entire CardContent JSX here */}
+          {/* Card Content */}
+          <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+            <div className="relative z-20 p-2 flex flex-col justify-between h-full">
 
-              <div className="relative z-20 p-2 flex flex-col justify-between h-full">
-                {/* Card Heading */}
-                <div className="mb-0 px-2 pt-0">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate text-center">
-                    Feed & Leaderboard
-                  </h2>
-                </div>
-                <CardContent className="flex flex-col gap-8 text-xm italic ">
-                  <p className="text-gray-700 dark:text-white/90">
-                    Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
-                  </p>
-                  {/* Stats Row */}
-                  <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
-                    {/* Questions Attempted */}
-                    <div className="flex flex-col sm:flex-row justify-start items-center gap-4">
-                      <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
-                      {feedsAttemptCount === undefined ? (
-                        <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
-                      ) : (
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
-                      )}
-                    </div>
-                    {/* Leader Student */}
-                    {topStudents.length > 0 ? (
-                      <div
-                        className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (navigator.vibrate) navigator.vibrate(50);
-                          navigate("/feed");
-                        }}
-                      >
-                        <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
-                        <img
-                          src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                          alt={topStudents[0].name}
-                          className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
-                        />
-                        <div className="flex flex-col items-center">
-                          <p className="text-xl mt-1 truncate text-center text-gray-700 dark:text-white/90 font-bold">
-                            {topStudents[0].name}
-                          </p>
-
-                          {/* Professional Badge */}
-                          <div className="mt-1 flex items-center gap-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-3 w-3"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path d="M10 15l-5.878 3.09 1.123-6.545L.49 6.91l6.572-.955L10 0l2.938 5.955 6.572.955-4.755 4.635 1.123 6.545z" />
-                            </svg>
-                            <span>Top Performer</span>
-                          </div>
-                        </div>
-
-                      </div>
+              {/* Card Heading */}
+              <div className="mb-0 px-2 pt-0">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate text-center">
+                  Feed & Leaderboard
+                </h2>
+              </div>
+              <CardContent className="flex flex-col gap-8 text-xm italic ">
+                <p className="text-gray-700 dark:text-white/90">
+                  Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
+                </p>
+                {/* Stats Row */}
+                <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
+                  {/* Questions Attempted */}
+                  <div className="flex flex-col sm:flex-row justify-start items-center gap-4">
+                    <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
+                    {feedsAttemptCount === undefined ? (
+                      <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
                     ) : (
-                      <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
-                        <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-                        <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      </div>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
                     )}
                   </div>
-
-
-                  {/* Centered Button */}
-                  <div className="flex justify-center mt-3">
-
+                  {/* Leader Student */}
+                  {topStudents.length > 0 ? (
                     <div
-                      className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
+                      className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (navigator.vibrate) navigator.vibrate(50);
                         navigate("/feed");
                       }}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
-                      </svg>
-                      <span className="text-sm font-medium">Feed Page</span>
+                      <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
+                      <img
+                        src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                        alt={topStudents[0].name}
+                        className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
+                      />
+                      <div className="flex flex-col items-center">
+                        <p className="text-xl mt-1 truncate text-center text-gray-700 dark:text-white/90 font-bold">
+                          {topStudents[0].name}
+                        </p>
+
+                        {/* Professional Badge */}
+                        <div className="mt-1 flex items-center gap-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path d="M10 15l-5.878 3.09 1.123-6.545L.49 6.91l6.572-.955L10 0l2.938 5.955 6.572.955-4.755 4.635 1.123 6.545z" />
+                          </svg>
+                          <span>Top Performer</span>
+                        </div>
+                      </div>
+
                     </div>
+                  ) : (
+                    <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
+                      <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                      <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                  )}
+                </div>
 
 
+                {/* Centered Button */}
+                <div className="flex justify-center mt-3">
+
+                  <div
+                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (navigator.vibrate) navigator.vibrate(50);
+                      navigate("/feed");
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
+                    </svg>
+                    <span className="text-sm font-medium">Feed Page</span>
                   </div>
-                </CardContent>
 
-              </div>
+
+                </div>
+              </CardContent>
+
             </div>
           </div>
-        </div>
-      )}
 
+        </DialogContent>
+      </Dialog>
       <DailyImagesTrivia />
 
 
       <MistakeCard />
 
       {/* Upcoming Redletter Dates / Revision Schedule Card */}
-      {calendarEvents.length > 0 && (
+      {
+        calendarEvents.length > 0 && (
 
-        <Card
-          className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
-          onClick={() => navigate("/calendar")}
-        >
+          <Card
+            className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
+            onClick={() => navigate("/calendar")}
+          >
 
-          <CardHeader className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
-            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-              Your Upcoming Revision Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
-            Stay on track! Visit your calendar to plan and adjust your study timeline.
-          </CardDescription>
-          <CardContent className="space-y-2 mt-2">
-            {calendarEvents.length > 0 ? (
-              <div className="space-y-2">
-                {calendarEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
-                  >
-                    <div className="truncate">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {event.title}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                        {event.type}
-                      </p>
+            <CardHeader className="flex items-center space-x-2">
+              <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                Your Upcoming Revision Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
+              Stay on track! Visit your calendar to plan and adjust your study timeline.
+            </CardDescription>
+            <CardContent className="space-y-2 mt-2">
+              {calendarEvents.length > 0 ? (
+                <div className="space-y-2">
+                  {calendarEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
+                    >
+                      <div className="truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {event.title}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                          {event.type}
+                        </p>
+                      </div>
+                      <Badge className={getPriorityColor(event.priority)}>
+                        {new Date(event.start_time).toLocaleDateString()}
+                      </Badge>
                     </div>
-                    <Badge className={getPriorityColor(event.priority)}>
-                      {new Date(event.start_time).toLocaleDateString()}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                You have no upcoming revisions. Visit your calendar to plan your schedule.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  You have no upcoming revisions. Visit your calendar to plan your schedule.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
 
       <Card className="lg:col-span-3 w-full max-w-nonebg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-none rounded-none overflow-hidden sm:-mx-1">
 
