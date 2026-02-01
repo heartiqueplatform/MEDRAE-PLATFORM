@@ -805,7 +805,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
               whileHover={{ scale: 1.05 }}
               className="px-4 py-2 border border-gray-400 rounded-xl text-foreground dark:text-white hover:bg-green-500 hover:text-white dark:hover:text-white transition-all duration-300"
             >
-              Home
+              Go to My Dashboard
             </motion.button>
           </Link>
 
@@ -1187,6 +1187,18 @@ Keep striving each step you take strengthens your nursing expertise and prepares
       {!mediaAllowed && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center">
           <div className="text-center space-y-6">
+            {/* HOME BUTTON TOP LEFT */}
+            <div className="absolute top-4 left-4">
+              <Link to="/dashboard">
+                <motion.button
+                  initial={false}
+                  whileHover={{ scale: 1.05 }}
+                  className="px-4 py-2 border border-gray-400 rounded-xl text-white hover:bg-green-500 hover:text-white transition-all duration-300 shadow-md"
+                >
+                  Go to My Dashboard
+                </motion.button>
+              </Link>
+            </div>
             <h2 className="text-white text-2xl font-bold">Camera & Mic Disabled</h2>
             <p className="text-gray-300">
               Double Click below to enable camera and microphone to start your simulation.
