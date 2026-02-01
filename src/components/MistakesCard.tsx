@@ -10,10 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Users, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-
+import { GlobalLoader } from "@/components/GlobalLoader";
 const PAGE_SIZE = 10;
 
 export function MistakesCard() {
+    const [hiddenIds, setHiddenIds] = useState<string[]>(() => {
+        if (typeof window === "undefined") return [];
+        const saved = localStorage.getItem("hiddenMistakeQuestions");
+        return saved ? JSON.parse(saved) : [];
+    });
+
     const [data, setData] = useState<any[]>(() => {
         if (typeof window !== "undefined") {
             const saved = localStorage.getItem("mistakesData");
@@ -21,11 +27,13 @@ export function MistakesCard() {
         }
         return [];
     });
+    const [expandedCard, setExpandedCard] = useState<any | null>(null);
 
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const [selected, setSelected] = useState<any[]>([]);
+    const [loadingStudents, setLoadingStudents] = useState(false);
 
     // Load counts from localStorage initially
     const [studentCounts, setStudentCounts] = useState<Record<string, number>>(() => {
@@ -35,6 +43,15 @@ export function MistakesCard() {
         }
         return {};
     });
+    let lastTap = 0;
+
+    const handleCardDoubleTap = (item: any) => {
+        const now = Date.now();
+        if (now - lastTap < 300) { // 300ms threshold for double tap
+            setExpandedCard(item);
+        }
+        lastTap = now;
+    };
 
     const fetchMistakes = async () => {
         setLoading(true);
@@ -146,52 +163,75 @@ export function MistakesCard() {
 
 
     const openDetails = async (questionId: string) => {
-        // 1️⃣ get mistake rows
-        const { data: mistakes, error } = await supabase
-            .from("user_mistakes")
-            .select("user_id, times_wrong, last_wrong_at")
-            .eq("question_id", questionId)
-            .order("last_wrong_at", { ascending: false });
+        setLoadingStudents(true);
 
-        if (error || !mistakes) {
-            setSelected([]);
+        try {
+            // 1️⃣ get mistake rows
+            const { data: mistakes, error } = await supabase
+                .from("user_mistakes")
+                .select("user_id, times_wrong, last_wrong_at")
+                .eq("question_id", questionId)
+                .order("last_wrong_at", { ascending: false });
+
+            if (error || !mistakes) {
+                setSelected([]);
+                setOpen(true);
+                return;
+            }
+
+            // 2️⃣ collect user ids
+            const userIds = mistakes.map((m) => m.user_id);
+
+            // 3️⃣ fetch profiles with correct columns
+            const { data: profiles } = await supabase
+                .from("profiles")
+                .select("user_id, name, institution, avatar_url")
+                .in("user_id", userIds);
+
+            // 4️⃣ merge results
+            const merged = mistakes.map((m) => ({
+                ...m,
+                profile: profiles?.find((p) => p.user_id === m.user_id),
+            }));
+
+            // ✅ Update student count for this question and persist
+            setStudentCounts((prev) => {
+                const updated = { ...prev, [questionId]: merged.length };
+                localStorage.setItem("studentCounts", JSON.stringify(updated));
+                return updated;
+            });
+
+            setSelected(merged);
             setOpen(true);
-            return;
+        } finally {
+            setLoadingStudents(false);
         }
-
-        // 2️⃣ collect user ids
-        const userIds = mistakes.map((m) => m.user_id);
-
-        // 3️⃣ fetch profiles with correct columns
-        const { data: profiles } = await supabase
-            .from("profiles")
-            .select("user_id, name, institution, avatar_url")
-            .in("user_id", userIds);
-
-        // 4️⃣ merge results
-        const merged = mistakes.map((m) => ({
-            ...m,
-            profile: profiles?.find((p) => p.user_id === m.user_id),
-        }));
-
-        // ✅ Update student count for this question and persist
-        setStudentCounts((prev) => {
-            const updated = { ...prev, [questionId]: merged.length };
-            localStorage.setItem("studentCounts", JSON.stringify(updated));
-            return updated;
-        });
-
-        setSelected(merged);
-        setOpen(true);
     };
 
-    const optionStyle = (key: string, correct: string) =>
-        key === correct
-            ? "border-green-500 bg-green-50 dark:bg-green-900"
-            : "border-gray-200 dark:border-gray-700";
+    const optionStyle = () => "";
 
     return (
         <>
+            {/* Full-screen loading overlay */}
+            {/* Full-screen loading overlay */}
+            {loadingStudents && (
+                <div
+                    className="fixed inset-0 z-[9999] flex flex-col items-center justify-center
+               bg-white/40 dark:bg-black/40 backdrop-blur-sm"
+                >
+                    {/* Close button */}
+                    <button
+                        onClick={() => setLoadingStudents(false)}
+                        className="absolute top-4 right-4 text-2xl font-bold text-gray-700 dark:text-white hover:text-red-500"
+                    >
+                        ✕
+                    </button>
+
+                    {/* Loader spinner */}
+                    <GlobalLoader />
+                </div>
+            )}
+
             <Card className="border-0 shadow-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
                 <CardHeader className="p-2">
                     <CardTitle className="flex items-center gap-2">
@@ -201,51 +241,143 @@ export function MistakesCard() {
                     <CardDescription>High-impact mistakes students struggle with the most</CardDescription>
                 </CardHeader>
 
-                <CardContent className="flex gap-4 overflow-x-auto custom-scrollbar pb-4">
-                    {data.map((item, i) => {
-                        const q = item.quiz_questions;
-                        return (
-                            <motion.div key={i} whileHover={{ scale: 1.03 }} className="min-w-[320px]">
-                                <Card onClick={() => openDetails(item.question_id)} className="cursor-pointer bg-white dark:bg-gray-900">
-                                    <CardContent className="p-1 flex flex-col h-[520px]">
-                                        {/* Question */}
-                                        <p className="text-sm font-semibold mb-1">{q.question_text}</p>
+                <CardContent className="flex gap-2 overflow-x-auto custom-scrollbar pb-3">
+                    {data
+                        .filter((item) => !hiddenIds.includes(item.question_id))
+                        .map((item, i) => {
 
-                                        {/* Options */}
-                                        <div className="flex flex-col gap-1 mb-2">
-                                            {["A", "B", "C", "D"].map((key) => (
-                                                <div
-                                                    key={key}
-                                                    className={`border rounded-md p-2 text-xs ${optionStyle(key, q.correct_answer)}`}
+                            const q = item.quiz_questions;
+                            return (
+                                <motion.div
+                                    key={item.question_id}
+                                    drag="y"
+                                    dragConstraints={{ top: 0, bottom: 120 }}
+                                    onClick={() => handleCardDoubleTap(item)} // double tap or double click
+
+
+                                    dragElastic={0.2}
+                                    onDragEnd={(event, info) => {
+                                        if (info.offset.y > 80) {
+                                            setHiddenIds((prev) => {
+                                                const updated = [...prev, item.question_id];
+                                                localStorage.setItem(
+                                                    "hiddenMistakeQuestions",
+                                                    JSON.stringify(updated)
+                                                );
+                                                return updated;
+                                            });
+
+                                            setData((prev) =>
+                                                prev.filter((q) => q.question_id !== item.question_id)
+                                            );
+                                        }
+
+                                    }}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileDrag={{ scale: 0.98, opacity: 0.85 }}
+                                    initial={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 120 }}
+                                    transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                                    className="min-w-[320px]"
+                                >
+
+                                    <Card className="relative bg-white dark:bg-gray-900">
+                                        {/* Restore Hidden Button */}
+                                        {hiddenIds.length > 0 && (
+                                            <div className="flex text-[10px] justify-start mb-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="xs"
+                                                    className="text-[10px] px-2 py-1"
+                                                    onClick={() => {
+                                                        setData((prev) => {
+                                                            // Reload hidden questions from localStorage
+                                                            const allHidden = hiddenIds.map((id) => {
+                                                                // Find in localStorage (data is already loaded)
+                                                                const savedData = JSON.parse(localStorage.getItem("mistakesData") || "[]");
+                                                                return savedData.find((q: any) => q.question_id === id);
+                                                            }).filter(Boolean);
+                                                            return [...prev, ...allHidden];
+                                                        });
+                                                        setHiddenIds([]); // optional: removes hidden badge count
+                                                    }}
                                                 >
-                                                    <strong>{key}.</strong> {q[`option_${key.toLowerCase()}`]}
-                                                </div>
-                                            ))}
-                                        </div>
+                                                    Marked understood ({hiddenIds.length})
 
-                                        {/* Explanation + additional scrollable */}
-                                        <div className="flex-1 overflow-y-auto custom-scrollbar text-xs text-muted-foreground mb-2">
-                                            <div>
-                                                <strong>Explanation:</strong> {q.explanation}
+                                                </Button>
                                             </div>
-                                            {q.additional && <div className="italic mt-1">{q.additional}</div>}
-                                        </div>
+                                        )}
 
-                                        {/* Stats */}
-                                        <div className="flex justify-between items-center pt-2">
-                                            <Badge className="bg-red-500 text-white cursor-pointer hover:opacity-80">
-                                                Who attempted?
-                                            </Badge>
+                                        <CardContent className="p-2 flex flex-col h-[520px]">
 
-                                            <span className="text-xs text-muted-foreground">
-                                                {item.lastWrong ? formatDistanceToNow(new Date(item.lastWrong)) + " ago" : "No attempts yet"}
-                                            </span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        );
-                    })}
+                                            {/* Question */}
+                                            <p className="text-sm font-semibold mt-4 mb-1">
+                                                {q.question_text}
+                                            </p>
+
+                                            {/* Swipe hint */}
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -4 }}
+                                                animate={{ opacity: [0, 1, 0.6], y: [0, -4, 0] }}
+                                                transition={{
+                                                    duration: 2,
+                                                    repeat: Infinity,
+                                                    repeatDelay: 3,
+                                                    ease: "easeInOut",
+                                                }}
+                                                className="absolute top-2 right-2 z-20 text-xs text-muted-foreground bg-white/80 dark:bg-gray-900/80 px-3 py-1 rounded-md backdrop-blur pointer-events-none"
+
+                                            >
+                                                ↓ Swipe down to hide
+                                            </motion.div>
+
+                                            {/* Options */}
+                                            <div className="flex flex-col gap-1 mb-2">
+                                                {["A", "B", "C", "D"].map((key) => (
+                                                    <div
+                                                        key={key}
+                                                        className={`flex items-start gap-2 px-2 py-2 text-xs
+border-b last:border-b-0
+border-gray-200 dark:border-gray-700
+${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : "text-gray-700 dark:text-gray-300"}
+`}
+
+                                                    >
+                                                        <strong>{key}.</strong> {q[`option_${key.toLowerCase()}`]}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Explanation + additional scrollable */}
+                                            <div className="flex-1 overflow-y-auto custom-scrollbar text-xs text-muted-foreground mb-2">
+                                                <div>
+                                                    <strong>Explanation:</strong> {q.explanation}
+                                                </div>
+                                                {q.additional && <div className="italic mt-1">{q.additional}</div>}
+                                            </div>
+
+                                            {/* Stats */}
+                                            <div className="flex justify-between items-center pt-2">
+                                                <Badge
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // ⛔ prevents card / swipe conflict
+                                                        openDetails(item.question_id);
+                                                    }}
+                                                    className="bg-red-500 text-white cursor-pointer hover:opacity-80 active:scale-95 transition"
+                                                >
+                                                    Who attempted?
+                                                </Badge>
+
+
+                                                <span className="text-xs text-muted-foreground">
+                                                    {item.lastWrong ? formatDistanceToNow(new Date(item.lastWrong)) + " ago" : "No attempts yet"}
+                                                </span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            );
+                        })}
 
                     {/* Load More Button */}
                     <div className="flex items-center justify-center min-w-[320px]">
@@ -290,6 +422,54 @@ export function MistakesCard() {
                     </div>
                 </DialogContent>
             </Dialog>
+            {/* Expanded Card Overlay */}
+            {expandedCard && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+                    onClick={() => setExpandedCard(null)} // tap outside closes
+                >
+                    <div
+                        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg max-w-xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6"
+                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                    >
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setExpandedCard(null)}
+                            className="absolute top-4 right-4 text-xl font-bold text-gray-700 dark:text-white hover:text-red-500"
+                        >
+                            ✕
+                        </button>
+
+                        {/* Question */}
+                        <h2 className="text-lg font-semibold mb-3">{expandedCard.quiz_questions.question_text}</h2>
+
+                        {/* Options */}
+                        <div className="flex flex-col gap-2 mb-4">
+                            {["A", "B", "C", "D"].map((key) => (
+                                <div
+                                    key={key}
+                                    className={`px-3 py-2 rounded border ${key === expandedCard.quiz_questions.correct_answer
+                                        ? "border-green-600 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 font-medium"
+                                        : "border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                                        }`}
+                                >
+                                    <strong>{key}.</strong> {expandedCard.quiz_questions[`option_${key.toLowerCase()}`]}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Explanation + additional */}
+                        <div className="text-sm text-muted-foreground">
+                            <p><strong>Explanation:</strong> {expandedCard.quiz_questions.explanation}</p>
+                            {expandedCard.quiz_questions.additional && (
+                                <p className="italic mt-1">{expandedCard.quiz_questions.additional}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
         </>
     );
 }
