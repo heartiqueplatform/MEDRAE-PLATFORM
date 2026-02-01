@@ -1265,7 +1265,7 @@ export default function Feed() {
                 ref={index === questions.length - 1 ? loaderRef : null}
 
               >
-                <Card className="relative bg-transparent dark:bg-transparent border-0 shadow-none rounded-none overflow-hidden transition-all hover:shadow-none">
+                <Card className="relative bg-transparent dark:bg-transparent border border-gray-300/60 dark:border-white/5 shadow-none rounded-xl overflow-hidden transition-all hover:shadow-none">
 
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (
