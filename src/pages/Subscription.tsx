@@ -11,6 +11,7 @@ export function Subscription() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [showOverlay, setShowOverlay] = useState(true);
 
   const studentPlans = [
     {
@@ -85,20 +86,30 @@ export function Subscription() {
 
   return (
     <div className="relative space-y-6">
+      {showOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 pointer-events-auto">
+          <div className="bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700 p-8 rounded-2xl shadow-2xl text-center max-w-md text-white relative">
 
-      {/* Free Trial Overlay (only over subscription page content) */}
-      <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-lg z-30">
-        <div className="bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700 p-8 rounded-2xl shadow-2xl text-center max-w-md text-white">
-          <h2 className="text-3xl font-extrabold mb-3">Free Trial Active</h2>
-          <p className="text-blue-100 mb-6 leading-relaxed">
-            You are currently on a <span className="font-semibold text-white">3-month free trial</span>.
-            Payments are disabled while we finalize subscriptions.
-          </p>
-          <Badge className="bg-green-500 text-white px-4 py-1 rounded-full text-sm tracking-wide shadow-md">
-            Free Mode
-          </Badge>
+            {/* Close Button */}
+            <button
+              className="absolute top-3 right-3 text-white text-xl font-bold hover:text-red-500"
+              onClick={() => window.history.back()} // Go back to previous page
+            >
+              ✕
+            </button>
+
+            <h2 className="text-3xl font-extrabold mb-3">Free Trial Active</h2>
+            <p className="text-blue-100 mb-6 leading-relaxed">
+              You are currently on a <span className="font-semibold text-white">Unlimited Free trial</span>.
+              Payments are disabled while we finalize subscriptions.
+            </p>
+            <Badge className="bg-green-500 text-white px-4 py-1 rounded-full text-sm tracking-wide shadow-md">
+              Free trial
+            </Badge>
+          </div>
         </div>
-      </div>
+      )}
+
 
 
       {/* Header */}
