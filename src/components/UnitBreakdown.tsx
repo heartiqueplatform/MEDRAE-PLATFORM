@@ -57,7 +57,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
     };
 
     return (
-        <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] ">
+        <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
             <CardHeader className="p-2 flex flex-row items-center justify-between">
 
                 <div>
@@ -68,7 +68,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                 </div>
                 <Button
                     asChild
-                    className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-none-md hover:shadow-none"
+                    className="bg-blue-500 hover:bg-green-500 text-white transition-all transform hover:scale-105 shadow-none-md hover:shadow-none mistake-card-glow"
                 >
                     <Link to="/Medrae-quizzes">Quizzes</Link>
                 </Button>
@@ -84,7 +84,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                             .map(unit => (
                                 <div
                                     key={unit.unit_code}
-                                    className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
+                                    className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
                                     onClick={() => navigate("/Medrae-quizzes")}
                                 >
                                     <div className="flex items-center gap-1">
@@ -112,7 +112,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                                 .map(unit => (
                                     <div
                                         key={unit.unit_code}
-                                        className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all"
+                                        className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
                                         onClick={() => navigate("/Medrae-quizzes")}
                                     >
                                         <div className="flex flex-col">

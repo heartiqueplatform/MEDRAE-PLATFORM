@@ -119,7 +119,7 @@
     --shadow-medical: 0 10px 30px -10px hsl(200 95% 60% / 0.4);
     --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
     --shadow-glow: 0 0 40px hsl(200 95% 60% / 0.3);
-    --sidebar-background: 240 5.9% 10%;
+    --sidebar-background: 215 28% 8%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -472,4 +472,22 @@ pre {
 
 .dark .glow-text {
   color: #ffffff;
+}
+
+.hover\:glow-effect:hover {
+  box-shadow: 0 0 8px 2px #4ade80, 0 0 16px 4px #22d3ee;
+  /* green + cyan glow */
+  border-radius: 12px;
+  /* same as card rounding */
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+/* Put this in globals.css or app.css */
+.mistake-card-glow {
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.mistake-card-glow:hover {
+  box-shadow: 0 0 12px 3px #22d3ee, 0 0 24px 6px #4ade80;
+  /* dual color glow */
 }
