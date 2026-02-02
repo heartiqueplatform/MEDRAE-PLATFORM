@@ -273,15 +273,15 @@ export function MistakesCard() {
                                         }
 
                                     }}
-                                    whileHover={{ scale: 1.02 }}
+                                    className="min-w-[320px] hover:mistake-card-glow transition-all"
                                     whileDrag={{ scale: 0.98, opacity: 0.85 }}
                                     initial={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 120 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                                    className="min-w-[320px]"
-                                >
 
-                                    <Card className="relative bg-white dark:bg-gray-900">
+                                >
+                                    <Card className="relative bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] shadow-md rounded-xl hover:glow-effect">
+
                                         {/* Restore Hidden Button */}
                                         {hiddenIds.length > 0 && (
                                             <div className="flex text-[10px] justify-start mb-2">
