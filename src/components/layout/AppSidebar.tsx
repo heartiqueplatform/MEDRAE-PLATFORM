@@ -496,23 +496,32 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             navigate(item.url);
                           }}
                         >
-                          <item.icon className="h-4 w-4" />
+                          {/* 1️⃣ Icon container - now separate and resizable */}
+                          <div className="flex-shrink-0 mr-2">
+                            <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                          </div>
+
+                          {/* 2️⃣ Text and badge container */}
                           {!isCollapsed && (
-                            <>
+                            <div className="flex items-center justify-between w-full">
+                              {/* Text */}
                               <span>{item.title}</span>
+
+                              {/* Badge */}
                               {item.title === "Chat Room" && unreadCount > 0 && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {unreadCount}
                                 </Badge>
                               )}
-                              {item.badge && item.title !== "Chat Room" && (
+                              {item.title !== "Chat Room" && item.badge && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
                                 </Badge>
                               )}
-                            </>
+                            </div>
                           )}
                         </button>
+
 
 
                       </SidebarMenuButton>
@@ -551,18 +560,27 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             navigate(item.url);
                           }}
                         >
-                          <item.icon className="h-4 w-4" />
+                          {/* 1️⃣ Icon container */}
+                          <div className="flex-shrink-0 mr-2">
+                            <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                          </div>
+
+                          {/* 2️⃣ Text + Badge container */}
                           {!isCollapsed && (
-                            <>
+                            <div className="flex items-center justify-between w-full">
+                              {/* Text */}
                               <span>{item.title}</span>
+
+                              {/* Badge */}
                               {item.badge && (
                                 <Badge variant="secondary" className="ml-auto h-5 text-xs">
                                   {item.badge}
                                 </Badge>
                               )}
-                            </>
+                            </div>
                           )}
                         </button>
+
 
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -595,18 +613,27 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                         navigate(item.url);
                       }}
                     >
-                      <item.icon className="h-4 w-4" />
+                      {/* 1️⃣ Icon container */}
+                      <div className="flex-shrink-0 mr-2">
+                        <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                      </div>
+
+                      {/* 2️⃣ Text + Badge container */}
                       {!isCollapsed && (
-                        <>
+                        <div className="flex items-center justify-between w-full">
+                          {/* Text */}
                           <span>{item.title}</span>
+
+                          {/* Badge */}
                           {item.badge && (
                             <Badge variant="secondary" className="ml-auto h-5 text-xs">
                               {item.badge}
                             </Badge>
                           )}
-                        </>
+                        </div>
                       )}
                     </button>
+
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -641,9 +668,17 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                               navigate(item.url);
                             }}
                           >
-                            <item.icon className="h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
+                            {/* 1️⃣ Icon container */}
+                            <div className="flex-shrink-0 mr-2">
+                              <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                            </div>
+
+                            {/* 2️⃣ Text container */}
+                            {!isCollapsed && (
+                              <span>{item.title}</span>
+                            )}
                           </button>
+
 
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -681,7 +716,12 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                               navigate(item.url);
                             }}
                           >
-                            <item.icon className="h-4 w-4" />
+                            {/* Icon container */}
+                            <div className="flex-shrink-0 mr-2">
+                              <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                            </div>
+
+                            {/* Text container */}
                             {!isCollapsed && <span>{item.title}</span>}
                           </button>
 
@@ -716,28 +756,35 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                               .from("announcements")
                               .select("id")
                               .eq("is_published", true);
-                            if (data) localStorage.setItem(
-                              "readAnnouncements",
-                              JSON.stringify(data.map(d => d.id))
-                            );
+                            if (data)
+                              localStorage.setItem(
+                                "readAnnouncements",
+                                JSON.stringify(data.map(d => d.id))
+                              );
                           })();
                         }
 
                         navigate(item.url);
                       }}
                     >
-                      <item.icon className="h-4 w-4" />
+                      {/* Icon container */}
+                      <div className="flex-shrink-0 mr-2">
+                        <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                      </div>
+
+                      {/* Text and badge container */}
                       {!isCollapsed && (
-                        <>
+                        <div className="flex items-center w-full">
                           <span>{item.title}</span>
                           {item.title === "Announcements" && unreadAnnouncements > 0 && (
                             <Badge variant="secondary" className="ml-auto h-5 text-xs">
                               {unreadAnnouncements}
                             </Badge>
                           )}
-                        </>
+                        </div>
                       )}
                     </button>
+
 
                   </SidebarMenuButton>
                 </SidebarMenuItem>
