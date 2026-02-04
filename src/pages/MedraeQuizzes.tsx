@@ -110,6 +110,7 @@ const paperThreeUnits = [
 const paperFourUnits = [
   { code: "FP-01", title: "2026 Newest Mock Paper 1", level: "Professional" },
   { code: "FP-02", title: "2026 Newest Practice Paper 2", level: "Professional" },
+  { code: "FP-03", title: "PP1 FQE PRACTICE PAPER 1", level: "Professional" },
 ];
 
 
