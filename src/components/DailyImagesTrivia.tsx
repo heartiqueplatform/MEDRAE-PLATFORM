@@ -443,11 +443,12 @@ export default function DailyImagesTrivia() {
         <>
             {/* Card Header */}
             <div
-                className="w-full max-w-5xl mx-auto text-center mb-4 px-4 cursor-pointer"
+                className="w-full max-w-5xl mx-auto text-left mb-4 px-4 cursor-pointer"
                 onClick={() => {
                     if (isLargeScreen) setIsCollapsed(!isCollapsed);
                 }}
             >
+
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Daily 3Ree Visual Trivia
                 </h2>

@@ -250,36 +250,13 @@ export function MistakesCard() {
                             return (
                                 <motion.div
                                     key={item.question_id}
-                                    drag="y"
-                                    dragConstraints={{ top: 0, bottom: 120 }}
-                                    onClick={() => handleCardDoubleTap(item)} // double tap or double click
-
-
-                                    dragElastic={0.2}
-                                    onDragEnd={(event, info) => {
-                                        if (info.offset.y > 80) {
-                                            setHiddenIds((prev) => {
-                                                const updated = [...prev, item.question_id];
-                                                localStorage.setItem(
-                                                    "hiddenMistakeQuestions",
-                                                    JSON.stringify(updated)
-                                                );
-                                                return updated;
-                                            });
-
-                                            setData((prev) =>
-                                                prev.filter((q) => q.question_id !== item.question_id)
-                                            );
-                                        }
-
-                                    }}
+                                    onClick={() => setExpandedCard(item)} // single tap opens overlay
                                     className="min-w-[320px] hover:mistake-card-glow transition-all"
-                                    whileDrag={{ scale: 0.98, opacity: 0.85 }}
                                     initial={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 120 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 22 }}
-
                                 >
+
                                     <Card className="relative bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] shadow-md rounded-xl hover:glow-effect">
 
                                         {/* Restore Hidden Button */}
@@ -309,27 +286,40 @@ export function MistakesCard() {
                                         )}
 
                                         <CardContent className="p-2 flex flex-col h-[520px]">
+                                            {/* Swipe hint + Hide Button */}
+                                            <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1">
+
+                                                {/* Hide button */}
+                                                <Button
+                                                    size="xs"
+                                                    variant="outline"
+                                                    className="px-2 py-1 text-[10px]"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Prevent triggering card click
+                                                        // Hide the question
+                                                        setHiddenIds((prev) => {
+                                                            const updated = [...prev, item.question_id];
+                                                            localStorage.setItem(
+                                                                "hiddenMistakeQuestions",
+                                                                JSON.stringify(updated)
+                                                            );
+                                                            return updated;
+                                                        });
+                                                        setData((prev) =>
+                                                            prev.filter((q) => q.question_id !== item.question_id)
+                                                        );
+                                                    }}
+                                                >
+                                                    Hide Question
+                                                </Button>
+                                            </div>
 
                                             {/* Question */}
-                                            <p className="text-sm font-semibold mt-4 mb-1">
+                                            <p className="text-sm font-semibold mt-8 mb-1">
                                                 {q.question_text}
                                             </p>
 
-                                            {/* Swipe hint */}
-                                            <motion.div
-                                                initial={{ opacity: 0, y: -4 }}
-                                                animate={{ opacity: [0, 1, 0.6], y: [0, -4, 0] }}
-                                                transition={{
-                                                    duration: 2,
-                                                    repeat: Infinity,
-                                                    repeatDelay: 3,
-                                                    ease: "easeInOut",
-                                                }}
-                                                className="absolute top-2 right-2 z-20 text-xs text-muted-foreground bg-white/80 dark:bg-gray-900/80 px-3 py-1 rounded-md backdrop-blur pointer-events-none"
 
-                                            >
-                                                ↓ Swipe down to hide
-                                            </motion.div>
 
                                             {/* Options */}
                                             <div className="flex flex-col gap-1 mb-2">
