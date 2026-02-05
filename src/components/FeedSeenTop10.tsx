@@ -84,9 +84,9 @@ export default function FeedSeenTop10() {
                 <CardDescription>Students who have seen the most questions.</CardDescription>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="px-0">
                 <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
-                    <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-2 custom-scrollbar">
+                    <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-1 custom-scrollbar">
                         {loading ? (
                             <div className="flex gap-4 animate-pulse">
                                 {Array.from({ length: 4 }).map((_, idx) => (

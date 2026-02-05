@@ -470,6 +470,23 @@ export default function CountdownCards() {
 
 
         <div className="space-y-2 w-full px-2 sm:px-2">
+            {/* Card Heading */}
+            <div className="mb-2 px-1">
+                <div className="flex items-center gap-2">
+                    <img
+                        src="/clock.ico"
+                        alt="Exam Countdown"
+                        className="w-8 h-8 object-contain"
+                    />
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Exam Countdown
+                    </h2>
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
+                    Track your upcoming exams and stay prepared
+                </p>
+            </div>
 
             <div className="flex justify-end space-x-2">
                 <button

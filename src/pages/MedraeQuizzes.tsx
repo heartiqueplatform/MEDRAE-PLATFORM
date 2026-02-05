@@ -435,9 +435,13 @@ export function MedraeQuizzes() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
-            <Heart className="h-8 w-8 text-red-500 animate-pulse" />
+            <Heart
+              className="h-8 w-8 text-red-500 animate-pulse"
+              fill="currentColor"
+            />
             Medrae Quizzes Bank
           </h1>
+
           <p className="text-muted-foreground mt-3 text-base leading-relaxed">
             Explore NCK/NCLEX-aligned quizzes for all core nursing units. Each quiz has been
             carefully curated to reflect the NCLEX and Nursing Council of Kenya (NCK) syllabus, with

@@ -241,7 +241,8 @@ export function MistakesCard() {
                     <CardDescription>High-impact mistakes students struggle with the most</CardDescription>
                 </CardHeader>
 
-                <CardContent className="flex gap-2 overflow-x-auto custom-scrollbar pb-3">
+                <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-4 custom-scrollbar pb-2">
+
                     {data
                         .filter((item) => !hiddenIds.includes(item.question_id))
                         .map((item, i) => {
@@ -250,22 +251,21 @@ export function MistakesCard() {
                             return (
                                 <motion.div
                                     key={item.question_id}
-                                    onClick={() => setExpandedCard(item)} // single tap opens overlay
-                                    className="min-w-[320px] hover:mistake-card-glow transition-all"
+                                    onClick={() => setExpandedCard(item)}
+                                    className="w-[calc(100vw-1rem)] sm:w-[320px] flex-shrink-0 hover:mistake-card-glow transition-all mt-4"
                                     initial={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 120 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 22 }}
                                 >
-
-                                    <Card className="relative bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] shadow-md rounded-xl hover:glow-effect">
+                                    <Card className="w-full relative bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] shadow-md rounded-xl hover:glow-effect">
 
                                         {/* Restore Hidden Button */}
                                         {hiddenIds.length > 0 && (
-                                            <div className="flex text-[10px] justify-start mb-2">
+                                            <div className="flex text-[10px] justify-start mb-2 mt-2">
                                                 <Button
                                                     variant="outline"
-                                                    size="xs"
-                                                    className="text-[10px] px-2 py-1"
+                                                    size="sm"
+                                                    className="px-2 py-1 text-[10px]"
                                                     onClick={() => {
                                                         setData((prev) => {
                                                             // Reload hidden questions from localStorage
@@ -291,7 +291,7 @@ export function MistakesCard() {
 
                                                 {/* Hide button */}
                                                 <Button
-                                                    size="xs"
+                                                    size="sm"
                                                     variant="outline"
                                                     className="px-2 py-1 text-[10px]"
                                                     onClick={(e) => {
@@ -310,12 +310,12 @@ export function MistakesCard() {
                                                         );
                                                     }}
                                                 >
-                                                    Hide Question
+                                                    Mark as Understood
                                                 </Button>
                                             </div>
 
                                             {/* Question */}
-                                            <p className="text-sm font-semibold mt-8 mb-1">
+                                            <p className="text-sm font-semibold mt-16 mb-1">
                                                 {q.question_text}
                                             </p>
 

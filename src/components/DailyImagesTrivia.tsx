@@ -472,7 +472,8 @@ export default function DailyImagesTrivia() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                         ref={containerRef}
-                        className="relative w-full py-6 flex flex-col items-center justify-center overflow-visible max-w-5xl mx-auto"
+                        className="relative w-full flex flex-col items-center justify-center overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6"
+
                     >
 
                         {/* Loader */}
@@ -538,7 +539,7 @@ export default function DailyImagesTrivia() {
                             ) : (
                                 images[activeIndex] && (
                                     <div
-                                        className="w-screen h-[80vh] cursor-pointer relative overflow-hidden"
+                                        className="w-full h-[80vh] cursor-pointer relative overflow-hidden rounded-xl px-1 py-1"
                                         onClick={(e) => {
                                             const { left, width } = e.currentTarget.getBoundingClientRect();
                                             const clickX = e.clientX - left;

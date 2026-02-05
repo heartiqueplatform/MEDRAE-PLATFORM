@@ -1265,7 +1265,7 @@ export default function Feed() {
                 ref={index === questions.length - 1 ? loaderRef : null}
 
               >
-                <Card className="relative bg-transparent dark:bg-transparent border border-gray-300/60 dark:border-white/5 shadow-none rounded-xl overflow-hidden transition-all hover:shadow-none">
+                <Card className="relative bg-transparent dark:bg-transparent border border-gray-300/60 dark:border-white/5 shadow-none rounded-xl overflow-visible transition-all">
 
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (
@@ -1399,37 +1399,69 @@ export default function Feed() {
 
                     {/* Buttons row */}
                     <div className="flex gap-6 mt-4">
-                      {/* Like Button */}
+                      {/* Like Button with full red heart */}
                       <Button
                         variant="ghost"
-                        className={`flex items-center gap-2 ${liked ? "text-red-500 animate-emoji-zoom" : ""}`}
+                        className="flex items-center gap-2 bg-transparent hover:bg-transparent"
                         onClick={() => {
                           toggleLike(q.id, liked);
 
                           // Play tap sound only on adding a like
-                          // Play tap sound only on adding a like
                           if (!liked) {
                             playSound("tap-correct", false);
                           }
-
                         }}
                       >
-                        <Heart size={18} /> {q.qfeed_likes?.length || 0}
+                        {/* Heart icon */}
+                        <span className="transition-transform duration-200 hover:scale-110 flex items-center">
+                          <svg
+                            role="img"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            style={{ width: "32px", height: "32px" }} // ✅ control size
+                          >
+                            <title>Heart</title>
+                            <path
+                              fill={liked ? "#FF0000" : "#CCCCCC"} // full red if liked, gray if not
+                              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                            />
+                          </svg>
+                        </span>
+
+                        {/* Like count */}
+                        <span className="text-gray-700 dark:text-gray-300 font-semibold">{q.qfeed_likes?.length || 0}</span>
                       </Button>
 
-                      {/* Comment Button */}
+                      {/* Comment Button with LiveChat SVG */}
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 bg-transparent hover:bg-transparent"
                         onClick={() => loadComments(q.id)}
                       >
-                        <MessageCircle size={18} /> {commentCount}
+                        <span className="transition-transform duration-200 hover:scale-110 flex items-center">
+                          <svg
+                            role="img"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            style={{ width: "32px", height: "32px" }} // ✅ pixel control
+                          >
+                            <title>LiveChat</title>
+                            <path
+                              fill="#FF5100"
+                              d="M23.849 14.91c-.24 2.94-2.73 5.22-5.7 5.19h-3.15l-6 3.9v-3.9l6-3.9h3.15c.93.03 1.71-.66 1.83-1.59.18-3 .18-6-.06-9-.06-.84-.75-1.47-1.56-1.53-2.04-.09-4.2-.18-6.36-.18s-4.32.06-6.36.21c-.84.06-1.5.69-1.56 1.53-.21 3-.24 6-.06 9 .09.93.9 1.59 1.83 1.56h3.15v3.9h-3.15a5.644 5.644 0 01-5.7-5.19c-.21-3.21-.18-6.39.06-9.6a5.57 5.57 0 015.19-5.1c2.1-.15 4.35-.21 6.6-.21s4.5.06 6.63.24a5.57 5.57 0 015.19 5.1c.21 3.18.24 6.39.03 9.57z"
+                            />
+                          </svg>
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-300 font-semibold">{commentCount}</span>
                       </Button>
+
+
 
                       {/* Share Button */}
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 bg-transparent hover:bg-transparent text-gray-800 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-200"
+
                         onClick={() => {
                           if (!user) {
                             alert("Please log in to share!");
@@ -1450,7 +1482,15 @@ export default function Feed() {
                         }}
                       >
                         <div className="flex items-center gap-2">
-                          <MessageCircle size={18} />
+                          <svg
+                            role="img"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            style={{ width: "32px", height: "32px" }} // ✅ pixel control
+                          >
+                            <title>WhatsApp</title>
+                            <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                          </svg>
                           <span className="text-[10px]">WhatsApp</span>     {/* smaller */}
                         </div>
 
