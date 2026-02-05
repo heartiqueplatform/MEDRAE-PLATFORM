@@ -1220,7 +1220,7 @@ export default function StudentDashboard() {
         </Card>
 
       </div>
-      <CountdownFloating />
+
       {/* 🏆 Top Students Leaderboard */}
       <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-0">
         <CardHeader className="p-2">
@@ -1381,6 +1381,7 @@ export default function StudentDashboard() {
         </CardContent>
       </Card >
       <FeedSeenTop10 />
+      <CountdownFloating />
       <DailyTriviaCard />
       <MistakesCard />
       {/* Floating Button showing top student's avatar */}
