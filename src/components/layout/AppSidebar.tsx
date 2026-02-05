@@ -72,6 +72,77 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
+  // 🎨 Semantic icon tone system
+  type IconTone =
+    | "neutral"
+    | "ai"
+    | "learning"
+    | "progress"
+    | "practice"
+    | "alert"
+    | "communication"
+    | "media"
+    | "finance"
+    | "system"
+    | "people"
+    | "content";
+
+  const ICON_TONE_STYLES: Record<
+    IconTone,
+    {
+      box: { light: string; dark: string };
+      icon: { light: string; dark: string };
+    }
+  > = {
+    neutral: {
+      box: { light: "bg-slate-100", dark: "bg-slate-800" },
+      icon: { light: "text-slate-700", dark: "text-slate-200" },
+    },
+    ai: {
+      box: { light: "bg-purple-200", dark: "bg-purple-800" },
+      icon: { light: "text-purple-700", dark: "text-purple-300" },
+    },
+    learning: {
+      box: { light: "bg-blue-200", dark: "bg-blue-800" },
+      icon: { light: "text-blue-700", dark: "text-blue-300" },
+    },
+    progress: {
+      box: { light: "bg-emerald-200", dark: "bg-emerald-800" },
+      icon: { light: "text-emerald-700", dark: "text-emerald-300" },
+    },
+    practice: {
+      box: { light: "bg-rose-200", dark: "bg-rose-800" },
+      icon: { light: "text-rose-700", dark: "text-rose-300" },
+    },
+    alert: {
+      box: { light: "bg-amber-200", dark: "bg-amber-800" },
+      icon: { light: "text-amber-700", dark: "text-amber-300" },
+    },
+    communication: {
+      box: { light: "bg-cyan-200", dark: "bg-cyan-800" },
+      icon: { light: "text-cyan-700", dark: "text-cyan-300" },
+    },
+    media: {
+      box: { light: "bg-violet-200", dark: "bg-violet-800" },
+      icon: { light: "text-violet-700", dark: "text-violet-300" },
+    },
+    finance: {
+      box: { light: "bg-emerald-200", dark: "bg-emerald-800" },
+      icon: { light: "text-emerald-700", dark: "text-emerald-300" },
+    },
+    system: {
+      box: { light: "bg-gray-200", dark: "bg-gray-700" },
+      icon: { light: "text-gray-700", dark: "text-gray-300" },
+    },
+    people: {
+      box: { light: "bg-indigo-200", dark: "bg-indigo-800" },
+      icon: { light: "text-indigo-700", dark: "text-indigo-300" },
+    },
+    content: {
+      box: { light: "bg-indigo-200", dark: "bg-indigo-800" },
+      icon: { light: "text-indigo-700", dark: "text-indigo-300" },
+    },
+  };
 
   // ✅ Sync with localStorage and update in real-time
   useEffect(() => {
@@ -166,57 +237,53 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
   };
   const mainItems = [
-    { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home },
-    { title: "Feed Page", url: "/feed", icon: Newspaper },
-    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? mistakeCount : undefined },
-    { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, badge: "New" },
-    { title: "Forum", url: "/forum", icon: MessageSquare },
-
+    { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" },
+    { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" },
+    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert", badge: mistakeCount > 0 ? mistakeCount : undefined },
+    { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai", badge: "New" },
+    { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },
   ];
 
-  const visibleMainItems = isFooterMounted
-    ? mainItems.filter(item => !footerRoutes.includes(item.url))
-    : mainItems;
+
+  const visibleMainItems = isFooterMounted ? mainItems.filter(item => !footerRoutes.includes(item.url)) : mainItems;
 
   const learningItems = [
-    { title: "Assessment Tracker", url: "/calendar", icon: Calendar, badge: `${totalEvents}E` },
-    { title: "Study Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★` },
-    { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
-    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
-
-    { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen },
-    { title: "Resources Bank", url: "/resources", icon: FileText, badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
-
+    { title: "Assessment Tracker", url: "/calendar", icon: Calendar, iconTone: "learning", badge: `${totalEvents}E` },
+    { title: "Study Progress", url: "/progress", icon: TrendingUp, iconTone: "progress", badge: `${totalStars}★` },
+    { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, iconTone: "practice", badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
+    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, iconTone: "practice", badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
+    { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" },
+    { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content", badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
   ];
-  const visibleLearningItems = isFooterMounted
-    ? learningItems.filter(item => !footerRoutes.includes(item.url))
-    : learningItems;
+
+
+  const visibleLearningItems = isFooterMounted ? learningItems.filter(item => !footerRoutes.includes(item.url)) : learningItems;
 
   const mediaItems = [
-    { title: "MedTube", url: "/medtube", icon: Play, badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
-
+    { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media", badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
   ];
 
   const otherItems = [
-    { title: "Announcements", url: "/announcements", icon: Bell },
-    { title: "Feedback Box", url: "/feedback", icon: MessageSquareX },
-    { title: "Settings", url: "/settings", icon: Settings },
-    { title: "Subscription", url: "/subscription", icon: CreditCard },
+    { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" },
+    { title: "Feedback Box", url: "/feedback", icon: MessageSquareX, iconTone: "communication" },
+    { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" },
+    { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" },
   ];
 
-  const tutorItems = userRole === 'tutor' ? [
-    { title: "Student Analytics", url: "/analytics", icon: Users },
-    { title: "Create Content", url: "/create", icon: BookOpen },
-    { title: "Earnings", url: "/earnings", icon: Star },
+  const tutorItems = userRole === "tutor" ? [
+    { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" },
+    { title: "Create Content", url: "/create", icon: BookOpen, iconTone: "content" },
+    { title: "Earnings", url: "/earnings", icon: Star, iconTone: "finance" },
   ] : [];
 
-  const staffItems = userRole === 'staff' ? [
-    { title: "Knowledge Feed", url: "/knowledge", icon: Network },
-    { title: "Post Videos", url: "/post-videos", icon: Video },
-    { title: "Events & Seminars", url: "/events", icon: CalendarDays },
-    { title: "Job Board", url: "/jobs", icon: Briefcase },
-    { title: "Write Articles", url: "/articles", icon: PenTool },
+  const staffItems = userRole === "staff" ? [
+    { title: "Knowledge Feed", url: "/knowledge", icon: Network, iconTone: "content" },
+    { title: "Post Videos", url: "/post-videos", icon: Video, iconTone: "media" },
+    { title: "Events & Seminars", url: "/events", icon: CalendarDays, iconTone: "learning" },
+    { title: "Job Board", url: "/jobs", icon: Briefcase, iconTone: "people" },
+    { title: "Write Articles", url: "/articles", icon: PenTool, iconTone: "content" },
   ] : [];
+
 
   // Fetch unread messages and listen for live updates
   // ----- UNREAD MESSAGES & ANNOUNCEMENTS -----
@@ -497,9 +564,23 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           }}
                         >
                           {/* 1️⃣ Icon container - now separate and resizable */}
-                          <div className="flex-shrink-0 mr-2">
-                            <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                          <div
+                            className={`
+    flex-shrink-0 mr-2 p-1.5 rounded-md
+    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+  `}
+                          >
+                            <item.icon
+                              className={`
+      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+    `}
+                            />
                           </div>
+
+
 
                           {/* 2️⃣ Text and badge container */}
                           {!isCollapsed && (
@@ -561,9 +642,22 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                           }}
                         >
                           {/* 1️⃣ Icon container */}
-                          <div className="flex-shrink-0 mr-2">
-                            <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                          <div
+                            className={`
+    flex-shrink-0 mr-2 p-1.5 rounded-md
+    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+  `}
+                          >
+                            <item.icon
+                              className={`
+      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+    `}
+                            />
                           </div>
+
 
                           {/* 2️⃣ Text + Badge container */}
                           {!isCollapsed && (
@@ -614,9 +708,22 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       }}
                     >
                       {/* 1️⃣ Icon container */}
-                      <div className="flex-shrink-0 mr-2">
-                        <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                      <div
+                        className={`
+    flex-shrink-0 mr-2 p-1.5 rounded-md
+    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+  `}
+                      >
+                        <item.icon
+                          className={`
+      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+    `}
+                        />
                       </div>
+
 
                       {/* 2️⃣ Text + Badge container */}
                       {!isCollapsed && (
@@ -669,9 +776,23 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             }}
                           >
                             {/* 1️⃣ Icon container */}
-                            <div className="flex-shrink-0 mr-2">
-                              <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                            <div
+                              className={`
+    flex-shrink-0 mr-2 p-1.5 rounded-md
+    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+  `}
+                            >
+                              <item.icon
+                                className={`
+      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+    `}
+                              />
                             </div>
+
+
 
                             {/* 2️⃣ Text container */}
                             {!isCollapsed && (
@@ -717,9 +838,23 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                             }}
                           >
                             {/* Icon container */}
-                            <div className="flex-shrink-0 mr-2">
-                              <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                            <div
+                              className={`
+    flex-shrink-0 mr-2 p-1.5 rounded-md
+    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+  `}
+                            >
+                              <item.icon
+                                className={`
+      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+    `}
+                              />
                             </div>
+
+
 
                             {/* Text container */}
                             {!isCollapsed && <span>{item.title}</span>}
@@ -768,9 +903,23 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
                       }}
                     >
                       {/* Icon container */}
-                      <div className="flex-shrink-0 mr-2">
-                        <item.icon className={isCollapsed ? "h-8 w-8" : "h-6 w-6"} />
+                      <div
+                        className={`
+    flex-shrink-0 mr-2 p-1.5 rounded-md
+    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+  `}
+                      >
+                        <item.icon
+                          className={`
+      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+    `}
+                        />
                       </div>
+
+
 
                       {/* Text and badge container */}
                       {!isCollapsed && (
