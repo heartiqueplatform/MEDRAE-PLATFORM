@@ -1407,7 +1407,7 @@ export default function Feed() {
                     )}
 
                     {/* Buttons row */}
-                    <div className="flex gap-3 mt-4">
+                    <div className="flex gap-2 mt-4">
                       {/* Like Button with full red heart */}
                       <Button
                         variant="ghost"
