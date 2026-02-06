@@ -194,7 +194,7 @@ export function Header({
         {/* Desktop Sidebar Toggle */}
         <button
           onClick={toggleSidebar}
-          className="hidden lg:flex flex-col items-center justify-center px-3 py-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
+          className="hidden lg:flex flex-col items-center justify-center px-3 py-1 rounded-md  active:scale-95 transition"
         >
           <Menu className="h-5 w-5" />
           <span className="text-[11px] font-medium mt-0.5">Menu</span>
@@ -260,7 +260,7 @@ export function Header({
         {/*  Reload PWA */}
         <button
           onClick={handleReload}
-          className="flex flex-col items-center space-y-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
+          className="flex flex-col items-center space-y-1 p-2 rounded-full active:scale-95 transition"
         >
           {/* Spinner only when loading */}
           {rotating && (
@@ -298,7 +298,7 @@ export function Header({
         {/* Share App */}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={() => {
             const shareMessage = `Medrae – The Professional Medical Education & Career Network
 
@@ -323,18 +323,24 @@ Advance your medical journey today: https://medrae.vercel.app`;
             }
           }}
         >
-          <Share2 className="h-5 w-5" />
+          <Share2 width={24} height={24} stroke="#3B82F6" />
         </Button>
 
 
         {/* Notifications */}
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           className="relative"
           onClick={() => navigate("/notifications")}
         >
-          <Bell className="h-5 w-5" />
+          <Bell
+            width={24}
+            height={24}
+            stroke="none"
+            fill={isDarkMode ? "#FBBF24" : "#FACC15"}
+          />
+
           {notificationCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-destructive">
               {notificationCount}
@@ -343,8 +349,8 @@ Advance your medical journey today: https://medrae.vercel.app`;
         </Button>
 
         {/* Dark Mode Toggle */}
-        <Button variant="ghost" size="sm" onClick={onToggleDarkMode}>
-          {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        <Button variant="ghost" size="icon" onClick={onToggleDarkMode}>
+          {isDarkMode ? <Sun width={24} height={24} stroke="#FBBF24" /> : <Moon width={24} height={24} stroke="none" fill="#071016" />}
         </Button>
 
         {/*  User Info */}

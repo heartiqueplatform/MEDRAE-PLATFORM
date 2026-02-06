@@ -1861,7 +1861,7 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
                 cachedSimulationPapers.map((paper) => (
                   <Card
                     key={paper.id}
-                    className="flex flex-col justify-between cursor-pointer hover:scale-105 transform transition-all rounded-none sm:rounded-md bg-white dark:bg-gray-900 shadow-none border border-gray-200 dark:border-gray-700 mistake-card-glow"
+                    className="flex flex-col justify-between cursor-pointer hover:scale-105 transform transition-all rounded-xl sm:rounded-md bg-white dark:bg-gray-900 shadow-none border border-gray-200 dark:border-gray-700 mistake-card-glow"
                     onClick={async () => {
                       navigate(`/simulation/${paper.id}`);
                       const { data: userData } = await supabase.auth.getUser();

@@ -84,7 +84,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                             .map(unit => (
                                 <div
                                     key={unit.unit_code}
-                                    className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
+                                    className="p-2 rounded-xl sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
                                     onClick={() => navigate("/Medrae-quizzes")}
                                 >
                                     <div className="flex items-center gap-1">
@@ -112,7 +112,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                                 .map(unit => (
                                     <div
                                         key={unit.unit_code}
-                                        className="p-2 rounded-none sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
+                                        className="p-2 rounded-xl sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
                                         onClick={() => navigate("/Medrae-quizzes")}
                                     >
                                         <div className="flex flex-col">
@@ -142,7 +142,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                     Array.from({ length: 6 }).map((_, idx) => (
                         <div
                             key={idx}
-                            className="p-4 rounded-none sm:rounded-md flex flex-col justify-between animate-pulse bg-white dark:bg-gray-900 min-h-[80px] shadow-none border-0"
+                            className="p-4 rounded-xl sm:rounded-md flex flex-col justify-between animate-pulse bg-white dark:bg-gray-900 min-h-[80px] shadow-none border-0"
                         >
                             <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
                             <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>

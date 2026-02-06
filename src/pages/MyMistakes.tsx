@@ -313,10 +313,29 @@ export default function MyMistakes() {
                     </p>
                     <button
                         onClick={() => navigate("/Medrae-quizzes")}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
                     >
+                        {/* Filled red heart icon */}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-8 w-8"
+                            viewBox="0 0 24 24"
+                            fill="red"
+                            stroke="white"
+                            strokeWidth={1}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42
+           4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81
+           14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4
+           6.86-8.55 11.54L12 21.35z" />
+                        </svg>
+
                         Go to Quizzes
                     </button>
+
+
                 </div>
             </div>
         );

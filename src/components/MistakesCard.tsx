@@ -315,7 +315,7 @@ export function MistakesCard() {
                                             </div>
 
                                             {/* Question */}
-                                            <p className="text-sm font-semibold mt-16 mb-1">
+                                            <p className="text-sm font-semibold mt-4 mb-1">
                                                 {q.question_text}
                                             </p>
 
