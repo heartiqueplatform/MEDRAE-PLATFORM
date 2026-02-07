@@ -1106,7 +1106,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
               className="h-6 w-6 rounded-sm object-contain"
             />
             <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
-              Medrae  Self Test SimuProctor
+              Medrae Self-Test: Proctorium Lite
             </p>
           </div>
 

@@ -251,7 +251,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "Assessment Tracker", url: "/calendar", icon: Calendar, iconTone: "learning", badge: `${totalEvents}E` },
     { title: "Study Progress", url: "/progress", icon: TrendingUp, iconTone: "progress", badge: `${totalStars}★` },
     { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, iconTone: "practice", badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
-    { title: "NCK Simulation", url: "/simulation/candidate", icon: Play, iconTone: "practice", badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
+    { title: "Proctorium Lite", url: "/simulation/candidate", icon: Play, iconTone: "practice", badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" },
     { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content", badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
   ];
