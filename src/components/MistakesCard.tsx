@@ -252,7 +252,8 @@ export function MistakesCard() {
                             return (
                                 <motion.div
                                     key={item.question_id}
-                                    onClick={() => setExpandedCard(item)}
+                                    onClick={() => setExpandedCard({ ...item, index: i })}
+
                                     className="w-[calc(100vw-1rem)] sm:w-[320px] flex-shrink-0 hover:mistake-card-glow transition-all mt-4"
                                     initial={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 120 }}
@@ -340,9 +341,27 @@ export function MistakesCard() {
                                             </div>
 
                                             {/* Question */}
-                                            <p className="text-sm font-semibold mt-4 mb-1">
-                                                {q.question_text}
-                                            </p>
+                                            {/* Question */}
+                                            <div className="flex items-start gap-3 mt-4 mb-1">
+                                                {/* Number badge */}
+                                                <div className="
+        min-w-[24px] h-6
+        flex items-center justify-center
+        rounded-full
+        bg-gray-200 text-gray-700
+        dark:bg-gray-800 dark:text-gray-300
+        text-xs font-bold
+        flex-shrink-0
+    ">
+                                                    Q.{i + 1}
+                                                </div>
+
+                                                {/* Question text */}
+                                                <p className="text-sm font-semibold leading-snug">
+                                                    {q.question_text}
+                                                </p>
+                                            </div>
+
 
 
 
@@ -461,7 +480,30 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                         </button>
 
                         {/* Question */}
-                        <h2 className="text-lg font-semibold mb-3">{expandedCard.quiz_questions.question_text}</h2>
+                        {/* Overlay Question */}
+                        <div className="flex items-start gap-3 mb-3">
+                            {/* Number badge */}
+                            <div
+                                className="
+      min-w-[28px] h-7
+      flex items-center justify-center
+      rounded-full
+      bg-gray-200 text-gray-700
+      dark:bg-gray-800 dark:text-gray-300
+      text-sm font-bold
+      flex-shrink-0
+    "
+                            >
+                                Q.{expandedCard.index + 1}
+
+                            </div>
+
+                            {/* Question text */}
+                            <h2 className="text-lg font-semibold leading-snug">
+                                {expandedCard.quiz_questions.question_text}
+                            </h2>
+                        </div>
+
 
                         {/* Options */}
                         <div className="flex flex-col gap-2 mb-4">
