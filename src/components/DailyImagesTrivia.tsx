@@ -23,7 +23,8 @@ export default function DailyImagesTrivia() {
     const [activeImage, setActiveImage] = useState<string | null>(null);
     const [dataLoading, setDataLoading] = useState(true);
     const [uiLoading, setUiLoading] = useState(true);
-    const [isCollapsed, setIsCollapsed] = useState(true); // Desktop collapsed by default
+    const [isCollapsed, setIsCollapsed] = useState(false); // Start fully open
+
     const [showComments, setShowComments] = useState(false);
     const [seenData, setSeenData] = useState<{ [key: string]: string }>({});
     const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -50,13 +51,6 @@ export default function DailyImagesTrivia() {
     const resetInactivityTimer = () => {
         // Clear existing timer
         if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-
-        // Only start timer for large screens
-        if (isLargeScreen && !isCollapsed) {
-            inactivityTimer.current = setTimeout(() => {
-                setIsCollapsed(true); // Collapse card after 10s
-            }, INACTIVITY_DELAY);
-        }
     };
     const quickComments = [
         "Very helpful for revision.",
@@ -472,7 +466,9 @@ export default function DailyImagesTrivia() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                         ref={containerRef}
-                        className="relative w-full flex flex-col items-center justify-center overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6"
+                        className="relative w-full flex flex-col items-center justify-center
+           overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6
+           bg-gradient-to-b from-gray-700 to-gray-900 rounded-xl shadow-md"
 
                     >
 
@@ -597,7 +593,7 @@ export default function DailyImagesTrivia() {
                                     onClick={() => setShowComments(false)}
                                 >
                                     <div
-                                        className="bg-white dark:bg-gray-800 rounded-lg p-4 flex flex-col gap-2 animate-slide-up"
+                                        className="bg-white dark:bg-gray-900 rounded-lg p-4 flex flex-col gap-2 animate-slide-up"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">

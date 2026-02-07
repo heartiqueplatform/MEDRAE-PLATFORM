@@ -350,16 +350,35 @@ export default function MyMistakes() {
                 </div>
             )}
 
-            <div className="mb-6 text-center">
-                <h1 className="text-2xl font-bold mb-2">My Mistakes</h1>
-                <p className="text-gray-600 dark:text-gray-300">
-                    Review questions you answered incorrectly. Green highlights the correct
-                    answer, answers with "your choice" shows what you chose. Mark as “understood” when you’ve mastered it.
-                </p>
-                <p className="text-gray-500 dark:text-gray-400 mt-1">
-                    You have {mistakeCount} unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
-                </p>
+            <div className="mb-8 ">
+                <div className="relative bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border-0 rounded-2xl shadow-lg p-6 sm:p-8 text-center overflow-hidden">
+
+                    {/* Decorative Gradient Accent */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full blur-xl opacity-50"></div>
+
+                    {/* Title */}
+                    <h1 className="text-3xl sm:text-4xl font-extrabold mb-3 text-gray-900 dark:text-white relative z-10 flex items-center justify-center gap-3">
+                        {/* Icon */}
+                        <img
+                            src="/pwa-192x192.jpeg"   // <-- replace with your icon file name in public/
+                            alt="Accent Icon"
+                            className="w-10 h-10 object-contain opacity-80"
+                        />
+                        My Mistakes
+                    </h1>
+
+                    {/* Description */}
+                    <p className="text-gray-700 dark:text-gray-300 mb-2 sm:text-lg leading-relaxed relative z-10">
+                        Review questions you answered incorrectly. <span className="font-semibold text-green-700 dark:text-green-400">Green</span> highlights the correct answer, answers with <span className="font-semibold text-blue-600 dark:text-blue-400">“your choice”</span> shows what you chose. Mark as <span className="font-semibold">“understood”</span> when you’ve mastered it.
+                    </p>
+
+                    {/* Mistake Count */}
+                    <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium relative z-10">
+                        You have <span className="font-bold text-red-600 dark:text-red-400">{mistakeCount}</span> unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
+                    </p>
+                </div>
             </div>
+
 
             <AnimatePresence>
                 {mistakes.map((m, i) => (
@@ -369,10 +388,12 @@ export default function MyMistakes() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -300, transition: { duration: 0.4, type: "spring", stiffness: 150 } }}
                         layout
+                        className="mb-4"
                     >
-                        <Card className="overflow-visible bg-transparent border-0 shadow-none rounded-none">
+                        <Card className="overflow-visible border-0 shadow-md rounded-xl
+  bg-white/40 dark:bg-gray-900">
 
-                            <CardHeader className="p-0">
+                            <CardHeader className="p-2">
 
                                 <CardTitle className="text-base sm:text-lg">
                                     Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}

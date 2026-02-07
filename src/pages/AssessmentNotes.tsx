@@ -538,7 +538,11 @@ export default function AssessmentNotes() {
                         <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
 
                           {subNotes.map((note) => (
-                            <Card key={note.id} className="w-full">
+                            <Card
+                              key={note.id}
+                              className="flex flex-col border-0 justify-between transition-all hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                            >
+
 
                               <CardHeader>
                                 <div className="flex items-center gap-2">
@@ -555,34 +559,7 @@ export default function AssessmentNotes() {
                                 </p>
                               </CardHeader>
                               <CardContent>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
 
-                                  onClick={async () => {
-                                    setFullscreenNote(note);
-                                    if (session?.user?.id) {
-                                      const { error } = await supabase
-                                        .from("note_views")
-                                        .upsert(
-                                          { note_id: note.id, user_id: session.user.id },
-                                          { onConflict: ["note_id", "user_id"] }
-                                        );
-
-                                      if (!error) {
-                                        setViewCounts((prev) => ({
-                                          ...prev,
-                                          [note.id]: (prev[note.id] || 0) + 1,
-                                        }));
-                                      }
-                                    }
-
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  View
-                                </Button>
 
                                 {/* Offline download button */}
                                 <div className="flex gap-2 mt-2">
@@ -594,8 +571,36 @@ export default function AssessmentNotes() {
                                     variant="ghost"
                                     className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                   >
-                                    <Download className="h-3 w-3" />
+                                    <Download className="h-4 w-4" />
                                     Cache
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+
+                                    onClick={async () => {
+                                      setFullscreenNote(note);
+                                      if (session?.user?.id) {
+                                        const { error } = await supabase
+                                          .from("note_views")
+                                          .upsert(
+                                            { note_id: note.id, user_id: session.user.id },
+                                            { onConflict: ["note_id", "user_id"] }
+                                          );
+
+                                        if (!error) {
+                                          setViewCounts((prev) => ({
+                                            ...prev,
+                                            [note.id]: (prev[note.id] || 0) + 1,
+                                          }));
+                                        }
+                                      }
+
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    View
                                   </Button>
                                   {/* Delete button for uploader only */}
                                   {session?.user?.id === note.uploaded_by && (
@@ -621,16 +626,17 @@ export default function AssessmentNotes() {
 
                                 <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
                                   <div className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
+                                    <Eye className="h-6 w-6" />
                                     {viewCounts[note.id] || 0}
                                   </div>
+
                                   <button
                                     className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : ""
                                       }`}
                                     onClick={() => toggleLike(note.id)}
                                   >
                                     <Heart
-                                      className={`h-4 w-4 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""
+                                      className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""
                                         }`}
                                     />
                                     <span>{likeCounts[note.id] || 0}</span>

@@ -143,7 +143,8 @@ export default function InstructionPage() {
     return <GlobalLoader message="Setting simulation page..." />;
   }
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
 
 
       {/* Timer + Countdown + Start Button + Explanation */}
@@ -209,26 +210,7 @@ export default function InstructionPage() {
         </div>
 
       </div>
-      {/* Enriched Environment Warning */}
-      <div className="mt-6 text-sm text-gray-600">
-        <strong>Note: This will work only on desktop.</strong>
-        <br /><br />
 
-        You may see your face on the screen, notice your motor activity being monitored,
-        and hear audio playback. This simulates a real NCK-like exam environment.
-        <br /><br />
-
-        <strong>If this setup feels confusing or takes too long:</strong>
-        <br />
-        You can safely <strong>skip the setup</strong> and start the simulation immediately.
-        Camera and microphone can be enabled later during the session if needed.
-        <br /><br />
-
-        Please remember to <strong>double-click</strong> the Camera button if you choose to enable it.
-        <br />
-
-        These monitoring features are for simulation only and are not fully automated.
-      </div>
 
       {/* Camera + Mic Preview */}
       <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
@@ -393,16 +375,38 @@ export default function InstructionPage() {
             {micReady ? "Mic Enabled" : scanningMic ? "Calibrating..." : "Enable Mic"}
           </Button>
         </div>
+      </div>
 
+
+      {/* Enriched Environment Warning */}
+      <div className="mt-6 rounded-xl text-sm text-gray-400 bg-gray-100 dark:bg-gray-900 p-4 sm:p-6">
+        <strong>Note: This will work only on desktop.</strong>
+        <br /><br />
+
+        You may see your face on the screen, notice your motor activity being monitored,
+        and hear audio playback. This simulates a real NCK-like exam environment.
+        <br /><br />
+
+        <strong>If this setup feels confusing or takes too long:</strong>
+        <br />
+        You can safely <strong>skip the setup</strong> and start the simulation immediately.
+        Camera and microphone can be enabled later during the session if needed.
+        <br /><br />
+
+        Please remember to <strong>double-click</strong> the Camera button if you choose to enable it.
+        <br />
+
+        These monitoring features are for simulation only and are not fully automated.
       </div>
 
 
       {/* Instructions Card */}
 
-      <Card>
+      <Card className="mt-4 border-0">
+
         <CardHeader>
           <CardTitle className="text-center text-lg">
-            NCK Simulation Instructions
+            NCK Exam Practice Simulation Guide
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5 text-sm text-muted-foreground leading-relaxed">

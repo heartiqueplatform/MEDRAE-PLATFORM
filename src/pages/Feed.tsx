@@ -1265,13 +1265,13 @@ export default function Feed() {
             cards.push(
               <motion.div
                 key={q.id}
-                whileHover={{ scale: 1.02 }}
+
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="relative w-full max-w-screen-lg mx-auto mb-5"
                 ref={index === questions.length - 1 ? loaderRef : null}
 
               >
-                <Card className="relative bg-transparent dark:bg-transparent border border-gray-300/60 dark:border-white/5 shadow-none rounded-xl overflow-visible transition-all">
+                <Card className="relative bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-800 border border-gray-300/60 dark:border-white/5 shadow-none rounded-xl overflow-visible transition-all">
 
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (

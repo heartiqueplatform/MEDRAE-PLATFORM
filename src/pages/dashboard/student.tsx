@@ -948,1030 +948,1030 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="dashboard-no-select min-h-screen md:min-h-auto rounded-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
-
-      <GreetingsCard />
-      <Referral />
-      {/* Quick Stats */}
-      <div
-        className="
-    flex gap-4   mt-2 overflow-y-auto custom-scrollbar pb-2 snap-x snap-mandatory
-    sm:grid sm:grid-cols-2
-    md:grid-cols-3
-    lg:grid-cols-4
-    xl:grid-cols-5
-    w-full
+    <div className="dashboard-no-select min-h-screen md:flex md:items-center md:justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] w-full">
+      <div className="w-full md:max-w-3xl md:px-4">
+        <GreetingsCard />
+        <Referral />
+        {/* Quick Stats */}
+        <div
+          className="
+    flex gap-2 mt-2 rounded-xl overflow-x-auto  custom-scrollbar snap-x snap-mandatory
+    w-full py-2 px-2
     scrollbar-hide
-    h-[260px] sm:h-auto
   "
-      >
+        >
+          {/* Study Progress */}
+          <Card
 
-
-        {/* Study Progress */}
-        <Card
-          className="
+            className="
     relative overflow-hidden shadow-lg
-    min-w-[220px] max-w-[220px]
-    sm:min-w-0 sm:max-w-none
+    min-w-[220px]
+    h-[260px]
     rounded-xl
     snap-start
     transition-transform duration-300
     hover:scale-105
     mistake-card-glow
-"
-
-
-
-          style={{
-            backgroundImage: "url('/background06.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
-
-          <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
-
-              <CardTitle className="text-sm font-medium text-white">
-                Study Progress
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-white" />
-            </CardHeader>
-            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-
-              {loadingStats ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-16 bg-white/40/30 rounded"></div>
-                  <div className="h-2 bg-white/40/30 rounded w-full mt-1"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-white">{studyProgress}%</div>
-                  <Progress value={studyProgress} className="mt-2" />
-                </>
-              )}
-            </CardContent>
-          </div>
-        </Card>
-
-        {/* Quizzes Completed */}
-        <Card
-          className="
-    relative overflow-hidden shadow-lg
-    min-w-[220px] max-w-[220px]
-    sm:min-w-0 sm:max-w-none
-    rounded-xl
-    snap-start
-    transition-transform duration-300
-    hover:scale-105
-    mistake-card-glow
-"
-
-          style={{
-            backgroundImage: "url('/indexbackground7.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
-
-          <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
-
-              <CardTitle className="text-sm font-medium text-white">
-                Quizzes Completed
-              </CardTitle>
-              <Target className="h-4 w-4 text-white" />
-            </CardHeader>
-            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-
-              {loadingStats ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-16 bg-white/40/30 rounded"></div>
-                  <div className="h-2 w-12 bg-white/40/30 rounded"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-white">{quizCount}</div>
-                  <p className="text-xs text-white/80 truncate">+3 this week</p>
-                </>
-              )}
-            </CardContent>
-          </div>
-        </Card>
-
-        <Card
-          className="
-    relative overflow-hidden shadow-lg
-    min-w-[220px] max-w-[220px]
-    sm:min-w-0 sm:max-w-none
-    rounded-xl
-    snap-start
-    transition-transform duration-300
-    hover:scale-105
-    mistake-card-glow
-"
-
-        >
-          {/* Background image */}
-          <div
-            className="absolute inset-0"
+    flex-shrink-0
+  "
             style={{
-              backgroundImage: "url('/background05.jpg')",
+              backgroundImage: "url('/background06.jpg')",
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
-          />
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
+          >
+            <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
 
-          <div className="relative z-20 p-2 flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+            <div className="relative z-10">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
 
-              <CardTitle className="text-sm font-medium text-white">My Target Score</CardTitle>
-              <Target className="h-4 w-4 text-white/80" />
-            </CardHeader>
+                <CardTitle className="text-sm font-medium text-white">
+                  Study Progress
+                </CardTitle>
+                <TrendingUp className="h-4 w-4 text-white" />
+              </CardHeader>
+              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
 
-            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-
-              {loadingStats ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-16 bg-white/30 rounded"></div>
-                  <div className="h-2 w-20 bg-white/30 rounded"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-white">{targetScore}%</div>
-                  <p className="text-xs text-white/80 truncate">Your personal target</p>
-                </>
-              )}
-
-              {/* Divider line */}
-              <div className="border-t border-white/30 my-2 w-full" />
-
-              {/* Small instruction, lighter and italic */}
-              <p className="text-xs text-white/50 italic mb-1">
-                Visit your progress page to adjust your target.
-              </p>
-
-              {/* Button aligned right */}
-              <div className="flex justify-end">
-                <button
-                  onClick={() => navigate("/progress")}
-                  className="px-3 py-1 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded transition"
-                >
-                  Visit
-                </button>
-              </div>
-            </CardContent>
-          </div>
-        </Card>
-
-
-        {/* Current Streak */}
-        <Card
-          className="
-    relative overflow-hidden shadow-lg
-    min-w-[220px] max-w-[220px]
-    sm:min-w-0 sm:max-w-none
-    rounded-xl
-    snap-start
-    transition-transform duration-300
-    hover:scale-105
-    mistake-card-glow
-"
-
-
-          style={{
-            backgroundImage: "url('/indexbackground5.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
-
-
-          <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
-
-              <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
-              <Clock className="h-4 w-4 text-white" />
-            </CardHeader>
-            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-
-              {loadingStats ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-20 bg-white/40/30 rounded"></div>
-                  <div className="h-2 w-16 bg-white/40/30 rounded"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-white">{studyStreak} days</div>
-                  <p className="text-xs text-white/80 truncate">Keep it up!</p>
-                </>
-              )}
-            </CardContent>
-          </div>
-        </Card>
-
-        {/* Best Streak */}
-        <Card
-          className="
-    relative overflow-hidden shadow-lg
-    min-w-[220px] max-w-[220px]
-    sm:min-w-0 sm:max-w-none
-    rounded-xl
-    snap-start
-    transition-transform duration-300
-    hover:scale-105
-    mistake-card-glow
-"
-
-          style={{
-            backgroundImage: "url('/indexbackground2.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
-
-
-          <div className="relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
-
-              <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
-              <Trophy className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-              {loadingStats ? (
-                <div className="animate-pulse space-y-2">
-                  <div className="h-8 w-20 bg-white/40/30 rounded"></div>
-                  <div className="h-2 w-16 bg-white/40/30 rounded"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-white">{bestStreak} days</div>
-                  <p className="text-xs text-white/80 truncate">All-time record</p>
-                </>
-              )}
-            </CardContent>
-          </div>
-        </Card>
-
-      </div>
-
-      {/* 🏆 Top Students Leaderboard */}
-      <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-0">
-        <CardHeader className="p-2">
-
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-            <Trophy className="h-5 w-5 text-yellow-500" />
-            Top Students
-          </CardTitle>
-          <CardDescription>
-            Ranked by stars earned across all submitted quizzes. The leaderboard highlights
-            learners who consistently perform well, encouraging healthy competition.
-          </CardDescription>
-
-          {/* 🔽 Explanation Dropdown (scrolls internally) */}
-          {/* 🔽 Explanation Dropdown (scrolls internally) */}
-          <details className="mt-2 text-sm">
-            <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
-              How winners are chosen?
-            </summary>
-            <div className="mt-2 max-h-44 overflow-y-auto pr-2 space-y-3 text-gray-600 dark:text-gray-300 custom-scrollbar">
-              {/* ⭐ How stars are calculated */}
-              <div>
-                <h4 className="font-semibold">1. How stars are calculated</h4>
-                <ul className="list-disc ml-5 mt-1 space-y-1">
-                  <li>90%+ average → ⭐⭐⭐⭐⭐</li>
-                  <li>75–89% → ⭐⭐⭐⭐</li>
-                  <li>60–74% → ⭐⭐⭐</li>
-                  <li>40–59% → ⭐⭐</li>
-                  <li>1–39% → ⭐</li>
-                </ul>
-                <p className="mt-1 text-xs italic">
-                  Stars come from the average quiz performance across all attempts.
-                </p>
-              </div>
-
-              {/* Ranking rules */}
-              <div>
-                <h4 className="font-semibold">2. Ranking rules</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Students are ranked by <strong>total stars earned</strong>.</li>
-                  <li>If stars are equal → compare <strong>average quiz scores</strong>.</li>
-                  <li>If still tied → the student with <strong>more quizzes attempted</strong> wins.</li>
-                </ul>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
-                  This ensures there is always one clear winner at the top.
-                </p>
-              </div>
-
-              {/* Tip + Button */}
-              <p className="text-sm">
-                Want to improve your ranking? Attempt more units and submit results on the quizzes page.
-              </p>
-
-              <Button
-                asChild
-                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
-              >
-                <Link to="/Medrae-quizzes">Go to Quizzes</Link>
-              </Button>
+                {loadingStats ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-8 w-16 bg-white/40/30 rounded"></div>
+                    <div className="h-2 bg-white/40/30 rounded w-full mt-1"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-white">{studyProgress}%</div>
+                    <Progress value={studyProgress} className="mt-2" />
+                  </>
+                )}
+              </CardContent>
             </div>
-          </details>
+          </Card>
 
-        </CardHeader>
+          {/* Quizzes Completed */}
+          <Card
+            className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px]
+    h-[260px]
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+    mistake-card-glow
+    flex-shrink-0
+  "
 
-        {/* 🧑‍🎓 Leaderboard Section */}
-        <CardContent className="px-0">
-          <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
-            <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-1 custom-scrollbar">
-              {loadingTopStudents ? (
-                <div className="flex gap-4 animate-pulse">
-                  {Array.from({ length: 4 }).map((_, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-md bg-gray-200 dark:bg-gray-700">
+            style={{
+              backgroundImage: "url('/indexbackground7.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
 
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
-                        <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                        <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                        <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                        <div className="flex justify-center mt-2 gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <div
-                              key={`skeleton-star-${i}`}
-                              className="h-4 w-4 bg-yellow-300 rounded-full"
-                            />
-                          ))}
+            <div className="relative z-10">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
 
-                        </div>
-                        <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded-full mt-2"></div>
-                      </div>
-                    </div>
-                  ))}
+                <CardTitle className="text-sm font-medium text-white">
+                  Quizzes Completed
+                </CardTitle>
+                <Target className="h-4 w-4 text-white" />
+              </CardHeader>
+              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
+                {loadingStats ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-8 w-16 bg-white/40/30 rounded"></div>
+                    <div className="h-2 w-12 bg-white/40/30 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-white">{quizCount}</div>
+                    <p className="text-xs text-white/80 truncate">+3 this week</p>
+                  </>
+                )}
+              </CardContent>
+            </div>
+          </Card>
+
+          <Card
+            className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px]
+    h-[260px]
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+    mistake-card-glow
+    flex-shrink-0
+  "
+          >
+            {/* Background image */}
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: "url('/background05.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            />
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
+
+            <div className="relative z-20 p-2 flex flex-col">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
+                <CardTitle className="text-sm font-medium text-white">My Target Score</CardTitle>
+                <Target className="h-4 w-4 text-white/80" />
+              </CardHeader>
+
+              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
+                {loadingStats ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-8 w-16 bg-white/30 rounded"></div>
+                    <div className="h-2 w-20 bg-white/30 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-white">{targetScore}%</div>
+                    <p className="text-xs text-white/80 truncate">Your personal target</p>
+                  </>
+                )}
+
+                {/* Divider line */}
+                <div className="border-t border-white/30 my-2 w-full" />
+
+                {/* Small instruction, lighter and italic */}
+                <p className="text-xs text-white/50 italic mb-1">
+                  Visit your progress page to adjust your target.
+                </p>
+
+                {/* Button aligned right */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => navigate("/progress")}
+                    className="px-3 py-1 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded transition"
+                  >
+                    Visit
+                  </button>
                 </div>
-              ) : topStudents.length > 0 ? (
-                topStudents.map((s, idx) => {
-                  const rankColor =
-                    idx === 0
-                      ? "from-yellow-400 to-yellow-200"
-                      : idx === 1
-                        ? "from-gray-400 to-gray-200"
-                        : idx === 2
-                          ? "from-amber-600 to-amber-300"
-                          : "from-gray-100 to-gray-50";
+              </CardContent>
+            </div>
+          </Card>
 
-                  return (
-                    <div
-                      key={s.userId}
-                      className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900
+
+          {/* Current Streak */}
+          <Card
+            className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px]
+    h-[260px]
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+    mistake-card-glow
+    flex-shrink-0
+  "
+
+
+            style={{
+              backgroundImage: "url('/indexbackground5.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
+
+
+            <div className="relative z-10">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
+                <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
+                <Clock className="h-4 w-4 text-white" />
+              </CardHeader>
+              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
+                {loadingStats ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-8 w-20 bg-white/40/30 rounded"></div>
+                    <div className="h-2 w-16 bg-white/40/30 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-white">{studyStreak} days</div>
+                    <p className="text-xs text-white/80 truncate">Keep it up!</p>
+                  </>
+                )}
+              </CardContent>
+            </div>
+          </Card>
+
+          {/* Best Streak */}
+          <Card
+            className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px]
+    h-[260px]
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    hover:scale-105
+    mistake-card-glow
+    flex-shrink-0
+  "
+
+            style={{
+              backgroundImage: "url('/indexbackground2.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
+
+
+            <div className="relative z-10">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
+                <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
+                <Trophy className="h-4 w-4 text-yellow-500" />
+              </CardHeader>
+              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+                {loadingStats ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-8 w-20 bg-white/40/30 rounded"></div>
+                    <div className="h-2 w-16 bg-white/40/30 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-white">{bestStreak} days</div>
+                    <p className="text-xs text-white/80 truncate">All-time record</p>
+                  </>
+                )}
+              </CardContent>
+            </div>
+          </Card>
+
+        </div>
+
+        {/* 🏆 Top Students Leaderboard */}
+        <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden
+                 bg-gray-100 dark:bg-gray-900 border-0 mt-4">
+
+          <CardHeader className="p-2">
+
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              Top Students
+            </CardTitle>
+            <CardDescription>
+              Ranked by stars earned across all submitted quizzes. The leaderboard highlights
+              learners who consistently perform well, encouraging healthy competition.
+            </CardDescription>
+
+            {/* 🔽 Explanation Dropdown (scrolls internally) */}
+            {/* 🔽 Explanation Dropdown (scrolls internally) */}
+            <details className="mt-2 text-sm">
+              <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
+                How winners are chosen?
+              </summary>
+              <div className="mt-2 max-h-44 overflow-y-auto pr-2 space-y-3 text-gray-600 dark:text-gray-300 custom-scrollbar">
+                {/* ⭐ How stars are calculated */}
+                <div>
+                  <h4 className="font-semibold">1. How stars are calculated</h4>
+                  <ul className="list-disc ml-5 mt-1 space-y-1">
+                    <li>90%+ average → ⭐⭐⭐⭐⭐</li>
+                    <li>75–89% → ⭐⭐⭐⭐</li>
+                    <li>60–74% → ⭐⭐⭐</li>
+                    <li>40–59% → ⭐⭐</li>
+                    <li>1–39% → ⭐</li>
+                  </ul>
+                  <p className="mt-1 text-xs italic">
+                    Stars come from the average quiz performance across all attempts.
+                  </p>
+                </div>
+
+                {/* Ranking rules */}
+                <div>
+                  <h4 className="font-semibold">2. Ranking rules</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Students are ranked by <strong>total stars earned</strong>.</li>
+                    <li>If stars are equal → compare <strong>average quiz scores</strong>.</li>
+                    <li>If still tied → the student with <strong>more quizzes attempted</strong> wins.</li>
+                  </ul>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
+                    This ensures there is always one clear winner at the top.
+                  </p>
+                </div>
+
+                {/* Tip + Button */}
+                <p className="text-sm">
+                  Want to improve your ranking? Attempt more units and submit results on the quizzes page.
+                </p>
+
+                <Button
+                  asChild
+                  className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
+                >
+                  <Link to="/Medrae-quizzes">Go to Quizzes</Link>
+                </Button>
+              </div>
+            </details>
+
+          </CardHeader>
+
+          {/* 🧑‍🎓 Leaderboard Section */}
+          <CardContent className="px-0">
+            <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
+              <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-1 custom-scrollbar">
+                {loadingTopStudents ? (
+                  <div className="flex gap-4 animate-pulse">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={idx} className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-md bg-gray-200 dark:bg-gray-700">
+
+                        <div className="flex flex-col items-center text-center">
+                          <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
+                          <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                          <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
+                          <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                          <div className="flex justify-center mt-2 gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <div
+                                key={`skeleton-star-${i}`}
+                                className="h-4 w-4 bg-yellow-300 rounded-full"
+                              />
+                            ))}
+
+                          </div>
+                          <div className="h-4 w-16 bg-gray-300 dark:bg-gray-600 rounded-full mt-2"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : topStudents.length > 0 ? (
+                  topStudents.map((s, idx) => {
+                    const rankColor =
+                      idx === 0
+                        ? "from-yellow-400 to-yellow-200"
+                        : idx === 1
+                          ? "from-gray-400 to-gray-200"
+                          : idx === 2
+                            ? "from-amber-600 to-amber-300"
+                            : "from-gray-100 to-gray-50";
+
+                    return (
+                      <div
+                        key={s.userId}
+                        className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900
            transform transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 hover:shadow-xl`}
 
-                    >
+                      >
 
-                      <div className="flex flex-col items-center text-center">
-                        <img
-                          src={s.avatar_url || "/UsersAvatar.jpg"}
-                          alt={s.name}
-                          className="w-12 h-12 rounded-full mb-2 object-cover border-none shadow-none"
-                        />
+                        <div className="flex flex-col items-center text-center">
+                          <img
+                            src={s.avatar_url || "/UsersAvatar.jpg"}
+                            alt={s.name}
+                            className="w-12 h-12 rounded-full mb-2 object-cover border-none shadow-none"
+                          />
 
-                        <h3
-                          className="font-medium text-sm sm:text-base text-gray-900 dark:text-white max-w-[8rem] line-clamp-2"
-                          title={s.name}
-                        >
-                          {s.name || "Unknown"}
-                        </h3>
-                        <p
-                          className="text-xs text-gray-700 dark:text-gray-300 max-w-[8rem] line-clamp-2"
-                          title={s.institution}
-                        >
-                          {s.institution || "Institution"}
-                        </p>
-                        <p
-                          className="text-xs text-gray-500 max-w-[8rem] truncate"
-                          title={s.county}
-                        >
-                          {s.county || ""}
-                        </p>
-                        <div className="flex justify-center mt-2 text-yellow-500">
-                          {Array.from({ length: s.stars }).map((_, i) => (
-                            <Star key={`${s.userId}-star-${i}`} className="h-4 w-4 fill-yellow-400" />
-                          ))}
-
-                        </div>
-                        {idx < 3 && (
-                          <p className="text-xs mt-2 font-semibold text-white bg-black/50 px-2 py-1 rounded-full whitespace-nowrap">
-                            {idx === 0 ? "🥇 Gold" : idx === 1 ? "🥈 Silver" : "🥉 Bronze"}
+                          <h3
+                            className="font-medium text-sm sm:text-base text-gray-900 dark:text-white max-w-[8rem] line-clamp-2"
+                            title={s.name}
+                          >
+                            {s.name || "Unknown"}
+                          </h3>
+                          <p
+                            className="text-xs text-gray-700 dark:text-gray-300 max-w-[8rem] line-clamp-2"
+                            title={s.institution}
+                          >
+                            {s.institution || "Institution"}
                           </p>
-                        )}
+                          <p
+                            className="text-xs text-gray-500 max-w-[8rem] truncate"
+                            title={s.county}
+                          >
+                            {s.county || ""}
+                          </p>
+                          <div className="flex justify-center mt-2 text-yellow-500">
+                            {Array.from({ length: s.stars }).map((_, i) => (
+                              <Star key={`${s.userId}-star-${i}`} className="h-4 w-4 fill-yellow-400" />
+                            ))}
+
+                          </div>
+                          {idx < 3 && (
+                            <p className="text-xs mt-2 font-semibold text-white bg-black/50 px-2 py-1 rounded-full whitespace-nowrap">
+                              {idx === 0 ? "🥇 Gold" : idx === 1 ? "🥈 Silver" : "🥉 Bronze"}
+                            </p>
+                          )}
+                        </div>
+
                       </div>
-
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-gray-500">No top students yet</p>
-              )}
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-gray-500">No top students yet</p>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card >
-      <FeedSeenTop10 />
-      <CountdownFloating />
-      <DailyTriviaCard />
-      <MistakesCard />
-      {/* Floating Button showing top student's avatar */}
-      {/* Floating Avatar Button with Crown Outside */}
-      <div className="fixed bottom-36 right-2 rounded-full  p-0 z-30 ">
+          </CardContent>
+        </Card >
+        <FeedSeenTop10 />
+        <CountdownFloating />
+        <DailyTriviaCard />
+        <MistakesCard />
+        {/* Floating Button showing top student's avatar */}
+        {/* Floating Avatar Button with Crown Outside */}
+        <div className="fixed bottom-36 right-2 rounded-full  p-0 z-30 ">
 
-        <FloatingHearts trigger="hover" bubbleCount={3}>
-          <button
-            className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700 slow-blink"
-            onClick={() => setOverlayOpen(true)}
-          >
-            {topStudents.length > 0 ? (
-              <>
-                {/* Avatar Circle */}
-                <div className="w-full h-full rounded-full overflow-hidden">
-                  <img
-                    src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                    alt={topStudents[0].name}
-                    className="w-full h-full object-cover"
-                  />
+          <FloatingHearts trigger="hover" bubbleCount={3}>
+            <button
+              className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700 slow-blink"
+              onClick={() => setOverlayOpen(true)}
+            >
+              {topStudents.length > 0 ? (
+                <>
+                  {/* Avatar Circle */}
+                  <div className="w-full h-full rounded-full overflow-hidden">
+                    <img
+                      src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                      alt={topStudents[0].name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Crown Badge Floating Outside */}
+                  <div className="absolute -top-3 -right-3 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-700">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-4 h-4 text-white"
+                    >
+                      <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" />
+                      <path d="M5 16H19V19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V16Z" />
+                    </svg>
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">?</span>
                 </div>
+              )}
+            </button>
+          </FloatingHearts>
+        </div>
 
-                {/* Crown Badge Floating Outside */}
-                <div className="absolute -top-3 -right-3 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-700">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-4 h-4 text-white"
-                  >
-                    <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" />
-                    <path d="M5 16H19V19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V16Z" />
-                  </svg>
+
+
+
+        <Dialog open={overlayOpen} onOpenChange={setOverlayOpen}>
+          <DialogContent className="max-w-3xl p-0">
+
+            {/* Close button is already handled by Dialog, but we keep yours */}
+            <button
+              type="button"
+              className="absolute top-10 right-4 z-50 text-sm font-semibold text-gray-600 dark:text-white/80 hover:text-red-500 tracking-wide"
+              onClick={() => setOverlayOpen(false)}
+            >
+              Close
+            </button>
+
+
+            {/* Card Content */}
+            <div className="relative z-20 p-4 flex flex-col justify-between h-full">
+              <div className="relative z-20 p-2 flex flex-col justify-between h-full">
+
+                {/* Card Heading */}
+                <div className="mb-0 px-2 pt-0">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate text-center">
+                    Feed & Leaderboard
+                  </h2>
                 </div>
-              </>
-            ) : (
-              <div className="w-full h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                <span className="text-white font-bold text-xl">?</span>
-              </div>
-            )}
-          </button>
-        </FloatingHearts>
-      </div>
+                <CardContent className="flex flex-col gap-8 text-xm italic ">
+                  <p className="text-gray-700 dark:text-white/90">
+                    Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
+                  </p>
+                  {/* Stats Row */}
+                  <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
+                    {/* Questions Attempted */}
+                    <div className="flex flex-col sm:flex-row justify-start items-center gap-4">
+                      <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
+                      {feedsAttemptCount === undefined ? (
+                        <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                      ) : (
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+                      )}
+                    </div>
+                    {/* Leader Student */}
+                    {topStudents.length > 0 ? (
+                      <div
+                        className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (navigator.vibrate) navigator.vibrate(50);
+                          navigate("/feed");
+                        }}
+                      >
+                        <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
+                        <img
+                          src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                          alt={topStudents[0].name}
+                          className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
+                        />
+                        <div className="flex flex-col items-center">
+                          <p className="text-xl mt-1 truncate text-center text-gray-700 dark:text-white/90 font-bold">
+                            {topStudents[0].name}
+                          </p>
 
+                          {/* Professional Badge */}
+                          <div className="mt-1 flex items-center gap-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path d="M10 15l-5.878 3.09 1.123-6.545L.49 6.91l6.572-.955L10 0l2.938 5.955 6.572.955-4.755 4.635 1.123 6.545z" />
+                            </svg>
+                            <span>Top Performer</span>
+                          </div>
+                        </div>
 
-
-
-      <Dialog open={overlayOpen} onOpenChange={setOverlayOpen}>
-        <DialogContent className="max-w-3xl p-0">
-
-          {/* Close button is already handled by Dialog, but we keep yours */}
-          <button
-            type="button"
-            className="absolute top-10 right-4 z-50 text-sm font-semibold text-gray-600 dark:text-white/80 hover:text-red-500 tracking-wide"
-            onClick={() => setOverlayOpen(false)}
-          >
-            Close
-          </button>
-
-
-          {/* Card Content */}
-          <div className="relative z-20 p-4 flex flex-col justify-between h-full">
-            <div className="relative z-20 p-2 flex flex-col justify-between h-full">
-
-              {/* Card Heading */}
-              <div className="mb-0 px-2 pt-0">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate text-center">
-                  Feed & Leaderboard
-                </h2>
-              </div>
-              <CardContent className="flex flex-col gap-8 text-xm italic ">
-                <p className="text-gray-700 dark:text-white/90">
-                  Keep practicing random questions in the feed page and the quizzes bank page to improve your skills and climb one of the leaderboards!
-                </p>
-                {/* Stats Row */}
-                <div className="flex flex-col sm:flex-row justify-start items-center lg:gap-64 ">
-                  {/* Questions Attempted */}
-                  <div className="flex flex-col sm:flex-row justify-start items-center gap-4">
-                    <p className="text-xs text-gray-500 dark:text-white/70">Questions You Attempted</p>
-                    {feedsAttemptCount === undefined ? (
-                      <div className="h-5 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                      </div>
                     ) : (
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{feedsAttemptCount}</p>
+                      <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
+                        <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                        <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      </div>
                     )}
                   </div>
-                  {/* Leader Student */}
-                  {topStudents.length > 0 ? (
+
+
+                  {/* Centered Button */}
+                  <div className="flex justify-center mt-3">
+
                     <div
-                      className="flex flex-col items-center cursor-pointer w-24 sm:w-24 mt-2 sm:mt-0"
+                      className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (navigator.vibrate) navigator.vibrate(50);
                         navigate("/feed");
                       }}
                     >
-                      <p className="text-xs text-gray-500 dark:text-white/70 text-center truncate">Leader Student</p>
-                      <img
-                        src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                        alt={topStudents[0].name}
-                        className="w-12 h-12 rounded-full mt-1 object-cover border-2 border-gray-300/30 dark:border-white/30 shadow-none-none"
-                      />
-                      <div className="flex flex-col items-center">
-                        <p className="text-xl mt-1 truncate text-center text-gray-700 dark:text-white/90 font-bold">
-                          {topStudents[0].name}
-                        </p>
-
-                        {/* Professional Badge */}
-                        <div className="mt-1 flex items-center gap-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-3 w-3"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.49 6.91l6.572-.955L10 0l2.938 5.955 6.572.955-4.755 4.635 1.123 6.545z" />
-                          </svg>
-                          <span>Top Performer</span>
-                        </div>
-                      </div>
-
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
+                      </svg>
+                      <span className="text-sm font-medium">Feed Page</span>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center w-24 sm:w-24 mt-2 sm:mt-0 animate-pulse">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-1"></div>
-                      <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-                      <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    </div>
-                  )}
-                </div>
 
 
-                {/* Centered Button */}
-                <div className="flex justify-center mt-3">
-
-                  <div
-                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md cursor-pointer transition-all shadow-none-md"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (navigator.vibrate) navigator.vibrate(50);
-                      navigate("/feed");
-                    }}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 13H7m10-4H7m5 8H7" />
-                    </svg>
-                    <span className="text-sm font-medium">Feed Page</span>
                   </div>
+                </CardContent>
 
-
-                </div>
-              </CardContent>
-
-            </div>
-          </div>
-
-        </DialogContent>
-      </Dialog>
-      <DailyImagesTrivia />
-
-
-      <MistakeCard />
-
-      {/* Upcoming Redletter Dates / Revision Schedule Card */}
-      {
-        calendarEvents.length > 0 && (
-
-          <Card
-            className="p-2 mt-4 cursor-pointer bg-transparent hover:bg-transparent transition-colors rounded-none"
-            onClick={() => navigate("/calendar")}
-          >
-
-            <CardHeader className="flex items-center space-x-2">
-              <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
-              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-                Your Upcoming Revision Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
-              Stay on track! Visit your calendar to plan and adjust your study timeline.
-            </CardDescription>
-            <CardContent className="space-y-2 mt-2">
-              {calendarEvents.length > 0 ? (
-                <div className="space-y-2">
-                  {calendarEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
-                    >
-                      <div className="truncate">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {event.title}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                          {event.type}
-                        </p>
-                      </div>
-                      <Badge className={getPriorityColor(event.priority)}>
-                        {new Date(event.start_time).toLocaleDateString()}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  You have no upcoming revisions. Visit your calendar to plan your schedule.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )
-      }
-
-      <Card className="lg:col-span-3 w-full max-w-nonebg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  border-none rounded-none overflow-hidden sm:-mx-1">
-
-        <CardHeader className="p-2">
-
-          <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
-          <CardDescription className="text-gray-700 dark:text-gray-300">
-            Share insights and experiences to educate, inspire, and grow together as a learning community.
-          </CardDescription>
-
-        </CardHeader>
-
-        <CardContent className="p-2">
-          <div className="space-y-4 px-3 sm:px-4">
-
-            {/* Daily Thought Textarea */}
-            <textarea
-              className="w-full p-3 rounded-none sm:rounded-md
-bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
-              placeholder="Write today's thought..."
-              value={dailyContent}
-              onChange={(e) => setDailyContent(e.target.value)}
-            />
-
-
-            {/* Visibility Selector */}
-            <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
-              <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
-              <select
-                value={dailyDuration}
-                onChange={(e) => setDailyDuration(e.target.value as any)}
-                className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-none sm:rounded-md
- w-full sm:w-40"
-              >
-                <option value="24h">24 Hours</option>
-                <option value="1w">1 Week</option>
-                <option value="1m">1 Month</option>
-                <option value="3m">3 Months</option>
-              </select>
-            </div>
-
-            {/* Image Upload */}
-            <input
-              id="dailyImageUpload"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
-              className="hidden"
-            />
-            <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
-              <label
-                htmlFor="dailyImageUpload"
-                className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  Choose Image
-                </span>
-              </label>
-
-              {/* Send Button as rectangle tab */}
-              <div
-                onClick={handlePostClick}
-                className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md
-      ${uploading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"}`}
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-white" />
-                ) : (
-                  <Send className="w-4 h-4 text-white" />
-                )}
-                <span className="text-sm font-medium text-white">Send</span>
               </div>
             </div>
 
-            {/* Daily Posts */}
-            <div className="space-y-3 mt-4">
-              {loading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="p-3 rounded-none sm:rounded-md
- bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
-                  ))}
-                </div>
-              ) : dailyPosts.length > 0 ? (
-                dailyPosts.map((post) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 border rounded-none sm:rounded-md
- bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+          </DialogContent>
+        </Dialog>
+        <DailyImagesTrivia />
+
+
+        <MistakeCard />
+
+        {/* Upcoming Redletter Dates / Revision Schedule Card */}
+        {
+          calendarEvents.length > 0 && (
+
+            <Card
+              className="p-2 mt-4 cursor-pointer rounded-xl border-0 bg-gray-100 dark:bg-gray-900 transition-colors"
+              onClick={() => navigate("/calendar")}
+            >
+
+
+              <CardHeader className="flex items-center space-x-2">
+                <Calendar className="w-5 h-5 text-gray-900 dark:text-white" />
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Your Upcoming Revision Schedule
+                </CardTitle>
+              </CardHeader>
+              <CardDescription className="text-sm text-gray-600 dark:text-gray-400 ml-[26px]">
+                Stay on track! Visit your calendar to plan and adjust your study timeline.
+              </CardDescription>
+              <CardContent className="space-y-2 mt-2">
+                {calendarEvents.length > 0 ? (
+                  <div className="space-y-2">
+                    {calendarEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex justify-between items-center p-2 rounded-md bg-white/10 dark:bg-gray-700/20 w-full"
+                      >
+                        <div className="truncate">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {event.title}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                            {event.type}
+                          </p>
+                        </div>
+                        <Badge className={getPriorityColor(event.priority)}>
+                          {new Date(event.start_time).toLocaleDateString()}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    You have no upcoming revisions. Visit your calendar to plan your schedule.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )
+        }
+
+        <Card className="lg:col-span-3 w-full max-w-none bg-gray-100 dark:bg-gray-900 border-none rounded-xl overflow-hidden sm:-mx-1 mt-4">
+
+          <CardHeader className="p-2">
+
+            <CardTitle className="text-gray-900 dark:text-white">Medrae Daily Status</CardTitle>
+            <CardDescription className="text-gray-700 dark:text-gray-300">
+              Share insights and experiences to educate, inspire, and grow together as a learning community.
+            </CardDescription>
+
+          </CardHeader>
+
+          <CardContent className="p-2">
+            <div className="space-y-4 px-3 sm:px-4">
+
+              {/* Daily Thought Textarea */}
+              <textarea
+                className="w-full p-3 rounded-none sm:rounded-md
+bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
+                placeholder="Write today's thought..."
+                value={dailyContent}
+                onChange={(e) => setDailyContent(e.target.value)}
+              />
+
+
+              {/* Visibility Selector */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
+                <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
+                <select
+                  value={dailyDuration}
+                  onChange={(e) => setDailyDuration(e.target.value as any)}
+                  className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-none sm:rounded-md
+ w-full sm:w-40"
+                >
+                  <option value="24h">24 Hours</option>
+                  <option value="1w">1 Week</option>
+                  <option value="1m">1 Month</option>
+                  <option value="3m">3 Months</option>
+                </select>
+              </div>
+
+              {/* Image Upload */}
+              <input
+                id="dailyImageUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
+                className="hidden"
+              />
+              <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
+                <label
+                  htmlFor="dailyImageUpload"
+                  className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-5 h-5 text-green-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   >
-                    <div className="flex flex-col sm:flex-row gap-4 items-start">
-                      {/* User Info */}
-                      {/* User Info */}
-                      <div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenProfileId(openProfileId === post.id ? null : post.id)
-                          }
-                          className="flex flex-col items-center focus:outline-none"
-                        >
-                          {/* Avatar */}
-                          {post.profiles?.avatar_url ? (
-                            <img
-                              src={post.profiles.avatar_url}
-                              alt={post.profiles.username}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
-                              {post.profiles?.username?.charAt(0).toUpperCase()}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    Choose Image
+                  </span>
+                </label>
+
+                {/* Send Button as rectangle tab */}
+                <div
+                  onClick={handlePostClick}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md
+      ${uploading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"}`}
+                >
+                  {uploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <Send className="w-4 h-4 text-white" />
+                  )}
+                  <span className="text-sm font-medium text-white">Send</span>
+                </div>
+              </div>
+
+              {/* Daily Posts */}
+              <div className="space-y-3 mt-4">
+                {loading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="p-3 rounded-none sm:rounded-md
+ bg-gray-200 dark:bg-gray-700 animate-pulse h-24 w-full"></div>
+                    ))}
+                  </div>
+                ) : dailyPosts.length > 0 ? (
+                  dailyPosts.map((post) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 border rounded-none sm:rounded-md
+ bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+                    >
+                      <div className="flex flex-col sm:flex-row gap-4 items-start">
+                        {/* User Info */}
+                        {/* User Info */}
+                        <div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenProfileId(openProfileId === post.id ? null : post.id)
+                            }
+                            className="flex flex-col items-center focus:outline-none"
+                          >
+                            {/* Avatar */}
+                            {post.profiles?.avatar_url ? (
+                              <img
+                                src={post.profiles.avatar_url}
+                                alt={post.profiles.username}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
+                                {post.profiles?.username?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </button>
+
+                          {/* Tiny Tooltip Overlay */}
+                          {openProfileId === post.id && (
+                            <div className="absolute top-1/2 left-full ml-2 transform -translate-y-1/2 max-w-[220px] p-3 rounded-lg bg-white dark:bg-gray-900 shadow-lg text-left text-xs z-30 border border-gray-200 dark:border-gray-700">
+
+                              <span className="font-semibold text-gray-900 dark:text-white block truncate">
+                                {post.profiles?.full_name}
+                              </span>
+                              <span className="text-gray-700 dark:text-gray-300 block truncate">
+                                @{post.profiles?.username}
+                              </span>
+                              <span className="text-gray-700 dark:text-gray-300 block truncate">
+                                {post.profiles?.institution}
+                              </span>
+                              <span className="text-gray-700 dark:text-gray-300 block truncate">
+                                {post.profiles?.county}
+                              </span>
                             </div>
                           )}
-                        </button>
-
-                        {/* Tiny Tooltip Overlay */}
-                        {openProfileId === post.id && (
-                          <div className="absolute top-1/2 left-full ml-2 transform -translate-y-1/2 max-w-[220px] p-3 rounded-lg bg-white dark:bg-gray-900 shadow-lg text-left text-xs z-30 border border-gray-200 dark:border-gray-700">
-
-                            <span className="font-semibold text-gray-900 dark:text-white block truncate">
-                              {post.profiles?.full_name}
-                            </span>
-                            <span className="text-gray-700 dark:text-gray-300 block truncate">
-                              @{post.profiles?.username}
-                            </span>
-                            <span className="text-gray-700 dark:text-gray-300 block truncate">
-                              {post.profiles?.institution}
-                            </span>
-                            <span className="text-gray-700 dark:text-gray-300 block truncate">
-                              {post.profiles?.county}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                        </div>
 
 
-                      {/* Post Content & Image */}
-                      <div className="flex-1 flex flex-col gap-2">
-                        {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
+                        {/* Post Content & Image */}
+                        <div className="flex-1 flex flex-col gap-2">
+                          {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
 
-                        {post.image_url && (
-                          <img
-                            src={post.image_url}
-                            alt="daily"
-                            className="rounded-none sm:rounded-md
+                          {post.image_url && (
+                            <img
+                              src={post.image_url}
+                              alt="daily"
+                              className="rounded-none sm:rounded-md
  w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
-                            onClick={() => setFullscreenImage(post.image_url)}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                          />
+                              onClick={() => setFullscreenImage(post.image_url)}
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                          )}
+                        </div>
+
+                        {/* Delete Button */}
+                        {user?.id === post.user_id && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="mt-2 sm:mt-0 p-2 flex items-center justify-center"
+                            onClick={() => handleDeletePost(post.id, post.user_id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         )}
                       </div>
-
-                      {/* Delete Button */}
-                      {user?.id === post.user_id && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="mt-2 sm:mt-0 p-2 flex items-center justify-center"
-                          onClick={() => handleDeletePost(post.id, post.user_id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} •
-                      Expires on {new Date(post.expires_at).toLocaleString()}
-                    </p>
-                  </motion.div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
-              )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} •
+                        Expires on {new Date(post.expires_at).toLocaleString()}
+                      </p>
+                    </motion.div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No posts yet.</p>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
+          </CardContent>
 
-        {/* Fullscreen Modal */}
-        {fullscreenImage && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
-            onClick={() => setFullscreenImage(null)}
-          >
-            <img
-              src={fullscreenImage}
-              alt="fullscreen"
-              className="max-w-full max-h-full object-contain rounded-none sm:rounded-md
+          {/* Fullscreen Modal */}
+          {fullscreenImage && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+              onClick={() => setFullscreenImage(null)}
+            >
+              <img
+                src={fullscreenImage}
+                alt="fullscreen"
+                className="max-w-full max-h-full object-contain rounded-none sm:rounded-md
 "
-            />
-          </div>
-        )}
-      </Card>
-
-      {/* Simulation Papers Section */}
-      <Card className="w-full rounded-none sm:rounded-md shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  p-2">
-        <CardHeader className="p-2">
-          <CardTitle className="text-gray-900 dark:text-white">
-            Self Test SimuProctor Papers V1
-            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-              ({cachedSimulationPapers.length} Papers)
-            </span>
-          </CardTitle>
-          <CardDescription className="text-gray-700 dark:text-gray-300">
-            Prepare smarter with simulation papers designed to mirror real exam conditions.
-            Practicing here helps you build confidence, improve time management, reduce anxiety, and sharpen focus.
-            Students who regularly use simulations perform better by identifying weak areas early and training their mind to stay calm under pressure.
-          </CardDescription>
-
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {cachedSimulationPapers.length} simulation papers available — start practicing today!
-          </p>
-
-          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-red-800 dark:text-red-200 text-sm font-semibold shadow-none border-0">
-            For the best experience, use a desktop or laptop. Simulations may work on some phones, but a larger screen ensures smoother interaction.
-          </div>
-
-
-          <div className="mt-2 p-0 rounded-none sm:rounded-md bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-blue-800 dark:text-blue-200 text-xs italic shadow-none border-0">
-            Tip: Treat each simulation as if it’s the real exam — no distractions, no breaks.
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {(!cachedSimulationPapers.length && loading) ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-[2px] w-full">
-              {Array.from({ length: 8 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="flex flex-col justify-between rounded-none sm:rounded-md bg-white dark:bg-gray-900 animate-pulse p-4 shadow-none border-0"
-                  style={{ minHeight: "250px" }}
-                >
-                  <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-full mb-1"></div>
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-5/6 mb-1"></div>
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-2/3 mt-auto"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
-              {cachedSimulationPapers.length > 0 ? (
-                cachedSimulationPapers.map((paper) => (
-                  <Card
-                    key={paper.id}
-                    className="flex flex-col justify-between cursor-pointer hover:scale-105 transform transition-all rounded-xl sm:rounded-md bg-white dark:bg-gray-900 shadow-none border border-gray-200 dark:border-gray-700 mistake-card-glow"
-                    onClick={async () => {
-                      navigate(`/simulation/${paper.id}`);
-                      const { data: userData } = await supabase.auth.getUser();
-                      await supabase.from("simulation_visits").insert({
-                        paper_id: paper.id,
-                        user_id: userData?.user?.id || null,
-                      });
-                    }}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-gray-900 dark:text-white text-lg line-clamp-2">
-                        {paper.title}
-                        {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
-                          <Badge className="ml-2" variant="outline">New</Badge>
-                        )}
-                        {paper.difficulty && (
-                          <Badge className="ml-2" variant="secondary">{paper.difficulty}</Badge>
-                        )}
-                      </CardTitle>
-                      {paper.course && (
-                        <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-                          {paper.course} {paper.block ? ` - ${paper.block}` : ""}
-                        </CardDescription>
-                      )}
-                    </CardHeader>
-
-                    <CardContent className="flex flex-col flex-1 justify-between">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
-                        {paper.description || "No description available."}
-                      </p>
-
-                      <p className="text-xs text-gray-500 mt-1">
-                        ⏱ Estimated time:{" "}
-                        {(() => {
-                          const duration = Number(paper.duration) || 30;
-                          if (duration < 60) return `${duration}m`;
-                          if (duration % 60 === 0) return `${duration / 60}h`;
-                          return `${Math.floor(duration / 60)}h ${duration % 60}m`;
-                        })()}
-                      </p>
-
-                      <p className="text-xs text-gray-500 mt-1">
-                        {paper.visit_count} visits
-                      </p>
-
-                      <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-2 bg-blue-500"
-                          style={{ width: `${simulationProgress[paper.id] || 0}%` }}
-                        />
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between">
-                        <Badge variant={paper.is_free ? "default" : "secondary"}>
-                          {paper.is_free ? "Free" : "Premium"}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(new Date(paper.created_at))} ago
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <p className="text-gray-600 dark:text-gray-400">
-                  No simulation papers available yet.
-                </p>
-              )}
+              />
             </div>
           )}
+        </Card>
 
-          <p className="mt-6 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
-            Every simulation you complete brings you one step closer to exam success!
-          </p>
-        </CardContent>
-      </Card>
+        {/* Simulation Papers Section */}
+        <Card className="w-full rounded-xl shadow-none border-0 bg-gray-100 dark:bg-gray-900 p-2 mt-4">
 
-      <UnitBreakdown nclexUnitCodes={[
-        "HNX3-001", "HNX3-002", "HNX3-003", "HNX3-004",
-        "HNX3-005", "HNX3-006", "HNX3-007", "HNX3-008"
-      ]} />
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 w-full">
-
-
-        {/* Share App Card */}
-        <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white/40 dark:bg-gray-900">
-          <CardHeader>
-
-            <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
-            <CardDescription>
-              Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
+          <CardHeader className="p-2">
+            <CardTitle className="text-gray-900 dark:text-white">
+              Self Test SimuProctor Papers V1
+              <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                ({cachedSimulationPapers.length} Papers)
+              </span>
+            </CardTitle>
+            <CardDescription className="text-gray-700 dark:text-gray-300">
+              Prepare smarter with simulation papers designed to mirror real exam conditions.
+              Practicing here helps you build confidence, improve time management, reduce anxiety, and sharpen focus.
+              Students who regularly use simulations perform better by identifying weak areas early and training their mind to stay calm under pressure.
             </CardDescription>
+
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              {cachedSimulationPapers.length} simulation papers available — start practicing today!
+            </p>
+
+            <div className="mt-2 p-0 rounded-none sm:rounded-md bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-red-800 dark:text-red-200 text-sm font-semibold shadow-none border-0">
+              For the best experience, use a desktop or laptop. Simulations may work on some phones, but a larger screen ensures smoother interaction.
+            </div>
+
+
+            <div className="mt-2 p-0 rounded-none sm:rounded-md bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-blue-800 dark:text-blue-200 text-xs italic shadow-none border-0">
+              Tip: Treat each simulation as if it’s the real exam — no distractions, no breaks.
+            </div>
           </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
- h-10 w-full sm:w-64"></div>
+
+          <CardContent className="p-0">
+            {(!cachedSimulationPapers.length && loading) ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-[2px] w-full">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col justify-between rounded-none sm:rounded-md bg-white dark:bg-gray-900 animate-pulse p-4 shadow-none border-0"
+                    style={{ minHeight: "250px" }}
+                  >
+                    <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-full mb-1"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-5/6 mb-1"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-2/3 mt-auto"></div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
-                <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-none sm:rounded-md
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full">
+
+                {cachedSimulationPapers.length > 0 ? (
+                  cachedSimulationPapers.map((paper) => (
+                    <Card
+                      key={paper.id}
+                      className="flex flex-col justify-between cursor-pointer hover:scale-105 transform transition-all rounded-xl sm:rounded-md bg-white dark:bg-gray-800 shadow-none border-0 mistake-card-glow"
+                      onClick={async () => {
+                        navigate(`/simulation/${paper.id}`);
+                        const { data: userData } = await supabase.auth.getUser();
+                        await supabase.from("simulation_visits").insert({
+                          paper_id: paper.id,
+                          user_id: userData?.user?.id || null,
+                        });
+                      }}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-gray-900 dark:text-white text-lg line-clamp-2">
+                          {paper.title}
+                          {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                            <Badge className="ml-2" variant="outline">New</Badge>
+                          )}
+                          {paper.difficulty && (
+                            <Badge className="ml-2" variant="secondary">{paper.difficulty}</Badge>
+                          )}
+                        </CardTitle>
+                        {paper.course && (
+                          <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
+                            {paper.course} {paper.block ? ` - ${paper.block}` : ""}
+                          </CardDescription>
+                        )}
+                      </CardHeader>
+
+                      <CardContent className="flex flex-col flex-1 justify-between">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                          {paper.description || "No description available."}
+                        </p>
+
+                        <p className="text-xs text-gray-500 mt-1">
+                          ⏱ Estimated time:{" "}
+                          {(() => {
+                            const duration = Number(paper.duration) || 30;
+                            if (duration < 60) return `${duration}m`;
+                            if (duration % 60 === 0) return `${duration / 60}h`;
+                            return `${Math.floor(duration / 60)}h ${duration % 60}m`;
+                          })()}
+                        </p>
+
+                        <p className="text-xs text-gray-500 mt-1">
+                          {paper.visit_count} visits
+                        </p>
+
+                        <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-2 bg-blue-500"
+                            style={{ width: `${simulationProgress[paper.id] || 0}%` }}
+                          />
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between">
+                          <Badge variant={paper.is_free ? "default" : "secondary"}>
+                            {paper.is_free ? "Free" : "Premium"}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {formatDistanceToNow(new Date(paper.created_at))} ago
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-gray-600 dark:text-gray-400">
+                    No simulation papers available yet.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <p className="mt-6 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
+              Every simulation you complete brings you one step closer to exam success!
+            </p>
+          </CardContent>
+        </Card>
+
+        <UnitBreakdown nclexUnitCodes={[
+          "HNX3-001", "HNX3-002", "HNX3-003", "HNX3-004",
+          "HNX3-005", "HNX3-006", "HNX3-007", "HNX3-008"
+        ]} />
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full mt-4">
+
+
+          {/* Share App Card */}
+          <Card className="rounded-none sm:rounded-md
+ shadow-none-md border-0 bg-white/40 dark:bg-gray-900">
+            <CardHeader>
+
+              <CardTitle className="text-lg font-semibold">Share Medrae</CardTitle>
+              <CardDescription>
+                Invite your colleagues and peers to join Medrae — the professional network for medical education, skills, and career growth.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+                  <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+ h-10 w-full sm:w-64"></div>
+                </div>
+              ) : (
+                <div className="flex flex-col md:flex-row md:justify-center md:space-x-4 gap-2">
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-none sm:rounded-md
  flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64"
-                  onClick={() => {
-                    const shareMessage =
-                      `Medrae – The Professional Medical Education & Career Network
+                    onClick={() => {
+                      const shareMessage =
+                        `Medrae – The Professional Medical Education & Career Network
 
 • Structured modules across core clinical disciplines
 • Expert-led lectures and verified medical resources
@@ -1980,219 +1980,219 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
 
 Join the Medrae community today: https://medrae.vercel.app`;
 
-                    if (navigator.share) {
-                      navigator.share({
-                        title: "Medrae – Medical Education & Career Network",
-                        text: shareMessage,
-                        url: "https://medrae.vercel.app",
-                      }).catch(err => console.log("Share cancelled:", err));
-                    } else {
-                      navigator.clipboard.writeText(shareMessage);
-                      alert("Medrae link and overview copied to clipboard!");
-                    }
-                  }}
+                      if (navigator.share) {
+                        navigator.share({
+                          title: "Medrae – Medical Education & Career Network",
+                          text: shareMessage,
+                          url: "https://medrae.vercel.app",
+                        }).catch(err => console.log("Share cancelled:", err));
+                      } else {
+                        navigator.clipboard.writeText(shareMessage);
+                        alert("Medrae link and overview copied to clipboard!");
+                      }
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4" />
+                    </svg>
+                    Share
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* WhatsApp Channel Card */}
+          <Card className="rounded-none sm:rounded-md
+ shadow-none-md border-0 bg-white/40 dark:bg-gray-900">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <svg
+                  role="img"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ width: "32px", height: "32px" }} // ✅ pixel control
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l5 4-5 4M8 8l-5 4 5 4" />
-                  </svg>
-                  Share
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* WhatsApp Channel Card */}
-        <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white/40 dark:bg-gray-900">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <svg
-                role="img"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ width: "32px", height: "32px" }} // ✅ pixel control
-              >
-                <title>WhatsApp</title>
-                <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-              </svg>
-              Join Our WhatsApp Channel
-            </CardTitle>
-            <CardDescription>
-              Stay updated with important announcements and new study content.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+                  <title>WhatsApp</title>
+                  <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                </svg>
+                Join Our WhatsApp Channel
+              </CardTitle>
+              <CardDescription>
+                Stay updated with important announcements and new study content.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
  h-10 w-full sm:w-64 mx-auto"></div>
-            ) : (
-              <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
-                <div className="flex justify-center">
-                  <Button className="bg-transparent text-green-600 hover:bg-transparent rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-                    <svg
-                      role="img"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{ width: "32px", height: "32px" }} // ✅ pixel control
-                    >
-                      <title>WhatsApp</title>
-                      <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                    </svg>
-                    WhatsApp Channel
-                  </Button>
-                </div>
-              </a>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
+                  <div className="flex justify-center">
+                    <Button className="bg-transparent text-green-600 hover:bg-transparent rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                      <svg
+                        role="img"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ width: "32px", height: "32px" }} // ✅ pixel control
+                      >
+                        <title>WhatsApp</title>
+                        <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                      </svg>
+                      WhatsApp Channel
+                    </Button>
+                  </div>
+                </a>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* WhatsApp Group Card */}
-        <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white/40 dark:bg-gray-900">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <svg
-                role="img"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ width: "32px", height: "32px" }} // ✅ pixel control
-              >
-                <title>WhatsApp</title>
-                <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-              </svg>
-              Join Our WhatsApp Group
-            </CardTitle>
-            <CardDescription>
-              Connect with fellow nursing and medical students. Share insights, ask questions, and stay updated with study materials.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+          {/* WhatsApp Group Card */}
+          <Card className="rounded-none sm:rounded-md
+ shadow-none-md border-0 bg-white/40 dark:bg-gray-900">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <svg
+                  role="img"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ width: "32px", height: "32px" }} // ✅ pixel control
+                >
+                  <title>WhatsApp</title>
+                  <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                </svg>
+                Join Our WhatsApp Group
+              </CardTitle>
+              <CardDescription>
+                Connect with fellow nursing and medical students. Share insights, ask questions, and stay updated with study materials.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
  h-10 w-full sm:w-64 mx-auto"></div>
-            ) : (
-              <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
-                <div className="flex justify-center">
-                  <Button className="bg-transparent text-green-600 hover:bg-transparent rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+              ) : (
+                <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
+                  <div className="flex justify-center">
+                    <Button className="bg-transparent text-green-600 hover:bg-transparent rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
 
-                    <svg
-                      role="img"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{ width: "32px", height: "32px" }} // ✅ pixel control
-                    >
-                      <title>WhatsApp</title>
-                      <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                    </svg>
-                    WhatsApp Group
-                  </Button>
-                </div>
-              </a>
-            )}
-          </CardContent>
-        </Card>
+                      <svg
+                        role="img"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ width: "32px", height: "32px" }} // ✅ pixel control
+                      >
+                        <title>WhatsApp</title>
+                        <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                      </svg>
+                      WhatsApp Group
+                    </Button>
+                  </div>
+                </a>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Telegram Channel Card */}
-        <Card className="rounded-none sm:rounded-md
- shadow-none-md border bg-white/40 dark:bg-gray-900">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <svg role="img" viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{ width: "32px", height: "32px" }} // ✅ pixel control
-              >
+          {/* Telegram Channel Card */}
+          <Card className="rounded-none sm:rounded-md
+ shadow-none-md border-0 bg-white/40 dark:bg-gray-900">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <svg role="img" viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ width: "32px", height: "32px" }} // ✅ pixel control
+                >
 
-                <title>Telegram</title>
-                <path fill="#26A5E4" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></svg>
+                  <title>Telegram</title>
+                  <path fill="#26A5E4" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></svg>
 
-              Join Our Telegram Channel
-            </CardTitle>
-            <CardDescription>
-              Stay updated with the latest resources, study tips, and announcements. Be part of our growing community of nursing and medical scholars.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
+                Join Our Telegram Channel
+              </CardTitle>
+              <CardDescription>
+                Stay updated with the latest resources, study tips, and announcements. Be part of our growing community of nursing and medical scholars.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md
  h-10 w-full sm:w-64 mx-auto"></div>
-            ) : (
-              <a href="https://t.me/heartiquenursingnexusscholar" target="_blank" rel="noopener noreferrer">
-                <div className="flex justify-center">
-                  <Button className="bg-transparent text-blue-600 hover:bg-transparent rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+              ) : (
+                <a href="https://t.me/heartiquenursingnexusscholar" target="_blank" rel="noopener noreferrer">
+                  <div className="flex justify-center">
+                    <Button className="bg-transparent text-blue-600 hover:bg-transparent rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
 
-                    <svg role="img" viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{ width: "32px", height: "32px" }} // ✅ pixel control
-                    >
+                      <svg role="img" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ width: "32px", height: "32px" }} // ✅ pixel control
+                      >
 
-                      <title>Telegram</title>
-                      <path fill="#26A5E4" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></svg>
-                    Telegram Channel
-                  </Button>
-                </div>
-              </a>
-            )}
-          </CardContent>
-        </Card>
+                        <title>Telegram</title>
+                        <path fill="#26A5E4" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" /></svg>
+                      Telegram Channel
+                    </Button>
+                  </div>
+                </a>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Facebook Group Card */}
-        <Card className="rounded-none sm:rounded-md shadow-none-md border bg-white/40 dark:bg-gray-900">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {/* Facebook Icon in blue */}
-              <svg
-                role="img"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5 text-blue-600"
-              >
-                <title>Facebook</title>
-                <path
-                  fill="currentColor"
-                  d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"
-                />
-              </svg>
-              Join Our Facebook Group
-            </CardTitle>
-            <CardDescription>
-              Connect with fellow nursing and medical students. Share updates, resources, and join discussions in our Facebook community.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md h-10 w-full sm:w-64 mx-auto"></div>
-            ) : (
-              <a
-                href="https://web.facebook.com/share/g/1AY4nC9Hcp/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <div className="flex justify-center">
-                  <Button className="bg-transparent hover:bg-transparent text-blue-600 hover:text-blue-800 rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
-                    <svg
-                      role="img"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{ width: "32px", height: "32px" }}
-                    >
-                      <title>Facebook</title>
-                      <path
-                        fill="currentColor"
-                        d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"
-                      />
-                    </svg>
-                    Facebook Group
-                  </Button>
-                </div>
-              </a>
-            )}
-          </CardContent>
-        </Card>
+          {/* Facebook Group Card */}
+          <Card className="rounded-none sm:rounded-md shadow-none-md border-0 bg-white/40 dark:bg-gray-900">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {/* Facebook Icon in blue */}
+                <svg
+                  role="img"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5 text-blue-600"
+                >
+                  <title>Facebook</title>
+                  <path
+                    fill="currentColor"
+                    d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"
+                  />
+                </svg>
+                Join Our Facebook Group
+              </CardTitle>
+              <CardDescription>
+                Connect with fellow nursing and medical students. Share updates, resources, and join discussions in our Facebook community.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="bg-gray-200 dark:bg-gray-700 animate-pulse rounded-none sm:rounded-md h-10 w-full sm:w-64 mx-auto"></div>
+              ) : (
+                <a
+                  href="https://web.facebook.com/share/g/1AY4nC9Hcp/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex justify-center">
+                    <Button className="bg-transparent hover:bg-transparent text-blue-600 hover:text-blue-800 rounded-none sm:rounded-md flex items-center justify-center gap-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm w-full sm:w-64">
+                      <svg
+                        role="img"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ width: "32px", height: "32px" }}
+                      >
+                        <title>Facebook</title>
+                        <path
+                          fill="currentColor"
+                          d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"
+                        />
+                      </svg>
+                      Facebook Group
+                    </Button>
+                  </div>
+                </a>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Quick Actions Card */}
-        <FloatingQuickActions />
-
+          {/* Quick Actions Card */}
+          <FloatingQuickActions />
+        </div>
       </div>
     </div >
   );

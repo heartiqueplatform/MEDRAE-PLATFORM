@@ -320,8 +320,8 @@ export default function CountdownCards() {
         flex-shrink-0 transition-transform duration-300
         border border-gray-300/30 dark:border-gray-600/50
         ${selected
-                        ? "scale-105 border-blue-400 shadow-[0_0_25px_8px_rgba(59,130,246,0.8)] bg-dashboard dark:bg-dashboard-dark"
-                        : "border-gray-300/30 dark:border-gray-600/50 bg-dashboard dark:bg-dashboard-dark"
+                        ? "scale-105 border-blue-400 shadow-[0_0_25px_8px_rgba(59,130,246,0.8)] bg-gray-100 dark:bg-gray-800"
+                        : "border-gray-300/30 dark:border-gray-600/50 bg-gray-100 dark:bg-gray-800"
                     }
     `}
             >
@@ -371,7 +371,7 @@ export default function CountdownCards() {
       ${highlightNext ? "border-red-500" : ""}
       ${status === "in-progress"
                         ? "bg-green-100 dark:bg-green-900 border-green-500"
-                        : "bg-white dark:bg-gray-900"}`}
+                        : "bg-gray-100 dark:bg-gray-800"}`}
             >
                 <div className="flex-1 mb-3 md:mb-0">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between">
@@ -469,7 +469,7 @@ export default function CountdownCards() {
     return (
 
 
-        <div className="space-y-2 w-full px-2 sm:px-2">
+        <div className="space-y-4 w-full px-4 py-4 rounded-lg shadow-lg bg-white dark:bg-gray-900 border-0 dark:border-gray-700 mt-4">
             {/* Card Heading */}
             <div className="mb-2 px-1">
                 <div className="flex items-center gap-2">

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -42,17 +41,17 @@ export function Feedback() {
   }, []);
 
   // Fetch feedback from Supabase
- const fetchMyFeedback = async (uid: string) => {
-  const { data, error } = await supabase
-    .from("feedback")
-    .select("*")
-    .eq("user_id", uid)
-    .order("submitted_at", { ascending: false }); //FIXED
+  const fetchMyFeedback = async (uid: string) => {
+    const { data, error } = await supabase
+      .from("feedback")
+      .select("*")
+      .eq("user_id", uid)
+      .order("submitted_at", { ascending: false }); //FIXED
 
-  if (!error && data) {
-    setMyFeedback(data);
-  }
-};
+    if (!error && data) {
+      setMyFeedback(data);
+    }
+  };
 
 
   // Real-time updates for feedback changes
@@ -112,18 +111,17 @@ export function Feedback() {
     Array.from({ length: 5 }).map((_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 cursor-pointer ${
-          i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
-        }`}
+        className={`h-4 w-4 cursor-pointer ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"
+          }`}
         onClick={() => setFeedback((prev) => ({ ...prev, rating: i + 1 }))}
       />
     ));
 
   return (
-    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 w-full">
+    <div className="grid gap-4 grid-cols-1 px-3 lg:grid-cols-2 w-full">
 
       {/* Left: Submit Feedback */}
-      <Card>
+      <Card className="px-3 border-0">
         <CardHeader>
           <CardTitle>Submit New Feedback</CardTitle>
           <CardDescription>
@@ -155,17 +153,17 @@ export function Feedback() {
                   <SelectValue placeholder="Select feedback category" />
                 </SelectTrigger>
                 <SelectContent>
-  <SelectItem value="bug">Bug</SelectItem>
-  <SelectItem value="suggestion">Suggestion</SelectItem>
-  <SelectItem value="complaint">Complaint</SelectItem>
-  <SelectItem value="general">General</SelectItem>
-  <SelectItem value="feature-request">Feature Request</SelectItem>
-  <SelectItem value="performance">Performance Issue</SelectItem>
-  <SelectItem value="ui-ux">UI/UX Feedback</SelectItem>
-  <SelectItem value="data-error">Data Error</SelectItem>
-  <SelectItem value="security">Security Concern</SelectItem>
-  <SelectItem value="other">Other</SelectItem>
-</SelectContent>
+                  <SelectItem value="bug">Bug</SelectItem>
+                  <SelectItem value="suggestion">Suggestion</SelectItem>
+                  <SelectItem value="complaint">Complaint</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="feature-request">Feature Request</SelectItem>
+                  <SelectItem value="performance">Performance Issue</SelectItem>
+                  <SelectItem value="ui-ux">UI/UX Feedback</SelectItem>
+                  <SelectItem value="data-error">Data Error</SelectItem>
+                  <SelectItem value="security">Security Concern</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
 
               </Select>
             </div>
@@ -214,52 +212,52 @@ export function Feedback() {
             </Button>
           </form>
         </CardContent>
-      </Card>
+      </Card >
       {/* Right: My Feedback History */}
-<Card>
-  <CardHeader>
-    <CardTitle>My Feedback</CardTitle>
-    <CardDescription>See what you sent and admin replies.</CardDescription>
-  </CardHeader>
-<CardContent className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
+      < Card className="px-3 border-0" >
+        <CardHeader>
+          <CardTitle>My Feedback</CardTitle>
+          <CardDescription>See what you sent and admin replies.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
 
-    {myFeedback.length === 0 ? (
-      <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
-    ) : (
-      myFeedback.map((fb) => (
-        <div key={fb.id} className="p-3 border rounded-lg space-y-2">
-          {/* Subject + Category */}
-          <div className="flex justify-between items-center">
-            <p className="font-medium">{fb.subject}</p>
-            <span className="text-xs text-muted-foreground">{fb.category}</span>
-          </div>
-
-          {/* User Message */}
-        <div className="bg-gray-700 text-white border-l-4 border-gray-400 p-2 text-sm">
-  <strong>You:</strong> {fb.message}
-</div>
-
-
-          {/* Admin Reply */}
-          {fb.admin_response ? (
-           <div className="bg-green-50 text-gray-900 border-l-4 border-green-500 p-2 text-sm dark:bg-green-900 dark:text-green-100">
-  <strong>Admin:</strong> {fb.admin_response}
-</div>
-
+          {myFeedback.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
           ) : (
-            <p className="text-xs italic text-muted-foreground">No reply yet</p>
-          )}
+            myFeedback.map((fb) => (
+              <div key={fb.id} className="p-3 border rounded-lg space-y-2">
+                {/* Subject + Category */}
+                <div className="flex justify-between items-center">
+                  <p className="font-medium">{fb.subject}</p>
+                  <span className="text-xs text-muted-foreground">{fb.category}</span>
+                </div>
 
-          {/* Extra Info */}
-          <p className="text-xs text-muted-foreground">
-            Rating: {fb.rating ? `${fb.rating}/5` : "N/A"} • Status: {fb.status} • Sent on{" "}
-            {new Date(fb.submitted_at).toLocaleString()}
-          </p>
-        </div>
-      ))
-    )}
-  </CardContent>
-</Card>
-    </div>
+                {/* User Message */}
+                <div className="bg-gray-700 text-white border-l-4 border-gray-400 p-2 text-sm">
+                  <strong>You:</strong> {fb.message}
+                </div>
+
+
+                {/* Admin Reply */}
+                {fb.admin_response ? (
+                  <div className="bg-green-50 text-gray-900 border-l-4 border-green-500 p-2 text-sm dark:bg-green-900 dark:text-green-100">
+                    <strong>Admin:</strong> {fb.admin_response}
+                  </div>
+
+                ) : (
+                  <p className="text-xs italic text-muted-foreground">No reply yet</p>
+                )}
+
+                {/* Extra Info */}
+                <p className="text-xs text-muted-foreground">
+                  Rating: {fb.rating ? `${fb.rating}/5` : "N/A"} • Status: {fb.status} • Sent on{" "}
+                  {new Date(fb.submitted_at).toLocaleString()}
+                </p>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card >
+    </div >
   );
 }

@@ -184,7 +184,7 @@ export default function GreetingsCard() {
     }, [name]);
 
     return (
-        <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-none p-2 text-white">
+        <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-xl p-2 text-white">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">
                 {typedWelcome || "Loading..."}
 

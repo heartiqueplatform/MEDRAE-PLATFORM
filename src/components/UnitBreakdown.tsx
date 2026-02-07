@@ -57,7 +57,8 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
     };
 
     return (
-        <Card className="rounded-none sm:rounded-md shadow-none border-0 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
+        <Card className="rounded-md shadow-md border-0 bg-gray-100 dark:bg-gray-900 p-4 flex flex-col justify-between mt-4">
+
             <CardHeader className="p-2 flex flex-row items-center justify-between">
 
                 <div>
@@ -74,7 +75,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                 </Button>
             </CardHeader>
 
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {unitCounts.length > 0 ? (
                     <>
 
@@ -84,7 +85,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                             .map(unit => (
                                 <div
                                     key={unit.unit_code}
-                                    className="p-2 rounded-xl sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
+                                    className="p-2 rounded-xl sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-800 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
                                     onClick={() => navigate("/Medrae-quizzes")}
                                 >
                                     <div className="flex items-center gap-1">
@@ -112,7 +113,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                                 .map(unit => (
                                     <div
                                         key={unit.unit_code}
-                                        className="p-2 rounded-xl sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-900 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
+                                        className="p-2 rounded-xl sm:rounded-md flex items-center justify-between bg-white dark:bg-gray-800 shadow-none border-0 cursor-pointer hover:scale-105 transform transition-all mistake-card-glow"
                                         onClick={() => navigate("/Medrae-quizzes")}
                                     >
                                         <div className="flex flex-col">
@@ -142,7 +143,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                     Array.from({ length: 6 }).map((_, idx) => (
                         <div
                             key={idx}
-                            className="p-4 rounded-xl sm:rounded-md flex flex-col justify-between animate-pulse bg-white dark:bg-gray-900 min-h-[80px] shadow-none border-0"
+                            className="p-4 rounded-xl sm:rounded-md flex flex-col justify-between animate-pulse bg-white dark:bg-gray-800 min-h-[80px] shadow-none border-0"
                         >
                             <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded-full w-3/4 mb-2"></div>
                             <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded-full w-1/2"></div>

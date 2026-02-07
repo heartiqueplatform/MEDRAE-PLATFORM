@@ -1071,7 +1071,8 @@ Please provide a detailed discussion and guidance.`;
                     ? "bg-green-300 dark:bg-green-800"
                     : notUnderstood[q.id]
                       ? "bg-[#FF4C4C] dark:bg-[#800000]"
-                      : "bg-transparent dark:bg-transparent"
+                      : "bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900"
+
                   }
     sm:px-4 sm:py-4 sm:rounded-md sm:shadow-none sm:border-0
   `} >
@@ -1415,7 +1416,7 @@ Please provide a detailed discussion and guidance.`;
               </div>
 
               {/* Small Note Card */}
-              <div className="w-full lg:w-1/3 p-1.5 sm:px-4 sm:py-4 rounded-md shadow-none border-0 bg-transparent dark:bg-transparent text-black dark:text-white flex flex-col">
+              <div className="w-full lg:w-1/3 p-1.5 sm:px-4 sm:py-4 rounded-md shadow-none border-0 bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900 text-black dark:text-white flex flex-col">
 
                 {/* Header */}
                 <div className="flex justify-between items-center mb-2 px-2 lg:px-0">

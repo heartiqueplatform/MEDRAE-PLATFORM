@@ -232,7 +232,8 @@ export function MistakesCard() {
                 </div>
             )}
 
-            <Card className="border-0 shadow-none bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+            <Card className="rounded-md border-0 shadow-md bg-gray-100 dark:bg-gray-900 mt-4">
+
                 <CardHeader className="p-2">
                     <CardTitle className="flex items-center gap-2">
                         <AlertTriangle className="text-red-500" />
@@ -257,61 +258,83 @@ export function MistakesCard() {
                                     exit={{ opacity: 0, y: 120 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 22 }}
                                 >
-                                    <Card className="w-full relative bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] shadow-md rounded-xl hover:glow-effect">
+                                    <Card className="w-full relative
+                 bg-gradient-to-b from-gray-300 to-gray-400
+                 dark:from-gray-700 dark:to-gray-900
+                 shadow-md rounded-xl hover:glow-effect">
 
                                         {/* Restore Hidden Button */}
                                         {hiddenIds.length > 0 && (
                                             <div className="flex text-[10px] justify-start mb-2 mt-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="px-2 py-1 text-[10px]"
-                                                    onClick={() => {
-                                                        setData((prev) => {
-                                                            // Reload hidden questions from localStorage
-                                                            const allHidden = hiddenIds.map((id) => {
-                                                                // Find in localStorage (data is already loaded)
-                                                                const savedData = JSON.parse(localStorage.getItem("mistakesData") || "[]");
-                                                                return savedData.find((q: any) => q.question_id === id);
-                                                            }).filter(Boolean);
-                                                            return [...prev, ...allHidden];
-                                                        });
-                                                        setHiddenIds([]); // optional: removes hidden badge count
-                                                    }}
-                                                >
-                                                    Marked understood ({hiddenIds.length})
+                                                <div className="relative inline-block group">
+                                                    <div
+                                                        onClick={() => {
+                                                            setData((prev) => {
+                                                                const allHidden = hiddenIds.map((id) => {
+                                                                    const savedData = JSON.parse(localStorage.getItem("mistakesData") || "[]");
+                                                                    return savedData.find((q: any) => q.question_id === id);
+                                                                }).filter(Boolean);
+                                                                return [...prev, ...allHidden];
+                                                            });
+                                                            setHiddenIds([]);
+                                                        }}
+                                                        className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 active:scale-95 transition px-2 py-1 relative"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-6 h-6">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                                                        </svg>
 
-                                                </Button>
+                                                        {/* Badge */}
+                                                        {hiddenIds.length > 0 && (
+                                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-[1px]">
+                                                                {hiddenIds.length}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Tooltip */}
+                                                    <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-all bg-gray-900 text-white text-xs px-2 py-1 rounded">
+                                                        Achieved
+                                                    </span>
+                                                </div>
+
+
                                             </div>
                                         )}
+                                        <CardContent className="p-2 flex flex-col h-[360px] justify-between">
 
-                                        <CardContent className="p-2 flex flex-col h-[520px]">
                                             {/* Swipe hint + Hide Button */}
                                             <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1">
 
-                                                {/* Hide button */}
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="px-2 py-1 text-[10px]"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation(); // Prevent triggering card click
-                                                        // Hide the question
-                                                        setHiddenIds((prev) => {
-                                                            const updated = [...prev, item.question_id];
-                                                            localStorage.setItem(
-                                                                "hiddenMistakeQuestions",
-                                                                JSON.stringify(updated)
+                                                <div className="relative inline-block group">
+                                                    <div
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent triggering card click
+                                                            setHiddenIds((prev) => {
+                                                                const updated = [...prev, item.question_id];
+                                                                localStorage.setItem(
+                                                                    "hiddenMistakeQuestions",
+                                                                    JSON.stringify(updated)
+                                                                );
+                                                                return updated;
+                                                            });
+                                                            setData((prev) =>
+                                                                prev.filter((q) => q.question_id !== item.question_id)
                                                             );
-                                                            return updated;
-                                                        });
-                                                        setData((prev) =>
-                                                            prev.filter((q) => q.question_id !== item.question_id)
-                                                        );
-                                                    }}
-                                                >
-                                                    Mark as Understood
-                                                </Button>
+                                                        }}
+                                                        className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 active:scale-95 transition px-2 py-1"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-6 h-6">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0-3-3m3 3 3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                                                        </svg>
+                                                    </div>
+
+                                                    {/* Tooltip */}
+                                                    <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-all bg-gray-900 text-white text-xs px-2 py-1 rounded">
+                                                        Achieve
+                                                    </span>
+                                                </div>
+
                                             </div>
 
                                             {/* Question */}
@@ -339,24 +362,29 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                                             </div>
 
                                             {/* Explanation + additional scrollable */}
-                                            <div className="flex-1 overflow-y-auto custom-scrollbar text-xs text-muted-foreground mb-2">
-                                                <div>
-                                                    <strong>Explanation:</strong> {q.explanation}
-                                                </div>
-                                                {q.additional && <div className="italic mt-1">{q.additional}</div>}
-                                            </div>
+
 
                                             {/* Stats */}
                                             <div className="flex justify-between items-center pt-2">
-                                                <Badge
-                                                    onClick={(e) => {
-                                                        e.stopPropagation(); // ⛔ prevents card / swipe conflict
-                                                        openDetails(item.question_id);
-                                                    }}
-                                                    className="bg-red-500 text-white cursor-pointer hover:opacity-80 active:scale-95 transition"
-                                                >
-                                                    Who attempted?
-                                                </Badge>
+                                                <div className="relative inline-block group">
+                                                    <div
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openDetails(item.question_id);
+                                                        }}
+                                                        className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 active:scale-95 transition"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-8 h-8">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" fill="#0caae9" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                                                        </svg>
+                                                    </div>
+
+                                                    {/* Tooltip */}
+                                                    <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-all bg-gray-900 text-white text-xs px-2 py-1 rounded">
+                                                        Who?
+                                                    </span>
+                                                </div>
+
 
 
                                                 <span className="text-xs text-muted-foreground">
@@ -415,7 +443,7 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
             {/* Expanded Card Overlay */}
             {expandedCard && (
                 <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-1"
                     onClick={() => setExpandedCard(null)} // tap outside closes
                 >
                     <div
@@ -449,7 +477,7 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                         </div>
 
                         {/* Explanation + additional */}
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-xl text-white-foreground">
                             <p><strong>Explanation:</strong> {expandedCard.quiz_questions.explanation}</p>
                             {expandedCard.quiz_questions.additional && (
                                 <p className="italic mt-1">{expandedCard.quiz_questions.additional}</p>

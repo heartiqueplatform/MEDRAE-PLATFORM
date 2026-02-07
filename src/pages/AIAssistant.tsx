@@ -302,11 +302,18 @@ User's message: ${inputMessage}
     return <GlobalLoader message="Loading chat history..." />;
   }
   return (
-    <div className="h-screen flex flex-col w-full">
+    <div className="h-[calc(100vh-4rem)] flex flex-col w-full max-w-3xl mx-auto">
+
       {/* Header */}
       <div className="w-full flex items-center gap-3 p-4 bg-background border-b shadow-sm">
         <div className="h-10 w-10 bg-gradient-medical rounded-full flex items-center justify-center">
-          <Brain className="h-5 w-5 text-white" />
+          {/* Icon */}
+          <img
+            src="/pwa-192x192.jpeg"   // <-- replace with your icon file name in public/
+            alt="Accent Icon"
+            className="w-10 h-10 object-contain opacity-80"
+          />
+
         </div>
         <div>
           <h1 className="text-2xl font-bold">Medrae AI Study Assistant</h1>

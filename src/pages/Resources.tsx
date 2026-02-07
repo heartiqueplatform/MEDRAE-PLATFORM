@@ -839,7 +839,7 @@ export function Resources() {
 
 
       {/* Static Block Selector Below Search */}
-      <div className="relative mt-4 w-full flex justify-center px-2 sm:px-0">
+      <div className="relative mt-4 w-full flex justify-start px-2 sm:px-0">
 
 
         {/* ✅ Screen Overlay */}
@@ -858,50 +858,74 @@ export function Resources() {
         <Button
           onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
           className="
-  relative z-40
-  bg-gray-100 text-gray-900
-  dark:bg-gray-800 dark:text-gray-100
-  hover:bg-gray-200 dark:hover:bg-gray-700
-  transition-colors
-  w-full sm:w-auto
-"
+    relative z-40 text-lg
+    bg-gray-100 text-gray-900
+    dark:bg-gray-800 dark:text-gray-100
+    hover:bg-gray-200 dark:hover:bg-gray-700
+    transition-colors
+    w-full sm:w-auto
+    flex items-center gap-2
+  "
         >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="1.5"
+            stroke="currentColor"
+            className="!w-10 !h-10"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+            />
+          </svg>
 
           Choose Block OR Semester here
         </Button>
 
-        {/* Floating Animated Dropdown */}
+        {/* Floating Animated Dropdown with Full-Screen Overlay */}
         {floatingBlockOpen && (
-          <div
-            className="
-  absolute top-full mt-2 z-40
-  left-0 right-0 sm:w-56
-  bg-white dark:bg-gray-800
-  shadow-xl rounded-lg
-  origin-top
-  animate-in slide-in-from-top-2 fade-in
-  duration-200
-  mx-2 sm:mx-0
-"
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Overlay */}
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setFloatingBlockOpen(false)} // click outside closes
+            />
 
-            {blockCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setSelectedBlock(cat.id);
-                  setFloatingBlockOpen(false);
-                }}
-                className={`
+            {/* Dropdown Card */}
+            <div
+              className="
+        relative z-50
+        w-80 sm:w-96
+        bg-white dark:bg-gray-800
+        shadow-xl rounded-lg
+        origin-top
+        animate-in slide-in-from-top-2 fade-in
+        duration-200
+        p-4
+      "
+            >
+
+              {blockCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedBlock(cat.id);
+                    setFloatingBlockOpen(false);
+                  }}
+                  className={`
             w-full text-left px-4 py-2 text-sm
             hover:bg-blue-100 dark:hover:bg-blue-700
             transition-colors
             ${selectedBlock === cat.id ? "font-bold" : ""}
           `}
-              >
-                {cat.name}
-              </button>
-            ))}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -951,8 +975,9 @@ export function Resources() {
                     .map((note) => (
                       <Card
                         key={note.id}
-                        className="transition-all hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                        className="flex flex-col justify-between transition-all border-0 hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
                       >
+
 
                         <CardHeader>
                           <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 sm:gap-2 px-2 sm:px-0">
@@ -971,50 +996,6 @@ export function Resources() {
                               </div>
                             </div>
 
-                            {session?.user?.id === note.uploaded_by && (
-                              <Button
-
-                                size="sm"
-                                variant="ghost"
-                                className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-
-                                onClick={async () => {
-                                  if (!confirm("Are you sure you want to delete this note?")) return;
-
-                                  try {
-                                    const url = note.file_url;
-                                    const parts = url.split("/notes/");
-                                    const storagePath = parts[1];
-
-                                    if (storagePath) {
-                                      const { error: storageError } = await supabase.storage
-                                        .from("notes")
-                                        .remove([storagePath]);
-                                      if (storageError) console.error("Storage deletion error:", storageError);
-                                    }
-
-                                    const { error: dbError } = await supabase
-                                      .from("notes")
-                                      .delete()
-                                      .eq("id", note.id);
-                                    if (dbError) {
-                                      console.error("DB deletion error:", dbError);
-                                      alert("Failed to delete note");
-                                      return;
-                                    }
-
-                                    setNotes((prev) => prev.filter((n) => n.id !== note.id));
-                                    alert("Note deleted successfully!");
-                                  } catch (err) {
-                                    console.error("Unexpected deletion error:", err);
-                                    alert("Something went wrong while deleting the note");
-                                  }
-                                }}
-                              >
-                                {/* ✅ Updated trash icon */}
-                                <Trash2 className="h-4 w-4 mr-1" />
-                              </Button>
-                            )}
                           </div>
                         </CardHeader>
 
@@ -1079,12 +1060,58 @@ export function Resources() {
                                   Preserved
                                 </Badge>
                               )}
+
+
+                              {session?.user?.id === note.uploaded_by && (
+                                <Button
+
+                                  size="sm"
+                                  variant="ghost"
+                                  className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+
+                                  onClick={async () => {
+                                    if (!confirm("Are you sure you want to delete this note?")) return;
+
+                                    try {
+                                      const url = note.file_url;
+                                      const parts = url.split("/notes/");
+                                      const storagePath = parts[1];
+
+                                      if (storagePath) {
+                                        const { error: storageError } = await supabase.storage
+                                          .from("notes")
+                                          .remove([storagePath]);
+                                        if (storageError) console.error("Storage deletion error:", storageError);
+                                      }
+
+                                      const { error: dbError } = await supabase
+                                        .from("notes")
+                                        .delete()
+                                        .eq("id", note.id);
+                                      if (dbError) {
+                                        console.error("DB deletion error:", dbError);
+                                        alert("Failed to delete note");
+                                        return;
+                                      }
+
+                                      setNotes((prev) => prev.filter((n) => n.id !== note.id));
+                                      alert("Note deleted successfully!");
+                                    } catch (err) {
+                                      console.error("Unexpected deletion error:", err);
+                                      alert("Something went wrong while deleting the note");
+                                    }
+                                  }}
+                                >
+                                  {/* ✅ Updated trash icon */}
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                </Button>
+                              )}
                             </div>
                           )}
 
-                          <div className="text-sm text-muted-foreground flex flex-wrap gap-3 items-center">
+                          <div className="text-sm text-muted-foreground flex flex-wrap gap-8 items-center">
                             <div className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
+                              <Eye className="h-6 w-6" />
                               <span>{viewCounts[note.id] || 0}</span>
                             </div>
 
@@ -1093,7 +1120,7 @@ export function Resources() {
                               className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
                                 }`}
                             >
-                              <Heart className={`h-3 w-3 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
+                              <Heart className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
                               <span>{likeCounts[note.id] || 0}</span>
                             </button>
                           </div>

@@ -228,10 +228,10 @@ export function Settings() {
 
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-0 sm:px-6 lg:px-6 py-10">
+    <div className="space-y-10 max-w-7xl mx-auto px-0 sm:px-6 lg:px-6 py-10 border-0">
 
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
+        <h1 className="text-3xl font-bold bg-gradient-medical border-0 bg-clip-text text-transparent flex items-center gap-2">
           <SettingsIcon className="h-8 w-8" />
           Settings
         </h1>
@@ -249,7 +249,7 @@ export function Settings() {
         </TabsList>
 
         <TabsContent value="profile">
-          <Card>
+          <Card className=" border-0">
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
               <CardDescription>
