@@ -488,7 +488,7 @@ export default function CountdownCards() {
                 </p>
             </div>
 
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-start space-x-2">
                 <button
                     onClick={resetHidden}
                     className="flex items-center space-x-1 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">

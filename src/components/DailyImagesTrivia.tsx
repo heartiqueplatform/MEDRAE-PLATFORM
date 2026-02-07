@@ -437,12 +437,13 @@ export default function DailyImagesTrivia() {
         <>
             {/* Card Header */}
             <div
-                className="w-full max-w-5xl mx-auto text-left mb-4 px-4 cursor-pointer"
+                className="w-full max-w-5xl mx-auto mb-4 px-4 py-4 cursor-pointer
+               bg-white dark:bg-gray-900 rounded-xl shadow-md
+               flex flex-col"
                 onClick={() => {
                     if (isLargeScreen) setIsCollapsed(!isCollapsed);
                 }}
             >
-
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Daily 3Ree Visual Trivia
                 </h2>
@@ -450,11 +451,51 @@ export default function DailyImagesTrivia() {
                     Swipe through today’s images to enhance your memory and learn new concepts!
                 </p>
                 {isLargeScreen && (
-                    <span className="mt-2 inline-block text-gray-600 dark:text-gray-300">
-                        {isCollapsed ? "▼ Click to expand" : "▲ Click to collapse"}
-                    </span>
+                    <div className="mt-2 inline-flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                        {isCollapsed ? (
+                            <>
+                                {/* Down arrow */}
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={1.5}
+                                    stroke="currentColor"
+                                    className="w-5 h-5"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M19.5 8.25L12 15.75 4.5 8.25"
+                                    />
+                                </svg>
+                                <span>Click to expand</span>
+                            </>
+                        ) : (
+                            <>
+                                {/* Up arrow */}
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={1.5}
+                                    stroke="currentColor"
+                                    className="w-5 h-5"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M4.5 15.75L12 8.25 19.5 15.75"
+                                    />
+                                </svg>
+                                <span>Click to collapse</span>
+                            </>
+                        )}
+                    </div>
                 )}
+
             </div>
+
 
             {/* Collapsible Card Body */}
             <AnimatePresence initial={false}>
@@ -467,8 +508,10 @@ export default function DailyImagesTrivia() {
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                         ref={containerRef}
                         className="relative w-full flex flex-col items-center justify-center
-           overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6
-           bg-gradient-to-b from-gray-700 to-gray-900 rounded-xl shadow-md"
+   overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6
+   bg-gradient-to-b from-white to-gray-100 dark:from-gray-700 dark:to-gray-900
+   rounded-xl shadow-md"
+
 
                     >
 
