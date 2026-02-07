@@ -437,7 +437,7 @@ export default function DailyImagesTrivia() {
         <>
             {/* Card Header */}
             <div
-                className="w-full max-w-5xl mx-auto mb-4 px-4 py-4 cursor-pointer
+                className="w-full max-w-5xl mx-auto mb-4 px-4 py-4 mt-4 cursor-pointer
                bg-white dark:bg-gray-900 rounded-xl shadow-md
                flex flex-col"
                 onClick={() => {

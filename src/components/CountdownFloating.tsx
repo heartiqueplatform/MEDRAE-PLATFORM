@@ -471,7 +471,7 @@ export default function CountdownCards() {
 
         <div className="space-y-4 w-full px-4 py-4 rounded-lg shadow-lg bg-white dark:bg-gray-900 border-0 dark:border-gray-700 mt-4">
             {/* Card Heading */}
-            <div className="mb-2 px-1">
+            <div className="mb-2 px-1 mt-4">
                 <div className="flex items-center gap-2">
                     <img
                         src="/clock.ico"
@@ -484,18 +484,11 @@ export default function CountdownCards() {
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
-                    Track your upcoming exams and stay prepared
+                    Stay prepared for your exams. Tap a card to expand and learn more...
                 </p>
             </div>
 
-            <div className="flex justify-start space-x-2">
-                <button
-                    onClick={resetHidden}
-                    className="flex items-center space-x-1 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600">
-                    <RefreshCw className="w-4 h-4" />
-                    <span>Reset Hidden Exams</span>
-                </button>
-            </div>
+
             {/* Analog Clock Grid */}
             <div className="flex gap-4 overflow-y-auto custom-scrollbar  py-2 px-2 snap-x snap-mandatory scrollbar-hide">
                 {visibleExams.map((exam) => (
@@ -526,14 +519,24 @@ export default function CountdownCards() {
             }
 
 
+            <div className="flex flex-col md:flex-row justify-start gap-4">
+                <button
+                    className="flex items-center space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                    onClick={() => setShowForm(!showForm)}
+                >
+                    <Plus className="w-5 h-5" />
+                    <span>Add your Upcoming Exams</span>
+                </button>
 
-            < button
-                className="flex items-center space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                onClick={() => setShowForm(!showForm)}
-            >
-                <Plus className="w-5 h-5" />
-                <span>Add your Upcoming Exams</span>
-            </button>
+                <button
+                    onClick={resetHidden}
+                    className="flex items-center space-x-1 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600"
+                >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Reset Hidden Exams</span>
+                </button>
+            </div>
+
             {
                 showForm && (
                     <div className="space-y-2 mt-2 border-t pt-4">

@@ -239,7 +239,7 @@ export function MistakesCard() {
                         <AlertTriangle className="text-red-500" />
                         Most Failed Questions
                     </CardTitle>
-                    <CardDescription>High-impact mistakes students struggle with the most</CardDescription>
+                    <CardDescription>High-impact mistakes students struggle with the most. Tap a card to expand and learn more...</CardDescription>
                 </CardHeader>
 
                 <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-4 custom-scrollbar pb-2">
