@@ -258,10 +258,12 @@ export function MistakesCard() {
                                     exit={{ opacity: 0, y: 120 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 22 }}
                                 >
-                                    <Card className="w-full relative
-                 bg-gradient-to-b from-gray-300 to-gray-400
-                 dark:from-gray-700 dark:to-gray-900
-                 shadow-md rounded-xl hover:glow-effect">
+                                    <Card
+                                        className="w-full relative
+    bg-white
+    dark:bg-gradient-to-b dark:from-gray-700 dark:to-gray-900
+    shadow-md rounded-xl hover:glow-effect"
+                                    >
 
                                         {/* Restore Hidden Button */}
                                         {hiddenIds.length > 0 && (
