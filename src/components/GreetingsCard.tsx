@@ -112,58 +112,61 @@ export default function GreetingsCard() {
             { morning: string; afternoon: string; evening: string; night: string }
         > = {
             Sunday: {
-                morning: `Welcome to a new week of professional growth. Reflect on your achievements and prepare for a week full of learning and skill development.`,
-                afternoon: `Keep building momentum today. Take time to consolidate your learning and plan for the week ahead.`,
-                evening: `Wrap up your Sunday with reflection and preparation. Celebrate small wins and set goals for a productive week.`,
-                night: `Hope your Sunday winds down peacefully. Take a moment to rest and recharge for the week ahead.`,
+                morning: `A new week begins a fresh chance to grow professionally. Take a moment to reflect on your progress and prepare for focused learning ahead.`,
+                afternoon: `Keep the momentum steady today. Use this time to organize your thoughts and plan the week with clarity.`,
+                evening: `End your Sunday with calm reflection. Acknowledge what you’ve achieved and set simple, realistic goals for the week.`,
+                night: `As Sunday winds down, allow yourself to rest. A clear mind tonight supports a strong start tomorrow.`,
             },
             Monday: {
-                morning: `Welcome to the start of a productive week. Review your notes and practice essential skills with focus and confidence.`,
-                afternoon: `Keep pushing forward and apply what you've learned so far. Every effort counts towards mastery.`,
-                evening: `Reflect on what you accomplished today and plan your next steps. Your dedication sets the tone for a successful week.`,
-                night: `Hope your Monday winds down smoothly. Rest well and prepare for continued growth tomorrow.`,
+                morning: `A new week is underway. Review your notes, focus on core skills, and approach today with intention.`,
+                afternoon: `Stay consistent and apply what you’ve learned so far. Progress comes from steady effort.`,
+                evening: `Take a moment to reflect on today’s work and outline your next steps. Small actions create strong routines.`,
+                night: `As Monday comes to a close, rest well. Tomorrow is another opportunity to build forward.`,
             },
             Tuesday: {
-                morning: `Welcome to another day of advancement. Stay curious and continue building your clinical expertise.`,
-                afternoon: `Keep progressing and challenging yourself. Every step brings you closer to mastery.`,
-                evening: `Review today's achievements and consider areas for improvement. Growth is built daily.`,
-                night: `Hope your Tuesday concludes positively. Rest and recharge to continue your learning journey.`,
+                morning: `A new day to build confidence and competence. Stay curious and continue strengthening your clinical knowledge.`,
+                afternoon: `Keep moving forward at a steady pace. Each focused session adds meaningful progress.`,
+                evening: `Review today’s work and note areas to improve. Growth happens through awareness and practice.`,
+                night: `As Tuesday ends, give yourself space to recharge. Consistency matters more than intensity.`,
             },
             Wednesday: {
-                morning: `Welcome to midweek. Celebrate your progress so far and stay motivated for the remainder of the week.`,
-                afternoon: `Continue applying your skills and reflect on your learning. Midweek is perfect for focus and refinement.`,
-                evening: `Wrap up your Wednesday with reflection and planning. Your consistent effort is impressive.`,
-                night: `Hope your Wednesday evening is relaxing. Recharge and prepare for the rest of the week.`,
+                morning: `Midweek is here. Recognize how far you’ve come and stay focused on what remains.`,
+                afternoon: `Use this time to refine your understanding and apply skills with intention.`,
+                evening: `Pause to reflect on today’s progress and prepare calmly for the rest of the week.`,
+                night: `Let Wednesday end on a relaxed note. Rest supports clarity and retention.`,
             },
             Thursday: {
-                morning: `Welcome to a new day of professional growth. Embrace every learning opportunity and refine your skills.`,
-                afternoon: `Keep applying knowledge in practice. Small consistent steps lead to mastery.`,
-                evening: `Reflect on what you learned today and celebrate progress made.`,
-                night: `Hope your Thursday winds down well. Rest and get ready to finish the week strong.`,
+                morning: `Another day to strengthen your professional foundation. Approach learning with patience and focus.`,
+                afternoon: `Continue applying what you know. Consistent effort leads to long-term confidence.`,
+                evening: `Reflect on what stood out today and carry those insights forward.`,
+                night: `As Thursday settles, slow down and rest. Finishing strong starts with recovery.`,
             },
             Friday: {
-                morning: `Welcome to the final stretch of the week. Focus on consolidating knowledge and practicing skills.`,
-                afternoon: `Keep moving forward and apply lessons learned this week.`,
-                evening: `Reflect on the week’s accomplishments and plan for next week’s growth.`,
-                night: `Hope your Friday evening is peaceful. Take time to rest and recharge for the weekend.`,
+                morning: `The final stretch of the week begins. Focus on reinforcing what you’ve learned.`,
+                afternoon: `Keep moving steadily and apply the week’s lessons with confidence.`,
+                evening: `Take time to reflect on the week’s progress and consider what you want to improve next.`,
+                night: `As Friday ends, allow yourself to rest fully. Recovery is part of growth.`,
             },
             Saturday: {
-                morning: `Welcome to a day for reflection and skill refinement. Review your progress and deepen your understanding.`,
-                afternoon: `Continue exploring new concepts and applying knowledge practically.`,
-                evening: `Wrap up Saturday with reflection and acknowledge your achievements.`,
-                night: `Hope your Saturday concludes positively. Rest well and prepare for the week ahead.`,
+                morning: `A quieter day to reflect and refine. Review your progress and deepen understanding.`,
+                afternoon: `Explore concepts at your own pace and apply knowledge thoughtfully.`,
+                evening: `Close the day by recognizing what you’ve accomplished, no matter how small.`,
+                night: `Let Saturday end peacefully. Rest prepares you for the week ahead.`,
             },
         };
 
+
         const nursingMessages: Record<string, string> = {
-            Sunday: ` Sunday reset: Rest up, future nurse! Take today to recharge, reflect on your progress, and plan for the week ahead. Your patients will appreciate your energy and dedication tomorrow!`,
-            Monday: ` Motivated Monday! A fresh week to sharpen your nursing skills, tackle challenging concepts, and set new goals. Remember, every step today brings you closer to becoming the nurse you aspire to be.`,
-            Tuesday: `Triage Tuesday! Keep organizing your notes, practicing procedures, and building your knowledge. Focus on consistency and small victories—they add up to big success in your nursing journey.`,
-            Wednesday: ` Wellness Wednesday! Halfway through the week—keep your energy high and your mind sharp. Take a moment to celebrate your wins so far, and remember that persistence is key to mastery.`,
-            Thursday: ` Thriving Thursday! Your dedication to learning and improving as a nurse is inspiring. Push through, review what you’ve learned, and keep challenging yourself—you’re making amazing progress!`,
-            Friday: `Fantastic Friday! End the week strong by consolidating your knowledge, practicing skills, and reflecting on your achievements. Celebrate your growth and get ready to recharge for an even better week ahead.`,
-            Saturday: ` Study Saturday! Use today to review, practice, and deepen your understanding. Whether it’s theory or hands-on skills, every effort counts. Your future patients and colleagues will thank you for your commitment.`,
+            Sunday: `Sunday reset. Take today to slow down, reflect on your progress, and prepare for the week ahead. Rest is part of becoming a steady, dependable nurse.`,
+            Monday: `Motivated Monday! Use today to sharpen your nursing skills, focus on key concepts, and set clear, achievable goals.`,
+            Tuesday: `Triage Tuesday. Stay organized, practice consistently, and keep building your clinical understanding. Small, steady efforts lead to strong outcomes.`,
+            Wednesday: `Wellness Wednesday. You’re halfway through the week  steady progress matters. Acknowledge what you’ve done well so far and continue forward with focus.`,
+            Thursday: `Thriving Thursday. Your commitment to learning is shaping your professional confidence. Review what you’ve covered and keep challenging yourself thoughtfully.`,
+            Friday: `Fantastic Friday! Reflect on what you’ve learned this week and recognize your progress. Growth comes from both effort and reflection.`,
+            Saturday: `Study Saturday. Take time to review, practice, and deepen understanding. Each focused session strengthens the nurse you’re becoming.`,
         };
+
+
 
         // Determine time key
         let timeOfDay: "morning" | "afternoon" | "evening" | "night";
