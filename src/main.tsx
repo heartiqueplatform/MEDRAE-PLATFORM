@@ -2,9 +2,37 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import AuthGate from "@/auth/AuthGate";
+// In your main entry file (e.g., main.tsx or index.tsx)
+import { toast } from "@/hooks/use-toast";
+
+// Save original alert just in case
+window.originalAlert = window.alert;
+
+type AlertMessage = string | {
+    title?: string;
+    description?: string;
+    variant?: "default" | "destructive" | "secondary" | "ghost" | "link";
+};
+
+window.alert = function (message: AlertMessage) {
+    if (typeof message === "string") {
+        // fallback for old-style alerts
+        toast({
+            title: message,
+            variant: "destructive",
+        });
+    } else {
+        // enhanced object-style alerts
+        toast({
+            title: message.title || "Notification",
+            description: message.description,
+            variant: message.variant || "default",
+        });
+    }
+};
 
 // ✅ App version for cache control
-const APP_VERSION = "47"// increment this with each deployment
+const APP_VERSION = "48"// increment this with each deployment
 const storedVersion = localStorage.getItem("appVersion");
 
 // Update app version safely without clearing all storage

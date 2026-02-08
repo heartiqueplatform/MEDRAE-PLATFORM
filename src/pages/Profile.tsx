@@ -23,8 +23,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 export function Profile() {
- const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
-const [profileState, setProfileState] = useState(cachedProfile);
+  const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
+  const [profileState, setProfileState] = useState(cachedProfile);
 
   const user = useUser();
   const navigate = useNavigate();
@@ -38,68 +38,68 @@ const [profileState, setProfileState] = useState(cachedProfile);
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-const [deleting, setDeleting] = useState(false);
-const handleLogout = async () => {
-  await supabase.auth.signOut();
-  localStorage.removeItem("userProfile");
-  localStorage.removeItem("userStreak");
-  navigate("/", { replace: true });
-  toast({ title: "Logged out", description: "You have been logged out." });
-};
-
-const handleDeleteAccount = async () => {
-  if (!user) return;
-  setDeleting(true);
-
-  try {
-    // ✅ Always get fresh access token
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session?.access_token) {
-      toast({ title: "Error", description: "No active session found." });
-      return;
-    }
-
-    const res = await fetch(
-      "https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/delete-user",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ userId: user.id }),
-        
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast({
-        title: "Error",
-        description: data.error || "Something went wrong while deleting your account.",
-      });
-      return;
-    }
-
-    toast({
-      title: "Deleted",
-      description: "Your account has been permanently deleted.",
-    });
-
-    setShowDeleteDialog(false); // ✅ close confirmation dialog
+  const [deleting, setDeleting] = useState(false);
+  const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/");
-  } catch (err: any) {
-    toast({ title: "Error", description: err.message });
-      } finally {
-    setDeleting(false);
-  }
-};
+    localStorage.removeItem("userProfile");
+    localStorage.removeItem("userStreak");
+    navigate("/", { replace: true });
+    toast({ title: "Logged out", description: "You have been logged out." });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setDeleting(true);
+
+    try {
+      // ✅ Always get fresh access token
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        toast({ title: "Error", description: "No active session found." });
+        return;
+      }
+
+      const res = await fetch(
+        "https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/delete-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ userId: user.id }),
+
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description: data.error || "Something went wrong while deleting your account.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Deleted",
+        description: "Your account has been permanently deleted.",
+      });
+
+      setShowDeleteDialog(false); // ✅ close confirmation dialog
+      await supabase.auth.signOut();
+      navigate("/");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleProfileUpdate = () => {
     navigate("/settings");
@@ -135,21 +135,21 @@ const handleDeleteAccount = async () => {
       setShowDialog(false);
     }
   };
-const getDaysMessage = () => {
-  if (!profileState?.joined_date) return "No join date available.";
-  const joinDate = new Date(profileState.joined_date);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - joinDate.getTime());
-  const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const years = Math.floor(days / 365);
+  const getDaysMessage = () => {
+    if (!profileState?.joined_date) return "No join date available.";
+    const joinDate = new Date(profileState.joined_date);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - joinDate.getTime());
+    const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const years = Math.floor(days / 365);
 
-  if (years === 0) {
-    return `You are ${days} day${days !== 1 ? "s" : ""} old on the platform. Keep going strong!`;
-  }
+    if (years === 0) {
+      return `You are ${days} day${days !== 1 ? "s" : ""} old on the platform. Keep going strong!`;
+    }
 
-  const nextAnniversary = years + 1;
-  return `You are ${years} year${years > 1 ? "s" : ""} old on the platform. Waiting to celebrate your ${nextAnniversary}${getOrdinalSuffix(nextAnniversary)} anniversary!`;
-};
+    const nextAnniversary = years + 1;
+    return `You are ${years} year${years > 1 ? "s" : ""} old on the platform. Waiting to celebrate your ${nextAnniversary}${getOrdinalSuffix(nextAnniversary)} anniversary!`;
+  };
 
   const getOrdinalSuffix = (i: number) => {
     const j = i % 10,
@@ -160,56 +160,56 @@ const getDaysMessage = () => {
     return "th";
   };
 
-// Wait until Supabase finishes loading the user
-const [checkingUser, setCheckingUser] = useState(true);
+  // Wait until Supabase finishes loading the user
+  const [checkingUser, setCheckingUser] = useState(true);
 
-useEffect(() => {
-  if (checkingUser) return; // wait until user check is complete
+  useEffect(() => {
+    if (checkingUser) return; // wait until user check is complete
 
-  if (!user) {
-    navigate("/login", { replace: true });
-  } else {
-    const cached = JSON.parse(localStorage.getItem("userProfile") || "null");
-    if (cached) setProfileState(cached);
-  }
-}, [user, checkingUser, navigate]);
-
-// Show loader only if still checking user OR no profile data yet
-
-useEffect(() => {
-  const fetchProfile = async () => {
-    if (!user) return;
-    try {
+    if (!user) {
+      navigate("/login", { replace: true });
+    } else {
       const cached = JSON.parse(localStorage.getItem("userProfile") || "null");
       if (cached) setProfileState(cached);
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-      if (data) {
-        setProfileState(data);
-        localStorage.setItem("userProfile", JSON.stringify(data));
-      }
-    } catch (err) {
-      console.error("Failed to fetch profile:", err);
     }
-  };
+  }, [user, checkingUser, navigate]);
 
-  fetchProfile();
-}, [user]);
+  // Show loader only if still checking user OR no profile data yet
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      try {
+        const cached = JSON.parse(localStorage.getItem("userProfile") || "null");
+        if (cached) setProfileState(cached);
+
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        if (data) {
+          setProfileState(data);
+          localStorage.setItem("userProfile", JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
 
 
 
-// Only show loader if we have no cached profile yet
-if (!profileState) {
-  return <GlobalLoader message="Medrae is aligning your content..." />;
-}
+  // Only show loader if we have no cached profile yet
+  if (!profileState) {
+    return <GlobalLoader message="Medrae is aligning your content..." />;
+  }
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-3 border-0">
       <div className="flex items-center gap-3 mb-6">
         <User className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">My Profile</h1>
@@ -223,23 +223,23 @@ if (!profileState) {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <Card>
+          <Card className="border-0">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-start gap-6">
                 <div className="relative">
-                 <Avatar className="h-24 w-24">
-  <AvatarImage
-    src={profileState?.avatar_url || undefined}
-    className="object-cover"
-  />
-  <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-2xl">
-    {profileState?.name?.split(" ").map((n) => n[0]).join("") || "??"}
-  </AvatarFallback>
-</Avatar>
-  <Button variant="outline" onClick={handleProfileUpdate}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit My Profile
-                </Button>
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage
+                      src={profileState?.avatar_url || undefined}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-2xl">
+                      {profileState?.name?.split(" ").map((n) => n[0]).join("") || "??"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button variant="outline" onClick={handleProfileUpdate}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit My Profile
+                  </Button>
                   <Button
                     size="icon"
                     variant="outline"
@@ -301,12 +301,12 @@ if (!profileState) {
                   </div>
                 </div>
 
-              
+
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0">
             <CardHeader>
               <CardTitle>Academic Information</CardTitle>
             </CardHeader>
@@ -332,7 +332,7 @@ if (!profileState) {
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-6">
-          <Card>
+          <Card className="border-0">
             <CardHeader>
               <CardTitle>Platform Statistics</CardTitle>
             </CardHeader>
@@ -343,7 +343,7 @@ if (!profileState) {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
-          <Card>
+          <Card className="border-0">
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
             </CardHeader>
@@ -351,55 +351,55 @@ if (!profileState) {
               <p className="text-muted-foreground">
                 Update your account settings and preferences in the Settings page.
               </p>
-{/* Logout Confirmation */}
-<Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-  <DialogTrigger asChild>
-    <Button variant="outline">Logout</Button>
-  </DialogTrigger>
+              {/* Logout Confirmation */}
+              <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Logout</Button>
+                </DialogTrigger>
 
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Confirm Logout</DialogTitle>
-      <DialogDescription>
-        Are you sure you want to log out?
-      </DialogDescription>
-    </DialogHeader>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirm Logout</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to log out?
+                    </DialogDescription>
+                  </DialogHeader>
 
-    <DialogFooter className="mt-4">
-      <Button variant="secondary" onClick={() => setShowLogoutDialog(false)}>
-        Cancel
-      </Button>
-      <Button variant="destructive" onClick={handleLogout}>
-        Logout
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-{/* Delete Account Confirmation */}
-<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-  <DialogTrigger asChild>
-    <Button variant="destructive">Delete My Account</Button>
-  </DialogTrigger>
+                  <DialogFooter className="mt-4">
+                    <Button variant="secondary" onClick={() => setShowLogoutDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button variant="destructive" onClick={handleLogout}>
+                      Logout
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              {/* Delete Account Confirmation */}
+              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive">Delete My Account</Button>
+                </DialogTrigger>
 
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Confirm Delete</DialogTitle>
-      <DialogDescription>
-        This action cannot be undone. Your account and all associated data
-        will be permanently deleted.
-      </DialogDescription>
-    </DialogHeader>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirm Delete</DialogTitle>
+                    <DialogDescription>
+                      This action cannot be undone. Your account and all associated data
+                      will be permanently deleted.
+                    </DialogDescription>
+                  </DialogHeader>
 
-    <DialogFooter className="mt-4">
-      <Button variant="secondary" onClick={() => setShowDeleteDialog(false)}>
-        Cancel
-      </Button>
-      <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
-  {deleting ? "Deleting..." : "Delete"}
-</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+                  <DialogFooter className="mt-4">
+                    <Button variant="secondary" onClick={() => setShowDeleteDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
+                      {deleting ? "Deleting..." : "Delete"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {/* Password Modal */}
               <Dialog open={showDialog} onOpenChange={setShowDialog}>

@@ -946,6 +946,34 @@ export default function StudentDashboard() {
         return "bg-gray-400 text-white";
     }
   };
+  function QuickStatSkeleton() {
+    return (
+      <div
+        className="
+        relative overflow-hidden
+        min-w-[220px]
+        h-[260px]
+        rounded-xl
+        snap-start
+        flex-shrink-0
+        bg-gray-200 dark:bg-gray-800
+        animate-pulse
+      "
+      >
+        <div className="p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="h-4 w-28 bg-gray-300 dark:bg-gray-700 rounded" />
+            <div className="h-4 w-4 bg-gray-300 dark:bg-gray-700 rounded-full" />
+          </div>
+
+          <div className="mt-10 space-y-3">
+            <div className="h-8 w-20 bg-gray-300 dark:bg-gray-700 rounded" />
+            <div className="h-2 w-full bg-gray-300 dark:bg-gray-700 rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-no-select min-h-screen md:flex md:items-center md:justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] w-full">
@@ -960,260 +988,242 @@ export default function StudentDashboard() {
     scrollbar-hide
   "
         >
-          {/* Study Progress */}
-          <Card
 
-            className="
+          {loadingStats ? (
+            <>
+              <QuickStatSkeleton />
+              <QuickStatSkeleton />
+              <QuickStatSkeleton />
+              <QuickStatSkeleton />
+              <QuickStatSkeleton />
+            </>
+          ) : (
+            <>
+              {/* Study Progress */}
+              <Card
+
+                className="
     relative overflow-hidden shadow-lg
     min-w-[220px]
     h-[260px]
     rounded-xl
     snap-start
     transition-transform duration-300
-    hover:scale-105
+
     mistake-card-glow
     flex-shrink-0
   "
-            style={{
-              backgroundImage: "url('/background06.jpg')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
+                style={{
+                  backgroundImage: "url('/background06.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/60" /> {/* darker overlay for readability */}
 
-            <div className="relative z-10">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+                <div className="relative z-10">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
 
-                <CardTitle className="text-sm font-medium text-white">
-                  Study Progress
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-white" />
-              </CardHeader>
-              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+                    <CardTitle className="text-sm font-medium text-white">
+                      Study Progress
+                    </CardTitle>
+                    <TrendingUp className="h-4 w-4 text-white" />
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
 
-                {loadingStats ? (
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-8 w-16 bg-white/40/30 rounded"></div>
-                    <div className="h-2 bg-white/40/30 rounded w-full mt-1"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-white">{studyProgress}%</div>
-                    <Progress value={studyProgress} className="mt-2" />
-                  </>
-                )}
-              </CardContent>
-            </div>
-          </Card>
 
-          {/* Quizzes Completed */}
-          <Card
-            className="
-    relative overflow-hidden shadow-lg
-    min-w-[220px]
-    h-[260px]
-    rounded-xl
-    snap-start
-    transition-transform duration-300
-    hover:scale-105
-    mistake-card-glow
-    flex-shrink-0
-  "
+                    <>
+                      <div className="text-2xl font-bold text-white">{studyProgress}%</div>
+                      <Progress value={studyProgress} className="mt-2" />
+                    </>
 
-            style={{
-              backgroundImage: "url('/indexbackground7.jpg')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
-
-            <div className="relative z-10">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
-
-                <CardTitle className="text-sm font-medium text-white">
-                  Quizzes Completed
-                </CardTitle>
-                <Target className="h-4 w-4 text-white" />
-              </CardHeader>
-              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-
-                {loadingStats ? (
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-8 w-16 bg-white/40/30 rounded"></div>
-                    <div className="h-2 w-12 bg-white/40/30 rounded"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-white">{quizCount}</div>
-                    <p className="text-xs text-white/80 truncate">+3 this week</p>
-                  </>
-                )}
-              </CardContent>
-            </div>
-          </Card>
-
-          <Card
-            className="
-    relative overflow-hidden shadow-lg
-    min-w-[220px]
-    h-[260px]
-    rounded-xl
-    snap-start
-    transition-transform duration-300
-    hover:scale-105
-    mistake-card-glow
-    flex-shrink-0
-  "
-          >
-            {/* Background image */}
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: "url('/background05.jpg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
-
-            <div className="relative z-20 p-2 flex flex-col">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
-
-                <CardTitle className="text-sm font-medium text-white">My Target Score</CardTitle>
-                <Target className="h-4 w-4 text-white/80" />
-              </CardHeader>
-
-              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-
-                {loadingStats ? (
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-8 w-16 bg-white/30 rounded"></div>
-                    <div className="h-2 w-20 bg-white/30 rounded"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-white">{targetScore}%</div>
-                    <p className="text-xs text-white/80 truncate">Your personal target</p>
-                  </>
-                )}
-
-                {/* Divider line */}
-                <div className="border-t border-white/30 my-2 w-full" />
-
-                {/* Small instruction, lighter and italic */}
-                <p className="text-xs text-white/50 italic mb-1">
-                  Visit your progress page to adjust your target.
-                </p>
-
-                {/* Button aligned right */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => navigate("/progress")}
-                    className="px-3 py-1 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded transition"
-                  >
-                    Visit
-                  </button>
+                  </CardContent>
                 </div>
-              </CardContent>
-            </div>
-          </Card>
+              </Card>
 
-
-          {/* Current Streak */}
-          <Card
-            className="
+              {/* Quizzes Completed */}
+              <Card
+                className="
     relative overflow-hidden shadow-lg
     min-w-[220px]
     h-[260px]
     rounded-xl
     snap-start
     transition-transform duration-300
-    hover:scale-105
     mistake-card-glow
     flex-shrink-0
   "
 
+                style={{
+                  backgroundImage: "url('/indexbackground7.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
 
-            style={{
-              backgroundImage: "url('/indexbackground5.jpg')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
+                <div className="relative z-10">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
+                    <CardTitle className="text-sm font-medium text-white">
+                      Quizzes Completed
+                    </CardTitle>
+                    <Target className="h-4 w-4 text-white" />
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
 
 
-            <div className="relative z-10">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+                    <>
+                      <div className="text-2xl font-bold text-white">{quizCount}</div>
+                      <p className="text-xs text-white/80 truncate">+3 this week</p>
+                    </>
 
-                <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
-                <Clock className="h-4 w-4 text-white" />
-              </CardHeader>
-              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+                  </CardContent>
+                </div>
+              </Card>
 
-                {loadingStats ? (
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-8 w-20 bg-white/40/30 rounded"></div>
-                    <div className="h-2 w-16 bg-white/40/30 rounded"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-white">{studyStreak} days</div>
-                    <p className="text-xs text-white/80 truncate">Keep it up!</p>
-                  </>
-                )}
-              </CardContent>
-            </div>
-          </Card>
-
-          {/* Best Streak */}
-          <Card
-            className="
+              <Card
+                className="
     relative overflow-hidden shadow-lg
     min-w-[220px]
     h-[260px]
     rounded-xl
     snap-start
     transition-transform duration-300
-    hover:scale-105
+    mistake-card-glow
+    flex-shrink-0
+  "
+              >
+                {/* Background image */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: "url('/background05.jpg')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                />
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-black/60 z-10 rounded-lg" />
+
+                <div className="relative z-20 p-2 flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
+                    <CardTitle className="text-sm font-medium text-white">My Target Score</CardTitle>
+                    <Target className="h-4 w-4 text-white/80" />
+                  </CardHeader>
+
+                  <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
+
+                    <>
+                      <div className="text-2xl font-bold text-white">{targetScore}%</div>
+                      <p className="text-xs text-white/80 truncate">Your personal target</p>
+                    </>
+
+
+                    {/* Divider line */}
+                    <div className="border-t border-white/30 my-2 w-full" />
+
+                    {/* Small instruction, lighter and italic */}
+                    <p className="text-xs text-white/50 italic mb-1">
+                      Visit your progress page to adjust your target.
+                    </p>
+
+                    {/* Button aligned right */}
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => navigate("/progress")}
+                        className="px-3 py-1 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded transition"
+                      >
+                        Visit
+                      </button>
+                    </div>
+                  </CardContent>
+                </div>
+              </Card>
+
+
+              {/* Current Streak */}
+              <Card
+                className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px]
+    h-[260px]
+    rounded-xl
+    snap-start
+    transition-transform duration-300
     mistake-card-glow
     flex-shrink-0
   "
 
-            style={{
-              backgroundImage: "url('/indexbackground2.jpg')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
+
+                style={{
+                  backgroundImage: "url('/indexbackground5.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
 
 
-            <div className="relative z-10">
-              <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+                <div className="relative z-10">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
 
-                <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
-                <Trophy className="h-4 w-4 text-yellow-500" />
-              </CardHeader>
-              <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-                {loadingStats ? (
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-8 w-20 bg-white/40/30 rounded"></div>
-                    <div className="h-2 w-16 bg-white/40/30 rounded"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold text-white">{bestStreak} days</div>
-                    <p className="text-xs text-white/80 truncate">All-time record</p>
-                  </>
-                )}
-              </CardContent>
-            </div>
-          </Card>
+                    <CardTitle className="text-sm font-medium text-white">Current Streak</CardTitle>
+                    <Clock className="h-4 w-4 text-white" />
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
 
+                    <>
+                      <div className="text-2xl font-bold text-white">{studyStreak} days</div>
+                      <p className="text-xs text-white/80 truncate">Keep it up!</p>
+                    </>
+
+                  </CardContent>
+                </div>
+              </Card>
+
+              {/* Best Streak */}
+              <Card
+                className="
+    relative overflow-hidden shadow-lg
+    min-w-[220px]
+    h-[260px]
+    rounded-xl
+    snap-start
+    transition-transform duration-300
+    mistake-card-glow
+    flex-shrink-0
+  "
+
+                style={{
+                  backgroundImage: "url('/indexbackground2.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/30 sm:bg-black/60" />
+
+
+                <div className="relative z-10">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 px-3 sm:px-6">
+
+                    <CardTitle className="text-sm font-medium text-white">Best Streak</CardTitle>
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
+
+                    <>
+                      <div className="text-2xl font-bold text-white">{bestStreak} days</div>
+                      <p className="text-xs text-white/80 truncate">All-time record</p>
+                    </>
+
+                  </CardContent>
+                </div>
+              </Card>
+            </>
+          )}
         </div>
 
         {/* 🏆 Top Students Leaderboard */}
@@ -1387,7 +1397,7 @@ export default function StudentDashboard() {
 
           <FloatingHearts trigger="hover" bubbleCount={3}>
             <button
-              className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700 slow-blink"
+              className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700"
               onClick={() => setOverlayOpen(true)}
             >
               {topStudents.length > 0 ? (
@@ -1855,7 +1865,7 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 w-full">
 
                 {cachedSimulationPapers.length > 0 ? (
                   cachedSimulationPapers.map((paper) => (

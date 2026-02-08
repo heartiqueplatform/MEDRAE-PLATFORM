@@ -57,7 +57,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
     };
 
     return (
-        <Card className="rounded-md shadow-md border-0 bg-gray-100 dark:bg-gray-900 p-4 flex flex-col justify-between mt-4">
+        <Card className="rounded-md shadow-md border-0 bg-gray-100 dark:bg-gray-900 p-0 flex flex-col justify-between mt-4">
 
             <CardHeader className="p-2 flex flex-row items-center justify-between">
 
@@ -75,7 +75,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                 </Button>
             </CardHeader>
 
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {unitCounts.length > 0 ? (
                     <>
 

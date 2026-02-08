@@ -351,7 +351,7 @@ export default function MyMistakes() {
             )}
 
             <div className="mb-8 ">
-                <div className="relative bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border-0 rounded-2xl shadow-lg p-6 sm:p-8 text-center overflow-hidden">
+                <div className="relative bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border-0 rounded-2xl shadow-lg p-3 sm:p-8 text-start overflow-hidden">
 
                     {/* Decorative Gradient Accent */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full blur-xl opacity-50"></div>
@@ -373,7 +373,7 @@ export default function MyMistakes() {
                     </p>
 
                     {/* Mistake Count */}
-                    <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium relative z-10">
+                    <p className="text-gray-500 dark:text-gray-400 mt-2 text-center font-medium relative z-10">
                         You have <span className="font-bold text-red-600 dark:text-red-400">{mistakeCount}</span> unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
                     </p>
                 </div>
