@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import AuthGate from "@/auth/AuthGate";
 // In your main entry file (e.g., main.tsx or index.tsx)
+/*
 import { toast } from "@/hooks/use-toast";
 
 // Save original alert just in case
@@ -30,6 +31,7 @@ window.alert = function (message: AlertMessage) {
         });
     }
 };
+*/
 
 // ✅ App version for cache control
 const APP_VERSION = "51"// increment this with each deployment
