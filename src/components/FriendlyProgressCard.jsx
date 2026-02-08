@@ -9,7 +9,7 @@ function FriendlyProgressCard({ userTheme, name }) {
         "View your progress, track your quizzes, and keep improving."
     );
 
-    const [latestScore, setLatestScore] = useState(null); // for progress ring
+    const [latestScore, setLatestScore] = useState(null); // for progress bar
     const [targetScore, setTargetScore] = useState(50); // user's actual target
 
     useEffect(() => {
@@ -60,54 +60,48 @@ function FriendlyProgressCard({ userTheme, name }) {
         checkScores();
     }, [name]);
 
-
-    // ⭐ Progress Ring Component (updated for 70 radius)
-    const ProgressRing = ({ value }) => {
-        const radius = 70; // updated size
-        const strokeWidth = 10; // keep the ring thickness same
-        const circumference = 2 * Math.PI * radius;
-
-        // Ensure 'value' is a valid number between 0 and 100
+    // ⭐ Progress Bar Component
+    const ProgressBar = ({ value }) => {
+        const width = 200; // total width of the bar
+        const height = 20; // bar height
         const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
-
-        // Calculate offset safely
-        const offset = circumference - (safeValue / 100) * circumference;
-
-        const bgColor = userTheme.iconBg || (userTheme.isDark ? "#2d2d2d" : "#e5e7eb");
         const fgColor = warning ? "#ff4d4f" : userTheme.iconColor;
+        const bgColor = userTheme.iconBg || (userTheme.isDark ? "#2d2d2d" : "#e5e7eb");
 
-        // SVG size must fit the circle plus stroke
-        const svgSize = radius * 2 + strokeWidth;
+        // filled width in pixels
+        const fillWidth = (safeValue / 100) * width;
 
         return (
-            <svg width={svgSize} height={svgSize}>
-                <circle
-                    stroke={bgColor}
-                    fill="transparent"
-                    strokeWidth={strokeWidth}
-                    r={radius}
-                    cx={radius + strokeWidth / 2}
-                    cy={radius + strokeWidth / 2}
+            <svg width={width} height={height}>
+                {/* Background bar */}
+                <rect
+                    x={0}
+                    y={0}
+                    width={width}
+                    height={height}
+                    rx={10} // rounded corners
+                    ry={10}
+                    fill={bgColor}
                 />
-                <circle
-                    stroke={fgColor}
-                    fill="transparent"
-                    strokeWidth={strokeWidth}
-                    r={radius}
-                    cx={radius + strokeWidth / 2}
-                    cy={radius + strokeWidth / 2}
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                    style={{ transition: "stroke-dashoffset 1s ease" }}
+                {/* Foreground bar */}
+                <rect
+                    x={0}
+                    y={0}
+                    width={fillWidth}
+                    height={height}
+                    rx={10} // rounded corners
+                    ry={10}
+                    fill={fgColor}
+                    style={{ transition: "width 1s ease" }}
                 />
+                {/* Percentage text */}
                 <text
-                    x="50%"
-                    y="52%"
+                    x={width / 2}
+                    y={height / 2 + 5} // slightly adjusted vertical
                     dominantBaseline="middle"
                     textAnchor="middle"
-                    className="text-xl font-bold"
-                    style={{ fill: "currentColor" }}
+                    className="text-sm font-bold"
+                    style={{ fill: warning ? "#ff4d4f" : userTheme.textColor }}
                 >
                     {safeValue}%
                 </text>
@@ -115,24 +109,24 @@ function FriendlyProgressCard({ userTheme, name }) {
         );
     };
 
-
     return (
         <div
             onClick={() => navigate("/progress")}
             className={`
-    rounded-none p-2 shadow-none border-0
-    cursor-pointer hover:shadow-none transition-all active:scale-[0.97] select-none
-    flex flex-col items-center justify-center gap-5 mt-4    bg-[${userTheme.background}]
-  `}
+        rounded-2xl p-4
+        bg-gray-100 dark:bg-gray-900
+        shadow-md hover:shadow-lg
+        cursor-pointer transition-all active:scale-[0.97] select-none
+        flex flex-col items-center justify-center gap-5 mt-4
+      `}
         >
-
             <div
                 onClick={() => navigate("/progress")}
                 className={`flex flex-col items-center gap-4 mt-4 p-2 rounded-none bg-[${userTheme.background}] cursor-pointer`}
             >
-                {/* Circle */}
-                <div className={`p-4 bg-[${userTheme.iconBg}] rounded-full shadow-md flex items-center justify-center`}>
-                    <ProgressRing value={latestScore} />
+                {/* Progress Bar */}
+                <div className="w-full p-2 bg-[${userTheme.iconBg}] rounded-xl shadow-md flex items-center justify-center">
+                    <ProgressBar value={latestScore} />
                 </div>
 
                 {/* Greeting & Message */}

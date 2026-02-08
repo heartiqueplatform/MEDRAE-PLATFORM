@@ -104,7 +104,7 @@ export function Notifications() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-2 border-0">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -137,12 +137,11 @@ export function Notifications() {
             return (
               <Card
                 key={notification.id}
-                className={`cursor-pointer transition-colors hover:bg-muted/50 border-l-4 ${notification.is_read
-                  ? "border-green-500 bg-green-50"
-                  : "border-blue-500 bg-blue-50"
-                  }`}
+                className="cursor-pointer transition-colors bg-gray-900 shadow-none border-0 hover:bg-muted/50"
                 onClick={() => markAsRead(notification.id)}
               >
+
+
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <div
@@ -188,7 +187,7 @@ export function Notifications() {
           })}
         </div>
       ) : (
-        <Card>
+        <Card className="border-0    bg-gray-100 dark:bg-gray-900">
           <CardContent className="p-8 text-center">
             <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">No notifications</h3>

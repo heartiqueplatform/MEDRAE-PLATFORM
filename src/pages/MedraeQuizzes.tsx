@@ -547,8 +547,10 @@ export function MedraeQuizzes() {
             ) : (
               <Card
                 key={index}
-                className="border-green-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+                className="shadow-md hover:shadow-lg transition-all rounded-2xl"
+                style={{ border: "1px solid #023f02" }}
               >
+
                 <CardHeader>
                   <CardTitle className="text-md flex items-center gap-2">
                     <BookOpen className="h-5 w-5 text-green-600" />
@@ -633,7 +635,8 @@ export function MedraeQuizzes() {
                 ) : (
                   <Card
                     key={index}
-                    className="border-yellow-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+                    className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
+                    style={{ border: "1px solid #706005" }}
                   >
                     <CardHeader>
                       <CardTitle className="text-md flex items-center gap-2">
@@ -729,7 +732,8 @@ export function MedraeQuizzes() {
                 ) : (
                   <Card
                     key={index}
-                    className="border-blue-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+                    className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
+                    style={{ border: "1px solid #03044b" }}
                   >
                     <CardHeader>
                       <CardTitle className="text-md flex items-center gap-2">
@@ -818,7 +822,8 @@ export function MedraeQuizzes() {
                 ) : (
                   <Card
                     key={index}
-                    className="border-purple-300 shadow-md hover:shadow-lg transition-all rounded-2xl"
+                    className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
+                    style={{ border: "1px solid #400442" }}
                   >
                     <CardHeader>
                       <CardTitle className="text-md flex items-center gap-2">
