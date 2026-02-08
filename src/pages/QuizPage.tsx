@@ -11,7 +11,7 @@ import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, ChevronDown, Chevron
 import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
-import LiveReactions from "@/components/LiveReactions";
+
 ;
 interface Question {
   id: string;
@@ -2324,7 +2324,7 @@ Please provide a detailed discussion and guidance.`;
           <FloatingChat currentUserId={userId} isOpen={false} />
         )
       }
-      <LiveReactions />
+
     </div >
   );
 }
