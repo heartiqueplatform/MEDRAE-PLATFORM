@@ -196,20 +196,21 @@ const Index = () => {
     {
       bg: "/background8.jpg",
       text: (
-        <div className="w-full h-full flex items-end justify-center text-center pb-6 md:pb-12 lg:pb-16">
-          <div className="px-3 py-1 rounded-lg bg-white/05 backdrop-blur-none shadow-sm">
-            <h1 className="text-6xl font-bold text-blue-700" style={{
-
-              WebkitTextStroke: "0.5px blue",   // adds white outline
-              color: "rgb(182, 230, 10)"
-            }}>
-              <div className="flex items-center justify-center gap-2 mb-4">
+        <div className="w-full h-full flex items-end justify-center text-center pb-3 md:pb-12 lg:pb-16">
+          <div className="px-3 py-1 rounded-lg bg-white/5 backdrop-blur-none shadow-sm">
+            <h1
+              className="text-4xl md:text-6xl font-bold"
+              style={{
+                WebkitTextStroke: "0.5px blue",
+                color: "rgb(24, 14, 158)",
+              }}
+            >
+              <div className="flex items-center justify-center gap-2 mb-2 md:mb-2">
                 <img
                   src="/pwa-192x192.jpeg"
                   alt="Medrae Logo"
-                  className="h-18 w-18 rounded-sm object-contain"
+                  className="h-12 w-12 md:h-16 md:w-16 rounded-sm object-contain"
                 />
-                <span className="text-xl font-bold"></span>
               </div>
               MEDRAE
             </h1>
@@ -217,58 +218,59 @@ const Index = () => {
         </div>
       ),
     },
+
     {
-      bg: "/background03.jpg",
+      bg: "/indexbackground3.jpg",
       text: (
-        <h2 className="text-4xl md:text-2xl font-bold text-white">
-          Kenya’s Nursing Network Platform
+        <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
+          Medrae is a professional platform for Nursing education, clinical training,
+          and healthcare career advancement. Explore verified question banks,
+          case-based scenarios, and evidence-driven study materials tailored for
+          healthcare excellence.
         </h2>
-
-
-      ),
-    },
-    {
-      bg: "/indexbackground3.jpg", // keep empty so the video replaces the background
-      text: (
-        <h2 className="text-4xl md:text-xl font-bold text-white" >
-          Medrae is a professional platform for Nursing education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence.
-        </h2>
-
       ),
     },
 
     {
       bg: "/indexbackground6.jpg",
       text: (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 items-center">
-            <Button
-              size="lg"
-              className="bg-blue-500 text-white font-bold text-2xl px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-600 hover:scale-105 transition-all duration-300"
-              onClick={() => navigate('/register')}
-            >
-              Create   Account
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-yellow-500 text-blue-500 font-bold text-lg px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-500 hover:text-white hover:scale-105 transition-all duration-300"
-              onClick={() => navigate('/login')}
-            >
-              Sign In to Continue
-            </Button>
-          </div>
-
-
+        <div className="flex flex-col gap-3 items-center">
+          <Button
+            size="lg"
+            className="bg-blue-500 text-white font-bold text-lg md:text-2xl px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-600 hover:scale-105 transition-all duration-300"
+            onClick={() => navigate('/register')}
+          >
+            Create Account
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="border-yellow-500 text-blue-500 font-bold text-base md:text-lg px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-500 hover:text-white hover:scale-105 transition-all duration-300"
+            onClick={() => navigate('/login')}
+          >
+            Sign In to Continue
+          </Button>
         </div>
       ),
     },
+    {
+      bg: "/background03.jpg",
+      text: (
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 md:text-white">
+          Kenya’s Nursing Network Platform
+        </h2>
+      ),
+    },
+
 
     {
       bg: "/background02.jpg",
       text: (
-        <h2 className="text-4xl md:text-xl font-bold text-white" >
-          Strengthen your skills through simulations, certification modules, and structured progression tracking.\n\nFor the best experience, access Medrae via desktop for enhanced clarity and performance, or use mobile for flexible learning anywhere.
+        <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
+          Strengthen your skills through simulations, certification modules, and
+          structured progression tracking. For the best experience, access Medrae
+          via desktop for enhanced clarity and performance, or use mobile for
+          flexible learning anywhere.
         </h2>
       ),
     },
@@ -276,14 +278,16 @@ const Index = () => {
     {
       bg: "/background06.jpg",
       text: (
-        <h2 className="text-4xl md:text-xl font-bold text-white" >
-          All plans include full feature access—choose Pro at KSh 99/month or Premium at KSh 450/year. The first 1,000 users receive a free 6-month professional trial to experience Medrae’s complete suite of educational and career tools.
+        <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
+          All plans include full feature access—choose Pro at KSh 99/month or Premium
+          at KSh 450/year. The first 1,000 users receive a free 6-month professional
+          trial to experience Medrae’s complete suite of educational and career tools.
         </h2>
       ),
     },
 
-
   ];
+
 
   // Simple mobile slider settings
   const mobileSliderSettings = {
