@@ -491,3 +491,33 @@ pre {
   box-shadow: 0 0 12px 3px #22d3ee, 0 0 24px 6px #4ade80;
   /* dual color glow */
 }
+
+/* Bubble animation */
+.bubble {
+  position: absolute;
+  bottom: 0;
+  background-color: #ff3b30;
+  border-radius: 50%;
+  opacity: 0.7;
+  animation-name: rise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: 1;
+  pointer-events: none;
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: translateY(-20px) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-80px) scale(0.5);
+    opacity: 0;
+  }
+}

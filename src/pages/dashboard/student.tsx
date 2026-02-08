@@ -31,6 +31,7 @@ import Referral from "@/components/Referral";
 import { MistakesCard } from "@/components/MistakesCard";
 import FloatingHearts from "@/components/ui/FloatingHearts";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import LiveReactions from "@/components/LiveReactions";
 
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
@@ -979,6 +980,7 @@ export default function StudentDashboard() {
     <div className="dashboard-no-select min-h-screen md:flex md:items-center md:justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] w-full">
       <div className="w-full md:max-w-3xl md:px-4">
         <GreetingsCard />
+
         <Referral />
         {/* Quick Stats */}
         <div
@@ -2200,9 +2202,11 @@ Join the Medrae community today: https://medrae.vercel.app`;
             </CardContent>
           </Card>
 
+
           {/* Quick Actions Card */}
           <FloatingQuickActions />
         </div>
+        <LiveReactions />
       </div>
     </div >
   );

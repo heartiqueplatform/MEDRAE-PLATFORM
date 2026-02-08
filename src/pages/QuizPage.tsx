@@ -11,7 +11,7 @@ import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, ChevronDown, Chevron
 import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
-
+import LiveReactions from "@/components/LiveReactions";
 ;
 interface Question {
   id: string;
@@ -553,6 +553,27 @@ export default function QuizPage() {
     if (quizId && userId) loadAttempts();
   }, [quizId, userId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("live-answer-events")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "live_answer_events",
+        },
+        (payload) => {
+
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleAnswer = (questionId: string, selected: string) => {
     if (answers[questionId]) return; // Prevent double answer
 
@@ -611,6 +632,26 @@ export default function QuizPage() {
 
     setRecentlyAnsweredId(questionId);
     setFeedbackShown(prev => ({ ...prev, [questionId]: true }));
+    // 🔴 LIVE ANSWER EVENT (for floating activity feed)
+    (async () => {
+      if (!userId) return;
+
+      const question = questions.find(q => q.id === questionId);
+      if (!question) return;
+
+      const correct = question.correct_answer === selected;
+
+      await supabase
+        .from("live_answer_events")
+        .insert({
+          user_id: userId,
+          question_id: questionId,
+          event_type: correct ? "answered_correct" : "answered_wrong",
+          is_correct: correct,
+          streak_count: null,
+          points: correct ? 1 : 0,
+        });
+    })();
 
     // Save unit answers to localStorage
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
@@ -1437,7 +1478,7 @@ Please provide a detailed discussion and guidance.`;
                     saveNoteOffline(q.id, value).catch(err => console.error(err));
                   }}
 
-                  className="w-full flex-1 p-2 border-0 resize-none bg-transparent text-black dark:text-white mb-2 min-h-[200px]"
+                  className="w-full flex-1 p-2 border-0 resize-none bg-transparent overflow-x-auto  custom-scrollbar text-black dark:text-white mb-2 min-h-[200px]"
                   placeholder="Take notes here..."
                 />
                 <div className="flex gap-2 justify-end">
@@ -2283,7 +2324,7 @@ Please provide a detailed discussion and guidance.`;
           <FloatingChat currentUserId={userId} isOpen={false} />
         )
       }
-
+      <LiveReactions />
     </div >
   );
 }
