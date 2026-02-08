@@ -590,7 +590,7 @@ export function MedraeQuizzes() {
               <Card
                 key={index}
                 className="shadow-md hover:shadow-lg transition-all rounded-2xl"
-                style={{ border: "1px solid #023f02" }}
+                style={{ border: "1px solid #11d111" }}
               >
 
                 <CardHeader>
@@ -606,9 +606,21 @@ export function MedraeQuizzes() {
                       <Badge variant="secondary">
                         {unit.totalQuestions} Questions
                       </Badge>
-                      <Badge variant="outline" className="text-black">
+                      <Badge
+                        variant={
+                          unit.level.toLowerCase() === "professional"
+                            ? "default"
+                            : "outline"
+                        }
+                        className={
+                          unit.level.toLowerCase() === "professional"
+                            ? "bg-teal-500 text-white"
+                            : ""
+                        }
+                      >
                         {unit.level}
                       </Badge>
+
 
                       {isPremium ? (
                         <Badge variant="default" className="bg-green-600 text-white">
@@ -678,7 +690,7 @@ export function MedraeQuizzes() {
                   <Card
                     key={index}
                     className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #706005" }}
+                    style={{ border: "1px solid #e9c80d" }}
                   >
                     <CardHeader>
                       <CardTitle className="text-md flex items-center gap-2">
@@ -775,7 +787,7 @@ export function MedraeQuizzes() {
                   <Card
                     key={index}
                     className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #03044b" }}
+                    style={{ border: "1px solid #191de6" }}
                   >
                     <CardHeader>
                       <CardTitle className="text-md flex items-center gap-2">
@@ -865,7 +877,7 @@ export function MedraeQuizzes() {
                   <Card
                     key={index}
                     className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #400442" }}
+                    style={{ border: "1px solid #ce0dd4" }}
                   >
                     <CardHeader>
                       <CardTitle className="text-md flex items-center gap-2">
