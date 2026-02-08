@@ -207,7 +207,7 @@ export function Header({
                 xmlns="http://www.w3.org/2000/svg"
                 fill="currentColor"
                 viewBox="0 0 24 24"
-                strokeWidth={1.5}
+                strokeWidth={0.75}
                 stroke="currentColor"
                 className="w-6 h-6 text-green-500"
               >
@@ -222,7 +222,7 @@ export function Header({
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                strokeWidth={1.5}
+                strokeWidth={0.75}
                 stroke="currentColor"
                 className="w-6 h-6 text-gray-400"
               >
@@ -268,7 +268,7 @@ export function Header({
               xmlns="http://www.w3.org/2000/svg"
               fill="currentColor"
               viewBox="0 0 24 24"
-              strokeWidth={1.5}
+              strokeWidth={0.75}
               stroke="currentColor"
               className="w-6 h-6 text-green-500"
             >
@@ -283,7 +283,7 @@ export function Header({
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
-              strokeWidth={1.5}
+              strokeWidth={0.75}
               stroke="currentColor"
               className="w-6 h-6 text-gray-400"
             >

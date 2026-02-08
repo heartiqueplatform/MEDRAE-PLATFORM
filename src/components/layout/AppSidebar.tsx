@@ -229,6 +229,36 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     if (num >= 1_000) return (num / 1_000).toFixed(0) + "k";
     return num.toString();
   };
+  const QuizzesHeartIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#a31010" stroke="none" className="h-5 w-5">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42
+             4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81
+             14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4
+             6.86-8.55 11.54L12 21.35z" />
+    </svg>
+  );
+  const HomeFilledIcon = ({ className }: { className?: string }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="#3B82F6"   // blue fill
+      stroke="none"
+      className="h-6 w-6"
+    >
+      <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+    </svg>
+  );
+  const PlayFilledIcon = ({ className }: { className?: string }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="#0d1fc7"  // green fill
+      stroke="none"
+      className="h-5 w-5"
+    >
+      <path d="M4 2v20l18-10L4 2z" />
+    </svg>
+  );
 
   const isActive = (path: string) => location.pathname === path;
   const getNavClass = (path: string) => {
@@ -237,7 +267,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
   };
   const mainItems = [
-    { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" },
+    { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: HomeFilledIcon, iconTone: "neutral" },
     { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" },
     { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert", badge: mistakeCount > 0 ? mistakeCount : undefined },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai", badge: "New" },
@@ -250,8 +280,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const learningItems = [
     { title: "Assessment Tracker", url: "/calendar", icon: Calendar, iconTone: "learning", badge: `${totalEvents}E` },
     { title: "Study Progress", url: "/progress", icon: TrendingUp, iconTone: "progress", badge: `${totalStars}★` },
-    { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: Heart, iconTone: "practice", badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
-    { title: "Proctorium Lite", url: "/simulation/candidate", icon: Play, iconTone: "practice", badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
+    { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice", badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
+    { title: "Proctorium Lite", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice", badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" },
     { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content", badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
   ];
@@ -260,7 +290,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const visibleLearningItems = isFooterMounted ? learningItems.filter(item => !footerRoutes.includes(item.url)) : learningItems;
 
   const mediaItems = [
-    { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media", badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
+    { title: "MedTube", url: "/medtube", icon: PlayFilledIcon, iconTone: "media", badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
   ];
 
   const otherItems = [

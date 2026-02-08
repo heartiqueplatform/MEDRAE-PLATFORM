@@ -909,7 +909,7 @@ export function MedraeQuizzes() {
 
 
       {/* Progress */}
-      <Card>
+      <Card className="border-0">
         <CardHeader>
           <CardTitle>Your Progress</CardTitle>
         </CardHeader>

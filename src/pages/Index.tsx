@@ -194,16 +194,20 @@ const Index = () => {
   const heroStorySlides = [
 
     {
-      bg: "/indexbackground7.jpg",
+      bg: "/background8.jpg",
       text: (
         <div className="w-full h-full flex items-end justify-center text-center pb-6 md:pb-12 lg:pb-16">
-          <div className="px-3 py-1 rounded-lg bg-white/05 backdrop-blur-sm shadow-sm">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-wide text-blue-700">
+          <div className="px-3 py-1 rounded-lg bg-white/05 backdrop-blur-none shadow-sm">
+            <h1 className="text-6xl font-bold text-blue-700" style={{
+
+              WebkitTextStroke: "0.5px blue",   // adds white outline
+              color: "rgb(182, 230, 10)"
+            }}>
               <div className="flex items-center justify-center gap-2 mb-4">
                 <img
                   src="/pwa-192x192.jpeg"
                   alt="Medrae Logo"
-                  className="h-6 w-6 rounded-sm object-contain"
+                  className="h-18 w-18 rounded-sm object-contain"
                 />
                 <span className="text-xl font-bold"></span>
               </div>
@@ -215,13 +219,22 @@ const Index = () => {
     },
     {
       bg: "/background03.jpg",
-      text: "Kenya’s Nursing Network Platform",
-    },
+      text: (
+        <h2 className="text-4xl md:text-2xl font-bold text-white">
+          Kenya’s Nursing Network Platform
+        </h2>
 
+
+      ),
+    },
     {
       bg: "/indexbackground3.jpg", // keep empty so the video replaces the background
-      text: "Medrae is a professional platform for Nursing education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence.",
+      text: (
+        <h2 className="text-4xl md:text-xl font-bold text-white" >
+          Medrae is a professional platform for Nursing education, clinical training, and healthcare career advancement. Explore verified question banks, case-based scenarios, and evidence-driven study materials tailored for healthcare excellence.
+        </h2>
 
+      ),
     },
 
     {
@@ -253,12 +266,20 @@ const Index = () => {
 
     {
       bg: "/background02.jpg",
-      text: "Strengthen your skills through simulations, certification modules, and structured progression tracking.\n\nFor the best experience, access Medrae via desktop for enhanced clarity and performance, or use mobile for flexible learning anywhere.",
+      text: (
+        <h2 className="text-4xl md:text-xl font-bold text-white" >
+          Strengthen your skills through simulations, certification modules, and structured progression tracking.\n\nFor the best experience, access Medrae via desktop for enhanced clarity and performance, or use mobile for flexible learning anywhere.
+        </h2>
+      ),
     },
 
     {
       bg: "/background06.jpg",
-      text: "All plans include full feature access—choose Pro at KSh 99/month or Premium at KSh 450/year. The first 1,000 users receive a free 6-month professional trial to experience Medrae’s complete suite of educational and career tools.",
+      text: (
+        <h2 className="text-4xl md:text-xl font-bold text-white" >
+          All plans include full feature access—choose Pro at KSh 99/month or Premium at KSh 450/year. The first 1,000 users receive a free 6-month professional trial to experience Medrae’s complete suite of educational and career tools.
+        </h2>
+      ),
     },
 
 
@@ -583,7 +604,10 @@ const Index = () => {
                             triggerAudioOnInteraction(); // ✅ play audio on click
                           }}
                         >
-                          &#60;
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                          </svg>
+
                         </button>
                         <button
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
@@ -594,7 +618,10 @@ const Index = () => {
                             triggerAudioOnInteraction(); // ✅ play audio on click
                           }}
                         >
-                          &#62;
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                          </svg>
+
                         </button>
                       </>
                     )}
