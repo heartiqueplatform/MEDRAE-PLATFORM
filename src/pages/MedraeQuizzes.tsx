@@ -19,7 +19,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
 import { playSound } from "@/lib/soundManager";
-import CountdownFloating from "@/components/CountdownFloating";
+import { motion, AnimatePresence } from "framer-motion";
+
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -340,6 +341,7 @@ export function MedraeQuizzes() {
       supabase.removeChannel(channel);
     };
   }, [incrementCount]);
+  const [showDescription, setShowDescription] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const [popup, setPopup] = useState<string | null>(null);
@@ -442,32 +444,73 @@ export function MedraeQuizzes() {
             Medrae Quizzes Bank
           </h1>
 
-          <p className="text-muted-foreground mt-3 text-base leading-relaxed">
-            Explore NCK/NCLEX-aligned quizzes for all core nursing units. Each quiz has been
-            carefully curated to reflect the NCLEX and Nursing Council of Kenya (NCK) syllabus, with
-            questions thoughtfully selected to avoid unnecessary repetition. This ensures
-            broad topic coverage and mirrors the structure of actual NCK assessments.
-            Remember  these quizzes are not just for memorizing; they are designed to help
-            you understand concepts deeply. Read each question carefully, and pay attention
-            to additional points beyond the direct answer.
 
-            <span className="font-semibold text-primary">
-              Note: You must finish the quiz to unlock the submit button.
-            </span>
-            <br />
-            <span className="font-semibold text-primary">
-              Your quiz progress is saved locally, so you can resume later anytime without losing your work.
-            </span>
-            <br />For engaging explanations, visuals, and deeper understanding, visit our Medtube Learning Sections.
-          </p>
-          <Link to="/medtube" className="inline-block mt-4">
-            <Button
-              variant="outline"
-              className="border-blue-500 !text-blue-900 hover:bg-blue-50 active:!text-blue-900 focus:!text-blue-500"
+          {/* Collapsible Description */}
+
+          <div className="mt-3">
+            <button
+              onClick={() => setShowDescription(!showDescription)}
+              className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
             >
-              Visit Medtube Learning Sections
-            </Button>
-          </Link>
+              <motion.span
+                animate={{ rotate: showDescription ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="inline-flex"
+              >
+                {/* Arrow SVG rotates automatically */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 8.25L12 15.75 4.5 8.25" // down arrow
+                  />
+                </svg>
+              </motion.span>
+
+              <span>
+                {showDescription
+                  ? "Hide description "
+                  : "Read description. Learn more..."}
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showDescription && (
+                <motion.p
+                  key="quiz-description"
+                  className="text-muted-foreground mt-2 text-base leading-relaxed"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                >
+                  Explore NCK/NCLEX-aligned quizzes for all core nursing units. Each quiz has been
+                  carefully curated to reflect the NCLEX and Nursing Council of Kenya (NCK) syllabus, with
+                  questions thoughtfully selected to avoid unnecessary repetition. This ensures
+                  broad topic coverage and mirrors the structure of actual NCK assessments.
+                  Remember these quizzes are not just for memorizing; they are designed to help
+                  you understand concepts deeply. Read each question carefully, and pay attention
+                  to additional points beyond the direct answer.
+
+                  <span className="font-semibold text-primary block mt-2">
+                    Note: You must finish the quiz to unlock the submit button.
+                  </span>
+
+                  <span className="font-semibold text-primary block mt-1">
+                    Your quiz progress is saved locally, so you can resume later anytime without losing your work.
+                  </span>
+
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
 
         </div>
       </div>
@@ -520,7 +563,6 @@ export function MedraeQuizzes() {
           Recommended Quiz
         </Button>
       </div>
-      <CountdownFloating />
 
       {/* PAPER FOUR – Full Papers */}
       <div className="space-y-4">

@@ -5,7 +5,7 @@ import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import "../styles/pdfOverrides.css";
-
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -56,7 +56,7 @@ export function Resources() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const uploadAbortController = useRef<AbortController | null>(null);
-
+  const [showDescription, setShowDescription] = useState(false);
   const [floatingBlockOpen, setFloatingBlockOpen] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState("PTS");
   const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
@@ -684,16 +684,65 @@ export function Resources() {
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
             Notes & Resources
           </h1>
-          <p className="text-muted-foreground mt-2">
-            This page provides access to a wide range of study materials and references.
-            While some notes may appear mixed across blocks and semesters, they are
-            organized to align closely with the curriculum used in most Kenyan KMTC and
-            private institutions. This ensures you’ll find diverse, high-quality content
-            to support your learning, research, and personal note uploads.
-          </p>
-          <p className="text-sm text-muted-foreground italic mt-1">
-            Well-organized notes aligned with KMTC and private institution curricula
-          </p>
+          <div className="mt-3">
+            <button
+              onClick={() => setShowDescription(!showDescription)}
+              className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
+            >
+              <motion.span
+                animate={{ rotate: showDescription ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="inline-flex"
+              >
+                {/* Down arrow SVG rotates */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 8.25L12 15.75 4.5 8.25"
+                  />
+                </svg>
+              </motion.span>
+
+              <span>
+                {showDescription
+                  ? "Hide description "
+                  : "Read description. Learn more... "}
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showDescription && (
+                <motion.div
+                  key="notes-description"
+                  className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                >
+                  <p className="text-muted-foreground mt-2">
+                    This page provides access to a wide range of study materials and references.
+                    While some notes may appear mixed across blocks and semesters, they are
+                    organized to align closely with the curriculum used in most Kenyan KMTC and
+                    private institutions. This ensures you’ll find diverse, high-quality content
+                    to support your learning, research, and personal note uploads.
+                  </p>
+
+                  <p className="text-sm text-muted-foreground italic mt-1">
+                    Well-organized notes aligned with KMTC and private institution curricula
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
         </div>
 

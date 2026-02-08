@@ -3,7 +3,7 @@ import { Worker, Viewer } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
-
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -86,7 +86,7 @@ export default function AssessmentNotes() {
   const [bookmarkedItems, setBookmarkedItems] = useState<string[]>([]);
 
   const fullscreenRef = useRef<HTMLDivElement>(null);
-
+  const [showDescription, setShowDescription] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(
     typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
   );
@@ -367,19 +367,68 @@ export default function AssessmentNotes() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
           Assessment Notes & Uploads
         </h1>
-        <p className="text-muted-foreground mt-2">
-          This page is dedicated to assessment guides, case study guides, and research
-          resources. It brings together universal materials designed to support nursing
-          education across all colleges and training institutions. Here, you’ll find
-          practical guides, structured case studies, and project references curated to
-          help students prepare effectively, build confidence, and excel both in
-          classroom learning and clinical practice. And note, this does not give you the
-          right to copy-paste it only provides a picture to show you what to expect.
-        </p>
+        <div className="mt-3">
+          <button
+            onClick={() => setShowDescription(!showDescription)}
+            className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
+          >
+            <motion.span
+              animate={{ rotate: showDescription ? 180 : 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="inline-flex"
+            >
+              {/* Down arrow SVG rotates */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.5 8.25L12 15.75 4.5 8.25" // down arrow
+                />
+              </svg>
+            </motion.span>
 
-        <p className="text-sm italic text-muted-foreground mt-1">
-          Universal nursing assessment resources for all colleges
-        </p>
+            <span>
+              {showDescription
+                ? "Hide description "
+                : "Read description. Learn more... "}
+            </span>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {showDescription && (
+              <motion.div
+                key="assessment-description"
+                className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.35, ease: "easeInOut" }}
+              >
+                <p>
+                  This page is dedicated to assessment guides, case study guides, and research
+                  resources. It brings together universal materials designed to support nursing
+                  education across all colleges and training institutions. Here, you’ll find
+                  practical guides, structured case studies, and project references curated to
+                  help students prepare effectively, build confidence, and excel both in
+                  classroom learning and clinical practice. And note, this does not give you the
+                  right to copy-paste it only provides a picture to show you what to expect.
+                </p>
+
+                <p className="text-sm italic">
+                  Universal nursing assessment resources for all colleges
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
 
       </div>
 
