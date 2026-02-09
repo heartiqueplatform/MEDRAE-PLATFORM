@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { playSound } from "@/lib/soundManager";
-import FloatingHearts from "@/components/ui/FloatingHearts";
+
 const actions = [
     { href: "/ai-assistant", label: "AI Assistant", icon: Brain, bgLight: "bg-purple-500 hover:bg-purple-600", bgDark: "bg-purple-600 hover:bg-purple-700" },
     { href: "/subscription", label: "Premium", icon: Star, bgLight: "bg-yellow-400 hover:bg-yellow-500", bgDark: "bg-yellow-500 hover:bg-yellow-600" },
@@ -48,7 +48,7 @@ export default function FloatingQuickActions() {
         // Auto-close after 15 seconds (15000 ms)
         const initialTimer = setTimeout(() => {
             setOpen(false);
-        }, 5000);
+        }, 10000);
 
         // Cleanup
         return () => clearTimeout(initialTimer);
@@ -85,7 +85,8 @@ export default function FloatingQuickActions() {
     return (
         <div
             ref={wrapperRef}
-            className="fixed top-16 right-2 sm:right-4 z-50 flex flex-col items-end gap-2"
+            className="hidden md:flex fixed top-16 right-2 sm:right-4 z-50 flex-col items-end gap-2"
+
         >
             {/* 🔽 DROPDOWN — ICONS PRESERVED */}
             {open && (
@@ -142,14 +143,14 @@ export default function FloatingQuickActions() {
 
             {/* 🔘 TOGGLE BUTTON */}
             <div className="flex flex-col items-center">
-                <FloatingHearts trigger="hover" bubbleCount={5}>
-                    <button
-                        onClick={() => {
-                            feedback();
-                            setOpen((prev) => !prev);
-                            startAutoClose();
-                        }}
-                        className="h-12 w-12 sm:h-14 sm:w-14
+
+                <button
+                    onClick={() => {
+                        feedback();
+                        setOpen((prev) => !prev);
+                        startAutoClose();
+                    }}
+                    className="h-12 w-12 sm:h-14 sm:w-14
                    rounded-full
                    bg-gray-900/70 dark:bg-gray-100/70
                    text-white dark:text-black
@@ -158,13 +159,13 @@ export default function FloatingQuickActions() {
                    hover:scale-105
                    active:scale-95
                    transition"
-                        aria-label="Quick actions"
-                    >
-                        <ChevronDown
-                            className={`h-5 w-5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-                        />
-                    </button>
-                </FloatingHearts>
+                    aria-label="Quick actions"
+                >
+                    <ChevronDown
+                        className={`h-5 w-5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                    />
+                </button>
+
                 {/* Hint text */}
                 {open && (
                     <span className="mt-1 text-xs text-gray-800 dark:text-gray-100 select-none">

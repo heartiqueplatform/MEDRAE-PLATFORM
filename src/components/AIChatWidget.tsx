@@ -241,9 +241,10 @@ User's message: ${input}
     <>
       {!open && (
         <Button
-          className="fixed bottom-20 right-3 w-12 h-12 rounded-full shadow-lg
-           bg-blue-600 hover:bg-blue-700 text-white
-           flex items-center justify-center z-30"
+          className="hidden lg:flex fixed bottom-36 mb-4 right-2 w-14 h-14 rounded-full shadow-lg
+ bg-blue-600 hover:bg-blue-700 text-white
+ items-center justify-center z-30"
+
           // ✅ lower, safe z-index
 
           onClick={() => {
@@ -251,7 +252,7 @@ User's message: ${input}
             setOpen(true);
           }}
         >
-          <MessageCircle size={48} className="drop-shadow-xl text-white" />
+          <MessageCircle size={68} className="drop-shadow-xl text-white" />
 
         </Button>
 

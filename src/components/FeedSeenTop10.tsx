@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Trophy, Stethoscope } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import FloatingHearts from "@/components/ui/FloatingHearts";
+
 
 interface TopStudent {
     user_id: string;

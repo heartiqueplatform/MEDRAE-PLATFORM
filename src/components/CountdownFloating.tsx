@@ -469,7 +469,7 @@ export default function CountdownCards() {
     return (
 
 
-        <div className="space-y-4 w-full px-4 py-4 rounded-lg shadow-lg bg-white dark:bg-gray-900 border-0 dark:border-gray-700 mt-4">
+        <div className="space-y-4 w-full px-1 py-2 rounded-lg shadow-lg bg-white dark:bg-gray-900 border-0 dark:border-gray-700 mt-4">
             {/* Card Heading */}
             <div className="mb-2 px-1 mt-4">
                 <div className="flex items-center gap-2">
@@ -490,7 +490,7 @@ export default function CountdownCards() {
 
 
             {/* Analog Clock Grid */}
-            <div className="flex gap-4 overflow-y-auto custom-scrollbar  py-2 px-2 snap-x snap-mandatory scrollbar-hide">
+            <div className="flex gap-2 overflow-y-auto custom-scrollbar  py-0 px-0 snap-x snap-mandatory scrollbar-hide">
                 {visibleExams.map((exam) => (
                     <CountdownRectCard
                         key={exam.id}

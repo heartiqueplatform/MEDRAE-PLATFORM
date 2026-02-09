@@ -242,7 +242,8 @@ export function MistakesCard() {
                     <CardDescription>High-impact mistakes students struggle with the most. Tap a card to expand and learn more...</CardDescription>
                 </CardHeader>
 
-                <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-4 custom-scrollbar pb-2">
+                <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-4 custom-scrollbar pb-2 scroll-smooth">
+
 
                     {data
                         .filter((item) => !hiddenIds.includes(item.question_id))
@@ -253,12 +254,12 @@ export function MistakesCard() {
                                 <motion.div
                                     key={item.question_id}
                                     onClick={() => setExpandedCard({ ...item, index: i })}
-
-                                    className="w-[calc(100vw-1rem)] sm:w-[320px] flex-shrink-0 hover:mistake-card-glow transition-all mt-4"
+                                    className="w-[calc(100vw-1rem)] sm:w-[80%] md:w-[320px] flex-shrink-0 hover:mistake-card-glow transition-all mt-4"
                                     initial={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 120 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 22 }}
                                 >
+
                                     <Card
                                         className="w-full relative
     bg-white
@@ -468,7 +469,7 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                     onClick={() => setExpandedCard(null)} // tap outside closes
                 >
                     <div
-                        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg max-w-xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6"
+                        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg max-w-xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-2"
                         onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
                     >
                         {/* Close Button */}
@@ -521,12 +522,15 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                         </div>
 
                         {/* Explanation + additional */}
-                        <div className="text-xl text-white-foreground">
-                            <p><strong>Explanation:</strong> {expandedCard.quiz_questions.explanation}</p>
+                        <div className="text-sm sm:text-base md:text-lg text-gray-800 dark:text-gray-200 mt-4">
+                            <p>
+                                <strong>Explanation:</strong> {expandedCard.quiz_questions.explanation}
+                            </p>
                             {expandedCard.quiz_questions.additional && (
                                 <p className="italic mt-1">{expandedCard.quiz_questions.additional}</p>
                             )}
                         </div>
+
                     </div>
                 </div>
             )}

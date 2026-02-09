@@ -29,9 +29,10 @@ import DailyImagesTrivia from "@/components/DailyImagesTrivia";
 import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
 import { MistakesCard } from "@/components/MistakesCard";
-import FloatingHearts from "@/components/ui/FloatingHearts";
+
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import LiveReactions from "@/components/LiveReactions";
+import { DialogClose } from "@/components/ui/dialog";
 
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
@@ -1395,60 +1396,57 @@ export default function StudentDashboard() {
         <MistakesCard />
         {/* Floating Button showing top student's avatar */}
         {/* Floating Avatar Button with Crown Outside */}
-        <div className="fixed bottom-36 right-2 rounded-full  p-0 z-30 ">
+        <div className="fixed bottom-20 right-2 rounded-full  p-0 z-30 ">
 
-          <FloatingHearts trigger="hover" bubbleCount={3}>
-            <button
-              className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700"
-              onClick={() => setOverlayOpen(true)}
-            >
-              {topStudents.length > 0 ? (
-                <>
-                  {/* Avatar Circle */}
-                  <div className="w-full h-full rounded-full overflow-hidden">
-                    <img
-                      src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                      alt={topStudents[0].name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
 
-                  {/* Crown Badge Floating Outside */}
-                  <div className="absolute -top-3 -right-3 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-700">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="w-4 h-4 text-white"
-                    >
-                      <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" />
-                      <path d="M5 16H19V19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V16Z" />
-                    </svg>
-                  </div>
-                </>
-              ) : (
-                <div className="w-full h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">?</span>
+          <button
+            className="relative w-14 h-14 rounded-full shadow-lg border-2 border-white dark:border-gray-700"
+            onClick={() => setOverlayOpen(true)}
+          >
+            {topStudents.length > 0 ? (
+              <>
+                {/* Avatar Circle */}
+                <div className="w-full h-full rounded-full overflow-hidden">
+                  <img
+                    src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                    alt={topStudents[0].name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              )}
-            </button>
-          </FloatingHearts>
+
+                {/* Crown Badge Floating Outside */}
+                <div className="absolute -top-3 -right-3 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-700">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-4 h-4 text-white"
+                  >
+                    <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" />
+                    <path d="M5 16H19V19C19 19.6 18.6 20 18 20H6C5.4 20 5 19.6 5 19V16Z" />
+                  </svg>
+                </div>
+              </>
+            ) : (
+              <div className="w-full h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                <span className="text-white font-bold text-xl">?</span>
+              </div>
+            )}
+          </button>
+
         </div>
 
 
 
 
         <Dialog open={overlayOpen} onOpenChange={setOverlayOpen}>
-          <DialogContent className="max-w-3xl p-0">
-
-            {/* Close button is already handled by Dialog, but we keep yours */}
-            <button
-              type="button"
-              className="absolute top-10 right-4 z-50 text-sm font-semibold text-gray-600 dark:text-white/80 hover:text-red-500 tracking-wide"
-              onClick={() => setOverlayOpen(false)}
-            >
-              Close
-            </button>
+          <DialogContent
+            className="max-w-3xl p-0"
+            onClick={() => setOverlayOpen(false)} // 🔹 must call this manually
+            onMouseDown={() => {
+              if (navigator.vibrate) navigator.vibrate(50); // 🔹 vibration on tap/click
+            }}
+          >
 
 
             {/* Card Content */}
