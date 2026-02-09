@@ -355,7 +355,7 @@ export default function FloatingChat({ currentUserId }: FloatingChatProps) {
 
 
   return (
-    <div className="fixed bottom-24 right-4 flex flex-col gap-2 items-end z-50">
+    <div className="fixed bottom-16 right-4 flex flex-col gap-2 items-end z-50">
 
       <div className="relative">
         {/* Toggle Chat Icon */}
