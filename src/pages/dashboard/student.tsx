@@ -32,7 +32,7 @@ import { MistakesCard } from "@/components/MistakesCard";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import LiveReactions from "@/components/LiveReactions";
-import { DialogClose } from "@/components/ui/dialog";
+
 
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line

@@ -1,5 +1,10 @@
 "use client";
 import { useLocation } from "react-router-dom";
+// DashboardLayout.tsx
+import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
+import { MusicPlayer } from "@/components/MusicPlayer";
+
+import { Outlet } from "react-router-dom";
 
 import { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -24,6 +29,8 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
   const { isLoading } = useSessionContext();
   const location = useLocation();
   const isForum = location.pathname === "/forum";
+  const disabledPages = ["/login", "/register", "/checkout"]; // pages where music never shows
+  const showMusic = !disabledPages.includes(location.pathname);
 
   // ------------------------------
   // Auth redirect
@@ -155,16 +162,18 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
   // ------------------------------
   return (
     <SidebarProvider>
-      <DashboardContent
-        user={user}
-        userRole={userRole}
-        isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-        streak={streak}
-        isForum={isForum}   // ✅ pass it here
-      >
-        {children}
-      </DashboardContent>
+      <MusicPlayerProvider>
+        <DashboardContent
+          user={user}
+          userRole={userRole}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          streak={streak}
+          isForum={isForum}   // ✅ pass it here
+        >
+          {children}
+        </DashboardContent>
+      </MusicPlayerProvider>
     </SidebarProvider>
 
   );
@@ -174,22 +183,21 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
 // THIS COMPONENT CAN NOW SAFELY USE useSidebar()
 // -------------------------------------------------------------
 import { useSidebar } from "@/components/ui/sidebar";
-
 function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, children, isForum }: any) {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
 
+  // Pages where the music player should never appear
+  const disabledPages = ["/login", "/register", "/simulation/candidate", "/quiz-simulation/instructions"];
+  const showMusic = !disabledPages.includes(window.location.pathname);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-
 
       <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
 
       <div className="flex flex-col flex-1 overflow-hidden">
 
-
         <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
-
         <main
           className={`
     flex-1 box-border
@@ -197,15 +205,15 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
     py-4
     ${!isForum ? "pb-14" : ""}
     overflow-auto
-custom-scrollbar
+    custom-scrollbar
   `}
         >
-          {children}
+          {/* This renders the child route */}
+          <Outlet />
 
           {/* Footer spacer — only on non-forum pages */}
           {!isForum && <div className="h-20 shrink-0" />}
         </main>
-
 
         {!isSidebarOpen && (
           <BottomBar
@@ -213,9 +221,12 @@ custom-scrollbar
             unreadCount={0}
             unreadAnnouncements={0}
           />
-
         )}
+
         <Footer mistakeCount={0} />
+
+        {/* ------------------- Floating Music Player ------------------- */}
+        {showMusic && <MusicPlayer />}
       </div>
     </div>
   );
