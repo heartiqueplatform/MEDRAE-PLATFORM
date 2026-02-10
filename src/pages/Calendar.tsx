@@ -242,7 +242,7 @@ export function Calendar() {
 
 
         {/* Calendar */}
-        <Card className="w-full overflow-hidden">
+        <Card className="w-full border-0 overflow-hidden">
 
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -278,7 +278,7 @@ export function Calendar() {
 
         {/* Upcoming Assessments */}
 
-        <Card className="w-full overflow-hidden">
+        <Card className="w-full border-0 overflow-hidden">
 
           <CardHeader>
             <CardTitle>Upcoming Assessments</CardTitle>

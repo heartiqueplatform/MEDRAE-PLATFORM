@@ -14,6 +14,7 @@ import {
     ChevronDown,
     FilePlus,
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface Track {
     name: string;
@@ -24,14 +25,7 @@ interface Track {
 const LOCAL_STORAGE_KEY = "savedTracks";
 
 export const MusicPlayer = () => {
-    const defaultTracks: Track[] = [
-        { name: "Lo-Fi Study Beat", src: "/sounds/Medrae_studify_music (1).mp3" },
-        { name: "Calm Piano", src: "/sounds/Medrae_studify_music track1.mp3" },
-        { name: "Focus Flow", src: "/sounds/Medrae_studify_music track 3.mp3" },
-        { name: "Chill Vibes", src: "/sounds/Medrae_studify_music track 2.mp3" },
-        { name: "Morning Study", src: "/sounds/Medrae_studify_music track 4.mp3" },
-        { name: "Evening Calm", src: "/sounds/Medrae_studify_music (2).mp3" },
-    ];
+
 
     // -------------------- UI State --------------------
     const [showTrackList, setShowTrackList] = useState(false);
@@ -56,29 +50,55 @@ export const MusicPlayer = () => {
         setProgress,
     } = useMusicPlayer();
 
-    // -------------------- Load saved tracks --------------------
-    useEffect(() => {
-        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-        let savedTracks: Track[] = [];
-        if (saved) {
-            try {
-                savedTracks = JSON.parse(saved).map((t: Track) => ({
-                    ...t,
-                    fromStorage: true,
-                }));
-            } catch { }
+    const fetchDefaultTracks = async (): Promise<Track[]> => {
+        const { data, error } = await supabase
+            .from("music_tracks")
+            .select("title, audio_url")
+            .eq("is_active", true)
+            .order("order_index", { ascending: true });
+
+        if (error) {
+            console.error("Failed to load music tracks:", error);
+            return [];
         }
 
-        // Only append default tracks that are not already in savedTracks
-        const combinedTracks = [...savedTracks];
-        defaultTracks.forEach((t) => {
-            if (!combinedTracks.some((st) => st.src === t.src)) {
-                combinedTracks.push(t);
-            }
-        });
+        return data.map((t) => ({
+            name: t.title,
+            src: t.audio_url,
+        }));
+    };
 
-        setTracks(combinedTracks);
+    // -------------------- Load saved tracks --------------------
+    useEffect(() => {
+        const loadTracks = async () => {
+            const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+            let savedTracks: Track[] = [];
+
+            if (saved) {
+                try {
+                    savedTracks = JSON.parse(saved).map((t: Track) => ({
+                        ...t,
+                        fromStorage: true,
+                    }));
+                } catch { }
+            }
+
+            const dbTracks = await fetchDefaultTracks();
+
+            const combinedTracks = [...savedTracks];
+
+            dbTracks.forEach((t) => {
+                if (!combinedTracks.some((st) => st.src === t.src)) {
+                    combinedTracks.push(t);
+                }
+            });
+
+            setTracks(combinedTracks);
+        };
+
+        loadTracks();
     }, []);
+
     useEffect(() => {
         // Save only tracks added by the user (fromStorage)
         const userTracks = tracks.filter((t) => t.fromStorage);
@@ -200,7 +220,7 @@ export const MusicPlayer = () => {
             {/* 🔵 CIRCULAR AVATAR */}
             {/* 🔵 CIRCULAR AVATAR + NOW PLAYING */}
             <>
-                <div className="fixed bottom-16 p-2 right-68 z-50 flex items-center gap-2">
+                <div className="fixed bottom-16 p-2 right-68 z-30 flex items-center gap-2">
                     {/* Avatar button */}
                     <button
                         onClick={() => setIsOpen(true)}
