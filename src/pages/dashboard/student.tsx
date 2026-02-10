@@ -1713,7 +1713,7 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="p-3 border rounded-none sm:rounded-md
- bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 w-full"
+ bg-gray-50 dark:bg-gray-800 border-0 w-full"
                     >
                       <div className="flex flex-col sm:flex-row gap-4 items-start">
                         {/* User Info */}
