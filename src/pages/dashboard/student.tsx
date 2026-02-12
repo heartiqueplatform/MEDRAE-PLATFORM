@@ -1390,9 +1390,10 @@ export default function StudentDashboard() {
             </div>
           </CardContent>
         </Card >
-        <FeedSeenTop10 />
+
         <CountdownFloating />
         <DailyTriviaCard />
+        <FeedSeenTop10 />
         <MistakesCard />
         {/* Floating Button showing top student's avatar */}
         {/* Floating Avatar Button with Crown Outside */}

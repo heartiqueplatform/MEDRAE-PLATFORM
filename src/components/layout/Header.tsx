@@ -307,7 +307,7 @@ export function Header({
         <div className="hidden md:block">
           <div className="flex items-center gap-1">
             {/* Archive SVG next to badge */}
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-8 h-8">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-6 h-6">
               <path stroke-linecap="round" stroke-linejoin="round" fill="#0caae9" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
             </svg>
             <Badge className="h-5 px-2 text-xs bg-blue-500 text-white">
@@ -383,7 +383,7 @@ Advance your medical journey today: https://medrae.vercel.app`;
             }
           }}
         >
-          <Share2 width={24} height={24} stroke="#3B82F6" />
+          <Share2 width={20} height={20} stroke="#3B82F6" />
         </Button>
 
 
@@ -395,8 +395,8 @@ Advance your medical journey today: https://medrae.vercel.app`;
           onClick={() => navigate("/notifications")}
         >
           <Bell
-            width={24}
-            height={24}
+            width={20}
+            height={20}
             stroke="none"
             fill={isDarkMode ? "#FBBF24" : "#FACC15"}
           />
@@ -410,7 +410,7 @@ Advance your medical journey today: https://medrae.vercel.app`;
 
         {/* Dark Mode Toggle */}
         <Button variant="ghost" size="icon" onClick={onToggleDarkMode}>
-          {isDarkMode ? <Sun width={24} height={24} stroke="#FBBF24" /> : <Moon width={24} height={24} stroke="none" fill="#071016" />}
+          {isDarkMode ? <Sun width={20} height={20} stroke="#FBBF24" /> : <Moon width={20} height={20} stroke="none" fill="#071016" />}
         </Button>
 
         {/*  User Info */}

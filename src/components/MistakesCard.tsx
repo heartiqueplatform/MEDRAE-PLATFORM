@@ -465,7 +465,7 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
             {/* Expanded Card Overlay */}
             {expandedCard && (
                 <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-1"
+                    className="fixed mt-4 inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-1"
                     onClick={() => setExpandedCard(null)} // tap outside closes
                 >
                     <div
@@ -473,12 +473,15 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                         onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
                     >
                         {/* Close Button */}
-                        <button
-                            onClick={() => setExpandedCard(null)}
-                            className="absolute top-4 right-4 text-xl font-bold text-gray-700 dark:text-white hover:text-red-500"
-                        >
-                            ✕
-                        </button>
+                        {/* Top Header */}
+                        <div className="flex justify-end mb-2">
+                            <button
+                                onClick={() => setExpandedCard(null)}
+                                className="text-xl font-bold text-gray-700 dark:text-white hover:text-red-500"
+                            >
+                                ✕
+                            </button>
+                        </div>
 
                         {/* Question */}
                         {/* Overlay Question */}
@@ -512,8 +515,8 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                                 <div
                                     key={key}
                                     className={`px-3 py-2 rounded border ${key === expandedCard.quiz_questions.correct_answer
-                                        ? "border-green-600 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 font-medium"
-                                        : "border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                                        ? "border-0 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 font-medium"
+                                        : "border-0 text-gray-700 dark:text-gray-300"
                                         }`}
                                 >
                                     <strong>{key}.</strong> {expandedCard.quiz_questions[`option_${key.toLowerCase()}`]}

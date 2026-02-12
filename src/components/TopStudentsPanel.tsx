@@ -25,6 +25,8 @@ interface TopStudent {
     score: number;
     avatar_url?: string | null;
     institution?: string | null;
+    completedAt?: string | null; // ✅ new field
+    timeUsed?: number | null;
 }
 export const DailyTriviaCard = () => {
     const navigate = useNavigate();
@@ -50,6 +52,15 @@ export const DailyTriviaCard = () => {
     const [timeUsedToday, setTimeUsedToday] = useState<number | null>(null);
     const [savedScore, setSavedScore] = useState<{ correct_answers: number; total_questions: number } | null>(null);
     const startTimeRef = useRef<number>(0);
+    const [completedAt, setCompletedAt] = useState<string | null>(null);
+    const formatTimeReadable = (sec: number) => {
+        const minutes = Math.floor(sec / 60);
+        const seconds = sec % 60;
+        const minText = minutes > 0 ? `${minutes} minute${minutes > 1 ? "s" : ""}` : "";
+        const secText = seconds > 0 ? `${seconds} second${seconds > 1 ? "s" : ""}` : "";
+        return [minText, secText].filter(Boolean).join(" and ");
+    };
+
     // Load questions
     useEffect(() => {
         async function loadQuestions() {
@@ -91,6 +102,7 @@ export const DailyTriviaCard = () => {
                     correct_answers: attempts[0].correct_answers,
                     total_questions: attempts[0].total_questions
                 });
+                setCompletedAt(attempts[0].created_at); // ✅ use created_at as completion time
             }
 
         }
@@ -101,7 +113,7 @@ export const DailyTriviaCard = () => {
         async function fetchTop() {
             const { data: results } = await supabase
                 .from("daily_trivia_results")
-                .select("user_id, score")
+                .select("user_id, score,  time_used, created_at")
                 .eq("attempt_date", today)
                 .order("score", { ascending: false })
                 .limit(10);
@@ -122,6 +134,8 @@ export const DailyTriviaCard = () => {
                     name: profile?.name || "Student",
                     avatar_url: profile?.avatar_url || null,
                     institution: profile?.institution || null,
+                    completedAt: r.created_at, // ✅ add created_at here
+                    timeUsed: r.time_used,
                 };
             });
             setTopStudents(mapped);
@@ -185,6 +199,8 @@ export const DailyTriviaCard = () => {
                 score: correctCount,
                 time_used: timeUsed,
                 attempt_date: today,
+
+
             }, { onConflict: ["user_id", "attempt_date"] });
 
         setSavedScore({ correct_answers: correctCount, total_questions: normalizedQuestions.length });
@@ -425,6 +441,17 @@ export const DailyTriviaCard = () => {
                                         <div className="mt-2 font-bold text-blue-600 dark:text-blue-400">
                                             {s.score} pts
                                         </div>
+                                        {s.completedAt && (
+                                            <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
+                                                Done at {new Date(s.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                            </div>
+                                        )}
+                                        {s.timeUsed !== undefined && (
+                                            <div className="text-xs text-gray-500 dark:text-gray-300">
+                                                Spent {formatTimeReadable(s.timeUsed)}
+                                            </div>
+                                        )}
+
 
                                         {/* Top 3 badges */}
                                         <div className="mt-1">
@@ -479,6 +506,8 @@ export const DailyTriviaCard = () => {
                                 {/* Time spent display */}
                                 {timeUsedToday !== null ? `${timeUsedToday}s spent ⏱` : "0s spent ⏱"}
                                 <br /><br />
+
+
                                 {/* Description for bars */}
                                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                                     Bars show your performance: <strong>green</strong> is good, <strong>yellow</strong> is average, <strong>red</strong> is below expectations.
@@ -486,6 +515,7 @@ export const DailyTriviaCard = () => {
                                     Correct answers bar: how many questions you got right. <br />
                                     Time used bar: how fast you completed the quiz.
                                 </div>
+
                                 {/* Progress bars */}
                                 <div className="mt-2 space-y-4">
                                     {/* Correct answers bar */}
