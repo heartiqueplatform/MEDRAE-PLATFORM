@@ -936,7 +936,8 @@ Keep striving each step you take strengthens your nursing expertise and prepares
     <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
       <div className="md:col-span-2 space-y-4">
 
-        <Card className="min-h-[400px] bg-transparent shadow-none border-none">
+        <Card className="min-h-[400px] bg-white dark:bg-gray-900 border border-0 shadow-sm rounded-xl">
+
 
 
           <CardHeader>

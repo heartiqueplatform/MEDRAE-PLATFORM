@@ -312,7 +312,7 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                 { title: "Tracker", url: "/calendar", icon: Calendar, badge: formatNumber(totalEvents), iconTone: "progress" },
                 { title: "Progress", url: "/progress", icon: TrendingUp, badge: `${totalStars}★`, iconTone: "progress" },
                 { title: "Quizzes", url: "/Medrae-quizzes", icon: Heart, badge: formatNumber(totalQuestions), iconTone: "practice" },
-                { title: "SimuProctor", url: "/simulation/candidate", icon: Play, badge: formatNumber(totalSimulationPapers), iconTone: "practice" },
+                { title: "Proctorium", url: "/simulation/candidate", icon: Play, badge: formatNumber(totalSimulationPapers), iconTone: "practice" },
                 { title: "A.Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content", hasDot: true },
                 { title: "Resources", url: "/resources", icon: FileText, badge: formatNumber(totalNotes), iconTone: "content" },
             ],

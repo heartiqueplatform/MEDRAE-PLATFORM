@@ -1824,7 +1824,7 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
 
           <CardHeader className="p-2">
             <CardTitle className="text-gray-900 dark:text-white">
-              Self Test SimuProctor Papers V1
+              Self Test Proctorium Papers V1
               <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                 ({cachedSimulationPapers.length} Papers)
               </span>
