@@ -632,26 +632,6 @@ export default function QuizPage() {
 
     setRecentlyAnsweredId(questionId);
     setFeedbackShown(prev => ({ ...prev, [questionId]: true }));
-    // 🔴 LIVE ANSWER EVENT (for floating activity feed)
-    (async () => {
-      if (!userId) return;
-
-      const question = questions.find(q => q.id === questionId);
-      if (!question) return;
-
-      const correct = question.correct_answer === selected;
-
-      await supabase
-        .from("live_answer_events")
-        .insert({
-          user_id: userId,
-          question_id: questionId,
-          event_type: correct ? "answered_correct" : "answered_wrong",
-          is_correct: correct,
-          streak_count: null,
-          points: correct ? 1 : 0,
-        });
-    })();
 
     // Save unit answers to localStorage
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
