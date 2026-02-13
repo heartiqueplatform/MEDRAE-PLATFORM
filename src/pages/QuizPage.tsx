@@ -1165,23 +1165,34 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           // 4️⃣ ORIGINAL ANSWER LOGIC
                           handleAnswer(q.id, letter);
 
-                          // 🔴 INSERT LIVE EVENT
+                          // 🔴 LIVE ANSWER EVENT (for floating activity feed)
                           (async () => {
+                            // 1️⃣ Get current user
                             const { data: { user } } = await supabase.auth.getUser();
                             if (!user) return;
 
+                            // 2️⃣ Find the question from your state
+                            const question = questions.find(q => q.id === q.id); // replace q.id with the current question's ID variable if needed
+                            if (!question) return;
+
+                            // 3️⃣ Determine correctness
+                            const correct = question.correct_answer === selectedAnswer; // replace selectedAnswer with your current variable
+
+                            // 4️⃣ Insert into live_answer_events exactly like original
                             try {
                               await supabase.from("live_answer_events").insert({
                                 user_id: user.id,
-                                question_id: q.id,
+                                question_id: question.id,
                                 event_type: correct ? "answered_correct" : "answered_wrong",
                                 is_correct: correct,
-                                streak_count: null, // or your streak variable if you have one
+                                streak_count: null,
+                                points: correct ? 1 : 0, // keep points field like original
                               });
                             } catch (err) {
                               console.error("Error inserting live event:", err);
                             }
                           })();
+
 
                           // 5️⃣ RECORD MISTAKE IF WRONG
                           if (!correct) {
