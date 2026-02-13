@@ -937,9 +937,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
       <div className="md:col-span-2 space-y-4">
 
         <Card className="min-h-[400px] bg-white dark:bg-gray-900 border border-0 shadow-sm rounded-xl">
-
-
-
           <CardHeader>
             <CardTitle>
               Question {currentIndex + 1} of {questions.length}

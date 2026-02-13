@@ -161,10 +161,12 @@ export default function LiveReactions() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 50 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-20 right-16 w-72 max-h-[70vh] p-4 bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-y-auto z-50 flex flex-col space-y-2 custom-scrollbar"
+                        className="fixed bottom-10 right-16 w-72 max-h-[70vh] p-0 bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-y-auto z-50 flex flex-col space-y-2 custom-scrollbar"
                     >
                         {/* Panel Header */}
-                        <div className="flex justify-between items-center mb-2">
+                        <div className="flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 px-3 py-2">
+
+
                             <div>
                                 <h3 className="font-bold text-lg dark:text-white">Live Quizzes Activity</h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-300">

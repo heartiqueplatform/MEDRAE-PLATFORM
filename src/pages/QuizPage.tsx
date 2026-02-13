@@ -1184,6 +1184,25 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
 
                           // 4️⃣ ORIGINAL ANSWER LOGIC
                           handleAnswer(q.id, letter);
+
+                          // 🔴 INSERT LIVE EVENT
+                          (async () => {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) return;
+
+                            try {
+                              await supabase.from("live_answer_events").insert({
+                                user_id: user.id,
+                                question_id: q.id,
+                                event_type: correct ? "answered_correct" : "answered_wrong",
+                                is_correct: correct,
+                                streak_count: null, // or your streak variable if you have one
+                              });
+                            } catch (err) {
+                              console.error("Error inserting live event:", err);
+                            }
+                          })();
+
                           // 5️⃣ RECORD MISTAKE IF WRONG
                           if (!correct) {
                             // ✅ SHOW REASON BOX IMMEDIATELY (NO WAIT)
