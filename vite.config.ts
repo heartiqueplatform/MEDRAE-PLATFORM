@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
           name: "MEDRAE",
           short_name: "MEDRAE",
           description:
-            "Comprehensive medical education platform for healthcare students and professionals — featuring structured study modules, clinical case simulations, progress tracking, and interactive learning tools.",
+            "Structured NCK- style exam practice with 6,000+ questions, unit- based revision and smart performance tracking",
           theme_color: "#4ade80",
           background_color: "#ffffff",
           display: "standalone",
