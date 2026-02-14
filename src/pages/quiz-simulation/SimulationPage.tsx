@@ -635,7 +635,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
     //  Footer + page numbers AFTER all content
     const pageCount = doc.internal.getNumberOfPages();
     const footerLine1 = "MEDRAE";
-    const footerLine2 = "Organized Learning = Confident Exams";
+    const footerLine2 = "Stop Guessing. Start Passing.";
 
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);

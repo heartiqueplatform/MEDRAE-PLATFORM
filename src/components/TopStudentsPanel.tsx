@@ -162,7 +162,7 @@ export const DailyTriviaCard = () => {
     const shareOnWhatsApp = () => {
         const appUrl = window.location.origin; // Automatically gets your app URL
         const message = encodeURIComponent(
-            `I just completed today's Medrae Daily MindRush! 🧠🎉\nOrganized Learning. Confident Exams.\nCheck out Medrae here: ${appUrl}`
+            `I just completed today's Medrae Daily MindRush! 🧠🎉\nStop Guessing. Start Passing.\nCheck out Medrae here: ${appUrl}`
         );
         const whatsappUrl = `https://wa.me/?text=${message}`;
         window.open(whatsappUrl, "_blank");
@@ -594,7 +594,7 @@ export const DailyTriviaCard = () => {
                                 </p>
 
                                 <span className="mt-3 text-sm text-gray-700 dark:text-gray-300 italic">
-                                    Remember: Medrae helps you <strong>Organized Learning. Confident Exams.</strong>
+                                    Remember: Medrae helps you <strong>Stop Guessing. Start Passing.</strong>
                                 </span>
 
                                 <br />

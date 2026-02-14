@@ -223,10 +223,8 @@ const Index = () => {
       bg: "/indexbackground3.jpg",
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
-          Medrae is a professional platform for Nursing education, clinical training,
-          and healthcare career advancement. Explore verified question banks,
-          case-based scenarios, and evidence-driven study materials tailored for
-          healthcare excellence.
+          Medrae is built for serious NCK exam preparation. Practice 5,000+ updated NCK-style questions, get instant explanations after every answer, and focus directly on your weakest and most tested units.
+
         </h2>
       ),
     },
@@ -257,7 +255,8 @@ const Index = () => {
       bg: "/background03.jpg",
       text: (
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 md:text-white">
-          Kenya’s Nursing Network Platform
+          Kenya’s Structured NCK Exam Practice Platform
+
         </h2>
       ),
     },
@@ -267,10 +266,8 @@ const Index = () => {
       bg: "/background02.jpg",
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
-          Strengthen your skills through simulations, certification modules, and
-          structured progression tracking. For the best experience, access Medrae
-          via desktop for enhanced clarity and performance, or use mobile for
-          flexible learning anywhere.
+          Train in DigiProctor-style exam mode with timed practice, unit-based revision, and automatic tracking of every question you fail. Review smarter. Practice faster. Improve strategically.
+
         </h2>
       ),
     },
@@ -279,9 +276,8 @@ const Index = () => {
       bg: "/background06.jpg",
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
-          All plans include full feature access—choose Pro at KSh 99/month or Premium
-          at KSh 450/year. The first 1,000 users receive a free 6-month professional
-          trial to experience Medrae’s complete suite of educational and career tools.
+          Access the full NCK revision system—structured units, instant explanations, weak-topic tracking, and a growing bank of 5,000+ questions updated regularly to match exam trends.
+
         </h2>
       ),
     },
@@ -358,23 +354,27 @@ const Index = () => {
   const features = [
     {
       icon: Brain,
-      title: "AI Clinical Assistant",
-      description: "Receive precise guidance on medical concepts, drug information, and evidence-based practices. Medrae AI enhances your understanding and supports critical decision-making in real time."
+      title: "Instant Answer Explanations",
+      description: "Tap an answer and immediately see why it’s correct or wrong. No guessing. No searching. Understand fast and lock it in."
+
     },
     {
       icon: Users,
-      title: "Professional Collaboration",
-      description: "Engage with healthcare professionals and students, join specialty discussions, and share clinical insights to expand your medical expertise and professional network."
+      title: "Unit-Based Smart Revision",
+      description: "Jump directly to your weakest or most tested NCK units. Focus where you lose marks and eliminate blind revision."
+
     },
     {
       icon: Star,
-      title: "Performance Analytics",
-      description: "Track your educational and clinical progress through data-driven insights. Identify your strengths, improve your focus areas, and achieve measurable growth in your professional development."
+      title: "Failed Question Tracker",
+      description: "Every question you fail is saved automatically. Revisit mistakes, reinforce weak areas, and convert weaknesses into guaranteed marks."
+
     },
     {
       icon: Play,
-      title: "Video Learning & Continuous Updates",
-      description: "Access expert-led videos, clinical demonstrations, and updated educational content. Stay current with medical trends and maintain consistent professional growth."
+      title: "6,000+ Updated Questions",
+      description: "Practice from a constantly growing question bank designed around real NCK patterns. Train with exam-relevant content—not outdated material."
+
     }
   ];
 
@@ -666,11 +666,13 @@ const Index = () => {
       <section className="py-20 px-3 bg-white text-gray-900">
         <div className="max-w-6xl mx-auto">
           <div className="text-xl mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Innovative Tools for Nursing Excellence
+            <h2 className="text-3xl md:text-4xl text-center font-bold mb-4">
+              Everything You Need to Pass the NCK Exam
+
             </h2>
             <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-              Medrae integrates modern technology with evidence-based education. Access structured medical content, detailed progress analytics, and interactive video lessons all designed to support continuous professional growth and mastery in healthcare practice.
+              Stop wasting time searching through random PDFs. Medrae organizes NCK revision into structured units, instant-answer explanations, and smart performance analytics so you know exactly what to fix before exam day.
+
             </p>
           </div>
 
@@ -753,7 +755,8 @@ const Index = () => {
                 Our Mission
               </h3>
               <p className="text-gray-700 dark:text-gray-800">
-                To simplify learning for healthcare students by offering organized materials, key resources, and guidance for exams and assessments, turning preparation into confidence.
+                To eliminate random, unstructured revision and replace it with a focused NCK exam system that builds confidence through repeated, intelligent practice.
+
               </p>
             </div>
 
@@ -766,7 +769,8 @@ const Index = () => {
                 Our Vision
               </h3>
               <p className="text-gray-700 dark:text-gray-800">
-                To become Kenya’s leading platform for nursing students, bridging the gap between students and professional nurses, making learning interactive, engaging, and enjoyable, while connecting education to real-world nursing practice.
+                To become Kenya’s most trusted NCK exam preparation platform by helping students pass faster through structured, measurable, and performance-driven practice.
+
               </p>
             </div>
 
@@ -779,7 +783,7 @@ const Index = () => {
                 Our Slogan
               </h3>
               <p className="text-gray-700 dark:text-gray-800 font-semibold">
-                Organized Learning. Confident Exams.
+                Stop Guessing. Start Passing.
               </p>
             </div>
 
@@ -844,10 +848,12 @@ const Index = () => {
       < section className="py-20 px-4 bg-gradient-to-tr from-blue-500 to-blue-200 text-gray-900" >
         <div className="max-w-4xl mx-auto text-xl">
           <h2 className="text-3xl md:text-4xl font-bold mb-2">
-            Elevate Your Nursing Career with Medrae
+            Ready to Pass Your NCK Exam?
+
           </h2>
           <p className="text-xl text-white mb-2">
-            Medrae unites learners and professionals in one advanced medical ecosystem. Harness AI-driven insights, structured clinical learning, and collaborative tools to transform how you study, train, and grow in healthcare.
+            Stop scrolling through PDFs. Start practicing with structure. Join Medrae and train daily with instant explanations, unit-based drills, and exam-style simulations designed for NCK success.
+
           </p>
 
           <Button

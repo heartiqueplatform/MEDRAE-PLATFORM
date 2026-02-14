@@ -162,7 +162,7 @@ export function Register() {
     const [formData, setFormData] = useState({
       fullName: "",
       email: "",
-      phone: "",
+      phone: "+254",
       username: "",
       institution: "",
       county: "",
@@ -203,15 +203,45 @@ export function Register() {
           />
           </div>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Email *</Label>
+            <Input
+              type="email"
+              placeholder="example@email.com"
+              value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
 
-        <Label>Email *</Label>
-        <Input type="email" placeholder="example@email.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+          <div>
+            <Label>Phone Number *</Label>
+            <Input
+              value={formData.phone}
+              onChange={e => {
+                let value = e.target.value;
+                if (!value.startsWith("+254")) value = "+254";
+                setFormData({ ...formData, phone: value });
+              }}
+            />
+          </div>
+        </div>
 
-        <Label>Phone Number *</Label>
-        <Input placeholder="+254 712 345 678" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
 
-        <PasswordField label="Password *" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
-        <PasswordField label="Confirm Password *" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <PasswordField
+            label="Password *"
+            value={formData.password}
+            onChange={e => setFormData({ ...formData, password: e.target.value })}
+          />
+
+          <PasswordField
+            label="Confirm Password *"
+            value={formData.confirmPassword}
+            onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+          />
+        </div>
+
         <Label>Security Question *</Label>
         <Select
           value={formData.resetQuestion}
@@ -410,7 +440,7 @@ export function Register() {
     const [formData, setFormData] = useState({
       fullName: "",
       email: "",
-      phone: "",
+      phone: "+254",
       username: "",
       institution: "",
       county: "",
@@ -447,15 +477,44 @@ export function Register() {
           />
           </div>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Email *</Label>
+            <Input
+              type="email"
+              placeholder="example@email.com"
+              value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
 
-        <Label>Email *</Label>
-        <Input type="email" placeholder="tutor@email.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+          <div>
+            <Label>Phone Number *</Label>
+            <Input
+              value={formData.phone}
+              onChange={e => {
+                let value = e.target.value;
+                if (!value.startsWith("+254")) value = "+254";
+                setFormData({ ...formData, phone: value });
+              }}
+            />
+          </div>
+        </div>
 
-        <Label>Phone Number *</Label>
-        <Input placeholder="+254 700 000 000" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
 
-        <PasswordField label="Password *" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
-        <PasswordField label="Confirm Password *" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <PasswordField
+            label="Password *"
+            value={formData.password}
+            onChange={e => setFormData({ ...formData, password: e.target.value })}
+          />
+
+          <PasswordField
+            label="Confirm Password *"
+            value={formData.confirmPassword}
+            onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+          />
+        </div>
 
         <Label>Security Question *</Label>
         <Select
@@ -627,7 +686,7 @@ export function Register() {
             I have an account, login in
           </Link>
         </CardHeader>
-        <CardDescription>Register as a Student, Tutor or Staff</CardDescription>
+        <CardDescription className="p-4 ">Register as a Student, Tutor or Staff</CardDescription>
 
         <CardContent className="pb-8 md:pb-6">
           <Tabs defaultValue="student">

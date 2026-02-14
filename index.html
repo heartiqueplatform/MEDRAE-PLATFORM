@@ -7,35 +7,41 @@
 
   <link rel="icon" type="image/png" href="/favicon.png" />
 
-
-  <title>Medrae Medical Education, Clinical Skills, Careers, Certificates, Professional Growth</title>
+  <title>Medrae – NCK Exam Revision Questions & Study Plan (Kenya)</title>
 
   <meta name="description"
-    content="Medrae is a professional medical education and career network. Access clinical training, certifications, jobs, internships, and tools for continuous professional growth." />
+    content="Preparing for the NCK exam? Medrae provides 5,000+ NCK-style practice questions, instant explanations, structured revision by unit, and performance tracking to help you pass with confidence." />
+
   <meta name="author" content="Medrae" />
+
   <meta name="keywords"
-    content="medical education, clinical skills, healthcare careers, medical jobs, internships, medical certificates, professional development, Medrae" />
+    content="NCK exam revision, NCK practice questions, Kenya nursing exam prep, NCK past papers, nursing revision Kenya, DigiProctor practice NCK, NCK mock exams" />
+
   <link rel="canonical" href="https://medrae.com/" />
 
-  <meta property="og:title" content="Medrae – Medical Education and Career Network" />
+  <meta property="og:title" content="Medrae – Pass Your NCK Exam with Structured Practice" />
+
   <meta property="og:description"
-    content="Medrae connects medical professionals to education, clinical training, and career opportunities. Advance your skills and grow your professional profile." />
+    content="Train like the real NCK exam. Get DigiProctor-style timed practice, instant explanations, categorized units, and smart review of failed questions." />
+
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://medrae.com/" />
   <meta property="og:image" content="/assets/og-image.png" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@medrae_network" />
-  <meta name="twitter:title" content="Medrae – Medical Education and Career Network" />
+
+  <meta name="twitter:title" content="Medrae – NCK Exam Practice & Revision Platform" />
+
   <meta name="twitter:description"
-    content="Medrae empowers medical professionals through clinical education, certifications, and career growth opportunities." />
+    content="Stop relying on random PDFs. Practice 5,000+ NCK-style questions with instant explanations and track every weak unit until you master it." />
+
   <meta name="twitter:image" content="/assets/og-image.png" />
 
   <meta name="theme-color" content="#1e90ff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-
 
   <script type="application/ld+json">
     {
@@ -44,7 +50,7 @@
       "name": "Medrae",
       "url": "https://medrae.com/",
       "logo": "https://medrae.com/icon-512.png",
-      "description": "Medrae is a professional medical education and career network offering clinical skills training, certifications, and healthcare opportunities.",
+      "description": "Medrae is a Kenya-based NCK exam revision platform offering structured study plans, 5,000+ NCK-style practice questions, instant explanations, and smart performance tracking.",
       "sameAs": ["https://twitter.com/medrae_network"]
     }
   </script>
@@ -53,24 +59,22 @@
 <body style="margin:0; height:100%;">
   <div id="root" style="height:100%;"></div>
 
-  <!-- ✅ Load React app with offline-safe fallback -->
+  <!-- Load React app -->
   <script type="module">
     import("/src/main.tsx");
   </script>
-  <!-- ✅ Lock theme and gradient splash BEFORE paint -->
+
+  <!-- Theme + splash logic (UNCHANGED) -->
   <script>
-    // Determine user theme immediately
     let userTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
     document.documentElement.classList.add(userTheme);
 
-    // Default background to prevent flash
     const bgColor = userTheme === 'dark' ? '#000' : '#fff';
     document.documentElement.style.backgroundColor = bgColor;
     document.body.style.backgroundColor = bgColor;
 
-    // Show animated gradient for first-time visitors
     const firstVisit = !localStorage.getItem('hasVisited');
     if (firstVisit) {
       localStorage.setItem('hasVisited', 'true');
@@ -94,7 +98,6 @@
         `;
       document.head.appendChild(styleEl);
     }
-
   </script>
 
 </body>

@@ -255,7 +255,7 @@ export function Header({
         {/* Center scrolling text */}
         <div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">
           <div className="whitespace-nowrap animate-marquee text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
-            🌟 Welcome to Medrae...Organized Learning. Confident Exams.🌟
+            🌟 Welcome to Medrae.... Stop Guessing. Start Passing.🌟
           </div>
         </div>
 

@@ -508,8 +508,7 @@ function SimulationAndTriviaSummary() {
     const inner = document.createElement("div");
     inner.innerHTML = `
      <strong>New target saved: ${targetInput}%!</strong><br/>
-    Keep pushing, work hard, and you’ll reach your goal! <br/>
-    Organized Learning. Confident Exams.
+    Stop Guessing. Start Passing.
   `;
     inner.className = `
   px-6 py-4 rounded-xl shadow-lg text-center
