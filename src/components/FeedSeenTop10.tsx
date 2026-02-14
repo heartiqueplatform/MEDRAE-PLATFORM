@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Trophy, Stethoscope } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { UserProfileModal } from "@/components/UserProfileModal";
 
 
 interface TopStudent {
@@ -20,6 +21,7 @@ export default function FeedSeenTop10() {
     const [topStudents, setTopStudents] = useState<TopStudent[]>([]);
     const [loading, setLoading] = useState(true);
     const [rankChangedUser, setRankChangedUser] = useState<string | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
     const prevTopStudents = useRef<TopStudent[]>([]);
 
@@ -129,6 +131,8 @@ export default function FeedSeenTop10() {
                                     }}
                                     whileHover={{ scale: 1.05 }} // zoom on hover
                                     whileTap={{ scale: 0.95 }}   // tap feedback on mobile
+                                    onClick={() => setSelectedUserId(s.user_id)}
+
                                 >
 
                                     <div className="flex flex-col items-center text-center">
@@ -182,6 +186,11 @@ export default function FeedSeenTop10() {
                     </AnimatePresence>
                 </div>
             </CardContent>
+            <UserProfileModal
+                userId={selectedUserId}
+                onClose={() => setSelectedUserId(null)}
+            />
+
         </Card >
     );
 }

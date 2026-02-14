@@ -200,7 +200,6 @@ export default function LiveReactions() {
                                             : "bg-gray-100 dark:bg-gray-900 dark:text-white text-gray-900"
                                             }`}
                                     >
-                                        {/* Avatar */}
                                         {event.user_avatar ? (
                                             <img
                                                 src={event.user_avatar}
@@ -208,8 +207,13 @@ export default function LiveReactions() {
                                                 className="w-10 h-10 flex-shrink-0 rounded-full object-cover border border-gray-300 dark:border-gray-700"
                                             />
                                         ) : (
-                                            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-gray-400 border border-gray-300 dark:border-gray-700" />
+                                            <img
+                                                src="/UsersAvatar.jpg"   // <-- default avatar here
+                                                alt="Default User"
+                                                className="w-10 h-10 flex-shrink-0 rounded-full object-cover border border-gray-300 dark:border-gray-700"
+                                            />
                                         )}
+
 
                                         {/* Text */}
                                         <div className="flex flex-col">

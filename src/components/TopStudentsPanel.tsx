@@ -9,6 +9,7 @@ import { Brain, MessageCircle, Trophy, Stethoscope, Book, Eye } from "lucide-rea
 import confetti from "canvas-confetti";
 import { playSound } from "@/lib/soundManager";
 import { useNavigate } from "react-router-dom";
+import { UserProfileModal } from "@/components/UserProfileModal";
 
 interface TriviaQuestion {
     id: string;
@@ -53,6 +54,8 @@ export const DailyTriviaCard = () => {
     const [savedScore, setSavedScore] = useState<{ correct_answers: number; total_questions: number } | null>(null);
     const startTimeRef = useRef<number>(0);
     const [completedAt, setCompletedAt] = useState<string | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
     const formatTimeReadable = (sec: number) => {
         const minutes = Math.floor(sec / 60);
         const seconds = sec % 60;
@@ -412,6 +415,8 @@ export const DailyTriviaCard = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05, type: "spring", stiffness: 120 }}
                                     whileHover={{ scale: 1.05 }}
+                                    onClick={() => setSelectedUserId(s.user_id)}
+
                                 >
                                     <div className="flex flex-col items-center text-center">
                                         {/* Top 3 Icon */}
@@ -633,6 +638,11 @@ export const DailyTriviaCard = () => {
 
                 </CardContent >
             </Card >
+            <UserProfileModal
+                userId={selectedUserId}
+                onClose={() => setSelectedUserId(null)}
+            />
+
         </div >
     );
 };

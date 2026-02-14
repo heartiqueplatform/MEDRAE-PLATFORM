@@ -29,6 +29,7 @@ import DailyImagesTrivia from "@/components/DailyImagesTrivia";
 import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
 import { MistakesCard } from "@/components/MistakesCard";
+import { UserProfileModal } from "@/components/UserProfileModal";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import LiveReactions from "@/components/LiveReactions";
@@ -49,6 +50,7 @@ export default function StudentDashboard() {
   const [feedsAttemptCount, setFeedsAttemptCount] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
   const [openProfileId, setOpenProfileId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
 
   // New state for daily post duration
@@ -1337,6 +1339,7 @@ export default function StudentDashboard() {
                     return (
                       <div
                         key={s.userId}
+                        onClick={() => setSelectedUserId(s.userId)}
                         className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-xl bg-gradient-to-br ${rankColor} dark:from-gray-800 dark:to-gray-900
            transform transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95 hover:shadow-xl`}
 
@@ -1389,6 +1392,11 @@ export default function StudentDashboard() {
               </div>
             </div>
           </CardContent>
+          <UserProfileModal
+            userId={selectedUserId}
+            onClose={() => setSelectedUserId(null)}
+          />
+
         </Card >
 
         <CountdownFloating />
