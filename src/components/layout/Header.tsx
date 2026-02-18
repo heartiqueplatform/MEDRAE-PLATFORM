@@ -365,15 +365,10 @@ export function Header({
           <PopoverTrigger asChild>
             <div className="flex items-center gap-1 cursor-pointer">
               {isCompact ? (
-                // Compact: show first 3 online users as numbers + green dots
+                // Compact: just a green dot + number
                 <span className="flex items-center gap-1 text-green-500 text-xs font-medium">
-                  {onlineUsers.slice(0, 3).map((_, idx) => (
-                    <span key={idx} className="flex items-center gap-1">
-                      {idx + 1}
-                      <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
-                    </span>
-                  ))}
-                  {onlineUsers.length > 3 && <span>…</span>} {/* indicate more */}
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                  {onlineUsers.length}
                 </span>
               ) : (
                 // Full badge
@@ -390,18 +385,10 @@ export function Header({
               {onlineUsers.length > 0 ? (
                 onlineUsers.map((u, idx) => (
                   <li key={u.user_id} className="flex items-center gap-2">
-                    {isCompact ? (
-                      // compact list: just numbers + dot
-                      <span className="text-green-500 text-xs font-medium">
-                        {idx + 1}●
-                      </span>
-                    ) : (
-                      // full list: name + dot
-                      <>
-                        <span className="flex-1 truncate">{idx + 1}. {u.name}</span>
-                        <span className="text-green-500 text-xs font-medium">●</span>
-                      </>
-                    )}
+                    <span className="flex-1 truncate">
+                      {idx + 1}. {u.name}
+                    </span>
+                    <span className="text-green-500 text-xs font-medium">●</span>
                   </li>
                 ))
               ) : (
@@ -410,6 +397,7 @@ export function Header({
             </ul>
           </PopoverContent>
         </Popover>
+
 
 
 
