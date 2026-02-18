@@ -265,15 +265,15 @@ const App = () => {
   return (
     <>
       {forceLogout && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+
           <div className="max-w-md w-full bg-white dark:bg-gray-900 shadow-lg rounded-2xl p-6 text-center mx-4">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               Session Ended
             </h2>
             <p className="mt-3 text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-              It looks like your account was accessed from another device.
-              For your security, your previous session has been ended.
-              Please log in again to continue.
+              For your security, we've recently upgraded our system. Your previous session has been ended.
+              Please log in again to continue using your account safely.
             </p>
             <button
               onClick={() => window.location.reload()}
@@ -282,11 +282,15 @@ const App = () => {
               Log In Again
             </button>
             <p className="mt-3 text-gray-500 dark:text-gray-400 text-xs">
-              If this wasn’t you, we recommend changing your password immediately.
+              If you did not log out, we recommend changing your password immediately to keep your account secure.
+            </p>
+            <p className="mt-2 text-gray-500 dark:text-gray-400 text-xs">
+              ⚠️ Make sure to always use only one account. Multiple accounts may lead to being banned.
             </p>
           </div>
         </div>
       )}
+
 
 
       <SessionContextProvider supabaseClient={supabase}>

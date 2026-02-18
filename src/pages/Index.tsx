@@ -429,7 +429,14 @@ const Index = () => {
               >
                 {allMediaReady ? "Yes, I want to join!" : "Downloading..."}
               </button>
-
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-yellow-500 text-blue-500 font-bold text-base md:text-lg px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-500 hover:text-white hover:scale-105 transition-all duration-300"
+                onClick={() => navigate('/login')}
+              >
+                Sign In  back to Continue
+              </Button>
               {/* Progress bar */}
 
               {/* Progress bar */}
