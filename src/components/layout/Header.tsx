@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
+import { useWindowWidth } from "@/hooks/useWindowWidth"; // <-- add this
 
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useOnlineUsers } from "@/hooks/useOnlineUsers";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // add this
 
 import { Bell, Moon, Sun, User, Menu, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +45,11 @@ export function Header({
   const navigate = useNavigate();
   const authUser = useUser();
   const { toggleSidebar } = useSidebar();
+  // Get all users + online users
+  const { users: allUsers, onlineUsers } = useOnlineUsers();
+  const [showOnlineUsers, setShowOnlineUsers] = useState(false);
+  const width = useWindowWidth(); // get the current window width
+  const isCompact = width < 480;   // true if screen is narrow (you can adjust 480px)
 
   const [streak, setStreak] = useState(propStreak);
   const isOnline = useOnlineStatus();
@@ -200,6 +208,7 @@ export function Header({
           <span className="text-[11px] font-medium mt-0.5">Menu</span>
         </button>
         <div className="flex items-center gap-3 order-1 lg:hidden">
+
           {/* Online Status */}
           <div className="flex flex-col items-start space-y-1">
             {isOnline ? (
@@ -313,6 +322,7 @@ export function Header({
             <Badge className="h-5 px-2 text-xs bg-blue-500 text-white">
               {totalUsers ?? "-"}
             </Badge>
+
           </div>
 
         </div>
@@ -351,6 +361,55 @@ export function Header({
             {rotating ? "Updating..." : "Update"}
           </span>
         </button>
+        <Popover open={showOnlineUsers} onOpenChange={setShowOnlineUsers}>
+          <PopoverTrigger asChild>
+            <div className="flex items-center gap-1 cursor-pointer">
+              {isCompact ? (
+                // Compact: show first 3 online users as numbers + green dots
+                <span className="flex items-center gap-1 text-green-500 text-xs font-medium">
+                  {onlineUsers.slice(0, 3).map((_, idx) => (
+                    <span key={idx} className="flex items-center gap-1">
+                      {idx + 1}
+                      <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                    </span>
+                  ))}
+                  {onlineUsers.length > 3 && <span>…</span>} {/* indicate more */}
+                </span>
+              ) : (
+                // Full badge
+                <Badge className="h-5 px-2 text-xs bg-green-500 text-white">
+                  {onlineUsers.length} online
+                </Badge>
+              )}
+            </div>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-56 max-h-60 overflow-y-auto p-2 bg-card">
+            <h4 className="font-semibold text-sm mb-2">Online Users</h4>
+            <ul className="space-y-1 text-sm">
+              {onlineUsers.length > 0 ? (
+                onlineUsers.map((u, idx) => (
+                  <li key={u.user_id} className="flex items-center gap-2">
+                    {isCompact ? (
+                      // compact list: just numbers + dot
+                      <span className="text-green-500 text-xs font-medium">
+                        {idx + 1}●
+                      </span>
+                    ) : (
+                      // full list: name + dot
+                      <>
+                        <span className="flex-1 truncate">{idx + 1}. {u.name}</span>
+                        <span className="text-green-500 text-xs font-medium">●</span>
+                      </>
+                    )}
+                  </li>
+                ))
+              ) : (
+                <li className="text-gray-500 text-xs">No one online</li>
+              )}
+            </ul>
+          </PopoverContent>
+        </Popover>
 
 
 

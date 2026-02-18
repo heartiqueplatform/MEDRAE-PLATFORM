@@ -68,6 +68,13 @@ export function Login() {
         }
 
         const userId = data.user.id;
+        // 🔐 Save this session as the only active session
+        const sessionId = data.session?.access_token;
+
+        await supabase
+          .from("profiles")
+          .update({ active_session_id: sessionId })
+          .eq("user_id", userId);
 
         const { data: userData, error: userError } = await supabase
           .from("users")

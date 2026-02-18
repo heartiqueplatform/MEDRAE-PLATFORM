@@ -24,6 +24,7 @@ interface Profile {
     specialization: string | null;
     joined_date: string | null;
     is_online: boolean | null;
+    last_seen: string | null; // add this  last_seen: string | null; // add this
 }
 
 interface QuizResult {
@@ -188,7 +189,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                 exit={{ opacity: 0 }}
             >
                 <motion.div
-                    className="bg-white dark:bg-gray-900 w-[95%] sm:w-full max-w-md rounded-t-3xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto custom-scrollbar"
+                    className="bg-white dark:bg-gray-900 w-[95%] sm:w-full max-w-md rounded-t-3xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto custom-scrollbar mb-4"
                     initial={{ y: 400 }}
                     animate={{ y: 0 }}
                     exit={{ y: 400 }}
@@ -206,17 +207,19 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         <div className="flex flex-col items-center text-center">
                             <img
                                 src={profile.avatar_url || "/UsersAvatar.jpg"}
-                                className="w-20 h-20 rounded-full object-cover mb-3"
-                                // add this line:
                                 onClick={() => setIsAvatarOpen(true)}
                                 className="cursor-pointer w-20 h-20 rounded-full object-cover mb-3"
                             />
-
                             <h2 className="text-lg font-bold">{profile.name || "Student"}</h2>
                             {profile.username && <p className="text-sm text-gray-500">@{profile.username}</p>}
                             {profile.is_online !== null && (
                                 <p className={`text-xs mt-1 ${profile.is_online ? "text-green-500" : "text-gray-400"}`}>
                                     {profile.is_online ? "Online" : "Offline"}
+                                </p>
+                            )}
+                            {profile.last_seen && !profile.is_online && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Last seen: {new Date(profile.last_seen).toLocaleString()}
                                 </p>
                             )}
 

@@ -103,6 +103,8 @@ const BottomBarWrapper = () => {
 };
 
 const App = () => {
+  const [forceLogout, setForceLogout] = useState(false);
+
   const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
   useEffect(() => {
@@ -126,6 +128,83 @@ const App = () => {
         audio.currentTime = 0;
       }
     });
+  }, []);
+
+  useEffect(() => {
+    const updateOnlineStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Mark user online immediately
+      await supabase
+        .from('profiles')
+        .update({ is_online: true, last_seen: new Date() })
+        .eq('user_id', user.id);
+
+      // Heartbeat every 30 seconds to keep them online
+      const interval = setInterval(async () => {
+        await supabase
+          .from('profiles')
+          .update({ is_online: true, last_seen: new Date() })
+          .eq('user_id', user.id);
+      }, 30000);
+
+      // Mark offline on tab close
+      const handleBeforeUnload = async () => {
+        await supabase
+          .from('profiles')
+          .update({ is_online: false, last_seen: new Date() })
+          .eq('user_id', user.id);
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    };
+
+    updateOnlineStatus();
+  }, []);
+
+  useEffect(() => {
+    const checkActiveSession = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentSessionId = sessionData.session?.access_token;
+      const user = sessionData.session?.user;
+
+      if (!user || !currentSessionId) return;
+
+      try {
+        // Fetch the active session from profiles table
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("active_session_id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching profile for session check:", error);
+          return;
+        }
+
+        if (profileData?.active_session_id !== currentSessionId) {
+          // Session mismatch → force logout
+          await supabase.auth.signOut();
+          setForceLogout(true);
+        }
+      } catch (err) {
+        console.error("Unexpected session check error:", err);
+      }
+    };
+
+    // Initial check
+    checkActiveSession();
+
+    // Optional: Poll every 10 seconds to detect logins on other devices
+    const interval = setInterval(checkActiveSession, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -184,70 +263,97 @@ const App = () => {
   if (loading) return <SplashScreen theme={theme} />; // pass theme to SplashScreen
 
   return (
-    <SessionContextProvider supabaseClient={supabase}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <SidebarProvider>
-            <MusicPlayerProvider>
-              <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-                <AIWrapper>
-                  <FirstTimeGuide />
-                  <Routes>
-                    {/* ------------------- Public Routes ------------------- */}
-                    <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
-                    <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-                    <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-                    <Route path="/redirect" element={<RedirectToRoleDashboard />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
+    <>
+      {forceLogout && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="max-w-md w-full bg-white dark:bg-gray-900 shadow-lg rounded-2xl p-6 text-center mx-4">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              Session Ended
+            </h2>
+            <p className="mt-3 text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+              It looks like your account was accessed from another device.
+              For your security, your previous session has been ended.
+              Please log in again to continue.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-5 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200"
+            >
+              Log In Again
+            </button>
+            <p className="mt-3 text-gray-500 dark:text-gray-400 text-xs">
+              If this wasn’t you, we recommend changing your password immediately.
+            </p>
+          </div>
+        </div>
+      )}
 
-                    {/* ------------------- Dashboard Redirect ------------------- */}
-                    <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
 
-                    {/* ------------------- Persistent Dashboard Layout ------------------- */}
-                    <Route element={<PrivateRoute><DashboardLayout userRole={getRole()} /></PrivateRoute>}>
-                      <Route path="/dashboard/student" element={<StudentDashboard />} />
-                      <Route path="/dashboard/tutor" element={<TutorDashboard />} />
-                      <Route path="/dashboard/staff" element={<StaffDashboard />} />
+      <SessionContextProvider supabaseClient={supabase}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <SidebarProvider>
+              <MusicPlayerProvider>
+                <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+                  <AIWrapper>
+                    <FirstTimeGuide />
+                    <Routes>
+                      {/* ------------------- Public Routes ------------------- */}
+                      <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+                      <Route path="/redirect" element={<RedirectToRoleDashboard />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
 
-                      <Route path="/my-mistakes" element={<MyMistakes />} />
-                      <Route path="/ai-assistant" element={<AIAssistant />} />
-                      <Route path="/calendar" element={<Calendar />} />
-                      <Route path="/progress" element={<StudyProgress />} />
-                      <Route path="/resources" element={<Resources />} />
-                      <Route path="/medtube" element={<MedTube />} />
-                      <Route path="/announcements" element={<Announcements />} />
-                      <Route path="/feedback" element={<Feedback />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/subscription" element={<Subscription />} />
-                      <Route path="/notifications" element={<Notifications />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/quiz" element={<QuizPage />} />
-                      <Route path="/assessment-notes" element={<AssessmentNotes />} />
-                      <Route path="/forum" element={<Forum />} />
-                      <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
-                      <Route path="/feed" element={<Feed />} />
-                      <Route path="/simulation/candidate" element={<CandidateInfo />} />
-                      <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
-                    </Route>
+                      {/* ------------------- Dashboard Redirect ------------------- */}
+                      <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
 
-                    {/* ------------------- Full-screen / Independent Pages ------------------- */}
+                      {/* ------------------- Persistent Dashboard Layout ------------------- */}
+                      <Route element={<PrivateRoute><DashboardLayout userRole={getRole()} /></PrivateRoute>}>
+                        <Route path="/dashboard/student" element={<StudentDashboard />} />
+                        <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+                        <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
-                    <Route path="/simulation/:paper_id" element={<SimulationPage />} />
+                        <Route path="/my-mistakes" element={<MyMistakes />} />
+                        <Route path="/ai-assistant" element={<AIAssistant />} />
+                        <Route path="/calendar" element={<Calendar />} />
+                        <Route path="/progress" element={<StudyProgress />} />
+                        <Route path="/resources" element={<Resources />} />
+                        <Route path="/medtube" element={<MedTube />} />
+                        <Route path="/announcements" element={<Announcements />} />
+                        <Route path="/feedback" element={<Feedback />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/subscription" element={<Subscription />} />
+                        <Route path="/notifications" element={<Notifications />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/quiz" element={<QuizPage />} />
+                        <Route path="/assessment-notes" element={<AssessmentNotes />} />
+                        <Route path="/forum" element={<Forum />} />
+                        <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
+                        <Route path="/feed" element={<Feed />} />
+                        <Route path="/simulation/candidate" element={<CandidateInfo />} />
+                        <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
+                      </Route>
 
-                    {/* ------------------- Catch-all ------------------- */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                      {/* ------------------- Full-screen / Independent Pages ------------------- */}
 
-                  <BottomBarWrapper />
-                </AIWrapper>
-              </BrowserRouter>
-            </MusicPlayerProvider>
-          </SidebarProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </SessionContextProvider>
+                      <Route path="/simulation/:paper_id" element={<SimulationPage />} />
+
+                      {/* ------------------- Catch-all ------------------- */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+
+                    <BottomBarWrapper />
+                  </AIWrapper>
+                </BrowserRouter>
+              </MusicPlayerProvider>
+            </SidebarProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </SessionContextProvider>
+    </>
   );
 };
 export default App;

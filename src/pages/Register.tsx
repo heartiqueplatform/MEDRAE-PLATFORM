@@ -11,7 +11,7 @@ import { GraduationCap, UserCheck, Stethoscope, Eye, EyeOff } from "lucide-react
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect } from "react";
-
+import sha256 from "crypto-js/sha256";
 export function Register() {
   useEffect(() => {
     document.documentElement.classList.remove("dark");
@@ -131,13 +131,32 @@ export function Register() {
       const { error: profileInsertError } = await supabase.from("profiles").insert(profilePayload);
       if (profileInsertError) throw new Error(profileInsertError.message);
 
-      await supabase.auth.signInWithPassword({ email: formData.email, password: formData.password });
+      // Sign in the user to get a session
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (loginError || !loginData.user) throw new Error(loginError?.message || "Login after registration failed.");
+
+      // Save session token in profiles table
+      const sessionId = loginData.session?.access_token;
+      await supabase
+        .from("profiles")
+        .update({ active_session_id: sessionId })
+        .eq("user_id", loginData.user.id);
+
+      // Optional: Save credentials offline if you want offline login (like in Login component)
+
+      const passwordHash = sha256(formData.password).toString();
+      await saveLoginInfo(formData.email, sessionId || "", passwordHash);
 
       toast({ title: "Welcome!", description: `Account created and logged in as ${role}.` });
       localStorage.setItem("userRole", role);
       localStorage.setItem("hasLoggedInBefore", "true");
 
       navigate(`/dashboard/${role}`);
+
     } catch (err) {
       toast({ title: "Registration failed!", description: err.message || "Something went wrong.", variant: "destructive" });
     } finally {

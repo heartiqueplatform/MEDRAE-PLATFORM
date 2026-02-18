@@ -3,7 +3,8 @@ import { openDB } from "idb";
 import { playSound } from "@/lib/soundManager";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+
 import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI";
@@ -70,12 +71,27 @@ export default function QuizPage() {
   const [recentlyAnsweredId, setRecentlyAnsweredId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
   const CHECKPOINT_SIZE = 25; // <-- add this here at the top of the component
   const [checkpointOverlay, setCheckpointOverlay] = useState<{
     visible: boolean;
     reached: number;
     total: number;
   } | null>(null);
+
+
+  const circleRefs = useRef([]);
+
+  useEffect(() => {
+    if (currentQuestionIndex !== undefined && circleRefs.current[currentQuestionIndex]) {
+      circleRefs.current[currentQuestionIndex].scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest"
+      });
+    }
+  }, [currentQuestionIndex]);
 
 
 
@@ -576,6 +592,9 @@ export default function QuizPage() {
 
   const handleAnswer = (questionId: string, selected: string) => {
     if (answers[questionId]) return; // Prevent double answer
+    // After updating answers
+    const nextIndex = questions.findIndex(q => q.id === questionId);
+    if (nextIndex !== -1) setCurrentQuestionIndex(nextIndex);
 
     const updatedAnswers = { ...answers, [questionId]: selected };
 
@@ -941,24 +960,23 @@ Please provide a detailed discussion and guidance.`;
         </div>
       )}
 
+      {/* 🔹 Sticky Quiz Progress + Circle Tracker */}
+      <div className="sticky top-0 z-50 bg-white dark:bg-gray-800 p-2 shadow flex flex-col w-60 rounded-lg">
 
-      {/* Floating Answer Progress Panel */}
-      {/* ========================================= */}
-      {/* This panel is sticky inside the question scroll area */}
-
-
-      <div className="sticky top-0 self-start z-50">
+        {/* Toggleable Progress Panel */}
         <button
           onClick={() => setProgressOpen(!progressOpen)}
           className={`flex items-center gap-2 px-3 h-8 rounded-full text-white shadow-lg transition
-      ${Object.keys(answers).length / questions.length < 0.5 ? 'bg-red-600 hover:bg-red-700' :
-              Object.keys(answers).length / questions.length < 0.7 ? 'bg-yellow-500 hover:bg-yellow-600' :
-                'bg-green-600 hover:bg-green-700'}
+      ${Object.keys(answers).length / questions.length < 0.5
+              ? 'bg-red-600 hover:bg-red-700'
+              : Object.keys(answers).length / questions.length < 0.7
+                ? 'bg-yellow-500 hover:bg-yellow-600'
+                : 'bg-green-600 hover:bg-green-700'}
     `}
           title="Click to expand"
         >
           <span className="font-bold">{Object.keys(answers).length}/{questions.length}</span>
-          <span className="font-medium">Questions Answered</span>
+          <span className="font-medium">Q's Answered</span>
           {progressOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
 
@@ -970,7 +988,41 @@ Please provide a detailed discussion and guidance.`;
             <p>Total Questions: {questions.length}</p>
           </div>
         )}
+
+        {/* Horizontal Circle Tracker */}
+        <div className="flex overflow-x-auto custom-scrollbar gap-2 py-1 mt-2">
+          {questions.map((q, index) => {
+            const userAnswer = answers[q.id];
+            let circleColor = "bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+
+            if (userAnswer !== undefined) {
+              circleColor = userAnswer === q.correct_answer
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white";
+            }
+
+            return (
+              <div
+                key={q.id}
+                ref={(el) => (circleRefs.current[index] = el)}
+                className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold ${circleColor}`}
+                title={`Question ${index + 1} ${userAnswer !== undefined ? `(Your answer: ${userAnswer})` : ""}`}
+              >
+                {index + 1}
+              </div>
+            );
+          })}
+
+          {/* Total circle */}
+          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 text-white font-bold">
+            {questions.length}
+          </div>
+        </div>
       </div>
+
+      {/* 🔹 React Hooks for smooth scroll */}
+
+
       <div className="mt-2 flex justify-between items-center w-full gap-4">
         {/* Left side: Question actions */}
         <div className="flex items-center gap-4">
