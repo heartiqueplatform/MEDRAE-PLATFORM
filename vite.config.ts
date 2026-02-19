@@ -40,13 +40,26 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,html,png,jpeg,svg,ico}"],
-          runtimeCaching: [],
+          runtimeCaching: [
+            {
+              urlPattern: /^.*$/,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "offline-cache",
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 24 * 60 * 60
+                }
+              }
+            }
+          ],
           navigateFallback: "/index.html",
           cleanupOutdatedCaches: true,
           navigationPreload: true,
           skipWaiting: true,
           clientsClaim: true,
         }
+
       })
 
     ].filter(Boolean),
