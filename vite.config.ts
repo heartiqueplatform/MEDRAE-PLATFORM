@@ -21,7 +21,20 @@ export default defineConfig(({ mode }) => {
         strategies: "generateSW",
         injectRegister: "auto",
         registerType: "autoUpdate",
-        manifest: { ... }, // your existing manifest
+        manifest: {
+          name: "MEDRAE",
+          short_name: "MEDRAE",
+          description: "Structured NCK- style exam practice with 6,000+ questions, unit- based revision and smart performance tracking",
+          theme_color: "#4ade80",
+          background_color: "#ffffff",
+          display: "standalone",
+          scope: "/",
+          start_url: "/",
+          icons: [
+            { src: "/pwa-192x192.jpeg", sizes: "192x192", type: "image/jpeg" },
+            { src: "/pwa-512x512.jpeg", sizes: "512x512", type: "image/jpeg" }
+          ]
+        },
         workbox: {
           globPatterns: ["**/*.{js,css,html,png,jpeg,svg,ico}"],
           runtimeCaching: [
