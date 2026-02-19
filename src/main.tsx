@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import AuthGate from "@/auth/AuthGate";
+import { BrowserRouter } from "react-router-dom"; // <-- add this import
 // In your main entry file (e.g., main.tsx or index.tsx)
 /*
 import { toast } from "@/hooks/use-toast";
@@ -34,7 +35,7 @@ window.alert = function (message: AlertMessage) {
 */
 
 // App version for cache control
-const APP_VERSION = "61"// increment this with each deployment
+const APP_VERSION = "62"// increment this with each deployment
 const storedVersion = localStorage.getItem("appVersion");
 
 // Update app version safely without clearing all storage
@@ -51,7 +52,10 @@ if (typeof window !== "undefined") {
 
 //  Nothing renders until auth state is known
 createRoot(document.getElementById("root")!).render(
-    <AuthGate>
-        <App />
-    </AuthGate>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <AuthGate>
+
+            <App />
+        </AuthGate>
+    </BrowserRouter>
 );

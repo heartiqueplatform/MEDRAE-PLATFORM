@@ -39,15 +39,16 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          globPatterns: [],
+          globPatterns: ["**/*.{js,css,html,png,jpeg,svg,ico}"],
           runtimeCaching: [],
-          navigateFallback: null,
-          cleanupOutdatedCaches: false,
-          navigationPreload: false,
+          navigateFallback: "/index.html",
+          cleanupOutdatedCaches: true,
+          navigationPreload: true,
           skipWaiting: true,
           clientsClaim: true,
         }
       })
+
     ].filter(Boolean),
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
     define: { "process.env": env },
