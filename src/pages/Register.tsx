@@ -140,16 +140,25 @@ export function Register() {
       if (loginError || !loginData.user) throw new Error(loginError?.message || "Login after registration failed.");
 
       // Save session token in profiles table
-      const sessionId = loginData.session?.access_token;
+      // Generate unique device ID (single device enforcement)
+      let deviceId = localStorage.getItem("device_id");
+
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem("device_id", deviceId);
+      }
+
+      // Save device ID in profiles table
       await supabase
         .from("profiles")
-        .update({ active_session_id: sessionId })
+        .update({ active_session_id: deviceId })
         .eq("user_id", loginData.user.id);
 
       // Optional: Save credentials offline if you want offline login (like in Login component)
 
       const passwordHash = sha256(formData.password).toString();
-      await saveLoginInfo(formData.email, sessionId || "", passwordHash);
+      await saveLoginInfo(formData.email, deviceId, passwordHash);
+
 
       toast({ title: "Welcome!", description: `Account created and logged in as ${role}.` });
       localStorage.setItem("userRole", role);

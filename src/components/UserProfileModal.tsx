@@ -189,7 +189,8 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                 exit={{ opacity: 0 }}
             >
                 <motion.div
-                    className="bg-white dark:bg-gray-900 w-[95%] sm:w-full max-w-md rounded-t-3xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto custom-scrollbar mb-4"
+                    className="bg-white dark:bg-gray-900 w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto custom-scrollbar pb-24"
+
                     initial={{ y: 400 }}
                     animate={{ y: 0 }}
                     exit={{ y: 400 }}

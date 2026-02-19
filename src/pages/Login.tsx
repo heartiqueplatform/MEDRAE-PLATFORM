@@ -69,12 +69,20 @@ export function Login() {
 
         const userId = data.user.id;
         // 🔐 Save this session as the only active session
-        const sessionId = data.session?.access_token;
+        // Generate unique device ID
+        let deviceId = localStorage.getItem("device_id");
+
+        if (!deviceId) {
+          deviceId = crypto.randomUUID();
+          localStorage.setItem("device_id", deviceId);
+        }
+
 
         await supabase
           .from("profiles")
-          .update({ active_session_id: sessionId })
+          .update({ active_session_id: deviceId })
           .eq("user_id", userId);
+
 
         const { data: userData, error: userError } = await supabase
           .from("users")

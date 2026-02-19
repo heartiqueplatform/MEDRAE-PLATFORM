@@ -170,7 +170,8 @@ const App = () => {
   useEffect(() => {
     const checkActiveSession = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
-      const currentSessionId = sessionData.session?.access_token;
+      const currentSessionId = localStorage.getItem("device_id");
+
       const user = sessionData.session?.user;
 
       if (!user || !currentSessionId) return;
