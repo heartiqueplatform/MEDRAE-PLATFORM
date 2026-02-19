@@ -58,6 +58,8 @@ export default defineConfig(({ mode }) => {
           navigationPreload: true,
           skipWaiting: true,
           clientsClaim: true,
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+
         }
 
       })
