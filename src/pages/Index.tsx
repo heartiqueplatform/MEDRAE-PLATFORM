@@ -351,6 +351,7 @@ const Index = () => {
     return () => window.removeEventListener("wheel", handleWheel);
   }, []);
 
+
   const features = [
     {
       icon: Brain,
@@ -429,14 +430,16 @@ const Index = () => {
               >
                 {allMediaReady ? "Yes, I want to join!" : "Downloading..."}
               </button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-yellow-500 text-blue-500 font-bold text-base md:text-lg px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-500 hover:text-white hover:scale-105 transition-all duration-300"
-                onClick={() => navigate('/login')}
-              >
-                Sign In  back to Continue
-              </Button>
+              <p className="text-gray-700 dark:text-gray-300 text-base md:text-lg">
+                Already have an account?{" "}
+                <span
+                  className="text-blue-500 font-bold cursor-pointer hover:underline transition-all"
+                  onClick={() => window.location.href = "/login"}
+                >
+                  Log in
+                </span>
+              </p>
+
               {/* Progress bar */}
 
               {/* Progress bar */}
@@ -612,7 +615,7 @@ const Index = () => {
                           className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
                           onClick={() => {
                             setActiveHeroStory((prev) => Math.max(prev - 1, 0));
-                            triggerAudioOnInteraction(); // ✅ play audio on click
+
                           }}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="size-6">
@@ -626,7 +629,7 @@ const Index = () => {
                             setActiveHeroStory((prev) =>
                               Math.min(prev + 1, heroStorySlides.length - 1)
                             );
-                            triggerAudioOnInteraction(); // ✅ play audio on click
+
                           }}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="size-6">
