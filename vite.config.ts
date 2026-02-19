@@ -19,12 +19,15 @@ export default defineConfig(({ mode }) => {
       mode === "development" && componentTagger(),
       VitePWA({
         strategies: "generateSW",
+        useCredentials: false,
         injectRegister: "auto",
         registerType: "autoUpdate",
+        devOptions: { enabled: false },
         manifest: {
           name: "MEDRAE",
           short_name: "MEDRAE",
-          description: "Structured NCK- style exam practice with 6,000+ questions, unit- based revision and smart performance tracking",
+          description:
+            "Structured NCK- style exam practice with 6,000+ questions, unit- based revision and smart performance tracking",
           theme_color: "#4ade80",
           background_color: "#ffffff",
           display: "standalone",
@@ -36,23 +39,15 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          globPatterns: ["**/*.{js,css,html,png,jpeg,svg,ico}"],
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
-              handler: "NetworkFirst",
-              options: { cacheName: "api-cache", expiration: { maxEntries: 50, maxAgeSeconds: 3600 } }
-            }
-          ],
-          navigateFallback: "/index.html",
-          cleanupOutdatedCaches: true,
+          globPatterns: [],
+          runtimeCaching: [],
+          navigateFallback: null,
+          cleanupOutdatedCaches: false,
+          navigationPreload: false,
           skipWaiting: true,
           clientsClaim: true,
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
         }
       })
-
-
     ].filter(Boolean),
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
     define: { "process.env": env },
