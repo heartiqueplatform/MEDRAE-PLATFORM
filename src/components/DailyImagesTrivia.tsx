@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { ChevronLeft, ChevronRight, Maximize, Eye, X } from "lucide-react";
-
+import { GlobalLoader } from "@/components/GlobalLoader";
 import { motion, AnimatePresence } from "framer-motion";
 type ImageItem = {
     id: string;
@@ -22,7 +22,7 @@ export default function DailyImagesTrivia() {
     const [activeIndex, setActiveIndex] = useState(0);
     const [activeImage, setActiveImage] = useState<string | null>(null);
     const [dataLoading, setDataLoading] = useState(true);
-
+    const [uiLoading, setUiLoading] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(false); // Start fully open
 
     const [showComments, setShowComments] = useState(false);
@@ -177,6 +177,19 @@ export default function DailyImagesTrivia() {
         loadDailyImages();
     }, []);
 
+
+    // Loader: show only once per day
+
+    useEffect(() => {
+        const alreadyLoaded = localStorage.getItem(localLoaderKey);
+        if (!alreadyLoaded) {
+            setUiLoading(true);
+            localStorage.setItem(localLoaderKey, "true");
+            setTimeout(() => setUiLoading(false), 1000);
+        } else {
+            setUiLoading(false);
+        }
+    }, []);
 
     // Autoplay
     useEffect(() => {
@@ -494,24 +507,21 @@ export default function DailyImagesTrivia() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                         ref={containerRef}
-                        className="relative w-full flex flex-col items-center justify-start h-auto
-           overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-1
-           bg-gradient-to-b from-white to-gray-100 dark:from-gray-700 dark:to-gray-900
-           rounded-xl shadow-md"
+                        className="relative w-full flex flex-col items-center justify-center
+   overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6
+   bg-gradient-to-b from-white to-gray-100 dark:from-gray-700 dark:to-gray-900
+   rounded-xl shadow-md"
 
 
                     >
 
-                        {dataLoading && (
-                            <div className="w-full flex flex-col items-center gap-4 last:mb-0">
-                                {Array(3).fill(0).map((_, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="w-full sm:w-auto max-w-full h-[300px] sm:h-[400px] bg-gray-300 dark:bg-gray-700 animate-pulse rounded-md"
-                                    />
-                                ))}
+                        {/* Loader */}
+                        {(dataLoading || uiLoading) && (
+                            <div className="absolute inset-0 flex items-center justify-center z-10">
+                                <GlobalLoader />
                             </div>
                         )}
+
                         {/* Status Bars */}
                         <div className="absolute top-4 left-4 right-4 flex gap-2 z-20 px-2">
                             {images.map((_, idx) => (
@@ -525,48 +535,101 @@ export default function DailyImagesTrivia() {
                             ))}
                         </div>
 
-                        {/* Images stacked vertically */}
-                        <div className="w-full flex flex-col items-center gap-4">
-                            {images.map((img) => (
+                        {/* Images */}
+                        <div className="relative w-full h-[460px] flex items-center justify-center overflow-hidden">
+                            {isLargeScreen ? (
                                 <div
-                                    key={img.id}
-                                    className="w-screen sm:w-auto max-w-full -mx-4 sm:mx-0 flex flex-col items-center relative"
+                                    className="flex transition-transform duration-500 ease-out"
+                                    style={{
+                                        transform: `translateX(-${activeIndex * 100}%)`,
+                                        width: `${images.length * 100}%`,
+                                    }}
+                                    onClick={(e) => {
+                                        const { left, width } = e.currentTarget.getBoundingClientRect();
+                                        const clickX = e.clientX - left;
+                                        if (clickX < width / 2) prev();
+                                        else next();
+                                    }}
                                 >
-                                    {/* Image */}
-                                    <img
-                                        src={img.image_url}
-                                        alt="Daily Trivia"
-                                        className="w-full h-auto object-contain cursor-pointer rounded-none sm:rounded-md shadow-md"
-                                        onClick={() => openFullscreen(img.image_url)}
-                                        loading="lazy"
-                                    />
-
-
-                                    {/* Mark Seen Button */}
-                                    {seenData[img.id] ? (
-                                        <button
-                                            className="mt-2 px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed flex items-center gap-2"
-                                            disabled
+                                    {images.map((img) => (
+                                        <div
+                                            key={img.id}
+                                            className="w-full flex-shrink-0 flex items-center justify-center cursor-pointer px-2 relative"
                                         >
-                                            <Eye className="w-5 h-5" />
-                                            <span>Seen: {seenData[img.id]}</span>
-                                        </button>
-                                    ) : (
-                                        <button
-                                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-                                            onClick={() => {
-                                                vibrateSafe(100);
-                                                setShowComments(true);
-                                            }}
-                                        >
-                                            <Eye className="w-5 h-5" />
-                                            Mark Seen
-                                        </button>
-                                    )}
+                                            <img
+                                                src={img.image_url}
+                                                alt="Story"
+                                                className="w-[320px] h-[420px] object-cover rounded-xl shadow-lg"
+                                                loading="lazy"
+                                            />
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openFullscreen(img.image_url);
+                                                }}
+                                                className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
+                                            >
+                                                <Maximize className="w-8 h-8 text-black" />
+                                                <span className="text-xs font-medium text-black">View</span>
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            ) : (
+                                images[activeIndex] && (
+                                    <div
+                                        className="w-full h-[80vh] cursor-pointer relative overflow-hidden rounded-xl px-1 py-1"
+                                        onClick={(e) => {
+                                            const { left, width } = e.currentTarget.getBoundingClientRect();
+                                            const clickX = e.clientX - left;
+                                            if (clickX < width / 2) prev();
+                                            else next();
+                                        }}
+                                    >
+                                        <img
+                                            src={images[activeIndex].image_url}
+                                            alt="Story"
+                                            className="w-full h-full object-cover transition-transform duration-300"
+                                            loading="lazy"
+                                        />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openFullscreen(images[activeIndex].image_url);
+                                            }}
+                                            className="absolute bottom-32 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
+                                        >
+                                            <Maximize className="w-4 h-4 text-black" />
+                                            <span className="text-xs font-medium text-black">View</span>
+                                        </button>
+                                    </div>
+                                )
+                            )}
+                        </div>
 
-                            {/* Comments Overlay */}
+                        {/* Mark Seen Button */}
+                        <div className="w-full flex flex-col items-center gap-2 mb-4">
+                            {images[activeIndex] && seenData[images[activeIndex].id] ? (
+                                <button
+                                    className="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed flex items-center gap-2"
+                                    disabled
+                                >
+                                    <Eye className="w-5 h-5" />
+                                    <span>Seen: {seenData[images[activeIndex].id]}</span>
+                                </button>
+                            ) : (
+                                <button
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                                    onClick={() => {
+                                        vibrateSafe(100);
+                                        setShowComments(true);
+                                    }}
+                                >
+                                    <Eye className="w-5 h-5" />
+                                    Mark Seen
+                                </button>
+                            )}
+
                             {showComments && (
                                 <div
                                     className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center animate-overlay"
@@ -597,26 +660,6 @@ export default function DailyImagesTrivia() {
                             )}
                         </div>
 
-                        {/* Fullscreen View */}
-                        {activeImage && (
-                            <div
-                                className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-2 sm:p-0 transition-opacity duration-300"
-                                onClick={() => setActiveImage(null)}
-                            >
-                                <button
-                                    onClick={() => setActiveImage(null)}
-                                    className="absolute top-4 right-4 z-[10000] p-2 rounded-full bg-white/80 hover:bg-white text-black transition-transform duration-200 hover:scale-110"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                                <img
-                                    src={activeImage}
-                                    alt="Fullscreen"
-                                    className="w-full max-w-none h-auto max-h-full object-contain rounded-none sm:rounded-md transition-transform duration-300 transform scale-90 animate-scale-up"
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                            </div>
-                        )}
                         {/* Top 10 Students Panel */}
                         <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mt-6">
                             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
