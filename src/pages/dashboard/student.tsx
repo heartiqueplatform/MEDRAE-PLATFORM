@@ -396,8 +396,17 @@ export default function StudentDashboard() {
       profiles: profiles?.find((pr) => pr.user_id === p.user_id) || null,
     }));
 
-    setDailyPosts(mergedPosts);
+    setDailyPosts((prevPosts) => {
+      const prevIds = prevPosts.map(p => p.id).join(",");
+      const newIds = mergedPosts.map(p => p.id).join(",");
 
+      // If posts are identical → do nothing
+      if (prevIds === newIds) {
+        return prevPosts;
+      }
+
+      return mergedPosts;
+    });
     // Notifications
     if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
 
@@ -1563,7 +1572,7 @@ export default function StudentDashboard() {
 
           </DialogContent>
         </Dialog>
-        <DailyImagesTrivia />
+
 
 
         <MistakeCard />
@@ -1631,7 +1640,7 @@ export default function StudentDashboard() {
           </CardHeader>
 
           <CardContent className="p-2">
-            <div className="space-y-4 px-3 sm:px-4">
+            <div className="space-y-4 px-0 sm:px-4">
 
               {/* Daily Thought Textarea */}
               <textarea
@@ -1721,7 +1730,7 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
                       key={post.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-3 border rounded-none sm:rounded-md
+                      className="p-0 sm:p-3 border rounded-none sm:rounded-md
  bg-gray-50 dark:bg-gray-800 border-0 w-full"
                     >
                       <div className="flex flex-col sm:flex-row gap-4 items-start">
@@ -1775,14 +1784,15 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
                           {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
 
                           {post.image_url && (
-                            <img
-                              src={post.image_url}
-                              alt="daily"
-                              className="rounded-none sm:rounded-md
- w-full max-h-96 object-contain bg-gray-100 dark:bg-black cursor-pointer"
-                              onClick={() => setFullscreenImage(post.image_url)}
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                            />
+                            <div className="w-screen sm:w-auto sm:max-w-none -mx-4 sm:mx-0">
+                              <img
+                                src={post.image_url}
+                                alt="daily"
+                                className="w-full h-auto object-contain cursor-pointer rounded-none sm:rounded-md"
+                                onClick={() => setFullscreenImage(post.image_url)}
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                              />
+                            </div>
                           )}
                         </div>
 
@@ -1810,18 +1820,18 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
               </div>
             </div>
           </CardContent>
-
+          <DailyImagesTrivia />
           {/* Fullscreen Modal */}
+
           {fullscreenImage && (
             <div
-              className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-2 sm:p-0"
               onClick={() => setFullscreenImage(null)}
             >
               <img
                 src={fullscreenImage}
                 alt="fullscreen"
-                className="max-w-full max-h-full object-contain rounded-none sm:rounded-md
-"
+                className="w-full max-w-none h-auto max-h-full object-contain rounded-none sm:rounded-md"
               />
             </div>
           )}
