@@ -521,3 +521,35 @@ pre {
     opacity: 0;
   }
 }
+
+/* Wrapper for rainbow border */
+.rainbow-border {
+  border-radius: 50%;
+  padding: 2px;
+  /* thickness of the rainbow ring */
+  background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+  background-size: 400% 400%;
+  /* makes the gradient move */
+  display: inline-block;
+  /* wrap tightly around image */
+}
+
+/* Animate the gradient */
+.animate-rainbow-glow {
+  animation: rainbow-glow 3s linear infinite;
+}
+
+/* Keyframes for flowing rainbow */
+@keyframes rainbow-glow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}

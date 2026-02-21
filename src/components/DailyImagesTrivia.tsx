@@ -52,18 +52,7 @@ export default function DailyImagesTrivia() {
         // Clear existing timer
         if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     };
-    const quickComments = [
-        "Very helpful for revision.",
-        "This makes the concept easier to remember.",
-        "Good visual explanation.",
-        "Helpful for clinical exams.",
-        "This clarifies the topic well.",
-        "Supports practical nursing skills.",
-        "Useful learning resource.",
-        "Well structured visual content.",
-        "This aids clinical reasoning.",
-        "Relevant for patient care practice.",
-    ];
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container || !isLargeScreen) return;
@@ -511,153 +500,66 @@ export default function DailyImagesTrivia() {
    overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6
    bg-gradient-to-b from-white to-gray-100 dark:from-gray-700 dark:to-gray-900
    rounded-xl shadow-md"
-
-
                     >
 
-                        {/* Loader */}
-                        {(dataLoading || uiLoading) && (
-                            <div className="absolute inset-0 flex items-center justify-center z-10">
-                                <GlobalLoader />
-                            </div>
-                        )}
 
-                        {/* Status Bars */}
-                        <div className="absolute top-4 left-4 right-4 flex gap-2 z-20 px-2">
-                            {images.map((_, idx) => (
+
+                        {/* Story Circles */}
+                        <div className="flex gap-4 overflow-x-auto py-2 px-4">
+                            {images.map((img, idx) => (
                                 <div
-                                    key={idx}
-                                    className={`h-1 rounded-full transition-all duration-500 ${idx === activeIndex
-                                        ? "bg-blue-500 flex-1"
-                                        : "bg-gray-300 dark:bg-gray-600 flex-1"
+                                    key={img.id}
+                                    className={`flex-shrink-0 cursor-pointer relative transition-transform duration-300 ${activeIndex === idx ? "scale-110" : "scale-100"
                                         }`}
-                                />
-                            ))}
-                        </div>
+                                    onClick={async () => {
+                                        setActiveIndex(idx);
+                                        openFullscreen(img.image_url);
 
-                        {/* Images */}
-                        <div className="relative w-full h-[460px] flex items-center justify-center overflow-hidden">
-                            {isLargeScreen ? (
-                                <div
-                                    className="flex transition-transform duration-500 ease-out"
-                                    style={{
-                                        transform: `translateX(-${activeIndex * 100}%)`,
-                                        width: `${images.length * 100}%`,
-                                    }}
-                                    onClick={(e) => {
-                                        const { left, width } = e.currentTarget.getBoundingClientRect();
-                                        const clickX = e.clientX - left;
-                                        if (clickX < width / 2) prev();
-                                        else next();
+                                        // Auto-mark as seen for this specific image
+                                        if (!seenData[img.id]) {
+                                            vibrateSafe(50);
+
+                                            const { data: { user } } = await supabase.auth.getUser();
+                                            if (!user) return;
+
+                                            try {
+                                                await supabase.from("qfeed_seen_comments").insert({
+                                                    image_id: img.id,
+                                                    user_id: user.id,
+                                                    comment: "Seen",
+                                                });
+
+                                                // Update local state immediately
+                                                setSeenData(prev => ({ ...prev, [img.id]: true }));
+
+                                            } catch (err) {
+                                                console.error("Failed to mark seen:", err);
+                                            }
+                                        }
                                     }}
                                 >
-                                    {images.map((img) => (
-                                        <div
-                                            key={img.id}
-                                            className="w-full flex-shrink-0 flex items-center justify-center cursor-pointer px-2 relative"
-                                        >
-                                            <img
-                                                src={img.image_url}
-                                                alt="Story"
-                                                className="w-[320px] h-[420px] object-cover rounded-xl shadow-lg"
-                                                loading="lazy"
-                                            />
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openFullscreen(img.image_url);
-                                                }}
-                                                className="absolute bottom-3 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
-                                            >
-                                                <Maximize className="w-8 h-8 text-black" />
-                                                <span className="text-xs font-medium text-black">View</span>
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                images[activeIndex] && (
                                     <div
-                                        className="w-full h-[80vh] cursor-pointer relative overflow-hidden rounded-xl px-1 py-1"
-                                        onClick={(e) => {
-                                            const { left, width } = e.currentTarget.getBoundingClientRect();
-                                            const clickX = e.clientX - left;
-                                            if (clickX < width / 2) prev();
-                                            else next();
-                                        }}
+                                        className={`p-1 rounded-full ${!seenData[img.id]
+                                            ? "rainbow-border animate-rainbow-glow" // rainbow if unseen
+                                            : "border-2 border-gray-400"           // grey if seen
+                                            }`}
                                     >
                                         <img
-                                            src={images[activeIndex].image_url}
-                                            alt="Story"
-                                            className="w-full h-full object-cover transition-transform duration-300"
+                                            src={img.image_url}
+                                            alt={`Story ${idx + 1}`}
+                                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover"
                                             loading="lazy"
                                         />
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                openFullscreen(images[activeIndex].image_url);
-                                            }}
-                                            className="absolute bottom-32 right-3 flex flex-col items-center justify-center gap-1 p-4 bg-white/90 hover:bg-white rounded-lg shadow-lg"
-                                        >
-                                            <Maximize className="w-4 h-4 text-black" />
-                                            <span className="text-xs font-medium text-black">View</span>
-                                        </button>
                                     </div>
-                                )
-                            )}
-                        </div>
 
-                        {/* Mark Seen Button */}
-                        <div className="w-full flex flex-col items-center gap-2 mb-4">
-                            {images[activeIndex] && seenData[images[activeIndex].id] ? (
-                                <button
-                                    className="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed flex items-center gap-2"
-                                    disabled
-                                >
-                                    <Eye className="w-5 h-5" />
-                                    <span>Seen: {seenData[images[activeIndex].id]}</span>
-                                </button>
-                            ) : (
-                                <button
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-                                    onClick={() => {
-                                        vibrateSafe(100);
-                                        setShowComments(true);
-                                    }}
-                                >
-                                    <Eye className="w-5 h-5" />
-                                    Mark Seen
-                                </button>
-                            )}
-
-                            {showComments && (
-                                <div
-                                    className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center animate-overlay"
-                                    onClick={() => setShowComments(false)}
-                                >
-                                    <div
-                                        className="bg-white dark:bg-gray-900 rounded-lg p-4 flex flex-col gap-2 animate-slide-up"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
-                                            Select a comment
-                                        </h3>
-                                        {quickComments.map((c) => (
-                                            <button
-                                                key={c}
-                                                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                                                onClick={() => {
-                                                    vibrateSafe(50);
-                                                    markSeen(c);
-                                                    setShowComments(false);
-                                                }}
-                                            >
-                                                {c}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    {/* Optional: small seen dot if you want */}
+                                    {/* <span
+      className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
+        seenData[img.id] ? "bg-gray-400" : "bg-blue-500"
+      }`}
+    ></span> */}
                                 </div>
-                            )}
+                            ))}
                         </div>
 
                         {/* Top 10 Students Panel */}

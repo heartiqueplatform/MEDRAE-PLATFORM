@@ -1782,16 +1782,29 @@ bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  text-gray-900 dark:text-white
                         {/* Post Content & Image */}
                         <div className="flex-1 flex flex-col gap-2">
                           {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
-
                           {post.image_url && (
-                            <div className="w-screen sm:w-auto sm:max-w-none -mx-4 sm:mx-0">
+                            <div className="w-screen sm:w-full -mx-4 sm:mx-0 sm:flex sm:justify-center">
+
+                              {/* Mobile Image (unchanged full width) */}
                               <img
                                 src={post.image_url}
                                 alt="daily"
-                                className="w-full h-auto object-contain cursor-pointer rounded-none sm:rounded-md"
+                                className="block sm:hidden w-full h-auto object-contain cursor-pointer rounded-none"
                                 onClick={() => setFullscreenImage(post.image_url)}
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                               />
+
+                              {/* Desktop Instagram Style */}
+                              <div className="hidden sm:block sm:w-[400px] sm:h-[550px] bg-black overflow-hidden rounded-md">
+                                <img
+                                  src={post.image_url}
+                                  alt="daily"
+                                  className="w-full h-full object-cover cursor-pointer"
+                                  onClick={() => setFullscreenImage(post.image_url)}
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                />
+                              </div>
+
                             </div>
                           )}
                         </div>
