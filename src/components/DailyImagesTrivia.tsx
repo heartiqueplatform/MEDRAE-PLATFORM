@@ -167,8 +167,6 @@ export default function DailyImagesTrivia() {
     }, []);
 
 
-    // Loader: show only once per day
-
     useEffect(() => {
         const alreadyLoaded = localStorage.getItem(localLoaderKey);
         if (!alreadyLoaded) {
@@ -192,7 +190,6 @@ export default function DailyImagesTrivia() {
     }, [images]);
 
     // Swipe & mouse drag was here
-
     const prev = () => setActiveIndex((i) => (i === 0 ? images.length - 1 : i - 1));
     const next = () => setActiveIndex((i) => (i === images.length - 1 ? 0 : i + 1));
 
