@@ -589,7 +589,7 @@ export default function DailyImagesTrivia() {
                                                     <div className="text-xs text-gray-600 dark:text-gray-400">
                                                         {u.comments.map((c, i) => (
                                                             <span key={i}>
-                                                                User commented: {c}
+                                                                Marked: {c}
                                                                 {i < u.comments.length - 1 && <br />}
                                                             </span>
                                                         ))}
