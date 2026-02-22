@@ -121,6 +121,7 @@ const App = () => {
       ["trivia-finish", "/sounds/Trivia.mp3"],
       ["toast-sound", "/sounds/Toast.mp3"],
       ["alert-sound", "/sounds/Alert.mp3"]
+
     ];
     soundFiles.forEach(([name, src]) => {
       const audio = loadSound(name, src);
