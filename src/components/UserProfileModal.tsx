@@ -318,7 +318,10 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setIsAvatarOpen(false)}
+                        onClick={(e) => {
+                            e.stopPropagation(); // ✅ prevent click from bubbling to parent modal
+                            setIsAvatarOpen(false); // close avatar modal
+                        }}
                     >
                         <motion.img
                             src={profile.avatar_url || "/UsersAvatar.jpg"}
@@ -326,10 +329,10 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                             initial={{ scale: 0.8 }}
                             animate={{ scale: 1 }}
                             exit={{ scale: 0.8 }}
+                            onClick={(e) => e.stopPropagation()} // ✅ prevent clicking image from closing anything
                         />
                     </motion.div>
                 )}
-
             </motion.div>
         </AnimatePresence>
     );

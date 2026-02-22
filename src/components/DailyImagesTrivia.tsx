@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { ChevronLeft, ChevronRight, Maximize, Eye, X } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { motion, AnimatePresence } from "framer-motion";
+import { UserProfileModal } from "@/components/UserProfileModal";
 type ImageItem = {
     id: string;
     image_url: string;
@@ -24,7 +25,7 @@ export default function DailyImagesTrivia() {
     const [dataLoading, setDataLoading] = useState(true);
     const [uiLoading, setUiLoading] = useState(true);
     const [isCollapsed, setIsCollapsed] = useState(false); // Start fully open
-
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [showComments, setShowComments] = useState(false);
     const [seenData, setSeenData] = useState<{ [key: string]: string }>({});
     const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -572,7 +573,11 @@ export default function DailyImagesTrivia() {
                             ) : (
                                 <ul className="flex flex-col gap-2">
                                     {topUsers.map((u, index) => (
-                                        <li key={u.id} className="flex items-start gap-2">
+                                        <li
+                                            key={u.id}
+                                            className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md p-1"
+                                            onClick={() => setSelectedUserId(u.id)} // ✅ open modal
+                                        >
                                             <span className="font-semibold w-5 text-gray-700 dark:text-gray-300">
                                                 {index + 1}
                                             </span>
@@ -625,6 +630,12 @@ export default function DailyImagesTrivia() {
                         onClick={(e) => e.stopPropagation()}
                     />
                 </div>
+            )}
+            {selectedUserId && (
+                <UserProfileModal
+                    userId={selectedUserId}
+                    onClose={() => setSelectedUserId(null)} // closes the modal
+                />
             )}
         </>
     );
