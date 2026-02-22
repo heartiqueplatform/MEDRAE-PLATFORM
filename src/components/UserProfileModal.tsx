@@ -191,11 +191,11 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
             >
                 <motion.div
                     className="bg-white dark:bg-gray-900 w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto custom-scrollbar pb-24"
-
                     initial={{ y: 400 }}
                     animate={{ y: 0 }}
                     exit={{ y: 400 }}
                     transition={{ type: "spring", stiffness: 120 }}
+                    onClick={(e) => e.stopPropagation()} // ✅ stop clicks inside modal from closing
                 >
                     <div className="flex justify-end">
                         <X className="cursor-pointer" onClick={onClose} />
