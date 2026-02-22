@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, Heart, AlertCircle, TrendingUp, Menu } from "lucide-react";
+import { Home, Heart, AlertCircle, TrendingUp, Menu, Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
@@ -136,6 +136,7 @@ export function Footer() {
 
     const items = [
         { icon: Heart, label: "Quizzes", url: "/Medrae-quizzes", iconTone: "practice" },
+        { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" },
         { icon: Home, label: "Home", url: "/dashboard/student", iconTone: "neutral" },
         { icon: AlertCircle, label: "Mistakes", url: "/my-mistakes", badge: mistakeCount > 0 ? mistakeCount : undefined, iconTone: "alert" },
         { title: "Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" },

@@ -28,10 +28,9 @@ const toastVariants = cva(
     variants: {
       variant: {
         default:
-          "group relative overflow-hidden border border-blue-300/60 bg-blue-50 text-blue-900 ring-1 ring-inset ring-blue-400/40 shadow-[inset_0_0_0_2px_rgba(59,130,246,0.25)] before:absolute before:left-0 before:top-0 before:h-3 before:w-3 before:bg-blue-400/50 before:clip-path-[polygon(0_0,100%_0,0_100%)]",
+          "group relative overflow-hidden border bg-background text-foreground shadow-lg dark:border-border before:absolute before:left-0 before:top-0 before:h-3 before:w-3 before:bg-primary/60 dark:before:bg-primary/80 before:clip-path-[polygon(0_0,100%_0,0_100%)]",
         destructive:
-          "destructive group relative overflow-hidden border border-red-300/60 bg-red-50 text-red-900 ring-1 ring-inset ring-red-400/40 shadow-[inset_0_0_0_2px_rgba(239,68,68,0.25)] before:absolute before:left-0 before:top-0 before:h-3 before:w-3 before:bg-red-400/70 before:clip-path-[polygon(0_0,100%_0,0_100%)]",
-
+          "destructive group relative overflow-hidden border bg-red-700 text-white shadow-lg before:absolute before:left-0 before:top-0 before:h-3 before:w-3 before:bg-red-400 dark:before:bg-red-500 before:clip-path-[polygon(0_0,100%_0,0_100%)]",
       },
     },
     defaultVariants: {
@@ -77,14 +76,13 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-100 transition-opacity hover:text-foreground focus:outline-none focus:ring-2 " +
-      "group-[.destructive]:text-red-700 group-[.destructive]:hover:text-red-800 group-[.destructive]:focus:ring-red-600 group-[.destructive]:focus:ring-offset-red-600",
+      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-100 transition-opacity hover:text-foreground focus:outline-none focus:ring-2 group-[.destructive]:text-white group-[.destructive]:hover:text-gray-200",
       className
     )}
     toast-close=""
     {...props}
   >
-    <X className="h-4 w-4" />
+    <X className="h-5 w-5" />
   </ToastPrimitives.Close>
 ))
 
