@@ -311,11 +311,7 @@ export function Header({
               {isOnline ? "Online" : "Offline"}
             </span>
           </div>
-
-
-
-
-
+          <AllUsersPopover totalUsers={totalUsers} />
           {/*  Reload PWA */}
           <button
             onClick={handleReload}
@@ -542,14 +538,6 @@ Advance your medical journey today: https://medrae.vercel.app`;
         )
       }
 
-      <div className="hidden md:block">
-        <div className="flex items-center gap-1">
-
-          <AllUsersPopover totalUsers={totalUsers} />
-
-        </div>
-
-      </div>
     </>
   );
 }

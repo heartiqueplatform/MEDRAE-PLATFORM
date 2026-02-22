@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlobalLoader } from "@/components/GlobalLoader";
+import { createPortal } from "react-dom";
 interface Props {
     userId: string | null;
     onClose: () => void;
@@ -179,8 +180,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
     }, [userId]);
 
     if (!userId) return null;
-
-    return (
+    return createPortal(
         <AnimatePresence>
             <motion.div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50"
@@ -334,6 +334,8 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                     </motion.div>
                 )}
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+
     );
 };
