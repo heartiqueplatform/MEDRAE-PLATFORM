@@ -4,8 +4,14 @@ import { supabase } from "../lib/supabaseClient";
 export type Profile = {
     user_id: string;
     name: string;
+    username?: string;
+    role: string;
+    subscription?: string;
+    avatar_url?: string;
+    institution?: string;
+    course?: string;
+    specialization?: string;
     is_online: boolean;
-    last_seen: string | null;
 };
 
 export const useOnlineUsers = () => {
@@ -18,7 +24,18 @@ export const useOnlineUsers = () => {
             // 1️⃣ Fetch initial users
             const { data, error } = await supabase
                 .from<Profile>("profiles")
-                .select("user_id, name, is_online, last_seen");
+                .select(`
+  user_id,
+  name,
+  username,
+  role,
+  subscription,
+  avatar_url,
+  institution,
+  course,
+  specialization,
+  is_online
+`);
 
             if (error) {
                 console.error("Error fetching users:", error);
