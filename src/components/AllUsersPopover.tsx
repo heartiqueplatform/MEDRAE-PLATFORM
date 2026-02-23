@@ -47,10 +47,10 @@ export default function AllUsersPopover({ totalUsers }: { totalUsers?: number })
             >
                 <PopoverTrigger asChild>
                     {/* Wrap SVG + badge together */}
-                    <div className="flex items-center gap-1 cursor-pointer">
+                    <div className="hidden sm:flex items-center gap-1 cursor-pointer">
                         {/* SVG icon */}
                         <svg
-                            xmlns="http://www.w3.org/2000/svg"
+                            xmlns="http://www.w3org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
                             strokeWidth={1.5}
