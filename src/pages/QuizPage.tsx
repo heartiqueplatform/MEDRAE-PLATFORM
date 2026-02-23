@@ -844,7 +844,7 @@ Please provide a detailed discussion and guidance.`;
 
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+    <div className="space-y-2 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
 
 
 
