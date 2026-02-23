@@ -362,74 +362,62 @@ export default function AssessmentNotes() {
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
       <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
-        <div className="flex flex-col">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
-            Assessment Notes & Uploads
-          </h1>
-          <div className="mt-3">
-            <button
-              onClick={() => setShowDescription(!showDescription)}
-              className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
-            >
-              <motion.span
-                animate={{ rotate: showDescription ? 180 : 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="inline-flex"
-              >
-                {/* Down arrow SVG rotates */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
+        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-4">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold flex items-center gap-2 bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
+              Assessment Notes & Uploads
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            <div>
+              {/* Preview + Learn more */}
+              <p className="text-muted-foreground text-base leading-relaxed mt-0">
+                This page is dedicated to assessment guides, case study guides, and research resources.
+                It brings together universal materials designed to support nursing education across all colleges and training institutions
+                <span
+                  className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
+                  onClick={() => setShowDescription(!showDescription)}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19.5 8.25L12 15.75 4.5 8.25" // down arrow
-                  />
-                </svg>
-              </motion.span>
+                  ... Learn more
+                </span>
+              </p>
 
-              <span>
-                {showDescription
-                  ? "Hide description "
-                  : "Read description. Learn more... "}
-              </span>
-            </button>
+              {/* Animated dropdown for full text */}
+              <AnimatePresence initial={false}>
+                {showDescription && (
+                  <motion.div
+                    key="assessment-description-expanded"
+                    className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.35, ease: "easeInOut" }}
+                  >
+                    <p>
+                      Here, you’ll find practical guides, structured case studies, and project references curated to
+                      help students prepare effectively, build confidence, and excel both in classroom learning and clinical practice.
+                      And note, this does not give you the right to copy-paste it; it only provides a picture to show you what to expect.
+                    </p>
 
-            <AnimatePresence initial={false}>
-              {showDescription && (
-                <motion.div
-                  key="assessment-description"
-                  className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
-                >
-                  <p>
-                    This page is dedicated to assessment guides, case study guides, and research
-                    resources. It brings together universal materials designed to support nursing
-                    education across all colleges and training institutions. Here, you’ll find
-                    practical guides, structured case studies, and project references curated to
-                    help students prepare effectively, build confidence, and excel both in
-                    classroom learning and clinical practice. And note, this does not give you the
-                    right to copy-paste it only provides a picture to show you what to expect.
-                  </p>
-
-                  <p className="text-sm italic">
-                    Universal nursing assessment resources for all colleges
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-
-        </div>
+                    <p className="text-sm italic">
+                      Universal nursing assessment resources for all colleges
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="relative mt-3">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by title or description..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
 
         {showUploadForm && (
@@ -511,15 +499,7 @@ export default function AssessmentNotes() {
           </form>
         )}
 
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by title or description..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+
         <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
           {showUploadForm ? "Cancel Upload" : "New Upload"}
         </Button>
@@ -583,7 +563,7 @@ export default function AssessmentNotes() {
                         {subNotes.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
                         ) : (
-                          <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-2">
 
                             {subNotes.map((note) => (
                               <Card
@@ -592,25 +572,31 @@ export default function AssessmentNotes() {
                               >
 
 
-                                <CardHeader>
-                                  <div className="flex items-center gap-2">
-                                    {getTypeIcon(note.file_type)}
-                                    <CardTitle className="text-sm truncate">{note.title}</CardTitle>
-                                    <Badge className={getTypeColor(note.file_type)}>
-                                      {note.file_type.toUpperCase()}
-                                    </Badge>
+                                <CardHeader className="px-2 sm:px-0">
+                                  <div className="flex flex-col items-start gap-1">
+                                    {/* Icon + title + badge in one line, left-aligned */}
+                                    <div className="flex items-center gap-1">
+                                      {getTypeIcon(note.file_type)}
+                                      <CardTitle className="text-sm  text-left">{note.title}</CardTitle>
+                                      <Badge className={getTypeColor(note.file_type)}>
+                                        {note.file_type.toUpperCase()}
+                                      </Badge>
+                                    </div>
+
+                                    {/* Description */}
+                                    <CardDescription className="mt-1  text-sm text-left">
+                                      {note.description}
+                                    </CardDescription>
+
+                                    {/* Course and date */}
+                                    <p className="text-xs text-muted-foreground text-left">
+                                      {note.course && <span>{note.course} · </span>}
+                                      {new Date(note.created_at).toLocaleDateString()}
+                                    </p>
                                   </div>
-                                  <CardDescription className="mt-1 line-clamp-3 text-sm">
-                                    {note.description}
-                                  </CardDescription>
-                                  <p className="text-xs text-muted-foreground">
-                                    {note.course && <span>{note.course} · </span>}
-                                    {new Date(note.created_at).toLocaleDateString()}
-                                  </p>
                                 </CardHeader>
+
                                 <CardContent>
-
-
                                   {/* Offline download button */}
                                   <div className="flex gap-2 mt-2">
                                     <Button

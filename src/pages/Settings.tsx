@@ -232,28 +232,63 @@ export function Settings() {
       <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
 
         <Card className="w-full border-0 overflow-hidden p-6">
-          <CardHeader className="flex flex-col items-center text-center">
-            <CardTitle className="flex items-center gap-2 text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
 
-              Settings
-            </CardTitle>
-            <CardDescription className="mt-2 text-muted-foreground">
-              Manage your profile information
-            </CardDescription>
-          </CardHeader>
+
+          {/* Tabs + profile info: left-aligned */}
+          <div className="mt-6">
+            <Tabs defaultValue="profile" className="space-y-4">
+
+              {/* Title */}
+              <h2 className="text-4xl font-bold text-start bg-gradient-medical bg-clip-text text-transparent">
+                Settings
+              </h2>
+              <h2 className="text-sm font-bold text-start bg-gradient-medical bg-clip-text text-transparent">
+                Manage your profile information
+              </h2>
+              <TabsContent value="profile">
+                {/* Profile info inside the tab with avatar */}
+                <div className="flex flex-col gap-6">
+                  {/* Avatar and basic info */}
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage
+                        src={profile.avatar_url || "/placeholder.svg"}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="text-lg">
+                        {profile.name?.[0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-lg font-semibold">{profile.name || "Not set"}</p>
+                      <p className="text-sm text-muted-foreground">{profile.email || "Not set"}</p>
+                      <p className="text-sm text-muted-foreground">Username: {profile.username || "Not set"}</p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Extended profile info */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <p className="text-sm font-medium">Phone: {profile.phone || "Not set"}</p>
+                    <p className="text-sm font-medium">Institution: {profile.institution || "Not set"}</p>
+                    <p className="text-sm font-medium">Course: {profile.course || "Not set"}</p>
+                    <p className="text-sm font-medium">Block: {profile.block || "Not set"}</p>
+                    <p className="text-sm font-medium">County: {profile.county || "Not set"}</p>
+                    <p className="text-sm font-medium">Bio: {profile.bio || "Not set"}</p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </Card>
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-1">
-            <TabsTrigger value="profile" className="flex items-center gap-1">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-          </TabsList>
+
 
           <TabsContent value="profile">
             <Card className=" border-0">
               <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
+                <CardTitle>Edit Profile Information</CardTitle>
                 <CardDescription>
                   Update your personal and academic details
                 </CardDescription>

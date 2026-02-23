@@ -679,75 +679,75 @@ export function Resources() {
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
       <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
+        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-4">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
               Notes & Resources
-            </h1>
-            <div className="mt-3">
-              <button
-                onClick={() => setShowDescription(!showDescription)}
-                className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
-              >
-                <motion.span
-                  animate={{ rotate: showDescription ? 180 : 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="inline-flex"
-                >
-                  {/* Down arrow SVG rotates */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-5 h-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19.5 8.25L12 15.75 4.5 8.25"
-                    />
-                  </svg>
-                </motion.span>
+            </CardTitle>
+          </CardHeader>
 
-                <span>
-                  {showDescription
-                    ? "Hide description "
-                    : "Read description. Learn more... "}
+          <CardContent>
+            <div>
+              {/* Preview + Learn more button */}
+              <p className="text-muted-foreground text-base leading-relaxed mt-0">
+                {/* First two sentences always visible */}
+                This page provides access to a wide range of study materials and references.
+                While some notes may appear mixed across blocks and semesters, they are
+                organized to align closely with the curriculum used in most Kenyan KMTC and
+                private institutions.
+                <span
+                  className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
+                  onClick={() => setShowDescription(!showDescription)}
+                >
+                  ... Learn more
                 </span>
-              </button>
+              </p>
 
               <AnimatePresence initial={false}>
                 {showDescription && (
                   <motion.div
-                    key="notes-description"
+                    key="notes-description-expanded"
                     className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.35, ease: "easeInOut" }}
                   >
-                    <p className="text-muted-foreground mt-2">
-                      This page provides access to a wide range of study materials and references.
-                      While some notes may appear mixed across blocks and semesters, they are
-                      organized to align closely with the curriculum used in most Kenyan KMTC and
-                      private institutions. This ensures you’ll find diverse, high-quality content
-                      to support your learning, research, and personal note uploads.
+                    {/* Full text continuation */}
+                    <p>
+                      This ensures you’ll find diverse, high-quality content to support your learning, research, and personal note uploads.
                     </p>
-
-                    <p className="text-sm text-muted-foreground italic mt-1">
+                    <p className="text-sm italic">
                       Well-organized notes aligned with KMTC and private institution curricula
                     </p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
+            <div className="flex flex-col sm:flex-row gap-2 mt-3 border-0 sm:items-center">
+              <div className="relative flex-1 px-2 sm:px-0">
 
-          </div>
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search resources..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full"
+                />
 
-        </div>
+              </div>
 
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadForm(!showUploadForm)}
+                className="whitespace-nowrap"
+              >
+                {showUploadForm ? "Cancel Upload" : "New Upload"}
+              </Button>
+            </div>
+
+          </CardContent>
+        </Card>
 
         {showUploadForm && (
           <div className="p-4 border rounded-lg space-y-4 bg-muted/10 px-2 sm:px-4">
@@ -863,27 +863,7 @@ export function Resources() {
 
           </div>
         )}
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <div className="relative flex-1 px-2 sm:px-0">
 
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search resources..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full"
-            />
-
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={() => setShowUploadForm(!showUploadForm)}
-            className="whitespace-nowrap"
-          >
-            {showUploadForm ? "Cancel Upload" : "New Upload"}
-          </Button>
-        </div>
 
 
 
@@ -992,7 +972,7 @@ export function Resources() {
             .filter((cat) => cat.id === selectedBlock)
             .map((cat) => (
               <div key={cat.id}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 w-full">
                   {loadingNotes ? (
                     <div className="flex flex-col items-center justify-center py-20 col-span-full">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -1007,11 +987,16 @@ export function Resources() {
                         .some((b) => (note.block || "").toUpperCase() === b.id)
                       : (note.block || "").toUpperCase() === cat.id
                   ).length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 col-span-full">
-                      <p className="text-muted-foreground text-center">
-                        No notes available for this category yet. Check back soon for updates!
-                      </p>
-                    </div>
+                    <Card className="col-span-full flex flex-col items-center justify-center py-12 px-6 border-0 shadow-md rounded-2xl">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-center text-muted-foreground">
+                          No notes available
+                        </CardTitle>
+                        <CardDescription className="text-center text-muted-foreground">
+                          Check back soon for updates!
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
                   ) : (
                     filteredResources
                       .filter((note) =>
@@ -1028,23 +1013,25 @@ export function Resources() {
                         >
 
 
-                          <CardHeader>
-                            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 sm:gap-2 px-2 sm:px-0">
-                              <div className="space-y-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {getTypeIcon(note.file_type)}
-                                  <CardTitle className="text-lg">{note.title}</CardTitle>
-                                  <Badge className={getTypeColor(note.file_type)}>
-                                    {note.file_type.toUpperCase()}
-                                  </Badge>
-                                </div>
-                                <CardDescription>{note.description}</CardDescription>
-                                <div className="text-sm text-muted-foreground flex flex-wrap gap-2">
-                                  {note.course && <span>{note.course}</span>}
-                                  <span>· Uploaded {new Date(note.created_at).toLocaleDateString()}</span>
-                                </div>
+                          <CardHeader className="px-2 sm:px-0">
+                            <div className="flex flex-col items-start gap-2">
+                              {/* Icon + title + badge stacked vertically or tightly left-aligned */}
+                              <div className="flex items-center gap-1">
+                                {getTypeIcon(note.file_type)}
+                                <CardTitle className="text-lg">{note.title}</CardTitle>
+                                <Badge className={getTypeColor(note.file_type)}>
+                                  {note.file_type.toUpperCase()}
+                                </Badge>
                               </div>
 
+                              {/* Description */}
+                              <CardDescription className="text-left">{note.description}</CardDescription>
+
+                              {/* Course + upload date */}
+                              <div className="text-sm text-muted-foreground flex flex-wrap gap-2 text-left">
+                                {note.course && <span>{note.course}</span>}
+                                <span>· Uploaded {new Date(note.created_at).toLocaleDateString()}</span>
+                              </div>
                             </div>
                           </CardHeader>
 

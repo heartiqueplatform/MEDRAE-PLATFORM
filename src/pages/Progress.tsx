@@ -23,9 +23,10 @@ import {
   BookOpen,
   Clock,
   Award,
+  Heart,
 } from "lucide-react";
 import { playSound } from "@/lib/soundManager";
-
+import { motion, AnimatePresence } from "framer-motion";
 import { allUnits } from "@/constants/units";
 
 // --- Local Storage Helpers ---
@@ -64,6 +65,7 @@ export function StudyProgress() {
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
   const [unitsWithStats, setUnitsWithStats] = useState<any[]>([]);
   const [totalTopicsInApp, setTotalTopicsInApp] = useState(0);
+  const [showProgressDescription, setShowProgressDescription] = useState(false);
   useEffect(() => {
     const fetchProgress = async (showLoader = true) => {
       if (showLoader) setLoading(true);
@@ -208,72 +210,101 @@ export function StudyProgress() {
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
       <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
-            Study Progress Tracker
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            This tracker measures your learning journey in three ways:
-            <br />• <strong>Progress %</strong> = highest quiz score in the unit.
-            <br />• <strong>Stars</strong> = 5 if at least one quiz attempted.
-            <br />• <strong>Hours Studied</strong> = 1.5 × number of attempts.
-            <br /><br />
-            To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App — your results will automatically update here.
-          </p>
-        </div>
+        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
+          <CardHeader>
+            <CardTitle className="text-3xl flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
+              <Heart className="h-8 w-8 text-red-500 animate-pulse" fill="currentColor" />
+              Study Progress Tracker
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mt-2">
+              <motion.div layout>
+                <p className="text-muted-foreground mt-0 text-base leading-relaxed">
+                  This tracker measures your learning journey in three ways:
+                  <br />• <strong>Progress %</strong> = highest quiz score in the unit.
+                  <br />• <strong>Stars</strong> = 5 if at least one quiz attempted.
+                  <br />• <strong>Hours Studied</strong> = 1.5 × number of attempts...
+                  <span
+                    onClick={() => setShowProgressDescription(!showProgressDescription)}
+                    className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
+                  >
+                    Learn more
+                  </span>
+                </p>
 
-        {/* Overall Stats */}
-        <div className="grid gap-2 md:grid-cols-4 w-full">
+                <AnimatePresence initial={false}>
+                  {showProgressDescription && (
+                    <motion.div
+                      key="progress-description-expanded"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.35, ease: "easeInOut" }}
+                      className="mt-2 text-muted-foreground text-base leading-relaxed"
+                    >
+                      <br />
+                      To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App  your results will automatically update here.
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+            {/* Overall Stats */}
+            <div className="grid gap-2 md:grid-cols-4 w-full">
 
-          <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+              <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
 
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{Math.round(overallStats.totalProgress)}%</p>
-                  <p className="text-sm text-muted-foreground">Overall Progress</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <TrendingUp className="h-8 w-8 text-primary" />
+                    <div>
+                      <p className="text-2xl font-bold">{Math.round(overallStats.totalProgress)}%</p>
+                      <p className="text-sm text-muted-foreground">Overall Progress</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
 
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-2">
-                <Clock className="h-8 w-8 text-blue-500" />
-                <div>
-                  <p className="text-2xl font-bold">{overallStats.totalHours}</p>
-                  <p className="text-sm text-muted-foreground">Hours Studied</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-8 w-8 text-blue-500" />
+                    <div>
+                      <p className="text-2xl font-bold">{overallStats.totalHours}</p>
+                      <p className="text-sm text-muted-foreground">Hours Studied</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
 
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-2">
-                <BookOpen className="h-8 w-8 text-green-500" />
-                <div>
-                  <p className="text-2xl font-bold">{overallStats.completedTopics}/{overallStats.totalTopics}</p>
-                  <p className="text-sm text-muted-foreground">Topics Done</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="h-8 w-8 text-green-500" />
+                    <div>
+                      <p className="text-2xl font-bold">{overallStats.completedTopics}/{overallStats.totalTopics}</p>
+                      <p className="text-sm text-muted-foreground">Topics Done</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
 
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-2">
-                <Star className="h-8 w-8 text-yellow-500" />
-                <div>
-                  <p className="text-2xl font-bold">{overallStats.totalStars}★</p>
-                  <p className="text-sm text-muted-foreground">Total Stars Earned</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <Star className="h-8 w-8 text-yellow-500" />
+                    <div>
+                      <p className="text-2xl font-bold">{overallStats.totalStars}★</p>
+                      <p className="text-sm text-muted-foreground">Total Stars Earned</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+          </CardContent>
+        </Card>
 
         {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
         <SimulationAndTriviaSummary />
