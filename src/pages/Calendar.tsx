@@ -228,7 +228,7 @@ export function Calendar() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
-      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
+      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
             Assessment Calendar
@@ -237,7 +237,7 @@ export function Calendar() {
             Track your upcoming assessments and important dates
           </p>
         </div>
-        <div className="grid gap-6 grid-cols-1 w-full">
+        <div className="grid gap-2 grid-cols-1 w-full">
           {/* Calendar */}
           <Card className="w-full border-0 overflow-hidden">
 

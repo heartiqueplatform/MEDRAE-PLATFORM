@@ -209,20 +209,20 @@ export function Profile() {
 
 
   return (
-    <div className="space-y-6 px-3 border-0">
+    <div className="space-y-2 px-3 border-0">
       <div className="flex items-center gap-3 mb-6">
         <User className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">My Profile</h1>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="overview" className="space-y-2">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="stats">Statistics</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-2">
           <Card className="border-0">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-start gap-6">

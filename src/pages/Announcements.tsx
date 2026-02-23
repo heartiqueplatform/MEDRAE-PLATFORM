@@ -125,7 +125,7 @@ export function Announcements() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
-      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
+      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
 
         <div className="flex items-center justify-between">
           <div>

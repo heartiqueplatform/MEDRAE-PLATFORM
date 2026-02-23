@@ -677,7 +677,7 @@ export function Resources() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
-      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
+      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
 
         <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-4">
           <CardHeader>
@@ -972,7 +972,7 @@ export function Resources() {
             .filter((cat) => cat.id === selectedBlock)
             .map((cat) => (
               <div key={cat.id}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 w-full">
+                <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-2 gap-3 w-full">
                   {loadingNotes ? (
                     <div className="flex flex-col items-center justify-center py-20 col-span-full">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>

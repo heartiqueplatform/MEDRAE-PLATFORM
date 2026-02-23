@@ -361,7 +361,7 @@ export default function AssessmentNotes() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
-      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
+      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
         <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-4">
           <CardHeader>
             <CardTitle className="text-3xl font-bold flex items-center gap-2 bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">

@@ -494,7 +494,7 @@ export function MedTube() {
   );
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-2 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
       <div className="flex items-center justify-between">
         <div>
@@ -664,7 +664,7 @@ export function MedTube() {
             {videos.length === 0 && loading ? (
               <GlobalLoader message="Medrae is loading videos..." />
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2  md:grid-cols-2 lg:grid-cols-3">
 
                 {filteredVideos
                   .filter((video) => {
@@ -679,7 +679,7 @@ export function MedTube() {
                     return 0;
                   })
                   .map((video) => (
-                    <Card key={video.id} className="group cursor-pointer transition-all hover:shadow-lg">
+                    <Card key={video.id} className="group cursor-pointer transition-all hover:shadow-lg border-0">
                       <div className="relative" onPlay={() => recordView(video.id)}>
                         {video.video_url ? (
                           video.canAccess ? (

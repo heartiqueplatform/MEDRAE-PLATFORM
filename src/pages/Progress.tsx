@@ -209,7 +209,7 @@ export function StudyProgress() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
-      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
+      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
         <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
           <CardHeader>
             <CardTitle className="text-3xl flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
@@ -308,19 +308,20 @@ export function StudyProgress() {
 
         {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
         <SimulationAndTriviaSummary />
-        <Tabs defaultValue="subjects" className="space-y-4">
+
+        <Tabs defaultValue="subjects" className="space-y-2">
           <TabsList>
             <TabsTrigger value="subjects">By Unit</TabsTrigger>
             <TabsTrigger value="timeline">Timeline View</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="subjects" className="space-y-4">
+          <TabsContent value="subjects" className="space-y-2">
             {subjects.length === 0 && loading ? (
               <div className="flex justify-center items-center py-10">
                 <GlobalLoader />
               </div>
             ) : (
-              <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
+              <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
 
                 {subjects.map((subject) => (
                   <Card key={subject.id} className="transition-all border-0 hover:shadow-lg hover:scale-105 duration-300">
@@ -694,7 +695,7 @@ Take a moment to review your mistakes and try again improvement comes fast when 
     const offset = circumference - (safeValue / 100) * circumference;
 
     return (
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center mb-3">
         <svg width="120" height="120">
           <circle stroke="#e5e7eb" fill="transparent" strokeWidth="10" r={radius} cx="60" cy="60" />
           <circle
@@ -729,7 +730,7 @@ Take a moment to review your mistakes and try again improvement comes fast when 
   return (
     <div>
       {/* GREETING HEADER */}
-      <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-white/40 dark:bg-gray-800/60 backdrop-blur border-0 animate-fade-slide">
+      <div className="flex items-center gap-3 mb-2 p-3  rounded-xl bg-white/40 dark:bg-gray-800/60 backdrop-blur border-0 animate-fade-slide">
         <img
           src={profile?.avatar_url || "/UsersAvatar.jpg"}
           alt="avatar"

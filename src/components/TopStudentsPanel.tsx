@@ -284,7 +284,7 @@ export const DailyTriviaCard = () => {
 
 
             <Card className="rounded-md overflow-hidden border-0 relative
-                 bg-gray-100 dark:bg-gray-900 shadow-md mt-4">
+                 bg-gray-100 dark:bg-gray-900 shadow-md mt-2">
 
                 <CardHeader className="bg-blue-50 dark:bg-blue-900/40">
                     <div className="flex items-center justify-between">

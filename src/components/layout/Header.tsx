@@ -515,7 +515,7 @@ Advance your medical journey today: https://medrae.vercel.app`;
 
               </p>
             </div>
-            <Avatar className="h-6 w-6 sm:h-8 sm:w-8 mobile-profile-avatar">
+            <Avatar className="h-10 w-10 sm:h-12 sm:w-12 mobile-profile-avatar rounded-full border-2 border-pink-300 shadow-sm">
               <AvatarImage
                 src={user.avatar && isOnline ? user.avatar : undefined}
                 className="object-cover"
