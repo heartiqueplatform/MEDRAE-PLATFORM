@@ -350,7 +350,7 @@ export default function MyMistakes() {
                 </div>
             )}
 
-            <div className="mb-8 ">
+            <div className="mb-1 ">
                 <div className="relative bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border-0 rounded-2xl shadow-lg p-3 sm:p-8 text-start overflow-hidden">
 
                     {/* Decorative Gradient Accent */}
