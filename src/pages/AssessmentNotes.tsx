@@ -360,393 +360,394 @@ export default function AssessmentNotes() {
   );
 
   return (
-    <div className="space-y-10 w-full px-2 sm:px-4">
-
-
-      <div className="flex flex-col">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
-          Assessment Notes & Uploads
-        </h1>
-        <div className="mt-3">
-          <button
-            onClick={() => setShowDescription(!showDescription)}
-            className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
-          >
-            <motion.span
-              animate={{ rotate: showDescription ? 180 : 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="inline-flex"
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
+        <div className="flex flex-col">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
+            Assessment Notes & Uploads
+          </h1>
+          <div className="mt-3">
+            <button
+              onClick={() => setShowDescription(!showDescription)}
+              className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
             >
-              {/* Down arrow SVG rotates */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
+              <motion.span
+                animate={{ rotate: showDescription ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="inline-flex"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 8.25L12 15.75 4.5 8.25" // down arrow
-                />
-              </svg>
-            </motion.span>
+                {/* Down arrow SVG rotates */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 8.25L12 15.75 4.5 8.25" // down arrow
+                  />
+                </svg>
+              </motion.span>
 
-            <span>
-              {showDescription
-                ? "Hide description "
-                : "Read description. Learn more... "}
-            </span>
-          </button>
+              <span>
+                {showDescription
+                  ? "Hide description "
+                  : "Read description. Learn more... "}
+              </span>
+            </button>
 
-          <AnimatePresence initial={false}>
-            {showDescription && (
-              <motion.div
-                key="assessment-description"
-                className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.35, ease: "easeInOut" }}
-              >
-                <p>
-                  This page is dedicated to assessment guides, case study guides, and research
-                  resources. It brings together universal materials designed to support nursing
-                  education across all colleges and training institutions. Here, you’ll find
-                  practical guides, structured case studies, and project references curated to
-                  help students prepare effectively, build confidence, and excel both in
-                  classroom learning and clinical practice. And note, this does not give you the
-                  right to copy-paste it only provides a picture to show you what to expect.
-                </p>
+            <AnimatePresence initial={false}>
+              {showDescription && (
+                <motion.div
+                  key="assessment-description"
+                  className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35, ease: "easeInOut" }}
+                >
+                  <p>
+                    This page is dedicated to assessment guides, case study guides, and research
+                    resources. It brings together universal materials designed to support nursing
+                    education across all colleges and training institutions. Here, you’ll find
+                    practical guides, structured case studies, and project references curated to
+                    help students prepare effectively, build confidence, and excel both in
+                    classroom learning and clinical practice. And note, this does not give you the
+                    right to copy-paste it only provides a picture to show you what to expect.
+                  </p>
 
-                <p className="text-sm italic">
-                  Universal nursing assessment resources for all colleges
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <p className="text-sm italic">
+                    Universal nursing assessment resources for all colleges
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+
         </div>
 
 
-      </div>
+        {showUploadForm && (
+          <form onSubmit={handleUpload} className="border p-4 rounded space-y-4 bg-muted/20">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input name="title" placeholder="Title *" required />
+              <Input name="description" placeholder="Short Description" />
+              <Input name="course" placeholder="Course *" required />
+              <Input name="institution" placeholder="Institution *" required />
+              <Input name="unit" placeholder="Unit *" required />
+              <Input name="category" placeholder="Category *" required />
+              <select
+                className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
+                value={selectedBlock}
+                onChange={(e) => {
+                  setSelectedBlock(e.target.value);
+                  setSelectedSubcategory("");
+                }}
+                required
+              >
+                <option value="">Select Block *</option>
+                {SECTIONS.map((s) => (
+                  <option key={s.title} value={s.title}>
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
+                value={selectedSubcategory}
+                onChange={(e) => setSelectedSubcategory(e.target.value)}
+                required
+                disabled={!selectedBlock}
+              >
+                <option value="">Select Subcategory *</option>
+                {SECTIONS.find((s) => s.title === selectedBlock)?.subcategories.map((sub) => (
+                  <option key={sub} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+              </select>
+              <Input
+                type="file"
+                name="file"
+                required
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setSelectedFile(file);
+                }}
+              />
 
-
-      {showUploadForm && (
-        <form onSubmit={handleUpload} className="border p-4 rounded space-y-4 bg-muted/20">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input name="title" placeholder="Title *" required />
-            <Input name="description" placeholder="Short Description" />
-            <Input name="course" placeholder="Course *" required />
-            <Input name="institution" placeholder="Institution *" required />
-            <Input name="unit" placeholder="Unit *" required />
-            <Input name="category" placeholder="Category *" required />
-            <select
-              className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
-              value={selectedBlock}
-              onChange={(e) => {
-                setSelectedBlock(e.target.value);
-                setSelectedSubcategory("");
-              }}
-              required
-            >
-              <option value="">Select Block *</option>
-              {SECTIONS.map((s) => (
-                <option key={s.title} value={s.title}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
-            <select
-              className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
-              value={selectedSubcategory}
-              onChange={(e) => setSelectedSubcategory(e.target.value)}
-              required
-              disabled={!selectedBlock}
-            >
-              <option value="">Select Subcategory *</option>
-              {SECTIONS.find((s) => s.title === selectedBlock)?.subcategories.map((sub) => (
-                <option key={sub} value={sub}>
-                  {sub}
-                </option>
-              ))}
-            </select>
-            <Input
-              type="file"
-              name="file"
-              required
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                setSelectedFile(file);
-              }}
-            />
-
-          </div>
-          {uploadProgress !== null && selectedFile && (
-            <div className="mt-2 space-y-1">
-              {/* Progress bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-
-              {/* Percentage + File size */}
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{uploadProgress}%</span>
-                <span>
-                  {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
-                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                </span>
-              </div>
             </div>
-          )}
+            {uploadProgress !== null && selectedFile && (
+              <div className="mt-2 space-y-1">
+                {/* Progress bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+
+                {/* Percentage + File size */}
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{uploadProgress}%</span>
+                  <span>
+                    {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
+                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </span>
+                </div>
+              </div>
+            )}
 
 
-          <Button type="submit" disabled={uploading}>
-            <UploadCloud className="w-4 h-4 mr-1" />
-            {uploading ? "Uploading..." : "Upload Note"}
-          </Button>
-        </form>
-      )}
+            <Button type="submit" disabled={uploading}>
+              <UploadCloud className="w-4 h-4 mr-1" />
+              {uploading ? "Uploading..." : "Upload Note"}
+            </Button>
+          </form>
+        )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by title or description..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-      <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
-        {showUploadForm ? "Cancel Upload" : "New Upload"}
-      </Button>
-      <Accordion type="multiple" className="space-y-6">
-        {SECTIONS.map((section, i) => (
-          <AccordionItem key={i} value={`section-${i}`}>
-            <AccordionTrigger>{section.title}</AccordionTrigger>
-            <AccordionContent>
-              <Tabs defaultValue={section.subcategories[0]}>
-                {/* Only for Practical Assessments & Case Studies */}
-                {["Practical Assessments", "Case Studies"].includes(section.title) ? (
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() =>
-                        setSelectedSubcategory((prev) =>
-                          prev && section.subcategories.includes(prev) ? "" : section.subcategories[0]
-                        )
-                      }
-                    >
-                      {selectedSubcategory || "Select Subcategory"}
-                    </Button>
-                    {selectedSubcategory === section.subcategories[0] && (
-                      <div className="flex flex-wrap gap-2 mt-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by title or description..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
+          {showUploadForm ? "Cancel Upload" : "New Upload"}
+        </Button>
+        <Accordion type="multiple" className="space-y-6">
+          {SECTIONS.map((section, i) => (
+            <AccordionItem key={i} value={`section-${i}`}>
+              <AccordionTrigger>{section.title}</AccordionTrigger>
+              <AccordionContent>
+                <Tabs defaultValue={section.subcategories[0]}>
+                  {/* Only for Practical Assessments & Case Studies */}
+                  {["Practical Assessments", "Case Studies"].includes(section.title) ? (
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() =>
+                          setSelectedSubcategory((prev) =>
+                            prev && section.subcategories.includes(prev) ? "" : section.subcategories[0]
+                          )
+                        }
+                      >
+                        {selectedSubcategory || "Select Subcategory"}
+                      </Button>
+                      {selectedSubcategory === section.subcategories[0] && (
+                        <div className="flex flex-wrap gap-2 mt-2">
 
-                        {section.subcategories.map((sub) => (
-                          <Button
-                            key={sub}
-                            size="sm"
-                            variant="ghost"
-                            className="justify-start"
-                            onClick={() => setSelectedSubcategory(sub)}
-                          >
-                            {sub}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Keep original horizontal tabs for others
-                  <TabsList className="flex flex-wrap gap-2 w-full">
-
-                    {section.subcategories.map((sub) => (
-                      <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
-                        {sub}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                )}
-
-
-                {section.subcategories.map((sub) => {
-                  const subNotes = filteredNotes.filter(
-                    (n) => n.sub_category === sub && n.block === section.title
-                  );
-
-                  return (
-                    <TabsContent key={sub} value={sub} className="space-y-4 mt-4">
-                      {subNotes.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
-                      ) : (
-                        <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
-
-                          {subNotes.map((note) => (
-                            <Card
-                              key={note.id}
-                              className="flex flex-col border-0 justify-between transition-all hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                          {section.subcategories.map((sub) => (
+                            <Button
+                              key={sub}
+                              size="sm"
+                              variant="ghost"
+                              className="justify-start"
+                              onClick={() => setSelectedSubcategory(sub)}
                             >
-
-
-                              <CardHeader>
-                                <div className="flex items-center gap-2">
-                                  {getTypeIcon(note.file_type)}
-                                  <CardTitle className="text-sm">{note.title}</CardTitle>
-                                  <Badge className={getTypeColor(note.file_type)}>
-                                    {note.file_type.toUpperCase()}
-                                  </Badge>
-                                </div>
-                                <CardDescription className="mt-1">{note.description}</CardDescription>
-                                <p className="text-xs text-muted-foreground">
-                                  {note.course && <span>{note.course} · </span>}
-                                  {new Date(note.created_at).toLocaleDateString()}
-                                </p>
-                              </CardHeader>
-                              <CardContent>
-
-
-                                {/* Offline download button */}
-                                <div className="flex gap-2 mt-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={async () => {
-                                      await handleDownload(note.id, note.file_url);
-                                    }}
-                                    variant="ghost"
-                                    className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                    Cache
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-
-                                    onClick={async () => {
-                                      setFullscreenNote(note);
-                                      if (session?.user?.id) {
-                                        const { error } = await supabase
-                                          .from("note_views")
-                                          .upsert(
-                                            { note_id: note.id, user_id: session.user.id },
-                                            { onConflict: ["note_id", "user_id"] }
-                                          );
-
-                                        if (!error) {
-                                          setViewCounts((prev) => ({
-                                            ...prev,
-                                            [note.id]: (prev[note.id] || 0) + 1,
-                                          }));
-                                        }
-                                      }
-
-                                    }}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                    View
-                                  </Button>
-                                  {/* Delete button for uploader only */}
-                                  {session?.user?.id === note.uploaded_by && (
-                                    <Button
-                                      size="sm"
-
-                                      onClick={() => handleDelete(note)}
-                                      variant="ghost"
-                                      className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  )}
-
-
-                                  {/* Show badge if file is saved offline */}
-                                  {offlineFiles.includes(note.id) && (
-                                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                      Preserved
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
-                                  <div className="flex items-center gap-1">
-                                    <Eye className="h-6 w-6" />
-                                    {viewCounts[note.id] || 0}
-                                  </div>
-
-                                  <button
-                                    className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : ""
-                                      }`}
-                                    onClick={() => toggleLike(note.id)}
-                                  >
-                                    <Heart
-                                      className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""
-                                        }`}
-                                    />
-                                    <span>{likeCounts[note.id] || 0}</span>
-                                  </button>
-                                </div>
-                              </CardContent>
-
-                            </Card>
+                              {sub}
+                            </Button>
                           ))}
                         </div>
                       )}
-                    </TabsContent>
-                  );
-                })}
-              </Tabs>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
-      {fullscreenNote && (
-        <div
-          ref={fullscreenRef}
-          className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
-        >
-          {/* Close button */}
-          <div className="flex justify-end p-2">
-            <Button
-              onClick={() => setFullscreenNote(null)}
-              variant="ghost"
-              className="text-current hover:bg-muted/20"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
+                    </div>
+                  ) : (
+                    // Keep original horizontal tabs for others
+                    <TabsList className="flex flex-wrap gap-2 w-full">
 
-          {/* PDF viewer or iframe */}
-          {fullscreenNote.file_type === "pdf" ? (
-            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-              <Viewer
-                fileUrl={fullscreenNote.file_url}
-                plugins={[defaultLayoutPluginInstance]}
-                theme={isDarkMode ? "dark" : "light"}
-                renderLoader={() => (
-                  <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
-                    <GlobalLoader message="Medrae is Loading PDF..." />
-                  </div>
-                )}
+                      {section.subcategories.map((sub) => (
+                        <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
+                          {sub}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  )}
+
+
+                  {section.subcategories.map((sub) => {
+                    const subNotes = filteredNotes.filter(
+                      (n) => n.sub_category === sub && n.block === section.title
+                    );
+
+                    return (
+                      <TabsContent key={sub} value={sub} className="space-y-4 mt-4">
+                        {subNotes.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
+                        ) : (
+                          <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
+
+                            {subNotes.map((note) => (
+                              <Card
+                                key={note.id}
+                                className="flex flex-col border-0 justify-between transition-all hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                              >
+
+
+                                <CardHeader>
+                                  <div className="flex items-center gap-2">
+                                    {getTypeIcon(note.file_type)}
+                                    <CardTitle className="text-sm truncate">{note.title}</CardTitle>
+                                    <Badge className={getTypeColor(note.file_type)}>
+                                      {note.file_type.toUpperCase()}
+                                    </Badge>
+                                  </div>
+                                  <CardDescription className="mt-1 line-clamp-3 text-sm">
+                                    {note.description}
+                                  </CardDescription>
+                                  <p className="text-xs text-muted-foreground">
+                                    {note.course && <span>{note.course} · </span>}
+                                    {new Date(note.created_at).toLocaleDateString()}
+                                  </p>
+                                </CardHeader>
+                                <CardContent>
+
+
+                                  {/* Offline download button */}
+                                  <div className="flex gap-2 mt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={async () => {
+                                        await handleDownload(note.id, note.file_url);
+                                      }}
+                                      variant="ghost"
+                                      className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                      Cache
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+
+                                      onClick={async () => {
+                                        setFullscreenNote(note);
+                                        if (session?.user?.id) {
+                                          const { error } = await supabase
+                                            .from("note_views")
+                                            .upsert(
+                                              { note_id: note.id, user_id: session.user.id },
+                                              { onConflict: ["note_id", "user_id"] }
+                                            );
+
+                                          if (!error) {
+                                            setViewCounts((prev) => ({
+                                              ...prev,
+                                              [note.id]: (prev[note.id] || 0) + 1,
+                                            }));
+                                          }
+                                        }
+
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      View
+                                    </Button>
+                                    {/* Delete button for uploader only */}
+                                    {session?.user?.id === note.uploaded_by && (
+                                      <Button
+                                        size="sm"
+
+                                        onClick={() => handleDelete(note)}
+                                        variant="ghost"
+                                        className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    )}
+
+
+                                    {/* Show badge if file is saved offline */}
+                                    {offlineFiles.includes(note.id) && (
+                                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        Preserved
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
+                                    <div className="flex items-center gap-1">
+                                      <Eye className="h-6 w-6" />
+                                      {viewCounts[note.id] || 0}
+                                    </div>
+
+                                    <button
+                                      className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : ""
+                                        }`}
+                                      onClick={() => toggleLike(note.id)}
+                                    >
+                                      <Heart
+                                        className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""
+                                          }`}
+                                      />
+                                      <span>{likeCounts[note.id] || 0}</span>
+                                    </button>
+                                  </div>
+                                </CardContent>
+
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </TabsContent>
+                    );
+                  })}
+                </Tabs>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+        {fullscreenNote && (
+          <div
+            ref={fullscreenRef}
+            className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
+          >
+            {/* Close button */}
+            <div className="flex justify-end p-2">
+              <Button
+                onClick={() => setFullscreenNote(null)}
+                variant="ghost"
+                className="text-current hover:bg-muted/20"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+
+            {/* PDF viewer or iframe */}
+            {fullscreenNote.file_type === "pdf" ? (
+              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                <Viewer
+                  fileUrl={fullscreenNote.file_url}
+                  plugins={[defaultLayoutPluginInstance]}
+                  theme={isDarkMode ? "dark" : "light"}
+                  renderLoader={() => (
+                    <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
+                      <GlobalLoader message="Medrae is Loading PDF..." />
+                    </div>
+                  )}
+                />
+
+              </Worker>
+            ) : (
+              <iframe
+                src={fullscreenNote.file_url}
+                className="flex-1 w-full bg-background text-foreground"
+                style={{ border: "none" }}
+                title={fullscreenNote.title}
               />
-
-            </Worker>
-          ) : (
-            <iframe
-              src={fullscreenNote.file_url}
-              className="flex-1 w-full bg-background text-foreground"
-              style={{ border: "none" }}
-              title={fullscreenNote.title}
-            />
-          )}
-        </div>
-      )}
-
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

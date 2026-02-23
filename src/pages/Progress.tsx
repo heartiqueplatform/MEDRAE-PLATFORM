@@ -206,187 +206,189 @@ export function StudyProgress() {
     ));
 
   return (
-    <div className="space-y-10 w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
-          Study Progress Tracker
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          This tracker measures your learning journey in three ways:
-          <br />• <strong>Progress %</strong> = highest quiz score in the unit.
-          <br />• <strong>Stars</strong> = 5 if at least one quiz attempted.
-          <br />• <strong>Hours Studied</strong> = 1.5 × number of attempts.
-          <br /><br />
-          To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App — your results will automatically update here.
-        </p>
-      </div>
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
+            Study Progress Tracker
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            This tracker measures your learning journey in three ways:
+            <br />• <strong>Progress %</strong> = highest quiz score in the unit.
+            <br />• <strong>Stars</strong> = 5 if at least one quiz attempted.
+            <br />• <strong>Hours Studied</strong> = 1.5 × number of attempts.
+            <br /><br />
+            To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App — your results will automatically update here.
+          </p>
+        </div>
 
-      {/* Overall Stats */}
-      <div className="grid gap-2 md:grid-cols-4 w-full">
+        {/* Overall Stats */}
+        <div className="grid gap-2 md:grid-cols-4 w-full">
 
-        <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+          <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
 
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-2xl font-bold">{Math.round(overallStats.totalProgress)}%</p>
-                <p className="text-sm text-muted-foreground">Overall Progress</p>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="text-2xl font-bold">{Math.round(overallStats.totalProgress)}%</p>
+                  <p className="text-sm text-muted-foreground">Overall Progress</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            </CardContent>
+          </Card>
+          <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
 
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="text-2xl font-bold">{overallStats.totalHours}</p>
-                <p className="text-sm text-muted-foreground">Hours Studied</p>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-8 w-8 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-bold">{overallStats.totalHours}</p>
+                  <p className="text-sm text-muted-foreground">Hours Studied</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
+            </CardContent>
+          </Card>
+          <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
 
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="h-8 w-8 text-green-500" />
-              <div>
-                <p className="text-2xl font-bold">{overallStats.completedTopics}/{overallStats.totalTopics}</p>
-                <p className="text-sm text-muted-foreground">Topics Done</p>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <BookOpen className="h-8 w-8 text-green-500" />
+                <div>
+                  <p className="text-2xl font-bold">{overallStats.completedTopics}/{overallStats.totalTopics}</p>
+                  <p className="text-sm text-muted-foreground">Topics Done</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+            </CardContent>
+          </Card>
+          <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
 
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-2">
-              <Star className="h-8 w-8 text-yellow-500" />
-              <div>
-                <p className="text-2xl font-bold">{overallStats.totalStars}★</p>
-                <p className="text-sm text-muted-foreground">Total Stars Earned</p>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2">
+                <Star className="h-8 w-8 text-yellow-500" />
+                <div>
+                  <p className="text-2xl font-bold">{overallStats.totalStars}★</p>
+                  <p className="text-sm text-muted-foreground">Total Stars Earned</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
-      <SimulationAndTriviaSummary />
-      <Tabs defaultValue="subjects" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="subjects">By Unit</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-        </TabsList>
+        {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
+        <SimulationAndTriviaSummary />
+        <Tabs defaultValue="subjects" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="subjects">By Unit</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline View</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="subjects" className="space-y-4">
-          {subjects.length === 0 && loading ? (
-            <div className="flex justify-center items-center py-10">
-              <GlobalLoader />
-            </div>
-          ) : (
-            <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
+          <TabsContent value="subjects" className="space-y-4">
+            {subjects.length === 0 && loading ? (
+              <div className="flex justify-center items-center py-10">
+                <GlobalLoader />
+              </div>
+            ) : (
+              <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
 
-              {subjects.map((subject) => (
-                <Card key={subject.id} className="transition-all border-0 hover:shadow-lg hover:scale-105 duration-300">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{subject.name}</CardTitle>
-                        <CardDescription>
-                          {subject.topicsCompleted} of {subject.totalTopics} completed Atempt
-                        </CardDescription>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 mb-1">
-                          {renderStars(subject.rating)}
+                {subjects.map((subject) => (
+                  <Card key={subject.id} className="transition-all border-0 hover:shadow-lg hover:scale-105 duration-300">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{subject.name}</CardTitle>
+                          <CardDescription>
+                            {subject.topicsCompleted} of {subject.totalTopics} completed Atempt
+                          </CardDescription>
                         </div>
-                        <Badge variant="secondary">{subject.progress}% Complete</Badge>
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 mb-1">
+                            {renderStars(subject.rating)}
+                          </div>
+                          <Badge variant="secondary">{subject.progress}% Complete</Badge>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{subject.progress}%</span>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>Progress</span>
+                          <span>{subject.progress}%</span>
+                        </div>
+                        <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
                       </div>
-                      <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="text-center">
-                        <p className="font-semibold text-lg">{subject.hoursStudied}</p>
-                        <p className="text-muted-foreground">Hours</p>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="text-center">
+                          <p className="font-semibold text-lg">{subject.hoursStudied}</p>
+                          <p className="text-muted-foreground">Hours</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
+                          <p className="text-muted-foreground">Atempt</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-semibold text-lg">{subject.rating}/5</p>
+                          <p className="text-muted-foreground">Rating</p>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
-                        <p className="text-muted-foreground">Atempt</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-lg">{subject.rating}/5</p>
-                        <p className="text-muted-foreground">Rating</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-        <TabsContent value="timeline">
-          <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+          <TabsContent value="timeline">
+            <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
 
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Learning Timeline
-              </CardTitle>
-              <CardDescription>Your progress over the past weeks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border-l-2 border-primary pl-4">
-                <div className="relative">
-                  <div className="absolute -left-6 w-3 h-3 bg-primary rounded-full" />
-                  <div className="space-y-1">
-                    <p className="font-medium">Completed latest quiz</p>
-                    <p className="text-sm text-muted-foreground">Recently • Updated</p>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5" />
+                  Learning Timeline
+                </CardTitle>
+                <CardDescription>Your progress over the past weeks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border-l-2 border-primary pl-4">
+                  <div className="relative">
+                    <div className="absolute -left-6 w-3 h-3 bg-primary rounded-full" />
+                    <div className="space-y-1">
+                      <p className="font-medium">Completed latest quiz</p>
+                      <p className="text-sm text-muted-foreground">Recently • Updated</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
 
-        <TabsContent value="timeline">
-          <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+          <TabsContent value="timeline">
+            <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
 
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Learning Timeline
-              </CardTitle>
-              <CardDescription>Your progress over the past weeks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border-l-2 border-primary pl-4">
-                <div className="relative">
-                  <div className="absolute -left-6 w-3 h-3 bg-primary rounded-full" />
-                  <div className="space-y-1">
-                    <p className="font-medium">Completed latest quiz</p>
-                    <p className="text-sm text-muted-foreground">Recently • Updated</p>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5" />
+                  Learning Timeline
+                </CardTitle>
+                <CardDescription>Your progress over the past weeks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border-l-2 border-primary pl-4">
+                  <div className="relative">
+                    <div className="absolute -left-6 w-3 h-3 bg-primary rounded-full" />
+                    <div className="space-y-1">
+                      <p className="font-medium">Completed latest quiz</p>
+                      <p className="text-sm text-muted-foreground">Recently • Updated</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div >
   );
 }
 
@@ -501,19 +503,19 @@ function SimulationAndTriviaSummary() {
     // Show popup
     const popup = document.createElement("div");
     popup.className = `
-    fixed inset-0 flex items-center justify-center
-    bg-black/20 dark:bg-black/30 z-50
-  `;
+      fixed inset-0 flex items-center justify-center
+      bg-black/20 dark:bg-black/30 z-50
+      `;
 
     const inner = document.createElement("div");
     inner.innerHTML = `
-     <strong>New target saved: ${targetInput}%!</strong><br/>
-    Stop Guessing. Start Passing.
-  `;
+      <strong>New target saved: ${targetInput}%!</strong><br />
+      Stop Guessing. Start Passing.
+      `;
     inner.className = `
-  px-6 py-4 rounded-xl shadow-lg text-center
-  bg-white dark:bg-gray-800 text-lg font-bold zoom-popup
-`;
+      px-6 py-4 rounded-xl shadow-lg text-center
+      bg-white dark:bg-gray-800 text-lg font-bold zoom-popup
+      `;
 
     popup.appendChild(inner);
     document.body.appendChild(popup);

@@ -430,550 +430,551 @@ export function MedraeQuizzes() {
 
 
   return (
-    <div className="space-y-10 w-full px-2 sm:px-4">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
 
-      {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
+        {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
-            <Heart
-              className="h-8 w-8 text-red-500 animate-pulse"
-              fill="currentColor"
-            />
-            Medrae Quizzes Bank
-          </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
+              <Heart
+                className="h-8 w-8 text-red-500 animate-pulse"
+                fill="currentColor"
+              />
+              Medrae Quizzes Bank
+            </h1>
 
 
-          {/* Collapsible Description */}
+            {/* Collapsible Description */}
 
-          <div className="mt-3">
-            <button
-              onClick={() => setShowDescription(!showDescription)}
-              className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
-            >
-              <motion.span
-                animate={{ rotate: showDescription ? 180 : 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="inline-flex"
+            <div className="mt-3">
+              <button
+                onClick={() => setShowDescription(!showDescription)}
+                className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
               >
-                {/* Arrow SVG rotates automatically */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
+                <motion.span
+                  animate={{ rotate: showDescription ? 180 : 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="inline-flex"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19.5 8.25L12 15.75 4.5 8.25" // down arrow
-                  />
-                </svg>
-              </motion.span>
+                  {/* Arrow SVG rotates automatically */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.5 8.25L12 15.75 4.5 8.25" // down arrow
+                    />
+                  </svg>
+                </motion.span>
 
-              <span>
-                {showDescription
-                  ? "Hide description "
-                  : "Read description. Learn more..."}
-              </span>
-            </button>
+                <span>
+                  {showDescription
+                    ? "Hide description "
+                    : "Read description. Learn more..."}
+                </span>
+              </button>
 
-            <AnimatePresence initial={false}>
-              {showDescription && (
-                <motion.p
-                  key="quiz-description"
-                  className="text-muted-foreground mt-2 text-base leading-relaxed"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
-                >
-                  Explore NCK/NCLEX-aligned quizzes for all core nursing units. Each quiz has been
-                  carefully curated to reflect the NCLEX and Nursing Council of Kenya (NCK) syllabus, with
-                  questions thoughtfully selected to avoid unnecessary repetition. This ensures
-                  broad topic coverage and mirrors the structure of actual NCK assessments.
-                  Remember these quizzes are not just for memorizing; they are designed to help
-                  you understand concepts deeply. Read each question carefully, and pay attention
-                  to additional points beyond the direct answer.
+              <AnimatePresence initial={false}>
+                {showDescription && (
+                  <motion.p
+                    key="quiz-description"
+                    className="text-muted-foreground mt-2 text-base leading-relaxed"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.35, ease: "easeInOut" }}
+                  >
+                    Explore NCK/NCLEX-aligned quizzes for all core nursing units. Each quiz has been
+                    carefully curated to reflect the NCLEX and Nursing Council of Kenya (NCK) syllabus, with
+                    questions thoughtfully selected to avoid unnecessary repetition. This ensures
+                    broad topic coverage and mirrors the structure of actual NCK assessments.
+                    Remember these quizzes are not just for memorizing; they are designed to help
+                    you understand concepts deeply. Read each question carefully, and pay attention
+                    to additional points beyond the direct answer.
 
-                  <span className="font-semibold text-primary block mt-2">
-                    Note: You must finish the quiz to unlock the submit button.
-                  </span>
+                    <span className="font-semibold text-primary block mt-2">
+                      Note: You must finish the quiz to unlock the submit button.
+                    </span>
 
-                  <span className="font-semibold text-primary block mt-1">
-                    Your quiz progress is saved locally, so you can resume later anytime without losing your work.
-                  </span>
+                    <span className="font-semibold text-primary block mt-1">
+                      Your quiz progress is saved locally, so you can resume later anytime without losing your work.
+                    </span>
 
-                </motion.p>
-              )}
-            </AnimatePresence>
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
-
         </div>
-      </div>
 
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
-        <input
-          type="text"
-          placeholder="Search all papers..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
+          <input
+            type="text"
+            placeholder="Search all papers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 p-3 pl-10 rounded-2xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm
                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
                dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
-        />
+          />
 
-        <Button
-          onClick={() => {
-            const allUnits = [...paperOneUnits, ...paperTwoUnits];
-            const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
-            navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
-          }}
-          variant="outline"
-          className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
-        >
-          Surprise Me With a Random Unit
-        </Button>
-
-        <Button
-          onClick={() => {
-            const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
-            let recommendedUnit;
-
-            if (pastUnits.length > 0) {
+          <Button
+            onClick={() => {
               const allUnits = [...paperOneUnits, ...paperTwoUnits];
-              recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
-            }
+              const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+              navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
+            }}
+            variant="outline"
+            className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
+          >
+            Surprise Me With a Random Unit
+          </Button>
 
-            if (!recommendedUnit) {
-              const allUnits = [...paperOneUnits, ...paperTwoUnits];
-              recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
-            }
+          <Button
+            onClick={() => {
+              const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
+              let recommendedUnit;
 
-            if (recommendedUnit) {
-              navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
-            }
-          }}
-          variant="outline"
-          className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
-        >
-          Recommended Quiz
-        </Button>
-      </div>
+              if (pastUnits.length > 0) {
+                const allUnits = [...paperOneUnits, ...paperTwoUnits];
+                recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
+              }
 
-      {/* PAPER FOUR – Full Papers */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-green-600">
-          Full Paper Units
-          <span className="text-sm text-gray-500">
-            ({totalPaperFour.reduce((sum, unit) => sum + unit.totalQuestions, 0)} Questions)
-          </span>
-        </h2>
+              if (!recommendedUnit) {
+                const allUnits = [...paperOneUnits, ...paperTwoUnits];
+                recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+              }
 
-        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
-          {(!hasLocalCache
-            ? paperFourUnits
-            : paperFourUnits.filter((unit) =>
-              unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-          ).map((unit, index) =>
-            !hasLocalCache ? (
-              <div
-                key={index}
-                className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-              ></div>
-            ) : (
-              <Card
-                key={index}
-                className="shadow-md hover:shadow-lg transition-all rounded-2xl"
-                style={{ border: "1px solid #11d111" }}
-              >
+              if (recommendedUnit) {
+                navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
+              }
+            }}
+            variant="outline"
+            className="flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
+          >
+            Recommended Quiz
+          </Button>
+        </div>
 
-                <CardHeader>
-                  <CardTitle className="text-md flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-green-600" />
-                    {unit.title}
-                  </CardTitle>
-                  <CardDescription>{unit.code}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">
-                        {unit.totalQuestions} Questions
-                      </Badge>
-                      <Badge
-                        variant={
-                          unit.level.toLowerCase() === "professional"
-                            ? "default"
-                            : "outline"
-                        }
-                        className={
-                          unit.level.toLowerCase() === "professional"
-                            ? "bg-teal-500 text-white"
-                            : ""
-                        }
-                      >
-                        {unit.level}
-                      </Badge>
+        {/* PAPER FOUR – Full Papers */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-green-600">
+            Full Paper Units
+            <span className="text-sm text-gray-500">
+              ({totalPaperFour.reduce((sum, unit) => sum + unit.totalQuestions, 0)} Questions)
+            </span>
+          </h2>
 
+          <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+            {(!hasLocalCache
+              ? paperFourUnits
+              : paperFourUnits.filter((unit) =>
+                unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+            ).map((unit, index) =>
+              !hasLocalCache ? (
+                <div
+                  key={index}
+                  className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                ></div>
+              ) : (
+                <Card
+                  key={index}
+                  className="shadow-md hover:shadow-lg transition-all rounded-2xl"
+                  style={{ border: "1px solid #11d111" }}
+                >
 
-                      {isPremium ? (
-                        <Badge variant="default" className="bg-green-600 text-white">
-                          Unlocked
+                  <CardHeader>
+                    <CardTitle className="text-md flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-green-600" />
+                      {unit.title}
+                    </CardTitle>
+                    <CardDescription>{unit.code}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">
+                          {unit.totalQuestions} Questions
                         </Badge>
-                      ) : freeUnits.includes(unit.code.trim()) ? (
-                        <Badge variant="default" className="bg-green-600 text-white">
-                          Free
+                        <Badge
+                          variant={
+                            unit.level.toLowerCase() === "professional"
+                              ? "default"
+                              : "outline"
+                          }
+                          className={
+                            unit.level.toLowerCase() === "professional"
+                              ? "bg-teal-500 text-white"
+                              : ""
+                          }
+                        >
+                          {unit.level}
                         </Badge>
+
+
+                        {isPremium ? (
+                          <Badge variant="default" className="bg-green-600 text-white">
+                            Unlocked
+                          </Badge>
+                        ) : freeUnits.includes(unit.code.trim()) ? (
+                          <Badge variant="default" className="bg-green-600 text-white">
+                            Free
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-red-600 border-red-600">
+                            Premium/Pro
+                          </Badge>
+                        )}
+                      </div>
+
+                      {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                        <Link
+                          to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                          onClick={() => {
+                            markUnitStarted(unit.code);
+                            playSound("start");
+                            if (navigator.vibrate) navigator.vibrate(50);
+                          }}
+                        >
+                          <Button
+                            className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+                      ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                          </Button>
+                        </Link>
                       ) : (
-                        <Badge variant="outline" className="text-red-600 border-red-600">
-                          Premium/Pro
-                        </Badge>
+                        <Button className="w-full mt-4" variant="outline" disabled>
+                          Premium/Pro Only
+                        </Button>
                       )}
                     </div>
-
-                    {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                      <Link
-                        to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                        onClick={() => {
-                          markUnitStarted(unit.code);
-                          playSound("start");
-                          if (navigator.vibrate) navigator.vibrate(50);
-                        }}
-                      >
-                        <Button
-                          className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-                      ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
-                        >
-                          <Play className="h-4 w-4 mr-1" />
-                          {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Button className="w-full mt-4" variant="outline" disabled>
-                        Premium/Pro Only
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          )}
+                  </CardContent>
+                </Card>
+              )
+            )}
+          </div>
         </div>
-      </div>
-      {/* PAPER ONE */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-yellow-500">
-          NCK PP1 UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
-        </h2>
-        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+        {/* PAPER ONE */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-yellow-500">
+            NCK PP1 UNITS <span className="text-sm text-gray-500">({totalPaperOne} Questions)</span>
+          </h2>
+          <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
 
 
-          {(!hasLocalCache
-            ? paperOneUnits : paperOneUnits.filter((unit) =>
-              unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-            )).map((unit, index) => (
-              !hasLocalCache
-                ? (
+            {(!hasLocalCache
+              ? paperOneUnits : paperOneUnits.filter((unit) =>
+                unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+              )).map((unit, index) => (
+                !hasLocalCache
+                  ? (
 
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
-                ) : (
-                  <Card
-                    key={index}
-                    className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #e9c80d" }}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-yellow-500" />
-                        {unit.title}
-                      </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">
-                            {cachedCounts[unit.code] !== undefined
-                              ? `${cachedCounts[unit.code]} Questions`
-                              : "0 Questions"}
-                          </Badge>
-
-                          <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">
-                              Unlocked
+                    <div
+                      key={index}
+                      className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                    ></div>
+                  ) : (
+                    <Card
+                      key={index}
+                      className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
+                      style={{ border: "1px solid #e9c80d" }}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-md flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-yellow-500" />
+                          {unit.title}
+                        </CardTitle>
+                        <CardDescription>{unit.code}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary">
+                              {cachedCounts[unit.code] !== undefined
+                                ? `${cachedCounts[unit.code]} Questions`
+                                : "0 Questions"}
                             </Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">
-                              Free
-                            </Badge>
+
+                            <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
+                            {isPremium ? (
+                              <Badge variant="default" className="bg-green-600 text-white">
+                                Unlocked
+                              </Badge>
+                            ) : freeUnits.includes(unit.code.trim()) ? (
+                              <Badge variant="default" className="bg-green-600 text-white">
+                                Free
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-red-600 border-red-600">
+                                Premium/Pro
+                              </Badge>
+                            )}
+                          </div>
+
+                          {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                            <Link
+                              to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                              onClick={() => {
+                                // Mark the unit as started
+                                markUnitStarted(unit.code);
+
+                                // Play start sound
+                                playSound("start"); // just call it by name
+
+                                // Vibrate device (50ms)
+                                if (navigator.vibrate) {
+                                  navigator.vibrate(50);
+                                }
+                              }}
+                            >
+                              <Button
+                                className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+    ${hasStartedQuiz(unit.code)
+                                    ? "bg-green-600 text-white hover:bg-green-700"
+                                    : ""}`}
+                              >
+                                <Play className="h-4 w-4 mr-1" />
+                                {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                              </Button>
+                            </Link>
+
                           ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">
-                              Premium/Pro
-                            </Badge>
+                            <Button className="w-full mt-4" variant="outline" disabled>
+                              Premium/Pro Only
+                            </Button>
                           )}
                         </div>
+                      </CardContent>
+                    </Card>
+                  )
+              ))}
+          </div>
+        </div>
 
-                        {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                          <Link
-                            to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                            onClick={() => {
-                              // Mark the unit as started
-                              markUnitStarted(unit.code);
 
-                              // Play start sound
-                              playSound("start"); // just call it by name
+        {/* PAPER TWO */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-blue-600">
+            NCK PP2 UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
+          </h2>
+          <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+            {(!hasLocalCache
+              ? paperTwoUnits : paperTwoUnits.filter((unit) =>
+                unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+              )).map((unit, index) => (
+                !hasLocalCache
+                  ? (
 
-                              // Vibrate device (50ms)
-                              if (navigator.vibrate) {
-                                navigator.vibrate(50);
+                    <div
+                      key={index}
+                      className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                    ></div>
+                  ) : (
+                    <Card
+                      key={index}
+                      className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
+                      style={{ border: "1px solid #191de6" }}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-md flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-blue-600" />
+                          {unit.title}
+                        </CardTitle>
+                        <CardDescription>{unit.code}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary">
+                              {cachedCounts[unit.code] !== undefined
+                                ? `${cachedCounts[unit.code]} Questions`
+                                : "0 Questions"}
+                            </Badge>
+
+                            <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
+                            {isPremium ? (
+                              <Badge variant="default" className="bg-green-600 text-white">
+                                Unlocked
+                              </Badge>
+                            ) : freeUnits.includes(unit.code.trim()) ? (
+                              <Badge variant="default" className="bg-green-600 text-white">
+                                Free
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-red-600 border-red-600">
+                                Premium/Pro
+                              </Badge>
+                            )}
+                          </div>
+
+                          {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                            <Link
+                              to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                              onClick={() => {
+                                markUnitStarted(unit.code);
+                                playSound("start");
+                                if (navigator.vibrate) navigator.vibrate(50);
+                              }}
+                            >
+                              <Button
+                                className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+    ${hasStartedQuiz(unit.code)
+                                    ? "bg-green-600 text-white hover:bg-green-700"
+                                    : ""}`}
+                              >
+                                <Play className="h-4 w-4 mr-1" />
+                                {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button className="w-full mt-4" variant="outline" disabled>
+                              Premium/Pro Only
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+              ))}
+          </div>
+        </div>
+
+        {/* PAPER THREE */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-purple-600">
+            NCLEX Mastery Units <span className="text-sm text-gray-500">({totalPaperThree} Questions)</span>
+          </h2>
+          <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+
+
+            {(!hasLocalCache
+              ? paperThreeUnits : paperThreeUnits.filter((unit) =>
+                unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+              )).map((unit, index) => (
+                !hasLocalCache
+                  ? (
+
+                    <div
+                      key={index}
+                      className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                    ></div>
+                  ) : (
+                    <Card
+                      key={index}
+                      className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
+                      style={{ border: "1px solid #ce0dd4" }}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-md flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-purple-600" />
+                          {unit.title}
+                        </CardTitle>
+                        <CardDescription>{unit.code}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary">
+                              {cachedCounts[unit.code] !== undefined
+                                ? `${cachedCounts[unit.code]} Questions`
+                                : "0 Questions"}
+                            </Badge>
+
+                            <Badge
+                              variant={
+                                unit.level.toLowerCase() === "foundation" ? "default" :
+                                  unit.level.toLowerCase() === "professional" ? "secondary" :
+                                    unit.level.toLowerCase() === "expert" ? "destructive" :
+                                      "outline"
                               }
-                            }}
-                          >
-                            <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-    ${hasStartedQuiz(unit.code)
-                                  ? "bg-green-600 text-white hover:bg-green-700"
-                                  : ""}`}
+                              className={
+                                unit.level.toLowerCase() === "foundation" ? "bg-yellow-400 text-black" :
+                                  unit.level.toLowerCase() === "professional" ? "bg-teal-500 text-white" :
+                                    unit.level.toLowerCase() === "expert" ? "bg-purple-600 text-white" :
+                                      ""
+                              }
                             >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
-                            </Button>
-                          </Link>
-
-                        ) : (
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-            ))}
-        </div>
-      </div>
-
-
-      {/* PAPER TWO */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-blue-600">
-          NCK PP2 UNITS <span className="text-sm text-gray-500">({totalPaperTwo} Questions)</span>
-        </h2>
-        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
-          {(!hasLocalCache
-            ? paperTwoUnits : paperTwoUnits.filter((unit) =>
-              unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-            )).map((unit, index) => (
-              !hasLocalCache
-                ? (
-
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
-                ) : (
-                  <Card
-                    key={index}
-                    className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #191de6" }}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-blue-600" />
-                        {unit.title}
-                      </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">
-                            {cachedCounts[unit.code] !== undefined
-                              ? `${cachedCounts[unit.code]} Questions`
-                              : "0 Questions"}
-                          </Badge>
-
-                          <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">
-                              Unlocked
+                              {unit.level}
                             </Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">
-                              Free
-                            </Badge>
+
+                            {isPremium ? (
+                              <Badge variant="default" className="bg-green-600 text-white">
+                                Unlocked
+                              </Badge>
+                            ) : freeUnits.includes(unit.code.trim()) ? (
+                              <Badge variant="default" className="bg-green-600 text-white">
+                                Free
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-red-600 border-red-600">
+                                Premium/Pro
+                              </Badge>
+                            )}
+                          </div>
+
+                          {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                            <Link
+                              to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                              onClick={() => {
+                                markUnitStarted(unit.code);
+                                playSound("start");
+                                if (navigator.vibrate) navigator.vibrate(50);
+                              }}
+                            >
+                              <Button
+                                className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+    ${hasStartedQuiz(unit.code)
+                                    ? "bg-green-600 text-white hover:bg-green-700"
+                                    : ""}`}
+                              >
+                                <Play className="h-4 w-4 mr-1" />
+                                {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                              </Button>
+                            </Link>
                           ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">
-                              Premium/Pro
-                            </Badge>
+
+                            <Button className="w-full mt-4" variant="outline" disabled>
+                              Premium/Pro Only
+                            </Button>
                           )}
                         </div>
-
-                        {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                          <Link
-                            to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                            onClick={() => {
-                              markUnitStarted(unit.code);
-                              playSound("start");
-                              if (navigator.vibrate) navigator.vibrate(50);
-                            }}
-                          >
-                            <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-    ${hasStartedQuiz(unit.code)
-                                  ? "bg-green-600 text-white hover:bg-green-700"
-                                  : ""}`}
-                            >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
-                            </Button>
-                          </Link>
-                        ) : (
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-            ))}
+                      </CardContent>
+                    </Card>
+                  )
+              ))}
+          </div>
         </div>
+
+
+
+        {/* Progress */}
+        <Card className="border-0">
+          <CardHeader>
+            <CardTitle>Your Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
+            </p>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* PAPER THREE */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold text-purple-600">
-          NCLEX Mastery Units <span className="text-sm text-gray-500">({totalPaperThree} Questions)</span>
-        </h2>
-        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
-
-
-          {(!hasLocalCache
-            ? paperThreeUnits : paperThreeUnits.filter((unit) =>
-              unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-            )).map((unit, index) => (
-              !hasLocalCache
-                ? (
-
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
-                ) : (
-                  <Card
-                    key={index}
-                    className=" shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #ce0dd4" }}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-purple-600" />
-                        {unit.title}
-                      </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">
-                            {cachedCounts[unit.code] !== undefined
-                              ? `${cachedCounts[unit.code]} Questions`
-                              : "0 Questions"}
-                          </Badge>
-
-                          <Badge
-                            variant={
-                              unit.level.toLowerCase() === "foundation" ? "default" :
-                                unit.level.toLowerCase() === "professional" ? "secondary" :
-                                  unit.level.toLowerCase() === "expert" ? "destructive" :
-                                    "outline"
-                            }
-                            className={
-                              unit.level.toLowerCase() === "foundation" ? "bg-yellow-400 text-black" :
-                                unit.level.toLowerCase() === "professional" ? "bg-teal-500 text-white" :
-                                  unit.level.toLowerCase() === "expert" ? "bg-purple-600 text-white" :
-                                    ""
-                            }
-                          >
-                            {unit.level}
-                          </Badge>
-
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">
-                              Unlocked
-                            </Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">
-                              Free
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">
-                              Premium/Pro
-                            </Badge>
-                          )}
-                        </div>
-
-                        {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                          <Link
-                            to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                            onClick={() => {
-                              markUnitStarted(unit.code);
-                              playSound("start");
-                              if (navigator.vibrate) navigator.vibrate(50);
-                            }}
-                          >
-                            <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-    ${hasStartedQuiz(unit.code)
-                                  ? "bg-green-600 text-white hover:bg-green-700"
-                                  : ""}`}
-                            >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
-                            </Button>
-                          </Link>
-                        ) : (
-
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-            ))}
-        </div>
-      </div>
-
-
-
-      {/* Progress */}
-      <Card className="border-0">
-        <CardHeader>
-          <CardTitle>Your Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
-          </p>
-        </CardContent>
-      </Card>
-
     </div>
   );
 }

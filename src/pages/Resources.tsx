@@ -676,237 +676,237 @@ export function Resources() {
   }
 
   return (
-    <div className="space-y-10 w-full px-2 sm:px-4">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
 
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
-            Notes & Resources
-          </h1>
-          <div className="mt-3">
-            <button
-              onClick={() => setShowDescription(!showDescription)}
-              className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
-            >
-              <motion.span
-                animate={{ rotate: showDescription ? 180 : 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="inline-flex"
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
+              Notes & Resources
+            </h1>
+            <div className="mt-3">
+              <button
+                onClick={() => setShowDescription(!showDescription)}
+                className="text-primary font-semibold flex items-center gap-2 hover:text-primary/80 transition-colors"
               >
-                {/* Down arrow SVG rotates */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
+                <motion.span
+                  animate={{ rotate: showDescription ? 180 : 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="inline-flex"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19.5 8.25L12 15.75 4.5 8.25"
-                  />
-                </svg>
-              </motion.span>
+                  {/* Down arrow SVG rotates */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.5 8.25L12 15.75 4.5 8.25"
+                    />
+                  </svg>
+                </motion.span>
 
-              <span>
-                {showDescription
-                  ? "Hide description "
-                  : "Read description. Learn more... "}
-              </span>
-            </button>
+                <span>
+                  {showDescription
+                    ? "Hide description "
+                    : "Read description. Learn more... "}
+                </span>
+              </button>
 
-            <AnimatePresence initial={false}>
-              {showDescription && (
-                <motion.div
-                  key="notes-description"
-                  className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.35, ease: "easeInOut" }}
-                >
-                  <p className="text-muted-foreground mt-2">
-                    This page provides access to a wide range of study materials and references.
-                    While some notes may appear mixed across blocks and semesters, they are
-                    organized to align closely with the curriculum used in most Kenyan KMTC and
-                    private institutions. This ensures you’ll find diverse, high-quality content
-                    to support your learning, research, and personal note uploads.
-                  </p>
+              <AnimatePresence initial={false}>
+                {showDescription && (
+                  <motion.div
+                    key="notes-description"
+                    className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.35, ease: "easeInOut" }}
+                  >
+                    <p className="text-muted-foreground mt-2">
+                      This page provides access to a wide range of study materials and references.
+                      While some notes may appear mixed across blocks and semesters, they are
+                      organized to align closely with the curriculum used in most Kenyan KMTC and
+                      private institutions. This ensures you’ll find diverse, high-quality content
+                      to support your learning, research, and personal note uploads.
+                    </p>
 
-                  <p className="text-sm text-muted-foreground italic mt-1">
-                    Well-organized notes aligned with KMTC and private institution curricula
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <p className="text-sm text-muted-foreground italic mt-1">
+                      Well-organized notes aligned with KMTC and private institution curricula
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
 
         </div>
 
-      </div>
 
+        {showUploadForm && (
+          <div className="p-4 border rounded-lg space-y-4 bg-muted/10 px-2 sm:px-4">
 
-      {showUploadForm && (
-        <div className="p-4 border rounded-lg space-y-4 bg-muted/10 px-2 sm:px-4">
+            <h2 className="text-xl font-semibold">Upload New Resource</h2>
+            <div className="grid gap-4 md:grid-cols-2 px-0">
 
-          <h2 className="text-xl font-semibold">Upload New Resource</h2>
-          <div className="grid gap-4 md:grid-cols-2 px-0">
-
-            <Input
-              placeholder="Course (optional)"
-              value={uploadForm.course}
-              onChange={(e) => {
-                const value = e.target.value;
-                setUploadForm({ ...uploadForm, course: value });
-                localStorage.setItem("selectedCourse", value); // ✅ remember optional course
-              }}
-            />
-
-            <Input
-              placeholder="Short description"
-              value={uploadForm.description}
-              onChange={(e) =>
-                setUploadForm({ ...uploadForm, description: e.target.value })
-              }
-            />
-            <select
-              value={uploadForm.block}
-              onChange={(e) =>
-                setUploadForm({ ...uploadForm, block: e.target.value })
-              }
-              className="border rounded px-3 py-2 text-sm bg-gray-100 text-black"
-            >
-              {blockCategories.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={uploadForm.fileType}
-              onChange={(e) =>
-                setUploadForm({ ...uploadForm, fileType: e.target.value })
-              }
-              className="border rounded px-3 py-2 text-sm bg-gray-100 text-black"
-            >
-              <option value="pdf">PDF</option>
-              <option value="video">Video</option>
-              <option value="audio">Audio</option>
-              <option value="link">Link</option>
-            </select>
-            <Input
-              type="file"
-              accept=".pdf"
-              multiple
-              onChange={(e) => {
-                if (!e.target.files) return;
-                const selected = Array.from(e.target.files);
-                setFiles(selected); // ✅ keep in state
-                uploadBatchResources(e.target.files); // ✅ start upload
-              }}
-            />
-
-
-          </div>
-          {uploading ? (
-            <div className="flex gap-2">
-              <Button disabled>
-                Uploading...
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  uploadAbortController.current?.abort(); // stop Supabase upload
-                  setUploading(false);
-                  setUploadProgress(null);
-                  setFile(null); // ✅ clear file input
-                  setUploadForm({
-                    title: "",
-                    description: "",
-                    block: "PTS",
-                    course: localStorage.getItem("selectedCourse") || "",
-                    fileType: "pdf",
-                  }); // ✅ reset form
-                  alert("Upload canceled!");
+              <Input
+                placeholder="Course (optional)"
+                value={uploadForm.course}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setUploadForm({ ...uploadForm, course: value });
+                  localStorage.setItem("selectedCourse", value); // ✅ remember optional course
                 }}
+              />
+
+              <Input
+                placeholder="Short description"
+                value={uploadForm.description}
+                onChange={(e) =>
+                  setUploadForm({ ...uploadForm, description: e.target.value })
+                }
+              />
+              <select
+                value={uploadForm.block}
+                onChange={(e) =>
+                  setUploadForm({ ...uploadForm, block: e.target.value })
+                }
+                className="border rounded px-3 py-2 text-sm bg-gray-100 text-black"
               >
-                Cancel Upload
+                {blockCategories.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={uploadForm.fileType}
+                onChange={(e) =>
+                  setUploadForm({ ...uploadForm, fileType: e.target.value })
+                }
+                className="border rounded px-3 py-2 text-sm bg-gray-100 text-black"
+              >
+                <option value="pdf">PDF</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+                <option value="link">Link</option>
+              </select>
+              <Input
+                type="file"
+                accept=".pdf"
+                multiple
+                onChange={(e) => {
+                  if (!e.target.files) return;
+                  const selected = Array.from(e.target.files);
+                  setFiles(selected); // ✅ keep in state
+                  uploadBatchResources(e.target.files); // ✅ start upload
+                }}
+              />
+
+
+            </div>
+            {uploading ? (
+              <div className="flex gap-2">
+                <Button disabled>
+                  Uploading...
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    uploadAbortController.current?.abort(); // stop Supabase upload
+                    setUploading(false);
+                    setUploadProgress(null);
+                    setFile(null); // ✅ clear file input
+                    setUploadForm({
+                      title: "",
+                      description: "",
+                      block: "PTS",
+                      course: localStorage.getItem("selectedCourse") || "",
+                      fileType: "pdf",
+                    }); // ✅ reset form
+                    alert("Upload canceled!");
+                  }}
+                >
+                  Cancel Upload
+                </Button>
+
+              </div>
+            ) : (
+              <Button onClick={uploadResource}>
+                Submit Resource
               </Button>
-
-            </div>
-          ) : (
-            <Button onClick={uploadResource}>
-              Submit Resource
-            </Button>
-          )}
-          {uploadProgress !== null && (
-            <div className="w-full mt-2 space-y-1">
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
+            )}
+            {uploadProgress !== null && (
+              <div className="w-full mt-2 space-y-1">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground text-right">
+                  {(() => {
+                    const totalSize = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024); // MB
+                    const uploaded = (uploadProgress / 100) * totalSize;
+                    return `${uploaded.toFixed(2)} MB / ${totalSize.toFixed(2)} MB (${uploadProgress.toFixed(0)}%)`;
+                  })()}
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground text-right">
-                {(() => {
-                  const totalSize = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024); // MB
-                  const uploaded = (uploadProgress / 100) * totalSize;
-                  return `${uploaded.toFixed(2)} MB / ${totalSize.toFixed(2)} MB (${uploadProgress.toFixed(0)}%)`;
-                })()}
-              </div>
-            </div>
-          )}
+            )}
 
 
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="relative flex-1 px-2 sm:px-0">
+
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search resources..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => setShowUploadForm(!showUploadForm)}
+            className="whitespace-nowrap"
+          >
+            {showUploadForm ? "Cancel Upload" : "New Upload"}
+          </Button>
         </div>
-      )}
-      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-        <div className="relative flex-1 px-2 sm:px-0">
-
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search resources..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
-          />
-
-        </div>
-
-        <Button
-          variant="outline"
-          onClick={() => setShowUploadForm(!showUploadForm)}
-          className="whitespace-nowrap"
-        >
-          {showUploadForm ? "Cancel Upload" : "New Upload"}
-        </Button>
-      </div>
 
 
 
-      {/* Static Block Selector Below Search */}
-      <div className="relative mt-4 w-full flex justify-start px-2 sm:px-0">
+        {/* Static Block Selector Below Search */}
+        <div className="relative mt-4 w-full flex justify-start px-2 sm:px-0">
 
 
-        {/* ✅ Screen Overlay */}
-        {floatingBlockOpen && (
-          <div
-            className="
+          {/* ✅ Screen Overlay */}
+          {floatingBlockOpen && (
+            <div
+              className="
         fixed inset-0 z-40
         bg-black/70
         transition-opacity
       "
-            onClick={() => setFloatingBlockOpen(false)}
-          />
-        )}
+              onClick={() => setFloatingBlockOpen(false)}
+            />
+          )}
 
-        {/* Button */}
-        <Button
-          onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
-          className="
+          {/* Button */}
+          <Button
+            onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
+            className="
     relative z-40 text-lg
     bg-gray-100 text-gray-900
     dark:bg-gray-800 dark:text-gray-100
@@ -915,37 +915,37 @@ export function Resources() {
     w-full sm:w-auto
     flex items-center gap-2
   "
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="1.5"
-            stroke="currentColor"
-            className="!w-10 !h-10"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-            />
-          </svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="!w-10 !h-10"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+              />
+            </svg>
 
-          Choose Block OR Semester here
-        </Button>
+            Choose Block OR Semester here
+          </Button>
 
-        {/* Floating Animated Dropdown with Full-Screen Overlay */}
-        {floatingBlockOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Overlay */}
-            <div
-              className="absolute inset-0 bg-black/60"
-              onClick={() => setFloatingBlockOpen(false)} // click outside closes
-            />
+          {/* Floating Animated Dropdown with Full-Screen Overlay */}
+          {floatingBlockOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              {/* Overlay */}
+              <div
+                className="absolute inset-0 bg-black/60"
+                onClick={() => setFloatingBlockOpen(false)} // click outside closes
+              />
 
-            {/* Dropdown Card */}
-            <div
-              className="
+              {/* Dropdown Card */}
+              <div
+                className="
         relative z-50
         w-80 sm:w-96
         bg-white dark:bg-gray-800
@@ -955,272 +955,273 @@ export function Resources() {
         duration-200
         p-4
       "
-            >
+              >
 
-              {blockCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedBlock(cat.id);
-                    setFloatingBlockOpen(false);
-                  }}
-                  className={`
+                {blockCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setSelectedBlock(cat.id);
+                      setFloatingBlockOpen(false);
+                    }}
+                    className={`
             w-full text-left px-4 py-2 text-sm
             hover:bg-blue-100 dark:hover:bg-blue-700
             transition-colors
             ${selectedBlock === cat.id ? "font-bold" : ""}
           `}
-                >
-                  {cat.name}
-                </button>
-              ))}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
 
-      {/* Tabs content controlled by selectedBlock */}
-      <div className="space-y-4 mt-2 px-2 sm:px-0">
+        {/* Tabs content controlled by selectedBlock */}
+        <div className="space-y-4 mt-2 px-2 sm:px-0">
 
-        {/* Dynamic Heading for Selected Block */}
-        <h2 className="text-2xl font-bold mb-4">
-          {blockCategories.find((cat) => cat.id === selectedBlock)?.name.split("/").pop()}
-        </h2>
+          {/* Dynamic Heading for Selected Block */}
+          <h2 className="text-2xl font-bold mb-4">
+            {blockCategories.find((cat) => cat.id === selectedBlock)?.name.split("/").pop()}
+          </h2>
 
-        {blockCategories
-          .filter((cat) => cat.id === selectedBlock)
-          .map((cat) => (
-            <div key={cat.id}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 w-full">
-                {loadingNotes ? (
-                  <div className="flex flex-col items-center justify-center py-20 col-span-full">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                    <p className="text-muted-foreground text-center">
-                      Medrae is preparing your notes...
-                    </p>
-                  </div>
-                ) : filteredResources.filter((note) =>
-                  cat.id === "OTHER"
-                    ? !blockCategories
-                      .slice(0, 7)
-                      .some((b) => (note.block || "").toUpperCase() === b.id)
-                    : (note.block || "").toUpperCase() === cat.id
-                ).length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 col-span-full">
-                    <p className="text-muted-foreground text-center">
-                      No notes available for this category yet. Check back soon for updates!
-                    </p>
-                  </div>
-                ) : (
-                  filteredResources
-                    .filter((note) =>
-                      cat.id === "OTHER"
-                        ? !blockCategories
-                          .slice(0, 7)
-                          .some((b) => (note.block || "").toUpperCase() === b.id)
-                        : (note.block || "").toUpperCase() === cat.id
-                    )
-                    .map((note) => (
-                      <Card
-                        key={note.id}
-                        className="flex flex-col justify-between transition-all border-0 hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
-                      >
+          {blockCategories
+            .filter((cat) => cat.id === selectedBlock)
+            .map((cat) => (
+              <div key={cat.id}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                  {loadingNotes ? (
+                    <div className="flex flex-col items-center justify-center py-20 col-span-full">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                      <p className="text-muted-foreground text-center">
+                        Medrae is preparing your notes...
+                      </p>
+                    </div>
+                  ) : filteredResources.filter((note) =>
+                    cat.id === "OTHER"
+                      ? !blockCategories
+                        .slice(0, 7)
+                        .some((b) => (note.block || "").toUpperCase() === b.id)
+                      : (note.block || "").toUpperCase() === cat.id
+                  ).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 col-span-full">
+                      <p className="text-muted-foreground text-center">
+                        No notes available for this category yet. Check back soon for updates!
+                      </p>
+                    </div>
+                  ) : (
+                    filteredResources
+                      .filter((note) =>
+                        cat.id === "OTHER"
+                          ? !blockCategories
+                            .slice(0, 7)
+                            .some((b) => (note.block || "").toUpperCase() === b.id)
+                          : (note.block || "").toUpperCase() === cat.id
+                      )
+                      .map((note) => (
+                        <Card
+                          key={note.id}
+                          className="flex flex-col justify-between transition-all border-0 hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                        >
 
 
-                        <CardHeader>
-                          <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 sm:gap-2 px-2 sm:px-0">
-                            <div className="space-y-2">
-                              <div className="flex flex-wrap items-center gap-2">
-                                {getTypeIcon(note.file_type)}
-                                <CardTitle className="text-lg">{note.title}</CardTitle>
-                                <Badge className={getTypeColor(note.file_type)}>
-                                  {note.file_type.toUpperCase()}
-                                </Badge>
+                          <CardHeader>
+                            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 sm:gap-2 px-2 sm:px-0">
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {getTypeIcon(note.file_type)}
+                                  <CardTitle className="text-lg">{note.title}</CardTitle>
+                                  <Badge className={getTypeColor(note.file_type)}>
+                                    {note.file_type.toUpperCase()}
+                                  </Badge>
+                                </div>
+                                <CardDescription>{note.description}</CardDescription>
+                                <div className="text-sm text-muted-foreground flex flex-wrap gap-2">
+                                  {note.course && <span>{note.course}</span>}
+                                  <span>· Uploaded {new Date(note.created_at).toLocaleDateString()}</span>
+                                </div>
                               </div>
-                              <CardDescription>{note.description}</CardDescription>
-                              <div className="text-sm text-muted-foreground flex flex-wrap gap-2">
-                                {note.course && <span>{note.course}</span>}
-                                <span>· Uploaded {new Date(note.created_at).toLocaleDateString()}</span>
-                              </div>
+
                             </div>
+                          </CardHeader>
 
-                          </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-2 px-2 sm:px-0">
-                          {note.file_type === "pdf" && (
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-
-                                onClick={async () => {
-                                  try {
-                                    const file = await getFile(note.id);
-                                    if (file) {
-                                      const url = URL.createObjectURL(file);
-                                      setFullscreenNote({ ...note, file_url: url });
-                                    } else {
-                                      setFullscreenNote(note);
-                                    }
-
-                                    const { error } = await supabase
-                                      .from("note_views")
-                                      .upsert(
-                                        { note_id: note.id, user_id: session?.user?.id || null },
-                                        { onConflict: ['note_id', 'user_id'] }
-                                      );
-
-                                    if (error) console.error("Error recording view:", error);
-                                    else
-                                      setViewCounts((prev) => ({
-                                        ...prev,
-                                        [note.id]: (prev[note.id] || 0) + 1,
-                                      }));
-
-                                    if (!error) {
-                                      setViewCounts((prev) => ({
-                                        ...prev,
-                                        [note.id]: (prev[note.id] || 0) + 1,
-                                      }));
-                                    }
-                                  } catch (err) {
-                                    console.error("Unexpected error recording view:", err);
-                                  }
-                                }}
-                              >
-                                <Eye className="h-4 w-4" />View
-                              </Button>
-
-                              <Button
-                                size="sm"
-                                onClick={async () => await handleDownload(note.id, note.file_url)}
-                                variant="ghost"
-                                className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {/* ✅ Updated download icon */}
-                                <Download className="h-3 w-3" /> Cache
-                              </Button>
-
-                              {offlineFiles.includes(note.id) && (
-                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 w-full sm:w-auto">
-                                  Preserved
-                                </Badge>
-                              )}
-
-
-                              {session?.user?.id === note.uploaded_by && (
+                          <CardContent className="space-y-2 px-2 sm:px-0">
+                            {note.file_type === "pdf" && (
+                              <div className="flex flex-wrap gap-2">
                                 <Button
-
                                   size="sm"
                                   variant="ghost"
-                                  className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
 
                                   onClick={async () => {
-                                    if (!confirm("Are you sure you want to delete this note?")) return;
-
                                     try {
-                                      const url = note.file_url;
-                                      const parts = url.split("/notes/");
-                                      const storagePath = parts[1];
-
-                                      if (storagePath) {
-                                        const { error: storageError } = await supabase.storage
-                                          .from("notes")
-                                          .remove([storagePath]);
-                                        if (storageError) console.error("Storage deletion error:", storageError);
+                                      const file = await getFile(note.id);
+                                      if (file) {
+                                        const url = URL.createObjectURL(file);
+                                        setFullscreenNote({ ...note, file_url: url });
+                                      } else {
+                                        setFullscreenNote(note);
                                       }
 
-                                      const { error: dbError } = await supabase
-                                        .from("notes")
-                                        .delete()
-                                        .eq("id", note.id);
-                                      if (dbError) {
-                                        console.error("DB deletion error:", dbError);
-                                        alert("Failed to delete note");
-                                        return;
-                                      }
+                                      const { error } = await supabase
+                                        .from("note_views")
+                                        .upsert(
+                                          { note_id: note.id, user_id: session?.user?.id || null },
+                                          { onConflict: ['note_id', 'user_id'] }
+                                        );
 
-                                      setNotes((prev) => prev.filter((n) => n.id !== note.id));
-                                      alert("Note deleted successfully!");
+                                      if (error) console.error("Error recording view:", error);
+                                      else
+                                        setViewCounts((prev) => ({
+                                          ...prev,
+                                          [note.id]: (prev[note.id] || 0) + 1,
+                                        }));
+
+                                      if (!error) {
+                                        setViewCounts((prev) => ({
+                                          ...prev,
+                                          [note.id]: (prev[note.id] || 0) + 1,
+                                        }));
+                                      }
                                     } catch (err) {
-                                      console.error("Unexpected deletion error:", err);
-                                      alert("Something went wrong while deleting the note");
+                                      console.error("Unexpected error recording view:", err);
                                     }
                                   }}
                                 >
-                                  {/* ✅ Updated trash icon */}
-                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  <Eye className="h-4 w-4" />View
                                 </Button>
-                              )}
-                            </div>
-                          )}
 
-                          <div className="text-sm text-muted-foreground flex flex-wrap gap-8 items-center">
-                            <div className="flex items-center gap-1">
-                              <Eye className="h-6 w-6" />
-                              <span>{viewCounts[note.id] || 0}</span>
-                            </div>
+                                <Button
+                                  size="sm"
+                                  onClick={async () => await handleDownload(note.id, note.file_url)}
+                                  variant="ghost"
+                                  className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {/* ✅ Updated download icon */}
+                                  <Download className="h-3 w-3" /> Cache
+                                </Button>
 
-                            <button
-                              onClick={() => toggleLike(note.id)}
-                              className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
-                                }`}
-                            >
-                              <Heart className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
-                              <span>{likeCounts[note.id] || 0}</span>
-                            </button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                )}
+                                {offlineFiles.includes(note.id) && (
+                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 w-full sm:w-auto">
+                                    Preserved
+                                  </Badge>
+                                )}
+
+
+                                {session?.user?.id === note.uploaded_by && (
+                                  <Button
+
+                                    size="sm"
+                                    variant="ghost"
+                                    className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+
+                                    onClick={async () => {
+                                      if (!confirm("Are you sure you want to delete this note?")) return;
+
+                                      try {
+                                        const url = note.file_url;
+                                        const parts = url.split("/notes/");
+                                        const storagePath = parts[1];
+
+                                        if (storagePath) {
+                                          const { error: storageError } = await supabase.storage
+                                            .from("notes")
+                                            .remove([storagePath]);
+                                          if (storageError) console.error("Storage deletion error:", storageError);
+                                        }
+
+                                        const { error: dbError } = await supabase
+                                          .from("notes")
+                                          .delete()
+                                          .eq("id", note.id);
+                                        if (dbError) {
+                                          console.error("DB deletion error:", dbError);
+                                          alert("Failed to delete note");
+                                          return;
+                                        }
+
+                                        setNotes((prev) => prev.filter((n) => n.id !== note.id));
+                                        alert("Note deleted successfully!");
+                                      } catch (err) {
+                                        console.error("Unexpected deletion error:", err);
+                                        alert("Something went wrong while deleting the note");
+                                      }
+                                    }}
+                                  >
+                                    {/* ✅ Updated trash icon */}
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="text-sm text-muted-foreground flex flex-wrap gap-8 items-center">
+                              <div className="flex items-center gap-1">
+                                <Eye className="h-6 w-6" />
+                                <span>{viewCounts[note.id] || 0}</span>
+                              </div>
+
+                              <button
+                                onClick={() => toggleLike(note.id)}
+                                className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
+                                  }`}
+                              >
+                                <Heart className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
+                                <span>{likeCounts[note.id] || 0}</span>
+                              </button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-      </div>
-
-
-
-
-      {fullscreenNote && (
-        <div
-          ref={fullscreenRef}
-          className="fixed inset-0 bg-black z-50 flex flex-col"
-        >
-          <div className="flex justify-end p-2">
-            <Button
-              onClick={() => setFullscreenNote(null)}
-              variant="ghost"
-              className="text-white"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-          {fullscreenNote.file_type === 'pdf' ? (
-            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-
-              <Viewer
-                fileUrl={fullscreenNote.file_url}
-                plugins={[defaultLayoutPluginInstance]}
-                theme={isDarkMode ? "dark" : "light"}
-                renderLoader={() => <GlobalLoader message="Medrae is Downloading PDF..." />}
-              />
-            </Worker>
-
-          ) : (
-            <iframe
-              src={fullscreenNote.file_url}
-              className="flex-1 w-full"
-              style={{ border: "none" }}
-              title={fullscreenNote.title}
-            />
-          )}
-
+            ))}
         </div>
-      )}
+
+
+
+
+        {fullscreenNote && (
+          <div
+            ref={fullscreenRef}
+            className="fixed inset-0 bg-black z-50 flex flex-col"
+          >
+            <div className="flex justify-end p-2">
+              <Button
+                onClick={() => setFullscreenNote(null)}
+                variant="ghost"
+                className="text-white"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            {fullscreenNote.file_type === 'pdf' ? (
+              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+
+                <Viewer
+                  fileUrl={fullscreenNote.file_url}
+                  plugins={[defaultLayoutPluginInstance]}
+                  theme={isDarkMode ? "dark" : "light"}
+                  renderLoader={() => <GlobalLoader message="Medrae is Downloading PDF..." />}
+                />
+              </Worker>
+
+            ) : (
+              <iframe
+                src={fullscreenNote.file_url}
+                className="flex-1 w-full"
+                style={{ border: "none" }}
+                title={fullscreenNote.title}
+              />
+            )}
+
+          </div>
+        )}
+      </div>
     </div>
   );
 }

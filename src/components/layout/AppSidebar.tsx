@@ -278,12 +278,12 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const visibleMainItems = isFooterMounted ? mainItems.filter(item => !footerRoutes.includes(item.url)) : mainItems;
 
   const learningItems = [
-    { title: "Assessment Tracker", url: "/calendar", icon: Calendar, iconTone: "learning", badge: `${totalEvents}E` },
-    { title: "Study Progress", url: "/progress", icon: TrendingUp, iconTone: "progress", badge: `${totalStars}★` },
     { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice", badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
+    { title: "Study Progress", url: "/progress", icon: TrendingUp, iconTone: "progress", badge: `${totalStars}★` },
     { title: "Proctorium Lite", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice", badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" },
     { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content", badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
+    { title: "Assessment Tracker", url: "/calendar", icon: Calendar, iconTone: "learning", badge: `${totalEvents}E` },
   ];
 
 

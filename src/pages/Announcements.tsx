@@ -124,41 +124,62 @@ export function Announcements() {
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
-            <Bell className="h-8 w-8" />
-            Announcements
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Stay updated with important notifications and updates
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
+
+              Announcements
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Stay updated with important notifications and updates
+            </p>
+          </div>
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="px-3 py-1">
+              {unreadCount} unread
+            </Badge>
+          )}
         </div>
-        {unreadCount > 0 && (
-          <Badge variant="destructive" className="px-3 py-1">
-            {unreadCount} unread
-          </Badge>
-        )}
-      </div>
 
-      <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">All ({announcements.length})</TabsTrigger>
-          <TabsTrigger value="pinned">Pinned ({pinnedAnnouncements.length})</TabsTrigger>
-          <TabsTrigger value="unread">Unread ({unreadCount})</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="all" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="all">All ({announcements.length})</TabsTrigger>
+            <TabsTrigger value="pinned">Pinned ({pinnedAnnouncements.length})</TabsTrigger>
+            <TabsTrigger value="unread">Unread ({unreadCount})</TabsTrigger>
+          </TabsList>
 
-        {/* All */}
-        <TabsContent value="all" className="space-y-4">
-          {pinnedAnnouncements.length > 0 && (
+          {/* All */}
+          <TabsContent value="all" className="space-y-4">
+            {pinnedAnnouncements.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Pin className="h-5 w-5" />
+                  Pinned Announcements
+                </h3>
+                {pinnedAnnouncements.map((a) => (
+                  <AnnouncementCard
+                    key={a.id}
+                    announcement={a}
+                    markAsRead={markAsRead}
+                    readAnnouncements={readAnnouncements}
+                    getTypeIcon={getTypeIcon}
+                    getTypeColor={getTypeColor}
+                    getPriorityColor={getPriorityColor}
+                    formatDate={formatDate}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Regular */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Pin className="h-5 w-5" />
-                Pinned Announcements
-              </h3>
-              {pinnedAnnouncements.map((a) => (
+              {pinnedAnnouncements.length > 0 && (
+                <h3 className="text-lg font-semibold">Recent Announcements</h3>
+              )}
+              {regularAnnouncements.map((a) => (
                 <AnnouncementCard
                   key={a.id}
                   announcement={a}
@@ -171,14 +192,11 @@ export function Announcements() {
                 />
               ))}
             </div>
-          )}
+          </TabsContent>
 
-          {/* Regular */}
-          <div className="space-y-4">
-            {pinnedAnnouncements.length > 0 && (
-              <h3 className="text-lg font-semibold">Recent Announcements</h3>
-            )}
-            {regularAnnouncements.map((a) => (
+          {/* Pinned */}
+          <TabsContent value="pinned" className="space-y-4">
+            {pinnedAnnouncements.map((a) => (
               <AnnouncementCard
                 key={a.id}
                 announcement={a}
@@ -190,43 +208,27 @@ export function Announcements() {
                 formatDate={formatDate}
               />
             ))}
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        {/* Pinned */}
-        <TabsContent value="pinned" className="space-y-4">
-          {pinnedAnnouncements.map((a) => (
-            <AnnouncementCard
-              key={a.id}
-              announcement={a}
-              markAsRead={markAsRead}
-              readAnnouncements={readAnnouncements}
-              getTypeIcon={getTypeIcon}
-              getTypeColor={getTypeColor}
-              getPriorityColor={getPriorityColor}
-              formatDate={formatDate}
-            />
-          ))}
-        </TabsContent>
-
-        {/* Unread */}
-        <TabsContent value="unread" className="space-y-4">
-          {announcements
-            .filter((a) => !readAnnouncements.includes(a.id))
-            .map((a) => (
-              <AnnouncementCard
-                key={a.id}
-                announcement={a}
-                markAsRead={markAsRead}
-                readAnnouncements={readAnnouncements}
-                getTypeIcon={getTypeIcon}
-                getTypeColor={getTypeColor}
-                getPriorityColor={getPriorityColor}
-                formatDate={formatDate}
-              />
-            ))}
-        </TabsContent>
-      </Tabs>
+          {/* Unread */}
+          <TabsContent value="unread" className="space-y-4">
+            {announcements
+              .filter((a) => !readAnnouncements.includes(a.id))
+              .map((a) => (
+                <AnnouncementCard
+                  key={a.id}
+                  announcement={a}
+                  markAsRead={markAsRead}
+                  readAnnouncements={readAnnouncements}
+                  getTypeIcon={getTypeIcon}
+                  getTypeColor={getTypeColor}
+                  getPriorityColor={getPriorityColor}
+                  formatDate={formatDate}
+                />
+              ))}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
@@ -242,8 +244,7 @@ function AnnouncementCard({
 }: any) {
   return (
     <Card
-      className={`${announcement.pinned ? "border-l-4 border-l-primary" : ""
-        } ${!readAnnouncements.includes(announcement.id) ? "bg-muted/20" : ""}`}
+      className={`${!readAnnouncements.includes(announcement.id) ? "bg-muted/20 border-0" : ""}`}
     >
       <CardHeader>
         <div className="flex items-start justify-between">

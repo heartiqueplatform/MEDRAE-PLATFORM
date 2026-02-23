@@ -228,195 +228,198 @@ export function Settings() {
 
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto px-0 sm:px-6 lg:px-6 py-10 border-0">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
 
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-medical border-0 bg-clip-text text-transparent flex items-center gap-2">
-          <SettingsIcon className="h-8 w-8" />
-          Settings
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your profile information
-        </p>
+        <Card className="w-full border-0 overflow-hidden p-6">
+          <CardHeader className="flex flex-col items-center text-center">
+            <CardTitle className="flex items-center gap-2 text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
+
+              Settings
+            </CardTitle>
+            <CardDescription className="mt-2 text-muted-foreground">
+              Manage your profile information
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-1">
+            <TabsTrigger value="profile" className="flex items-center gap-1">
+              <User className="h-4 w-4" />
+              Profile
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="profile">
+            <Card className=" border-0">
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>
+                  Update your personal and academic details
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Avatar */}
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage
+                      src={avatarPreview || "/placeholder.svg"}
+                      className="object-cover"
+                    />
+
+                    <AvatarFallback className="text-lg">
+                      {profile.name?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                    />
+                    <div className="flex gap-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4 mr-1" /> Remove Avatar
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Remove your avatar?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. Your profile picture
+                              will be permanently removed.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleRemoveAvatar}>
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      JPG, PNG or GIF. Max size 10MB.
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Personal Info */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={profile.name || ""}
+                      onChange={(e) => handleChange("name", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={profile.username || ""}
+                      onChange={(e) => handleChange("username", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      value={profile.email || ""}
+                      onChange={(e) => handleChange("email", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={profile.phone || ""}
+                      onChange={(e) => handleChange("phone", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Academic Info */}
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" />
+                    Academic Information
+                  </h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="institution">Institution</Label>
+                      <Input
+                        id="institution"
+                        value={profile.institution || ""}
+                        onChange={(e) =>
+                          handleChange("institution", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="course">Course</Label>
+                      <Input
+                        id="course"
+                        value={profile.course || ""}
+                        onChange={(e) => handleChange("course", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="block">Block</Label>
+                      <Input
+                        id="block"
+                        value={profile.block || ""}
+                        onChange={(e) => handleChange("block", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="county">County</Label>
+                      <Input
+                        id="county"
+                        value={profile.county || ""}
+                        onChange={(e) => handleChange("county", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio</Label>
+                    <Input
+                      id="bio"
+                      value={profile.bio || ""}
+                      onChange={(e) => handleChange("bio", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <Button
+                  onClick={handleSaveProfile}
+                  className="flex items-center gap-2"
+                  disabled={loading}
+                >
+                  <Save className="h-4 w-4" />
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="profile" className="flex items-center gap-1">
-            <User className="h-4 w-4" />
-            Profile
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile">
-          <Card className=" border-0">
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your personal and academic details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Avatar */}
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage
-                    src={avatarPreview || "/placeholder.svg"}
-                    className="object-cover"
-                  />
-
-                  <AvatarFallback className="text-lg">
-                    {profile.name?.[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                  />
-                  <div className="flex gap-2">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                          <Trash2 className="h-4 w-4 mr-1" /> Remove Avatar
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Remove your avatar?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. Your profile picture
-                            will be permanently removed.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleRemoveAvatar}>
-                            Remove
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    JPG, PNG or GIF. Max size 10MB.
-                  </p>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Personal Info */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={profile.name || ""}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={profile.username || ""}
-                    onChange={(e) => handleChange("username", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    value={profile.email || ""}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={profile.phone || ""}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Academic Info */}
-              <Separator />
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5" />
-                  Academic Information
-                </h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="institution">Institution</Label>
-                    <Input
-                      id="institution"
-                      value={profile.institution || ""}
-                      onChange={(e) =>
-                        handleChange("institution", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="course">Course</Label>
-                    <Input
-                      id="course"
-                      value={profile.course || ""}
-                      onChange={(e) => handleChange("course", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="block">Block</Label>
-                    <Input
-                      id="block"
-                      value={profile.block || ""}
-                      onChange={(e) => handleChange("block", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="county">County</Label>
-                    <Input
-                      id="county"
-                      value={profile.county || ""}
-                      onChange={(e) => handleChange("county", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Input
-                    id="bio"
-                    value={profile.bio || ""}
-                    onChange={(e) => handleChange("bio", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Save Button */}
-              <Button
-                onClick={handleSaveProfile}
-                className="flex items-center gap-2"
-                disabled={loading}
-              >
-                <Save className="h-4 w-4" />
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
-
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }

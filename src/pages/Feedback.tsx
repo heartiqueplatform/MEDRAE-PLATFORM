@@ -118,146 +118,148 @@ export function Feedback() {
     ));
 
   return (
-    <div className="grid gap-4 grid-cols-1 px-3 lg:grid-cols-2 w-full">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+      <div className="w-full max-w-3xl space-y-10 px-3 sm:px-6">
 
-      {/* Left: Submit Feedback */}
-      <Card className="px-3 border-0">
-        <CardHeader>
-          <CardTitle>Submit New Feedback</CardTitle>
-          <CardDescription>
-            Help us improve by sharing your thoughts and suggestions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Anonymous toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="anonymous"
-                checked={isAnonymous}
-                onCheckedChange={setIsAnonymous}
-              />
-              <Label htmlFor="anonymous">Submit anonymously</Label>
-            </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={feedback.category}
-                onValueChange={(value) =>
-                  setFeedback((prev) => ({ ...prev, category: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select feedback category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="suggestion">Suggestion</SelectItem>
-                  <SelectItem value="complaint">Complaint</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="feature-request">Feature Request</SelectItem>
-                  <SelectItem value="performance">Performance Issue</SelectItem>
-                  <SelectItem value="ui-ux">UI/UX Feedback</SelectItem>
-                  <SelectItem value="data-error">Data Error</SelectItem>
-                  <SelectItem value="security">Security Concern</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-
-              </Select>
-            </div>
-
-            {/* Subject */}
-            <div className="space-y-2">
-              <Label htmlFor="subject">Subject *</Label>
-              <Input
-                id="subject"
-                placeholder="Brief description of your feedback"
-                value={feedback.subject}
-                onChange={(e) =>
-                  setFeedback((prev) => ({ ...prev, subject: e.target.value }))
-                }
-              />
-            </div>
-
-            {/* Rating */}
-            <div className="space-y-2">
-              <Label>Rating</Label>
-              <div className="flex items-center gap-1">
-                {renderStars(feedback.rating)}
-                <span className="ml-2 text-sm text-muted-foreground">
-                  {feedback.rating > 0 && `${feedback.rating}/5`}
-                </span>
+        {/* Left: Submit Feedback */}
+        <Card className="px-3 border-0">
+          <CardHeader>
+            <CardTitle>Submit New Feedback</CardTitle>
+            <CardDescription>
+              Help us improve by sharing your thoughts and suggestions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Anonymous toggle */}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="anonymous"
+                  checked={isAnonymous}
+                  onCheckedChange={setIsAnonymous}
+                />
+                <Label htmlFor="anonymous">Submit anonymously</Label>
               </div>
-            </div>
 
-            {/* Message */}
-            <div className="space-y-2">
-              <Label htmlFor="message">Message *</Label>
-              <Textarea
-                id="message"
-                placeholder="Your detailed feedback"
-                className="min-h-[120px]"
-                value={feedback.message}
-                onChange={(e) =>
-                  setFeedback((prev) => ({ ...prev, message: e.target.value }))
-                }
-              />
-            </div>
+              {/* Category */}
+              <div className="space-y-2">
+                <Label htmlFor="category">Category *</Label>
+                <Select
+                  value={feedback.category}
+                  onValueChange={(value) =>
+                    setFeedback((prev) => ({ ...prev, category: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select feedback category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bug">Bug</SelectItem>
+                    <SelectItem value="suggestion">Suggestion</SelectItem>
+                    <SelectItem value="complaint">Complaint</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="feature-request">Feature Request</SelectItem>
+                    <SelectItem value="performance">Performance Issue</SelectItem>
+                    <SelectItem value="ui-ux">UI/UX Feedback</SelectItem>
+                    <SelectItem value="data-error">Data Error</SelectItem>
+                    <SelectItem value="security">Security Concern</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
 
-            <Button type="submit" className="flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              {isConfirming ? "Click again to confirm & send" : "Submit Feedback"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card >
-      {/* Right: My Feedback History */}
-      < Card className="px-3 border-0" >
-        <CardHeader>
-          <CardTitle>My Feedback</CardTitle>
-          <CardDescription>See what you sent and admin replies.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
+                </Select>
+              </div>
 
-          {myFeedback.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
-          ) : (
-            myFeedback.map((fb) => (
-              <div key={fb.id} className="p-3 border rounded-lg space-y-2">
-                {/* Subject + Category */}
-                <div className="flex justify-between items-center">
-                  <p className="font-medium">{fb.subject}</p>
-                  <span className="text-xs text-muted-foreground">{fb.category}</span>
+              {/* Subject */}
+              <div className="space-y-2">
+                <Label htmlFor="subject">Subject *</Label>
+                <Input
+                  id="subject"
+                  placeholder="Brief description of your feedback"
+                  value={feedback.subject}
+                  onChange={(e) =>
+                    setFeedback((prev) => ({ ...prev, subject: e.target.value }))
+                  }
+                />
+              </div>
+
+              {/* Rating */}
+              <div className="space-y-2">
+                <Label>Rating</Label>
+                <div className="flex items-center gap-1">
+                  {renderStars(feedback.rating)}
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {feedback.rating > 0 && `${feedback.rating}/5`}
+                  </span>
                 </div>
+              </div>
 
-                {/* User Message */}
-                <div className="bg-gray-700 text-white border-l-4 border-gray-400 p-2 text-sm">
-                  <strong>You:</strong> {fb.message}
-                </div>
+              {/* Message */}
+              <div className="space-y-2">
+                <Label htmlFor="message">Message *</Label>
+                <Textarea
+                  id="message"
+                  placeholder="Your detailed feedback"
+                  className="min-h-[120px]"
+                  value={feedback.message}
+                  onChange={(e) =>
+                    setFeedback((prev) => ({ ...prev, message: e.target.value }))
+                  }
+                />
+              </div>
 
+              <Button type="submit" className="flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                {isConfirming ? "Click again to confirm & send" : "Submit Feedback"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card >
+        {/* Right: My Feedback History */}
+        < Card className="px-3 border-0" >
+          <CardHeader>
+            <CardTitle>My Feedback</CardTitle>
+            <CardDescription>See what you sent and admin replies.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-background">
 
-                {/* Admin Reply */}
-                {fb.admin_response ? (
-                  <div className="bg-green-50 text-gray-900 border-l-4 border-green-500 p-2 text-sm dark:bg-green-900 dark:text-green-100">
-                    <strong>Admin:</strong> {fb.admin_response}
+            {myFeedback.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
+            ) : (
+              myFeedback.map((fb) => (
+                <div key={fb.id} className="p-3 border rounded-lg space-y-2">
+                  {/* Subject + Category */}
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">{fb.subject}</p>
+                    <span className="text-xs text-muted-foreground">{fb.category}</span>
                   </div>
 
-                ) : (
-                  <p className="text-xs italic text-muted-foreground">No reply yet</p>
-                )}
+                  {/* User Message */}
+                  <div className="bg-gray-700 text-white border-l-4 border-gray-400 p-2 text-sm">
+                    <strong>You:</strong> {fb.message}
+                  </div>
 
-                {/* Extra Info */}
-                <p className="text-xs text-muted-foreground">
-                  Rating: {fb.rating ? `${fb.rating}/5` : "N/A"} • Status: {fb.status} • Sent on{" "}
-                  {new Date(fb.submitted_at).toLocaleString()}
-                </p>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card >
-    </div >
+
+                  {/* Admin Reply */}
+                  {fb.admin_response ? (
+                    <div className="bg-green-50 text-gray-900 border-l-4 border-green-500 p-2 text-sm dark:bg-green-900 dark:text-green-100">
+                      <strong>Admin:</strong> {fb.admin_response}
+                    </div>
+
+                  ) : (
+                    <p className="text-xs italic text-muted-foreground">No reply yet</p>
+                  )}
+
+                  {/* Extra Info */}
+                  <p className="text-xs text-muted-foreground">
+                    Rating: {fb.rating ? `${fb.rating}/5` : "N/A"} • Status: {fb.status} • Sent on{" "}
+                    {new Date(fb.submitted_at).toLocaleString()}
+                  </p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card >
+      </div >
+    </div>
   );
 }
