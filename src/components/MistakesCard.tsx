@@ -242,7 +242,7 @@ export function MistakesCard() {
                     <CardDescription>High-impact mistakes students struggle with the most. Tap a card to expand and learn more...</CardDescription>
                 </CardHeader>
 
-                <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-4 custom-scrollbar pb-2 scroll-smooth">
+                <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-2 custom-scrollbar pb-2 scroll-smooth px-1">
 
 
                     {data
@@ -254,7 +254,7 @@ export function MistakesCard() {
                                 <motion.div
                                     key={item.question_id}
                                     onClick={() => setExpandedCard({ ...item, index: i })}
-                                    className="w-[calc(100vw-1rem)] sm:w-[80%] md:w-[320px] flex-shrink-0 hover:mistake-card-glow transition-all mt-4"
+                                    className="w-[calc(100vw-1rem)] sm:w-[80%] md:w-[320px] flex-shrink-0 hover:mistake-card-glow transition-all mt-4 first:ml-0"
                                     initial={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 120 }}
                                     transition={{ type: "spring", stiffness: 260, damping: 22 }}

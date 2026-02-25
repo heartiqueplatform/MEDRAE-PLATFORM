@@ -151,16 +151,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-
       // Initial fetch
       const { count, error } = await supabase
         .from("user_mistakes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("resolved", false);
-
       if (!error) setMistakeCount(count || 0);
-
       // Subscribe to changes for this user
       const subscription = supabase
         .channel(`user_mistakes_real_time_${user.id}`)
@@ -183,13 +180,10 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
           }
         )
         .subscribe();
-
       return () => supabase.removeChannel(subscription);
     };
-
     fetchCount();
   }, []);
-
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -204,18 +198,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     "/my-mistakes",
     "/progress",
   ];
-
   // Footer is mounted only on mobile
   const isFooterMounted = windowWidth < 768;
-
-
   const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
-
   const handleCollapse = () => {
     // Collapse sidebar on mobile
     if (windowWidth < 1024) toggleSidebar();
   };
-
   const toggleGroup = (group: string) => {
     setOpenGroups(prev =>
       prev.includes(group)
@@ -273,10 +262,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai", badge: "New" },
     { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },
   ];
-
-
   const visibleMainItems = isFooterMounted ? mainItems.filter(item => !footerRoutes.includes(item.url)) : mainItems;
-
   const learningItems = [
     { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice", badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
     { title: "Study Progress", url: "/progress", icon: TrendingUp, iconTone: "progress", badge: `${totalStars}★` },
@@ -285,27 +271,21 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content", badge: totalNotes !== null ? `${formatNumber(totalNotes)}` : "Loading..." },
     { title: "Assessment Tracker", url: "/calendar", icon: Calendar, iconTone: "learning", badge: `${totalEvents}E` },
   ];
-
-
   const visibleLearningItems = isFooterMounted ? learningItems.filter(item => !footerRoutes.includes(item.url)) : learningItems;
-
   const mediaItems = [
     { title: "MedTube", url: "/medtube", icon: PlayFilledIcon, iconTone: "media", badge: totalVideos !== null ? `${formatNumber(totalVideos)} Videos` : "Loading..." },
   ];
-
   const otherItems = [
     { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" },
     { title: "Feedback Box", url: "/feedback", icon: MessageSquareX, iconTone: "communication" },
     { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" },
     { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" },
   ];
-
   const tutorItems = userRole === "tutor" ? [
     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" },
     { title: "Create Content", url: "/create", icon: BookOpen, iconTone: "content" },
     { title: "Earnings", url: "/earnings", icon: Star, iconTone: "finance" },
   ] : [];
-
   const staffItems = userRole === "staff" ? [
     { title: "Knowledge Feed", url: "/knowledge", icon: Network, iconTone: "content" },
     { title: "Post Videos", url: "/post-videos", icon: Video, iconTone: "media" },
@@ -313,13 +293,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "Job Board", url: "/jobs", icon: Briefcase, iconTone: "people" },
     { title: "Write Articles", url: "/articles", icon: PenTool, iconTone: "content" },
   ] : [];
-
-
-  // Fetch unread messages and listen for live updates
-  // ----- UNREAD MESSAGES & ANNOUNCEMENTS -----
-
-
-
   // ----- TOTAL QUESTIONS -----
   useEffect(() => {
     const fetchTotalQuestions = async () => {
@@ -361,11 +334,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     const fetchTotalNotes = async () => {
       const stored = localStorage.getItem("totalNotes");
       if (stored) setTotalNotes(parseInt(stored));
-
       const { count, error } = await supabase
         .from("notes")
         .select("*", { count: "exact", head: true });
-
       if (!error) {
         setTotalNotes(count || 0);
         localStorage.setItem("totalNotes", String(count || 0));
@@ -379,11 +350,9 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     const fetchTotalVideos = async () => {
       const stored = localStorage.getItem("totalVideos");
       if (stored) setTotalVideos(parseInt(stored));
-
       const { count, error } = await supabase
         .from("medtube_videos")
         .select("*", { count: "exact", head: true });
-
       if (!error) {
         setTotalVideos(count || 0);
         localStorage.setItem("totalVideos", String(count || 0));
@@ -391,30 +360,27 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     };
     fetchTotalVideos();
   }, []);
+
   // ----- TOTAL EVENTS -----
   useEffect(() => {
     const fetchTotalEvents = async () => {
       const stored = localStorage.getItem("totalEvents");
       if (stored) setTotalEvents(parseInt(stored));
-
       const { count, error } = await supabase
         .from("calendar_events") // 👈 replace with your actual table name
         .select("*", { count: "exact", head: true });
-
       if (!error) {
         setTotalEvents(count || 0);
         localStorage.setItem("totalEvents", String(count || 0));
       }
     };
-
     fetchTotalEvents();
   }, []);
 
   // ----- TOTAL STARS -----
   useEffect(() => {
     let isMounted = true; // avoid state updates if unmounted
-
-    // 1️⃣ Load cached stars immediately
+    //  Load cached stars immediately
     const cached = localStorage.getItem("study_progress_cache");
     if (cached) {
       try {
@@ -424,29 +390,24 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         console.error("Error reading cached stars for sidebar:", e);
       }
     }
-
-    // 2️⃣ Function to fetch latest stars from Supabase
+    // Function to fetch latest stars from Supabase
     const fetchStars = async () => {
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
-
       if (userError || !user) {
         console.error("User not found or auth error in sidebar");
         return;
       }
-
       const { data, error } = await supabase
         .from("quiz_results")
         .select("unit, score, total_questions")
         .eq("user_id", user.id);
-
       if (error) {
         console.error("Error fetching quiz results for sidebar:", error.message);
         return;
       }
-
       // Group results by unit
       const grouped: Record<string, { count: number }> = {};
       data?.forEach((res) => {
@@ -454,18 +415,14 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         if (!grouped[key]) grouped[key] = { count: 1 };
         else grouped[key].count += 1;
       });
-
       // Only include units whose latest attempt > 0
       const unitsToInclude = Object.keys(grouped).filter((unitName) => {
         const attempts = data?.filter((r) => r.unit === unitName) || [];
         const latestAttempt = attempts[attempts.length - 1]; // assume last is latest
         return latestAttempt?.score && latestAttempt.score > 0;
       });
-
       const totalStars = unitsToInclude.length * 5;
-
       if (isMounted) setTotalStars(totalStars);
-
       // Update localStorage cache for other components
       try {
         const cached = JSON.parse(localStorage.getItem("study_progress_cache") || "{}");
@@ -477,9 +434,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         console.error("Error saving sidebar stars to cache:", e);
       }
     };
-
     fetchStars(); // initial fetch
-
     // 3️⃣ Realtime subscription for updates
     const channel = supabase
       .channel("quiz_results_changes_sidebar")
@@ -489,21 +444,15 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         fetchStars
       )
       .subscribe();
-
     return () => {
       isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
-
-
-
   // Reset unread count when clicking Chat Room
   const handleChatClick = async () => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user) return;
-
-    // You need to know which message(s) to mark as read
     // For example, fetch the first unread message delivered to this user
     const { data: messagesData, error: fetchError } = await supabase
       .from('messages')
@@ -511,14 +460,11 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       .contains('delivered_to', [user.id])
       .not('read_by', 'cs', [user.id])
       .limit(1);
-
     if (fetchError || !messagesData || messagesData.length === 0) {
       setUnreadCount(0);
       return;
     }
-
     const messageId = messagesData[0].id;
-
     // Call the RPC function to safely append the user ID
     const { error: rpcError } = await supabase.rpc('append_to_read_by', {
       message_id: messageId,
@@ -529,9 +475,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
     setUnreadCount(0);
   };
-
-
-
   return (
     <Sidebar
       className={`fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300

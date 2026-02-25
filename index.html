@@ -4,45 +4,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-
   <link rel="icon" type="image/png" href="/favicon.png" />
-
-  <title>Medrae – NCK Exam Revision Questions & Study Plan (Kenya)</title>
-
+  <title>Medrae-NCK Exam Revision Questions & Study Plan (Kenya)</title>
   <meta name="description"
     content="Preparing for the NCK exam? Medrae provides 5,000+ NCK-style practice questions, instant explanations, structured revision by unit, and performance tracking to help you pass with confidence." />
-
   <meta name="author" content="Medrae" />
-
   <meta name="keywords"
     content="NCK exam revision, NCK practice questions, Kenya nursing exam prep, NCK past papers, nursing revision Kenya, DigiProctor practice NCK, NCK mock exams" />
-
   <link rel="canonical" href="https://medrae.com/" />
-
   <meta property="og:title" content="Medrae – Pass Your NCK Exam with Structured Practice" />
-
   <meta property="og:description"
     content="Train like the real NCK exam. Get DigiProctor-style timed practice, instant explanations, categorized units, and smart review of failed questions." />
-
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://medrae.com/" />
   <meta property="og:image" content="/assets/og-image.png" />
-
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@medrae_network" />
-
   <meta name="twitter:title" content="Medrae – NCK Exam Practice & Revision Platform" />
-
   <meta name="twitter:description"
     content="Stop relying on random PDFs. Practice 5,000+ NCK-style questions with instant explanations and track every weak unit until you master it." />
-
   <meta name="twitter:image" content="/assets/og-image.png" />
-
   <meta name="theme-color" content="#1e90ff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -58,23 +43,19 @@
 
 <body style="margin:0; height:100%;">
   <div id="root" style="height:100%;"></div>
-
   <!-- Load React app -->
   <script type="module">
     import("/src/main.tsx");
   </script>
-
   <!-- Theme + splash logic (UNCHANGED) -->
   <script>
     let userTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
     document.documentElement.classList.add(userTheme);
-
     const bgColor = userTheme === 'dark' ? '#000' : '#fff';
     document.documentElement.style.backgroundColor = bgColor;
     document.body.style.backgroundColor = bgColor;
-
     const firstVisit = !localStorage.getItem('hasVisited');
     if (firstVisit) {
       localStorage.setItem('hasVisited', 'true');
@@ -99,7 +80,6 @@
       document.head.appendChild(styleEl);
     }
   </script>
-
 </body>
 
 </html>
