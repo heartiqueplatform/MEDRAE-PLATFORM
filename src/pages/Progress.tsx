@@ -253,7 +253,7 @@ export function StudyProgress() {
             {/* Overall Stats */}
             <div className="grid gap-2 md:grid-cols-4 w-full">
 
-              <Card className="w-full sm:w-auto  border-0 mistake-card-glow">
+              <Card className="w-full sm:w-auto  border-0 hover:shadow-lg duration-300">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -265,7 +265,7 @@ export function StudyProgress() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full sm:w-auto border-0 mistake-card-glow">
+              <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -277,7 +277,7 @@ export function StudyProgress() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full sm:w-auto border-0 mistake-card-glow">
+              <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -289,7 +289,7 @@ export function StudyProgress() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full sm:w-auto mistake-card-glow">
+              <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -324,7 +324,7 @@ export function StudyProgress() {
               <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
 
                 {subjects.map((subject) => (
-                  <Card key={subject.id} className=" border-0 mistake-card-glow">
+                  <Card key={subject.id} className=" border-0 hover:shadow-lg duration-300">
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
@@ -371,7 +371,7 @@ export function StudyProgress() {
           </TabsContent>
 
           <TabsContent value="timeline">
-            <Card className="w-full sm:w-auto border-0  mistake-card-glow">
+            <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
