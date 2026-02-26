@@ -253,7 +253,7 @@ export function StudyProgress() {
             {/* Overall Stats */}
             <div className="grid gap-2 md:grid-cols-4 w-full">
 
-              <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+              <Card className="w-full sm:w-auto  border-0 mistake-card-glow">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -265,7 +265,7 @@ export function StudyProgress() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <Card className="w-full sm:w-auto border-0 mistake-card-glow">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -277,7 +277,7 @@ export function StudyProgress() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full sm:w-auto border-0 hover:shadow-lg hover:scale-105 transition-all duration-300">
+              <Card className="w-full sm:w-auto border-0 mistake-card-glow">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -289,7 +289,7 @@ export function StudyProgress() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+              <Card className="w-full sm:w-auto mistake-card-glow">
 
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2">
@@ -321,10 +321,10 @@ export function StudyProgress() {
                 <GlobalLoader />
               </div>
             ) : (
-              <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
+              <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
 
                 {subjects.map((subject) => (
-                  <Card key={subject.id} className="transition-all border-0 hover:shadow-lg hover:scale-105 duration-300">
+                  <Card key={subject.id} className=" border-0 mistake-card-glow">
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
@@ -371,7 +371,7 @@ export function StudyProgress() {
           </TabsContent>
 
           <TabsContent value="timeline">
-            <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
+            <Card className="w-full sm:w-auto border-0  mistake-card-glow">
 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -395,29 +395,7 @@ export function StudyProgress() {
           </TabsContent>
 
 
-          <TabsContent value="timeline">
-            <Card className="w-full sm:w-auto hover:shadow-lg border-0 hover:scale-105 transition-all duration-300">
 
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Learning Timeline
-                </CardTitle>
-                <CardDescription>Your progress over the past weeks</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border-l-2 border-primary pl-4">
-                  <div className="relative">
-                    <div className="absolute -left-6 w-3 h-3 bg-primary rounded-full" />
-                    <div className="space-y-1">
-                      <p className="font-medium">Completed latest quiz</p>
-                      <p className="text-sm text-muted-foreground">Recently • Updated</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div >
@@ -786,9 +764,9 @@ Take a moment to review your mistakes and try again improvement comes fast when 
 
 
       {/* CARD GRID */}
-      <div className="grid gap-4 md:grid-cols-2 w-full">
+      <div className="grid gap-1 md:grid-cols-2 w-full">
         {/* SIMULATION CARD */}
-        <Card className="hover:shadow-lg hover:-translate-y-1 border-0 transition-all">
+        <Card className="hover:shadow-lg  border-0 ">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-blue-500" /> Simulation Paper Summary</CardTitle>
             <CardDescription>Your overall performance in full mock exams</CardDescription>
@@ -813,7 +791,7 @@ Take a moment to review your mistakes and try again improvement comes fast when 
         </Card>
 
         {/* TRIVIA CARD */}
-        <Card className="hover:shadow-lg hover:-translate-y-1 border-0 transition-all">
+        <Card className="hover:shadow-lg  border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" /> Daily Short Test Summary</CardTitle>
             <CardDescription>Your performance in quick daily tests</CardDescription>
