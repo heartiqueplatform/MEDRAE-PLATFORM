@@ -39,7 +39,7 @@ export function GlobalLoader() {
       : "border-t-red-400 border-r-yellow-400 border-b-green-400 border-l-blue-400";
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen w-full gap-6 bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="relative flex flex-col items-center justify-center min-h-screen w-full gap-6 overflow-hidden bg-transparent">
 
       {/* Background Doodles */}
       <MedicalDoodles />
