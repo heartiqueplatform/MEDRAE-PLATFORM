@@ -194,7 +194,7 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
     <div className="flex h-screen w-full overflow-hidden bg-background relative">
 
       {/* Medical Doodle Background */}
-      <MedicalDoodles />
+      <MedicalDoodles className="-z-10 pointer-events-none" />
       <div className="relative z-10 flex w-full">
 
         <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
