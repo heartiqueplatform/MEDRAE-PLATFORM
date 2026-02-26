@@ -5,7 +5,7 @@ import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
 
 import { Outlet } from "react-router-dom";
-
+import { MedicalDoodles } from "@/components/MedicalDoodles";
 import { useEffect, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -191,15 +191,19 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
   const showMusic = !disabledPages.includes(window.location.pathname);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-background relative">
 
-      <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
+      {/* Medical Doodle Background */}
+      <MedicalDoodles />
+      <div className="relative z-10 flex w-full">
 
-      <div className="flex flex-col flex-1 overflow-hidden">
+        <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
 
-        <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
-        <main
-          className={`
+        <div className="flex flex-col flex-1 overflow-hidden">
+
+          <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
+          <main
+            className={`
     flex-1 box-border
     px-0
     py-4
@@ -207,26 +211,27 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
     overflow-auto
     custom-scrollbar
   `}
-        >
-          {/* This renders the child route */}
-          <Outlet />
+          >
+            {/* This renders the child route */}
+            <Outlet />
 
-          {/* Footer spacer — only on non-forum pages */}
-          {!isForum && <div className="h-20 shrink-0" />}
-        </main>
+            {/* Footer spacer — only on non-forum pages */}
+            {!isForum && <div className="h-20 shrink-0" />}
+          </main>
 
-        {!isSidebarOpen && (
-          <BottomBar
-            userRole={userRole}
-            unreadCount={0}
-            unreadAnnouncements={0}
-          />
-        )}
+          {!isSidebarOpen && (
+            <BottomBar
+              userRole={userRole}
+              unreadCount={0}
+              unreadAnnouncements={0}
+            />
+          )}
 
-        <Footer mistakeCount={0} />
+          <Footer mistakeCount={0} />
 
-        {/* ------------------- Floating Music Player ------------------- */}
-        {showMusic && <MusicPlayer />}
+          {/* ------------------- Floating Music Player ------------------- */}
+          {showMusic && <MusicPlayer />}
+        </div>
       </div>
     </div>
   );
