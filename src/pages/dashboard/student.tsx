@@ -1678,39 +1678,41 @@ export default function StudentDashboard() {
                   {/* Daily Thought Textarea */}
                   <textarea
                     className="w-full p-3 rounded-none sm:rounded-md
-        bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
+      bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 border-0"
                     placeholder="Write today's thought..."
                     value={dailyContent}
                     onChange={(e) => setDailyContent(e.target.value)}
                   />
 
-                  {/* Visibility Selector */}
-                  <div className="flex flex-col sm:flex-row items-center gap-2 mt-2">
-                    <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
-                    <select
-                      value={dailyDuration}
-                      onChange={(e) => setDailyDuration(e.target.value as any)}
-                      className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-none sm:rounded-md w-full sm:w-40"
-                    >
-                      <option value="24h">24 Hours</option>
-                      <option value="1w">1 Week</option>
-                      <option value="1m">1 Month</option>
-                      <option value="3m">3 Months</option>
-                    </select>
-                  </div>
+                  {/* Horizontal Controls: Visibility + Image + Send */}
+                  <div className="flex flex-col sm:flex-row items-center gap-2 mt-2 w-full">
 
-                  {/* Image Upload */}
-                  <input
-                    id="dailyImageUpload"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
-                    className="hidden"
-                  />
-                  <div className="flex flex-col md:flex-row items-center justify-center gap-2 w-full">
+                    {/* Visibility Selector */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <label className="text-gray-900 dark:text-white text-sm">Visible for:</label>
+                      <select
+                        value={dailyDuration}
+                        onChange={(e) => setDailyDuration(e.target.value as any)}
+                        className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white text-sm p-1 rounded-none sm:rounded-md w-full sm:w-40"
+                      >
+                        <option value="24h">24 Hours</option>
+                        <option value="1w">1 Week</option>
+                        <option value="1m">1 Month</option>
+                        <option value="3m">3 Months</option>
+                      </select>
+                    </div>
+
+                    {/* Image Upload */}
+                    <input
+                      id="dailyImageUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setDailyImage(e.target.files ? e.target.files[0] : null)}
+                      className="hidden"
+                    />
                     <label
                       htmlFor="dailyImageUpload"
-                      className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 w-full sm:w-auto justify-center"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -1722,16 +1724,14 @@ export default function StudentDashboard() {
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4-4a3 3 0 014 0l6 6M3 7h18M3 3h18v18H3V3z" />
                       </svg>
-                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                        Choose Image
-                      </span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-white/90">Choose Image</span>
                     </label>
 
                     {/* Send Button */}
                     <div
                       onClick={handlePostClick}
                       className={`flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer transition shadow-none-md
-          ${uploading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"}`}
+        ${uploading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"} w-full sm:w-auto justify-center`}
                     >
                       {uploading ? (
                         <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -1740,10 +1740,27 @@ export default function StudentDashboard() {
                       )}
                       <span className="text-sm font-medium text-white">Send</span>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
 
+                  </div>
+
+                </div>
+                {/* Image Preview */}
+                {dailyImage && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <img
+                      src={URL.createObjectURL(dailyImage)}
+                      alt="Preview"
+                      className="h-24 w-24 object-cover rounded-md border"
+                    />
+                    <button
+                      onClick={() => setDailyImage(null)}
+                      className="px-2 py-1 text-sm text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-900"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </motion.div>
               {/* Daily Posts */}
               <div className="space-y-3 mt-4">
                 {loading ? (
@@ -1763,6 +1780,7 @@ export default function StudentDashboard() {
  bg-gray-50 dark:bg-gray-800 border-0 w-full"
                     >
                       <div className="flex flex-col sm:flex-row gap-4 items-start">
+
                         {/* User Info */}
                         {/* User Info */}
                         <div className="flex-shrink-0 flex flex-col items-center sm:items-start gap-2 w-24 relative">
@@ -1931,7 +1949,7 @@ export default function StudentDashboard() {
                   cachedSimulationPapers.map((paper) => (
                     <Card
                       key={paper.id}
-                      className="flex flex-col justify-between cursor-pointer hover:scale-105 transform transition-all rounded-xl sm:rounded-md bg-white dark:bg-gray-800 shadow-none border-0 mistake-card-glow"
+                      className="flex flex-col justify-between cursor-pointer  transform transition-all rounded-xl sm:rounded-md bg-white dark:bg-gray-800 shadow-none border-0 mistake-card-glow"
                       onClick={async () => {
                         navigate(`/simulation/${paper.id}`);
                         const { data: userData } = await supabase.auth.getUser();

@@ -1009,7 +1009,7 @@ export function Resources() {
                       .map((note) => (
                         <Card
                           key={note.id}
-                          className="flex flex-col justify-between transition-all border-0 hover:shadow-lg hover:scale-105 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                          className="flex flex-col justify-between transition-all border-0 hover:shadow-lg hover:scale-103 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
                         >
 
 
