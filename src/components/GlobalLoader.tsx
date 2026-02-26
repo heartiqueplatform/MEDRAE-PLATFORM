@@ -45,9 +45,9 @@ export function GlobalLoader() {
       <MedicalDoodles />
 
       {/* Spinning Loader */}
-      <div className="relative flex items-center justify-center h-36 w-36">
+      <div className="relative flex items-center justify-center h-24 w-24">
         <div
-          className={`animate-spin rounded-full h-36 w-36 ${borderColors} border-8`}
+          className={`animate-spin rounded-full h-24 w-24 ${borderColors} border-8`}
         ></div>
       </div>
 
