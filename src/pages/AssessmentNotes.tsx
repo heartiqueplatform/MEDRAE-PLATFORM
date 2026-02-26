@@ -563,7 +563,7 @@ export default function AssessmentNotes() {
                         {subNotes.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
                         ) : (
-                          <div className="grid gap-4 pb-2 sm:grid-cols-2 lg:grid-cols-2">
+                          <div className="grid gap-1 pb-2 sm:grid-cols-2 lg:grid-cols-2">
 
                             {subNotes.map((note) => (
                               <Card

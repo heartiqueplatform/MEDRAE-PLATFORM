@@ -144,7 +144,7 @@ export function Announcements() {
           )}
         </div>
 
-        <Tabs defaultValue="all" className="space-y-4">
+        <Tabs defaultValue="all" className="space-y-2">
           <TabsList>
             <TabsTrigger value="all">All ({announcements.length})</TabsTrigger>
             <TabsTrigger value="pinned">Pinned ({pinnedAnnouncements.length})</TabsTrigger>
@@ -152,7 +152,7 @@ export function Announcements() {
           </TabsList>
 
           {/* All */}
-          <TabsContent value="all" className="space-y-4">
+          <TabsContent value="all" className="space-y-2">
             {pinnedAnnouncements.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -175,7 +175,7 @@ export function Announcements() {
             )}
 
             {/* Regular */}
-            <div className="space-y-4">
+            <div className="space-y-1">
               {pinnedAnnouncements.length > 0 && (
                 <h3 className="text-lg font-semibold">Recent Announcements</h3>
               )}

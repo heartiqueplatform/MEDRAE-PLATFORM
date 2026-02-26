@@ -972,7 +972,7 @@ export function Resources() {
             .filter((cat) => cat.id === selectedBlock)
             .map((cat) => (
               <div key={cat.id}>
-                <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-2 gap-3 w-full">
+                <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-2 gap-1 w-full">
                   {loadingNotes ? (
                     <div className="flex flex-col items-center justify-center py-20 col-span-full">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -1009,7 +1009,7 @@ export function Resources() {
                       .map((note) => (
                         <Card
                           key={note.id}
-                          className="flex flex-col justify-between transition-all border-0 hover:shadow-lg hover:scale-103 duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                          className="flex flex-col justify-between transition-all border-0 hover:shadow-lg duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
                         >
 
 
