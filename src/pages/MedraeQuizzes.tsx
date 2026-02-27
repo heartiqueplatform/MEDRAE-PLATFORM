@@ -505,7 +505,7 @@ export function MedraeQuizzes() {
                 variant="outline"
                 className="flex-shrink-0 w-full md:w-auto mt-2 border-0 md:mt-0"
               >
-                Surprise Me With a Random Unit
+                Random Unit
               </Button>
 
               <Button
@@ -530,7 +530,7 @@ export function MedraeQuizzes() {
                 variant="outline"
                 className="flex-shrink-0 w-full md:w-auto mt-2 border-0 md:mt-0"
               >
-                Recommended Quiz
+                Recommend Unit
               </Button>
             </div>
           </CardContent>
