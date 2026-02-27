@@ -537,102 +537,12 @@ export function MedraeQuizzes() {
         </Card>
 
 
-        {/* PAPER FOUR – Full Papers */}
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
-          {/* CARD HEADER */}
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-green-600">
-              Full Paper Units
-              <span className="text-sm text-gray-500 ml-2">
-                ({totalPaperFour.reduce((sum, unit) => sum + unit.totalQuestions, 0)} Questions)
-              </span>
-            </CardTitle>
-          </CardHeader>
-
-          {/* CARD CONTENT */}
-          <CardContent className="space-y-4">
-            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
-              {(!hasLocalCache
-                ? paperFourUnits
-                : paperFourUnits.filter((unit) =>
-                  unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  unit.code.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-              ).map((unit, index) =>
-                !hasLocalCache ? (
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
-                ) : (
-                  <Card
-                    key={index}
-                    className="shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #11d111" }}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-green-600" />
-                        {unit.title}
-                      </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">{unit.totalQuestions} Questions</Badge>
-                          <Badge
-                            variant={unit.level.toLowerCase() === "professional" ? "default" : "outline"}
-                            className={unit.level.toLowerCase() === "professional" ? "bg-teal-500 text-white" : ""}
-                          >
-                            {unit.level}
-                          </Badge>
-
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
-                          )}
-                        </div>
-
-                        {isPremium || freeUnits.includes(unit.code.trim()) ? (
-                          <Link
-                            to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                            onClick={() => {
-                              markUnitStarted(unit.code);
-                              playSound("start");
-                              if (navigator.vibrate) navigator.vibrate(50);
-                            }}
-                          >
-                            <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-                        ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
-                            >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
-                            </Button>
-                          </Link>
-                        ) : (
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              )}
-            </div>
-          </CardContent>
-        </Card>
         {/* PAPER ONE */}
         <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
           {/* CARD HEADER */}
           <CardHeader>
             <CardTitle className="text-2xl font-semibold text-yellow-500">
-              NCK PP1 UNITS
+              NCK PP1 Course Units
               <span className="text-sm text-gray-500 ml-2">({totalPaperOne} Questions)</span>
             </CardTitle>
           </CardHeader>
@@ -720,7 +630,7 @@ export function MedraeQuizzes() {
           {/* CARD HEADER */}
           <CardHeader>
             <CardTitle className="text-2xl font-semibold text-blue-600">
-              NCK PP2 UNITS
+              NCK PP2 Course Units
               <span className="text-sm text-gray-500 ml-2">({totalPaperTwo} Questions)</span>
             </CardTitle>
           </CardHeader>
@@ -763,6 +673,99 @@ export function MedraeQuizzes() {
                           </Badge>
 
                           <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
+
+                          {isPremium ? (
+                            <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
+                          ) : freeUnits.includes(unit.code.trim()) ? (
+                            <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
+                          )}
+                        </div>
+
+                        {isPremium || freeUnits.includes(unit.code.trim()) ? (
+                          <Link
+                            to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
+                            onClick={() => {
+                              markUnitStarted(unit.code);
+                              playSound("start");
+                              if (navigator.vibrate) navigator.vibrate(50);
+                            }}
+                          >
+                            <Button
+                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
+                        ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
+                            >
+                              <Play className="h-4 w-4 mr-1" />
+                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Button className="w-full mt-4" variant="outline" disabled>
+                            Premium/Pro Only
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+
+
+        {/* PAPER FOUR – Full Papers */}
+        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
+          {/* CARD HEADER */}
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-green-600">
+              Full Paper Units
+              <span className="text-sm text-gray-500 ml-2">
+                ({totalPaperFour.reduce((sum, unit) => sum + unit.totalQuestions, 0)} Questions)
+              </span>
+            </CardTitle>
+          </CardHeader>
+
+          {/* CARD CONTENT */}
+          <CardContent className="space-y-4">
+            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+              {(!hasLocalCache
+                ? paperFourUnits
+                : paperFourUnits.filter((unit) =>
+                  unit.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  unit.code.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+              ).map((unit, index) =>
+                !hasLocalCache ? (
+                  <div
+                    key={index}
+                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                  ></div>
+                ) : (
+                  <Card
+                    key={index}
+                    className="shadow-md hover:shadow-lg transition-all rounded-2xl"
+                    style={{ border: "1px solid #11d111" }}
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-md flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-green-600" />
+                        {unit.title}
+                      </CardTitle>
+                      <CardDescription>{unit.code}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary">{unit.totalQuestions} Questions</Badge>
+                          <Badge
+                            variant={unit.level.toLowerCase() === "professional" ? "default" : "outline"}
+                            className={unit.level.toLowerCase() === "professional" ? "bg-teal-500 text-white" : ""}
+                          >
+                            {unit.level}
+                          </Badge>
 
                           {isPremium ? (
                             <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
