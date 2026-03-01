@@ -330,7 +330,7 @@ export default function MarketFeed({ user }: any) {
 
                     <h2 className="text-3xl font-bold">Access Restricted</h2>
                     <p className="text-md text-gray-300 max-w-md">
-                        This page is currently under construction will be available soon.
+                        This page is currently under construction, will be available soon!
                     </p>
 
                     {/* INFO SECTION */}
