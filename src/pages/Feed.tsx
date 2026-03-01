@@ -1033,7 +1033,7 @@ export default function Feed() {
             )}
           </AnimatePresence>
           {/*  Reload Feed + Leaderboard + Reset Section */}
-          <div className="flex flex-row flex-wrap justify-between items-center mt-4 gap-3">
+          <div className="flex flex-row flex-wrap justify-between items-center mt-0 gap-3">
             {/* Left side: Question count + two buttons */}
             <div className="flex flex-row flex-wrap items-center gap-3 w-full sm:w-auto">
               <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
@@ -1300,7 +1300,7 @@ export default function Feed() {
                     </p>
 
                     {/* Sound toggle */}
-                    <div className="flex justify-end w-full mb-2">
+                    <div className="flex justify-end w-full mb-0">
                       <button
                         type="button"
                         onClick={() => setIsMuted((prev) => !prev)}
@@ -1326,7 +1326,7 @@ export default function Feed() {
 
 
                     {/* Options */}
-                    <div className="flex flex-col gap-3 mt-3 w-full">
+                    <div className="flex flex-col gap-3 mt-0 w-full">
                       {["A", "B", "C", "D"].map((opt) => {
                         const text = q[`option_${opt.toLowerCase()}`];
                         if (!text) return null;

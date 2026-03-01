@@ -679,7 +679,7 @@ export function Resources() {
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
       <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
 
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-4">
+        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-0">
           <CardHeader>
             <CardTitle className="text-3xl font-bold flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
               Notes & Resources
