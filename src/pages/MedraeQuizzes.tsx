@@ -20,7 +20,7 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
 import { playSound } from "@/lib/soundManager";
 import { motion, AnimatePresence } from "framer-motion";
-
+import { TermsButton } from "@/components/ui/TermsButton";
 //  Popup component
 const PopupMessage = ({ message, onClose }: { message: string; onClose: () => void }) => {
   return (
@@ -930,7 +930,9 @@ export function MedraeQuizzes() {
               You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
             </p>
           </CardContent>
+          <TermsButton />
         </Card>
+
       </div>
     </div>
   );

@@ -287,7 +287,7 @@ export default function ListingDetail() {
 
     return (
         <div className="min-h-screen flex items-center justify-center">
-            <div className="w-full max-w-3xl bg-white dark:bg-gray-900 shadow-lg rounded-2xl px-6 py-8 space-y-6 text-center">
+            <div className="w-full max-w-3xl bg-white dark:bg-gray-900 shadow-lg rounded-2xl px-6 py-8 space-y-2 text-center">
                 {/* Featured badge */}
                 {listing.is_featured && (
                     <div className="bg-yellow-300 text-black px-3 py-1 rounded-xl inline-block font-bold">

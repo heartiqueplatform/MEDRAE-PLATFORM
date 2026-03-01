@@ -18,7 +18,7 @@ import { Footer } from "@/components/Footer";
 import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import TermsPage from "./pages/TermsPage";
-
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import MarketFeed from "./pages/market";
 import CreateListingPage from "./pages/market/create";
 import MyListings from "./pages/market/my-listings";
@@ -381,7 +381,7 @@ const App = () => {
                     {/* ------------------- Full-screen / Independent Pages ------------------- */}
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/simulation/:paper_id" element={<SimulationPage />} />
-
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     {/* ------------------- Catch-all ------------------- */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

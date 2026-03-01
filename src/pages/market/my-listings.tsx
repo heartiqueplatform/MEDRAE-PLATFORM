@@ -117,15 +117,7 @@ export default function MyListings() {
     };
 
     return (
-        <div className={`max-w-8xl  py-10 px-3 ${theme === "dark" ? "text-white" : "text-black"}`}>
-
-            <button
-                onClick={() => navigate("/market")}
-                className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm"
-            >
-                <ArrowLeft size={18} />
-                Back to NursMartt
-            </button>
+        <div className={`max-w-8xl  py-0 px-3 ${theme === "dark" ? "text-white" : "text-black"}`}>
 
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                 {/* Title */}
@@ -144,8 +136,16 @@ export default function MyListings() {
                         >
                             {tab.charAt(0).toUpperCase() + tab.slice(1)}
                         </button>
+
                     ))}
                 </div>
+                <button
+                    onClick={() => navigate("/market")}
+                    className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm"
+                >
+                    <ArrowLeft size={18} />
+                    Back to NursMartt
+                </button>
             </div>
 
             {loading ? (

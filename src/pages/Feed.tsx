@@ -1,5 +1,6 @@
 "use client";
 import PullToRefresh from "react-simple-pull-to-refresh";
+import { TermsButton } from "@/components/ui/TermsButton";
 import { useWindowSize } from "react-use";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload, Star, Heart, MessageCircle, Reply, ThumbsUp, ThumbsDown } from "lucide-react";
@@ -1895,6 +1896,7 @@ export default function Feed() {
               "Load more questions"
             )}
           </Button>
+          <TermsButton />
           <AnimatePresence>
             {viewerOpen && activeImage && (
               <motion.div

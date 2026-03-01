@@ -28,7 +28,7 @@ import {
 import { playSound } from "@/lib/soundManager";
 import { motion, AnimatePresence } from "framer-motion";
 import { allUnits } from "@/constants/units";
-
+import { TermsButton } from "@/components/ui/TermsButton";
 // --- Local Storage Helpers ---
 const LOCAL_STORAGE_KEY = "study_progress_cache";
 function saveToLocalStorage(userId: string, data: any) {
@@ -395,7 +395,7 @@ export function StudyProgress() {
           </TabsContent>
 
 
-
+          <TermsButton />
         </Tabs>
       </div>
     </div >
@@ -815,6 +815,7 @@ Take a moment to review your mistakes and try again improvement comes fast when 
           </CardContent>
         </Card>
       </div>
+
     </div >
   );
 }

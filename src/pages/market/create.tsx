@@ -33,6 +33,14 @@ export default function CreateListingPage({ user, profile }: any) {
     const [meetingLocation, setMeetingLocation] = useState("");
     const [deliveryAvailable, setDeliveryAvailable] = useState(false);
     const [images, setImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const removeImage = (indexToRemove: number) => {
+        const updatedImages = images.filter((_, index) => index !== indexToRemove);
+        const updatedPreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
+
+        setImages(updatedImages);
+        setImagePreviews(updatedPreviews);
+    };
     const [expiresAt, setExpiresAt] = useState(""); // NEW optional expiry
     const [whatsappNumber, setWhatsappNumber] = useState(profile?.phone || "+254");
     // --- UI state ---
@@ -49,9 +57,15 @@ export default function CreateListingPage({ user, profile }: any) {
 
     // --- Image upload ---
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) setImages(Array.from(e.target.files));
-    };
+        if (!e.target.files) return;
 
+        const files = Array.from(e.target.files);
+        setImages(files);
+
+        // Create preview URLs
+        const previewUrls = files.map((file) => URL.createObjectURL(file));
+        setImagePreviews(previewUrls);
+    };
     const uploadImages = async (files: File[]) => {
         const urls: string[] = [];
         for (let i = 0; i < files.length; i++) {
@@ -144,214 +158,280 @@ export default function CreateListingPage({ user, profile }: any) {
     };
 
     return (
-        <div className="max-w-3xl mx-auto py-10 px-6">
-            {/* Back Button */}
-            <button
-                onClick={() => navigate("/market")}
-                className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm"
-            >
-                <ArrowLeft size={18} /> Back to NursMartt
-            </button>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-0 px-4 bg-white/0 dark:bg-gray-900/0">
+            <div className="max-w-4xl mx-auto animate-fadeIn">
+                {/* Back Button */}
 
-            <h1 className="text-3xl font-bold mb-6 text-black dark:text-white">
-                Create New Listing
-            </h1>
+                {/* Main Card */}
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl rounded-2xl p-10 hover:shadow-2xl transition-all duration-300">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="flex justify-between items-center mb-8">
+                            {/* Heading on the left */}
+                            <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
+                                Create New Listing
+                            </h1>
 
-            {/* Main Card */}
-            <div className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Title */}
-                    <div className="flex items-center gap-2">
-                        <FileText className="text-blue-500 dark:text-blue-400" size={20} />
-                        <label className="block font-medium text-black dark:text-white">Title</label>
-                    </div>
-                    <input
-                        type="text"
-                        className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                    />
-                    {/* WhatsApp / Contact Number */}
-                    {/* WhatsApp / Contact Number */}
-                    <div className="flex items-center gap-2 mt-2">
-                        <Phone className="text-green-600 dark:text-green-400" size={20} />
-                        <label className="font-medium text-black dark:text-white">WhatsApp Number</label>
-                    </div>
-                    <input
-                        type="text"
-                        className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                        value={whatsappNumber}
-                        onChange={(e) => {
-                            let val = e.target.value;
-                            // always keep +254 prefix if user deletes
-                            if (!val.startsWith("+254")) val = "+254" + val.replace(/^(\+?254)?/, "");
-                            setWhatsappNumber(val);
-                        }}
-                        placeholder="+254712345678"
-                        required
-                    />
-                    {/* Description */}
-                    <div className="flex items-center gap-2 mt-4">
-                        <FileText className="text-green-500 dark:text-green-400" size={20} />
-                        <label className="block font-medium text-black dark:text-white">Description</label>
-                    </div>
-                    <textarea
-                        className="w-full border rounded px-3 py-2 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        required
-                    />
-
-                    {/* Grid Inputs */}
-                    <div className="grid md:grid-cols-2 gap-4 mt-4">
-                        {/* Category */}
-                        <div className="flex items-center gap-2">
-                            <Tag className="text-purple-600 dark:text-purple-400" size={20} />
-                            <label className="font-medium text-black dark:text-white">Category</label>
+                            {/* Back Button on the right */}
+                            <button
+                                onClick={() => navigate("/market")}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 rounded-xl shadow-sm hover:bg-blue-100 dark:hover:bg-blue-900"
+                            >
+                                <ArrowLeft size={18} /> Back to NursMartt
+                            </button>
                         </div>
-                        <select
-                            className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                        >
-                            <option value="textbook">Textbook</option>
-                            <option value="equipment">Equipment</option>
-                            <option value="uniform">Uniform</option>
-                            <option value="hostel_item">Hostel Item</option>
-                            <option value="nck_material">NCK Material</option>
-                        </select>
-
-                        {/* Subcategory */}
-                        <div className="flex items-center gap-2">
-                            <Tag className="text-purple-400 dark:text-purple-300" size={20} />
-                            <label className="font-medium text-black dark:text-white">Subcategory (Optional)</label>
-                        </div>
-                        <input
-                            type="text"
-                            className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                            value={subcategory}
-                            onChange={(e) => setSubcategory(e.target.value)}
-                        />
-
-                        {/* Condition */}
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="text-orange-500 dark:text-orange-400" size={20} />
-                            <label className="font-medium text-black dark:text-white">Condition</label>
-                        </div>
-                        <select
-                            className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                            value={condition}
-                            onChange={(e) => setCondition(e.target.value)}
-                        >
-                            <option value="new">New</option>
-                            <option value="like_new">Like New</option>
-                            <option value="good">Good</option>
-                            <option value="fair">Fair</option>
-                        </select>
-
-                        {/* Price */}
-                        <div className="flex items-center gap-2">
-                            <DollarSign className="text-green-700 dark:text-green-400" size={20} />
-                            <label className="font-medium text-black dark:text-white">Price (KES)</label>
-                        </div>
-                        <input
-                            type="number"
-                            className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            required
-                        />
-
-                        {/* Negotiable */}
-                        <div className="flex items-center gap-2 mt-2 col-span-2">
+                        <p className="text-gray-600 dark:text-gray-400 mb-8">
+                            Provide clear details and quality photos to attract serious buyers.
+                        </p>
+                        {/* Basic Information Section */}
+                        <div className="pt-2">
+                            <h2 className="text-sm font-semibold tracking-wide uppercase text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-4">
+                                Basic Information
+                            </h2>
+                            <div className="space-y-4"></div>
+                            {/* Title */}
+                            <div className="flex items-center gap-2">
+                                <FileText className="" size={20} />
+                                <label className="block font-medium text-black dark:text-white">Item title</label>
+                            </div>
                             <input
-                                type="checkbox"
-                                checked={negotiable}
-                                onChange={(e) => setNegotiable(e.target.checked)}
-                                className="mr-2"
+                                type="text"
+                                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Enter the name of the item"
+                                required
                             />
-                            <span className="text-black dark:text-white">Negotiable</span>
-                        </div>
-
-                        {/* Meeting Location */}
-                        <div className="flex items-center gap-2 mt-2">
-                            <MapPin className="text-red-600 dark:text-red-400" size={20} />
-                            <label className="font-medium text-black dark:text-white">Meeting Location</label>
-                        </div>
-                        <input
-                            type="text"
-                            className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                            value={meetingLocation}
-                            onChange={(e) => setMeetingLocation(e.target.value)}
-                        />
-
-                        {/* Delivery */}
-                        <div className="flex items-center gap-2 mt-2 col-span-2">
-                            <Truck className="text-blue-500 dark:text-blue-400" size={20} />
-                            <span className="text-black dark:text-white">Delivery Available</span>
+                            {/* WhatsApp / Contact Number */}
+                            {/* WhatsApp / Contact Number */}
+                            <div className="flex items-center gap-2 mt-2">
+                                <Phone className="" size={20} />
+                                <label className="font-medium text-black dark:text-white">WhatsApp Number</label>
+                            </div>
                             <input
-                                type="checkbox"
-                                checked={deliveryAvailable}
-                                onChange={(e) => setDeliveryAvailable(e.target.checked)}
-                                className="ml-2"
+                                type="text"
+                                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={whatsappNumber}
+                                onChange={(e) => {
+                                    let val = e.target.value;
+                                    // always keep +254 prefix if user deletes
+                                    if (!val.startsWith("+254")) val = "+254" + val.replace(/^(\+?254)?/, "");
+                                    setWhatsappNumber(val);
+                                }}
+                                placeholder="+254712345678"
+                                required
+                            />
+                            {/* Description */}
+                            <div className="flex items-center gap-2 mt-4">
+                                <FileText className="" size={20} />
+                                <label className="block font-medium text-black dark:text-white">Item description</label>
+                            </div>
+                            <textarea
+                                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Provide details about the item, condition, and any special features"
+                                required
                             />
                         </div>
+                        {/* Pricing & Details Section */}
+                        <div className="pt-12 border-t border-gray-200 dark:border-gray-800 border-gray-200 dark:border-gray-800">
+                            <h2 className="text-sm font-semibold tracking-wide uppercase text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-6">
+                                Pricing & Details
+                            </h2>
+                            <div className="grid md:grid-cols-2 gap-6"></div>
+                            {/* Grid Inputs */}
+                            <div className="grid md:grid-cols-2 gap-4 mt-4">
+                                {/* Category */}
+                                <div className="flex items-center gap-2">
+                                    <Tag className="" size={20} />
+                                    <label className="font-medium text-black dark:text-white">Category</label>
+                                </div>
+                                <select
+                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                >
+                                    <option value="textbook">Textbook</option>
+                                    <option value="equipment">Equipment</option>
+                                    <option value="uniform">Uniform</option>
+                                    <option value="hostel_item">Hostel Item</option>
+                                    <option value="nck_material">NCK Material</option>
+                                </select>
 
-                        {/* Expiry Date */}
-                        <div className="flex items-center gap-2 mt-2">
-                            <CheckCircle className="text-gray-600 dark:text-gray-400" size={20} />
-                            <label className="font-medium text-black dark:text-white">Expires At (Optional)</label>
+                                {/* Subcategory */}
+                                <div className="flex items-center gap-2">
+                                    <Tag className="" size={20} />
+                                    <label className="font-medium text-black dark:text-white">Subcategory (Optional)</label>
+                                </div>
+                                <input
+                                    type="text"
+                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={subcategory}
+                                    onChange={(e) => setSubcategory(e.target.value)}
+                                />
+
+                                {/* Condition */}
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="" size={20} />
+                                    <label className="font-medium text-black dark:text-white">Condition</label>
+                                </div>
+                                <select
+                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    onChange={(e) => setCondition(e.target.value)}
+                                >
+                                    <option value="new">New</option>
+                                    <option value="like_new">Like New</option>
+                                    <option value="good">Good</option>
+                                    <option value="fair">Fair</option>
+                                </select>
+
+                                {/* Price */}
+                                <div className="flex items-center gap-2">
+                                    <DollarSign className="" size={20} />
+                                    <label className="font-medium text-black dark:text-white">Price (KES)</label>
+                                </div>
+                                <input
+                                    type="number"
+                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={price}
+                                    onChange={(e) => setPrice(e.target.value)}
+                                    placeholder="Enter the price in KES, e.g., 1500"
+                                    required
+                                />
+
+                                {/* Negotiable */}
+                                <div className="flex items-center gap-2 mt-2 col-span-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={negotiable}
+                                        onChange={(e) => setNegotiable(e.target.checked)}
+                                        className="h-5 w-5 rounded-md border-gray-300 text-blue-600 focus:ring-blue-500 transition"
+                                    />
+                                    <span className="text-black dark:text-white">Negotiable</span>
+                                </div>
+
+                                {/* Meeting Location */}
+                                <div className="flex items-center gap-2 mt-2">
+                                    <MapPin className="" size={20} />
+                                    <label className="font-medium text-black dark:text-white">Meeting Location</label>
+                                </div>
+                                <input
+                                    type="text"
+                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={meetingLocation}
+                                    onChange={(e) => setMeetingLocation(e.target.value)}
+                                    placeholder="Enter the location where buyers can meet"
+                                />
+
+                                {/* Delivery */}
+                                <div className="flex items-center gap-2 mt-2 col-span-2">
+
+
+                                    <input
+                                        type="checkbox"
+                                        checked={deliveryAvailable}
+                                        onChange={(e) => setDeliveryAvailable(e.target.checked)}
+                                        className="h-5 w-5 rounded-md border-gray-300 text-blue-600 focus:ring-blue-500 transition"
+                                    />
+                                    <Truck className="" size={20} />
+                                    <span className="text-black dark:text-white">Delivery Available</span>
+                                </div>
+
+                                {/* Expiry Date */}
+                                <div className="flex items-center gap-2 mt-2">
+                                    <CheckCircle className="" size={20} />
+                                    <label className="font-medium text-black dark:text-white">Expires At (Optional)</label>
+                                </div>
+                                <input
+                                    type="date"
+                                    className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm text-gray-900 dark:text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    value={expiresAt}
+                                    onChange={(e) => setExpiresAt(e.target.value)}
+                                />
+                            </div>
                         </div>
-                        <input
-                            type="date"
-                            className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                            value={expiresAt}
-                            onChange={(e) => setExpiresAt(e.target.value)}
-                        />
-                    </div>
+                        {/* Photos Section */}
+                        <div className="pt-12 border-t border-gray-200 dark:border-gray-800">
+                            <h2 className="text-sm font-semibold tracking-wide uppercase text-gray-600 dark:text-gray-400 mb-6">
+                                Photos
+                            </h2>
 
-                    {/* Images */}
-                    <div className="flex items-center gap-2 mt-4">
-                        <ImageIcon className="text-pink-600 dark:text-pink-400" size={20} />
-                        <label className="font-medium text-black dark:text-white">Images (at least 1)</label>
-                    </div>
-                    <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        required
-                        className="border rounded px-3 py-2 w-full bg-gray-50 dark:bg-gray-800 dark:border-gray-600 text-black dark:text-white"
-                    />
+                            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-12 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:border-blue-500 transition-all duration-200">
 
-                    {/* Upload Progress */}
-                    {uploadProgress && (
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 mt-2">
-                            <Loader2 className="animate-spin" size={18} /> {uploadProgress}
+                                <ImageIcon className="w-12 h-12 text-gray-400 mb-4" />
+
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Click to upload images
+                                </span>
+
+                                <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    You can upload multiple high-quality photos
+                                </span>
+
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    required
+                                    className="hidden"
+                                />
+                            </label>
+                            {imagePreviews.length > 0 && (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+                                    {imagePreviews.map((src, index) => (
+                                        <div
+                                            key={index}
+                                            className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 group"
+                                        >
+                                            <img
+                                                src={src}
+                                                alt={`Preview ${index}`}
+                                                className="w-full h-40 object-cover"
+                                            />
+
+                                            {/* Remove Button */}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(index)}
+                                                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+
                         </div>
-                    )}
-
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        className="bg-black dark:bg-white dark:text-black text-white px-6 py-3 rounded-xl hover:opacity-90 transition flex items-center justify-center gap-2 mt-4"
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="animate-spin" size={18} /> Posting...
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle size={18} /> Post Listing
-                            </>
+                        {/* Upload Progress */}
+                        {uploadProgress && (
+                            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 mt-2">
+                                <Loader2 className="animate-spin" size={18} /> {uploadProgress}
+                            </div>
                         )}
-                    </button>
-                </form>
-            </div>
 
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="animate-spin" size={18} /> Posting...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle size={18} /> Post Listing
+                                </>
+                            )}
+                        </button>
+                    </form>
+                </div>
+            </div >
             <TermsButton />
-        </div>
+        </div >
     );
 }

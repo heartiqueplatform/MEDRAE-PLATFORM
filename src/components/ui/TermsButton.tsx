@@ -13,7 +13,7 @@ export function TermsButton({ text, className }: TermsButtonProps) {
     const currentYear = new Date().getFullYear();
 
     return (
-        <div className="flex flex-col items-center justify-center mt-10 text-center text-gray-500 dark:text-gray-400 space-y-4 px-4">
+        <div className="flex flex-col items-center justify-center mt-10 text-center text-gray-500 dark:text-gray-400 space-y-2 px-4">
             <div className="max-w-xl">
                 <p className="text-sm">
                     © {currentYear} <span className="font-semibold">Medrae Platform</span>. All rights reserved.
@@ -26,6 +26,13 @@ export function TermsButton({ text, className }: TermsButtonProps) {
                     className="inline-flex items-center gap-1 underline hover:text-gray-900 dark:hover:text-white text-sm font-medium mt-2"
                 >
                     <FileText size={16} /> Terms & Conditions
+                </button>
+
+                <button
+                    onClick={() => navigate("/privacy")}
+                    className={`inline-flex items-center gap-1 text-sm font-medium underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 ${className || ""}`}
+                >
+                    <FileText size={16} /> Privacy Policy
                 </button>
             </div>
         </div>

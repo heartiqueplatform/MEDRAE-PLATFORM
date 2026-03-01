@@ -316,21 +316,21 @@ export default function MarketFeed({ user }: any) {
     if (hasAccess === false) {
         return (
             <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-start z-50 text-white p-6">
-                {/* HEADER — Logo + Page Title */}
-                <div className="flex items-center gap-8 mb-6">
-                    <img
-                        src="/Nurvia_logo.png"
-                        alt="Nurvia Logo"
-                        className="h-10 w-10 object-contain"
-                    />
-                    <h1 className="text-4xl font-bold">NursMartt</h1>
-                </div>
-
                 {/* OVERLAY CONTENT */}
-                <div className="flex flex-col items-center justify-center flex-1 w-full text-center space-y-4">
+                <div className="flex flex-col items-center justify-center flex-1 w-full text-center space-y-1">
+                    {/* HEADER — Logo + Page Title */}
+                    <div className="flex items-center gap-6 mb-0">
+                        <img
+                            src="/Nurvia_logo.png"
+                            alt="Nurvia Logo"
+                            className="h-10 w-10 object-contain"
+                        />
+                        <h1 className="text-4xl font-bold">NursMartt</h1>
+                    </div>
+
                     <h2 className="text-3xl font-bold">Access Restricted</h2>
                     <p className="text-md text-gray-300 max-w-md">
-                        This page is currently under construction and available only for premium nursing students.
+                        This page is currently under construction and available soon
                     </p>
 
                     {/* INFO SECTION */}
@@ -355,7 +355,7 @@ export default function MarketFeed({ user }: any) {
         );
     }
     return (
-        <div className="max-w-8xl py-10 px-4">
+        <div className="max-w-8xl py-0 px-4">
             {/* HEADER — PRESERVED */}
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <h1 className="flex items-center gap-2 text-4xl font-bold text-gray-900 dark:text-white">

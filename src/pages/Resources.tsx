@@ -1,6 +1,6 @@
 "use client";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
-
+import { TermsButton } from "@/components/ui/TermsButton";
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
@@ -1165,6 +1165,7 @@ export function Resources() {
                       ))
                   )}
                 </div>
+                <TermsButton />
               </div>
             ))}
         </div>
