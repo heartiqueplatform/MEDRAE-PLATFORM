@@ -17,7 +17,12 @@ import PrivateRoute from "@/auth/PrivateRoute";
 import { Footer } from "@/components/Footer";
 import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
+import TermsPage from "./pages/TermsPage";
 
+import MarketFeed from "./pages/market";
+import CreateListingPage from "./pages/market/create";
+import MyListings from "./pages/market/my-listings";
+import ListingDetail from "./pages/market/[id]";
 // Pages
 import { Forum } from "./pages/Forum";
 import AssessmentNotes from "./pages/AssessmentNotes";
@@ -104,9 +109,30 @@ const BottomBarWrapper = () => {
 
 const App = () => {
   const [forceLogout, setForceLogout] = useState(false);
-
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!error && profileData) {
+          setProfile(profileData);
+        }
+      }
+    };
+    fetchUserProfile();
+  }, []);
   useEffect(() => {
     initSound();
     const soundFiles: [string, string][] = [
@@ -306,6 +332,7 @@ const App = () => {
               <MusicPlayerProvider>
                 <AIWrapper>
                   <FirstTimeGuide />
+
                   <Routes>
                     {/* ------------------- Public Routes ------------------- */}
                     <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
@@ -322,6 +349,13 @@ const App = () => {
                       <Route path="/dashboard/student" element={<StudentDashboard />} />
                       <Route path="/dashboard/tutor" element={<TutorDashboard />} />
                       <Route path="/dashboard/staff" element={<StaffDashboard />} />
+
+                      <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
+                      {user && profile && (
+                        <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
+                      )}
+                      <Route path="/market/my-listings" element={<MyListings />} />
+                      <Route path="/market/:id" element={<ListingDetail />} />
 
                       <Route path="/my-mistakes" element={<MyMistakes />} />
                       <Route path="/ai-assistant" element={<AIAssistant />} />
@@ -345,7 +379,7 @@ const App = () => {
                     </Route>
 
                     {/* ------------------- Full-screen / Independent Pages ------------------- */}
-
+                    <Route path="/terms" element={<TermsPage />} />
                     <Route path="/simulation/:paper_id" element={<SimulationPage />} />
 
                     {/* ------------------- Catch-all ------------------- */}

@@ -33,7 +33,7 @@ import { UserProfileModal } from "@/components/UserProfileModal";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import LiveReactions from "@/components/LiveReactions";
-
+import { TermsButton } from "@/components/ui/TermsButton";
 
 export default function StudentDashboard() {
   const navigate = useNavigate(); // 👈 Add this line
@@ -2278,12 +2278,15 @@ Join the Medrae community today: https://medrae.vercel.app`;
             </CardContent>
           </Card>
 
-
           {/* Quick Actions Card */}
           <FloatingQuickActions />
         </div>
+
+        <TermsButton />
         <LiveReactions />
       </div>
+
     </div >
+
   );
 }

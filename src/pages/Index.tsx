@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { TermsButton } from "@/components/ui/TermsButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, Volume, VolumeX } from "lucide-react";
@@ -402,13 +402,20 @@ const Index = () => {
 
             {/* Marketing Question */}
             <p className="text-lg text-gray-700 text-left">
-              Ready to join Kenya’s No.1 Nursing Network and boost your skills, career, and confidence? Don’t miss this exclusive chance to connect with thousands of peers and professionals!
+              Ready to join Kenya’s No.1 Nursing Network and boost your skills, career, and confidence? Before you proceed, please make sure you have read and understood our <span
+                className="underline cursor-pointer text-blue-600 hover:text-blue-800"
+                onClick={() => navigate("/terms")}
+              >
+                Terms & Conditions
+              </span>. Don’t miss this exclusive chance to connect with thousands of peers and professionals!
             </p>
 
 
             {/* Buttons */}
             {/* Buttons */}
+            <TermsButton />
             <div className="flex flex-col justify-center items-center gap-4 mt-4">
+
               <button
                 className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-2xl transition-all ${!allMediaReady ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={!allMediaReady}
@@ -428,8 +435,9 @@ const Index = () => {
                   playAudioSafely(studyAudioRef.current);
                 }}
               >
-                {allMediaReady ? "Yes, I want to join!" : "Downloading..."}
+                {allMediaReady ? "Yes, I agree!" : "Downloading..."}
               </button>
+
               <p className="text-gray-700 dark:text-gray-300 text-base md:text-lg">
                 Already have an account?{" "}
                 <span

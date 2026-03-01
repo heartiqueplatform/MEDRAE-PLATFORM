@@ -29,7 +29,8 @@ import {
   PenTool,
   Network,
   AlertCircle,
-  Newspaper
+  Newspaper,
+  ShoppingBag
 
 } from "lucide-react";
 import {
@@ -271,6 +272,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" },
     { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert", badge: mistakeCount > 0 ? mistakeCount : undefined },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai", badge: "New" },
+
     { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },
   ];
 
@@ -294,6 +296,17 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   ];
 
   const otherItems = [
+    {
+      title: "NurseMart",
+      url: "/market",
+      icon: () => (
+        <img
+          src="/Nurvia_logo.png"
+          alt="Nurvia Logo"
+          className="h-6 w-6 object-contain bg-transparent"
+        />
+      ),
+    },
     { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" },
     { title: "Feedback Box", url: "/feedback", icon: MessageSquareX, iconTone: "communication" },
     { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" },
