@@ -315,38 +315,41 @@ export default function MarketFeed({ user }: any) {
 
     if (hasAccess === false) {
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-start z-50 text-white p-6">
-                {/* OVERLAY CONTENT */}
-                <div className="flex flex-col items-center justify-center flex-1 w-full text-center space-y-1">
-                    {/* HEADER — Logo + Page Title */}
-                    <div className="flex items-center gap-6 mb-0">
-                        <img
-                            src="/Nurvia_logo.png"
-                            alt="Nurvia Logo"
-                            className="h-10 w-10 object-contain"
-                        />
-                        <h1 className="text-4xl font-bold">NursMartt</h1>
+            <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 text-white p-6">
+                {/* INFO SECTION */}
+                <div className="bg-gray-900 bg-opacity-70 p-5 rounded-xl max-w-md w-full space-y-6 text-center">
+                    {/* OVERLAY CONTENT */}
+                    <div className="flex flex-col items-center justify-center w-full space-y-4">
+                        {/* HEADER — Logo + Page Title */}
+                        <div className="flex flex-col items-center gap-4 mb-2">
+                            <img
+                                src="/Nurvia_logo.png"
+                                alt="Nurvia Logo"
+                                className="h-12 w-12 object-contain"
+                            />
+                            <h1 className="text-4xl font-bold">NursMartt</h1>
+                        </div>
+
+                        <h2 className="text-3xl font-bold">Access Restricted</h2>
+                        <p className="text-md text-gray-300 max-w-md">
+                            This page is currently under construction, will be available soon!
+                        </p>
+
+                        <div className="text-left w-full">
+                            <h3 className="text-xl font-semibold mb-2">What’s Coming</h3>
+                            <ul className="list-disc list-inside text-gray-200 space-y-1">
+                                <li>Listings from fellow nursing students and nurses selling second-hand items.</li>
+                                <li>Textbooks, uniforms, NCK materials, and hostel essentials for your studies.</li>
+                                <li>Real-time updates so you never miss newly added items.</li>
+                                <li>Save your favorite listings for easy access later.</li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <h2 className="text-3xl font-bold">Access Restricted</h2>
-                    <p className="text-md text-gray-300 max-w-md">
-                        This page is currently under construction, will be available soon!
-                    </p>
-
-                    {/* INFO SECTION */}
-                    <div className="bg-gray-900 bg-opacity-70 p-5 rounded-xl max-w-md space-y-2 text-left">
-                        <h3 className="text-xl font-semibold mb-2">What’s Coming</h3>
-                        <ul className="list-disc list-inside text-gray-200 space-y-1">
-                            <li>Listings from fellow nursing students and nurses selling second-hand items.</li>
-                            <li>Textbooks, uniforms, NCK materials, and hostel essentials for your studies.</li>
-                            <li>Real-time updates so you never miss newly added items.</li>
-                            <li>Save your favorite listings for easy access later.</li>
-                        </ul>
-                    </div>
-
+                    {/* Centered Go Back Button */}
                     <button
                         onClick={() => navigate(-1)}
-                        className="px-6 py-3 bg-gray-700 text-white font-semibold rounded-xl hover:opacity-90 transition mt-4"
+                        className="px-6 py-3 bg-gray-700 text-white font-semibold rounded-xl hover:opacity-90 transition mx-auto"
                     >
                         Go Back
                     </button>
