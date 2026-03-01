@@ -297,7 +297,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   const otherItems = [
     {
-      title: "NurseMart",
+      title: "NursMartt",
       url: "/market",
       icon: () => (
         <img

@@ -150,7 +150,7 @@ export default function CreateListingPage({ user, profile }: any) {
                 onClick={() => navigate("/market")}
                 className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm"
             >
-                <ArrowLeft size={18} /> Back to NurseMart
+                <ArrowLeft size={18} /> Back to NursMartt
             </button>
 
             <h1 className="text-3xl font-bold mb-6 text-black dark:text-white">

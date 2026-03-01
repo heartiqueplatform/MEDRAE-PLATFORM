@@ -250,7 +250,7 @@ export default function MarketFeed({ user }: any) {
         // Construct WhatsApp URL with prefilled message
         const phone = listing.seller_phone.replace(/\D/g, ""); // remove non-numeric chars
         const message = encodeURIComponent(
-            `Hi ${listing.seller_name}, I am interested in your "${listing.title}" listed on NurseMart. Could we discuss?`
+            `Hi ${listing.seller_name}, I am interested in your "${listing.title}" listed on NursMartt. Could we discuss?`
         );
 
         // Open WhatsApp Web / App
@@ -323,7 +323,7 @@ export default function MarketFeed({ user }: any) {
                         alt="Nurvia Logo"
                         className="h-10 w-10 object-contain"
                     />
-                    <h1 className="text-4xl font-bold">NurseMart</h1>
+                    <h1 className="text-4xl font-bold">NursMartt</h1>
                 </div>
 
                 {/* OVERLAY CONTENT */}
@@ -364,7 +364,7 @@ export default function MarketFeed({ user }: any) {
                         alt="Nurvia Logo"
                         className="h-8 w-8 object-contain"
                     />
-                    NurseMart
+                    NursMartt
                 </h1>
 
                 <div className="flex gap-3 flex-wrap">

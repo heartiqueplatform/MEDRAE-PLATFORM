@@ -124,7 +124,7 @@ export default function MyListings() {
                 className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm"
             >
                 <ArrowLeft size={18} />
-                Back to NurseMart
+                Back to NursMartt
             </button>
 
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
