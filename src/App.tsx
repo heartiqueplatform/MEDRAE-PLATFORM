@@ -36,7 +36,7 @@ import { Calendar } from "./pages/Calendar";
 import { StudyProgress } from "./pages/Progress";
 import { Resources } from "./pages/Resources";
 import { MedTube } from "./pages/MedTube";
-import AppScrollToTop from "@/components/AppScrollToTop"; // adjust path if needed
+
 import { Announcements } from "./pages/Announcements";
 import { Feedback } from "./pages/Feedback";
 import { Settings } from "./pages/Settings";
@@ -332,60 +332,60 @@ const App = () => {
               <MusicPlayerProvider>
                 <AIWrapper>
                   <FirstTimeGuide />
-                  <AppScrollToTop>
-                    <Routes>
-                      {/* ------------------- Public Routes ------------------- */}
-                      <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
-                      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-                      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-                      <Route path="/redirect" element={<RedirectToRoleDashboard />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
 
-                      {/* ------------------- Dashboard Redirect ------------------- */}
-                      <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
+                  <Routes>
+                    {/* ------------------- Public Routes ------------------- */}
+                    <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                    <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                    <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+                    <Route path="/redirect" element={<RedirectToRoleDashboard />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
-                      {/* ------------------- Persistent Dashboard Layout ------------------- */}
-                      <Route element={<PrivateRoute><DashboardLayout userRole={getRole()} /></PrivateRoute>}>
-                        <Route path="/dashboard/student" element={<StudentDashboard />} />
-                        <Route path="/dashboard/tutor" element={<TutorDashboard />} />
-                        <Route path="/dashboard/staff" element={<StaffDashboard />} />
+                    {/* ------------------- Dashboard Redirect ------------------- */}
+                    <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
 
-                        <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
-                        {user && profile && (
-                          <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
-                        )}
-                        <Route path="/market/my-listings" element={<MyListings />} />
-                        <Route path="/market/:id" element={<ListingDetail />} />
+                    {/* ------------------- Persistent Dashboard Layout ------------------- */}
+                    <Route element={<PrivateRoute><DashboardLayout userRole={getRole()} /></PrivateRoute>}>
+                      <Route path="/dashboard/student" element={<StudentDashboard />} />
+                      <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+                      <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
-                        <Route path="/my-mistakes" element={<MyMistakes />} />
-                        <Route path="/ai-assistant" element={<AIAssistant />} />
-                        <Route path="/calendar" element={<Calendar />} />
-                        <Route path="/progress" element={<StudyProgress />} />
-                        <Route path="/resources" element={<Resources />} />
-                        <Route path="/medtube" element={<MedTube />} />
-                        <Route path="/announcements" element={<Announcements />} />
-                        <Route path="/feedback" element={<Feedback />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/subscription" element={<Subscription />} />
-                        <Route path="/notifications" element={<Notifications />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/quiz" element={<QuizPage />} />
-                        <Route path="/assessment-notes" element={<AssessmentNotes />} />
-                        <Route path="/forum" element={<Forum />} />
-                        <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
-                        <Route path="/feed" element={<Feed />} />
-                        <Route path="/simulation/candidate" element={<CandidateInfo />} />
-                        <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
-                      </Route>
+                      <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
+                      {user && profile && (
+                        <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
+                      )}
+                      <Route path="/market/my-listings" element={<MyListings />} />
+                      <Route path="/market/:id" element={<ListingDetail />} />
 
-                      {/* ------------------- Full-screen / Independent Pages ------------------- */}
-                      <Route path="/terms" element={<TermsPage />} />
-                      <Route path="/simulation/:paper_id" element={<SimulationPage />} />
-                      <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                      {/* ------------------- Catch-all ------------------- */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppScrollToTop>
+                      <Route path="/my-mistakes" element={<MyMistakes />} />
+                      <Route path="/ai-assistant" element={<AIAssistant />} />
+                      <Route path="/calendar" element={<Calendar />} />
+                      <Route path="/progress" element={<StudyProgress />} />
+                      <Route path="/resources" element={<Resources />} />
+                      <Route path="/medtube" element={<MedTube />} />
+                      <Route path="/announcements" element={<Announcements />} />
+                      <Route path="/feedback" element={<Feedback />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/subscription" element={<Subscription />} />
+                      <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/quiz" element={<QuizPage />} />
+                      <Route path="/assessment-notes" element={<AssessmentNotes />} />
+                      <Route path="/forum" element={<Forum />} />
+                      <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
+                      <Route path="/feed" element={<Feed />} />
+                      <Route path="/simulation/candidate" element={<CandidateInfo />} />
+                      <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
+                    </Route>
+
+                    {/* ------------------- Full-screen / Independent Pages ------------------- */}
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/simulation/:paper_id" element={<SimulationPage />} />
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    {/* ------------------- Catch-all ------------------- */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+
                   <BottomBarWrapper />
                 </AIWrapper>
               </MusicPlayerProvider>
