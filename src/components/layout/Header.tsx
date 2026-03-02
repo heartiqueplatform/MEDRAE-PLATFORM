@@ -196,6 +196,7 @@ export function Header({
   return (
     <>
       <header className="h-14 sm:h-16 bg-card border-b border-border flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 text-sm sm:text-base">
+
         <OnlineStatusToast />
 
         <div className="flex items-center flex-1 justify-between">
@@ -208,6 +209,12 @@ export function Header({
             <Menu className="h-5 w-5" />
             <span className="text-[11px] font-medium mt-0.5">Menu</span>
           </button>
+          {/* Center scrolling text */}
+          <div className="hidden md:flex md:justify-center md:max-w-[400px] overflow-hidden">
+            <div className="whitespace-nowrap animate-marquee text-base font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
+              🌟 Welcome to Medrae.... Stop Guessing. Start Passing.🌟
+            </div>
+          </div>
           <div className="flex items-center gap-3 order-1 lg:hidden">
 
             {/* Online Status */}
@@ -249,6 +256,7 @@ export function Header({
               >
                 {isOnline ? "Online" : "Offline"}
               </span>
+
             </div>
 
 
@@ -262,12 +270,7 @@ export function Header({
             )}
 
           </div>
-          {/* Center scrolling text */}
-          <div className="hidden md:flex-1 md:flex md:justify-center order-2 overflow-hidden">
-            <div className="whitespace-nowrap animate-marquee text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
-              🌟 Welcome to Medrae.... Stop Guessing. Start Passing.🌟
-            </div>
-          </div>
+
 
         </div>
 
