@@ -989,7 +989,7 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="dashboard-no-select min-h-screen md:flex md:items-center md:justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] w-full">
+    <div className="dashboard-no-select min-h-screen md:flex md:items-center md:justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] w-full  animate-fadeIn">
       <div className="w-full space-y-2 md:max-w-3xl md:px-4">
         <GreetingsCard />
 

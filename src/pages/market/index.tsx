@@ -315,7 +315,7 @@ export default function MarketFeed({ user }: any) {
 
     if (hasAccess === false) {
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 text-white p-6">
+            <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 text-white p-6 ">
                 {/* INFO SECTION */}
                 <div className="bg-gray-900 bg-opacity-70 p-5 rounded-xl max-w-md w-full space-y-6 text-center">
                     {/* OVERLAY CONTENT */}
@@ -358,7 +358,7 @@ export default function MarketFeed({ user }: any) {
         );
     }
     return (
-        <div className="max-w-8xl py-0 px-4">
+        <div className="max-w-8xl py-0 px-4  animate-fadeIn">
             {/* HEADER — PRESERVED */}
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <h1 className="flex items-center gap-2 text-4xl font-bold text-gray-900 dark:text-white">
@@ -370,7 +370,7 @@ export default function MarketFeed({ user }: any) {
                     NursMartt
                 </h1>
 
-                <div className="flex gap-3 flex-wrap">
+                <div className="flex gap-4 flex-wrap">
                     <select
                         className="border rounded px-3 py-2 bg-white text-gray-900 dark:bg-gray-800 dark:text-white rounded-xl border-0"
                         value={categoryFilter || ""}

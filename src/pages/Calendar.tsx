@@ -227,7 +227,7 @@ export function Calendar() {
   };
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  animate-fadeIn">
       <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">

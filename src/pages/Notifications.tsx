@@ -104,7 +104,7 @@ export function Notifications() {
   };
 
   return (
-    <div className="space-y-6 p-2 border-0">
+    <div className="space-y-6 p-2 border-0  animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

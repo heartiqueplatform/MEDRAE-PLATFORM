@@ -16,7 +16,7 @@ export default function AllUsersPopover({ totalUsers }: { totalUsers?: number })
         setLoading(true);
         const { data, error } = await supabase
             .from("profiles")
-            .select("user_id, name, username, role, subscription, avatar_url, is_online, created_at"); // <-- include created_at
+            .select("user_id, name, username, role, avatar_url, is_online, created_at"); // <-- include created_at
         if (!error && data) setAllProfiles(data);
         setLoading(false);
     };
@@ -76,7 +76,7 @@ export default function AllUsersPopover({ totalUsers }: { totalUsers?: number })
                     </div>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-72 max-h-80 overflow-y-auto custom-scrollbar p-2 bg-card">
+                <PopoverContent className="w-72 max-h-80 overflow-y-auto custom-scrollbar p-2 bg-card animate-fadeIn">
                     <h4 className="font-semibold text-sm mb-2">All Users</h4>
                     {loading ? (
                         <p className="text-xs text-gray-500">Loading...</p>
@@ -111,7 +111,6 @@ export default function AllUsersPopover({ totalUsers }: { totalUsers?: number })
                                             <div className="text-xs text-muted-foreground flex gap-1 items-center">
                                                 {u.username && <span>@{u.username}</span>}
                                                 <span>{u.role}</span>
-                                                <span>({u.subscription})</span>
                                             </div>
                                         </div>
                                         {u.is_online && (

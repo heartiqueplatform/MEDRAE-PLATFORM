@@ -6,7 +6,7 @@ export type Profile = {
     name: string;
     username?: string;
     role: string;
-    subscription?: string;
+
     avatar_url?: string;
     institution?: string;
     course?: string;
@@ -23,13 +23,13 @@ export const useOnlineUsers = () => {
         const fetchUsers = async () => {
             // 1️⃣ Fetch initial users
             const { data, error } = await supabase
-                .from<Profile>("profiles")
+                .from("profiles")
                 .select(`
   user_id,
   name,
   username,
   role,
-  subscription,
+,
   avatar_url,
   institution,
   course,

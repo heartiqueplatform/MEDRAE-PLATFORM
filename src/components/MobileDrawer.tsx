@@ -326,6 +326,17 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
         {
             label: "Other",
             items: [
+                {
+                    title: "NursMartt",
+                    url: "/market",
+                    icon: () => (
+                        <img
+                            src="/Nurvia_logo.png"
+                            alt="Nurvia Logo"
+                            className="h-6 w-6 object-contain bg-transparent"
+                        />
+                    ),
+                },
                 { title: "Announcements", url: "/announcements", icon: Bell, badge: unreadAnnouncements > 0 ? formatNumber(unreadAnnouncements) : undefined, iconTone: "alert" },
                 { title: "Feedback", url: "/feedback", icon: MessageSquareX, iconTone: "communication" },
                 { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" },

@@ -85,7 +85,7 @@ export function Subscription() {
   }, []);
 
   return (
-    <div className="relative space-y-6">
+    <div className="relative space-y-6 ">
       {showOverlay && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 pointer-events-auto">
           <div className="bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-700 p-8 rounded-2xl shadow-2xl text-center max-w-md text-white relative">

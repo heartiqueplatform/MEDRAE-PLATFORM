@@ -54,6 +54,7 @@ interface TriviaResult {
 
 export const UserProfileModal = ({ userId, onClose }: Props) => {
     const [profile, setProfile] = useState<Profile | null>(null);
+
     const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
     const [simulationResults, setSimulationResults] = useState<SimulationResult[]>([]);
     const [triviaResults, setTriviaResults] = useState<TriviaResult[]>([]);
@@ -213,6 +214,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                                 className="cursor-pointer w-20 h-20 rounded-full object-cover mb-3"
                             />
                             <h2 className="text-lg font-bold">{profile.name || "Student"}</h2>
+
                             {profile.username && <p className="text-sm text-gray-500">@{profile.username}</p>}
                             {profile.is_online !== null && (
                                 <p className={`text-xs mt-1 ${profile.is_online ? "text-green-500" : "text-gray-400"}`}>

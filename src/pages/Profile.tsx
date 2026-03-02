@@ -25,7 +25,7 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 export function Profile() {
   const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
   const [profileState, setProfileState] = useState(cachedProfile);
-
+  const [activePlan, setActivePlan] = useState<string | null>(null);
   const user = useUser();
   const navigate = useNavigate();
 
@@ -192,12 +192,50 @@ export function Profile() {
           setProfileState(data);
           localStorage.setItem("userProfile", JSON.stringify(data));
         }
+        // 🔥 Fetch subscription separately
+        const { data: subData } = await supabase
+          .from("subscriptions")
+          .select("plan_type, is_active, expires_at")
+          .eq("user_id", user.id)
+          .single();
+
+        if (subData && subData.is_active) {
+          setActivePlan(subData.plan_type);
+        } else {
+          setActivePlan(null); // will show Free
+        }
       } catch (err) {
         console.error("Failed to fetch profile:", err);
       }
     };
 
     fetchProfile();
+    // 🔥 Real-time subscription listener
+    const channel = supabase
+      .channel("subscription-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "subscriptions",
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          const newSub = payload.new as any;
+
+          if (newSub?.is_active) {
+            setActivePlan(newSub.plan_type);
+          } else {
+            setActivePlan(null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
 
@@ -209,7 +247,7 @@ export function Profile() {
 
 
   return (
-    <div className="space-y-2 px-3 border-0">
+    <div className="space-y-2 px-3 border-0  animate-fadeIn">
       <div className="flex items-center gap-3 mb-6">
         <User className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">My Profile</h1>
@@ -261,7 +299,7 @@ export function Profile() {
                         {profileState?.role}
                       </Badge>
                       <Badge variant="outline">
-                        {profileState?.subscription || "Free"}
+                        {activePlan || "Free"}
                       </Badge>
                     </div>
                   </div>

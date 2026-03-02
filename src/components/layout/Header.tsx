@@ -401,7 +401,6 @@ export function Header({
                               <div className="flex gap-1 items-center">
                                 {username && <span>@{username}</span>}
                                 <span>{role}</span>
-                                <span>({subscription})</span>
                               </div>
                               {(institution || course || specialization) && (
                                 <div className="flex gap-1 items-center text-gray-400 truncate">

@@ -960,7 +960,7 @@ export default function Feed() {
           ref={scrollContainerRef}   // ✅ add this
           className="p-0 max-w-2xl mx-auto space-y-2
              h-[80vh] overflow-y-auto overflow-x-hidden
-             custom-scrollbar"
+             custom-scrollbar  animate-fadeIn"
         >
 
 

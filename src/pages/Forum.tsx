@@ -444,7 +444,7 @@ export function Forum() {
   };
 
   return (
-    <div className="h-[calc(100vh-2rem)] flex gap-4 overflow-hidden">
+    <div className="h-[calc(100vh-2rem)] flex gap-4 overflow-hidden ">
 
 
       {/* Chat Area */}
