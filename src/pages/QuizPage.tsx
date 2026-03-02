@@ -841,56 +841,121 @@ Please provide a detailed discussion and guidance.`;
       q => !answers[q.id] || lockedVisible[q.id]
     )
     : questions;
-
-
   return (
-    <div className="space-y-2 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8  ">
-
-
-
-      <div className="flex justify-between items-center">
-        <h1 className="uppercase text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-snug text-blue-700 dark:text-blue-400">
+    <div className="space-y-0 max-w-8xl mx-auto px-3 sm:px-6 lg:px-8  ">
+      <div className="flex flex-wrap justify-between items-center gap-2">
+        <h1 className="w-full sm:w-auto uppercase text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-snug text-blue-700 dark:text-blue-400">
           {unit}
         </h1>
+        {/* Always show the timer, even if timerEnd is undefined or after submission */}
+        <Countdown
+          date={timerEnd ?? new Date().getTime() + 1000 * 60 * 60 * 3} // fallback 1 hour if undefined
+          onComplete={() => handleSubmit(true)}
+          renderer={({ hours, minutes, seconds }) => (
+            <div className="flex items-center gap-2 text-sm sm:text-base font-bold text-red-600 dark:text-red-400 flex-shrink-0">
+              {/* Label */}
+              <span className="uppercase tracking-wide">Time:</span>
 
-        {!quizFinished && timerEnd && (
-          <Countdown
-            date={timerEnd}
-            onComplete={() => handleSubmit(true)}
-            renderer={({ hours, minutes, seconds }) => (
-              <div className="px-2 py-1 sm:px-3 sm:py-2 bg-white dark:bg-gray-800 border-0 rounded-3xl shadow-md text-center max-w-[220px] sm:max-w-xs mx-auto sm:mx-0">
-                <p className="text-[10px] sm:text-sm font-bold text-red-600 dark:text-red-400 mb-1">
-                  Time Remaining
-                </p>
-                <div className="flex items-center justify-center space-x-1 sm:space-x-2 text-sm sm:text-lg font-extrabold">
-                  <div className="flex flex-col items-center">
-                    <span>{hours}</span>
-                    <span className="text-[8px] sm:text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                      Hours
-                    </span>
-                  </div>
-                  <span>:</span>
-                  <div className="flex flex-col items-center">
-                    <span>{minutes}</span>
-                    <span className="text-[8px] sm:text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                      Minutes
-                    </span>
-                  </div>
-                  <span>:</span>
-                  <div className="flex flex-col items-center">
-                    <span>{seconds < 10 ? `0${seconds}` : seconds}</span>
-                    <span className="text-[8px] sm:text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                      Seconds
-                    </span>
+              {/* Countdown bar / numbers */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                <span>{hours ?? '--'}</span>:
+                <span>{minutes ?? '--'}</span>:
+                <span>{seconds !== undefined ? (seconds < 10 ? `0${seconds}` : seconds) : '--'}</span>
+              </div>
+
+              {/* Optional thin underline bar matching heading */}
+              <div className="flex-1 h-[2px] bg-red-500 dark:bg-red-400 rounded-full"></div>
+            </div>
+          )}
+        />
+        {/* 🔹 Sticky Quiz Progress Button + Centered Overlay */}
+        <div className="sticky top-0 z-50 flex flex-col w-60">
+
+          {/* Toggleable Progress Button */}
+          <button
+            onClick={() => setProgressOpen(!progressOpen)}
+            className={`flex items-center gap-2 px-3 h-8 rounded-full text-white shadow-lg transition
+      ${Object.keys(answers).length / questions.length < 0.5
+                ? 'bg-red-600 hover:bg-red-700'
+                : Object.keys(answers).length / questions.length < 0.7
+                  ? 'bg-yellow-500 hover:bg-yellow-600'
+                  : 'bg-green-600 hover:bg-green-700'}
+    `}
+            title="Click to view full progress"
+          >
+            <span className="font-bold">{Object.keys(answers).length}/{questions.length}</span>
+            <span className="font-medium">Q's Answered</span>
+            {progressOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+
+          {/* Centered Overlay */}
+          {progressOpen && (
+            <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-70 p-4 pt-10">
+
+              <div className="relative bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-3xl max-h-[80vh] text-center shadow-lg overflow-auto  custom-scrollbar">
+
+                {/* ❌ Top-right Close Button */}
+                <button
+                  onClick={() => setProgressOpen(false)}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-200 dark:hover:text-white text-xl font-bold transition"
+                  title="Close"
+                >
+                  ×
+                </button>
+
+                {/* Header */}
+                <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
+                  Quiz Progress
+                </h2>
+
+                {/* Stats */}
+                <div className="flex justify-center gap-6 mb-4 text-gray-700 dark:text-gray-300">
+                  <div>Answered: {Object.keys(answers).length}</div>
+                  <div>Unanswered: {questions.length - Object.keys(answers).length}</div>
+                  <div>Total: {questions.length}</div>
+                </div>
+
+                {/* Horizontal Circle Tracker */}
+                <div className="flex flex-wrap justify-center gap-2">
+                  {questions.map((q, index) => {
+                    const userAnswer = answers[q.id];
+                    let circleColor = "bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+
+                    if (userAnswer !== undefined) {
+                      circleColor = userAnswer === q.correct_answer
+                        ? "bg-green-500 text-white"
+                        : "bg-red-500 text-white";
+                    }
+
+                    return (
+                      <div
+                        key={q.id}
+                        ref={(el) => (circleRefs.current[index] = el)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold ${circleColor}`}
+                        title={`Question ${index + 1} ${userAnswer !== undefined ? `(Your answer: ${userAnswer})` : ""}`}
+                      >
+                        {index + 1}
+                      </div>
+                    );
+                  })}
+
+                  {/* Total circle */}
+                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 text-white font-bold">
+                    {questions.length}
                   </div>
                 </div>
 
-
+                {/* Close button */}
+                <button
+                  className="mt-6 px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-bold transition"
+                  onClick={() => setProgressOpen(false)}
+                >
+                  Close
+                </button>
               </div>
-
-            )}
-          />
-        )}
+            </div>
+          )}
+        </div>
       </div>
       {checkpointOverlay?.visible && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-80 text-white p-4">
@@ -960,65 +1025,6 @@ Please provide a detailed discussion and guidance.`;
         </div>
       )}
 
-      {/* 🔹 Sticky Quiz Progress + Circle Tracker */}
-      <div className="sticky top-0 z-50 bg-white dark:bg-gray-800 p-2 shadow flex flex-col w-60 rounded-lg">
-
-        {/* Toggleable Progress Panel */}
-        <button
-          onClick={() => setProgressOpen(!progressOpen)}
-          className={`flex items-center gap-2 px-3 h-8 rounded-full text-white shadow-lg transition
-      ${Object.keys(answers).length / questions.length < 0.5
-              ? 'bg-red-600 hover:bg-red-700'
-              : Object.keys(answers).length / questions.length < 0.7
-                ? 'bg-yellow-500 hover:bg-yellow-600'
-                : 'bg-green-600 hover:bg-green-700'}
-    `}
-          title="Click to expand"
-        >
-          <span className="font-bold">{Object.keys(answers).length}/{questions.length}</span>
-          <span className="font-medium">Q's Answered</span>
-          {progressOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-
-        {progressOpen && (
-          <div className="mt-2 p-3 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg text-sm text-gray-800 dark:text-gray-200">
-            <p className="font-semibold mb-1">Quiz Progress</p>
-            <p>Answered: {Object.keys(answers).length}</p>
-            <p>Unanswered: {questions.length - Object.keys(answers).length}</p>
-            <p>Total Questions: {questions.length}</p>
-          </div>
-        )}
-
-        {/* Horizontal Circle Tracker */}
-        <div className="flex overflow-x-auto custom-scrollbar gap-2 py-1 mt-2">
-          {questions.map((q, index) => {
-            const userAnswer = answers[q.id];
-            let circleColor = "bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
-
-            if (userAnswer !== undefined) {
-              circleColor = userAnswer === q.correct_answer
-                ? "bg-green-500 text-white"
-                : "bg-red-500 text-white";
-            }
-
-            return (
-              <div
-                key={q.id}
-                ref={(el) => (circleRefs.current[index] = el)}
-                className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold ${circleColor}`}
-                title={`Question ${index + 1} ${userAnswer !== undefined ? `(Your answer: ${userAnswer})` : ""}`}
-              >
-                {index + 1}
-              </div>
-            );
-          })}
-
-          {/* Total circle */}
-          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 text-white font-bold">
-            {questions.length}
-          </div>
-        </div>
-      </div>
 
       {/* 🔹 React Hooks for smooth scroll */}
 
@@ -1105,7 +1111,7 @@ Please provide a detailed discussion and guidance.`;
         </div>
 
         {/* Right side: Timer action */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleResetTimer}
             className="relative group p-2 rounded-full hover:bg-green-100 dark:hover:bg-green-700 active:scale-95 transition"
@@ -1128,7 +1134,7 @@ Please provide a detailed discussion and guidance.`;
           const isCorrect = selectedAnswer === q.correct_answer;
           const showFeedback = feedbackShown[q.id];
           return (
-            <div key={q.id} className="flex flex-col lg:flex-row gap-4 w-full">
+            <div key={q.id} className="flex flex-col lg:flex-row gap-2 w-full">
 
               {/* Question Card */}
               <div
@@ -1519,7 +1525,7 @@ Please provide a detailed discussion and guidance.`;
               </div>
 
               {/* Small Note Card */}
-              <div className="w-full lg:w-1/3 p-1.5 sm:px-4 sm:py-4 rounded-md shadow-none border-0 bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900 text-black dark:text-white flex flex-col">
+              <div className="w-full lg:w-1/3 p-1.5 sm:px-6 sm:py-4 rounded-md shadow-none border-0 bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900 text-black dark:text-white flex flex-col">
 
                 {/* Header */}
                 <div className="flex justify-between items-center mb-2 px-2 lg:px-0">
