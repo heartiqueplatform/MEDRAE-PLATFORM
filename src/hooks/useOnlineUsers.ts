@@ -29,7 +29,7 @@ export const useOnlineUsers = () => {
   name,
   username,
   role,
-,
+
   avatar_url,
   institution,
   course,
