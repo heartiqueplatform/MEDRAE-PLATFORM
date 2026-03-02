@@ -191,7 +191,7 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
   const showMusic = !disabledPages.includes(window.location.pathname);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background relative">
+    <div className="flex h-screen w-full overflow-hidden bg-background relative ">
 
       {/* Medical Doodle Background */}
       <MedicalDoodles className="-z-10 pointer-events-none" />
@@ -233,6 +233,8 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
           {showMusic && <MusicPlayer />}
         </div>
       </div>
+
     </div>
+
   );
 }
