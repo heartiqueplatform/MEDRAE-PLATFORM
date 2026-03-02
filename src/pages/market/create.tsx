@@ -429,9 +429,11 @@ export default function CreateListingPage({ user, profile }: any) {
                             )}
                         </button>
                     </form>
+                    <TermsButton />
                 </div>
+
             </div >
-            <TermsButton />
+
         </div >
     );
 }

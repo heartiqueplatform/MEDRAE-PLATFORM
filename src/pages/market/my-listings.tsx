@@ -119,7 +119,7 @@ export default function MyListings() {
     return (
         <div className={`max-w-8xl   py-0 px-3 ${theme === "dark" ? "text-white" : "text-black"}`}>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
                 {/* Title */}
                 <h1 className="text-3xl font-bold">My Listings</h1>
 

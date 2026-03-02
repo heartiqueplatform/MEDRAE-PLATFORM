@@ -296,13 +296,13 @@ export default function ListingDetail() {
                 )}
                 <button
                     onClick={() => navigate("/market")}
-                    className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm"
+                    className="inline-flex items-center gap-2 mb-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm"
                 >
                     <ArrowLeft size={18} />
                     Back to NursMartt
                 </button>
 
-                <h1 className="text-3xl font-bold">{listing.title}</h1>
+                <h1 className="text-4xl font-bold">{listing.title}</h1>
                 <p className="text-gray-500 dark:text-gray-400">{listing.category} • {listing.condition}</p>
 
                 {/* Image carousel */}

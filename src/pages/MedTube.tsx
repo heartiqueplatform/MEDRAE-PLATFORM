@@ -494,20 +494,29 @@ export function MedTube() {
   );
 
   return (
-    <div className="space-y-2 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8  ">
+    <div className="space-y-2 max-w-8xl mx-auto px-4 sm:px-6 lg:px-8  ">
 
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">MedTube</h1>
-          {subscription && (
-            <Badge className="ml-2 bg-green-600 text-white">
-              {subscription.plan_type.toUpperCase()}
-            </Badge>
-          )}
+        <div className="w-full">
 
-          <p className="text-muted-foreground mt-2">
+          {/* Title + Badge Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
+              MedTube
+            </h1>
+
+            {subscription && (
+              <Badge className="bg-green-600 text-white w-fit">
+                {subscription.plan_type.toUpperCase()}
+              </Badge>
+            )}
+          </div>
+
+          {/* Description */}
+          <p className="text-muted-foreground mt-1">
             Explore a rich library of educational videos designed specifically for nursing and medical students. Learn essential clinical skills, master pharmacology concepts, understand complex medical conditions, and stay prepared for emergencies. Our platform empowers you to grow confidently, practice with real-world scenarios, and advance your knowledge at your own pace. Dive in, stay curious, and let MedTube guide your journey to becoming a skilled healthcare professional!
           </p>
+
         </div>
       </div>
 
@@ -614,19 +623,25 @@ export function MedTube() {
         </div>
       )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search videos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      <div className="relative flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search videos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <Button
+          className="flex items-center gap-2 lg:w-auto w-full"
+          onClick={() => setShowUploadForm(!showUploadForm)}
+        >
+          <Upload className="h-4 w-4" /> Upload Video
+        </Button>
       </div>
-      <Button className="flex items-center gap-2" onClick={() => setShowUploadForm(!showUploadForm)}>
-        <Upload className="h-4 w-4" /> Upload Video
-      </Button>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-1">
 
         {/* Mobile dropdown */}
         <div className="md:hidden">
