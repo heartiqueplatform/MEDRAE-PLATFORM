@@ -76,7 +76,7 @@ export default function AllUsersPopover({ totalUsers }: { totalUsers?: number })
                     </div>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-72 max-h-80 overflow-y-auto custom-scrollbar p-2 bg-card animate-fadeIn">
+                <PopoverContent className="w-72 max-h-80 overflow-y-auto custom-scrollbar p-2 bg-card ">
                     <h4 className="font-semibold text-sm mb-2">All Users</h4>
                     {loading ? (
                         <p className="text-xs text-gray-500">Loading...</p>

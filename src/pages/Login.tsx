@@ -182,7 +182,7 @@ export function Login() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden  animate-fadeIn">
+    <div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden  ">
 
       <Card className="w-full max-w-xl bg-white shadow-lg rounded-2xl">
 

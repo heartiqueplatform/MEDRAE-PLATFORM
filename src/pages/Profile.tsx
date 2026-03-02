@@ -247,7 +247,7 @@ export function Profile() {
 
 
   return (
-    <div className="space-y-2 px-3 border-0  animate-fadeIn">
+    <div className="space-y-2 px-3 border-0  ">
       <div className="flex items-center gap-3 mb-6">
         <User className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">My Profile</h1>

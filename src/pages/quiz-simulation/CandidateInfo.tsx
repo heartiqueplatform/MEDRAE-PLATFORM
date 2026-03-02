@@ -72,7 +72,7 @@ export default function CandidateInfo() {
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-10  animate-fadeIn">
+    <div className="max-w-xl mx-auto mt-10  ">
       <Card className="border-0">
         <CardHeader>
           <CardTitle className="text-center">Confirm Your Details</CardTitle>

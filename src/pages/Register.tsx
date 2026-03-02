@@ -206,7 +206,7 @@ export function Register() {
     });
 
     return (
-      <div className="space-y-3  animate-fadeIn">
+      <div className="space-y-3  ">
         <div className="grid grid-cols-2 gap-4">
           <div><Label>Full Name *</Label><Input
             placeholder="John Doe"

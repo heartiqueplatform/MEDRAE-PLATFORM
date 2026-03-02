@@ -7,7 +7,7 @@ export default function PrivacyPolicyPage() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <div className="w-full min-h-screen bg-white text-gray-900 py-2 px-2  animate-fadeIn">
+        <div className="w-full min-h-screen bg-white text-gray-900 py-2 px-2  ">
             <div className="max-w-4xl mx-auto space-y-2 text-sm text-gray-700">
 
                 <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>

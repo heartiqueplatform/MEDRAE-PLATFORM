@@ -117,7 +117,7 @@ export default function MyListings() {
     };
 
     return (
-        <div className={`max-w-8xl  animate-fadeIn py-0 px-3 ${theme === "dark" ? "text-white" : "text-black"}`}>
+        <div className={`max-w-8xl   py-0 px-3 ${theme === "dark" ? "text-white" : "text-black"}`}>
 
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                 {/* Title */}

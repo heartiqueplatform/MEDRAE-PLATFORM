@@ -358,7 +358,7 @@ export default function MarketFeed({ user }: any) {
         );
     }
     return (
-        <div className="max-w-8xl py-0 px-4  animate-fadeIn">
+        <div className="max-w-8xl py-0 px-4  ">
             {/* HEADER — PRESERVED */}
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <h1 className="flex items-center gap-2 text-4xl font-bold text-gray-900 dark:text-white">

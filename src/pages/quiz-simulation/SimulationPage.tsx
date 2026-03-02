@@ -676,7 +676,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
     const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 
     return (
-      <div className="p-6 space-y-6 bg-background text-foreground dark:bg-gray-900 dark:text-gray-100 min-h-screen  animate-fadeIn">
+      <div className="p-6 space-y-6 bg-background text-foreground dark:bg-gray-900 dark:text-gray-100 min-h-screen  ">
         <h2 className="text-2xl font-semibold">
           Review Before You {pendingAction === "submit" ? "Submit" : "Reset"}
         </h2>
@@ -795,7 +795,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
       );
     }
     return (
-      <div className="min-h-screen bg-background text-foreground p-4  animate-fadeIn">
+      <div className="min-h-screen bg-background text-foreground p-4  ">
         <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
         {/* Dashboard Button */}
         <div className="mb-4">

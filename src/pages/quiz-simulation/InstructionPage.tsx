@@ -143,7 +143,7 @@ export default function InstructionPage() {
     return <GlobalLoader message="Setting simulation page..." />;
   }
   return (
-    <div className="space-y-2 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8  animate-fadeIn">
+    <div className="space-y-2 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8  ">
 
 
       {/* Setup Card */}

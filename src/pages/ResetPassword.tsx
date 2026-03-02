@@ -221,7 +221,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-blue-500 px-4  animate-fadeIn">
+    <div className="min-h-screen w-screen flex items-center justify-center bg-blue-500 px-4  ">
       <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-lg">
         {step === "request" && (
           <>

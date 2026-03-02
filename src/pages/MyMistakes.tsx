@@ -343,7 +343,7 @@ export default function MyMistakes() {
     return (
 
 
-        <div className="p-3 max-w-4xl mx-auto  space-y-2  animate-fadeIn">
+        <div className="p-3 max-w-4xl mx-auto  space-y-2  ">
             {syncing && (
                 <div className="fixed top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-lg shadow-md text-sm z-50">
                     Syncing changes...

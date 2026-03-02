@@ -302,7 +302,7 @@ User's message: ${inputMessage}
     return <GlobalLoader message="Loading chat history..." />;
   }
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col w-full max-w-3xl mx-auto  animate-fadeIn">
+    <div className="h-[calc(100vh-4rem)] flex flex-col w-full max-w-3xl mx-auto  ">
 
       {/* Header */}
       <div className="w-full flex items-center gap-3 p-4 bg-background border-b shadow-sm">
