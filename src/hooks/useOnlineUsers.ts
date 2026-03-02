@@ -6,7 +6,6 @@ export type Profile = {
     name: string;
     username?: string;
     role: string;
-
     avatar_url?: string;
     institution?: string;
     course?: string;
@@ -29,7 +28,6 @@ export const useOnlineUsers = () => {
   name,
   username,
   role,
-
   avatar_url,
   institution,
   course,

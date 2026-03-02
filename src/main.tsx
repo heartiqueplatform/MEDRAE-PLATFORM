@@ -35,7 +35,7 @@ window.alert = function (message: AlertMessage) {
 */
 
 // App version for cache control
-const APP_VERSION = "86"// increment this with each deployment
+const APP_VERSION = "87"// increment this with each deployment
 const storedVersion = localStorage.getItem("appVersion");
 
 // Update app version safely without clearing all storage
