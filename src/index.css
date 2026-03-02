@@ -599,3 +599,13 @@ pre {
     opacity: 1;
   }
 }
+
+/* Prevent layout containers from breaking fixed overlays */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  transform: none !important;
+}
