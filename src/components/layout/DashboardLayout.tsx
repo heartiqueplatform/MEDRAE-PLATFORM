@@ -22,7 +22,7 @@ interface DashboardLayoutProps {
   userRole?: "student" | "tutor" | "staff";
 }
 
-export function DashboardLayout({ children, userRole = "student" }: DashboardLayoutProps) {
+export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   const { profile, loading } = useUserProfile();
   const authUser = useUser();
   const navigate = useNavigate();
@@ -134,24 +134,13 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
   const user = userData
     ? {
       name: userData.name || "Unknown User",
-      role:
-        userData.role ||
-        (userRole === "student"
-          ? "Nursing Student"
-          : userRole === "tutor"
-            ? "Clinical Tutor"
-            : "Staff Nurse"),
+      role: userData.role || "User",
       avatar: userData.avatar_url || "/avatars/default.jpg",
     }
     : authUser
       ? {
         name: authUser.email || "Unknown User",
-        role:
-          userRole === "student"
-            ? "Nursing Student"
-            : userRole === "tutor"
-              ? "Clinical Tutor"
-              : "Staff Nurse",
+        role: "User",
         avatar: "/avatars/default.jpg",
       }
       : { name: "Offline", role: "Offline", avatar: "/avatars/default.jpg" };
@@ -165,7 +154,7 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
       <MusicPlayerProvider>
         <DashboardContent
           user={user}
-          userRole={userRole}
+          role={userData?.role}
           isDarkMode={isDarkMode}
           toggleDarkMode={toggleDarkMode}
           streak={streak}
@@ -183,7 +172,7 @@ export function DashboardLayout({ children, userRole = "student" }: DashboardLay
 // THIS COMPONENT CAN NOW SAFELY USE useSidebar()
 // -------------------------------------------------------------
 import { useSidebar } from "@/components/ui/sidebar";
-function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, children, isForum }: any) {
+function DashboardContent({ user, role, streak, isDarkMode, toggleDarkMode, children, isForum }: any) {
   const { isSidebarOpen, toggleSidebar } = useSidebar();
 
   // Pages where the music player should never appear
@@ -196,8 +185,7 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
       {/* Medical Doodle Background */}
       <MedicalDoodles className="-z-10 pointer-events-none" />
       <div className="relative z-10 flex w-full">
-
-        <AppSidebar userRole={userRole} className="flex-shrink-0 w-64 md:w-72" />
+        <AppSidebar userRole={role} className="flex-shrink-0 w-64 md:w-72" />
 
         <div className="flex flex-col flex-1 overflow-hidden">
 
@@ -220,8 +208,7 @@ function DashboardContent({ user, userRole, streak, isDarkMode, toggleDarkMode, 
           </main>
 
           {!isSidebarOpen && (
-            <BottomBar
-              userRole={userRole}
+            <BottomBar userRole={role}
               unreadCount={0}
               unreadAnnouncements={0}
             />
