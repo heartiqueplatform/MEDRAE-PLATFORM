@@ -1,5 +1,5 @@
 "use client";
-
+import GlobalRealtimeListener from "@/components/GlobalRealtimeListener";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -62,8 +62,30 @@ import { DashboardLayout } from "./components/layout/DashboardLayout";
 import StudentDashboard from "./pages/dashboard/student";
 import TutorDashboard from "./pages/dashboard/tutor";
 import StaffDashboard from "./pages/dashboard/staff";
+import { toast } from "sonner"; // make sure Sonner is imported
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1, // retry once
+      refetchOnWindowFocus: false,
+      onError: (error: any) => {
+        toast.error("Something went wrong", {
+          description:
+            error?.message || "Failed to fetch data. Please try again.",
+        });
+      },
+    },
+    mutations: {
+      onError: (error: any) => {
+        toast.error("Action failed", {
+          description:
+            error?.message || "Could not complete your request.",
+        });
+      },
+    },
+  },
+});
 
 const getRole = (): "student" | "tutor" | "staff" => {
   return (localStorage.getItem("userRole") as "student" | "tutor" | "staff") || "student";
@@ -325,6 +347,7 @@ const App = () => {
 
       <SessionContextProvider supabaseClient={supabase}>
         <QueryClientProvider client={queryClient}>
+          <GlobalRealtimeListener />
           <TooltipProvider>
             <Toaster />
             <Sonner />
