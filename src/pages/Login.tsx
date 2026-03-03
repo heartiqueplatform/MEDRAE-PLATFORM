@@ -46,18 +46,20 @@ export function Login() {
   };
 
 
-
   const handleLogin = async (
     role: "student" | "tutor" | "staff",
     email: string,
     password: string
   ) => {
     setIsLoading(true);
-    const passwordHash = sha256(password).toString(); // <-- NEW
+
+    // 🔥 Always clear old local data before new login
+    localStorage.clear();
+
+    const passwordHash = sha256(password).toString();
 
     try {
       if (navigator.onLine) {
-        // Online login via Supabase
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -68,46 +70,53 @@ export function Login() {
         }
 
         const userId = data.user.id;
-        // 🔐 Save this session as the only active session
-        // Generate unique device ID
-        let deviceId = localStorage.getItem("device_id");
 
+        // Generate device ID
+        let deviceId = localStorage.getItem("device_id");
         if (!deviceId) {
           deviceId = crypto.randomUUID();
           localStorage.setItem("device_id", deviceId);
         }
-
 
         await supabase
           .from("profiles")
           .update({ active_session_id: deviceId })
           .eq("user_id", userId);
 
-
-        const { data: userData, error: userError } = await supabase
-          .from("users")
+        // 🔎 Fetch role from database (SOURCE OF TRUTH)
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
           .select("role")
-          .eq("id", userId)
+          .eq("user_id", userId)
           .single();
 
-        if (userError || !userData) throw new Error("Profile not found.");
-        if (userData.role !== role) throw new Error("Access denied: role mismatch.");
+        if (profileError || !profile?.role) {
+          throw new Error("Profile not found.");
+        }
 
-        // Save credentials for offline login
-        await saveLoginInfo(email, data.session?.access_token || "", passwordHash);
+        // 🚫 Strict role check
+        if (profile.role !== role) {
+          throw new Error("Access denied: role mismatch.");
+        }
+
+        // Save offline login
+        await saveLoginInfo(
+          email,
+          data.session?.access_token || "",
+          passwordHash
+        );
 
         toast({
           title: "Login successful!",
-          description: `Welcome back, ${userData.role}`,
+          description: `Welcome back, ${profile.role}`,
         });
 
-        localStorage.setItem("userRole", userData.role);
-        localStorage.setItem("hasLoggedInBefore", "true");
+        navigate(`/dashboard/${profile.role}`, { replace: true });
 
-        navigate(`/dashboard/${userData.role}`, { replace: true });
       } else {
         // Offline login
         const saved = await getLoginInfo();
+
         if (
           saved &&
           saved.username === email &&
@@ -117,9 +126,6 @@ export function Login() {
             title: "Offline login successful!",
             description: `Welcome back, ${role} (Offline Mode)`,
           });
-
-          localStorage.setItem("userRole", role);
-          localStorage.setItem("hasLoggedInBefore", "true");
 
           navigate(`/dashboard/${role}`, { replace: true });
         } else {
@@ -139,7 +145,6 @@ export function Login() {
       setIsLoading(false);
     }
   };
-
 
   const LoginForm = ({ role }: { role: "student" | "tutor" | "staff" }) => {
     const [email, setEmail] = useState("");

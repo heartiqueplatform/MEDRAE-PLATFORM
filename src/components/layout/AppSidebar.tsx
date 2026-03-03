@@ -315,23 +315,13 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   const tutorItems = userRole === "tutor" ? [
     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" },
-    { title: "Create Content", url: "/create", icon: BookOpen, iconTone: "content" },
-    { title: "Earnings", url: "/earnings", icon: Star, iconTone: "finance" },
   ] : [];
 
   const staffItems = userRole === "staff" ? [
-    { title: "Knowledge Feed", url: "/knowledge", icon: Network, iconTone: "content" },
-    { title: "Post Videos", url: "/post-videos", icon: Video, iconTone: "media" },
     { title: "Events & Seminars", url: "/events", icon: CalendarDays, iconTone: "learning" },
     { title: "Job Board", url: "/jobs", icon: Briefcase, iconTone: "people" },
     { title: "Write Articles", url: "/articles", icon: PenTool, iconTone: "content" },
   ] : [];
-
-
-  // Fetch unread messages and listen for live updates
-  // ----- UNREAD MESSAGES & ANNOUNCEMENTS -----
-
-
 
   // ----- TOTAL QUESTIONS -----
   useEffect(() => {

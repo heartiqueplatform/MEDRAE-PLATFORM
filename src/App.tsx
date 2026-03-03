@@ -87,9 +87,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const getRole = (): "student" | "tutor" | "staff" => {
-  return (localStorage.getItem("userRole") as "student" | "tutor" | "staff") || "student";
-};
+
 const AIWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const allowedPaths = [
@@ -126,7 +124,7 @@ const BottomBarWrapper = () => {
   const publicPaths = ["/", "/login", "/register"];
   const showBottomBar = !publicPaths.includes(location.pathname);
   if (!showBottomBar) return null;
-  return <BottomBar userRole={getRole()} unreadCount={0} unreadAnnouncements={0} />;
+  return <BottomBar unreadCount={0} unreadAnnouncements={0} />;
 };
 
 const App = () => {
@@ -365,10 +363,10 @@ const App = () => {
                     <Route path="/reset-password" element={<ResetPassword />} />
 
                     {/* ------------------- Dashboard Redirect ------------------- */}
-                    <Route path="/dashboard" element={<Navigate to={`/dashboard/${getRole()}`} replace />} />
+                    <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
 
                     {/* ------------------- Persistent Dashboard Layout ------------------- */}
-                    <Route element={<PrivateRoute><DashboardLayout userRole={getRole()} /></PrivateRoute>}>
+                    <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
                       <Route path="/dashboard/student" element={<StudentDashboard />} />
                       <Route path="/dashboard/tutor" element={<TutorDashboard />} />
                       <Route path="/dashboard/staff" element={<StaffDashboard />} />

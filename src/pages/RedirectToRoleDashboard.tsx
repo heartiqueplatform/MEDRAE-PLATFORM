@@ -7,93 +7,67 @@ import { supabase } from "@/lib/supabaseClient";
 export function RedirectToRoleDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // ✅ Check cache immediately
-  const [cachedSession] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("userSession");
-      return stored ? JSON.parse(stored) : null;
-    }
-    return null;
-  });
-
-  const [cachedRole] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("userRole");
-    }
-    return null;
-  });
-
-  const [loading, setLoading] = useState(!cachedSession); // 🚀 Only load if no cache
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getRoleAndRedirect = async () => {
+    const redirectUser = async () => {
       try {
-        let role = cachedRole || "student";
-        let session = cachedSession;
-
-        if (!session) {
-          // Fetch fresh session
-          const {
-            data: { session: freshSession },
-          } = await supabase.auth.getSession();
-          session = freshSession;
-
-          if (session) {
-            localStorage.setItem("userSession", JSON.stringify(session));
-          }
-        }
+        // Always get fresh session from Supabase
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         const user = session?.user;
+
+        // If no user → go to login
         if (!user) {
-          if (location.pathname !== "/login") navigate("/login");
-          setLoading(false);
+          navigate("/login", { replace: true });
           return;
         }
 
-        // Refresh role if missing
-        if (!cachedRole) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
+        // Fetch role directly from DB (source of truth)
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
 
-          if (profile?.role) {
-            role = profile.role;
-            localStorage.setItem("userRole", role);
-          }
+        if (error || !profile?.role) {
+          navigate("/login", { replace: true });
+          return;
         }
 
-        // Navigate only if needed
+        const role = profile.role;
+
+        // Redirect only if not already on correct dashboard
         if (!location.pathname.startsWith(`/dashboard/${role}`)) {
           navigate(`/dashboard/${role}`, { replace: true });
         }
-      } catch (error) {
-        console.error("Redirect error:", error);
-        navigate("/login");
+      } catch (err) {
+        console.error("Redirect error:", err);
+        navigate("/login", { replace: true });
       } finally {
         setLoading(false);
       }
     };
 
-    getRoleAndRedirect();
+    redirectUser();
 
-    // ✅ Listen for logout only
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+    // Listen for logout
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
-        localStorage.removeItem("userRole");
-        localStorage.removeItem("userSession");
-        navigate("/login");
+        localStorage.clear(); // prevent ghost data
+        navigate("/login", { replace: true });
       }
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [navigate, location, cachedRole, cachedSession]);
+  }, [navigate, location.pathname]);
 
-  // ✅ Hide everything while loading; no flash at all
   if (loading) return null;
 
   return null;

@@ -1,155 +1,223 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import {
-  Video, Eye, PenTool, Heart,
-  Network, CalendarDays, Briefcase,
-  TrendingUp
+  CalendarDays,
+  Bell,
+  Briefcase,
+  Users,
+  ShieldCheck
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 
 export default function StaffDashboard() {
+
+  const [profile, setProfile] = useState<any>(null);
+  const [license, setLicense] = useState<any>(null);
+  const [shiftCount, setShiftCount] = useState(0);
+  const [notifications, setNotifications] = useState(0);
+  const [jobCount, setJobCount] = useState(0);
+  const [mentorshipCount, setMentorshipCount] = useState(0);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("user_id", user.id)
+        .single();
+
+      setProfile(profileData);
+
+      // License
+      const { data: licenseData } = await supabase
+        .from("staff_licenses")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .single();
+
+      setLicense(licenseData);
+
+      // Upcoming shifts
+      const { data: shifts } = await supabase
+        .from("staff_shifts")
+        .select("id")
+        .eq("user_id", user.id)
+        .gte("start_time", new Date().toISOString());
+
+      setShiftCount(shifts?.length || 0);
+
+      // Notifications
+      const { data: notif } = await supabase
+        .from("staff_notifications")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+
+      setNotifications(notif?.length || 0);
+
+      // Verified jobs available
+      const { data: jobs } = await supabase
+        .from("staff_jobs")
+        .select("id")
+        .eq("verified", true)
+        .eq("is_active", true);
+
+      setJobCount(jobs?.length || 0);
+
+      // Mentorship
+      const { data: mentorship } = await supabase
+        .from("staff_mentorship_requests")
+        .select("id")
+        .or(`mentor_id.eq.${user.id},mentee_id.eq.${user.id}`)
+        .eq("status", "active");
+
+      setMentorshipCount(mentorship?.length || 0);
+    };
+
+    loadDashboard();
+  }, []);
+
+  const daysUntilExpiry = license
+    ? Math.ceil(
+      (new Date(license.expiry_date).getTime() - new Date().getTime()) /
+      (1000 * 60 * 60 * 24)
+    )
+    : null;
+
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-care rounded-xl p-6 text-green">
+
+      {/* Welcome */}
+      <div className="bg-gradient-care rounded-xl p-6 text-white">
         <h1 className="text-2xl md:text-3xl font-bold mb-2">
-          Welcome back, Nurse Mary! 👩‍⚕️
+          Welcome back, {profile?.name || "Nurse"} 👩‍⚕️
         </h1>
         <p className="text-white/90">
-          Share your expertise and mentor the next generation of healthcare professionals.
+          Your professional nursing dashboard.
         </p>
       </div>
 
-      {/* Stats Section */}
+      {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Videos Posted</CardTitle>
-            <Video className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              License Status
+            </CardTitle>
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">23</div>
-            <p className="text-xs text-muted-foreground">+4 this month</p>
+            <div className="text-2xl font-bold">
+              {license ? "Active" : "Missing"}
+            </div>
+            {daysUntilExpiry && (
+              <p className="text-xs text-muted-foreground">
+                {daysUntilExpiry} days until renewal
+              </p>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Upcoming Shifts
+            </CardTitle>
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12,847</div>
-            <p className="text-xs text-muted-foreground">+1,203 this week</p>
+            <div className="text-2xl font-bold">
+              {shiftCount}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Scheduled shifts
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Articles Written</CardTitle>
-            <PenTool className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Job Opportunities
+            </CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">18</div>
-            <p className="text-xs text-muted-foreground">+2 this month</p>
+            <div className="text-2xl font-bold">
+              {jobCount}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Verified openings
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Community Impact</CardTitle>
-            <Heart className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              Notifications
+            </CardTitle>
+            <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.9/5</div>
-            <p className="text-xs text-muted-foreground">From 156 likes</p>
+            <div className="text-2xl font-bold">
+              {notifications}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Unread alerts
+            </p>
           </CardContent>
         </Card>
+
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Recent Activity */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Staff Activity</CardTitle>
-              <CardDescription>Your latest contributions to the community</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { action: "Posted Video: Managing ICU Pressure Ulcers", time: "3 hours ago", stat: "45 views" },
-                { action: "Shared Job Opportunity: Staff Nurse at KNH", time: "1 day ago", stat: "12 applications" },
-                { action: "Published Article: New Grad Nurse Tips", time: "2 days ago", stat: "89 reads" },
-                { action: "Added Event: CPD Seminar on Patient Safety", time: "3 days ago", stat: "23 RSVPs" }
-              ].map((activity, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Network className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">{activity.stat}</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+      {/* Mentorship Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mentorship</CardTitle>
+          <CardDescription>
+            Connect with experienced nurses or mentor new professionals
+          </CardDescription>
+        </CardHeader>
 
-        {/* Right: Actions + Trending */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline">
-                <Video className="mr-2 h-4 w-4" />
-                Post New Video
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <PenTool className="mr-2 h-4 w-4" />
-                Write Article
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Briefcase className="mr-2 h-4 w-4" />
-                Share Job Opening
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <CalendarDays className="mr-2 h-4 w-4" />
-                Create Event
-              </Button>
-            </CardContent>
-          </Card>
+        <CardContent className="flex items-center justify-between">
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Trending in Community</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { topic: "Medication Safety Tips", stat: "156 interactions" },
-                { topic: "Mental Health Support", stat: "98 interactions" },
-                { topic: "Career Development", stat: "87 interactions" },
-                { topic: "Clinical Protocols", stat: "76 interactions" }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/30">
-                  <div>
-                    <p className="text-sm font-medium">{item.topic}</p>
-                    <p className="text-xs text-muted-foreground">{item.stat}</p>
-                  </div>
-                  <Badge variant="secondary">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    Hot
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          <div>
+            <p className="text-lg font-semibold">
+              Active Mentorships
+            </p>
+
+            <p className="text-sm text-muted-foreground">
+              Grow your professional network
+            </p>
+          </div>
+
+          <Badge variant="secondary">
+            <Users className="h-3 w-3 mr-1" />
+            {mentorshipCount}
+          </Badge>
+
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
