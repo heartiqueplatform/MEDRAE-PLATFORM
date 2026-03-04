@@ -81,7 +81,7 @@ export default function SimulationPage() {
     return [];
   });
 
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState<any | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -283,8 +283,7 @@ export default function SimulationPage() {
   // ===== Auto-submit if fullscreen is exited (ESC, swipe, system) =====
   useEffect(() => {
     const handleFullscreenChange = () => {
-      if (selectedPaper && !document.fullscreenElement) {
-        // User exited fullscreen → submit exam
+      if (selectedPaper && !document.fullscreenElement && !isSubmitting) {
         confirmSubmit();
       }
     };
@@ -487,7 +486,9 @@ export default function SimulationPage() {
     setPendingAction(null);
   };
   const confirmSubmit = async () => {
-    if (!selectedPaper) return;
+    if (!selectedPaper || isSubmitting) return;
+
+    setIsSubmitting(true); // 🔒 lock
 
     const correctCount = questions.reduce((count, q) => {
       const userAnswer = answers[q.id];
@@ -495,31 +496,26 @@ export default function SimulationPage() {
     }, 0);
 
     const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
+
     await supabase.from("simulation_results").insert({
       paper_id: selectedPaper.id,
-      user_id: (await supabase.auth.getUser()).data.user?.id, //  include user_id
+      user_id: (await supabase.auth.getUser()).data.user?.id,
       score: correctCount,
       total_questions: questions.length,
     });
 
     generatePDF();
-    alert(
-      `Congratulations! You’ve successfully completed the simulation.\n\n` +
-      `Your Score: ${correctCount}/${questions.length} (${percentageScore}%)\n\n` +
-      `Every question you tackled sharpened your knowledge and strengthened your skills. ` +
-      `Remember, mastery is built step by step  each challenge you face is an opportunity to grow. ` +
-      `Keep striving, stay curious, and trust in your dedication. Your persistence today shapes the exceptional professional you’re becoming!`
-    );
-
 
     resetNow();
     setSelectedPaper(null);
     setShowDonePanel(false);
     setPendingAction(null);
     localStorage.removeItem(timerKey);
+
+    exitFullscreen(); // 👈 explicitly exit fullscreen
     navigate("/dashboard");
 
-    //  No manual refresh needed, realtime will update the paper list
+    setIsSubmitting(false); // optional cleanup
   };
   const generatePDF = async () => {
     const doc = new jsPDF();
