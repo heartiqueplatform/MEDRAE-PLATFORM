@@ -293,8 +293,7 @@ export default function SimulationPage() {
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [selectedPaper]);
-
+  }, [selectedPaper, isSubmitting]);
   useEffect(() => {
     fetchPapers();
   }, []);
