@@ -36,6 +36,18 @@ import { Calendar } from "./pages/Calendar";
 import { StudyProgress } from "./pages/Progress";
 import { Resources } from "./pages/Resources";
 import { MedTube } from "./pages/MedTube";
+import StudentAnalyticsPage from "@/pages/analytics/StudentAnalyticsPage";
+// STUDENT EXAM FLOW
+import ExamCandidateInfo from "./pages/exam/CandidateInfo";
+import ExamInstructions from "./pages/exam/InstructionPage";
+import ExamAccessPage from "./pages/exam/ExamAccessPage";
+import StudentResultsPage from "@/pages/exam/StudentResultsPage";;
+import ResultsListPage from "@/pages/exam/ResultsListPage";
+// TUTOR EXAM CONTROL
+import TutorExamList from "./pages/exam/tutor/ExamList";
+import TutorExamDetails from "./pages/exam/tutor/ExamDetails";
+import TutorLiveMonitor from "./pages/exam/tutor/LiveMonitor";
+import TutorResultsPage from "./pages/exam/tutor/ResultsPage";
 
 import { Announcements } from "./pages/Announcements";
 import { Feedback } from "./pages/Feedback";
@@ -378,6 +390,20 @@ const App = () => {
                       <Route path="/market/my-listings" element={<MyListings />} />
                       <Route path="/market/:id" element={<ListingDetail />} />
 
+                      {/* ------------------- STUDENT EXAM FLOW ------------------- */}
+                      <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
+                      <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
+                      <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
+                      <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
+                      <Route path="/exam/results" element={<ResultsListPage />} />
+
+                      {/* ------------------- TUTOR EXAM CONTROL ------------------- */}
+                      <Route path="/tutor/exams" element={<TutorExamList />} />
+                      <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
+                      <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
+                      <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
+                      <Route path="/analytics" element={<StudentAnalyticsPage />} />
+
                       <Route path="/my-mistakes" element={<MyMistakes />} />
                       <Route path="/ai-assistant" element={<AIAssistant />} />
                       <Route path="/calendar" element={<Calendar />} />
@@ -403,6 +429,9 @@ const App = () => {
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/simulation/:paper_id" element={<SimulationPage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
+                    {/* ------------------- FULLSCREEN EXAM PAGE ------------------- */}
+
                     {/* ------------------- Catch-all ------------------- */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>

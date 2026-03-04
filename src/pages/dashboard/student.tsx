@@ -30,6 +30,7 @@ import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
 import { MistakesCard } from "@/components/MistakesCard";
 import { UserProfileModal } from "@/components/UserProfileModal";
+import TutorsList from "@/components/student/TutorsList";
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import LiveReactions from "@/components/LiveReactions";
@@ -1239,7 +1240,7 @@ export default function StudentDashboard() {
             </>
           )}
         </div>
-
+        <TutorsList />
         {/* 🏆 Top Students Leaderboard */}
         <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden
                  bg-gray-100 dark:bg-gray-900 border-0 mt-4">

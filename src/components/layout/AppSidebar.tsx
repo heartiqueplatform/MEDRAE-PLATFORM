@@ -30,6 +30,7 @@ import {
   Network,
   AlertCircle,
   Newspaper,
+  BarChart3,
   ShoppingBag
 
 } from "lucide-react";
@@ -58,7 +59,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning']);
+  const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning', 'institutional', 'tutor']);
 
   const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(0);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -279,7 +280,44 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   const visibleMainItems = isFooterMounted ? mainItems.filter(item => !footerRoutes.includes(item.url)) : mainItems;
 
+  const institutionalExamItems = [
+    ...(userRole === "student"
+      ? [
+        {
+          title: "Candidate Exams",
+          url: "/exam/candidate",
+          icon: GraduationCap,
+          iconTone: "learning",
+        },
+        {
+          title: "Exam Results",
+          url: "/exam/results",
+          icon: BarChart3,
+          iconTone: "progress",
+        },
+      ]
+      : []),
+
+    ...(userRole === "tutor"
+      ? [
+        {
+          title: "Tutor Exams",
+          url: "/tutor/exams",
+          icon: GraduationCap,
+          iconTone: "learning",
+        },
+        {
+          title: "Exam Results",
+          url: "/tutor/exams/:paper_id/results",
+          icon: BarChart3,
+          iconTone: "progress",
+        },
+      ]
+      : []),
+  ];
+
   const learningItems = [
+
     { title: "Quizzes Bank", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice", badge: totalQuestions !== null ? `${formatNumber(totalQuestions)}` : "Loading..." },
     { title: "Study Progress", url: "/progress", icon: TrendingUp, iconTone: "progress", badge: `${totalStars}★` },
     { title: "Proctorium Lite", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice", badge: totalSimulationPapers !== null ? `${formatNumber(totalSimulationPapers)} ` : "Loading..." },
@@ -569,6 +607,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
       </div>
 
       <SidebarContent className="px-2 overflow-y-auto custom-scrollbar">
+
+
         {/* Main Navigation */}
         <SidebarGroup>
           <Collapsible open={openGroups.includes('main')} onOpenChange={() => toggleGroup('main')}>
@@ -647,6 +687,129 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
           </Collapsible>
         </SidebarGroup>
 
+
+        {/* Institutional Exams Section */}
+        <SidebarGroup>
+          <Collapsible open={openGroups.includes('institutional')} onOpenChange={() => toggleGroup('institutional')}>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+                Institutional Exams
+                {!isCollapsed && (
+                  <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
+                )}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {institutionalExamItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <button
+                          className={getNavClass(item.url)}
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            handleCollapse();
+                            navigate(item.url);
+                          }}
+                        >
+                          <div
+                            className={`
+                      flex-shrink-0 mr-2 p-1.5 rounded-md
+                      ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+                      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+                    `}
+                          >
+                            <item.icon
+                              className={`
+                        ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+                        ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+                        dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+                      `}
+                            />
+                          </div>
+
+                          {!isCollapsed && (
+                            <div className="flex items-center justify-between w-full">
+                              <span>{item.title}</span>
+                              {item.badge && (
+                                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarGroup>
+
+        {/* Tutor Section */}
+        {tutorItems.length > 0 && (
+          <SidebarGroup>
+            <Collapsible open={openGroups.includes('tutor')} onOpenChange={() => toggleGroup('tutor')}>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+                  Tutor Tools
+                  {!isCollapsed && (
+                    <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {tutorItems.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                          <button
+                            className={getNavClass(item.url)}
+                            onClick={() => {
+                              if (navigator.vibrate) navigator.vibrate(50);
+                              handleCollapse();
+                              navigate(item.url);
+                            }}
+                          >
+                            {/* 1️⃣ Icon container */}
+                            <div
+                              className={`
+    flex-shrink-0 mr-2 p-1.5 rounded-md
+    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+  `}
+                            >
+                              <item.icon
+                                className={`
+      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
+      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+    `}
+                              />
+                            </div>
+
+
+
+                            {/* 2️⃣ Text container */}
+                            {!isCollapsed && (
+                              <span>{item.title}</span>
+                            )}
+                          </button>
+
+
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
 
         {/* Learning Section */}
         <SidebarGroup>
@@ -782,67 +945,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
         </SidebarGroup>
 
 
-        {/* Tutor Section */}
-        {tutorItems.length > 0 && (
-          <SidebarGroup>
-            <Collapsible open={openGroups.includes('tutor')} onOpenChange={() => toggleGroup('tutor')}>
-              <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
-                  Tutor Tools
-                  {!isCollapsed && (
-                    <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/label:rotate-180" />
-                  )}
-                </SidebarGroupLabel>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {tutorItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <button
-                            className={getNavClass(item.url)}
-                            onClick={() => {
-                              if (navigator.vibrate) navigator.vibrate(50);
-                              handleCollapse();
-                              navigate(item.url);
-                            }}
-                          >
-                            {/* 1️⃣ Icon container */}
-                            <div
-                              className={`
-    flex-shrink-0 mr-2 p-1.5 rounded-md
-    ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
-    dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
-  `}
-                            >
-                              <item.icon
-                                className={`
-      ${isCollapsed ? "h-6 w-6" : "h-5 w-5"}
-      ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
-      dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
-    `}
-                              />
-                            </div>
-
-
-
-                            {/* 2️⃣ Text container */}
-                            {!isCollapsed && (
-                              <span>{item.title}</span>
-                            )}
-                          </button>
-
-
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-        )}
 
         {/* Staff Section */}
         {staffItems.length > 0 && (

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 // DashboardLayout.tsx
 import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
-
+import { Toaster } from "@/components/ui/toaster";
 import { Outlet } from "react-router-dom";
 import { MedicalDoodles } from "@/components/MedicalDoodles";
 import { useEffect, useState } from "react";
@@ -213,7 +213,7 @@ function DashboardContent({ user, role, streak, isDarkMode, toggleDarkMode, chil
               unreadAnnouncements={0}
             />
           )}
-
+          <Toaster />
           <Footer mistakeCount={0} />
 
           {/* ------------------- Floating Music Player ------------------- */}
