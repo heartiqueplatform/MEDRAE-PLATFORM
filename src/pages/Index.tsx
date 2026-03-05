@@ -2,14 +2,14 @@ import React from 'react';
 import { TermsButton } from "@/components/ui/TermsButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, Volume, VolumeX } from "lucide-react";
+import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, Volume, VolumeX, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDrag } from '@use-gesture/react';
 import { useSpring, animated } from '@react-spring/web';
 import { supabase } from "@/lib/supabaseClient";
-
+import HeroMobileCard from "@/components/HeroMobileCard";
 // ✅ Skeleton loader for hero cards (image/video replacement)
 const HeroSkeleton = () => {
   return (
@@ -219,6 +219,7 @@ const Index = () => {
       ),
     },
 
+
     {
       bg: "/indexbackground3.jpg",
       text: (
@@ -261,7 +262,27 @@ const Index = () => {
       ),
     },
 
+    {
+      bg: "/indexbackground5.jpg",
+      text: (
+        <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
+          <p className="font-semibold text-2xl text-white">
+            For Tutors & Institutions
+          </p>
 
+          <p>
+            Medrae also offers affordable institutional online exam hosting with a powerful
+            DigiProctor system. Tutors can upload revision questions, CATs, assignments,
+            mock exams, and internal assessments  all fully digitized and automatically tracked.
+          </p>
+
+          <p>
+            Save time on marking, go fully digital, and train your students to confidently
+            sit any computer-based exam  including NCK without fear.
+          </p>
+        </h2>
+      ),
+    },
     {
       bg: "/background02.jpg",
       text: (
@@ -376,6 +397,11 @@ const Index = () => {
       title: "6,000+ Updated Questions",
       description: "Practice from a constantly growing question bank designed around real NCK patterns. Train with exam-relevant content—not outdated material."
 
+    },
+    {
+      icon: GraduationCap,
+      title: "For Tutors & Institutions",
+      description: "Medrae offers affordable institutional online exam hosting powered by a secure DigiProctor system. Upload revision questions, CATs, assignments, mock exams, and internal assessments — all fully digitized, automatically tracked, and easy to manage. Save time on marking, go fully digital, and train your students to confidently sit any computer-based exam, including NCK, without fear."
     }
   ];
 
@@ -387,7 +413,7 @@ const Index = () => {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
         >
-          <div className="bg-white rounded-3xl p-8 w-[90%] max-w-lg text-center space-y-6 shadow-2xl">
+          <div className="bg-white rounded-3xl md:rounded-3xl p-4 md:p-8 w-full max-w-md md:max-w-lg mx-2 md:mx-4 text-center space-y-6 shadow-2xl">
             {/* Logo */}
             <img
               src="/pwa-192x192.jpeg"
@@ -497,11 +523,12 @@ const Index = () => {
 
       {/* Hero Section */}
       <div
-        className="relative w-full overflow-hidden"
-        style={{
-          minHeight: '80vh',
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #051f58ff 100%)', // darker blue gradient
-        }}
+        className="
+    relative w-full overflow-hidden
+    min-h-[80vh]
+    bg-white
+    md:bg-[linear-gradient(135deg,#1e3a8a_0%,#051f58ff_100%)]
+  "
       >
         {/* Marquee background */}
         <div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
@@ -529,20 +556,8 @@ const Index = () => {
 
 
         {isMobile ? (
-          <div className="flex flex-col gap-0">
-            {heroStorySlides.map((slide, idx) => (
-              <div
-                key={idx}
-                className="w-full bg-white rounded-none p-4 shadow-none border-none"
-              >
-                {typeof slide.text === "string"
-                  ? <p className="text-gray-900 text-sm">{slide.text}</p>
-                  : React.isValidElement(slide.text)
-                    ? slide.text
-                    : null}
-              </div>
-            ))}
-          </div>
+          <HeroMobileCard />
+
         ) : (
           <>
             {/* Desktop / Laptop view: keep current hero slides */}
@@ -652,18 +667,19 @@ const Index = () => {
                 );
               })}
             </animated.div>
+            {/* Pagination Dots */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+              {heroStorySlides.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${idx === activeHeroStory ? 'bg-white' : 'bg-white/40'
+                    }`}
+                />
+              ))}
+            </div>
           </>
         )}
-        {/* Pagination Dots */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-          {heroStorySlides.map((_, idx) => (
-            <div
-              key={idx}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${idx === activeHeroStory ? 'bg-white' : 'bg-white/40'
-                }`}
-            />
-          ))}
-        </div>
+
 
         {/* Bottom Marquee just below hero cards */}
         <div className="hidden md:block absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
@@ -681,9 +697,9 @@ const Index = () => {
 
 
       {/* Features Section */}
-      <section className="py-20 px-3 bg-white text-gray-900">
+      <section className="py-2 px-3 bg-white text-gray-900">
         <div className="max-w-6xl mx-auto">
-          <div className="text-xl mb-16">
+          <div className="text-xl mb-2">
             <h2 className="text-3xl md:text-4xl text-center font-bold mb-4">
               Everything You Need to Pass the NCK Exam
 
@@ -694,7 +710,7 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
             {/* Special Video Card */}
             <div className="w-full my-8 flex justify-center">
               <div className="w-full max-w-md bg-gray-800  rounded-3xl shadow-lg overflow-hidden">
@@ -806,9 +822,10 @@ const Index = () => {
             </div>
 
           </div>
-          {/* Video Side */}
+          {/* Image Side */}
           <div className="flex justify-center w-full">
             <div className="relative w-[220px] sm:w-[250px] md:w-[300px] lg:w-[350px] aspect-[9/16] rounded-3xl overflow-hidden shadow-lg">
+
               {/* Skeleton while loading */}
               {!heroMediaLoaded[activeHeroStory] && (
                 <div className="absolute inset-0 z-10">
@@ -816,22 +833,16 @@ const Index = () => {
                 </div>
               )}
 
-              {/* Video */}
-              <video
+              {/* Image */}
+              <img
+                src="high5.png" // replace with your image path
+                alt="Medrae Hero"
                 className="w-full h-full object-cover transition-opacity duration-500"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"      // ✅ preloads the entire video
-                onLoadedData={() =>
+                onLoad={() =>
                   setHeroMediaLoaded(prev => ({ ...prev, [activeHeroStory]: true }))
                 }
                 style={{ opacity: heroMediaLoaded[activeHeroStory] ? 1 : 0 }}
-              >
-                <source src="/videos/Medrae6.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              />
 
               {/* Top Watermark */}
               <div className="absolute top-2 left-0 w-full overflow-hidden pointer-events-none z-20">

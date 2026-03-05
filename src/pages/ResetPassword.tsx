@@ -17,7 +17,31 @@ export default function ResetPassword() {
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const backgroundImages = [
+    "/high1.png",
+    "/high2.png",
+    "/high3.png",
+    "/high4.png",
+    "/high5.png",
+    "/high6.png",
+  ];
 
+  const [bgIndex, setBgIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+  useEffect(() => {
+    const fadeDuration = 1000;  // 1s fade
+    const displayDuration = 5000; // 5s per image
+
+    const interval = setInterval(() => {
+      setFade(false); // start fade out
+      setTimeout(() => {
+        setBgIndex((prev) => (prev + 1) % backgroundImages.length);
+        setFade(true); // fade in next image
+      }, fadeDuration);
+    }, displayDuration + fadeDuration);
+
+    return () => clearInterval(interval);
+  }, []);
   // Pre-fill email if it comes from query string
   useEffect(() => {
     const emailFromQuery = searchParams.get("email");
@@ -221,99 +245,97 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-blue-500 px-4  ">
-      <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-lg">
-        {step === "request" && (
-          <>
-            <h1 className="text-2xl mb-4 text-center font-semibold">
-              Reset Password
-            </h1>
-            <Label>Email</Label>
-            <Input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="mb-4"
-            />
-            <Button onClick={handleRequestReset} className="w-full">
-              Next
-            </Button>
+    <div className="relative min-h-screen w-full overflow-x-hidden flex justify-center items-center font-sans">
+      {/* Background slideshow */}
+      <div
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${fade ? "opacity-100" : "opacity-0"}`}
+        style={{ backgroundImage: `url('${backgroundImages[bgIndex]}')` }}
+      />
+      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
 
+      {/* Card wrapper */}
+      <div className="relative z-10 w-full flex justify-center px-3 sm:px-6 pt-64">
+        <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-lg">
+          {step === "request" && (
+            <>
+              <h1 className="text-2xl mb-4 text-center font-semibold">Reset Password</h1>
+              <Label>Email</Label>
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="mb-4"
+              />
+              <Button onClick={handleRequestReset} className="w-full">Next</Button>
 
-            <div
-              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
-              onClick={() => navigate("/login")}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Login</span>
-            </div>
+              <div
+                className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
+                onClick={() => navigate("/login")}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Login</span>
+              </div>
+            </>
+          )}
 
-          </>
-        )}
+          {step === "answer" && (
+            <>
+              <h1 className="text-2xl mb-4 text-center font-semibold">Answer Security Question</h1>
+              <Label>Security Question</Label>
+              <Input value={resetQuestion} disabled className="mb-2" />
+              <Input
+                value={resetAnswer}
+                onChange={(e) => setResetAnswer(e.target.value)}
+                placeholder="Enter your answer"
+                className="mb-4"
+              />
+              <div
+                className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer"
+                onClick={handleCheckAnswer}
+              >
+                <ArrowRight className="w-4 h-4" />
+                <span>Next</span>
+              </div>
 
-        {step === "answer" && (
-          <>
-            <h1 className="text-2xl mb-4 text-center font-semibold">
-              Answer Security Question
-            </h1>
-            <Label>Security Question</Label>
-            <Input value={resetQuestion} disabled className="mb-2" />
-            <Input
-              value={resetAnswer}
-              onChange={(e) => setResetAnswer(e.target.value)}
-              placeholder="Enter your answer"
-              className="mb-4"
-            />
-            <div
-              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer"
-              onClick={handleCheckAnswer}
-            >
-              <ArrowRight className="w-4 h-4" />
-              <span>Next</span>
-            </div>
+              <div
+                className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
+                onClick={() => navigate("/login")}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Login</span>
+              </div>
+            </>
+          )}
 
+          {step === "newPassword" && (
+            <>
+              <h1 className="text-2xl mb-4 text-center font-semibold">Set New Password</h1>
+              <Label>New Password</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                className="mb-4"
+              />
+              <Button
+                onClick={handleResetPassword}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? "Resetting..." : "Reset Password"}
+              </Button>
 
-            <div
-              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
-              onClick={() => navigate("/login")}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Login</span>
-            </div>
-
-          </>
-        )}
-
-        {step === "newPassword" && (
-          <>
-            <h1 className="text-2xl mb-4 text-center font-semibold">
-              Set New Password
-            </h1>
-            <Label>New Password</Label>
-            <Input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
-              className="mb-4"
-            />
-            <Button
-              onClick={handleResetPassword}
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? "Resetting..." : "Reset Password"}
-            </Button>
-
-            <div
-              className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
-              onClick={() => navigate("/login")}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Login</span>
-            </div>
-          </>
-        )}
+              <div
+                className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer mt-2"
+                onClick={() => navigate("/login")}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Login</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

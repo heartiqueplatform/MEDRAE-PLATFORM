@@ -30,7 +30,7 @@ export default function SplashScreen() {
         }`}
     >
       {/* Logo */}
-      <img src="/icon-512.jpg" alt="App Logo" className="w-32 h-32 mb-6" />
+      <img src="/pwa-192x192.jpeg" alt="App Logo" className="w-32 h-32 mb-6" />
 
       {/* Bouncing Hearts Loader */}
       <div className="flex space-x-1">

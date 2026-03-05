@@ -1,25 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { GraduationCap, UserCheck, Heart } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
-import { useEffect } from "react";
 import { saveLoginInfo, getLoginInfo } from "@/lib/offlineAuth";
 import sha256 from "crypto-js/sha256"; // For hashing passwords offline
 
@@ -30,8 +16,37 @@ export function Login() {
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  // Step 1: Background image slideshow setup
+  const backgroundImages = [
+    "high1.png",
+    "high2.png",
+    "high3.png",
+    "high4.png",
+    "high5.png",
+    "high6.png",
+  ];
 
-  const handleForgotPassword = async (email: string) => {
+  const [bgIndex, setBgIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  // Step 2: Dark mode off + slideshow
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+
+    const interval = setInterval(() => {
+      setFade(false); // start fade out
+
+      setTimeout(() => {
+        setBgIndex((prev) => (prev + 1) % backgroundImages.length);
+        setFade(true); // fade in new image
+      }, 1000); // fade duration 1s
+    }, 5000); // change image every 7s
+
+    return () => clearInterval(interval);
+  }, []);
+  const handleForgotPassword = async () => {
     if (!email) {
       toast({
         title: "Email required",
@@ -40,26 +55,18 @@ export function Login() {
       });
       return;
     }
-
-    // Navigate to ResetPassword page with email pre-filled
     navigate(`/reset-password?email=${encodeURIComponent(email)}`);
   };
 
-
-  const handleLogin = async (
-    role: "student" | "tutor" | "staff",
-    email: string,
-    password: string
-  ) => {
+  const handleLogin = async () => {
     setIsLoading(true);
-
-    // 🔥 Always clear old local data before new login
     localStorage.clear();
 
     const passwordHash = sha256(password).toString();
 
     try {
       if (navigator.onLine) {
+        // ---------------- Online Login ----------------
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -78,25 +85,21 @@ export function Login() {
           localStorage.setItem("device_id", deviceId);
         }
 
+        // Update active session in profiles
         await supabase
           .from("profiles")
           .update({ active_session_id: deviceId })
           .eq("user_id", userId);
 
-        // 🔎 Fetch role from database (SOURCE OF TRUTH)
-        const { data: profile, error: profileError } = await supabase
+        // ---------------- Fetch user profile ----------------
+        const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("role")
+          .select("*")
           .eq("user_id", userId)
           .single();
 
-        if (profileError || !profile?.role) {
+        if (profileError || !profileData) {
           throw new Error("Profile not found.");
-        }
-
-        // 🚫 Strict role check
-        if (profile.role !== role) {
-          throw new Error("Access denied: role mismatch.");
         }
 
         // Save offline login
@@ -108,26 +111,27 @@ export function Login() {
 
         toast({
           title: "Login successful!",
-          description: `Welcome back, ${profile.role}`,
+          description: `Welcome back!`,
         });
 
-        navigate(`/dashboard/${profile.role}`, { replace: true });
+        // ---------------- Navigate to role-specific dashboard ----------------
+        if (profileData.role === "student") navigate("/dashboard/student", { replace: true });
+        else if (profileData.role === "tutor") navigate("/dashboard/tutor", { replace: true });
+        else if (profileData.role === "staff") navigate("/dashboard/staff", { replace: true });
+        else navigate("/"); // fallback if role missing
 
       } else {
-        // Offline login
+        // ---------------- Offline Login ----------------
         const saved = await getLoginInfo();
 
-        if (
-          saved &&
-          saved.username === email &&
-          saved.passwordHash === passwordHash
-        ) {
+        if (saved && saved.username === email && saved.passwordHash === passwordHash) {
           toast({
             title: "Offline login successful!",
-            description: `Welcome back, ${role} (Offline Mode)`,
+            description: `Welcome back (Offline Mode)`,
           });
 
-          navigate(`/dashboard/${role}`, { replace: true });
+          // Navigate to a generic dashboard (offline, role unknown)
+          navigate("/dashboard", { replace: true });
         } else {
           throw new Error(
             "Offline login failed: no cached credentials or wrong password"
@@ -145,91 +149,72 @@ export function Login() {
       setIsLoading(false);
     }
   };
-
-  const LoginForm = ({ role }: { role: "student" | "tutor" | "staff" }) => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-
-    return (
-      <div className="space-y-4">
-        <Label>Email</Label>
-        <Input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-        />
-
-        <Label>Password</Label>
-        <Input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Your secure password"
-        />
-
-        <Button disabled={isLoading} onClick={() => handleLogin(role, email, password)}>
-          {isLoading ? "Logging in..." : `Login as ${role}`}
-        </Button>
-
-        {/*Forgot Password link*/}
-        {/*Forgot Password link always visible*/}
-        <p
-          className="text-sm text-blue-600 hover:underline cursor-pointer mt-2"
-          onClick={() => handleForgotPassword(email)}
-        >
-          Forgot Password?
-        </p>
-
-
-      </div>
-
-    );
-  };
-
   return (
-    <div className="flex justify-center items-center min-h-screen w-full bg-blue-500 font-sans overflow-x-hidden  ">
+    <div className="relative min-h-screen w-full overflow-x-hidden font-sans flex justify-center items-center">
+      {/* Background image */}
+      <div
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${fade ? "opacity-100" : "opacity-0"}`}
+        style={{ backgroundImage: `url('${backgroundImages[bgIndex]}')` }}
+      ></div>
 
-      <Card className="w-full max-w-xl bg-white shadow-lg rounded-2xl">
+      {/* Optional overlay for readability */}
+      <div className="absolute inset-0 bg-black opacity-20"></div>
 
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Select your role and login</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="student">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="student">
-                <GraduationCap className="mr-2" /> Student
-              </TabsTrigger>
-              <TabsTrigger value="tutor">
-                <UserCheck className="mr-2" /> Tutor
-              </TabsTrigger>
-              <TabsTrigger value="staff">
-                <Heart className="mr-2" /> Staff
-              </TabsTrigger>
-            </TabsList>
+      {/* Your card */}
+      <div className="relative z-10 w-full flex justify-center items-center px-3 pt-40">
+        <Card className="w-full max-w-xl bg-white shadow-lg rounded-2xl">
+          {/* Keep your CardHeader and CardContent exactly as is */}
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-3 text-2xl font-bold">
+              <img
+                src="/pwa-192x192.jpeg"
+                alt="Logo"
+                className="w-8 h-8 object-contain"
+              />
+              <span>Hey there, welcome back! Log in</span>
+            </CardTitle>
+            <CardDescription>Enter your email and password</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Label>Email</Label>
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
 
-            <TabsContent value="student">
-              <LoginForm role="student" />
-            </TabsContent>
-            <TabsContent value="tutor">
-              <LoginForm role="tutor" />
-            </TabsContent>
-            <TabsContent value="staff">
-              <LoginForm role="staff" />
-            </TabsContent>
-          </Tabs>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your secure password"
+              />
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Don’t have an account?{" "}
-              <Link to="/register" className="text-blue-600 hover:underline font-medium">
-                Register here
-              </Link>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+              <Button disabled={isLoading} onClick={handleLogin}>
+                {isLoading ? "Logging in..." : "Login"}
+              </Button>
+
+              <p
+                className="text-sm text-blue-600 hover:underline cursor-pointer mt-2"
+                onClick={handleForgotPassword}
+              >
+                Forgot Password?
+              </p>
+            </div>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Don’t have an account?{" "}
+                <Link to="/register" className="text-blue-600 hover:underline font-medium">
+                  Register here
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
