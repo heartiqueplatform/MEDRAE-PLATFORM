@@ -6,7 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { GlobalLoader } from "@/components/GlobalLoader"; // <-- import your loader
 
 // App version for cache control
-const APP_VERSION = "94";
+const APP_VERSION = "95";
 const storedVersion = localStorage.getItem("appVersion");
 
 if (storedVersion !== APP_VERSION) {

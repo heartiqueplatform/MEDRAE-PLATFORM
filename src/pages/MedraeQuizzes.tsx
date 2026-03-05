@@ -431,11 +431,9 @@ export function MedraeQuizzes() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
-      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
-
+      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
         {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
-
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
+        <Card className="shadow-md hover:shadow-lg transition-all rounded-none sm:rounded-2xl border-0">
           <CardHeader>
             <CardTitle className="text-3xl flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
               <Heart className="h-8 w-8 text-red-500 animate-pulse" fill="currentColor" />

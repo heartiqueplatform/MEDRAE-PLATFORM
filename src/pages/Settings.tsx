@@ -229,7 +229,7 @@ export function Settings() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
-      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
+      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
 
         <Card className="w-full border-0 overflow-hidden p-6">
 
@@ -344,6 +344,30 @@ export function Settings() {
                   </div>
                 </div>
 
+                {/* Security / Password Reset Info */}
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Security / Recovery Information</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset_question">Reset Question</Label>
+                    <Input
+                      id="reset_question"
+                      value={profile.reset_question || ""}
+                      onChange={(e) => handleChange("reset_question", e.target.value)}
+                      placeholder="e.g. What is your favorite color?"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset_answer">Reset Answer</Label>
+                    <Input
+                      id="reset_answer"
+                      value={profile.reset_answer || ""}
+                      onChange={(e) => handleChange("reset_answer", e.target.value)}
+                      placeholder="Your answer here"
+                      type="password"
+                    />
+                  </div>
+                </div>
                 <Separator />
 
                 {/* Personal Info */}
@@ -439,7 +463,111 @@ export function Settings() {
                     />
                   </div>
                 </div>
+                {/* Professional Information */}
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Professional Information</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="nck_number">NCK Number/Exam number</Label>
+                      <Input
+                        id="nck_number"
+                        value={profile.nck_number || ""}
+                        onChange={(e) => handleChange("nck_number", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="specialization">Specialization</Label>
+                      <Input
+                        id="specialization"
+                        value={profile.specialization || ""}
+                        onChange={(e) => handleChange("specialization", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="years_experience">Years of Experience</Label>
+                      <Input
+                        id="years_experience"
+                        type="number"
+                        value={profile.years_experience || 0}
+                        onChange={(e) => handleChange("years_experience", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="workplace">Workplace</Label>
+                      <Input
+                        id="workplace"
+                        value={profile.workplace || ""}
+                        onChange={(e) => handleChange("workplace", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employment_type">Employment Type</Label>
+                    <Input
+                      id="employment_type"
+                      value={profile.employment_type || ""}
+                      onChange={(e) => handleChange("employment_type", e.target.value)}
+                    />
+                  </div>
+                </div>
 
+                {/* License Information */}
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">License Information</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="license_issue_date">License Issue Date</Label>
+                      <Input
+                        id="license_issue_date"
+                        type="date"
+                        value={profile.license_issue_date || ""}
+                        onChange={(e) => handleChange("license_issue_date", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="license_expiry_date">License Expiry Date</Label>
+                      <Input
+                        id="license_expiry_date"
+                        type="date"
+                        value={profile.license_expiry_date || ""}
+                        onChange={(e) => handleChange("license_expiry_date", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="license_status">License Status</Label>
+                    <Input
+                      id="license_status"
+                      value={profile.license_status || "active"}
+                      onChange={(e) => handleChange("license_status", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* App / Performance Info */}
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">App Information</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="target_score">Target Score</Label>
+                      <Input
+                        id="target_score"
+                        type="number"
+                        value={profile.target_score || 50}
+                        onChange={(e) => handleChange("target_score", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <p className="text-sm font-medium">Last Seen: {profile.last_seen || "Never"}</p>
+                    <p className="text-sm font-medium">Online: {profile.is_online ? "Yes" : "No"}</p>
+                  </div>
+                </div>
                 {/* Save Button */}
                 <Button
                   onClick={handleSaveProfile}

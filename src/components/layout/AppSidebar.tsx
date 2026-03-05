@@ -810,7 +810,6 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
             </Collapsible>
           </SidebarGroup>
         )}
-
         {/* Learning Section */}
         <SidebarGroup>
           <Collapsible open={openGroups.includes('learning')} onOpenChange={() => toggleGroup('learning')}>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Brain,
+
     Heart,
     Calendar,
     FileText,
@@ -294,6 +295,8 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
 
     // --------------------------
     // Sections with badges
+
+
     // --------------------------
     const sections: { label: string; items: (DrawerItem & { badge?: string; iconTone?: IconTone; hasDot?: boolean })[] }[] = [
         {
@@ -316,7 +319,51 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                 { title: "A.Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content", hasDot: true },
                 { title: "Resources", url: "/resources", icon: FileText, badge: formatNumber(totalNotes), iconTone: "content" },
             ],
+
         },
+        {
+            label: "Institutional Exams",
+            items: [
+
+                ...(userRole === "student"
+                    ? [
+                        {
+                            title: "Candidate Exams",
+                            url: "/exam/candidate",
+                            icon: Briefcase,
+                            iconTone: "practice"
+                        },
+                        {
+                            title: "Exam Results",
+                            url: "/exam/results",
+                            icon: TrendingUp,
+                            iconTone: "progress"
+                        },
+                    ]
+                    : []),
+
+                ...(userRole === "tutor"
+                    ? [
+                        { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" },
+                        {
+                            title: "Tutor Exams",
+                            url: "/tutor/exams",
+                            icon: Briefcase,
+                            iconTone: "practice"
+                        },
+                        {
+                            title: "Exam Results",
+                            url: "/tutor/exams/results",
+                            icon: TrendingUp,
+                            iconTone: "progress"
+                        },
+
+                    ]
+                    : []),
+            ],
+        },
+
+
         {
             label: "Media",
             items: [
@@ -352,9 +399,18 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
 
             <div
                 ref={drawerRef}
-                className={`fixed bottom-0 left-0 w-full bg-background shadow-xl transition-transform duration-300 rounded-t-xl z-40 md:hidden ${isOpen ? "translate-y-0" : "translate-y-full"}`}
-                style={{ maxHeight: "75vh", bottom: "4rem" }}
+                className={`fixed bottom-0 left-0 w-full shadow-xl transition-transform duration-300 rounded-t-xl z-40 md:hidden ${isOpen ? "translate-y-0" : "translate-y-full"}`}
+                style={{
+                    maxHeight: "75vh",
+                    bottom: "4rem",
+                    backgroundImage: "url('/high1.png')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat"
+                }}
             >
+
+                <div className="absolute inset-0 bg-black/70 rounded-t-xl pointer-events-none" />
 
                 {/* Header */}
                 <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700 bg-background z-10">
@@ -376,15 +432,15 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                 </div>
 
                 {/* Scrollable content */}
-                <div className="p-4 space-y-6 overflow-y-auto custom-scrollbar" style={{ maxHeight: "calc(70vh - 80px)" }}>
+                <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar" style={{ maxHeight: "calc(70vh - 80px)" }}>
                     {sections.map(section => section.items.length > 0 && (
                         <div key={section.label}>
                             <h3 className="text-blue-600 dark:text-blue-400 text-xs font-semibold mb-2 uppercase">{section.label}</h3>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="flex flex-wrap justify-start gap-x-2 gap-y-2">
                                 {section.items.map(item => (
                                     <div key={item.title} className="relative">
                                         <button
-                                            className="relative flex flex-col items-center justify-center text-xs text-gray-700 dark:text-gray-200"
+                                            className="relative flex flex-col items-center text-xs text-gray-700 dark:text-gray-200 w-16 h-18"
                                             onClick={() => {
                                                 tapFeedback();
                                                 navigate(item.url);

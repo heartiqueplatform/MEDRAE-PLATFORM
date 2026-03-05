@@ -209,7 +209,7 @@ export function StudyProgress() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
-      <div className="w-full max-w-3xl space-y-2 px-3 sm:px-6">
+      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
         <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
           <CardHeader>
             <CardTitle className="text-3xl flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
@@ -321,8 +321,7 @@ export function StudyProgress() {
                 <GlobalLoader />
               </div>
             ) : (
-              <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-2 sm:px-0">
-
+              <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-0 sm:px-0">
                 {subjects.map((subject) => (
                   <Card key={subject.id} className=" border-0 hover:shadow-lg duration-300">
                     <CardHeader>

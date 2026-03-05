@@ -209,8 +209,8 @@ export default function TutorDashboard() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center bg-transparent py-1 pt-0 px-2">
-      <div className="w-full max-w-4xl space-y-2">
+    <div className="min-h-screen flex justify-center bg-transparent py-1 pt-0 px-2 sm:px-2">
+      <div className="w-full max-w-none sm:max-w-4xl space-y-2">
         {/* Welcome */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white shadow-lg">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">
@@ -332,8 +332,7 @@ export default function TutorDashboard() {
             {/* Student Overlay */}
             {showStudentOverlay && (
               <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md sm:max-w-3xl lg:max-w-7xl max-h-[95vh] flex flex-col shadow-xl">
-
+                <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md sm:max-w-3xl lg:max-w-7xl max-h-[80vh] sm:max-h-[95vh] flex flex-col shadow-xl">
                   {/* STICKY HEADER */}
                   <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b p-4 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -526,7 +525,7 @@ export default function TutorDashboard() {
         <CohortAnnouncement linkedStudents={linkedStudents} colors={cohortColors} />
 
         {/* Linked Students List */}
-        <Card className="hover:shadow-xl transition-shadow duration-300 dark:bg-gray-900 border-0">
+        <Card className="hover:shadow-xl transition-shadow duration-300 dark:bg-gray-900 border-0 rounded-none sm:rounded-xl">
           <CardHeader className="flex items-center space-x-2">
             <GraduationCap className="w-5 h-5 text-gray-900 dark:text-gray-100" />
             <CardTitle className="text-gray-900 dark:text-gray-100">Your Cohort Students</CardTitle>
