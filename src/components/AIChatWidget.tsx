@@ -241,7 +241,7 @@ User's message: ${input}
     <>
       {!open && (
         <Button
-          className="hidden lg:flex fixed bottom-36 mb-4 right-2 w-14 h-14 rounded-full shadow-lg
+          className="hidden lg:flex fixed bottom-16 mb-4 right-2 w-14 h-14 rounded-full shadow-lg
  bg-blue-600 hover:bg-blue-700 text-white
  items-center justify-center z-30"
 
