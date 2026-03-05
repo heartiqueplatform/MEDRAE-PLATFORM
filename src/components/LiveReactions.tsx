@@ -113,7 +113,7 @@ export default function LiveReactions() {
     return (
         <>
             {/* Floating Avatar Button */}
-            <div className="hidden lg:block fixed bottom-36 right-2 z-50">
+            <div className="hidden lg:block fixed bottom-40 right-2 z-50">
 
                 <button
                     onClick={handleTogglePanel}
