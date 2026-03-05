@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-// SVG for megaphone
 const MegaphoneSVG = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -30,20 +30,76 @@ interface CohortAnnouncementProps {
     linkedStudents: LinkedStudent[];
 }
 
-export default function CohortAnnouncement({ linkedStudents }: CohortAnnouncementProps) {
+export default function CohortAnnouncement({
+    linkedStudents,
+}: CohortAnnouncementProps) {
     const user = useUser();
 
-    const [selectedCohort, setSelectedCohort] = useState<{ block: string; year: number; semester: number } | null>(null);
+    const [selectedCohort, setSelectedCohort] = useState<{
+        block: string;
+        year: number;
+        semester: number;
+    } | null>(null);
+
     const [announcementMessage, setAnnouncementMessage] = useState("");
     const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [sentAnnouncements, setSentAnnouncements] = useState<any[]>([]);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [readData, setReadData] = useState<any>({});
 
     // Compute unique cohorts
     const cohortOptions = useMemo(() => {
-        return Array.from(new Set(linkedStudents.map(s => `${s.block}|${s.year}|${s.semester}`))).map(item => {
+        return Array.from(
+            new Set(linkedStudents.map((s) => `${s.block}|${s.year}|${s.semester}`))
+        ).map((item) => {
             const [block, year, semester] = item.split("|");
             return { block, year: Number(year), semester: Number(semester) };
         });
     }, [linkedStudents]);
+
+    const fetchSentAnnouncements = async () => {
+        if (!user?.id) return;
+
+        const { data } = await supabase
+            .from("cohort_messages")
+            .select("*")
+            .eq("tutor_id", user.id)
+            .order("created_at", { ascending: false });
+
+        setSentAnnouncements(data || []);
+
+        if (data) {
+            fetchReadStats(data.map((m) => m.id));
+        }
+    };
+
+    const fetchReadStats = async (messageIds: string[]) => {
+        const { data } = await supabase
+            .from("cohort_message_reads")
+            .select(
+                `
+        message_id,
+        read_at,
+        student_id,
+        profiles (name)
+      `
+            )
+            .in("message_id", messageIds);
+
+        const grouped: any = {};
+
+        data?.forEach((r) => {
+            if (!grouped[r.message_id]) grouped[r.message_id] = [];
+            grouped[r.message_id].push(r);
+        });
+
+        setReadData(grouped);
+    };
+
+    useEffect(() => {
+        fetchSentAnnouncements();
+    }, [user]);
 
     const handleSendAnnouncement = async () => {
         if (!selectedCohort || !announcementMessage) {
@@ -62,14 +118,55 @@ export default function CohortAnnouncement({ linkedStudents }: CohortAnnouncemen
         });
 
         if (error) {
-            toast.error(error.message || "Failed to send announcement");
+            toast.error(error.message);
         } else {
             toast.success("Announcement sent!");
             setAnnouncementMessage("");
             setSelectedCohort(null);
+            fetchSentAnnouncements();
         }
 
         setSendingAnnouncement(false);
+    };
+
+    const handleUpdate = async (id: string) => {
+        const { error } = await supabase
+            .from("cohort_messages")
+            .update({
+                message: announcementMessage,
+                updated_at: new Date(),
+            })
+            .eq("id", id);
+
+        if (error) {
+            toast.error(error.message);
+        } else {
+            toast.success("Updated successfully");
+            setEditingId(null);
+            setAnnouncementMessage("");
+            fetchSentAnnouncements();
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        const confirmDelete = window.confirm("Delete this announcement?");
+        if (!confirmDelete) return;
+
+        setDeletingId(id);
+
+        const { error } = await supabase
+            .from("cohort_messages")
+            .delete()
+            .eq("id", id);
+
+        if (error) {
+            toast.error(error.message);
+        } else {
+            toast.success("Deleted");
+            fetchSentAnnouncements();
+        }
+
+        setDeletingId(null);
     };
 
     return (
@@ -79,18 +176,30 @@ export default function CohortAnnouncement({ linkedStudents }: CohortAnnouncemen
                     <MegaphoneSVG /> Send Cohort Announcement
                 </CardTitle>
             </CardHeader>
+
             <CardContent className="flex flex-col space-y-3">
                 <select
-                    value={selectedCohort ? `${selectedCohort.block}|${selectedCohort.year}|${selectedCohort.semester}` : ""}
+                    value={
+                        selectedCohort
+                            ? `${selectedCohort.block}|${selectedCohort.year}|${selectedCohort.semester}`
+                            : ""
+                    }
                     onChange={(e) => {
                         const [block, year, semester] = e.target.value.split("|");
-                        setSelectedCohort({ block, year: Number(year), semester: Number(semester) });
+                        setSelectedCohort({
+                            block,
+                            year: Number(year),
+                            semester: Number(semester),
+                        });
                     }}
-                    className="border rounded p-2 bg-white dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                    className="border rounded-xl p-2 bg-white dark:bg-gray-800 dark:text-gray-100"
                 >
                     <option value="">Select Cohort</option>
                     {cohortOptions.map((c) => (
-                        <option key={`${c.block}|${c.year}|${c.semester}`} value={`${c.block}|${c.year}|${c.semester}`}>
+                        <option
+                            key={`${c.block}|${c.year}|${c.semester}`}
+                            value={`${c.block}|${c.year}|${c.semester}`}
+                        >
                             Block {c.block} - Year {c.year} - Sem {c.semester}
                         </option>
                     ))}
@@ -100,12 +209,81 @@ export default function CohortAnnouncement({ linkedStudents }: CohortAnnouncemen
                     placeholder="Write your message here..."
                     value={announcementMessage}
                     onChange={(e) => setAnnouncementMessage(e.target.value)}
-                    className="border rounded p-2 resize-none h-24 bg-white dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                    className="border rounded-xl p-2 resize-none h-24 bg-white dark:bg-gray-800 dark:text-gray-100"
                 />
 
                 <Button onClick={handleSendAnnouncement} disabled={sendingAnnouncement}>
                     {sendingAnnouncement ? "Sending..." : "Send Announcement"}
                 </Button>
+
+                {/* Sent Announcements */}
+                <div className="space-y-3 pt-4">
+                    {sentAnnouncements.map((a) => {
+                        const reads = readData[a.id] || [];
+                        const isEdited = a.updated_at && a.updated_at !== a.created_at;
+                        const ONE_DAY = 24 * 60 * 60 * 1000;
+
+                        const canEdit =
+                            Date.now() - new Date(a.created_at).getTime() < ONE_DAY;
+
+                        return (
+                            <div
+                                key={a.id}
+                                className="p-3 border rounded-xl bg-gray-50 dark:bg-gray-800"
+                            >
+                                <div className="flex justify-between items-center mb-2">
+                                    <div className="text-sm font-medium">
+                                        Block {a.block} - Year {a.year} - Sem {a.semester}
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Badge>{reads.length} Viewed</Badge>
+                                        {isEdited && <Badge variant="secondary">Edited</Badge>}
+                                    </div>
+                                </div>
+
+                                <div className="text-sm mb-2">{a.message}</div>
+
+                                {reads.length > 0 && (
+                                    <div className="text-xs text-gray-500 mb-2">
+                                        Viewed by:{" "}
+                                        {reads.map((r: any) => r.profiles?.name).join(", ")}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2">
+                                    {canEdit && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setEditingId(a.id);
+                                                setAnnouncementMessage(a.message);
+                                            }}
+                                        >
+                                            Edit
+                                        </Button>
+                                    )}
+
+                                    {editingId === a.id && (
+                                        <Button size="sm" onClick={() => handleUpdate(a.id)}>
+                                            Save
+                                        </Button>
+                                    )}
+
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        disabled={deletingId === a.id}
+                                        onClick={() => handleDelete(a.id)}
+                                    >
+                                        {deletingId === a.id ? "Deleting..." : "Delete"}
+                                    </Button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </CardContent>
         </Card>
     );

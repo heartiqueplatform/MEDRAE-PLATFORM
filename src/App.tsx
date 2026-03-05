@@ -103,13 +103,8 @@ const queryClient = new QueryClient({
 const AIWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const allowedPaths = [
-    "/dashboard/student",
-    "/dashboard/tutor",
-    "/dashboard/staff",
     "/assessment-notes",
-    "/medtube",
     "/resources",
-    "/calendar",
   ];
   const showChatWidget = allowedPaths.some((path) =>
     location.pathname.startsWith(path)
