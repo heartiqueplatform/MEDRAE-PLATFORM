@@ -1,5 +1,4 @@
 import React from 'react';
-import { TermsButton } from "@/components/ui/TermsButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, Volume, VolumeX, GraduationCap } from "lucide-react";
@@ -438,8 +437,7 @@ const Index = () => {
 
 
             {/* Buttons */}
-            {/* Buttons */}
-            <TermsButton />
+
             <div className="flex flex-col justify-center items-center gap-4 mt-4">
 
               <button
@@ -464,7 +462,7 @@ const Index = () => {
                 {allMediaReady ? "Yes, I agree!" : "Downloading..."}
               </button>
 
-              <p className="text-gray-700 dark:text-gray-300 text-base md:text-lg">
+              <p className="text-gray-700 dark:text-gray-900 text-base md:text-lg">
                 Already have an account?{" "}
                 <span
                   className="text-blue-500 font-bold cursor-pointer hover:underline transition-all"
