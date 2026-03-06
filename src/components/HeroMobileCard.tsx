@@ -47,7 +47,7 @@ const HeroMobileCard = () => {
             <div className="absolute inset-0 bg-black/65" />
 
             {/* Content */}
-            <CardContent className="relative z-10 flex flex-col justify-center min-h-[100vh] px-6 py-10 space-y-6 font-sans">
+            <CardContent className="relative z-10 flex flex-col justify-center min-h-[100vh] px-2 py-12 space-y-2 font-sans">
 
                 {/* Logo + Title */}
                 <div className="flex flex-col items-center space-y-3">
@@ -63,7 +63,7 @@ const HeroMobileCard = () => {
                 </div>
 
                 {/* Description */}
-                <div className="space-y-3 text-base leading-relaxed text-white/95 text-start">
+                <div className="space-y-2 text-base leading-relaxed text-white/95 text-start ">
                     <p>
                         Medrae is built for serious NCK exam preparation. Practice 5,000+
                         updated NCK-style questions with instant explanations after every answer.
@@ -100,11 +100,12 @@ const HeroMobileCard = () => {
                     </p>
                 </div>
                 {/* Buttons */}
-                <div className="flex flex-col gap-4 pt-6">
+                <div className="flex flex-col gap-2 pt-0">
                     <Button
                         size="lg"
-                        className="bg-blue-600 text-white font-bold text-lg py-6 rounded-2xl shadow-xl hover:bg-blue-700 transition-all duration-300"
-                        onClick={() => navigate("/register")}
+                        className="bg-blue-500 text-white font-bold text-lg md:text-2xl px-8 py-3 rounded-3xl shadow-lg
+  transition-all duration-300 md:hover:bg-blue-600 md:hover:scale-105"
+                        onClick={() => navigate('/register')}
                     >
                         Create Account
                     </Button>
@@ -112,8 +113,9 @@ const HeroMobileCard = () => {
                     <Button
                         size="lg"
                         variant="outline"
-                        className="border-yellow-400 text-white font-semibold text-lg py-6 rounded-2xl hover:bg-white hover:text-black transition-all duration-300"
-                        onClick={() => navigate("/login")}
+                        className="border-yellow-500 text-blue-500 font-bold text-base md:text-lg px-8 py-3 rounded-3xl shadow-lg
+  transition-all duration-300 md:hover:bg-blue-500 md:hover:text-white md:hover:scale-105"
+                        onClick={() => navigate('/login')}
                     >
                         Sign In to Continue
                     </Button>

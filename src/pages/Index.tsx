@@ -202,18 +202,21 @@ const Index = () => {
     {
       bg: "/indexbackground6.jpg",
       text: (
-        <div className="flex flex-col gap-3 items-center">
+        <div className="flex flex-col gap-2  items-center">
           <Button
             size="lg"
-            className="bg-blue-500 text-white font-bold text-lg md:text-2xl px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-600 hover:scale-105 transition-all duration-300"
+            className="bg-blue-500 text-white font-bold text-lg md:text-2xl px-8 py-3 rounded-3xl shadow-lg
+  transition-all duration-300 md:hover:bg-blue-600 md:hover:scale-105"
             onClick={() => navigate('/register')}
           >
             Create Account
           </Button>
+
           <Button
             size="lg"
             variant="outline"
-            className="border-yellow-500 text-blue-500 font-bold text-base md:text-lg px-8 py-3 rounded-3xl shadow-lg hover:bg-blue-500 hover:text-white hover:scale-105 transition-all duration-300"
+            className="border-yellow-500 text-blue-500 font-bold text-base md:text-lg px-8 py-3 rounded-3xl shadow-lg
+  transition-all duration-300 md:hover:bg-blue-500 md:hover:text-white md:hover:scale-105"
             onClick={() => navigate('/login')}
           >
             Sign In to Continue
