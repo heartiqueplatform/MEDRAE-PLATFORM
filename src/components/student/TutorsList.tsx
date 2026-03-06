@@ -15,7 +15,7 @@ export default function TutorsList() {
 
     const notificationSound = useRef<HTMLAudioElement | null>(null);
     const announcementsRef = useRef<HTMLDivElement | null>(null);
-
+    const [inviteModalOpen, setInviteModalOpen] = useState(false);
     const [tutors, setTutors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedTutor, setSelectedTutor] = useState<any>(null);
@@ -341,7 +341,7 @@ export default function TutorsList() {
                 <CardHeader>
                     <div className="flex items-center space-x-2">
                         <Users className="w-5 h-5 text-green-400" />
-                        <CardTitle>Your Tutors</CardTitle>
+                        <CardTitle>My Tutors</CardTitle>
 
                         {unreadCount > 0 && (
                             <div className="text-xs bg-red-500 text-white px-2 py-1 rounded-full animate-pulse">
@@ -403,8 +403,14 @@ export default function TutorsList() {
                             ))}
                         </div>
                     ) : tutors.length === 0 ? (
-                        <div className="text-sm text-gray-600">
-                            No tutors found in your institution.
+                        <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
+                            <div>No tutors found in your institution.</div>
+                            <Button
+                                onClick={() => setInviteModalOpen(true)}
+                                className="bg-green-500 text-white hover:bg-green-600 focus:ring-2 focus:ring-green-400 transition-colors duration-200"
+                            >
+                                Invite a Tutor
+                            </Button>
                         </div>
                     ) : (
                         <ul className="space-y-2">
@@ -582,7 +588,59 @@ export default function TutorsList() {
             </Dialog>
             {/* YOUR ENTIRE ORIGINAL UI REMAINS EXACTLY AS YOU PROVIDED */}
             {/* (No deletions, nothing removed) */}
+            <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Invite a Tutor</DialogTitle>
+                    </DialogHeader>
 
-        </div>
+                    <div className="space-y-3 text-sm">
+                        <p>Hello! </p>
+                        <p>
+                            Invite a tutor by sending the template below. This message explains how they can help students, guide them, and join cohorts on our platform.
+                        </p>
+                        <p>Steps to invite a tutor:</p>
+                        <ul className="list-disc list-inside space-y-1">
+                            <li>Click the "Invite via WhatsApp" button below.</li>
+                            <li>The pre-written template message will open in WhatsApp.</li>
+                            <li>Send it to the tutor you want to invite.</li>
+                        </ul>
+                        <p>
+                            The app link is included so they can sign up immediately: <a href="https://medrae.vercel.app/" className="text-blue-500 underline">https://medrae.vercel.app/</a>
+                        </p>
+                    </div>
+
+                    <div className="flex justify-end mt-4 space-x-2">
+                        <a
+                            href={`https://wa.me/?text=${encodeURIComponent(
+                                `Hello !
+
+This platform helps students connect with knowledgeable tutors. By joining, you can guide students, answer questions, and post helpful announcements for your cohorts.
+
+Steps to get started:
+1. Sign up as a tutor on this platform.
+2. Link your institution and specialization.
+3. Create or join a cohort to start helping students.
+
+Once added, students from your institution will be able to see you and join your cohorts.
+
+Join the app here: https://medrae.vercel.app/`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block"
+                        >
+                            <Button variant="outline">
+                                Invite via WhatsApp
+                            </Button>
+                        </a>
+
+                        <Button variant="secondary" onClick={() => setInviteModalOpen(false)}>
+                            Close
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div >
     );
 }
