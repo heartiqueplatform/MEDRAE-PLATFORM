@@ -3,7 +3,6 @@ import App from "./App.tsx";
 import "./index.css";
 import AuthGate from "@/auth/AuthGate";
 import { BrowserRouter } from "react-router-dom";
-import { GlobalLoader } from "@/components/GlobalLoader"; // <-- import your loader
 
 // App version for cache control
 const APP_VERSION = "97";
@@ -21,17 +20,11 @@ if (typeof window !== "undefined") {
 
 const root = createRoot(document.getElementById("root")!);
 
-// Step 1: Render GlobalLoader immediately
-root.render(<GlobalLoader />);
-
-// Step 2: Once React is ready (AuthGate and App), replace loader
-// You can also wait for AuthGate logic if needed
-setTimeout(() => {
-    root.render(
-        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-            <AuthGate>
-                <App />
-            </AuthGate>
-        </BrowserRouter>
-    );
-}, 0);
+// Directly render the app — no loader
+root.render(
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <AuthGate>
+            <App />
+        </AuthGate>
+    </BrowserRouter>
+);
