@@ -313,11 +313,8 @@ export function Profile() {
 
 
   return (
-    <div className="space-y-2 px-1 border-0  ">
-      <div className="flex items-center gap-3 mb-6">
-        <User className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">My Profile</h1>
-      </div>
+    <div className="space-y-2 px-2 border-0 max-w-3xl mx-auto w-full">
+
 
       <Tabs defaultValue="overview" className="space-y-2">
         <TabsList className="grid w-full grid-cols-3">
@@ -329,7 +326,13 @@ export function Profile() {
         <TabsContent value="overview" className="space-y-2">
           <Card className="border-0">
             <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <User className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold">My Profile</h1>
+              </div>
               <div className="flex flex-col md:flex-row items-start gap-6">
+
+
                 <div className="relative">
                   <Avatar className="h-24 w-24">
                     <AvatarImage
