@@ -28,7 +28,8 @@ export default function CountdownCards() {
     const [nextExamId, setNextExamId] = useState<string | null>(null);
     const [hiddenAfterEnd, setHiddenAfterEnd] = useState<string[]>([]);
     const [selectedExam, setSelectedExam] = useState<CountdownPlan | null>(null);
-
+    const [addingExam, setAddingExam] = useState(false);
+    const [deletingExamId, setDeletingExamId] = useState<string | null>(null);
     const [examName, setExamName] = useState("");
     const [examType, setExamType] = useState("");
     const [examDate, setExamDate] = useState("");
@@ -99,7 +100,32 @@ export default function CountdownCards() {
             if (universalChannel) supabase.removeChannel(universalChannel);
         };
     }, []);
+    async function deleteExam(examId: string) {
+        const user = await supabase.auth.getUser();
+        if (!user.data.user) return;
 
+        setDeletingExamId(examId); // START loading
+
+        const { error } = await supabase
+            .from("countdown_plans")
+            .delete()
+            .eq("id", examId)
+            .eq("user_id", user.data.user.id);
+
+        setDeletingExamId(null); // STOP loading
+
+        if (error) {
+            console.error(error);
+            alert("Failed to delete exam");
+        } else {
+            setPlans((prev) => prev.filter((e) => e.id !== examId));
+            localStorage.setItem(
+                "allExams",
+                JSON.stringify([...plans.filter((e) => e.id !== examId), ...universalExams])
+            );
+            if (selectedExam?.id === examId) setSelectedExam(null);
+        }
+    }
     // --- Countdown timer ---
     const allExams = [...plans, ...universalExams].filter(e => !hiddenExams.includes(e.id));
     const now = new Date();
@@ -237,6 +263,8 @@ export default function CountdownCards() {
             return;
         }
 
+        setAddingExam(true); // START loading
+
         const { data, error } = await supabase
             .from("countdown_plans")
             .insert([
@@ -252,6 +280,8 @@ export default function CountdownCards() {
                 },
             ])
             .select();
+
+        setAddingExam(false); // STOP loading
 
         if (error) console.error(error);
         else {
@@ -376,14 +406,31 @@ export default function CountdownCards() {
                 <div className="flex-1 mb-3 md:mb-0">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between">
                         <p className="text-lg font-semibold mb-2 sm:mb-0">{exam.exam_name}</p>
-                        {showHideButton && onHide && (
-                            <button
-                                onClick={onHide}
-                                className="flex items-center space-x-1 px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition"
-                            >
-                                <span>Hide Irrelevant</span>
-                                <X className="w-3 h-3 text-gray-500" />
-                            </button>
+                        {exam.user_id && (
+                            <div className="flex space-x-2">
+                                {/* Hide Button */}
+                                {showHideButton && onHide && (
+                                    <button
+                                        onClick={onHide}
+                                        className="flex items-center space-x-1 px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition"
+                                    >
+                                        <span>Hide</span>
+                                        <X className="w-3 h-3 text-gray-500" />
+                                    </button>
+                                )}
+                                {/* Delete Button with confirmation */}
+                                <button
+                                    onClick={() => {
+                                        if (confirm(`Are you sure you want to delete the exam "${exam.exam_name}"? This action cannot be undone.`)) {
+                                            deleteExam(exam.id);
+                                        }
+                                    }}
+                                    className="flex items-center space-x-1 px-2 py-0.5 border border-red-400 rounded text-xs text-red-700 hover:bg-red-100 transition"
+                                    disabled={deletingExamId === exam.id}
+                                >
+                                    <span>{deletingExamId === exam.id ? "Deleting..." : "Delete"}</span>
+                                </button>
+                            </div>
                         )}
                     </div>
                     <p className="text-sm text-gray-500">Type: {exam.exam_type}</p>
@@ -570,8 +617,9 @@ export default function CountdownCards() {
                         <button
                             onClick={addPlan}
                             className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            disabled={addingExam}
                         >
-                            Add Exam
+                            {addingExam ? "Adding..." : "Add Exam"}
                         </button>
                     </div>
 
