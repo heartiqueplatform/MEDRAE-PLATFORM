@@ -222,44 +222,31 @@ const App = () => {
 
     updateOnlineStatus();
   }, []);
-
   useEffect(() => {
-    const checkActiveSession = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentSessionId = localStorage.getItem("device_id");
-
-      const user = sessionData.session?.user;
-
-      if (!user || !currentSessionId) return;
-
+    const keepSessionAlive = async () => {
       try {
-        // Fetch the active session from profiles table
-        const { data: profileData, error } = await supabase
-          .from("profiles")
-          .select("active_session_id")
+        const { data: sessionData } = await supabase.auth.getSession();
+        const deviceId = localStorage.getItem("device_id");
+        const user = sessionData.session?.user;
+
+        if (!user || !deviceId) return;
+
+        // Update last_active timestamp so the session stays alive
+        await supabase
+          .from("user_sessions")
+          .update({ last_active: new Date() })
           .eq("user_id", user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching profile for session check:", error);
-          return;
-        }
-
-        if (profileData?.active_session_id !== currentSessionId) {
-          // Session mismatch → force logout
-          await supabase.auth.signOut();
-          setForceLogout(true);
-        }
+          .eq("device_id", deviceId);
       } catch (err) {
-        console.error("Unexpected session check error:", err);
+        console.error("Session keep-alive error:", err);
       }
     };
 
-    // Initial check
-    checkActiveSession();
+    // Initial update
+    keepSessionAlive();
 
-    // Optional: Poll every 10 seconds to detect logins on other devices
-    const interval = setInterval(checkActiveSession, 10000);
+    // Periodically update last_active
+    const interval = setInterval(keepSessionAlive, 30000); // every 30s
 
     return () => clearInterval(interval);
   }, []);
@@ -321,6 +308,7 @@ const App = () => {
 
   return (
     <>
+
       {forceLogout && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
 
@@ -347,7 +335,6 @@ const App = () => {
           </div>
         </div>
       )}
-
 
 
       <SessionContextProvider supabaseClient={supabase}>

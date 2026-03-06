@@ -135,17 +135,39 @@ export function Register() {
       if (loginError || !loginData.user) throw new Error(loginError?.message || "Login after registration failed.");
 
       // 4️⃣ Save device/session info
+      // 4️⃣ Handle session in new user_sessions table
       let deviceId = localStorage.getItem("device_id");
       if (!deviceId) {
         deviceId = crypto.randomUUID();
         localStorage.setItem("device_id", deviceId);
       }
 
-      await supabase
-        .from("profiles")
-        .update({ active_session_id: deviceId })
+      // Fetch current active sessions
+      const { data: activeSessions = [], error: sessionError } = await supabase
+        .from("user_sessions")
+        .select("*")
         .eq("user_id", loginData.user.id);
 
+      if (sessionError) throw sessionError;
+
+      // Block if already 3 active sessions
+      if (activeSessions.length >= 3) {
+        toast({
+          title: "Device limit reached",
+          description: "You already have 3 active devices. Cannot login on a new device.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Insert new session
+      await supabase.from("user_sessions").insert({
+        user_id: loginData.user.id,
+        session_id: deviceId,
+        device_info: navigator.userAgent,
+        created_at: new Date().toISOString(),
+      });
       // 5️⃣ Toast and redirect
       toast({ title: "Welcome!", description: `Account created and logged in as ${role}.` });
       localStorage.setItem("userRole", role);

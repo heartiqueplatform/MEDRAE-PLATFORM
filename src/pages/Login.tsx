@@ -59,8 +59,9 @@ export function Login() {
   };
 
   const handleLogin = async () => {
+
     setIsLoading(true);
-    localStorage.removeItem("device_id"); // optional
+
 
     const passwordHash = sha256(password).toString();
 
@@ -80,19 +81,58 @@ export function Login() {
 
         const userId = data.user.id;
 
-        // Generate device ID
+
+        // ---------------- Device Session Control ----------------
+
+        // Device ID (persistent per browser)
         let deviceId = localStorage.getItem("device_id");
         if (!deviceId) {
           deviceId = crypto.randomUUID();
           localStorage.setItem("device_id", deviceId);
         }
 
-        // Update active session in profiles
-        await supabase
-          .from("profiles")
-          .update({ active_session_id: deviceId })
+        // Check existing sessions for this user
+        const { data: existingSessions, error: sessionError } = await supabase
+          .from("user_sessions")
+          .select("*")
           .eq("user_id", userId);
 
+        if (sessionError) throw new Error("Session check failed");
+
+        // Check if this device already has a session
+        const currentDeviceSession = existingSessions?.find(
+          (s) => s.device_id === deviceId
+        );
+
+        // If device already registered → update activity
+        if (currentDeviceSession) {
+          await supabase
+            .from("user_sessions")
+            .update({ last_active: new Date().toISOString() })
+            .eq("id", currentDeviceSession.id);
+        } else {
+          // New device login
+          if (existingSessions.length >= 2) {
+            throw new Error(
+              "Maximum devices reached. Log out from another device first."
+            );
+          }
+
+          // Register new device session
+          await supabase.from("user_sessions").insert({
+            user_id: userId,
+            device_id: deviceId,
+            device_info: navigator.userAgent,
+          });
+        }
+
+        await supabase
+          .from("profiles")
+          .update({
+            is_online: true,
+            last_seen: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
         // ---------------- Fetch user profile ----------------
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
