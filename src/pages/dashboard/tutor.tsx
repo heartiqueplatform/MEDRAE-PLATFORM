@@ -27,6 +27,7 @@ export default function TutorDashboard() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showStudentOverlay, setShowStudentOverlay] = useState(false);
   const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [loadingOverlayStudents, setLoadingOverlayStudents] = useState(true);
   // Replace single selectedStudent with an array
   const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
   const [block, setBlock] = useState("");
@@ -100,7 +101,7 @@ export default function TutorDashboard() {
           streak: newStreak,
           best_streak: previousBest,
         },
-        { onConflict: ["user_id", "login_date"] }
+        { onConflict: "user_id,login_date" }
       );
 
     // 3️⃣ Update state
@@ -136,6 +137,7 @@ export default function TutorDashboard() {
     setLoadingStudents(false);
   };
   const fetchAllStudents = async () => {
+    setLoadingOverlayStudents(true);
     const { data: profile } = await supabase
       .from("profiles")
       .select("institution")
@@ -147,52 +149,59 @@ export default function TutorDashboard() {
     const { data: students } = await supabase
       .from("profiles")
       .select(`
-      user_id,
-      name,
-      username,
-      block,
-      county,
-      institution,
-      course,
-      specialization,
-      nck_number,
-      email,
-      phone,
-      avatar_url
-    `)
-      .eq("role", "student")
-      .eq("institution", profile.institution);
-
+    user_id,
+    name,
+    username,
+    block,
+    county,
+    institution,
+    course,
+    specialization,
+    nck_number,
+    email,
+    phone,
+    avatar_url,
+    role
+  `)
+      .eq("role", "student");
     setAllStudents(students || []);
+
+    setLoadingOverlayStudents(false);
   };
 
   const handleAddStudent = async () => {
-    if (!selectedStudent || !block || !year || !semester) {
-      toast.error("Please fill all fields before adding a student.");
+    if (selectedStudents.length === 0 || !block || !year || !semester) {
+      toast.error("Please fill all fields before adding students.");
       return;
     }
+
     setJoining(true);
-    const { error } = await supabase.from("tutor_students").insert({
+
+    const inserts = selectedStudents.map((st) => ({
       tutor_id: user.id,
-      student_id: selectedStudent.user_id,
+      student_id: st.user_id,
       block,
       year,
       semester,
-    });
+    }));
+
+    const { error } = await supabase
+      .from("tutor_students")
+      .insert(inserts);
 
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(`Student ${selectedStudent.name} added to your list.`);
-      setSelectedStudent(null);
+      toast.success(`${selectedStudents.length} students added.`);
+      setSelectedStudents([]);
       setBlock("");
       setYear("");
       setSemester("");
-
+      fetchLinkedStudents();
     }
+
     setJoining(false);
   };
-
   const handleRemoveStudent = async (studentId: string) => {
     const { error } = await supabase
       .from("tutor_students")
@@ -331,8 +340,8 @@ export default function TutorDashboard() {
 
             {/* Student Overlay */}
             {showStudentOverlay && (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md sm:max-w-3xl lg:max-w-7xl max-h-[80vh] sm:max-h-[95vh] flex flex-col shadow-xl">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden w-full max-w-md sm:max-w-3xl lg:max-w-7xl h-[85vh] sm:h-[90vh] flex flex-col shadow-xl">
                   {/* STICKY HEADER */}
                   <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b p-4 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -352,6 +361,7 @@ export default function TutorDashboard() {
                   <div className="sticky top-[64px] z-10 bg-white dark:bg-gray-900 border-b p-3">
                     <input
                       type="text"
+                      value={search}
                       placeholder="Search students..."
                       className="w-full p-2 rounded-lg border dark:bg-gray-800 dark:border-gray-700"
                       onChange={(e) => {
@@ -366,152 +376,148 @@ export default function TutorDashboard() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 
-                      {allStudents
-                        .filter((s) =>
-                          s.name?.toLowerCase().includes(search) ||
-                          s.username?.toLowerCase().includes(search) ||
-                          s.email?.toLowerCase().includes(search)
-                        )
-                        .map((s) => {
-                          const isSelected = selectedStudents.some(
-                            (st) => st.user_id === s.user_id
-                          );
+                      {loadingOverlayStudents
+                        ? [...Array(9)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="p-3 rounded-xl border bg-gray-100 dark:bg-gray-800 animate-pulse space-y-3"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700"></div>
 
-                          return (
-                            <div
-                              key={s.user_id}
-                              onClick={() => {
-                                if (isSelected) {
-                                  setSelectedStudents((prev) =>
-                                    prev.filter((st) => st.user_id !== s.user_id)
-                                  );
-                                } else {
-                                  setSelectedStudents((prev) => [...prev, s]);
-                                }
-                              }}
-                              className={`flex flex-col space-y-1 p-3 rounded-xl cursor-pointer border hover:bg-gray-100 dark:hover:bg-gray-800 transition
+                              <div className="space-y-1">
+                                <div className="h-4 w-24 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                              </div>
+                            </div>
+
+                            <div className="ml-12 space-y-1">
+                              <div className="h-3 w-40 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                              <div className="h-3 w-32 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                            </div>
+                          </div>
+                        ))
+                        : allStudents
+                          .filter((s) =>
+                            s.name?.toLowerCase().includes(search) ||
+                            s.username?.toLowerCase().includes(search) ||
+                            s.email?.toLowerCase().includes(search)
+                          )
+                          .map((s) => {
+                            const isSelected = selectedStudents.some(
+                              (st) => st.user_id === s.user_id
+                            );
+
+                            return (
+                              <div
+                                key={s.user_id}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setSelectedStudents((prev) =>
+                                      prev.filter((st) => st.user_id !== s.user_id)
+                                    );
+                                  } else {
+                                    setSelectedStudents((prev) => [...prev, s]);
+                                  }
+                                }}
+                                className={`flex flex-col space-y-1 p-3 rounded-xl cursor-pointer border hover:bg-gray-100 dark:hover:bg-gray-800 transition
                   ${isSelected ? "bg-blue-200 dark:bg-blue-800" : ""}`}
-                            >
-                              <div className="flex items-center space-x-3">
-                                <Avatar>
-                                  {s.avatar_url ? (
-                                    <img
-                                      src={s.avatar_url}
-                                      alt={s.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <AvatarFallback>
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <Avatar>
+                                    {s.avatar_url ? (
                                       <img
-                                        src="/UsersAvatar.jpg"
+                                        src={s.avatar_url}
                                         alt={s.name}
                                         className="w-full h-full object-cover"
                                       />
-                                    </AvatarFallback>
-                                  )}
-                                </Avatar>
+                                    ) : (
+                                      <AvatarFallback>
+                                        <img
+                                          src="/UsersAvatar.jpg"
+                                          alt={s.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </AvatarFallback>
+                                    )}
+                                  </Avatar>
 
-                                <div>
-                                  <div className="font-medium text-gray-900 dark:text-gray-100">
-                                    {s.name}
-                                  </div>
-                                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                                    {s.username}
+                                  <div>
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                                      {s.name}
+                                    </div>
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                      {s.username}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              <div className="text-xs text-gray-700 dark:text-gray-300 ml-12 space-y-1">
-                                {s.email && (
-                                  <div>
-                                    <strong>Email:</strong> {s.email}
-                                  </div>
-                                )}
-                                {s.phone && (
-                                  <div>
-                                    <strong>Phone:</strong> {s.phone}
-                                  </div>
-                                )}
-                                {s.county && (
-                                  <div>
-                                    <strong>County:</strong> {s.county}
-                                  </div>
-                                )}
-                                {s.institution && (
-                                  <div>
-                                    <strong>Institution:</strong> {s.institution}
-                                  </div>
-                                )}
-                                {s.course && (
-                                  <div>
-                                    <strong>Course:</strong> {s.course}
-                                  </div>
-                                )}
-                                {s.block && (
-                                  <div>
-                                    <strong>Block:</strong> {s.block}
-                                  </div>
-                                )}
-                                {s.specialization && (
-                                  <div>
-                                    <strong>Specialization:</strong> {s.specialization}
-                                  </div>
-                                )}
-                                {s.nck_number && (
-                                  <div>
-                                    <strong>NCK Number:</strong> {s.nck_number}
-                                  </div>
-                                )}
+                                <div className="text-xs text-gray-700 dark:text-gray-300 ml-12 space-y-1">
+                                  {s.email && (
+                                    <div>
+                                      <strong>Email:</strong> {s.email}
+                                    </div>
+                                  )}
+                                  {s.phone && (
+                                    <div>
+                                      <strong>Phone:</strong> {s.phone}
+                                    </div>
+                                  )}
+                                  {s.county && (
+                                    <div>
+                                      <strong>County:</strong> {s.county}
+                                    </div>
+                                  )}
+                                  {s.institution && (
+                                    <div>
+                                      <strong>Institution:</strong> {s.institution}
+                                    </div>
+                                  )}
+                                  {s.course && (
+                                    <div>
+                                      <strong>Course:</strong> {s.course}
+                                    </div>
+                                  )}
+                                  {s.block && (
+                                    <div>
+                                      <strong>Block:</strong> {s.block}
+                                    </div>
+                                  )}
+                                  {s.specialization && (
+                                    <div>
+                                      <strong>Specialization:</strong> {s.specialization}
+                                    </div>
+                                  )}
+                                  {s.nck_number && (
+                                    <div>
+                                      <strong>NCK Number:</strong> {s.nck_number}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                     </div>
                   </div>
 
                   {/* STICKY BOTTOM BUTTON */}
                   <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t p-4">
                     <Button
-                      onClick={async () => {
-                        if (selectedStudents.length === 0 || !block || !year || !semester) {
-                          toast.error("Please select students and fill all fields.");
+                      onClick={() => {
+                        if (selectedStudents.length === 0) {
+                          toast.error("Please select at least one student.");
                           return;
                         }
 
-                        setJoining(true);
+                        // Close overlay only
+                        setShowStudentOverlay(false);
 
-                        const inserts = selectedStudents.map((st) => ({
-                          tutor_id: user.id,
-                          student_id: st.user_id,
-                          block,
-                          year,
-                          semester,
-                        }));
-
-                        const { error } = await supabase
-                          .from("tutor_students")
-                          .insert(inserts);
-
-                        if (error) {
-                          toast.error(error.message);
-                        } else {
-                          toast.success(`${selectedStudents.length} students added.`);
-                          setSelectedStudents([]);
-                          setBlock("");
-                          setYear("");
-                          setSemester("");
-                          setShowStudentOverlay(false);
-                          fetchLinkedStudents();
-                        }
-
-                        setJoining(false);
+                        toast.success(`${selectedStudents.length} students selected.`);
                       }}
-                      disabled={joining}
+                      disabled={selectedStudents.length === 0}
                       className="w-full"
                     >
-                      {joining
-                        ? "Adding..."
-                        : `Add Selected Students (${selectedStudents.length})`}
+                      Confirm Selection ({selectedStudents.length})
                     </Button>
                   </div>
                 </div>
