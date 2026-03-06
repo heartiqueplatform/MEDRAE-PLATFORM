@@ -46,23 +46,49 @@ export function Profile() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    // Clear storage cache
-    localStorage.clear();
-    sessionStorage.clear();
+      if (user) {
+        // Delete all sessions for this user
+        await supabase
+          .from("user_sessions")
+          .delete()
+          .eq("user_id", user.id);
 
-    // Reset React UI state
-    setProfileState(null);
-    setActivePlan(null);
+        // Clear active session reference in profile
+        await supabase
+          .from("profiles")
+          .update({ active_session_id: null })
+          .eq("user_id", user.id);
+      }
 
-    navigate("/", { replace: true });
+      await supabase.auth.signOut();
 
-    toast({
-      title: "Logged out",
-      description: "You have been logged out.",
-    });
+      // Clear storage cache
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Reset React UI state
+      setProfileState(null);
+      setActivePlan(null);
+
+      navigate("/", { replace: true });
+
+      toast({
+        title: "Logged out",
+        description: "You have been logged out.",
+      });
+
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+      });
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -70,7 +96,6 @@ export function Profile() {
     setDeleting(true);
 
     try {
-      // ✅ Always get fresh access token
       const {
         data: { session },
         error: sessionError,
@@ -81,6 +106,18 @@ export function Profile() {
         return;
       }
 
+      // Remove session records
+      await supabase
+        .from("user_sessions")
+        .delete()
+        .eq("user_id", user.id);
+
+      // Clear profile session reference
+      await supabase
+        .from("profiles")
+        .update({ active_session_id: null })
+        .eq("user_id", user.id);
+
       const res = await fetch(
         "https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/delete-user",
         {
@@ -90,7 +127,6 @@ export function Profile() {
             Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ userId: user.id }),
-
         }
       );
 
@@ -111,7 +147,6 @@ export function Profile() {
 
       setShowDeleteDialog(false);
 
-      // Clean everything
       localStorage.clear();
       sessionStorage.clear();
       setProfileState(null);
@@ -127,10 +162,10 @@ export function Profile() {
       setDeleting(false);
     }
   };
-
   const handleProfileUpdate = () => {
     navigate("/settings");
   };
+
 
   const handleAvatarUpdate = () => {
     toast({
