@@ -28,7 +28,7 @@ const HeroSkeleton = () => {
 const Index = () => {
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
 
-
+  const [joyrideReady, setJoyrideReady] = useState(false);
   const [ready, setReady] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
 
@@ -37,14 +37,12 @@ const Index = () => {
 
 
   const [activeHeroStory, setActiveHeroStory] = useState(0);
-  const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
-  const studyAudioRef = useRef<HTMLAudioElement | null>(null);
+  const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
 
 
   const [isMuted, setIsMuted] = useState(false); // always start unmuted
   const [isMobile, setIsMobile] = useState(false);
-  const [welcomeAudioReady, setWelcomeAudioReady] = useState(false);
-  const [studyAudioReady, setStudyAudioReady] = useState(false);
+  const [notificationAudioReady, setNotificationAudioReady] = useState(false);
 
   // Add these states for media tracking
   const [totalMedia, setTotalMedia] = useState(0);
@@ -61,8 +59,7 @@ const Index = () => {
   useEffect(() => {
     const mediaUrls = [
       ...heroStorySlides.flatMap(s => s.video ? [s.video] : [s.bg]),
-      "/sounds/MedraeVoice.mp3",
-      "/sounds/MedraeStudy.mp3",
+      "/sounds/notification.mp3",
     ];
 
     setTotalMedia(mediaUrls.length);
@@ -144,37 +141,10 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    // Initialize audios
-    const welcomeAudio = new Audio("/sounds/MedraeVoice.mp3");
-    welcomeAudio.volume = 1;
-    welcomeAudio.loop = false;
-    welcomeAudio.muted = true; // initially muted to allow preload
-    welcomeAudio.preload = "auto";
-
-    const studyAudio = new Audio("/sounds/MedraeStudy.mp3");
-    studyAudio.volume = 0.3;
-    studyAudio.loop = true;
-    studyAudio.muted = true; // initially muted
-    studyAudio.preload = "auto";
-
-    // Assign to refs
-    welcomeAudioRef.current = welcomeAudio;
-    studyAudioRef.current = studyAudio;
-
-    // Mark audios ready when can play through
-    welcomeAudio.oncanplaythrough = () => setWelcomeAudioReady(true);
-    studyAudio.oncanplaythrough = () => setStudyAudioReady(true);
-
-    // Cleanup
-    return () => {
-      welcomeAudio.pause();
-      studyAudio.pause();
-      welcomeAudioRef.current = null;
-      studyAudioRef.current = null;
-    };
-  }, []);
-
-
+    if (allMediaReady) { // or any other condition when elements are mounted
+      setJoyrideReady(true);
+    }
+  }, [allMediaReady]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -445,18 +415,13 @@ const Index = () => {
                 disabled={!allMediaReady}
                 onClick={() => {
                   setShowWelcomeOverlay(false);
-
                   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-                  const playAudioSafely = (audio: HTMLAudioElement | null) => {
-                    if (!audio) return;
-                    audio.muted = false;
-                    audio.currentTime = 0;
-                    audio.play().catch(() => { console.warn("Audio blocked"); });
-                  };
-
-                  playAudioSafely(welcomeAudioRef.current);
-                  playAudioSafely(studyAudioRef.current);
+                  // Create audio and play once
+                  const notificationAudio = new Audio("/sounds/notification.mp3");
+                  notificationAudio.volume = 1;
+                  notificationAudio.loop = false;
+                  notificationAudio.play().catch(() => console.warn("Audio blocked"));
                 }}
               >
                 {allMediaReady ? "Yes, I agree!" : "Downloading..."}
@@ -543,8 +508,7 @@ const Index = () => {
           onClick={() => {
             setIsMuted(prev => {
               const newMuted = !prev;
-              if (welcomeAudioRef.current) welcomeAudioRef.current.muted = newMuted;
-              if (studyAudioRef.current) studyAudioRef.current.muted = newMuted;
+              if (notificationAudioRef.current) notificationAudioRef.current.muted = newMuted;
               return newMuted;
             });
           }}
@@ -639,8 +603,8 @@ const Index = () => {
 
                           }}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="size-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
                           </svg>
 
                         </button>
@@ -653,8 +617,8 @@ const Index = () => {
 
                           }}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="size-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                           </svg>
 
                         </button>
@@ -718,7 +682,7 @@ const Index = () => {
                   muted
                   loop
                   playsInline
-                  preload="auto"      // ✅ preloads the entire video
+                  preload="auto"
                   controls
                 >
                   <source src="/videos/Medrae1.mp4" type="video/mp4" />
@@ -901,7 +865,7 @@ const Index = () => {
               muted
               loop
               playsInline
-              preload="auto"      // ✅ preloads the entire video
+              preload="auto"
               controls
             >
               <source src="/videos/Medrae2.mp4" type="video/mp4" />

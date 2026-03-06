@@ -5,7 +5,7 @@ import AuthGate from "@/auth/AuthGate";
 import { BrowserRouter } from "react-router-dom";
 
 // App version for cache control
-const APP_VERSION = "101";
+const APP_VERSION = "102";
 const storedVersion = localStorage.getItem("appVersion");
 
 if (storedVersion !== APP_VERSION) {
