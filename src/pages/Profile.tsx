@@ -23,8 +23,15 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { GlobalLoader } from "@/components/GlobalLoader";
 export function Profile() {
-  const cachedProfile = JSON.parse(localStorage.getItem("userProfile") || "null");
-  const [profileState, setProfileState] = useState(cachedProfile);
+  const getCachedProfile = () => {
+    try {
+      return JSON.parse(localStorage.getItem("userProfile") || "null");
+    } catch {
+      return null;
+    }
+  };
+
+  const [profileState, setProfileState] = useState(getCachedProfile());
   const [activePlan, setActivePlan] = useState<string | null>(null);
   const user = useUser();
   const navigate = useNavigate();
@@ -35,16 +42,27 @@ export function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
-
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem("userProfile");
-    localStorage.removeItem("userStreak");
+
+    // Clear storage cache
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Reset React UI state
+    setProfileState(null);
+    setActivePlan(null);
+
     navigate("/", { replace: true });
-    toast({ title: "Logged out", description: "You have been logged out." });
+
+    toast({
+      title: "Logged out",
+      description: "You have been logged out.",
+    });
   };
 
   const handleDeleteAccount = async () => {
@@ -91,9 +109,18 @@ export function Profile() {
         description: "Your account has been permanently deleted.",
       });
 
-      setShowDeleteDialog(false); // ✅ close confirmation dialog
+      setShowDeleteDialog(false);
+
+      // Clean everything
+      localStorage.clear();
+      sessionStorage.clear();
+      setProfileState(null);
+      setActivePlan(null);
+
       await supabase.auth.signOut();
-      navigate("/");
+
+      navigate("/", { replace: true });
+
     } catch (err: any) {
       toast({ title: "Error", description: err.message });
     } finally {
@@ -162,6 +189,10 @@ export function Profile() {
 
   // Wait until Supabase finishes loading the user
   const [checkingUser, setCheckingUser] = useState(true);
+
+  useEffect(() => {
+    setCheckingUser(false);
+  }, [user]);
 
   useEffect(() => {
     if (checkingUser) return; // wait until user check is complete

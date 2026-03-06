@@ -109,14 +109,30 @@ const ExamResultsPage = () => {
     return (
         <div className="max-w-8xl py-0 px-4 bg-transparent p-6 flex justify-center items-start">
             <div className="w-full max-w-3xl bg-white/20 dark:bg-gray-800/20 p-6 rounded-2xl shadow-lg backdrop-blur-md">
+
                 {loading && <GlobalLoader />}
 
+                {/* ---------- EMPTY STATE CARD ---------- */}
+                {!loading && (!resultsByPaper || resultsByPaper.length === 0) && (
+                    <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4 w-full">
+                        <div className="bg-gray-100 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-300 dark:border-gray-700 rounded-2xl p-6 shadow-xl max-w-md">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+                                No Exam Results Yet
+                            </h2>
+                            <p className="text-gray-700 dark:text-gray-300">
+                                There are no exam papers or results available at the moment.
+                                Once students complete exams and results are submitted, they will appear here.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* ---------- PAPER RESULTS MAPPING ---------- */}
                 {resultsByPaper.map(({ paper, results }) => {
                     const average =
                         results.length > 0
                             ? results.reduce((a, b) => a + b.score, 0) / results.length
                             : 0;
-
                     return (
                         <div key={paper.id}>
                             <div className="flex items-center justify-between mb-4 mt-4">
@@ -253,7 +269,8 @@ const ExamResultsPage = () => {
                             </div>
                         </div>
                     );
-                })}
+                })
+                }
             </div>
         </div>
     );

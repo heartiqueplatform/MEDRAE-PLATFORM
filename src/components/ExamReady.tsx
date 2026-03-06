@@ -81,7 +81,23 @@ const ExamReady = () => {
         window.location.reload();
     };
     if (loading) {
-        return <GlobalLoader />; // <-- show your global loader
+        return <GlobalLoader />;
+    }
+
+    // If no exams, show centered message
+    if (!exams || exams.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+                <div className="bg-gray-100 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-300 dark:border-gray-700 rounded-2xl p-6 shadow-xl">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+                        No Exams Yet
+                    </h2>
+                    <p className="text-gray-700 dark:text-gray-300">
+                        You haven’t created any exams yet. Once you create or release exams, they will appear here.
+                    </p>
+                </div>
+            </div>
+        );
     }
     return (
         <div className="space-y-6 mb-10">
@@ -93,8 +109,8 @@ const ExamReady = () => {
                     {/* Header */}
                     <div className="flex justify-between items-center">
                         <div>
-                            <h2 className="text-xl font-bold text-white">{exam.title}</h2>
-                            <p className="text-sm text-gray-300">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">{exam.title}</h2>
+                            <p className="text-sm text-gray-900">
                                 {exam.course} • {exam.block}
                             </p>
                         </div>
@@ -152,7 +168,7 @@ const ExamReady = () => {
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 text-sm text-gray-200">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 text-sm text-gray-800 dark:text-gray-200">
                         <div className="flex items-center gap-2"><FileText size={16} /> {exam.questions} Questions</div>
                         <div className="flex items-center gap-2"><Users size={16} /> {exam.sessions} Started</div>
                         <div className="flex items-center gap-2"><PlayCircle size={16} /> {exam.active} Active</div>

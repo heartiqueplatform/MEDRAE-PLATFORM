@@ -32,9 +32,9 @@ export default function CandidateInfo() {
       }
 
       const { data, error } = await supabase
-        .from("users")
+        .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("user_id", user.id) // <- match the actual column
         .single();
 
       if (error) {
@@ -78,7 +78,7 @@ export default function CandidateInfo() {
           <CardTitle className="text-center">Confirm Your Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input disabled value={userData.full_name || ""} placeholder="Full Name" />
+          <Input disabled value={userData.name || ""} placeholder="Full Name" />
           <Input disabled value={userData.institution || ""} placeholder="Institution" />
           <Input disabled value={userData.course || ""} placeholder="Course" />
           <Input disabled value={userData.block_class || ""} placeholder="Block / Class" />

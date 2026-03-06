@@ -66,57 +66,30 @@ export function Register() {
       return;
     }
     setIsLoading(true);
+
     try {
+      // 1️⃣ Sign up user with Supabase Auth
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
-        options: { data: { role } },
+        options: {
+          data: {
+            role: role,
+            name: formData.fullName
+          }
+        }
       });
+
       if (signUpError || !signUpData.user) throw new Error(signUpError?.message || "Sign-up failed.");
 
       const userId = signUpData.user.id;
       const courseFinal = formData.course === "other" ? formData.otherCourse : formData.course;
 
-      // Insert into users table
-      const userPayload =
+      // 2️⃣ Update the profile created by the trigger
+      const profileUpdatePayload =
         role === "tutor"
           ? {
-            id: userId,
-            full_name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone,
-            username: formData.username,
-            role,
-            institution: formData.institution,
-            county: formData.county,
-            bio: formData.bio,
-            plan_type: "free",
-          }
-          : {
-            id: userId,
-            full_name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone,
-            username: formData.username,
-            role,
-            institution: formData.institution,
-            county: formData.county,
-            course: courseFinal,
-            block_class: formData.block,
-            bio: formData.bio,
-            plan_type: "free",
-          };
-
-      const { error: userInsertError } = await supabase.from("users").insert(userPayload);
-      if (userInsertError) throw new Error(userInsertError.message);
-
-      // Insert into profiles table
-      const profilePayload =
-        role === "tutor"
-          ? {
-            user_id: userId,
             name: formData.fullName,
-            email: formData.email,
             username: formData.username,
             phone: formData.phone,
             county: formData.county,
@@ -125,58 +98,55 @@ export function Register() {
             role,
             subscription: "Free",
             joined_date: new Date().toISOString().split("T")[0],
+            reset_question: formData.resetQuestion,
+            reset_answer: formData.resetAnswer,
+            target_score: formData.targetScore,
           }
           : {
-            user_id: userId,
             name: formData.fullName,
-            email: formData.email,
             username: formData.username,
             phone: formData.phone,
             county: formData.county,
             institution: formData.institution,
             course: courseFinal,
             block: formData.block,
-            reset_question: formData.resetQuestion,
-            reset_answer: formData.resetAnswer,
-            target_score: formData.targetScore,  // <-- save user target here
             bio: formData.bio,
             role,
             subscription: "Free",
             joined_date: new Date().toISOString().split("T")[0],
+            reset_question: formData.resetQuestion,
+            reset_answer: formData.resetAnswer,
+            target_score: formData.targetScore,
           };
 
-      const { error: profileInsertError } = await supabase.from("profiles").insert(profilePayload);
-      if (profileInsertError) throw new Error(profileInsertError.message);
+      const { data, error } = await supabase
+        .from("profiles")
+        .update(profileUpdatePayload)
+        .eq("user_id", userId)
+        .select();
 
-      // Sign in the user to get a session
+      if (error) throw error;
+      // 3️⃣ Sign in the user automatically
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
       });
 
       if (loginError || !loginData.user) throw new Error(loginError?.message || "Login after registration failed.");
 
-      // Save session token in profiles table
-      // Generate unique device ID (single device enforcement)
+      // 4️⃣ Save device/session info
       let deviceId = localStorage.getItem("device_id");
-
       if (!deviceId) {
         deviceId = crypto.randomUUID();
         localStorage.setItem("device_id", deviceId);
       }
 
-      // Save device ID in profiles table
       await supabase
         .from("profiles")
         .update({ active_session_id: deviceId })
         .eq("user_id", loginData.user.id);
 
-      // Optional: Save credentials offline if you want offline login (like in Login component)
-
-      const passwordHash = sha256(formData.password).toString();
-
-
-
+      // 5️⃣ Toast and redirect
       toast({ title: "Welcome!", description: `Account created and logged in as ${role}.` });
       localStorage.setItem("userRole", role);
       localStorage.setItem("hasLoggedInBefore", "true");
@@ -185,7 +155,6 @@ export function Register() {
 
     } catch (err) {
       console.error(err);
-
       toast({
         title: "Registration issue",
         description: err?.message || "Check your connection or try again",

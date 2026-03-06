@@ -73,7 +73,15 @@ export default function StudentDashboard() {
   const [previousRank, setPreviousRank] = useState(null); // updated
   const [overlayOpen, setOverlayOpen] = useState(false);
 
+  const cachedProfile = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("userProfile") || "null");
+    } catch {
+      return null;
+    }
+  })();
 
+  const [profileState, setProfileState] = useState<any | null>(cachedProfile);
   const [position, setPosition] = useState({ x: 24, y: 400 }); // initial bottom-left
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -275,21 +283,29 @@ export default function StudentDashboard() {
 
       // Save to backend
       const newPostId = await handlePostDaily(); // assume this returns the new post ID
-
-      // Optimistically create the new post object
       const newPost = {
-        id: newPostId || crypto.randomUUID(), // fallback ID if backend does not return yet
+        id: newPostId || crypto.randomUUID(),
+
         content: dailyContent,
-        image_url: dailyImage ? URL.createObjectURL(dailyImage) : null,
+
+        image_url: dailyImage
+          ? URL.createObjectURL(dailyImage)
+          : null,
+
         created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // adjust as needed
+
+        expires_at: new Date(
+          Date.now() + 24 * 60 * 60 * 1000
+        ).toISOString(),
+
         user_id: user.id,
+
         profiles: {
-          username: user.username,
-          full_name: user.name,
-          avatar_url: user.avatar,
-          institution: user.institution || "N/A",
-          county: user.county || "N/A",
+          username: profileState?.username,
+          full_name: profileState?.name,
+          avatar_url: profileState?.avatar_url,
+          institution: profileState?.institution || "N/A",
+          county: profileState?.county || "N/A",
         },
       };
 
@@ -611,15 +627,22 @@ export default function StudentDashboard() {
             let title = "";
             let message = "";
 
+            const profileName =
+              (topStudents.find(s => s.userId === user.id)?.name) ||
+              profileState?.name ||
+              "Learner";
+
             if (newRank === 1) {
               title = "🏆 Top Student!";
-              message = `Wow ${user.user_metadata?.full_name || "Learner"}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
-            } else if (newRank === 2) {
+              message = `Wow ${profileName}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
+            }
+            else if (newRank === 2) {
               title = "🥈 Silver Star!";
-              message = `Great job ${user.user_metadata?.full_name || "Learner"}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
-            } else if (newRank === 3) {
+              message = `Great job ${profileName}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
+            }
+            else if (newRank === 3) {
               title = "🥉 Bronze Achiever!";
-              message = `Nice work ${user.user_metadata?.full_name || "Learner"}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
+              message = `Nice work ${profileName}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
             }
 
             // gentle vibration
@@ -1811,7 +1834,7 @@ export default function StudentDashboard() {
                             <div className="absolute top-1/2 left-full ml-2 transform -translate-y-1/2 max-w-[220px] p-3 rounded-lg bg-white dark:bg-gray-900 shadow-lg text-left text-xs z-30 border border-gray-200 dark:border-gray-700">
 
                               <span className="font-semibold text-gray-900 dark:text-white block truncate">
-                                {post.profiles?.full_name}
+                                {post.profiles?.name}
                               </span>
                               <span className="text-gray-700 dark:text-gray-300 block truncate">
                                 @{post.profiles?.username}

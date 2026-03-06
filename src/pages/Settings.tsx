@@ -188,29 +188,29 @@ export function Settings() {
 
     setLoading(true);
 
-    let avatarUrl = profile.avatar_url;
-    if (avatarFile) {
-      const uploadedUrl = await uploadAvatar();
-      if (uploadedUrl) {
-        avatarUrl = uploadedUrl;
+    try {
+      let avatarUrl = profile.avatar_url;
+
+      if (avatarFile) {
+        const uploadedUrl = await uploadAvatar();
+        if (uploadedUrl) avatarUrl = uploadedUrl;
       }
-    }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        ...profile,
-        avatar_url: avatarUrl,
-      })
-      .eq("user_id", userId);
+      const { email, ...profileWithoutEmail } = profile;
 
-    setLoading(false);
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({
+          ...profileWithoutEmail,
+          avatar_url: avatarUrl,
+        })
+        .eq("user_id", userId)
+        .select();
 
-    if (error) {
-      toast({ title: "Error", description: "Failed to save profile" });
-    } else {
-      // ✅ Save to localStorage immediately
+      if (error) throw error;
+
       const updatedProfile = { ...profile, avatar_url: avatarUrl };
+
       setProfile(updatedProfile);
       localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
 
@@ -218,9 +218,16 @@ export function Settings() {
         title: "Profile Saved!",
         description: "Your profile was updated successfully.",
       });
+
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to save profile",
+      });
+    } finally {
+      setLoading(false);
     }
   };
-
   // Only show loader if profile is not in cache
   if (!profile && !cachedProfile) {
     return <GlobalLoader message="Loading profile..." />;
@@ -491,8 +498,13 @@ export function Settings() {
                       <Input
                         id="years_experience"
                         type="number"
-                        value={profile.years_experience || 0}
-                        onChange={(e) => handleChange("years_experience", e.target.value)}
+                        value={profile.years_experience ?? ""}
+                        onChange={(e) =>
+                          handleChange(
+                            "years_experience",
+                            e.target.value === "" ? null : Number(e.target.value)
+                          )
+                        }
                       />
                     </div>
                     <div className="space-y-2">

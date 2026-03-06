@@ -62,6 +62,7 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
     const [totalEvents, setTotalEvents] = useState<number>(0);
     const [mistakeCount, setMistakeCount] = useState<number>(0);
     const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(0);
+    const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(null);
 
     const tapFeedback = () => {
         playSound("tap");
@@ -139,6 +140,30 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
         },
     };
 
+
+    useEffect(() => {
+        const fetchUserRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: profile, error } = await supabase
+                .from("profiles")
+                .select("role")
+                .eq("user_id", user.id)
+                .single();
+
+            if (error) {
+                console.error("Error fetching profile role:", error);
+                return;
+            }
+
+            if (profile?.role) {
+                setUserRoleState(profile.role.toLowerCase() === "tutor" ? "tutor" : "student");
+            }
+        };
+
+        fetchUserRole();
+    }, []);
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
@@ -323,47 +348,52 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
         },
         {
             label: "Institutional Exams",
-            items: [
+            items: (() => {
+                const items: (DrawerItem & { iconTone?: IconTone })[] = [];
 
-                ...(userRole === "student"
-                    ? [
+                if (userRoleState === "student") {
+                    items.push(
                         {
                             title: "Candidate Exams",
                             url: "/exam/candidate",
                             icon: Briefcase,
-                            iconTone: "practice"
+                            iconTone: "practice",
                         },
                         {
                             title: "Exam Results",
                             url: "/exam/results",
                             icon: TrendingUp,
-                            iconTone: "progress"
-                        },
-                    ]
-                    : []),
+                            iconTone: "progress",
+                        }
+                    );
+                }
 
-                ...(userRole === "tutor"
-                    ? [
-                        { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" },
+                if (userRoleState === "tutor") {
+                    items.push(
+                        {
+                            title: "Student Analytics",
+                            url: "/analytics",
+                            icon: Users,
+                            iconTone: "people",
+                        },
                         {
                             title: "Tutor Exams",
                             url: "/tutor/exams",
                             icon: Briefcase,
-                            iconTone: "practice"
+                            iconTone: "practice",
                         },
                         {
                             title: "Exam Results",
-                            url: "/tutor/exams/results",
+                            url: "/tutor/exams/:paper_id/results",
                             icon: TrendingUp,
-                            iconTone: "progress"
-                        },
+                            iconTone: "progress",
+                        }
+                    );
+                }
 
-                    ]
-                    : []),
-            ],
+                return items;
+            })(),
         },
-
-
         {
             label: "Media",
             items: [
@@ -396,24 +426,13 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
     return (
         <>
             {isOpen && <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setIsOpen(false)} />}
-
             <div
                 ref={drawerRef}
-                className={`fixed bottom-0 left-0 w-full shadow-xl transition-transform duration-300 rounded-t-xl z-40 md:hidden ${isOpen ? "translate-y-0" : "translate-y-full"}`}
-                style={{
-                    maxHeight: "75vh",
-                    bottom: "4rem",
-                    backgroundImage: "url('/high1.png')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundRepeat: "no-repeat"
-                }}
+                className={`fixed bottom-0 left-0 w-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 shadow-xl transition-transform duration-300 rounded-t-xl z-40 md:hidden ${isOpen ? "translate-y-0" : "translate-y-full"}`}
+                style={{ maxHeight: "75vh", bottom: "4rem" }}
             >
-
-                <div className="absolute inset-0 bg-black/70 rounded-t-xl pointer-events-none" />
-
                 {/* Header */}
-                <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-700 bg-background z-10">
+                <div className="flex items-center gap-3 p-4 border-b border-white/20 bg-transparent z-10">
                     <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
                         <img
                             src="/pwa-192x192.jpeg"
@@ -422,25 +441,24 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                         />
                     </div>
                     <div>
-                        <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100">
+                        <h2 className="font-bold text-lg text-white">
                             MEDRAE
                         </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-white/70">
                             Kenya Nursing Network Platform (MKN)
                         </p>
                     </div>
                 </div>
-
                 {/* Scrollable content */}
                 <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar" style={{ maxHeight: "calc(70vh - 80px)" }}>
                     {sections.map(section => section.items.length > 0 && (
                         <div key={section.label}>
-                            <h3 className="text-blue-600 dark:text-blue-400 text-xs font-semibold mb-2 uppercase">{section.label}</h3>
+                            <h3 className="text-white/80 text-xs font-semibold mb-2 uppercase">{section.label}</h3>
                             <div className="flex flex-wrap justify-start gap-x-2 gap-y-2">
                                 {section.items.map(item => (
                                     <div key={item.title} className="relative">
                                         <button
-                                            className="relative flex flex-col items-center text-xs text-gray-700 dark:text-gray-200 w-16 h-18"
+                                            className="relative flex flex-col items-center text-xs text-white w-16 h-18"
                                             onClick={() => {
                                                 tapFeedback();
                                                 navigate(item.url);
@@ -477,10 +495,8 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                                             )}
 
                                             {/* Title */}
-                                            <span className="mt-1">{item.title}</span>
+                                            <span className="mt-1 text-white/90">{item.title}</span>
                                         </button>
-
-
                                     </div>
                                 ))}
                             </div>

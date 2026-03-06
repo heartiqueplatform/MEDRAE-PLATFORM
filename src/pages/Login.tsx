@@ -60,7 +60,7 @@ export function Login() {
 
   const handleLogin = async () => {
     setIsLoading(true);
-    localStorage.clear();
+    localStorage.removeItem("device_id"); // optional
 
     const passwordHash = sha256(password).toString();
 
@@ -72,8 +72,10 @@ export function Login() {
           password,
         });
 
+        console.log("LOGIN DATA:", data);
+        console.log("LOGIN ERROR:", error);
         if (error || !data.user) {
-          throw new Error(error?.message || "Login failed.");
+          throw new Error(error?.message || "Invalid login credentials");
         }
 
         const userId = data.user.id;

@@ -12,10 +12,11 @@ export default function CandidateInfo() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState<any>({
-        full_name: "",
+        name: "",
+        email: "",
         institution: "",
         course: "",
-        block_class: "",
+        block: "",
         nck_number: "",
     });
 
@@ -37,9 +38,9 @@ export default function CandidateInfo() {
             }
 
             const { data, error } = await supabase
-                .from("users")
+                .from("profiles")
                 .select("*")
-                .eq("id", user.id)
+                .eq("user_id", user.id)
                 .single();
 
             if (error) {
@@ -110,9 +111,9 @@ export default function CandidateInfo() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                     <Input
-                        value={userData.full_name}
+                        value={userData.name}
                         placeholder="Full Name"
-                        onChange={(e) => setUserData({ ...userData, full_name: e.target.value })}
+                        onChange={(e) => setUserData({ ...userData, name: e.target.value })}
                         className="bg-input text-foreground border"
                     />
                     <Input
