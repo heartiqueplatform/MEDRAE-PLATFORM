@@ -11,11 +11,13 @@ type Result = {
     score: number;
     total_questions: number;
     submitted_at: string;
+    is_released: boolean;
     exam_papers: {
         id: string;
         title: string;
         course: string;
         is_released: boolean;
+
     };
 };
 
@@ -50,6 +52,7 @@ const ResultsListPage = () => {
                         score,
                         total_questions,
                         submitted_at,
+                            is_released,
                         exam_papers!inner (
                             id,
                             title,
@@ -98,7 +101,8 @@ const ResultsListPage = () => {
                 ) : (
                     <div className="space-y-4">
                         {results.map((res) => {
-                            const isReleased = res.exam_papers?.is_released;
+                            const isReleased =
+                                res.exam_papers?.is_released && res.is_released;
                             const percentage = ((res.score / res.total_questions) * 100).toFixed(1);
 
                             return (

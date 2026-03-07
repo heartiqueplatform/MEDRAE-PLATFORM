@@ -79,33 +79,75 @@ const ExamResultsPage = () => {
     useEffect(() => {
         fetchResults();
     }, []);
+
     const releaseResults = async (paperId: string) => {
         setLoading(true);
 
-        // Update exam_papers row
-        const { data, error } = await supabase
+        // Find current release status from state
+        const paper = resultsByPaper.find((p) => p.paper.id === paperId);
+        const currentlyReleased = paper?.paper.is_released ?? false;
+        const newReleaseState = !currentlyReleased;
+
+        // Update exam_papers
+        const { error: paperErr } = await supabase
             .from("exam_papers")
-            .update({ is_released: true })
-            .eq("id", paperId)
-            .select() // <-- Important: return the updated row
+            .update({ is_released: newReleaseState })
+            .eq("id", paperId);
 
-
-        if (error) {
-            console.error("Failed to release results:", error);
+        if (paperErr) {
+            console.error("Failed to update paper release:", paperErr);
             setLoading(false);
             return;
         }
 
-        // Update local state immediately instead of refetching
+        // Update all student exam_results for this paper
+        const { error: studentErr } = await supabase
+            .from("exam_results")
+            .update({ is_released: newReleaseState })
+            .eq("paper_id", paperId);
+
+        if (studentErr) console.error("Failed to update student results:", studentErr);
+
+        // Update local UI state
         setResultsByPaper((prev) =>
             prev.map((p) =>
-                p.paper.id === paperId ? { ...p, paper: { ...p.paper, is_released: true } } : p
+                p.paper.id === paperId
+                    ? {
+                        ...p,
+                        paper: { ...p.paper, is_released: newReleaseState },
+                        results: p.results.map((r) => ({ ...r, is_released: newReleaseState })),
+                    }
+                    : p
             )
         );
 
         setLoading(false);
     };
+    const toggleStudentRelease = async (
+        resultId: string,
+        current: boolean
+    ) => {
 
+        const { data, error } = await supabase
+            .from("exam_results")
+            .update({ is_released: !current })
+            .eq("id", resultId)
+            .select();
+        if (error) {
+            console.error("Student release update failed:", error);
+            return;
+        }
+        setResultsByPaper((prev) =>
+            prev.map((p) => ({
+                ...p,
+                results: p.results.map((r) =>
+                    r.id === resultId
+                        ? { ...r, is_released: !current }
+                        : r
+                ),
+            }))
+        );
+    };
     return (
         <div className="max-w-8xl py-0 px-4 bg-transparent p-6 flex justify-center items-start">
             <div className="w-full max-w-3xl bg-white/20 dark:bg-gray-800/20 p-6 rounded-2xl shadow-lg backdrop-blur-md">
@@ -198,7 +240,16 @@ const ExamResultsPage = () => {
                                                         </p>
                                                     </div>
                                                 </div>
-
+                                                <label className="flex items-center gap-2 text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={!!student.is_released}
+                                                        onChange={() =>
+                                                            toggleStudentRelease(student.id, student.is_released ?? false)
+                                                        }
+                                                    />
+                                                    Release
+                                                </label>
                                                 <div className="flex items-center gap-4">
                                                     <div className="text-right">
                                                         <p className="text-lg font-bold">

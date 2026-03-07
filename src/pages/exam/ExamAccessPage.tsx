@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion } from "framer-motion";
-const totalDuration = 60 * 60;
+
 
 const getStatusVariant = (status: string) => {
     switch (status.toLowerCase()) {
@@ -69,6 +69,8 @@ export default function ExamAccessPage() {
             );
         }
     }
+    const [totalDuration, setTotalDuration] = useState(0);
+    const [timerReady, setTimerReady] = useState(false);
     const [selectedPaper, setSelectedPaper] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedSession, setSelectedSession] = useState<string>("Session 1"); // or fetch dynamically
@@ -79,13 +81,13 @@ export default function ExamAccessPage() {
     const [answers, setAnswers] = useState<{ [key: string]: string }>({});
     const [flags, setFlags] = useState<string[]>([]);
     const [skipped, setSkipped] = useState<string[]>([]);
-    const [timeLeft, setTimeLeft] = useState(totalDuration);
+    const [timeLeft, setTimeLeft] = useState(0);
     const [showDonePanel, setShowDonePanel] = useState(false);
     const [pendingAction, setPendingAction] = useState<"submit" | "reset" | null>(null);
     const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const localKey = selectedPaper?.id ? `sim-answers-${selectedPaper.id}` : "";
-    const timerKey = selectedPaper?.id ? `sim-timer-${selectedPaper.id}` : "";
+    const timerKey = paper_id ? `sim-timer-${paper_id}` : "";
     const [loading, setLoading] = useState(true); // new
     const currentQuestion = questions?.[currentIndex] ?? null;
     const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -206,29 +208,6 @@ export default function ExamAccessPage() {
     useEffect(() => {
         if (!paper_id) return;
 
-        const fetchQuestions = async () => {
-            setLoading(true);
-
-            const { data, error } = await supabase
-                .from("exam_questions")
-                .select("*")
-                .eq("paper_id", paper_id);
-
-            if (error) {
-                console.error("Error fetching exam questions:", error.message);
-            } else {
-                setQuestions(data ?? []);
-                setSelectedPaper({ id: paper_id, title: "Test Paper" });
-            }
-
-            setLoading(false);
-        };
-
-        fetchQuestions();
-    }, [paper_id]);
-    useEffect(() => {
-        if (!paper_id) return;
-
         const initExam = async () => {
             setLoading(true);
 
@@ -251,6 +230,7 @@ export default function ExamAccessPage() {
 
         initExam();
     }, [paper_id]);
+
     useEffect(() => {
         if (isDark) {
             document.documentElement.classList.add("dark");
@@ -289,28 +269,26 @@ export default function ExamAccessPage() {
         return () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
-    }, [selectedPaper]);
+    }, [selectedPaper, timeLeft]);
 
 
     // Timer
     useEffect(() => {
-        if (!selectedPaper) return;
+        if (!selectedPaper || !timerReady) return;
+
         const interval = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(interval);
-                    alert("Time's up! Auto-submitting...");
                     confirmSubmit();
+                    return 0;
                 }
-                const newTime = prev - 1;
-                localStorage.setItem(timerKey, newTime.toString());
-                return newTime;
-
+                return prev - 1;
             });
         }, 1000);
-        return () => clearInterval(interval);
-    }, [selectedPaper]);
 
+        return () => clearInterval(interval);
+    }, [selectedPaper, timerReady]);
     // Inside your component, replace the two existing camera/audio useEffects
     useEffect(() => {
         return () => {
@@ -379,7 +357,32 @@ export default function ExamAccessPage() {
             setExamSession(session);
             localStorage.setItem(`exam-session-${paperId}`, session.id);
 
-            return session;
+            // calculate remaining time using server session
+            const { data: paper } = await supabase
+                .from("exam_papers")
+                .select("duration")
+                .eq("id", paperId)
+                .single();
+
+            if (paper) {
+                const durationSeconds = (paper.duration ?? 30) * 60;
+
+                const started = new Date(session.started_at).getTime();
+                const now = new Date().getTime();
+
+                const elapsed = Math.floor((now - started) / 1000);
+
+                const remaining = durationSeconds - elapsed;
+                setTotalDuration(durationSeconds);
+
+                if (remaining <= 0) {
+                    console.warn("Session expired");
+                    confirmSubmit();
+                } else {
+                    setTimeLeft(remaining);
+                    setTimerReady(true); // start timer ONLY after time is calculated
+                }
+            }
         } catch (err) {
             console.error("Error creating or fetching session:", err);
             return null;
@@ -519,7 +522,7 @@ export default function ExamAccessPage() {
                     .update({
                         completed_at: new Date().toISOString(),
                         status: "completed",
-                        duration_seconds: totalDuration - timeLeft,
+                        duration_seconds: (totalDuration || 0) - timeLeft,
                     })
                     .eq("id", sessionId);
             }
