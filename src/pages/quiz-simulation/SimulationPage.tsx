@@ -518,8 +518,25 @@ export default function SimulationPage() {
   };
   const generatePDF = async () => {
     const doc = new jsPDF();
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // 🧾 Generate Receipt Number
+    const receiptNumber = "MED-" + Date.now();
+
+
     doc.setFontSize(16);
-    doc.text("Medrae Kenya Nursing Platform (MKN) Simulation Results", 14, 20);
+    doc.setFont(undefined, "bold");
+    doc.text("MEDRAE KENYA NURSING PLATFORM (MKN)", pageWidth / 2, 18, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.setFont(undefined, "normal");
+    doc.text("Proctorium Revision Results", pageWidth / 2, 24, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.text(`Receipt No: ${receiptNumber}`, pageWidth - 60, 32);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 60, 38);
 
     // NEW: Candidate Details Section
 
@@ -531,10 +548,11 @@ export default function SimulationPage() {
 
     doc.setFontSize(12);
     doc.setFont(undefined, "bold");
-    doc.text("Candidate Details", 14, 30);
-    //  Candidate Profile Details
+    doc.text("Candidate Details", 14, 45);
+
+    // Candidate Profile Details
     doc.setFont(undefined, "normal");
-    let y = 38;
+    let y = 53;
 
     // ✅ Fetch from state or fallback to localStorage
     const profileData =
@@ -557,7 +575,7 @@ export default function SimulationPage() {
       y += 6;
     }
 
-    //  Paper details
+    // Paper details
     doc.text(`Paper Title: ${selectedPaper?.title || "N/A"}`, 14, y); y += 6;
     doc.text(`Score: ${correctCount}/${questions.length} (${percentageScore}%)`, 14, y); y += 6;
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, y); y += 10;
@@ -587,13 +605,12 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
     // Wrap text to fit PDF width
     doc.setFont(undefined, "normal");
-    const pageWidth = doc.internal.pageSize.getWidth();
     const splitText = doc.splitTextToSize(advisoryText, pageWidth - 28);
 
-    //  Use yPos (after details), not 30
+    // Use yPos (after details), not 30
     doc.text(splitText, 14, yPos);
 
-    yPos = yPos + splitText.length * 6 + 4; // continue after advisory
+    yPos = yPos + splitText.length * 6 + 4;
 
 
     /*
@@ -609,7 +626,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
           yPos += 6;
           ["A", "B", "C", "D"].forEach((opt) => {
-            const text = `${opt}. ${q[`option_${opt.toLowerCase()}`]}`;
+            const text = `${opt}. ${q[\`option_${opt.toLowerCase()}\`]}`;
             if (q.correct_answer === opt) {
               doc.setTextColor(0, 128, 0);
               doc.setFont(undefined, "bold");
@@ -627,7 +644,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
         });
     */
 
-    //  Footer + page numbers AFTER all content
+    // Footer + page numbers AFTER all content
     const pageCount = doc.internal.getNumberOfPages();
     const footerLine1 = "MEDRAE";
     const footerLine2 = "Stop Guessing. Start Passing.";
@@ -651,8 +668,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
       doc.text(pageText, (pageWidth - textWidthPage) / 2, pageHeight - 8);
     }
 
-
-    doc.save("MEDRAE.pdf");
+    doc.save("MEDRAE_Revision_Proctorium.pdf");
   };
 
 

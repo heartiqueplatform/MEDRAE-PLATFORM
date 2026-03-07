@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GlobalLoader } from "@/components/GlobalLoader";
-
+import ExamProctor from "@/components/ExamProctor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -319,7 +319,21 @@ export default function ExamAccessPage() {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    useEffect(() => {
+        const fetchAndStoreProfile = async () => {
+            const { data: userData } = await supabase.auth.getUser();
+            const userId = userData.user?.id;
+            if (!userId) return;
 
+            const profileFromDb = await fetchProfile(userId);
+            if (profileFromDb) {
+                setProfile(profileFromDb);
+                localStorage.setItem("profile", JSON.stringify(profileFromDb));
+            }
+        };
+
+        fetchAndStoreProfile();
+    }, []);
 
     const formatTime = (s: number) => {
         const h = Math.floor(s / 3600).toString().padStart(2, "0");
@@ -533,76 +547,165 @@ export default function ExamAccessPage() {
         }
     };
     const generatePDF = async () => {
-        const doc = new jsPDF();
-        doc.setFontSize(16);
-        doc.text("Medrae Kenya Nursing Platform (MKN) Exam Paper Details", 14, 20);
+        const doc = new jsPDF({ unit: "pt", format: "a4" });
 
-        // Candidate Details Section
-        doc.setFontSize(12);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        const margin = 40;
+        let y = margin;
+
+        const lineHeight = 16;
+
+        // ===== WATERMARK =====
+        doc.setTextColor(230, 230, 230);
+        doc.setFontSize(70);
         doc.setFont(undefined, "bold");
-        doc.text("Candidate Details", 14, 30);
+        doc.text("MEDRAE", pageWidth / 2, pageHeight / 2, {
+            align: "center",
+            angle: 45,
+        });
+        doc.setTextColor(0, 0, 0);
 
+        // ===== BORDER =====
+        doc.setLineWidth(1);
+        doc.rect(margin / 2, margin / 2, pageWidth - margin, pageHeight - margin);
+
+        // ===== HEADER BOX =====
+        doc.setFillColor(245, 245, 245);
+        doc.rect(margin, y, pageWidth - margin * 2, 70, "F");
+
+        doc.setFontSize(18);
+        doc.setFont(undefined, "bold");
+        doc.text("MEDRAE Kenya Nursing Platform", pageWidth / 2, y + 28, { align: "center" });
+
+        doc.setFontSize(12);
         doc.setFont(undefined, "normal");
-        let y = 38;
+        doc.text("Official Exam Participation Receipt", pageWidth / 2, y + 48, { align: "center" });
 
+        y += 90;
+
+        // ===== PROFILE DATA =====
         const profileData =
             profile ||
             (typeof window !== "undefined"
                 ? JSON.parse(localStorage.getItem("profile") || "null")
                 : null);
 
-        if (profileData) {
-            doc.text(`Full Name: ${profileData.name || "N/A"}`, 14, y); y += 6;
-            doc.text(`Email Address: ${profileData.email || "N/A"}`, 14, y); y += 6;
-            doc.text(`Institution: ${profileData.institution || "N/A"}`, 14, y); y += 6;
-            doc.text(`Course/Program: ${profileData.course || "N/A"}`, 14, y); y += 6;
-            doc.text(`County: ${profileData.county || "N/A"}`, 14, y); y += 6;
-            doc.text(`Phone Number: ${profileData.phone || "N/A"}`, 14, y); y += 6;
-            doc.text(`Subscription Type: ${profileData.subscription || "N/A"}`, 14, y); y += 6;
-            doc.text(`Role: ${profileData.role || "N/A"}`, 14, y); y += 6;
-        } else {
-            doc.text("Candidate Profile: Not Available", 14, y); y += 6;
-        }
+        const drawRow = (label: string, value: string) => {
+            doc.setFont(undefined, "bold");
+            doc.text(label, margin, y);
 
-        // Session & Exam Paper Details
-        doc.text(`Session: ${selectedSession || "N/A"}`, 14, y); y += 6;
-        doc.text(`Exam Paper Title: ${selectedPaper?.title || "N/A"}`, 14, y); y += 6;
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, y); y += 10;
+            doc.setFont(undefined, "normal");
+            doc.text(value || "N/A", margin + 160, y);
 
-        // Optional advisory (can remove if strictly paper info)
-        const advisoryText = `This document provides details of the exam paper and candidate profile for your reference. No scores or results are included.`;
+            y += lineHeight;
+        };
+
+        // ===== RECEIPT NUMBER =====
+        const receiptNumber = `MED-${Date.now().toString().slice(-8)}`;
 
         doc.setFontSize(11);
-        doc.text(advisoryText, 14, y);
+        drawRow("Receipt Number:", receiptNumber);
+        drawRow("Exam Date:", new Date().toLocaleString());
+        y += 8;
 
-        // Footer
+        // ===== SEPARATOR =====
+        doc.setDrawColor(200);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 20;
+
+        // ===== CANDIDATE DETAILS =====
+        doc.setFontSize(13);
+        doc.setFont(undefined, "bold");
+        doc.text("Candidate Information", margin, y);
+        y += 20;
+
+        doc.setFontSize(11);
+
+        if (profileData) {
+            drawRow("Full Name:", profileData.name);
+            drawRow("Email Address:", profileData.email);
+            drawRow("Institution:", profileData.institution);
+            drawRow("Course / Program:", profileData.course);
+            drawRow("County:", profileData.county);
+            drawRow("Phone Number:", profileData.phone);
+            drawRow("Subscription Type:", profileData.subscription);
+            drawRow("Role:", profileData.role);
+        } else {
+            drawRow("Candidate Profile:", "Not Available");
+        }
+
+        y += 10;
+
+        // ===== SEPARATOR =====
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 20;
+
+        // ===== EXAM DETAILS =====
+        doc.setFontSize(13);
+        doc.setFont(undefined, "bold");
+        doc.text("Exam Information", margin, y);
+        y += 20;
+
+        doc.setFontSize(11);
+
+        drawRow("Exam Paper Title:", selectedPaper?.title || "N/A");
+        drawRow("Session:", selectedSession || "N/A");
+        drawRow("Platform:", "Medrae Self‑Test Proctorium Lite");
+
+        y += 10;
+
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 20;
+
+        // ===== CERTIFICATION TEXT =====
+        doc.setFontSize(11);
+
+        const statement = `
+This document certifies that the above candidate accessed and participated in the listed examination session on the Medrae Kenya Nursing Platform (MKN).
+
+This receipt confirms exam participation only and does not represent the final exam result or academic grading.
+`;
+
+        const splitStatement = doc.splitTextToSize(statement.trim(), pageWidth - margin * 2);
+
+        splitStatement.forEach((line: string) => {
+            doc.text(line, margin, y);
+            y += lineHeight;
+        });
+
+        y += 40;
+
+        // ===== SIGNATURE AREA =====
+        doc.line(margin, y, margin + 200, y);
+        doc.text("Authorized Platform Verification", margin, y + 14);
+
+        doc.line(pageWidth - margin - 200, y, pageWidth - margin, y);
+        doc.text("Digital System Stamp", pageWidth - margin - 200, y + 14);
+
+        // ===== FOOTER =====
         const pageCount = doc.internal.getNumberOfPages();
-        const footerLine1 = "MEDRAE";
-        const footerLine2 = "Stop Guessing. Start Passing.";
 
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.setFontSize(10);
-            doc.setTextColor(100);
 
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
+            doc.setFontSize(9);
+            doc.setTextColor(120);
 
-            const textWidth1 = doc.getTextWidth(footerLine1);
-            doc.text(footerLine1, (pageWidth - textWidth1) / 2, pageHeight - 20);
+            const footerText1 = "MEDRAE • Stop Guessing. Start Passing.";
+            const footerText2 = `Page ${i} of ${pageCount}`;
 
-            const textWidth2 = doc.getTextWidth(footerLine2);
-            doc.text(footerLine2, (pageWidth - textWidth2) / 2, pageHeight - 14);
+            const textWidth1 = doc.getTextWidth(footerText1);
+            doc.text(footerText1, (pageWidth - textWidth1) / 2, pageHeight - 40);
 
-            const pageText = `Page ${i} of ${pageCount}`;
-            const textWidthPage = doc.getTextWidth(pageText);
-            doc.text(pageText, (pageWidth - textWidthPage) / 2, pageHeight - 8);
+            const textWidth2 = doc.getTextWidth(footerText2);
+            doc.text(footerText2, (pageWidth - textWidth2) / 2, pageHeight - 28);
         }
 
-        doc.save("MEDRAE_Exam_Details.pdf");
+        // ===== SAVE =====
+        doc.save("MEDRAE_Exam_Receipt.pdf");
     };
-
-
     // Render Review Panel with percentage score
     if (showDonePanel) {
         const answered = questions.filter((q) => answers[q.id]);
@@ -730,7 +833,7 @@ export default function ExamAccessPage() {
     if (loading) {
         return (
             <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">
-                <GlobalLoader message="Medrae is Loading questions..." />
+                <GlobalLoader />
             </div>
         );
     }
@@ -866,22 +969,13 @@ export default function ExamAccessPage() {
                 </div>
 
                 <div className="flex gap-4 mt-6 items-start">
-                    {/* Camera Panel */}
-                    <div className="border border-gray-300 rounded-lg overflow-hidden w-24 h-16">
-                        {cameraStream ? (
-                            <video
-                                ref={videoRef}
-                                className="w-full h-full object-cover"
-                                muted
-                                autoPlay
-                            />
-                        ) : (
-                            <p className="text-center text-sm text-gray-500">Camera not available</p>
-                        )}
-                    </div>
-
+                    <ExamProctor
+                        videoStream={cameraStream}
+                        sessionId={examSession?.id ?? null}
+                        paperId={paper_id}  // ← pass it here
+                    />
                     {/* Sound Wave Panel (Right side) */}
-                    <div className="border border-gray-300 rounded-lg overflow-hidden w-24 h-16 relative flex items-center justify-center">
+                    <div className="border border-gray-300 rounded-lg overflow-hidden w-40 h-32 relative flex items-center justify-center">
                         <canvas ref={canvasRef} width={256} height={192} className="w-full h-full" />
                         {loudWarning && (
                             <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
@@ -994,7 +1088,7 @@ export default function ExamAccessPage() {
 
 
             {!mediaAllowed && (
-                <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center">
+                <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-40 flex items-center justify-center">
                     <div className="text-center space-y-6">
                         {/* HOME BUTTON TOP LEFT */}
                         <div className="absolute top-4 left-4">

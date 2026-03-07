@@ -17,7 +17,7 @@ const TutorExamList = () => {
     const [block, setBlock] = useState("");
     const [duration, setDuration] = useState(30);
     const [examKey, setExamKey] = useState("");
-
+    const [tutorResetCode, setTutorResetCode] = useState("");
     // Dates & scheduling
     const [scheduledStart, setScheduledStart] = useState("");
     const [scheduledEnd, setScheduledEnd] = useState("");
@@ -71,6 +71,7 @@ const TutorExamList = () => {
         setBlock(exam.block);
         setDuration(exam.duration);
         setExamKey(exam.exam_key);
+        setTutorResetCode(exam.tutor_reset_code || "");
         setScheduledStart(exam.scheduled_start || "");
         setScheduledEnd(exam.scheduled_end || "");
         setReleasedAt(exam.released_at || "");
@@ -140,6 +141,8 @@ const TutorExamList = () => {
                     auto_submit_on_violation: autoSubmitOnViolation,
                     max_tab_switch: maxTabSwitch,
                     max_violation_limit: maxViolationLimit,
+                    tutor_reset_code: tutorResetCode, // ← added here
+
                 })
                 .eq("id", editingExamId);
 
@@ -179,6 +182,7 @@ const TutorExamList = () => {
                         auto_submit_on_violation: autoSubmitOnViolation,
                         max_tab_switch: maxTabSwitch,
                         max_violation_limit: maxViolationLimit,
+                        tutor_reset_code: tutorResetCode, // ← added here
                     },
                 ])
                 .select()
@@ -355,7 +359,19 @@ const TutorExamList = () => {
                             className="w-full p-3 rounded-lg bg-white/70 dark:bg-gray-700/70 focus:ring-2 focus:ring-blue-500 outline-none placeholder-gray-500"
                         />
                     </div>
-
+                    <div>
+                        <label className="block text-sm mb-1 text-gray-700 dark:text-gray-200">
+                            Tutor Reset Code <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Enter tutor reset code"
+                            value={tutorResetCode}
+                            onChange={(e) => setTutorResetCode(e.target.value)}
+                            required
+                            className="w-full p-3 rounded-lg bg-white/70 dark:bg-gray-700/70 focus:ring-2 focus:ring-blue-500 outline-none placeholder-gray-500"
+                        />
+                    </div>
                     {/* Date Fields */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
