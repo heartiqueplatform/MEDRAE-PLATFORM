@@ -154,17 +154,26 @@ export function StudyProgress() {
       const totalStars = computedUnits.reduce((acc, s) => acc + s.rating, 0);
 
       // 8️⃣ Only update state if data changed
-      if (!isEqualData(computedUnits, unitsWithStats)) {
+      // Compute new full state
+      const newState = {
+        subjects: computedUnits,
+        totalStarsEarned: totalStars,
+        totalTopicsInApp: totalTopicsInApp,
+      };
+
+      // Compare with current state
+      const hasChanged =
+        !isEqualData(computedUnits, unitsWithStats) ||
+        totalStarsEarned !== totalStars ||
+        totalTopicsInApp !== totalTopicsInApp;
+
+      if (hasChanged) {
         setUnitsWithStats(computedUnits);
         setSubjects(computedUnits);
         setTotalStarsEarned(totalStars);
         setTotalTopicsInApp(totalTopicsInApp);
 
-        // 9️⃣ Save updated data to localStorage
-        saveToLocalStorage(user.id, {
-          subjects: computedUnits,
-          totalStarsEarned: totalStars,
-        });
+        saveToLocalStorage(user.id, newState);
       }
 
       if (showLoader) setLoading(false);
@@ -594,12 +603,16 @@ function SimulationAndTriviaSummary() {
         average: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
         latest: scores[0],
       };
-      setSimSummary(summary);
-      localStorage.setItem("simSummary", JSON.stringify(summary));
-      if (summary.latest < (profile?.target_score ?? 50)) simLow = true;
-    } else {
-      setSimSummary("empty");
-      localStorage.removeItem("simSummary");
+      // Compare new summary with current state
+      if (JSON.stringify(summary) !== JSON.stringify(simSummary)) {
+        setSimSummary(summary);
+        localStorage.setItem("simSummary", JSON.stringify(summary));
+      }
+
+      if (JSON.stringify(summary) !== JSON.stringify(triviaSummary)) {
+        setTriviaSummary(summary);
+        localStorage.setItem("triviaSummary", JSON.stringify(summary));
+      }
     }
 
     const { data: trivia } = await supabase

@@ -22,30 +22,32 @@ export default function FeedSeenTop10() {
     const [loading, setLoading] = useState(true);
     const [rankChangedUser, setRankChangedUser] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
+    const cachedTopStudents = useRef<TopStudent[] | null>(null);
     const prevTopStudents = useRef<TopStudent[]>([]);
-
     const fetchTop10 = async () => {
         try {
             setLoading(true);
+
+            // use cache if exists
+            if (cachedTopStudents.current) {
+                setTopStudents(cachedTopStudents.current);
+                setLoading(false);
+                return;
+            }
+
             const { data, error } = await supabase
                 .from("qfeed_seen_leaderboard")
                 .select("*")
                 .order("seen_count", { ascending: false })
                 .limit(10);
 
-
-
             if (error) throw error;
             if (!data) return;
 
-
             // Check for rank changes
             data.forEach((user, idx) => {
-
                 const prevIdx = prevTopStudents.current.findIndex(u => u.user_id === user.user_id);
                 if (prevIdx !== -1 && prevIdx !== idx) {
-                    // rank changed
                     setRankChangedUser(user.user_id);
                     setTimeout(() => setRankChangedUser(null), 2000);
                 }
@@ -53,6 +55,8 @@ export default function FeedSeenTop10() {
 
             setTopStudents(data);
             prevTopStudents.current = data;
+
+            cachedTopStudents.current = data; // store in memory
             localStorage.setItem("topStudents", JSON.stringify(data));
 
         } catch (err) {
@@ -61,18 +65,25 @@ export default function FeedSeenTop10() {
             setLoading(false);
         }
     };
-
     useEffect(() => {
         // Load from localStorage first
         const cached = localStorage.getItem("topStudents");
-        if (cached) setTopStudents(JSON.parse(cached));
-        // Fetch fresh data immediately
-        fetchTop10();
-        // 🔁 Auto-refresh every 15 seconds
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            setTopStudents(parsed);
+            cachedTopStudents.current = parsed; // update memory cache
+        }
+
+        // Only fetch if cache is empty
+        if (!cachedTopStudents.current) {
+            fetchTop10();
+        }
+
+        // Optional: auto-refresh in background only if needed
         const interval = setInterval(() => {
             fetchTop10();
         }, 30000);
-        // Cleanup on unmount
+
         return () => clearInterval(interval);
     }, []);
 

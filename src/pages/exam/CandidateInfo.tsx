@@ -111,34 +111,29 @@ export default function CandidateInfo() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                     <Input
-                        value={userData.name}
+                        value={userData.name || ""}
                         placeholder="Full Name"
                         onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-                        className="bg-input text-foreground border"
                     />
                     <Input
-                        value={userData.institution}
+                        value={userData.institution || ""}
                         placeholder="Institution"
                         onChange={(e) => setUserData({ ...userData, institution: e.target.value })}
-                        className="bg-input text-foreground border"
                     />
                     <Input
-                        value={userData.course}
+                        value={userData.course || ""}
                         placeholder="Course"
                         onChange={(e) => setUserData({ ...userData, course: e.target.value })}
-                        className="bg-input text-foreground border"
                     />
                     <Input
-                        value={userData.block_class}
+                        value={userData.block_class || ""}
                         placeholder="Block / Class"
                         onChange={(e) => setUserData({ ...userData, block_class: e.target.value })}
-                        className="bg-input text-foreground border"
                     />
                     <Input
-                        value={userData.nck_number}
+                        value={userData.nck_number || ""}
                         placeholder="Exam Number"
                         onChange={(e) => setUserData({ ...userData, nck_number: e.target.value })}
-                        className="bg-input text-foreground border"
                     />
 
                     <Button className="w-full mt-4" onClick={handleProceed}>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "@/context/AuthProvider";
+
 export type Profile = {
     user_id: string;
     name: string;
@@ -18,64 +19,58 @@ export const useOnlineUsers = () => {
     const [users, setUsers] = useState<Profile[]>([]);
 
     useEffect(() => {
+        if (!user) return;
+
         let channel: any;
 
-        const fetchUsers = async () => {
-            if (!user) return;
-            // 1️⃣ Fetch initial users
-            const { data, error } = await supabase
-                .from("profiles")
-                .select(`
-  user_id,
-  name,
-  username,
-  role,
-  avatar_url,
-  institution,
-  course,
-  specialization,
-  is_online
-`);
+        // Fetch initial users immediately
+        supabase
+            .from<Profile>("profiles")
+            .select(`
+        user_id,
+        name,
+        username,
+        role,
+        avatar_url,
+        institution,
+        course,
+        specialization,
+        is_online
+      `)
+            .then(({ data, error }) => {
+                if (error) {
+                    console.error("Error fetching users:", error);
+                    return;
+                }
+                if (data) setUsers(data); // instant set
+            });
 
-            if (error) {
-                console.error("Error fetching users:", error);
-                return;
-            }
+        // Subscribe to real-time changes
+        channel = supabase.channel("online-users");
 
-            setUsers(data || []);
-
-            // 2️⃣ Subscribe to changes in 'profiles'
-            channel = supabase.channel("online-users");
-
-            await channel
-                .on(
-                    "postgres_changes",
-                    {
-                        event: "*", // listen to insert, update, delete
-                        schema: "public",
-                        table: "profiles",
-                    },
-                    (payload: any) => {
-                        const updated = payload.new as Profile;
-
-                        setUsers((prev) => {
-                            const exists = prev.find((u) => u.user_id === updated.user_id);
-                            if (exists) {
-                                // Update existing user
-                                return prev.map((u) =>
-                                    u.user_id === updated.user_id ? updated : u
-                                );
-                            } else {
-                                // Add new user
-                                return [...prev, updated];
-                            }
-                        });
-                    }
-                )
-                .subscribe();
-        };
-
-        fetchUsers();
+        channel
+            .on(
+                "postgres_changes",
+                {
+                    event: "*", // insert, update, delete
+                    schema: "public",
+                    table: "profiles",
+                },
+                (payload: any) => {
+                    const updated = payload.new as Profile;
+                    setUsers((prev) => {
+                        const exists = prev.find((u) => u.user_id === updated.user_id);
+                        if (exists) {
+                            return prev.map((u) =>
+                                u.user_id === updated.user_id ? updated : u
+                            );
+                        } else {
+                            return [...prev, updated];
+                        }
+                    });
+                }
+            )
+            .subscribe();
 
         return () => {
             if (channel) supabase.removeChannel(channel);

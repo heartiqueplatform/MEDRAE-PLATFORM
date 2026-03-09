@@ -29,7 +29,10 @@ export default function TutorsList() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [readMessages, setReadMessages] = useState<string[]>([]);
     /* ---------------- INIT SOUND ---------------- */
-
+    // cache for session
+    const cachedTutors = useRef<any[] | null>(null);
+    const cachedCohorts = useRef<any[] | null>(null);
+    const cachedAnnouncements = useRef<any[] | null>(null);
     useEffect(() => {
         notificationSound.current = new Audio("/sounds/notification.mp3");
     }, []);
@@ -179,8 +182,13 @@ export default function TutorsList() {
     };
 
     /* ---------------- FETCH TUTORS ---------------- */
-
     const fetchTutors = async () => {
+        if (cachedTutors.current) {
+            setTutors(cachedTutors.current);
+            setLoading(false);
+            return; // use cached
+        }
+
         setLoading(true);
 
         const { data: profile } = await supabase
@@ -202,24 +210,31 @@ export default function TutorsList() {
             .eq("institution", profile.institution);
 
         setTutors(data || []);
+        cachedTutors.current = data || []; // cache
         setLoading(false);
     };
 
     /* ---------------- FETCH COHORTS ---------------- */
-
     const fetchStudentCohorts = async () => {
+        if (cachedCohorts.current) {
+            setExistingCohorts(cachedCohorts.current);
+            fetchAnnouncements(cachedCohorts.current);
+            return;
+        }
+
         const { data } = await supabase
             .from("tutor_students")
             .select(`
-                tutor_id,
-                block,
-                year,
-                semester,
-                profiles!tutor_students_tutor_id_fkey(name)
-            `)
+            tutor_id,
+            block,
+            year,
+            semester,
+            profiles!tutor_students_tutor_id_fkey(name)
+        `)
             .eq("student_id", user?.id);
 
         setExistingCohorts(data || []);
+        cachedCohorts.current = data || [];
         fetchAnnouncements(data || []);
     };
 
@@ -228,6 +243,19 @@ export default function TutorsList() {
     const fetchAnnouncements = async (cohorts: any[]) => {
         if (!cohorts.length) {
             setCohortMessages([]);
+            return;
+        }
+
+        // if cached announcements exist and cohorts didn't change, reuse
+        const cohortsKey = JSON.stringify(cohorts.map(c => `${c.tutor_id}-${c.block}-${c.year}-${c.semester}`));
+        const prevKey = localStorage.getItem("cohortsKey");
+
+        if (cachedAnnouncements.current && prevKey === cohortsKey) {
+            setCohortMessages(cachedAnnouncements.current);
+            // calculate unread count
+            const readIds = readMessages;
+            const unread = cachedAnnouncements.current.filter((msg) => !readIds.includes(msg.id)).length;
+            setUnreadCount(unread);
             return;
         }
 
@@ -247,24 +275,23 @@ export default function TutorsList() {
         );
 
         setCohortMessages(filtered);
+        cachedAnnouncements.current = filtered;
+
+        // store cohorts key to check if announcements should be refetched
+        localStorage.setItem("cohortsKey", cohortsKey);
 
         /* FETCH READ MESSAGES */
-
         const { data: reads } = await supabase
             .from("cohort_message_reads")
             .select("message_id")
             .eq("student_id", user?.id);
 
         const readIds = reads?.map((r) => r.message_id) || [];
-
         setReadMessages(readIds);
 
         /* CALCULATE UNREAD COUNT */
-
         const unread = filtered.filter((msg) => !readIds.includes(msg.id)).length;
         setUnreadCount(unread);
-
-        setCohortMessages(filtered);
     };
 
     /* ---------------- JOIN ---------------- */
@@ -388,7 +415,7 @@ export default function TutorsList() {
                     {/* MAIN CONTENT unchanged below */}
                     {loading ? (
                         <div className="space-y-3">
-                            {[1, 2, 3, 4].map((i) => (
+                            {[1, 2].map((i) => (
                                 <div
                                     key={i}
                                     className="flex items-center space-x-3 p-3 border rounded-md"

@@ -425,48 +425,32 @@ export default function Feed() {
         setLoading(false);
       }
 
-      // 🚀 FAST FIRST FETCH (NON-BLOCKING)
-      // 🚀 INITIAL LOAD — ONLY 10 QUESTIONS
+      // 🚀 FETCH FRESH QUESTIONS IN BACKGROUND
       const INITIAL_LIMIT = 10;
-      // NEW
-      const fast = await fetchQuestions(0, INITIAL_LIMIT);
-      setQuestions(fast);
-      setLoading(false);
+      fetchQuestions(0, INITIAL_LIMIT).then((fresh) => {
+        if (!fresh || fresh.length === 0) return;
 
-      // Enrich background
-      enrichQuestions(fast).then((enriched) => {
+        // Merge with cached without overwriting
         setQuestions((prev) => {
-          const map = new Map(prev.map((q) => [q.id, q]));
-          enriched.forEach((q) => map.set(q.id, q));
-          return Array.from(map.values());
+          const ids = new Set(prev.map((q) => q.id));
+          return [...prev, ...fresh.filter((q) => !ids.has(q.id))];
         });
-      })
-      // Remove background streaming entirely
-      // Manual fetch only when needed
 
-      // Example: fetch initial questions once
-      const initQuestions = async () => {
-        if (!user) return;
-
-        const INITIAL_LIMIT = 10;
-        const fresh = await fetchQuestions(0, INITIAL_LIMIT);
-        setQuestions(fresh);
-        setLoading(false);
-
-        // Save to localStorage
+        // Save fresh questions to localStorage
         localStorage.setItem(
-          `feed_questions_${user.id}`,
-          JSON.stringify(fresh)
+          storageKey,
+          JSON.stringify({ questions: fresh, lastSaved: Date.now() })
         );
 
-        // Optional: enrich questions
+        // Enrich questions in background
         enrichQuestions(fresh).then((enriched) => {
-          setQuestions(enriched);
+          setQuestions((prev) => {
+            const map = new Map(prev.map((q) => [q.id, q]));
+            enriched.forEach((q) => map.set(q.id, q));
+            return Array.from(map.values());
+          });
         });
-      };
-
-      initQuestions();
-
+      });
     };
 
     init();

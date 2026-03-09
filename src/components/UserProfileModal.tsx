@@ -100,8 +100,6 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
             setBestStreak(0);
         }
     };
-
-
     useEffect(() => {
         if (!userId) return;
 
@@ -109,66 +107,110 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
             setLoading(true);
 
             try {
+                // ✅ Run independent fetches in parallel (profile, quiz, trivia, feed count, streaks)
+                const [
+                    { data: profileData },
+                    { data: quizData },
+                    { data: simResults },
+                    { data: triviaData },
+                    { count: feedCount },
+                    streaks
+                ] = await Promise.all([
+                    // 1️⃣ Profile
+                    supabase
+                        .from("profiles")
+                        .select("*")
+                        .eq("user_id", userId)
+                        .single(),
+
+                    // 2️⃣ Quiz results (last 10)
+                    supabase
+                        .from("quiz_results")
+                        .select("*")
+                        .eq("user_id", userId)
+                        .order("submitted_at", { ascending: false })
+                        .limit(10),
+
+                    // 3️⃣ Simulation results (last 10)
+                    supabase
+                        .from("simulation_results")
+                        .select("*")
+                        .eq("user_id", userId)
+                        .order("submitted_at", { ascending: false })
+                        .limit(10),
+
+                    // 4️⃣ Daily trivia (last 10)
+                    supabase
+                        .from("daily_trivia_results")
+                        .select("*")
+                        .eq("user_id", userId)
+                        .order("attempt_date", { ascending: false })
+                        .limit(10),
+
+                    // 5️⃣ Total feed seen
+                    supabase
+                        .from("qfeed_seen")
+                        .select("*", { count: "exact", head: true })
+                        .eq("user_id", userId),
+
+                    // 6️⃣ Streaks
+                    (async () => {
+                        const { data, error } = await supabase
+                            .from("login_activity")
+                            .select("streak")
+                            .eq("user_id", userId)
+                            .order("login_date", { ascending: false });
+                        return data || [];
+                    })()
+                ]);
+
                 // 1️⃣ Profile
-                const { data: profileData } = await supabase
-                    .from("profiles")
-                    .select("*")
-                    .eq("user_id", userId)
-                    .single();
                 setProfile(profileData);
 
-                // Fetch streaks
-                await fetchStreaks();
-
-                // 2️⃣ Last 10 quiz results
-                const { data: quizData } = await supabase
-                    .from("quiz_results")
-                    .select("*")
-                    .eq("user_id", userId)
-                    .order("submitted_at", { ascending: false })
-                    .limit(10);
+                // 2️⃣ Quiz results
                 setQuizResults(quizData || []);
 
-                // 3️⃣ Last 10 simulation results
-                // 1️⃣ Fetch last 10 simulation results
-                const { data: simResults } = await supabase
-                    .from("simulation_results")
-                    .select("*")
-                    .eq("user_id", userId)
-                    .order("submitted_at", { ascending: false })
-                    .limit(10);
-
-                // 2️⃣ Fetch paper info for these results
-                const paperIds = simResults?.map(r => r.paper_id).filter(Boolean) || [];
-                const { data: papers } = await supabase
-                    .from("simulation_papers")
-                    .select("id, title")
-                    .in("id", paperIds);
-
-                // 3️⃣ Merge paper titles into results
-                const simResultsWithTitles = simResults?.map(r => ({
+                // 3️⃣ Simulation results (show immediately)
+                const simResultsInitial = simResults?.map(r => ({
                     ...r,
-                    paper_name: papers?.find(p => p.id === r.paper_id)?.title || "Paper"
-                }));
-                setSimulationResults(simResultsWithTitles);
+                    paper_name: "Loading..." // placeholder
+                })) || [];
+                setSimulationResults(simResultsInitial);
 
+                // 🔹 Fetch paper titles asynchronously (non-blocking)
+                const paperIds = simResults?.map(r => r.paper_id).filter(Boolean) || [];
+                if (paperIds.length > 0) {
+                    supabase
+                        .from("simulation_papers")
+                        .select("id, title")
+                        .in("id", paperIds)
+                        .then(({ data: papers }) => {
+                            if (papers) {
+                                const updatedSimResults = simResultsInitial.map(r => ({
+                                    ...r,
+                                    paper_name: papers.find(p => p.id === r.paper_id)?.title || "Paper"
+                                }));
+                                setSimulationResults(updatedSimResults);
+                            }
+                        })
+                        .catch(err => console.error("Error fetching simulation paper titles:", err));
+                }
 
-
-                // 4️⃣ Last 10 daily trivia results
-                const { data: triviaData } = await supabase
-                    .from("daily_trivia_results")
-                    .select("*")
-                    .eq("user_id", userId)
-                    .order("attempt_date", { ascending: false })
-                    .limit(10);
+                // 4️⃣ Trivia results
                 setTriviaResults(triviaData || []);
 
-                // 5️⃣ Total feed seen
-                const { count } = await supabase
-                    .from("qfeed_seen")
-                    .select("*", { count: "exact", head: true })
-                    .eq("user_id", userId);
-                setTotalFeedSeen(count || 0);
+                // 5️⃣ Feed count
+                setTotalFeedSeen(feedCount || 0);
+
+                // 6️⃣ Streaks
+                if (streaks.length > 0) {
+                    const latest = streaks[0].streak || 0;
+                    setCurrentStreak(latest);
+                    setBestStreak(Math.max(...streaks.map(r => r.streak || 0)));
+                } else {
+                    setCurrentStreak(0);
+                    setBestStreak(0);
+                }
 
             } catch (err) {
                 console.error("Error loading user activity:", err);

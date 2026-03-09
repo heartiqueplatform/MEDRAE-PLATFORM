@@ -31,14 +31,7 @@ interface TopStudent {
 }
 export const DailyTriviaCard = () => {
     const navigate = useNavigate();
-
     const [selfUserId, setSelfUserId] = useState<string | null>(null);
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data }) => {
-            const id = data?.session?.user?.id;
-            if (id) setSelfUserId(id);
-        });
-    }, []);
     const today = new Date().toISOString().slice(0, 10);
     const QUIZ_ID = today;
     const [questions, setQuestions] = useState<TriviaQuestion[]>([]);
@@ -55,7 +48,7 @@ export const DailyTriviaCard = () => {
     const startTimeRef = useRef<number>(0);
     const [completedAt, setCompletedAt] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
+    const cachedTopStudents = useRef<TopStudent[] | null>(null);
     const formatTimeReadable = (sec: number) => {
         const minutes = Math.floor(sec / 60);
         const seconds = sec % 60;
@@ -63,7 +56,12 @@ export const DailyTriviaCard = () => {
         const secText = seconds > 0 ? `${seconds} second${seconds > 1 ? "s" : ""}` : "";
         return [minText, secText].filter(Boolean).join(" and ");
     };
-
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data }) => {
+            const id = data?.session?.user?.id;
+            if (id) setSelfUserId(id);
+        });
+    }, []);
     // Load questions
     useEffect(() => {
         async function loadQuestions() {
@@ -105,23 +103,41 @@ export const DailyTriviaCard = () => {
                     correct_answers: attempts[0].correct_answers,
                     total_questions: attempts[0].total_questions
                 });
-                setCompletedAt(attempts[0].created_at); // ✅ use created_at as completion time
+                setCompletedAt(attempts[0].created_at);
             }
 
         }
         checkAttempt();
     }, [selfUserId, today]);
     // Fetch top 10 students
+
+
     useEffect(() => {
         async function fetchTop() {
-            const { data: results } = await supabase
+            // Use memory cache first
+            if (cachedTopStudents.current) {
+                setTopStudents(cachedTopStudents.current);
+                return;
+            }
+
+            // Load from localStorage cache
+            const stored = localStorage.getItem(`daily_trivia_top_${today}`);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                setTopStudents(parsed);
+                cachedTopStudents.current = parsed;
+                return;
+            }
+
+            // Fetch fresh data from Supabase only if cache is empty
+            const { data: results, error } = await supabase
                 .from("daily_trivia_results")
-                .select("user_id, score,  time_used, created_at")
+                .select("user_id, score, time_used, created_at")
                 .eq("attempt_date", today)
                 .order("score", { ascending: false })
                 .limit(10);
 
-            if (!results?.length) return setTopStudents([]);
+            if (error || !results?.length) return setTopStudents([]);
 
             const ids = results.map((r) => r.user_id);
             const { data: profiles } = await supabase
@@ -137,13 +153,19 @@ export const DailyTriviaCard = () => {
                     name: profile?.name || "Student",
                     avatar_url: profile?.avatar_url || null,
                     institution: profile?.institution || null,
-                    completedAt: r.created_at, // ✅ add created_at here
+                    completedAt: r.created_at,
                     timeUsed: r.time_used,
                 };
             });
+
+            // Save to memory & localStorage cache
+            cachedTopStudents.current = mapped;
+            localStorage.setItem(`daily_trivia_top_${today}`, JSON.stringify(mapped));
             setTopStudents(mapped);
         }
+
         fetchTop();
+
     }, [today, completed]);
 
     // Timer

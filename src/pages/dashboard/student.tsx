@@ -159,60 +159,33 @@ export default function StudentDashboard() {
   }, [quizCount]);
 
   const loadDashboardData = async () => {
-
     if (!user?.id) return;
-
-    // Only show spinner if no cached data or first time loading
-    if (!cachedDashboard) setLoading(true); // Only show spinner if no cached data
-
-
-
-
-    try {
-      // Run all fetches in parallel
-      await Promise.all([
-        fetchProfile(),
-        fetchProgress(),
-        handleLoginAndStreak(),
-        fetchCalendarEvents(),
-        fetchUnitCounts(),
-        fetchDailyPosts(),
-        fetchSimulationPapers(), // 👈 add this
-        fetchTopStudents(), // 👈 fetch global leaderboard
-
-      ]);
-
-
-      // Save merged dashboard state to localStorage
-      // Save merged dashboard state to localStorage
-      localStorage.setItem(
-        "dashboardData",
-        JSON.stringify({
-          name,
-          studyProgress,
-          quizCount,
-
-          studyStreak,
-          bestStreak,
-          calendarEvents,
-          dailyPosts,
-          unitCounts,
-          simulationPapers, // ✅ preserve simulation papers
-          topStudents,      // ✅ preserve leaderboard
-        })
-      );
-
-      // ✅ Mark dashboard as loaded
-      localStorage.setItem("dashboardDataLoaded", "true");
-      setDashboardLoaded(true);
-      setLoading(false); // hide spinner only after first full load
-
-    } catch (err) {
-      console.error("Error loading dashboard data:", err);
-    } finally {
-      setLoading(false); // Hide spinner when all data is loaded
-    }
-  };
+    setLoading(!cachedDashboard); // only show spinner if no cache
+    // Run fetches in parallel but catch errors individually
+    const fetches = [
+      fetchProfile().catch(console.error),
+      fetchProgress().catch(console.error),
+      handleLoginAndStreak().catch(console.error),
+      fetchCalendarEvents().catch(console.error),
+      fetchUnitCounts().catch(console.error),
+      fetchDailyPosts().catch(console.error),
+      fetchSimulationPapers().catch(console.error),
+      fetchTopStudents().catch(console.error),
+    ];
+    await Promise.all(fetches);
+    // Merge current state into cache for faster next render
+    localStorage.setItem(
+      "dashboardData",
+      JSON.stringify({
+        name, studyProgress, quizCount,
+        studyStreak, bestStreak,
+        calendarEvents, dailyPosts,
+        unitCounts, simulationPapers, topStudents
+      })
+    );
+    setDashboardLoaded(true);
+    setLoading(false); // hide spinner once all done
+  };;
 
   // Handle posting daily thought
   const handlePostDaily = async () => {
@@ -368,8 +341,9 @@ export default function StudentDashboard() {
     });
   };
 
-  // Fetch daily posts (last 24 hours) - public for all users
   const fetchDailyPosts = async () => {
+    if (!user?.id) return;
+
     let durationMs = 24 * 60 * 60 * 1000; // default 24h
     if (dailyDuration === "1w") durationMs = 7 * 24 * 60 * 60 * 1000;
     if (dailyDuration === "1m") durationMs = 30 * 24 * 60 * 60 * 1000;
@@ -377,70 +351,66 @@ export default function StudentDashboard() {
 
     const since = new Date(Date.now() - durationMs).toISOString();
 
-    // Fetch all posts regardless of user
-    const { data: posts, error: postsError } = await supabase
-      .from("valid_daily_posts") // 👈 query the view instead of the table
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      // 1️⃣ Fetch posts first
+      const { data: posts, error: postsError } = await supabase
+        .from("valid_daily_posts")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-
-    if (postsError) {
-      console.error("Error fetching daily posts:", postsError.message);
-      return;
-    }
-
-    if (!posts || posts.length === 0) {
-      setDailyPosts([]);
-      // 🚫 No toast for empty posts
-      return;
-    }
-
-    // Fetch profiles for all user_ids in posts
-    const userIds = posts.map((p) => p.user_id);
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("user_id, username, name, institution, county, avatar_url")
-      .in("user_id", userIds);
-
-    if (profilesError) {
-      console.error("Error fetching profiles:", profilesError.message);
-      return;
-    }
-
-    // Merge posts with their profile
-    const mergedPosts = posts.map((p) => ({
-      ...p,
-      profiles: profiles?.find((pr) => pr.user_id === p.user_id) || null,
-    }));
-
-    setDailyPosts((prevPosts) => {
-      const prevIds = prevPosts.map(p => p.id).join(",");
-      const newIds = mergedPosts.map(p => p.id).join(",");
-
-      // If posts are identical → do nothing
-      if (prevIds === newIds) {
-        return prevPosts;
+      if (postsError) throw postsError;
+      if (!posts || posts.length === 0) {
+        setDailyPosts([]);
+        return;
       }
 
-      return mergedPosts;
-    });
-    // Notifications
-    if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
+      // 2️⃣ Render posts immediately with placeholder profile
+      const tempPosts = posts.map(p => ({
+        ...p,
+        profiles: { username: "Loading..." }
+      }));
+      setDailyPosts(tempPosts);
 
-      toast({
-        title: "New Daily Status!",
-        description: "A new daily post is available. Scroll down to view it.",
+      // 3️⃣ Fetch profiles in background
+      const userIds = posts.map(p => p.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, username, name, institution, county, avatar_url")
+        .in("user_id", userIds);
+
+      if (profilesError) console.error("Error fetching profiles:", profilesError.message);
+
+      // 4️⃣ Merge posts with real profile data
+      const mergedPosts = posts.map(p => ({
+        ...p,
+        profiles: profiles?.find(pr => pr.user_id === p.user_id) || null
+      }));
+
+      setDailyPosts(prevPosts => {
+        const prevIds = prevPosts.map(p => p.id).join(",");
+        const newIds = mergedPosts.map(p => p.id).join(",");
+        return prevIds === newIds ? prevPosts : mergedPosts;
       });
-    } else if (!latestPostId) {
-      toast({
-        title: "Daily Status",
-        description: "You're caught up today, nothing new!",
-      });
+
+      // 5️⃣ Toast notifications preserved
+      if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
+        toast({
+          title: "New Daily Status!",
+          description: "A new daily post is available. Scroll down to view it.",
+        });
+      } else if (!latestPostId) {
+        toast({
+          title: "Daily Status",
+          description: "You're caught up today, nothing new!",
+        });
+      }
+
+      setLatestPostId(mergedPosts[0].id);
+
+    } catch (err: any) {
+      console.error("Error fetching daily posts:", err.message);
     }
-
-    setLatestPostId(mergedPosts[0].id);
   };
-
 
   useEffect(() => {
     if (
@@ -459,30 +429,32 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (!user?.id) return;
 
-    // ✅ Show cached dashboard first (no spinner)
+    // 1️⃣ Render cached dashboard immediately (no spinner)
     if (cachedDashboard) {
       try {
         const parsed = JSON.parse(cachedDashboard);
-        if (parsed.name) setName(parsed.name);
-        if (parsed.studyProgress) setStudyProgress(parsed.studyProgress);
-        if (parsed.quizCount) setQuizCount(parsed.quizCount);
-
-        if (parsed.studyStreak) setStudyStreak(parsed.studyStreak);
-        if (parsed.bestStreak) setBestStreak(parsed.bestStreak);
-        if (parsed.calendarEvents) setCalendarEvents(parsed.calendarEvents);
-        if (parsed.dailyPosts) setDailyPosts(parsed.dailyPosts);
-        if (parsed.unitCounts) setUnitCounts(parsed.unitCounts);
-
+        parsed.name && setName(parsed.name);
+        parsed.studyProgress !== undefined && setStudyProgress(parsed.studyProgress);
+        parsed.quizCount !== undefined && setQuizCount(parsed.quizCount);
+        parsed.studyStreak !== undefined && setStudyStreak(parsed.studyStreak);
+        parsed.bestStreak !== undefined && setBestStreak(parsed.bestStreak);
+        parsed.calendarEvents && setCalendarEvents(parsed.calendarEvents);
+        parsed.dailyPosts && setDailyPosts(parsed.dailyPosts);
+        parsed.unitCounts && setUnitCounts(parsed.unitCounts);
+        parsed.topStudents && setTopStudents(parsed.topStudents);
+        parsed.simulationPapers && setSimulationPapers(parsed.simulationPapers);
       } catch (e) {
         console.error("Error parsing cached dashboard:", e);
       }
     }
 
-    // 🔄 Refresh in background silently
-    loadDashboardData();
-    setDashboardLoaded(true); // we now have something to render instantly
+    // 2️⃣ Load dashboard data in background
+    loadDashboardData().catch(err => console.error("Dashboard load error:", err));
 
-  }, [user]);
+    // 3️⃣ Mark dashboard loaded instantly
+    setDashboardLoaded(true);
+
+  }, [user]);;
 
   // Load initial count from localStorage
   useEffect(() => {
@@ -530,21 +502,32 @@ export default function StudentDashboard() {
   const showSkeleton = loading && cachedSimulationPapers.length === 0;
 
   /// 🏆 Top students state
+  /// 🏆 Top Students State (Improved)
   const [topStudents, setTopStudents] = useState<any[]>(() => {
-    // ✅ initialize from localStorage to avoid initial loader flash
-    const cached = localStorage.getItem("topStudents");
-    return cached ? JSON.parse(cached) : [];
+    try {
+      const cached = localStorage.getItem("topStudents");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [loadingTopStudents, setLoadingTopStudents] = useState(() => {
-    // ✅ show loader only if no cached data
-    const cached = localStorage.getItem("topStudents");
-    return cached ? false : true;
+    try {
+      const cached = localStorage.getItem("topStudents");
+      return cached && JSON.parse(cached).length ? false : true;
+    } catch {
+      return true;
+    }
   });
 
+  const [previousTopRank, setPreviousTopRank] = useState<number | null>(null); // track last notified rank
+
   const fetchTopStudents = async () => {
+    if (!user?.id) return;
+
     try {
-      // ✅ show loader only if we have no cached leaderboard
+      // Show loader only if no cached leaderboard
       setLoadingTopStudents(!topStudents.length);
 
       // 1️⃣ Get all quiz results
@@ -553,21 +536,20 @@ export default function StudentDashboard() {
         .select("user_id, score, total_questions");
 
       if (resultsError) throw resultsError;
-      if (!results) return;
+      if (!results || results.length === 0) {
+        setTopStudents([]);
+        localStorage.setItem("topStudents", JSON.stringify([]));
+        return;
+      }
 
       // 2️⃣ Calculate stars + stats for each user
       const userMap: Record<string, { total: number; count: number }> = {};
       results.forEach((r) => {
-        if (!r.user_id) return; // 🔑 skip null user_id rows
+        if (!r.user_id || !r.total_questions) return;
 
-        if (!userMap[r.user_id]) {
-          userMap[r.user_id] = { total: 0, count: 0 };
-        }
-
-        if (r.total_questions > 0) {
-          userMap[r.user_id].total += (r.score / r.total_questions) * 100;
-          userMap[r.user_id].count += 1;
-        }
+        if (!userMap[r.user_id]) userMap[r.user_id] = { total: 0, count: 0 };
+        userMap[r.user_id].total += (r.score / r.total_questions) * 100;
+        userMap[r.user_id].count += 1;
       });
 
       const userStars = Object.entries(userMap).map(([userId, stats]) => {
@@ -581,97 +563,67 @@ export default function StudentDashboard() {
         return { userId, stars, avg, count: stats.count };
       });
 
-      // 3️⃣ Sort: stars → avg → count
-      userStars.sort((a, b) => {
-        if (b.stars !== a.stars) return b.stars - a.stars; // stars first
-        if (b.avg !== a.avg) return b.avg - a.avg;         // then average %
-        return b.count - a.count;                          // finally quizzes count
-      });
+      // 3️⃣ Sort leaderboard
+      userStars.sort((a, b) => b.stars - a.stars || b.avg - a.avg || b.count - a.count);
 
-      // 4️⃣ Fetch matching profiles
-      const ids = userStars.map((u) => u.userId);
+      // 4️⃣ Fetch profiles
+      const ids = userStars.map(u => u.userId);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("user_id, name, avatar_url, institution, county")
         .in("user_id", ids);
-
       if (profilesError) throw profilesError;
 
       // 5️⃣ Merge stars + stats with profile
-      const merged = userStars.map((u) => {
-        const profile = profiles?.find((p) => p.user_id === u.userId);
-        return { ...u, ...profile };
-      });
+      const merged = userStars.map(u => ({ ...u, ...profiles?.find(p => p.user_id === u.userId) }));
 
-      // ✅ Only update state if there is a difference to prevent unnecessary re-renders
-      const currentIds = topStudents.map((s) => s.userId).join(",");
-      const newIds = merged.map((s) => s.userId).join(",");
-      if (currentIds !== newIds) {
+      // 6️⃣ Update state & cache if changed
+      const prevIds = topStudents.map(s => s.userId).join(",");
+      const newIds = merged.map(s => s.userId).join(",");
+      if (prevIds !== newIds) {
         setTopStudents(merged);
-        localStorage.setItem("topStudents", JSON.stringify(merged)); // ✅ cache for future visits
+        localStorage.setItem("topStudents", JSON.stringify(merged));
       }
 
+      // 7️⃣ Use merged array to safely compute rank for toast
+      const currentIndex = merged.findIndex(s => s.userId === user.id);
+      if (currentIndex !== -1) {
+        const newRank = currentIndex + 1;
+        const lastNotifiedRank = parseInt(localStorage.getItem(`lastRank_${user.id}`) || "0");
 
+        if (newRank <= 3 && newRank !== lastNotifiedRank) {
+          let title = "";
+          let message = "";
 
-      // ✅ Check and toast user's top rank once on first login
-      if (user && topStudents.length > 0) {
-        const currentIndex = topStudents.findIndex(s => s.userId === user.id);
-        if (currentIndex !== -1) {
-          const newRank = currentIndex + 1;
+          const profileName = merged[currentIndex]?.name || profileState?.name || "Learner";
 
-          // 🔹 Read last notified rank from localStorage
-          const lastNotifiedRank = parseInt(localStorage.getItem(`lastRank_${user.id}`) || "0");
-
-          // 🔹 Only show toast if user hasn't been notified for this rank yet
-          if (newRank <= 3 && newRank !== lastNotifiedRank) {
-            let title = "";
-            let message = "";
-
-            const profileName =
-              (topStudents.find(s => s.userId === user.id)?.name) ||
-              profileState?.name ||
-              "Learner";
-
-            if (newRank === 1) {
-              title = "🏆 Top Student!";
-              message = `Wow ${profileName}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
-            }
-            else if (newRank === 2) {
-              title = "🥈 Silver Star!";
-              message = `Great job ${profileName}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
-            }
-            else if (newRank === 3) {
-              title = "🥉 Bronze Achiever!";
-              message = `Nice work ${profileName}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
-            }
-
-            // gentle vibration
-            if (navigator.vibrate) navigator.vibrate(200);
-
-            // toast message
-            sonnerToast.success(message, {
-              title,
-              duration: 6000,
-              dismissible: true,
-            });
-
-            // 🔹 Save this rank to localStorage so we don't toast again
-            localStorage.setItem(`lastRank_${user.id}`, String(newRank));
+          if (newRank === 1) {
+            title = "🏆 Top Student!";
+            message = `Wow ${profileName}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
+          } else if (newRank === 2) {
+            title = "🥈 Silver Star!";
+            message = `Great job ${profileName}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
+          } else if (newRank === 3) {
+            title = "🥉 Bronze Achiever!";
+            message = `Nice work ${profileName}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
           }
 
-          // always update previousRank for future changes
-          setPreviousRank(newRank);
-        }
-      }
+          if (navigator.vibrate) navigator.vibrate(200);
 
+          // ✅ Preserve your original toast messages
+          sonnerToast.success(message, { title, duration: 6000, dismissible: true });
+          localStorage.setItem(`lastRank_${user.id}`, String(newRank));
+        }
+
+        setPreviousRank(newRank);
+      }
 
     } catch (err) {
       console.error("Error fetching top students:", err);
     } finally {
-      setLoadingTopStudents(false); // ✅ stop loader always
+      setLoadingTopStudents(false);
     }
   };
-
 
   const fetchSimulationPapers = async () => {
     try {
@@ -1593,7 +1545,7 @@ export default function StudentDashboard() {
             </div>
           </DialogContent>
         </Dialog>
-        <MistakeCard />
+
 
         {/* Upcoming Redletter Dates / Revision Schedule Card */}
         {
@@ -1821,6 +1773,7 @@ export default function StudentDashboard() {
                                 src={post.profiles.avatar_url}
                                 alt={post.profiles.username}
                                 className="w-12 h-12 rounded-full object-cover"
+
                               />
                             ) : (
                               <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-500 flex items-center justify-center text-gray-900 dark:text-white">
@@ -1861,6 +1814,7 @@ export default function StudentDashboard() {
                                 src={post.image_url}
                                 alt="daily"
                                 className="block sm:hidden w-full h-auto object-contain cursor-pointer rounded-none"
+                                loading="lazy" // ✅ lazy load desktop image
                                 onClick={() => setFullscreenImage(post.image_url)}
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                               />
@@ -1871,6 +1825,7 @@ export default function StudentDashboard() {
                                   src={post.image_url}
                                   alt="daily"
                                   className="w-full h-full object-cover cursor-pointer"
+                                  loading="lazy" // ✅ lazy load desktop image
                                   onClick={() => setFullscreenImage(post.image_url)}
                                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                                 />
@@ -1920,7 +1875,7 @@ export default function StudentDashboard() {
             </div>
           )}
         </Card>
-
+        <MistakeCard />
         {/* Simulation Papers Section */}
         <Card className="w-full rounded-xl shadow-none border-0 bg-gray-100 dark:bg-gray-900 p-2 mt-4">
           <CardHeader className="p-2">
