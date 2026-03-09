@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { playSound } from "@/lib/soundManager";
-
+import { useSession } from "@supabase/auth-helpers-react";
 import { Input } from "@/components/ui/input";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 import Confetti from "react-confetti";
@@ -63,6 +63,8 @@ const enrichQuestions = async (questions: any[]) => {
 
 
 export default function Feed() {
+  const session = useSession();
+  const userId = session?.user?.id;
   // ✅ Feedback Power-Up tracking
   const [correctStreak, setCorrectStreak] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(0);
@@ -330,48 +332,43 @@ export default function Feed() {
   }, [feedbackMessage]);
 
 
-  // Load all images once
   useEffect(() => {
     const loadImages = async () => {
-      // 1️⃣ Get current logged-in user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return; // user not logged in
+      if (!userId) return; // user not logged in
 
       try {
-        // 2️⃣ Get all images with uploader info
+        // 1️⃣ Get all images with uploader info
         const { data: images, error: imgErr } = await supabase
           .from("qfeed_images")
           .select(`
-  id,
-  image_url,
-  description,
-  storage_path,
-  added_by,
-  created_at,
-
-  profiles (
-    name,
-    avatar_url
-  )
-`)
-
+          id,
+          image_url,
+          description,
+          storage_path,
+          added_by,
+          created_at,
+          profiles (
+            name,
+            avatar_url
+          )
+        `)
           .order("created_at", { ascending: true });
 
         if (imgErr) throw imgErr;
 
-        // 3️⃣ Get all images the user has already seen
+        // 2️⃣ Get all images the user has already seen
         const { data: seen, error: seenErr } = await supabase
           .from("seen_images")
           .select("image_id")
-          .eq("user_id", user.id);
+          .eq("user_id", userId);
 
         if (seenErr) throw seenErr;
 
-        // 4️⃣ Filter out seen images
-        const seenIds = seen.map((row) => row.image_id);
-        const unseenImages = images.filter((img) => !seenIds.includes(img.id));
+        // 3️⃣ Filter out seen images
+        const seenIds = seen.map(row => row.image_id);
+        const unseenImages = images.filter(img => !seenIds.includes(img.id));
 
-        // 5️⃣ Update state
+        // 4️⃣ Update state
         setFeedImages(unseenImages);
 
       } catch (err) {
@@ -380,11 +377,8 @@ export default function Feed() {
     };
 
     loadImages();
-
-    // Optional: refetch on new uploads or after marking images as seen
-    // You can trigger loadImages() manually whenever needed
-
-  }, []);
+    // Optional: you can call loadImages() manually after new uploads or marking images as seen
+  }, [userId]); // refetch if userId changes
 
   // Load user & restore localStorage safely with preloading
   useEffect(() => {
@@ -507,85 +501,91 @@ export default function Feed() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [user, answers]);
 
-  // Place this inside Feed.tsx, above the component or at the top of the component
+
+  // Replace fetchQuestions
   const fetchQuestions = async (page = 0, limit = 25) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    if (!userId) return []; // user not logged in
 
-    // Get already seen question IDs
-    const { data: seenData, error: seenError } = await supabase
-      .from("qfeed_seen")
-      .select("question_id")
-      .eq("user_id", user.id);
+    try {
+      // Get already seen question IDs
+      const { data: seenData, error: seenError } = await supabase
+        .from("qfeed_seen")
+        .select("question_id")
+        .eq("user_id", userId);
 
-    if (seenError) {
-      console.error("Seen fetch error:", seenError);
+      if (seenError) {
+        console.error("Seen fetch error:", seenError);
+        return [];
+      }
+
+      const seenList = seenData?.map(s => s.question_id) || [];
+
+      // Fetch questions excluding seen ones
+      const { data: questions, error: questionsError } = await supabase
+        .from("quiz_questions")
+        .select(
+          "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation"
+        )
+        .not(
+          "id",
+          "in",
+          `(${seenList.join(",") || "00000000-0000-0000-0000-000000000000"})`
+        )
+        .range(page * limit, page * limit + limit - 1);
+
+      if (questionsError) {
+        console.error("Questions fetch error:", questionsError);
+        return [];
+      }
+
+      if (!questions?.length) return [];
+
+      // Shuffle
+      const shuffled = [...questions].sort(() => Math.random() - 0.5);
+      const ids = shuffled.map(q => q.id);
+      const quizIds = [...new Set(shuffled.map(q => q.quiz_id))];
+
+      // Fetch likes, comments, quizzes in parallel
+      const [{ data: likes }, { data: commentsData }, { data: quizzes }] =
+        await Promise.all([
+          supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
+          supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
+          supabase.from("quizzes").select("id, title").in("id", quizIds),
+        ]);
+
+      // Map for likes
+      const likesMap = new Map<string, any[]>();
+      likes?.forEach(l => {
+        if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
+        likesMap.get(l.question_id)!.push(l);
+      });
+
+      // Map for comments count
+      const commentsCountMap = new Map<string, number>();
+      commentsData?.forEach(c => {
+        commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
+      });
+
+      // Map for quiz titles
+      const quizTitleMap = new Map<string, string>();
+      quizzes?.forEach(q => quizTitleMap.set(q.id, q.title));
+
+      // Merge and return
+      return shuffled.map(q => ({
+        ...q,
+        qfeed_likes: likesMap.get(q.id) || [],
+        comments_count: commentsCountMap.get(q.id) || 0,
+        quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
+      }));
+    } catch (err) {
+      console.error("❌ Error fetching questions:", err);
       return [];
     }
-
-    const seenList = seenData?.map((s) => s.question_id) || [];
-
-    // Fetch questions excluding seen ones
-    const { data: questions, error: questionsError } = await supabase
-      .from("quiz_questions")
-      .select(
-        "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation"
-      )
-      .not("id", "in", `(${seenList.join(",") || "00000000-0000-0000-0000-000000000000"})`)
-      .range(page * limit, page * limit + limit - 1);
-
-    if (questionsError) {
-      console.error("Questions fetch error:", questionsError);
-      return [];
-    }
-
-    if (!questions?.length) return [];
-
-    // Shuffle
-    const shuffled = [...questions].sort(() => Math.random() - 0.5);
-    const ids = shuffled.map((q) => q.id);
-    const quizIds = [...new Set(shuffled.map((q) => q.quiz_id))];
-
-    // Fetch likes, comments, quizzes in parallel
-    const [
-      { data: likes },
-      { data: commentsData },
-      { data: quizzes },
-    ] = await Promise.all([
-      supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
-      supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
-      supabase.from("quizzes").select("id, title").in("id", quizIds),
-    ]);
-
-    // Map for likes
-    const likesMap = new Map<string, any[]>();
-    likes?.forEach((l) => {
-      if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
-      likesMap.get(l.question_id)!.push(l);
-    });
-
-    // Map for comments count
-    const commentsCountMap = new Map<string, number>();
-    commentsData?.forEach((c) => {
-      commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
-    });
-
-    // Map for quiz titles
-    const quizTitleMap = new Map<string, string>();
-    quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
-
-    // Merge and return
-    return shuffled.map((q) => ({
-      ...q,
-      qfeed_likes: likesMap.get(q.id) || [],
-      comments_count: commentsCountMap.get(q.id) || 0,
-      quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
-    }));
   };
 
   // Infinite scroll loader
   const loadMore = async () => {
-    if (loading || !user || !hasMore) return;
+    if (loading || !userId || !hasMore) return;
 
     setLoading(true);
     const batchSize = 10;
@@ -594,10 +594,10 @@ export default function Feed() {
     const newData = await fetchQuestions(nextPage, batchSize);
 
     if (newData && newData.length > 0) {
-      const existingIds = new Set(questions.map((q) => q.id));
-      const filtered = newData.filter((q) => !existingIds.has(q.id));
+      const existingIds = new Set(questions.map(q => q.id));
+      const filtered = newData.filter(q => !existingIds.has(q.id));
 
-      setQuestions((prev) => [...prev, ...filtered]);
+      setQuestions(prev => [...prev, ...filtered]);
       setPage(nextPage);
 
       if (filtered.length < batchSize) setHasMore(false);
@@ -607,8 +607,6 @@ export default function Feed() {
 
     setLoading(false);
   };
-
-
   // Mark question seen
   const markSeen = async (id) => {
     if (!user) return;
@@ -738,8 +736,9 @@ export default function Feed() {
 
     const { data, error } = await supabase
       .from("qfeed_comments")
+
       .select(
-        "id, comment_text, created_at, user_id, parent_id, profiles(name, avatar_url)"
+        "id, comment_text, created_at, user_id, parent_id, profiles!user_id(name, avatar_url)"
       )
 
       .eq("question_id", questionId)
@@ -1038,12 +1037,14 @@ export default function Feed() {
                       );
                       if (!confirmed) return; // Stop if user cancels
 
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) return;
+                      const userId = session?.user?.id;
+                      if (!userId) return;
 
                       try {
-                        await supabase.from("seen_images").delete().eq("user_id", user.id);
+                        // Delete all seen images for this user
+                        await supabase.from("seen_images").delete().eq("user_id", userId);
 
+                        // Reload all images
                         const { data: newImages, error } = await supabase
                           .from("qfeed_images")
                           .select("*")
@@ -1075,7 +1076,7 @@ export default function Feed() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="p-2 rounded-full  active:scale-95 transition"
+                    className="p-2 rounded-full active:scale-95 transition"
                     variant="ghost"
                     onClick={async () => {
                       // ✅ Ask for confirmation
@@ -1085,27 +1086,30 @@ export default function Feed() {
                       if (!confirmed) return; // Stop if user cancels
 
                       console.log("Starting reset...");
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) {
+                      const userId = session?.user?.id;
+                      if (!userId) {
                         console.warn("No user found!");
                         alert("Please log in first!");
                         return;
                       }
 
                       try {
+                        // Delete all seen questions for this user
                         const { error } = await supabase
                           .from("qfeed_seen")
                           .delete()
-                          .eq("user_id", user.id);
+                          .eq("user_id", userId);
 
                         if (error) throw error;
-                        console.log("qfeed_seen cleared for user:", user.id);
+                        console.log("qfeed_seen cleared for user:", userId);
 
-                        localStorage.removeItem(`feed_questions_${user.id}`);
-                        localStorage.removeItem(`feed_answers_${user.id}`);
-                        localStorage.removeItem(`feed_count_${user.id}`);
+                        // Clear local storage cache
+                        localStorage.removeItem(`feed_questions_${userId}`);
+                        localStorage.removeItem(`feed_answers_${userId}`);
+                        localStorage.removeItem(`feed_count_${userId}`);
                         console.log("🧹 Local cache cleared.");
 
+                        // Reset state
                         setQuestions([]);
                         setAnswers({});
                         setQuestionCount(0);
@@ -1655,11 +1659,11 @@ export default function Feed() {
                           onClick={async () => {
                             openViewer(img);
 
-                            const { data: { user } } = await supabase.auth.getUser();
-                            if (!user) return;
+                            const userId = session?.user?.id;
+                            if (!userId) return;
 
                             const { error } = await supabase.from("seen_images").insert({
-                              user_id: user.id,
+                              user_id: userId,
                               image_id: img.id,
                             });
 
@@ -1953,14 +1957,19 @@ export default function Feed() {
             open={!!activeQuestion}
             onOpenChange={() => setActiveQuestion(null)}
           >
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg" aria-describedby="comments-dialog-description">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold">
                   Comments
                 </DialogTitle>
               </DialogHeader>
-              <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent">
 
+              {/* Accessible description for screen readers */}
+              <p id="comments-dialog-description" className="sr-only">
+                View and post comments on this question. Replies appear indented under parent comments.
+              </p>
+
+              <div className="overflow-y-auto scrollbar scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent">
                 {comments.map((c) => {
                   const isReply = !!c.parent_id;
                   const liked = c.comment_likes?.some(
@@ -1969,20 +1978,17 @@ export default function Feed() {
                   return (
                     <div
                       key={c.id}
-                      className={`flex items-start gap-3 ${isReply ? "ml-8" : ""
-                        }`}
+                      className={`flex items-start gap-3 ${isReply ? "ml-8" : ""}`}
                     >
                       <img
                         src={c.profiles?.avatar_url || "/UsersAvatar.jpg"}
                         alt={c.profiles?.name || "User"}
                         className="w-8 h-8 rounded-full"
                       />
-
                       <div className="flex-1">
                         <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
                           {c.profiles?.name || "User"}
                         </p>
-
                         <p className="text-gray-700 dark:text-gray-300">
                           {c.comment_text}
                         </p>
@@ -2017,7 +2023,6 @@ export default function Feed() {
               </div>
             </DialogContent>
           </Dialog>
-
           {/* 🏆 Leaderboard Modal */}
           <Dialog open={leaderboardOpen} onOpenChange={setLeaderboardOpen}>
             <DialogContent

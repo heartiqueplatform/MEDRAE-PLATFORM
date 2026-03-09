@@ -28,7 +28,7 @@ import {
     AlertCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-
+import { useSession } from "@supabase/auth-helpers-react";
 interface MobileDrawerProps {
     userRole: "student" | "tutor" | "staff";
     isOpen: boolean;
@@ -63,7 +63,8 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
     const [mistakeCount, setMistakeCount] = useState<number>(0);
     const [unreadAnnouncements, setUnreadAnnouncements] = useState<number>(0);
     const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(null);
-
+    const session = useSession();       // ✅ get current session
+    const user = session?.user || null; // ✅ current user
     const tapFeedback = () => {
         playSound("tap");
         if (navigator.vibrate) navigator.vibrate(50);
@@ -140,30 +141,22 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
         },
     };
 
-
     useEffect(() => {
-        const fetchUserRole = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+        if (!user) return;
 
+        const fetchUserRole = async () => {
             const { data: profile, error } = await supabase
                 .from("profiles")
                 .select("role")
                 .eq("user_id", user.id)
                 .single();
-
-            if (error) {
-                console.error("Error fetching profile role:", error);
-                return;
-            }
-
-            if (profile?.role) {
+            if (!error && profile?.role) {
                 setUserRoleState(profile.role.toLowerCase() === "tutor" ? "tutor" : "student");
             }
         };
 
         fetchUserRole();
-    }, []);
+    }, [user]); // ✅ dependency on user
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
@@ -209,7 +202,7 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
     // --------------------------
     useEffect(() => {
         const fetchCounts = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+
             if (!user) return;
 
             // Mistakes
@@ -270,7 +263,7 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
         };
 
         fetchCounts();
-    }, []);
+    }, [user]);
 
     // --------------------------
     // Listen for localStorage changes to update badges in real-time

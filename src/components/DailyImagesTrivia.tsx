@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react"; // ✅ add
 import { ChevronLeft, ChevronRight, Maximize, Eye, X } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +20,9 @@ type SeenUser = {
     comments?: string[];
 };
 export default function DailyImagesTrivia() {
+    const session = useSession();                // ✅ get session
+    const supabaseClient = useSupabaseClient();  // optional
+    const user = session?.user || null;          // current user
     const [images, setImages] = useState<ImageItem[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
     const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -99,7 +103,7 @@ export default function DailyImagesTrivia() {
                 const cachedImages: ImageItem[] = JSON.parse(storedImages);
 
                 // 2️⃣ Filter out already seen images if user exists
-                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
                 let filteredImages = cachedImages;
 
                 if (user) {
@@ -283,8 +287,8 @@ export default function DailyImagesTrivia() {
 
     // Load seen data for the current user from Supabase
     useEffect(() => {
+        if (!user) return;
         const loadSeenData = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
             if (!user || images.length === 0) return;
 
             try {
@@ -315,16 +319,17 @@ export default function DailyImagesTrivia() {
         };
 
         loadSeenData();
-    }, [images]);
+    }, [images, user]);
 
 
     // Mark Seen + Save Comment
     const markSeen = async (comment: string) => {
         if (!images[activeIndex]) return;
         const image_id = images[activeIndex].id;
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return alert("You must be logged in.");
+        if (!user) {
+            alert("You must be logged in.");
+            return;
+        }
 
         try {
             // 1️⃣ Insert seen comment
@@ -517,8 +522,8 @@ export default function DailyImagesTrivia() {
                                         if (!seenData[img.id]) {
                                             vibrateSafe(50);
 
-                                            const { data: { user } } = await supabase.auth.getUser();
                                             if (!user) return;
+
 
                                             try {
                                                 await supabase.from("qfeed_seen_comments").insert({

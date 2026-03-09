@@ -16,7 +16,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
-import { useUser } from "@supabase/auth-helpers-react";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react"; // ✅ updated
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -33,7 +33,10 @@ export function Profile() {
 
   const [profileState, setProfileState] = useState(getCachedProfile());
   const [activePlan, setActivePlan] = useState<string | null>(null);
-  const user = useUser();
+  const session = useSession();                 // ✅ session from Supabase
+  const supabaseClient = useSupabaseClient();   // optional but good practice
+  const user = session?.user || null;           // current user
+
   const navigate = useNavigate();
 
   const [showDialog, setShowDialog] = useState(false);
@@ -47,11 +50,8 @@ export function Profile() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-
   const handleLogout = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
       if (user) {
         // Delete all sessions for this user
         await supabase
@@ -64,25 +64,24 @@ export function Profile() {
           .from("profiles")
           .update({ active_session_id: null })
           .eq("user_id", user.id);
+
+        await supabase.auth.signOut();
+
+        // Clear storage cache
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Reset React UI state
+        setProfileState(null);
+        setActivePlan(null);
+
+        navigate("/", { replace: true });
+
+        toast({
+          title: "Logged out",
+          description: "You have been logged out.",
+        });
       }
-
-      await supabase.auth.signOut();
-
-      // Clear storage cache
-      localStorage.clear();
-      sessionStorage.clear();
-
-      // Reset React UI state
-      setProfileState(null);
-      setActivePlan(null);
-
-      navigate("/", { replace: true });
-
-      toast({
-        title: "Logged out",
-        description: "You have been logged out.",
-      });
-
     } catch (err: any) {
       toast({
         title: "Error",
@@ -90,18 +89,14 @@ export function Profile() {
       });
     }
   };
-
   const handleDeleteAccount = async () => {
     if (!user) return;
     setDeleting(true);
 
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+      const sessionData = session;
 
-      if (sessionError || !session?.access_token) {
+      if (!sessionData?.access_token) {
         toast({ title: "Error", description: "No active session found." });
         return;
       }
@@ -124,7 +119,7 @@ export function Profile() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${sessionData.access_token}`,
           },
           body: JSON.stringify({ userId: user.id }),
         }
@@ -277,6 +272,8 @@ export function Profile() {
 
     fetchProfile();
     // 🔥 Real-time subscription listener
+    if (!user) return;
+
     const channel = supabase
       .channel("subscription-changes")
       .on(
@@ -285,7 +282,7 @@ export function Profile() {
           event: "*",
           schema: "public",
           table: "subscriptions",
-          filter: `user_id=eq.${user?.id}`,
+          filter: `user_id=eq.${user?.id}`
         },
         (payload) => {
           const newSub = payload.new as any;

@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
+import { useSession } from "@supabase/auth-helpers-react";
 export function MedTube() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,7 +31,8 @@ export function MedTube() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const session = useSession();        // ✅ Get the current session
+  const user = session?.user || null;  // ✅ Get the logged-in user
   const [subscription, setSubscription] = useState<any>(null);
   const [selectedTab, setSelectedTab] = useState("trending");
   const [activeTab, setActiveTab] = useState("trending");
@@ -82,27 +84,21 @@ export function MedTube() {
   ];
 
   useEffect(() => {
-    const getUserAndSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+    if (!user) return;
 
-      if (user) {
-        const { data: subData, error } = await supabase
-          .from("subscriptions")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("is_active", true)
-          .maybeSingle();
+    const fetchSubscription = async () => {
+      const { data: subData } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
 
-        if (!error && subData) {
-          setSubscription(subData);
-        } else {
-          setSubscription(null);
-        }
-      }
+      setSubscription(subData || null);
     };
-    getUserAndSubscription();
-  }, []);
+
+    fetchSubscription();
+  }, [user]);
 
   const fetchVideos = async () => {
     setLoading(true);
@@ -130,23 +126,31 @@ export function MedTube() {
         // Access rules
         const canAccess = subscription ? true : !isBlocked && isFreeVideo;
 
-
+        // inside fetchVideos
         const [likesRes, viewsRes, uploaderRes] = await Promise.all([
-          supabase
-            .from("medtube_video_likes")
-            .select("user_id")
-            .eq("video_id", video.id),
-          supabase
-            .from("medtube_video_views")
-            .select("id")
-            .eq("video_id", video.id),
-          supabase
-            .from("profiles")
-            .select("username, name, avatar_url")
-            .eq("user_id", video.uploaded_by)
-            .single()
+          video.id
+            ? supabase
+              .from("medtube_video_likes")
+              .select("user_id")
+              .eq("video_id", video.id)
+            : { data: [], error: null },
 
+          video.id
+            ? supabase
+              .from("medtube_video_views")
+              .select("id")
+              .eq("video_id", video.id)
+            : { data: [], error: null },
+
+          video.uploaded_by
+            ? supabase
+              .from("profiles")
+              .select("username, name, avatar_url")
+              .eq("user_id", video.uploaded_by)
+              .maybeSingle()
+            : { data: { username: "Unknown", name: "Unknown", avatar_url: null }, error: null }
         ]);
+
         return {
           ...video,
           likes_count: likesRes.data?.length ?? 0,
@@ -214,7 +218,6 @@ export function MedTube() {
           );
         }
       )
-
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "medtube_video_views" },
@@ -222,7 +225,6 @@ export function MedTube() {
           const newView = payload.new;
           if (!newView) return;
 
-          // Update only the specific video in state silently
           setVideos((prev) =>
             prev.map((v) =>
               v.id === newView.video_id
@@ -232,23 +234,22 @@ export function MedTube() {
           );
         }
       )
-
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "subscriptions" },
         async () => {
           console.log("Realtime: subscription changed, refreshing user subscription...");
-          const { data: { user } } = await supabase.auth.getUser();
-          setUser(user);
-          if (user) {
-            const { data: subData } = await supabase
-              .from("subscriptions")
-              .select("*")
-              .eq("user_id", user.id)
-              .eq("is_active", true)
-              .maybeSingle();
-            setSubscription(subData || null);
-          }
+
+          if (!user) return; // skip if no session
+
+          const { data: subData } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .maybeSingle();
+
+          setSubscription(subData || null);
         }
       )
       .subscribe();
@@ -256,7 +257,7 @@ export function MedTube() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]); // add user as dependency
 
 
 
@@ -326,10 +327,10 @@ export function MedTube() {
     }
   };
 
-
   const handleLikeToggle = async (videoId: string) => {
     if (!user) return alert("Login to like");
 
+    // check if already liked
     const { data: existingLike } = await supabase
       .from("medtube_video_likes")
       .select("id")
@@ -337,26 +338,29 @@ export function MedTube() {
       .eq("user_id", user.id)
       .single();
 
+    let liked = false;
+
     if (existingLike) {
       await supabase
         .from("medtube_video_likes")
         .delete()
         .eq("id", existingLike.id);
+      liked = false;
     } else {
       await supabase
         .from("medtube_video_likes")
         .insert({ video_id: videoId, user_id: user.id });
+      liked = true;
     }
 
+    // Update local state **based on actual result**
     setVideos((prev) =>
       prev.map((v) =>
         v.id === videoId
           ? {
             ...v,
-            liked_by_me: !v.liked_by_me,
-            likes_count: v.liked_by_me
-              ? v.likes_count - 1
-              : v.likes_count + 1,
+            liked_by_me: liked,
+            likes_count: liked ? v.likes_count + 1 : v.likes_count - 1,
           }
           : v
       )

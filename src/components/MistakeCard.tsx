@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 type Mistake = {
     id: string;
     mistake_reason: string | null;
@@ -13,7 +13,9 @@ type Mistake = {
 
 export default function MistakeCard() {
     const navigate = useNavigate();
-
+    const session = useSession();                // ✅ gets session
+    const supabaseClient = useSupabaseClient();  // optional but recommended
+    const user = session?.user || null;          // current user
     const [mistakes, setMistakes] = useState<Mistake[]>(() => {
         const stored = localStorage.getItem("mistakes");
         const storedDate = localStorage.getItem("mistakesDate");
@@ -64,9 +66,9 @@ export default function MistakeCard() {
         return "Needs review";
     };
 
+
     const fetchMistakes = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) return; // ✅ stop if not logged in
 
         const { data, error } = await supabase
             .from("user_mistakes")
@@ -74,7 +76,6 @@ export default function MistakeCard() {
             .eq("user_id", user.id)
             .eq("resolved", false)
             .order("last_wrong_at", { ascending: false });
-
         if (error) console.error("Error fetching mistakes:", error);
         else {
             const count = data?.length || 0;
@@ -90,10 +91,10 @@ export default function MistakeCard() {
     };
 
     useEffect(() => {
-        // Load fresh data in the background
+        if (!user) return;
+
         fetchMistakes();
 
-        // Real-time updates
         const channel = supabase
             .channel("public:user_mistakes")
             .on("postgres_changes", { event: "*", schema: "public", table: "user_mistakes" }, () => {
@@ -102,7 +103,7 @@ export default function MistakeCard() {
             .subscribe();
 
         return () => supabase.removeChannel(channel);
-    }, []);
+    }, [user]);
 
     const baseCardClass =
         "cursor-pointer rounded-xl p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between transition-all select-none";

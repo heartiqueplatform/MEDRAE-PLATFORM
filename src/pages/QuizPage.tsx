@@ -14,7 +14,7 @@ import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
 import { MicroCaseCard } from "@/components/MicroCaseCard";
-
+import { useSession } from "@supabase/auth-helpers-react";
 interface Question {
   id: string;
   quiz_id: string;
@@ -35,6 +35,9 @@ interface Attempt {
 }
 const TIMER_DURATION = 10_800_000; // 3 hours
 export default function QuizPage() {
+  const session = useSession();
+  const user = session?.user;
+  const userId = user?.id;
   const location = useLocation();
   const QUESTIONS_PER_BATCH = 20;
   const [progressOpen, setProgressOpen] = useState(false);
@@ -43,7 +46,7 @@ export default function QuizPage() {
   const [resetting, setResetting] = useState(false); // ✅ added
   const params = new URLSearchParams(location.search);
   const unit = params.get("unit");
-  const [session, setSession] = useState<any>(null); // Add this line
+
   const [saving, setSaving] = useState(false);
   const [isAIOverlayOpen, setAIOverlayOpen] = useState(false);
   const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
@@ -67,7 +70,7 @@ export default function QuizPage() {
   const [finalScore, setFinalScore] = useState(0);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+
   const [showUnansweredOnly, setShowUnansweredOnly] = useState(false);
   const [recentlyAnsweredId, setRecentlyAnsweredId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -370,30 +373,6 @@ export default function QuizPage() {
   }, [questions, userId]);
 
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-    };
-    fetchSession();
-  }, []);
-
-  useEffect(() => {
-    // Get initial session
-    const currentSession = supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-    });
-
-    // Listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -534,15 +513,7 @@ export default function QuizPage() {
     setVisibleCount(QUESTIONS_PER_BATCH);
   }, [questions, showUnansweredOnly]);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      const id = data.user?.id ?? null;
-      setUserId(id);
-    };
 
-    fetchUser();
-  }, []);
   useEffect(() => {
     if (!recentlyAnsweredId) return;
 
@@ -1225,26 +1196,20 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           handleAnswer(q.id, letter);
 
                           // 🔴 LIVE ANSWER EVENT (for floating activity feed)
-                          (async () => {
-                            const { data: { user } } = await supabase.auth.getUser();
-                            if (!user) return;
+                          if (!userId) return; // userId from const userId = session?.user?.id;
 
-                            const correct = q.correct_answer === letter;
-
-                            try {
-                              await supabase.from("live_answer_events").insert({
-                                user_id: user.id,
-                                question_id: q.id,
-                                event_type: correct ? "answered_correct" : "answered_wrong",
-                                is_correct: correct,
-                                streak_count: null,
-                                points: correct ? 1 : 0,
-                              });
-                            } catch (err) {
-                              console.error("Error inserting live event:", err);
-                            }
-                          })();
-
+                          try {
+                            await supabase.from("live_answer_events").insert({
+                              user_id: userId,
+                              question_id: q.id,
+                              event_type: correct ? "answered_correct" : "answered_wrong",
+                              is_correct: correct,
+                              streak_count: null,
+                              points: correct ? 1 : 0,
+                            });
+                          } catch (err) {
+                            console.error("Error inserting live event:", err);
+                          }
 
                           // 5️⃣ RECORD MISTAKE IF WRONG
                           if (!correct) {
@@ -1252,14 +1217,14 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                             setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
 
                             // 🔄 SAVE TO SUPABASE IN BACKGROUND (PRESERVES TAGGING)
+                            if (!userId) return; // userId from session
+
                             (async () => {
-                              const { data: { user } } = await supabase.auth.getUser();
-                              if (!user) return;
                               try {
                                 // Upsert first attempt
                                 await supabase.from("user_mistakes").upsert(
                                   {
-                                    user_id: user.id,
+                                    user_id: userId,
                                     question_id: q.id,
                                     quiz_id: q.quiz_id,
                                     last_wrong_at: new Date(),
@@ -1271,7 +1236,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
 
                                 // Increment times_wrong using RPC
                                 await supabase.rpc("increment_mistake", {
-                                  user_uuid: user.id,
+                                  user_uuid: userId,
                                   question_uuid: q.id,
                                   selected_option: letter,
                                 });
@@ -1327,25 +1292,24 @@ ${confidenceLevels[q.id]?.startsWith("High confidence")
                       <button
                         key={reason}
                         className={`px-3 py-1 rounded-none sm:rounded-md
-${selectedReason[q.id] === reason
+    ${selectedReason[q.id] === reason
                             ? "bg-blue-500 text-white dark:bg-blue-700"
                             : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
                           }`}
                         onClick={async () => {
                           setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
                           setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
-                          const { data: { user } } = await supabase.auth.getUser();
-                          if (user) {
-                            try {
-                              const { error } = await supabase
-                                .from("user_mistakes")
-                                .update({ mistake_reason: reason })
-                                .eq("user_id", user.id)
-                                .eq("question_id", q.id);
-                              if (error) throw error;
-                            } catch (err) {
-                              console.error("Error saving mistake reason:", err);
-                            }
+
+                          if (!userId) return; // userId from useSession()
+                          try {
+                            const { error } = await supabase
+                              .from("user_mistakes")
+                              .update({ mistake_reason: reason })
+                              .eq("user_id", userId)
+                              .eq("question_id", q.id);
+                            if (error) throw error;
+                          } catch (err) {
+                            console.error("Error saving mistake reason:", err);
                           }
                         }}
                       >

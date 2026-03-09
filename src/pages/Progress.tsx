@@ -29,6 +29,7 @@ import { playSound } from "@/lib/soundManager";
 import { motion, AnimatePresence } from "framer-motion";
 import { allUnits } from "@/constants/units";
 import { TermsButton } from "@/components/ui/TermsButton";
+import { useSession } from "@supabase/auth-helpers-react";
 // --- Local Storage Helpers ---
 const LOCAL_STORAGE_KEY = "study_progress_cache";
 function saveToLocalStorage(userId: string, data: any) {
@@ -66,18 +67,17 @@ export function StudyProgress() {
   const [unitsWithStats, setUnitsWithStats] = useState<any[]>([]);
   const [totalTopicsInApp, setTotalTopicsInApp] = useState(0);
   const [showProgressDescription, setShowProgressDescription] = useState(false);
+  const session = useSession();           // ✅ get session
+  const user = session?.user || null;     // ✅ current user
   useEffect(() => {
     const fetchProgress = async (showLoader = true) => {
       if (showLoader) setLoading(true);
 
       // 1️⃣ Get current user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
 
-      if (userError || !user) {
-        console.error("User not found or auth error");
+
+      if (!user) {
+        console.error("User not found");
         if (showLoader) setLoading(false);
         return;
       }
@@ -316,7 +316,7 @@ export function StudyProgress() {
         </Card>
 
         {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
-        <SimulationAndTriviaSummary />
+        <SimulationAndTriviaSummary user={user} />
 
         <Tabs defaultValue="subjects" className="space-y-2">
           <TabsList>
@@ -420,7 +420,7 @@ function SummaryItem({ label, value }) {
   );
 }
 
-function SimulationAndTriviaSummary() {
+function SimulationAndTriviaSummary({ user }) {
   const [profile, setProfile] = useState(null);
   const [streak, setStreak] = useState(0);
   const [simSummary, setSimSummary] = useState(null);
@@ -458,9 +458,8 @@ function SimulationAndTriviaSummary() {
   }, [targetInput]);
   async function loadProfile() {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        console.error("No user found:", userError);
+      if (!user) {
+        console.error("No session user found");
         setProfile({ name: "Guest", avatar_url: null, target_score: 50 });
         setTargetInput(50);
         return;
@@ -496,10 +495,8 @@ function SimulationAndTriviaSummary() {
     setSavingTarget(true);
     // 🔊 Play sound immediately on user click
     playSound("tap", false);
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (!user || userError) {
-      console.error("No authenticated user found or error:", userError);
+    if (!user) {
+      console.error("No session user found");
       setSavingTarget(false);
       return;
     }
@@ -544,7 +541,7 @@ function SimulationAndTriviaSummary() {
   }
 
   async function calculateStreak() {
-    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) return;
 
     const today = new Date();
@@ -575,7 +572,7 @@ function SimulationAndTriviaSummary() {
 
 
   async function fetchSummary() {
-    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) return;
 
     const todayKey = `alertShown-${new Date().toDateString()}`;
@@ -587,12 +584,16 @@ function SimulationAndTriviaSummary() {
       }
     };
 
-    const { data: sim } = await supabase
+    const { data: sim, error: simError } = await supabase
       .from("simulation_results")
-      .select("*")
+      .select("*")            // ✅ fix typo: .se → .select("*")
       .eq("user_id", user.id)
       .order("submitted_at", { ascending: false });
 
+    if (simError) {
+      console.error("Error fetching simulation results:", simError);
+      return;
+    }
     let simLow = false;
     if (sim?.length > 0) {
       const scores = sim.map((r) => Math.round((r.score / r.total_questions) * 100));

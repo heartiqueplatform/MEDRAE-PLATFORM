@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-
+import { useSession } from "@supabase/auth-helpers-react"; // ✅ added
 function FriendlyProgressCard({ userTheme, name }) {
     const navigate = useNavigate();
+    const session = useSession();       // ✅ get current session
+    const user = session?.user || null; // ✅ current user
     const [message, setMessage] = useState(
         "View your progress, track your quizzes, and keep improving."
     );
 
     useEffect(() => {
+        if (!user) return;
         async function fetchUserData() {
-            const { data: { user } } = await supabase.auth.getUser();
+
             if (!user) return;
 
             // Fetch profile for target_score
@@ -57,7 +60,7 @@ function FriendlyProgressCard({ userTheme, name }) {
         }
 
         fetchUserData();
-    }, [name]);
+    }, [user, name]);
 
     return (
         <div

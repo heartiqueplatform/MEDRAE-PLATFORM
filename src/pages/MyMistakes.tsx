@@ -14,6 +14,7 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
+import { useSession } from "@supabase/auth-helpers-react";
 
 interface Question {
     id: string;
@@ -40,7 +41,8 @@ interface Mistake {
 
 export default function MyMistakes() {
     const navigate = useNavigate();
-
+    const session = useSession();       // ✅ get current session
+    const user = session?.user || null; // ✅ current user
     // 🌟 Load cached mistakes from localStorage first
     const loadCachedMistakes = (): Mistake[] => {
         const cached = localStorage.getItem("mistakes");
@@ -66,7 +68,7 @@ export default function MyMistakes() {
             if (!queue.length) return;
 
             try {
-                const { data: { user } } = await supabase.auth.getUser();
+
                 if (!user) return;
 
                 for (const questionId of queue) {
@@ -98,14 +100,14 @@ export default function MyMistakes() {
         return () => {
             window.removeEventListener("online", syncOfflineQueue);
         };
-    }, []);
+    }, [user]);
 
     // 🌟 Fetch mistakes from Supabase in background
     useEffect(() => {
         let isMounted = true;
 
         const fetchMistakes = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+
             if (!user) return;
 
             const { data, error } = await supabase
@@ -161,7 +163,7 @@ export default function MyMistakes() {
             isMounted = false;
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [user]);
     const vibrateTap = (duration = 40) => {
         if (typeof navigator !== "undefined" && "vibrate" in navigator) {
             navigator.vibrate(duration);
@@ -196,7 +198,7 @@ export default function MyMistakes() {
         setSyncing(true); // Start syncing
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+
             if (!user) return;
 
             for (const questionId of queue) {
@@ -249,9 +251,11 @@ export default function MyMistakes() {
             playSound("tap-correct", false);
 
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) throw new Error("No user");
-
+                if (!user) {
+                    saveToOfflineQueue(questionId);
+                    console.error("No user, queued:", questionId);
+                    return;
+                }
                 if (!navigator.onLine) {
                     // Offline → save to local queue
                     saveToOfflineQueue(questionId);
