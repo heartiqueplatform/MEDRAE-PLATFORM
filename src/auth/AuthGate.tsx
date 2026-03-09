@@ -1,38 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/context/AuthProvider";
 import { WifiOff, HeartPulse } from "lucide-react";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth(); // ✅ get user from global context
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
 
-
-
-    // 🔐 ONLINE: Normal auth flow
+    // 🔐 Wait until user is loaded
     useEffect(() => {
-        let mounted = true;
+        if (user !== undefined) setLoading(false); // user is either null or object
+    }, [user]);
 
-        supabase.auth.getUser().then(({ data }) => {
-            if (!mounted) return;
-            setUser(data.user);
-            setLoading(false);
-        });
-
-        const { data: listener } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setUser(session?.user ?? null);
-            }
-        );
-
-        return () => {
-            mounted = false;
-            listener?.subscription.unsubscribe();
-        };
-    }, []);
-
-    // ⏳ Wait for auth
+    // ⏳ Show nothing while auth is loading
     if (loading) return null;
 
     return <>{children}</>;

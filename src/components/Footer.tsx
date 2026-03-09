@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { MobileDrawer } from "@/components/MobileDrawer";
-
+import { useAuth } from "@/context/AuthProvider";
 export function Footer() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user } = useAuth();
     // 🔔 Haptic feedback (mobile vibration)
     const vibrate = (duration = 50) => {
         if (navigator.vibrate) navigator.vibrate(duration);
@@ -94,8 +95,7 @@ export function Footer() {
         let subscription: any;
 
         const fetchCount = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            if (!user?.id) return;
 
             const { count, error } = await supabase
                 .from("user_mistakes")
@@ -132,7 +132,7 @@ export function Footer() {
         return () => {
             if (subscription) supabase.removeChannel(subscription);
         };
-    }, []);
+    }, [user]);
 
     const items = [
         { icon: Heart, label: "Quizzes", url: "/Medrae-quizzes", iconTone: "practice" },

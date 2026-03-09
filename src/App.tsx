@@ -24,6 +24,8 @@ import CreateListingPage from "./pages/market/create";
 import MyListings from "./pages/market/my-listings";
 import ListingDetail from "./pages/market/[id]";
 // Pages
+import { AuthProvider } from "@/context/AuthProvider";
+import { useAuth } from "@/context/AuthProvider";
 import { Forum } from "./pages/Forum";
 import AssessmentNotes from "./pages/AssessmentNotes";
 import QuizPage from "./pages/QuizPage";
@@ -110,6 +112,7 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     location.pathname.startsWith(path)
   );
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     setIsDarkTheme(media.matches);
@@ -119,6 +122,7 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
 
     return () => media.removeEventListener("change", listener);
   }, []);
+
   return (
     <>
       {children}
@@ -134,32 +138,31 @@ const BottomBarWrapper = () => {
   return <BottomBar unreadCount={0} unreadAnnouncements={0} />;
 };
 
-const App = () => {
+const AppContent = () => {
+  const { user } = useAuth();
   const [forceLogout, setForceLogout] = useState(false);
-  const [user, setUser] = useState<any>(null);
+
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
+      if (!user) return;
 
-        const { data: profileData, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
 
-        if (!error && profileData) {
-          setProfile(profileData);
-        }
+      if (!error && profileData) {
+        setProfile(profileData);
       }
     };
     fetchUserProfile();
-  }, []);
+  }, [user]);
+
   useEffect(() => {
     initSound();
     const soundFiles: [string, string][] = [
@@ -188,8 +191,8 @@ const App = () => {
 
   useEffect(() => {
     const updateOnlineStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
 
       // Mark user online immediately
       await supabase
@@ -221,13 +224,14 @@ const App = () => {
     };
 
     updateOnlineStatus();
-  }, []);
+  }, [user]);
+
   useEffect(() => {
     const keepSessionAlive = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        if (!user) return;
         const deviceId = localStorage.getItem("device_id");
-        const user = sessionData.session?.user;
+
 
         if (!user || !deviceId) return;
 
@@ -249,7 +253,7 @@ const App = () => {
     const interval = setInterval(keepSessionAlive, 30000); // every 30s
 
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!loading) return;
@@ -259,6 +263,7 @@ const App = () => {
     }, 2000);
     return () => clearTimeout(timer);
   }, [loading]);
+
   useEffect(() => {
     if (!("setAppBadge" in navigator)) return;
     let subscription: any;
@@ -271,8 +276,8 @@ const App = () => {
     };
 
     const fetchCount = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
 
       const { count, error } = await supabase
         .from("user_mistakes")
@@ -302,11 +307,12 @@ const App = () => {
     return () => {
       if (subscription) supabase.removeChannel(subscription);
     };
-  }, []);
+  }, [user]);
 
   if (loading) return <SplashScreen theme={theme} />; // pass theme to SplashScreen
 
   return (
+
     <>
 
       {forceLogout && (
@@ -336,96 +342,106 @@ const App = () => {
         </div>
       )}
 
-
       <SessionContextProvider supabaseClient={supabase}>
-        <QueryClientProvider client={queryClient}>
-          <GlobalRealtimeListener />
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <SidebarProvider>
-              <MusicPlayerProvider>
-                <AIWrapper>
-                  <FirstTimeGuide />
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <GlobalRealtimeListener />
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <SidebarProvider>
+                <MusicPlayerProvider>
+                  <AIWrapper>
+                    <FirstTimeGuide />
 
-                  <Routes>
-                    {/* ------------------- Public Routes ------------------- */}
-                    <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
-                    <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-                    <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-                    <Route path="/redirect" element={<RedirectToRoleDashboard />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Routes>
+                      {/* ------------------- Public Routes ------------------- */}
+                      <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+                      <Route path="/redirect" element={<RedirectToRoleDashboard />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
 
-                    {/* ------------------- Dashboard Redirect ------------------- */}
-                    <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
+                      {/* ------------------- Dashboard Redirect ------------------- */}
+                      <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
 
-                    {/* ------------------- Persistent Dashboard Layout ------------------- */}
-                    <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-                      <Route path="/dashboard/student" element={<StudentDashboard />} />
-                      <Route path="/dashboard/tutor" element={<TutorDashboard />} />
-                      <Route path="/dashboard/staff" element={<StaffDashboard />} />
+                      {/* ------------------- Persistent Dashboard Layout ------------------- */}
+                      <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+                        <Route path="/dashboard/student" element={<StudentDashboard />} />
+                        <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+                        <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
-                      <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
-                      {user && profile && (
-                        <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
-                      )}
-                      <Route path="/market/my-listings" element={<MyListings />} />
-                      <Route path="/market/:id" element={<ListingDetail />} />
+                        <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
+                        {user && profile && (
+                          <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
+                        )}
+                        <Route path="/market/my-listings" element={<MyListings />} />
+                        <Route path="/market/:id" element={<ListingDetail />} />
 
-                      {/* ------------------- STUDENT EXAM FLOW ------------------- */}
-                      <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
-                      <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
-                      <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
-                      <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
-                      <Route path="/exam/results" element={<ResultsListPage />} />
+                        {/* ------------------- STUDENT EXAM FLOW ------------------- */}
+                        <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
+                        <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
+                        <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
+                        <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
+                        <Route path="/exam/results" element={<ResultsListPage />} />
 
-                      {/* ------------------- TUTOR EXAM CONTROL ------------------- */}
-                      <Route path="/tutor/exams" element={<TutorExamList />} />
-                      <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
-                      <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
-                      <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
-                      <Route path="/analytics" element={<StudentAnalyticsPage />} />
+                        {/* ------------------- TUTOR EXAM CONTROL ------------------- */}
+                        <Route path="/tutor/exams" element={<TutorExamList />} />
+                        <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
+                        <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
+                        <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
+                        <Route path="/analytics" element={<StudentAnalyticsPage />} />
 
-                      <Route path="/my-mistakes" element={<MyMistakes />} />
-                      <Route path="/ai-assistant" element={<AIAssistant />} />
-                      <Route path="/calendar" element={<Calendar />} />
-                      <Route path="/progress" element={<StudyProgress />} />
-                      <Route path="/resources" element={<Resources />} />
-                      <Route path="/medtube" element={<MedTube />} />
-                      <Route path="/announcements" element={<Announcements />} />
-                      <Route path="/feedback" element={<Feedback />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/subscription" element={<Subscription />} />
-                      <Route path="/notifications" element={<Notifications />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/quiz" element={<QuizPage />} />
-                      <Route path="/assessment-notes" element={<AssessmentNotes />} />
-                      <Route path="/forum" element={<Forum />} />
-                      <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
-                      <Route path="/feed" element={<Feed />} />
-                      <Route path="/simulation/candidate" element={<CandidateInfo />} />
-                      <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
-                    </Route>
+                        <Route path="/my-mistakes" element={<MyMistakes />} />
+                        <Route path="/ai-assistant" element={<AIAssistant />} />
+                        <Route path="/calendar" element={<Calendar />} />
+                        <Route path="/progress" element={<StudyProgress />} />
+                        <Route path="/resources" element={<Resources />} />
+                        <Route path="/medtube" element={<MedTube />} />
+                        <Route path="/announcements" element={<Announcements />} />
+                        <Route path="/feedback" element={<Feedback />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/subscription" element={<Subscription />} />
+                        <Route path="/notifications" element={<Notifications />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/quiz" element={<QuizPage />} />
+                        <Route path="/assessment-notes" element={<AssessmentNotes />} />
+                        <Route path="/forum" element={<Forum />} />
+                        <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
+                        <Route path="/feed" element={<Feed />} />
+                        <Route path="/simulation/candidate" element={<CandidateInfo />} />
+                        <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
+                      </Route>
 
-                    {/* ------------------- Full-screen / Independent Pages ------------------- */}
-                    <Route path="/terms" element={<TermsPage />} />
-                    <Route path="/simulation/:paper_id" element={<SimulationPage />} />
-                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                    <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
-                    {/* ------------------- FULLSCREEN EXAM PAGE ------------------- */}
+                      {/* ------------------- Full-screen / Independent Pages ------------------- */}
+                      <Route path="/terms" element={<TermsPage />} />
+                      <Route path="/simulation/:paper_id" element={<SimulationPage />} />
+                      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                      <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
+                      {/* ------------------- FULLSCREEN EXAM PAGE ------------------- */}
 
-                    {/* ------------------- Catch-all ------------------- */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                      {/* ------------------- Catch-all ------------------- */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
 
-                  <BottomBarWrapper />
-                </AIWrapper>
-              </MusicPlayerProvider>
-            </SidebarProvider>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </SessionContextProvider >
+                    <BottomBarWrapper />
+                  </AIWrapper>
+                </MusicPlayerProvider>
+              </SidebarProvider>
+            </TooltipProvider>
+          </QueryClientProvider>
+        </AuthProvider>
+      </SessionContextProvider>
     </>
+
   );
 };
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+};
+
 export default App;

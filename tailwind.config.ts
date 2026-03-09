@@ -159,7 +159,7 @@ export default {
         pop: "pop 0.6s ease forwards",
         "emoji-zoom": "emoji-zoom-bounce 0.8s ease-out forwards",
         "scale-up": "scale-up 0.3s ease-out forwards",
-
+        'spin-slow': 'spin 1s linear infinite',
       },
     },
   },

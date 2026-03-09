@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-
+import { useAuth } from "@/context/AuthProvider";
 export type Profile = {
     user_id: string;
     name: string;
@@ -14,12 +14,14 @@ export type Profile = {
 };
 
 export const useOnlineUsers = () => {
+    const { user } = useAuth();
     const [users, setUsers] = useState<Profile[]>([]);
 
     useEffect(() => {
         let channel: any;
 
         const fetchUsers = async () => {
+            if (!user) return;
             // 1️⃣ Fetch initial users
             const { data, error } = await supabase
                 .from("profiles")
@@ -78,7 +80,7 @@ export const useOnlineUsers = () => {
         return () => {
             if (channel) supabase.removeChannel(channel);
         };
-    }, []);
+    }, [user]);
 
     const onlineUsers = users.filter((u) => u.is_online);
 

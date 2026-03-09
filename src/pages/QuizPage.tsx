@@ -1,10 +1,11 @@
 "use client";
+
 import { openDB } from "idb";
 import { playSound } from "@/lib/soundManager";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useLocation } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-
+import { Flashcard } from "@/components/Flashcard";
 import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI";
@@ -12,8 +13,8 @@ import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, ChevronDown, Chevron
 import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
+import { MicroCaseCard } from "@/components/MicroCaseCard";
 
-;
 interface Question {
   id: string;
   quiz_id: string;
@@ -1512,9 +1513,14 @@ Please provide a detailed discussion and guidance.`;
                       }}
                     >
                       Load more questions
+
                     </button>
+
+
                   </div>
                 )}
+                <Flashcard />
+                <MicroCaseCard />
               </div>
 
               {/* Small Note Card */}
