@@ -40,6 +40,7 @@ import { Resources } from "./pages/Resources";
 import { MedTube } from "./pages/MedTube";
 import StudentAnalyticsPage from "@/pages/analytics/StudentAnalyticsPage";
 // STUDENT EXAM FLOW
+import RouteScrollManager from "@/components/RouteScrollManager";
 import ExamCandidateInfo from "./pages/exam/CandidateInfo";
 import ExamInstructions from "./pages/exam/InstructionPage";
 import ExamAccessPage from "./pages/exam/ExamAccessPage";
@@ -353,7 +354,7 @@ const AppContent = () => {
                 <MusicPlayerProvider>
                   <AIWrapper>
                     <FirstTimeGuide />
-
+                    <RouteScrollManager />
                     <Routes>
                       {/* ------------------- Public Routes ------------------- */}
                       <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />

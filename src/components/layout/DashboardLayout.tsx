@@ -6,7 +6,7 @@ import { MusicPlayer } from "@/components/MusicPlayer";
 import { Toaster } from "@/components/ui/toaster";
 import { Outlet } from "react-router-dom";
 import { MedicalDoodles } from "@/components/MedicalDoodles";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
@@ -173,12 +173,12 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
 // -------------------------------------------------------------
 import { useSidebar } from "@/components/ui/sidebar";
 function DashboardContent({ user, role, streak, isDarkMode, toggleDarkMode, children, isForum }: any) {
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
 
+  const location = useLocation();
   // Pages where the music player should never appear
   const disabledPages = ["/login", "/register", "/simulation/candidate", "/quiz-simulation/instructions"];
   const showMusic = !disabledPages.includes(window.location.pathname);
-
+  const { isSidebarOpen, toggleSidebar } = useSidebar();
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background relative ">
 
@@ -191,6 +191,7 @@ function DashboardContent({ user, role, streak, isDarkMode, toggleDarkMode, chil
 
           <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
           <main
+            data-scroll-container
             className={`
     flex-1 box-border
     px-0
