@@ -405,8 +405,7 @@ export default function StudentDashboard() {
                 .getPublicUrl(p.image_url);
 
               if (!urlError && publicData.publicUrl) {
-                // Append width param if your Supabase supports transformations
-                thumbUrl = publicData.publicUrl + `?width=${THUMB_WIDTH}`;
+                thumbUrl = publicData.publicUrl + `?width=${THUMB_WIDTH}`; // thumbnail
                 localStorage.setItem(`thumb_${p.id}`, thumbUrl);
               }
             }
@@ -416,7 +415,7 @@ export default function StudentDashboard() {
       );
 
       // 6️⃣ Fetch user profiles
-      const userIds = posts.map(p => p.user_id).filter(Boolean);
+      const userIds = postsWithThumbs.map(p => p.user_id).filter(Boolean);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("user_id, username, name, institution, county, avatar_url")
@@ -424,7 +423,7 @@ export default function StudentDashboard() {
 
       if (profilesError) console.error("Error fetching profiles:", profilesError.message);
 
-      // 7️⃣ Merge posts with actual profiles + thumbnail
+      // 7️⃣ Merge posts with profiles
       const mergedPosts = postsWithThumbs.map(p => {
         const profile = profiles?.find(pr => pr.user_id === p.user_id);
         return {
@@ -441,10 +440,13 @@ export default function StudentDashboard() {
 
       // 8️⃣ Update state & cache
       setDailyPosts(prev => [...mergedPosts, ...prev]);
-      localStorage.setItem("dailyPostsCache", JSON.stringify(mergedPosts));
-      setLatestPostId(mergedPosts[0].id);
+      mergedPosts.forEach(p => localStorage.setItem(`thumb_${p.id}`, p.thumb_url || ""));
+      localStorage.setItem(
+        "dailyPostsCache",
+        JSON.stringify([...mergedPosts, ...(dailyPosts || [])])
+      );
 
-      // 9️⃣ Optional toast notifications
+      // 9️⃣ Preserve toast notifications
       if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
         toast({
           title: "New Daily Status!",
@@ -457,8 +459,10 @@ export default function StudentDashboard() {
         });
       }
 
+      setLatestPostId(mergedPosts[0].id);
     } catch (err: any) {
       console.error("Error fetching daily posts:", err.message);
+      // fallback: preserve old cache
       const cached = localStorage.getItem("dailyPostsCache");
       if (cached) {
         try {
@@ -1884,47 +1888,29 @@ export default function StudentDashboard() {
 
                         {/* Post Content & Image */}
                         <div className="flex-1 flex flex-col gap-2">
-                          {post.content && (
-                            <p className="text-gray-900 dark:text-white break-words">{post.content}</p>
-                          )}
-
+                          {post.content && <p className="text-gray-900 dark:text-white break-words">{post.content}</p>}
                           {post.image_url && (
                             <div className="w-screen sm:w-full -mx-4 sm:mx-0 sm:flex sm:justify-center">
 
-                              {/* Mobile Image */}
+                              {/* Mobile Image (unchanged full width) */}
                               <img
-                                src={post.thumb_url || post.image_url} // use cached thumbnail if available
-                                data-full={post.image_url} // store full image for click
+                                src={post.image_url}
                                 alt="daily"
-                                className="block sm:hidden w-full h-auto object-contain cursor-pointer rounded-none transition-opacity duration-300"
+                                className="block sm:hidden w-full h-auto object-contain cursor-pointer rounded-none"
                                 loading="lazy"
-                                onClick={(e) => {
-                                  const fullUrl = (e.currentTarget as HTMLImageElement).dataset.full;
-                                  setFullscreenImage(fullUrl);
-                                }}
-                                onLoad={(e) => {
-                                  const img = e.currentTarget as HTMLImageElement;
-                                  img.style.opacity = "1"; // fade-in effect for thumbnail
-                                }}
+                                onClick={() => setFullscreenImage(post.image_url)}
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                               />
 
                               {/* Desktop Instagram Style */}
                               <div className="hidden sm:block sm:w-[400px] sm:h-[550px] bg-black overflow-hidden rounded-md">
                                 <img
-                                  src={post.thumb_url || post.image_url} // use cached thumbnail first
-                                  data-full={post.image_url} // store full image for click
+                                  src={post.image_url}
                                   alt="daily"
-                                  className="w-full h-full object-cover cursor-pointer transition-opacity duration-300"
+                                  className="w-full h-full object-cover cursor-pointer"
                                   loading="lazy"
-                                  onClick={(e) => {
-                                    const fullUrl = (e.currentTarget as HTMLImageElement).dataset.full;
-                                    setFullscreenImage(fullUrl);
-                                  }}
-                                  onLoad={(e) => {
-                                    const img = e.currentTarget as HTMLImageElement;
-                                    img.style.opacity = "1"; // fade-in effect
-                                  }}
+
+                                  onClick={() => setFullscreenImage(post.image_url)}
                                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                                 />
                               </div>

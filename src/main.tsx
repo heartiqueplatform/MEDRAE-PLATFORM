@@ -8,7 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthProvider";
 
 // App version for cache control
-const APP_VERSION = "112";
+const APP_VERSION = "113";
 const storedVersion = localStorage.getItem("appVersion");
 
 if (storedVersion !== APP_VERSION) {
