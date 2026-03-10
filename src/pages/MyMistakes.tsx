@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
 import MistakeCard from "@/components/MistakeCard";
+import { MistakesCard } from "@/components/MistakesCard";
 interface Question {
     id: string;
     question_text: string;
@@ -382,6 +383,7 @@ export default function MyMistakes() {
                     </p>
                 </div>
             </div>
+            <MistakesCard />
             <MistakeCard />
 
             <AnimatePresence>

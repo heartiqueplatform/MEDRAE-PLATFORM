@@ -28,7 +28,7 @@ import { Send, Trash2 } from "lucide-react"; // make sure this import is at the 
 import DailyImagesTrivia from "@/components/DailyImagesTrivia";
 import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
-import { MistakesCard } from "@/components/MistakesCard";
+
 import { UserProfileModal } from "@/components/UserProfileModal";
 import TutorsList from "@/components/student/TutorsList";
 
@@ -1437,12 +1437,14 @@ export default function StudentDashboard() {
           />
 
         </Card >
-
         <CountdownFloating />
+
         <DailyTriviaCard />
+
         <DailyImagesTrivia />
+
         <FeedSeenTop10 />
-        <MistakesCard />
+
         {/* Floating Button showing top student's avatar */}
         {/* Floating Avatar Button with Crown Outside */}
         <div className="fixed bottom-20 right-2 rounded-full  p-0 z-30 ">
