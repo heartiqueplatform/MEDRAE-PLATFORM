@@ -26,8 +26,7 @@ export default function SplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 flex flex-col items-center justify-center z-50 ${theme === "dark" ? "bg-black" : "bg-white"
-        }`}
+      className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-black"
     >
       {/* Logo */}
       <img src="/pwa-192x192.jpeg" alt="App Logo" className="w-32 h-32 mb-6" />

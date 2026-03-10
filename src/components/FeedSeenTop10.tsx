@@ -19,7 +19,7 @@ interface TopStudent {
 
 export default function FeedSeenTop10() {
     const [topStudents, setTopStudents] = useState<TopStudent[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [rankChangedUser, setRankChangedUser] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const cachedTopStudents = useRef<TopStudent[] | null>(null);
@@ -27,13 +27,6 @@ export default function FeedSeenTop10() {
     const fetchTop10 = async () => {
         try {
             setLoading(true);
-
-            // use cache if exists
-            if (cachedTopStudents.current) {
-                setTopStudents(cachedTopStudents.current);
-                setLoading(false);
-                return;
-            }
 
             const { data, error } = await supabase
                 .from("qfeed_seen_leaderboard")
@@ -56,9 +49,6 @@ export default function FeedSeenTop10() {
             setTopStudents(data);
             prevTopStudents.current = data;
 
-            cachedTopStudents.current = data; // store in memory
-            localStorage.setItem("topStudents", JSON.stringify(data));
-
         } catch (err) {
             console.error("Error fetching top 10 feedseen students:", err);
         } finally {
@@ -66,25 +56,25 @@ export default function FeedSeenTop10() {
         }
     };
     useEffect(() => {
-        // Load from localStorage first
-        const cached = localStorage.getItem("topStudents");
-        if (cached) {
-            const parsed = JSON.parse(cached);
-            setTopStudents(parsed);
-            cachedTopStudents.current = parsed; // update memory cache
-        }
+        // Subscribe to real-time changes in qfeed_seen_leaderboard
+        const channel = supabase
+            .channel('realtime-feedseen-top10')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'qfeed_seen_leaderboard' },
+                () => {
+                    fetchTop10(); // refetch top 10 whenever table changes
+                }
+            )
+            .subscribe();
 
-        // Only fetch if cache is empty
-        if (!cachedTopStudents.current) {
-            fetchTop10();
-        }
+        // Initial fetch
+        fetchTop10();
 
-        // Optional: auto-refresh in background only if needed
-        const interval = setInterval(() => {
-            fetchTop10();
-        }, 30000);
-
-        return () => clearInterval(interval);
+        // Cleanup subscription on unmount
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     return (
@@ -172,7 +162,7 @@ export default function FeedSeenTop10() {
                                         </div>
 
                                         <div className="mt-2 font-bold text-yellow-600 dark:text-yellow-400">
-                                            Done {s.seen_count} Questions in Feed Page
+                                            Done {s.seen_count ?? 0} Questions in Feed Page
                                         </div>
                                     </div>
                                 </motion.div>
@@ -180,7 +170,6 @@ export default function FeedSeenTop10() {
                             ))
                         )}
                     </div>
-
                     {/* Rank change popup */}
                     <AnimatePresence>
                         {rankChangedUser && (

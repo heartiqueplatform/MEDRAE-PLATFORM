@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Gift, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { playSound, loadSound } from "@/lib/soundManager";
+import { useSession } from "@supabase/auth-helpers-react"; // ✅ add this
 loadSound("start", "/sounds/start.mp3");
 interface Scenario {
     id: number;
@@ -21,10 +22,12 @@ const Referral: React.FC = () => {
     const [scenario, setScenario] = useState<Scenario | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [scenarioAnswered, setScenarioAnswered] = useState(false);
-    const [userId, setUserId] = useState<string | null>(null);
+
     const [tokens, setTokens] = useState<number>(0);
     const [tokensToday, setTokensToday] = useState<number>(0);
 
+    const session = useSession();       // current session
+    const user = session?.user || null; // current user object
     const WHATSAPP_TOKENS = 5;
     const TELEGRAM_TOKENS = 10;
     const today = new Date().toDateString();
@@ -35,32 +38,38 @@ const Referral: React.FC = () => {
             <text x="12" y="16" textAnchor="middle" fontSize="12" fontWeight="bold" fill="white" fontFamily="Arial, Helvetica, sans-serif">$</text>
         </svg>
     );
+
     useEffect(() => {
         const loadUser = async () => {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const id = sessionData?.session?.user?.id;
-            if (!id) return;
-            setUserId(id);
-            // 🔒 Referral Weekend check (Saturday only)
-            const todayDate = new Date();
-            const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 6 = Saturday
+            if (!user) return;
 
-            // If NOT Saturday, do not show referral popup
-            // Weekend only: Saturday (6) or Sunday (0)
-            if (dayOfWeek !== 6 && dayOfWeek !== 0) {
+            const todayDate = new Date();
+            const dayOfWeek = todayDate.getDay();
+
+            // Weekend check
+            if (dayOfWeek !== 6 && dayOfWeek !== 0) return;
+
+            const { data: profile, error } = await supabase
+                .from("profiles")
+                .select("tokens")
+                .eq("user_id", user.id)
+                .single();
+
+            if (error) {
+                console.error("Error fetching tokens:", error);
                 return;
             }
 
+            setTokens(profile?.tokens ?? 0);
 
-            const { data: profile, error } = await supabase.from("profiles").select("tokens").eq("user_id", id).single();
-            if (error) console.error("Error fetching tokens:", error);
-            else setTokens(profile?.tokens ?? 0);
-
-            const lastShown = localStorage.getItem(`referral_popup_${id}`);
-            if (lastShown !== today) setShowPopup(true);
+            const lastShown = localStorage.getItem(`referral_popup_${user.id}`);
+            if (lastShown !== today) {
+                setShowPopup(true);
+            }
         };
+
         loadUser();
-    }, []);
+    }, [user]);
     // Fetch random scenario
     useEffect(() => {
         const fetchScenario = async () => {
@@ -72,10 +81,10 @@ const Referral: React.FC = () => {
     }, []);
     const referralLink = `https://medrae.vercel.app/`;
     const giveInviteTokens = async (amount: number, vibrationStrong = false) => {
-        if (!userId) return;
+        if (!user?.id) return; // ✅
         const newTokens = tokens + amount;
         const newTokensToday = tokensToday + amount;
-        const { error } = await supabase.from("profiles").update({ tokens: newTokens }).eq("user_id", userId);
+        const { error } = await supabase.from("profiles").update({ tokens: newTokens }).eq("user_id", user?.id);
         if (!error) {
             setTokens(newTokens);
             setTokensToday(newTokensToday);
@@ -112,12 +121,12 @@ const Referral: React.FC = () => {
 
     const closePopup = () => {
         setShowPopup(false);
-        if (userId) localStorage.setItem(`referral_popup_${userId}`, today);
+        if (user?.id) localStorage.setItem(`referral_popup_${user.id}`, today); //
     };
 
     return (
         <>
-            {showPopup && userId && scenario && (
+            {showPopup && user?.id && scenario && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

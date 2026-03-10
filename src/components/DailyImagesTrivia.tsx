@@ -37,7 +37,7 @@ export default function DailyImagesTrivia() {
     const containerRef = useRef<HTMLDivElement>(null);
     const autoplayRef = useRef<NodeJS.Timeout | null>(null);
     const AUTOPLAY_DELAY = 100000;
-    const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const todayKey = new Date().toLocaleDateString("en-CA");
     const localImagesKey = `dailyImages_${todayKey}`;
     const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
     const INACTIVITY_DELAY = 10000; // 10 seconds
@@ -99,31 +99,32 @@ export default function DailyImagesTrivia() {
 
             // 1️⃣ Check localStorage cache first
             const storedImages = localStorage.getItem(localImagesKey);
+
             if (storedImages) {
                 const cachedImages: ImageItem[] = JSON.parse(storedImages);
 
-                // 2️⃣ Filter out already seen images if user exists
-                if (!user) return;
-                let filteredImages = cachedImages;
+                if (cachedImages.length > 0 && cachedImages.every(img => img.image_url)) {
 
-                if (user) {
-                    const { data: seenRows } = await supabase
-                        .from("qfeed_seen_comments")
-                        .select("image_id")
-                        .eq("user_id", user.id)
-                        .gte("created_at", `${todayKey}T00:00:00`)
-                        .lt("created_at", `${todayKey}T23:59:59`);
+                    let filteredImages = cachedImages;
 
-                    const seenIds = seenRows?.map(r => r.image_id) || [];
-                    filteredImages = cachedImages.filter(img => !seenIds.includes(img.id));
+                    if (user) {
+                        const { data: seenRows } = await supabase
+                            .from("qfeed_seen_comments")
+                            .select("image_id")
+                            .eq("user_id", user.id)
+                            .gte("created_at", `${todayKey}T00:00:00`)
+                            .lt("created_at", `${todayKey}T23:59:59`);
 
-                    // If all images are seen, reset to full daily set
-                    if (filteredImages.length === 0) filteredImages = cachedImages;
+                        const seenIds = seenRows?.map(r => r.image_id) || [];
+                        filteredImages = cachedImages.filter(img => !seenIds.includes(img.id));
+
+                        if (filteredImages.length === 0) filteredImages = cachedImages;
+                    }
+
+                    setImages(filteredImages);
+                    setDataLoading(false);
+                    return;
                 }
-
-                setImages(filteredImages);
-                setDataLoading(false);
-                return;
             }
 
             // 3️⃣ Fetch all images from Supabase

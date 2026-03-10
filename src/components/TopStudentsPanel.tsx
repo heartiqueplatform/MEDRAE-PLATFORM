@@ -31,7 +31,14 @@ interface TopStudent {
 }
 export const DailyTriviaCard = () => {
     const navigate = useNavigate();
+
     const [selfUserId, setSelfUserId] = useState<string | null>(null);
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data }) => {
+            const id = data?.session?.user?.id;
+            if (id) setSelfUserId(id);
+        });
+    }, []);
     const today = new Date().toISOString().slice(0, 10);
     const QUIZ_ID = today;
     const [questions, setQuestions] = useState<TriviaQuestion[]>([]);
@@ -48,7 +55,10 @@ export const DailyTriviaCard = () => {
     const startTimeRef = useRef<number>(0);
     const [completedAt, setCompletedAt] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-    const cachedTopStudents = useRef<TopStudent[] | null>(null);
+    const [topLoading, setTopLoading] = useState(true);
+    const currentQuestion = questions[currentIndex];
+
+
     const formatTimeReadable = (sec: number) => {
         const minutes = Math.floor(sec / 60);
         const seconds = sec % 60;
@@ -56,12 +66,7 @@ export const DailyTriviaCard = () => {
         const secText = seconds > 0 ? `${seconds} second${seconds > 1 ? "s" : ""}` : "";
         return [minText, secText].filter(Boolean).join(" and ");
     };
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data }) => {
-            const id = data?.session?.user?.id;
-            if (id) setSelfUserId(id);
-        });
-    }, []);
+
     // Load questions
     useEffect(() => {
         async function loadQuestions() {
@@ -103,41 +108,24 @@ export const DailyTriviaCard = () => {
                     correct_answers: attempts[0].correct_answers,
                     total_questions: attempts[0].total_questions
                 });
-                setCompletedAt(attempts[0].created_at);
+                setCompletedAt(attempts[0].created_at); // ✅ use created_at as completion time
             }
 
         }
         checkAttempt();
     }, [selfUserId, today]);
     // Fetch top 10 students
-
-
     useEffect(() => {
         async function fetchTop() {
-            // Use memory cache first
-            if (cachedTopStudents.current) {
-                setTopStudents(cachedTopStudents.current);
-                return;
-            }
-
-            // Load from localStorage cache
-            const stored = localStorage.getItem(`daily_trivia_top_${today}`);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                setTopStudents(parsed);
-                cachedTopStudents.current = parsed;
-                return;
-            }
-
-            // Fetch fresh data from Supabase only if cache is empty
-            const { data: results, error } = await supabase
+            setTopLoading(true);
+            const { data: results } = await supabase
                 .from("daily_trivia_results")
-                .select("user_id, score, time_used, created_at")
+                .select("user_id, score,  time_used, created_at")
                 .eq("attempt_date", today)
                 .order("score", { ascending: false })
                 .limit(10);
 
-            if (error || !results?.length) return setTopStudents([]);
+            if (!results?.length) return setTopStudents([]);
 
             const ids = results.map((r) => r.user_id);
             const { data: profiles } = await supabase
@@ -153,19 +141,14 @@ export const DailyTriviaCard = () => {
                     name: profile?.name || "Student",
                     avatar_url: profile?.avatar_url || null,
                     institution: profile?.institution || null,
-                    completedAt: r.created_at,
+                    completedAt: r.created_at, // ✅ add created_at here
                     timeUsed: r.time_used,
                 };
             });
-
-            // Save to memory & localStorage cache
-            cachedTopStudents.current = mapped;
-            localStorage.setItem(`daily_trivia_top_${today}`, JSON.stringify(mapped));
             setTopStudents(mapped);
         }
-
         fetchTop();
-
+        setTopLoading(false);
     }, [today, completed]);
 
     // Timer
@@ -353,25 +336,28 @@ export const DailyTriviaCard = () => {
 
                                     {/* Answers */}
                                     <div className="flex flex-col gap-4">
+
                                         {(["A", "B", "C", "D"] as const).map((letter) => {
+                                            if (!currentQuestion) return null;
+
                                             const text =
                                                 letter === "A"
-                                                    ? questions[currentIndex].option_a
+                                                    ? currentQuestion.option_a
                                                     : letter === "B"
-                                                        ? questions[currentIndex].option_b
+                                                        ? currentQuestion.option_b
                                                         : letter === "C"
-                                                            ? questions[currentIndex].option_c
-                                                            : questions[currentIndex].option_d;
+                                                            ? currentQuestion.option_c
+                                                            : currentQuestion.option_d;
 
-                                            const isSelected = answers[questions[currentIndex].id] === letter;
+                                            const isSelected = answers[currentQuestion.id] === letter;
 
                                             const handleClick = () => {
                                                 if (!started || completed) return;
                                                 if (navigator.vibrate) navigator.vibrate(50);
                                                 playSound("tap-correct", false);
-                                                setAnswers((prev) => ({ ...prev, [questions[currentIndex].id]: letter }));
+                                                setAnswers((prev) => ({ ...prev, [currentQuestion.id]: letter }));
                                                 setTimeout(() => {
-                                                    if (currentIndex === questions.length - 1) finishTrivia({ ...answers, [questions[currentIndex].id]: letter });
+                                                    if (currentIndex === questions.length - 1) finishTrivia();
                                                     else setCurrentIndex((i) => i + 1);
                                                 }, 300);
                                             };
@@ -401,7 +387,9 @@ export const DailyTriviaCard = () => {
                     {/* Students attempted info */}
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-8 mb-3 px-0">
                         <Eye className="w-4 h-4" />
-                        {topStudents.length} students attempted today
+                        {topStudents.length === 0
+                            ? "No students attempted yet"
+                            : `${topStudents.length} students attempted today`}
                     </div>
                     {/* Daily Top Students Heading */}
                     <div className="flex items-center gap-2 mb-2 px-0">
@@ -410,7 +398,7 @@ export const DailyTriviaCard = () => {
                     </div>
                     {/* Scrollable Top Students Cards */}
                     <div className="w-full overflow-x-auto flex gap-4 py-2 custom-scrollbar">
-                        {topStudents.length === 0 ? (
+                        {topLoading ? (
                             <div className="flex gap-4 animate-pulse">
                                 {Array.from({ length: 4 }).map((_, idx) => (
                                     <div
@@ -424,6 +412,10 @@ export const DailyTriviaCard = () => {
                                     </div>
                                 ))}
                             </div>
+                        ) : topStudents.length === 0 ? (
+                            <p className="text-sm text-gray-500 px-2">
+                                No students have attempted today's trivia yet. Be the first!
+                            </p>
                         ) : (
                             topStudents.map((s, idx) => (
                                 <motion.div

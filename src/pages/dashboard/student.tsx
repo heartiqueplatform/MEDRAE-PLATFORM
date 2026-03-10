@@ -15,7 +15,7 @@ import { toast as sonnerToast } from "sonner"; // ✅ renamed
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import CountdownFloating from "@/components/CountdownFloating";
 import FloatingQuickActions from "@/components/FloatingQuickActions";
-import MistakeCard from "@/components/MistakeCard";
+
 import { UnitBreakdown } from "@/components/UnitBreakdown";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -340,10 +340,22 @@ export default function StudentDashboard() {
       description: "Your post was successfully deleted.",
     });
   };
-
-  const fetchDailyPosts = async () => {
+  const fetchDailyPosts = async (useCache = true) => {
     if (!user?.id) return;
 
+    // 1️⃣ Load cached posts instantly for smooth UI
+    if (useCache) {
+      const cached = localStorage.getItem("dailyPostsCache");
+      if (cached) {
+        try {
+          setDailyPosts(JSON.parse(cached));
+        } catch {
+          console.warn("Failed to parse cached daily posts");
+        }
+      }
+    }
+
+    // 2️⃣ Determine duration filter
     let durationMs = 24 * 60 * 60 * 1000; // default 24h
     if (dailyDuration === "1w") durationMs = 7 * 24 * 60 * 60 * 1000;
     if (dailyDuration === "1m") durationMs = 30 * 24 * 60 * 60 * 1000;
@@ -352,7 +364,7 @@ export default function StudentDashboard() {
     const since = new Date(Date.now() - durationMs).toISOString();
 
     try {
-      // 1️⃣ Fetch posts first
+      // 3️⃣ Fetch posts from Supabase
       const { data: posts, error: postsError } = await supabase
         .from("valid_daily_posts")
         .select("*")
@@ -361,18 +373,25 @@ export default function StudentDashboard() {
       if (postsError) throw postsError;
       if (!posts || posts.length === 0) {
         setDailyPosts([]);
+        localStorage.setItem("dailyPostsCache", JSON.stringify([]));
         return;
       }
 
-      // 2️⃣ Render posts immediately with placeholder profile
+      // 4️⃣ Show placeholders while fetching profiles
       const tempPosts = posts.map(p => ({
         ...p,
-        profiles: { username: "Loading..." }
+        profiles: {
+          username: "Loading...",
+          name: "",
+          avatar_url: "",
+          institution: "N/A",
+          county: "N/A",
+        },
       }));
       setDailyPosts(tempPosts);
 
-      // 3️⃣ Fetch profiles in background
-      const userIds = posts.map(p => p.user_id);
+      // 5️⃣ Fetch user profiles
+      const userIds = posts.map(p => p.user_id).filter(Boolean);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("user_id, username, name, institution, county, avatar_url")
@@ -380,19 +399,26 @@ export default function StudentDashboard() {
 
       if (profilesError) console.error("Error fetching profiles:", profilesError.message);
 
-      // 4️⃣ Merge posts with real profile data
-      const mergedPosts = posts.map(p => ({
-        ...p,
-        profiles: profiles?.find(pr => pr.user_id === p.user_id) || null
-      }));
-
-      setDailyPosts(prevPosts => {
-        const prevIds = prevPosts.map(p => p.id).join(",");
-        const newIds = mergedPosts.map(p => p.id).join(",");
-        return prevIds === newIds ? prevPosts : mergedPosts;
+      // 6️⃣ Merge posts with actual profiles, fallback to Unknown
+      const mergedPosts = posts.map(p => {
+        const profile = profiles?.find(pr => pr.user_id === p.user_id);
+        return {
+          ...p,
+          profiles: profile || {
+            username: "Unknown",
+            name: "Unknown",
+            avatar_url: "",
+            institution: "N/A",
+            county: "N/A",
+          },
+        };
       });
 
-      // 5️⃣ Toast notifications preserved
+      // 7️⃣ Update state & cache
+      setDailyPosts(mergedPosts);
+      localStorage.setItem("dailyPostsCache", JSON.stringify(mergedPosts));
+
+      // 8️⃣ Preserve toast notifications
       if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
         toast({
           title: "New Daily Status!",
@@ -409,6 +435,17 @@ export default function StudentDashboard() {
 
     } catch (err: any) {
       console.error("Error fetching daily posts:", err.message);
+      // fallback: preserve old cache if exists
+      const cached = localStorage.getItem("dailyPostsCache");
+      if (cached) {
+        try {
+          setDailyPosts(JSON.parse(cached));
+        } catch {
+          setDailyPosts([]);
+        }
+      } else {
+        setDailyPosts([]);
+      }
     }
   };
 
@@ -502,64 +539,55 @@ export default function StudentDashboard() {
   const showSkeleton = loading && cachedSimulationPapers.length === 0;
 
   /// 🏆 Top students state
-  /// 🏆 Top Students State (Improved)
-  const [topStudents, setTopStudents] = useState<any[]>(() => {
-    try {
-      const cached = localStorage.getItem("topStudents");
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [loadingTopStudents, setLoadingTopStudents] = useState(() => {
-    try {
-      const cached = localStorage.getItem("topStudents");
-      return cached && JSON.parse(cached).length ? false : true;
-    } catch {
-      return true;
-    }
-  });
-
-  const [previousTopRank, setPreviousTopRank] = useState<number | null>(null); // track last notified rank
+  /// 🏆 Top Students State
+  const [topStudents, setTopStudents] = useState<any[]>([]);
+  const [loadingTopStudents, setLoadingTopStudents] = useState(true);
+  const [previousTopRank, setPreviousTopRank] = useState<number | null>(null);
 
   const fetchTopStudents = async () => {
     if (!user?.id) return;
 
     try {
-      // Show loader only if no cached leaderboard
-      setLoadingTopStudents(!topStudents.length);
+      setLoadingTopStudents(true);
 
-      // 1️⃣ Get all quiz results
+      // 📅 Get start of current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      // 1️⃣ Get quiz results for THIS MONTH only
       const { data: results, error: resultsError } = await supabase
         .from("quiz_results")
-        .select("user_id, score, total_questions");
+        .select("user_id, score, total_questions, submitted_at")
+        .gte(" submitted_at", startOfMonth);
 
       if (resultsError) throw resultsError;
       if (!results || results.length === 0) {
         setTopStudents([]);
-        localStorage.setItem("topStudents", JSON.stringify([]));
         return;
       }
 
       // 2️⃣ Calculate stars + stats for each user
       const userMap: Record<string, { total: number; count: number }> = {};
+
       results.forEach((r) => {
         if (!r.user_id || !r.total_questions) return;
 
         if (!userMap[r.user_id]) userMap[r.user_id] = { total: 0, count: 0 };
+
         userMap[r.user_id].total += (r.score / r.total_questions) * 100;
         userMap[r.user_id].count += 1;
       });
 
       const userStars = Object.entries(userMap).map(([userId, stats]) => {
         const avg = stats.count > 0 ? stats.total / stats.count : 0;
+
         let stars = 0;
         if (avg >= 90) stars = 5;
         else if (avg >= 75) stars = 4;
         else if (avg >= 60) stars = 3;
         else if (avg >= 40) stars = 2;
         else if (avg > 0) stars = 1;
+
         return { userId, stars, avg, count: stats.count };
       });
 
@@ -568,25 +596,25 @@ export default function StudentDashboard() {
 
       // 4️⃣ Fetch profiles
       const ids = userStars.map(u => u.userId);
+
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("user_id, name, avatar_url, institution, county")
         .in("user_id", ids);
+
       if (profilesError) throw profilesError;
 
-      // 5️⃣ Merge stars + stats with profile
-      const merged = userStars.map(u => ({ ...u, ...profiles?.find(p => p.user_id === u.userId) }));
+      // 5️⃣ Merge leaderboard + profile info
+      const merged = userStars.map(u => ({
+        ...u,
+        ...profiles?.find(p => p.user_id === u.userId)
+      }));
 
-      // 6️⃣ Update state & cache if changed
-      const prevIds = topStudents.map(s => s.userId).join(",");
-      const newIds = merged.map(s => s.userId).join(",");
-      if (prevIds !== newIds) {
-        setTopStudents(merged);
-        localStorage.setItem("topStudents", JSON.stringify(merged));
-      }
+      setTopStudents(merged);
 
-      // 7️⃣ Use merged array to safely compute rank for toast
+      // 6️⃣ Rank detection (keeps your exact toast messages)
       const currentIndex = merged.findIndex(s => s.userId === user.id);
+
       if (currentIndex !== -1) {
         const newRank = currentIndex + 1;
         const lastNotifiedRank = parseInt(localStorage.getItem(`lastRank_${user.id}`) || "0");
@@ -600,22 +628,24 @@ export default function StudentDashboard() {
           if (newRank === 1) {
             title = "🏆 Top Student!";
             message = `Wow ${profileName}! You are ranked #1 and leading the leaderboard! Keep doing more quizzes to maintain your crown! 👑🚀`;
-          } else if (newRank === 2) {
+          }
+          else if (newRank === 2) {
             title = "🥈 Silver Star!";
             message = `Great job ${profileName}! You're ranked #2. Try a few more quizzes to reach the top! 🌟💪`;
-          } else if (newRank === 3) {
+          }
+          else if (newRank === 3) {
             title = "🥉 Bronze Achiever!";
             message = `Nice work ${profileName}! You’re #3 on the leaderboard. Keep pushing, and you can move up! 🔥📚`;
           }
 
           if (navigator.vibrate) navigator.vibrate(200);
 
-          // ✅ Preserve your original toast messages
           sonnerToast.success(message, { title, duration: 6000, dismissible: true });
+
           localStorage.setItem(`lastRank_${user.id}`, String(newRank));
         }
 
-        setPreviousRank(newRank);
+        setPreviousTopRank(newRank);
       }
 
     } catch (err) {
@@ -624,6 +654,30 @@ export default function StudentDashboard() {
       setLoadingTopStudents(false);
     }
   };
+  useEffect(() => {
+
+    fetchTopStudents();
+
+    const channel = supabase
+      .channel("leaderboard-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "quiz_results",
+        },
+        () => {
+          fetchTopStudents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
+  }, [user?.id]);
 
   const fetchSimulationPapers = async () => {
     try {
@@ -1814,7 +1868,7 @@ export default function StudentDashboard() {
                                 src={post.image_url}
                                 alt="daily"
                                 className="block sm:hidden w-full h-auto object-contain cursor-pointer rounded-none"
-                                loading="lazy" // ✅ lazy load desktop image
+
                                 onClick={() => setFullscreenImage(post.image_url)}
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                               />
@@ -1825,7 +1879,7 @@ export default function StudentDashboard() {
                                   src={post.image_url}
                                   alt="daily"
                                   className="w-full h-full object-cover cursor-pointer"
-                                  loading="lazy" // ✅ lazy load desktop image
+
                                   onClick={() => setFullscreenImage(post.image_url)}
                                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                                 />
@@ -1875,7 +1929,7 @@ export default function StudentDashboard() {
             </div>
           )}
         </Card>
-        <MistakeCard />
+
         {/* Simulation Papers Section */}
         <Card className="w-full rounded-xl shadow-none border-0 bg-gray-100 dark:bg-gray-900 p-2 mt-4">
           <CardHeader className="p-2">

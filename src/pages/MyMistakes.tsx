@@ -15,7 +15,7 @@ import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
-
+import MistakeCard from "@/components/MistakeCard";
 interface Question {
     id: string;
     question_text: string;
@@ -382,7 +382,7 @@ export default function MyMistakes() {
                     </p>
                 </div>
             </div>
-
+            <MistakeCard />
 
             <AnimatePresence>
                 {mistakes.map((m, i) => (

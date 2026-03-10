@@ -2,34 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabaseClient";
+import { useSession } from "@supabase/auth-helpers-react";
 
 export default function RedirectGate({ children }: { children: React.ReactNode }) {
     const navigate = useNavigate();
+    const session = useSession();       // ✅ current session
+    const user = session?.user || null; // ✅ current user
     const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        const checkSession = async () => {
+        const checkUser = () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-
-                if (session) {
-                    // User already logged in → redirect immediately
+                if (user) {
+                    // User logged in → redirect to role-based redirect page
                     navigate("/redirect", { replace: true });
                 } else {
-                    // No session → render app normally
+                    // No user → allow normal rendering
                     setReady(true);
                 }
             } catch (err) {
-                console.error("Error checking session:", err);
+                console.error("Error checking user:", err);
                 setReady(true);
             }
         };
 
-        checkSession();
-    }, [navigate]);
+        checkUser();
+    }, [navigate, user]);
 
-    // Nothing renders until we know the session
+    // Render children only when ready
     if (!ready) return null;
 
     return <>{children}</>;
