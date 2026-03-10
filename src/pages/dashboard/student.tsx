@@ -343,9 +343,6 @@ export default function StudentDashboard() {
   const fetchDailyPosts = async (useCache = true) => {
     if (!user?.id) return;
 
-    const THUMB_WIDTH = 300; // Thumbnail width
-    const storageBucket = "statuspics";
-
     // 1️⃣ Load cached posts instantly for smooth UI
     if (useCache) {
       const cached = localStorage.getItem("dailyPostsCache");
@@ -367,15 +364,18 @@ export default function StudentDashboard() {
     const since = new Date(Date.now() - durationMs).toISOString();
 
     try {
-      // 3️⃣ Fetch only new posts (incremental fetch)
+      // 3️⃣ Fetch posts from Supabase
       const { data: posts, error: postsError } = await supabase
         .from("valid_daily_posts")
         .select("*")
-        .order("created_at", { ascending: false })
-        .gt("id", latestPostId || ""); // only posts after latest
+        .order("created_at", { ascending: false });
 
       if (postsError) throw postsError;
-      if (!posts || posts.length === 0) return;
+      if (!posts || posts.length === 0) {
+        setDailyPosts([]);
+        localStorage.setItem("dailyPostsCache", JSON.stringify([]));
+        return;
+      }
 
       // 4️⃣ Show placeholders while fetching profiles
       const tempPosts = posts.map(p => ({
@@ -388,34 +388,10 @@ export default function StudentDashboard() {
           county: "N/A",
         },
       }));
-      setDailyPosts(prev => [...tempPosts, ...prev]);
+      setDailyPosts(tempPosts);
 
-      // 5️⃣ Generate thumbnails for images + cache them
-      const postsWithThumbs = await Promise.all(
-        posts.map(async (p) => {
-          let thumbUrl = "";
-          if (p.image_url) {
-            const cachedThumb = localStorage.getItem(`thumb_${p.id}`);
-            if (cachedThumb) {
-              thumbUrl = cachedThumb;
-            } else {
-              const { data: publicData, error: urlError } = supabase
-                .storage
-                .from(storageBucket)
-                .getPublicUrl(p.image_url);
-
-              if (!urlError && publicData.publicUrl) {
-                thumbUrl = publicData.publicUrl + `?width=${THUMB_WIDTH}`; // thumbnail
-                localStorage.setItem(`thumb_${p.id}`, thumbUrl);
-              }
-            }
-          }
-          return { ...p, thumb_url: thumbUrl };
-        })
-      );
-
-      // 6️⃣ Fetch user profiles
-      const userIds = postsWithThumbs.map(p => p.user_id).filter(Boolean);
+      // 5️⃣ Fetch user profiles
+      const userIds = posts.map(p => p.user_id).filter(Boolean);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("user_id, username, name, institution, county, avatar_url")
@@ -423,8 +399,8 @@ export default function StudentDashboard() {
 
       if (profilesError) console.error("Error fetching profiles:", profilesError.message);
 
-      // 7️⃣ Merge posts with profiles
-      const mergedPosts = postsWithThumbs.map(p => {
+      // 6️⃣ Merge posts with actual profiles, fallback to Unknown
+      const mergedPosts = posts.map(p => {
         const profile = profiles?.find(pr => pr.user_id === p.user_id);
         return {
           ...p,
@@ -438,15 +414,11 @@ export default function StudentDashboard() {
         };
       });
 
-      // 8️⃣ Update state & cache
-      setDailyPosts(prev => [...mergedPosts, ...prev]);
-      mergedPosts.forEach(p => localStorage.setItem(`thumb_${p.id}`, p.thumb_url || ""));
-      localStorage.setItem(
-        "dailyPostsCache",
-        JSON.stringify([...mergedPosts, ...(dailyPosts || [])])
-      );
+      // 7️⃣ Update state & cache
+      setDailyPosts(mergedPosts);
+      localStorage.setItem("dailyPostsCache", JSON.stringify(mergedPosts));
 
-      // 9️⃣ Preserve toast notifications
+      // 8️⃣ Preserve toast notifications
       if (latestPostId && mergedPosts[0]?.id && mergedPosts[0].id !== latestPostId) {
         toast({
           title: "New Daily Status!",
@@ -460,9 +432,10 @@ export default function StudentDashboard() {
       }
 
       setLatestPostId(mergedPosts[0].id);
+
     } catch (err: any) {
       console.error("Error fetching daily posts:", err.message);
-      // fallback: preserve old cache
+      // fallback: preserve old cache if exists
       const cached = localStorage.getItem("dailyPostsCache");
       if (cached) {
         try {
