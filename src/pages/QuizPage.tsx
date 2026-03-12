@@ -1438,6 +1438,10 @@ Please provide a detailed discussion and guidance.`;
                   </div>
                 )}
 
+
+                <Flashcard />
+                <MicroCaseCard />
+
                 {/* Load More button — only after last visible question */}
                 {i === visibleCount - 1 && visibleCount < filteredQuestions.length && (
                   <div className="flex justify-center mt-8">
@@ -1483,8 +1487,6 @@ Please provide a detailed discussion and guidance.`;
 
                   </div>
                 )}
-                <Flashcard />
-                <MicroCaseCard />
               </div>
 
               {/* Small Note Card */}

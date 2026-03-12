@@ -1431,7 +1431,7 @@ export default function Feed() {
                             {/* Vote percentage bar */}
                             {selected && (
                               <div
-                                className="absolute left-0 top-0 h-full bg-blue-500 dark:bg-blue-500/30 transition-all duration-500"
+                                className="absolute left-0 top-0 h-full bg-blue-500/30 dark:bg-blue-500/30 transition-all duration-500"
                                 style={{ width: `${percent}%` }}
                               />
                             )}
@@ -1467,18 +1467,28 @@ export default function Feed() {
                       })}
 
                     </div>
-
                     {selected && (
-                      <div className="mt-2">
-                        <p className="font-semibold text-emerald-600 dark:text-emerald-400">
-                          Correct Answer: {q.correct_answer}
-                        </p>
-                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-snug">
-                          {q.explanation}
-                        </p>
+                      <div className="mt-2 p-4 rounded-2xl
+                  bg-gradient-to-br from-indigo-800 via-purple-700 to-pink-700
+                  dark:from-indigo-700 dark:via-purple-600 dark:to-pink-600
+                  shadow-2xl border-0
+                  relative overflow-hidden transition-all duration-500">
+
+                        {/* Strong readability overlay */}
+                        <div className="absolute inset-0 bg-white/80 dark:bg-black/40 backdrop-blur-sm rounded-2xl pointer-events-none"></div>
+
+                        <div className="relative z-10">
+                          <p className="text-xl font-extrabold text-gray-900 dark:text-white mb-3 flex items-center drop-shadow-sm">
+                            <span className="w-5 h-5 mr-2 rounded-full bg-purple-400 dark:bg-purple-300 animate-pulse"></span>
+                            Correct Answer: {q.correct_answer}
+                          </p>
+
+                          <p className="text-gray-900 dark:text-gray-200 text-lg leading-relaxed border-0 pl-4 italic drop-shadow-sm">
+                            {q.explanation}
+                          </p>
+                        </div>
                       </div>
                     )}
-
                     {/* Buttons row */}
                     <div className="flex gap-1 mt-4">
                       {/* Like Button with full red heart */}
@@ -1931,7 +1941,7 @@ export default function Feed() {
             }}
             disabled={loading}
             className="
-    px-8 py-3
+    px-8 py-2
     text-base font-semibold
     rounded-full
     bg-blue-600 hover:bg-blue-700
