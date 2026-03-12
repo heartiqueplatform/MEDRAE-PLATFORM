@@ -1478,8 +1478,8 @@ export default function Feed() {
                         <div className="absolute inset-0 bg-white/80 dark:bg-black/40 backdrop-blur-sm rounded-2xl pointer-events-none"></div>
 
                         <div className="relative z-10">
-                          <p className="text-xl font-extrabold text-gray-900 dark:text-white mb-3 flex items-center drop-shadow-sm">
-                            <span className="w-5 h-5 mr-2 rounded-full bg-purple-400 dark:bg-purple-300 animate-pulse"></span>
+                          <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-400 mb-3 flex items-center drop-shadow-md">
+                            <span className="w-5 h-5 mr-2 rounded-full bg-emerald-700 dark:bg-emerald-400 animate-pulse"></span>
                             Correct Answer: {q.correct_answer}
                           </p>
 
