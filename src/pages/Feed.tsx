@@ -1341,7 +1341,7 @@ export default function Feed() {
                     </>
                   )}
 
-                  <CardContent className="flex flex-col gap-3 p-5 w-full">
+                  <CardContent className="flex flex-col gap-2 p-2 w-full">
                     <div className="flex justify-between items-center mb-1">
                       <p className="text-sm font-semibold text-blue-500 dark:text-blue-400 tracking-wide">
                         {q.quiz_title}
@@ -1379,7 +1379,7 @@ export default function Feed() {
 
 
                     {/* Options */}
-                    <div className="flex flex-col gap-3 mt-0 w-full">
+                    <div className="flex flex-col gap-2 mt-0 w-full">
                       {["A", "B", "C", "D"].map((opt) => {
                         const text = q[`option_${opt.toLowerCase()}`];
                         if (!text) return null;
@@ -1468,7 +1468,7 @@ export default function Feed() {
 
                     </div>
                     {selected && (
-                      <div className="mt-2 p-4 rounded-2xl
+                      <div className="mt-2 p-2 rounded-2xl
                   bg-gradient-to-br from-indigo-800 via-purple-700 to-pink-700
                   dark:from-indigo-700 dark:via-purple-600 dark:to-pink-600
                   shadow-2xl border-0
@@ -1483,7 +1483,7 @@ export default function Feed() {
                             Correct Answer: {q.correct_answer}
                           </p>
 
-                          <p className="text-gray-900 dark:text-gray-200 text-lg leading-relaxed border-0 pl-4 italic drop-shadow-sm">
+                          <p className="text-gray-900 dark:text-gray-200 text-lg leading-relaxed border-0  italic drop-shadow-sm">
                             {q.explanation}
                           </p>
                         </div>
