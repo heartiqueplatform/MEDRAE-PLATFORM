@@ -1431,7 +1431,7 @@ export default function Feed() {
                             {/* Vote percentage bar */}
                             {selected && (
                               <div
-                                className="absolute left-0 top-0 h-full bg-blue-500 dark:bg-blue-600 transition-all duration-500 rounded-l-lg"
+                                className="absolute left-0 top-0 h-full bg-blue-500 dark:bg-blue-500/30 transition-all duration-500"
                                 style={{ width: `${percent}%` }}
                               />
                             )}
