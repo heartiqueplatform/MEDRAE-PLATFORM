@@ -68,6 +68,7 @@ export default function Feed() {
   // ✅ Feedback Power-Up tracking
   const [correctStreak, setCorrectStreak] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(0);
+  const [voteStats, setVoteStats] = useState({});
   // ✅ Feedback Power-Up message
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [answers, setAnswers] = useState({});
@@ -110,6 +111,35 @@ export default function Feed() {
     }
   });
 
+  useEffect(() => {
+    // Subscribe to qfeed_seen table updates
+    const subscription = supabase
+      .channel("public:qfeed_seen")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "qfeed_seen" },
+        (payload) => {
+          const row = payload.new;
+          // Update voteStats state for this question
+          setVoteStats((prev) => {
+            const prevCounts = prev[row.question_id] || { A: 0, B: 0, C: 0, D: 0 };
+            const updatedCounts = { ...prevCounts };
+            if (row.selected_option && updatedCounts[row.selected_option] !== undefined) {
+              updatedCounts[row.selected_option] += 1;
+            }
+            return {
+              ...prev,
+              [row.question_id]: updatedCounts
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
   // 🔒 Save mute preference to localStorage
   useEffect(() => {
     localStorage.setItem("feed_isMuted", JSON.stringify(isMuted));
@@ -650,7 +680,21 @@ export default function Feed() {
 
     // Save answer locally
     setAnswers(newAnswers);
+    // Save that the user answered this question
+    await supabase.from("qfeed_seen").insert({
+      question_id: q.id,
+      user_id: user.id,
+      selected_option: option
+    });
+    // Fetch updated vote counts
+    const counts = await fetchVoteStats(q.id);
 
+    if (counts) {
+      setVoteStats((prev) => ({
+        ...prev,
+        [q.id]: counts
+      }));
+    }
     // Increment count only the first time answering this question
     // Increment count only the first time answering this question
     setQuestionCount((prev) => {
@@ -673,8 +717,29 @@ export default function Feed() {
       `feed_questions_${user.id}`,
       JSON.stringify(unansweredFresh)
     );
+  };
 
+  const fetchVoteStats = async (questionId) => {
+    const { data, error } = await supabase
+      .from("qfeed_seen")
+      .select("selected_option")
+      .eq("question_id", questionId);
 
+    if (error) {
+      console.error("Error loading vote stats:", error);
+      return null;
+    }
+
+    // Count votes
+    const counts = { A: 0, B: 0, C: 0, D: 0 };
+
+    data.forEach((row) => {
+      if (counts[row.selected_option] !== undefined) {
+        counts[row.selected_option]++;
+      }
+    });
+
+    return counts;
   };
   // Toggle like question
   const toggleLike = async (questionId, liked) => {
@@ -1320,6 +1385,15 @@ export default function Feed() {
                         if (!text) return null;
                         const chosen = selected === opt;
                         const correct = q.correct_answer === opt;
+                        const stats = voteStats[q.id] || { A: 0, B: 0, C: 0, D: 0 };
+
+                        const totalVotes =
+                          stats.A + stats.B + stats.C + stats.D;
+
+                        const percent =
+                          totalVotes > 0
+                            ? Math.round((stats[opt] / totalVotes) * 100)
+                            : 0;
                         let circleColor = "bg-gray-400";
                         if (selected) {
                           if (correct && chosen) circleColor = "bg-green-500";
@@ -1333,40 +1407,50 @@ export default function Feed() {
 
                               handleAnswer(q, opt);
 
-                              // 🔊 Sound feedback (same logic as other page)
-                              // Play sound only if not muted
                               if (!isMuted) {
                                 playSound(correct ? "tap-correct" : "tap-wrong", false);
                               }
 
-                              // ✅ VIBRATION
                               if (navigator.vibrate) {
                                 if (correct) {
-                                  // Short vibration for correct
                                   navigator.vibrate(50);
                                 } else {
-                                  // Stronger/longer vibration for wrong
-                                  navigator.vibrate([100, 50, 100]); // vibrate 100ms, pause 50ms, vibrate 100ms
+                                  navigator.vibrate([100, 50, 100]);
                                 }
                               }
-
                             }}
-
                             disabled={!!selected}
-                            className={`w-full flex items-start gap-3 px-3 py-2 text-left rounded-lg transition-all ${chosen
+                            className={`relative w-full flex items-start gap-3 px-3 py-2 text-left rounded-lg transition-all overflow-hidden ${chosen
                               ? correct
                                 ? "bg-green-100 dark:bg-green-800/40"
                                 : "bg-red-100 dark:bg-red-800/40"
                               : "hover:bg-gray-100 dark:hover:bg-gray-800/60"
                               }`}
                           >
+
+                            {/* Vote percentage bar */}
+                            {selected && (
+                              <div
+                                className="absolute left-0 top-0 h-full bg-blue-500 dark:bg-blue-600 transition-all duration-500 rounded-l-lg"
+                                style={{ width: `${percent}%` }}
+                              />
+                            )}
+
                             <span
-                              className={`w-4 h-4 rounded-full mt-1 flex-shrink-0 ${circleColor}`}
+                              className={`relative z-10 w-4 h-4 rounded-full mt-1 flex-shrink-0 ${circleColor}`}
                             ></span>
-                            <div className="flex justify-between items-center w-full">
-                              <div className="flex gap-2 break-words">
+
+                            <div className="relative z-10 flex justify-between items-center w-full">
+                              <div className="flex gap-2 break-words items-center">
                                 <span className="font-semibold">{opt}.</span>
                                 <span className="break-words">{text}</span>
+
+                                {/* Vote percentage */}
+                                {selected && totalVotes > 0 && (
+                                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {percent}% chose this
+                                  </span>
+                                )}
                               </div>
 
                               {/* Emoji reaction */}
@@ -1377,8 +1461,8 @@ export default function Feed() {
                                 <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>
                               )}
                             </div>
-
                           </button>
+
                         );
                       })}
 
