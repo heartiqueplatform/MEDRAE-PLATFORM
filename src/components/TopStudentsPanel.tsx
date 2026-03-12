@@ -11,6 +11,7 @@ import { playSound } from "@/lib/soundManager";
 import { useNavigate } from "react-router-dom";
 import { UserProfileModal } from "@/components/UserProfileModal";
 
+import { useToast } from "@/components/ui/use-toast";
 interface TriviaQuestion {
     id: string;
     question_text: string;
@@ -31,7 +32,7 @@ interface TopStudent {
 }
 export const DailyTriviaCard = () => {
     const navigate = useNavigate();
-
+    const { toast } = useToast();
     const [selfUserId, setSelfUserId] = useState<string | null>(null);
     useEffect(() => {
         supabase.auth.getSession().then(({ data }) => {
@@ -49,6 +50,10 @@ export const DailyTriviaCard = () => {
     const [timer, setTimer] = useState(5 * 60);
     const [loading, setLoading] = useState(true);
     const [topStudents, setTopStudents] = useState<TopStudent[]>([]);
+    // reactions for each student
+    const [reactions, setReactions] = useState<Record<string, { like: number; fire: number; clap: number }>>({});
+    // instead of string | null, we store array of reactions
+    const [myReactions, setMyReactions] = useState<Record<string, string[]>>({});
     const [attemptedToday, setAttemptedToday] = useState(false);
     const [timeUsedToday, setTimeUsedToday] = useState<number | null>(null);
     const [savedScore, setSavedScore] = useState<{ correct_answers: number; total_questions: number } | null>(null);
@@ -67,6 +72,55 @@ export const DailyTriviaCard = () => {
         return [minText, secText].filter(Boolean).join(" and ");
     };
 
+
+    useEffect(() => {
+        if (!selfUserId) return;
+
+        const channel = supabase
+            .channel("reaction-notifications")
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "trivia_reactions",
+                    filter: `target_user_id=eq.${selfUserId}`,
+                },
+                async (payload) => {
+
+                    // prevent notifying yourself
+                    if (payload.new.reactor_id === selfUserId) return;
+
+                    const reaction = payload.new.reaction;
+                    const reactorId = payload.new.reactor_id;
+
+                    const { data } = await supabase
+                        .from("profiles")
+                        .select("name")
+                        .eq("user_id", reactorId)
+                        .single();
+
+                    const reactorName = data?.name || "Someone";
+
+                    const emoji =
+                        reaction === "like"
+                            ? "👍"
+                            : reaction === "fire"
+                                ? "🔥"
+                                : "👏";
+
+                    toast({
+                        title: "New Reaction!",
+                        description: `${reactorName} reacted ${emoji} to your trivia result`,
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [selfUserId]);
     // Load questions
     useEffect(() => {
         async function loadQuestions() {
@@ -146,11 +200,115 @@ export const DailyTriviaCard = () => {
                 };
             });
             setTopStudents(mapped);
+            // load reactions
+            // Load reactions for today
+            const { data: reactionData, error: reactionError } = await supabase
+                .from("trivia_reactions")
+                .select("reactor_id,target_user_id,reaction")
+                .eq("attempt_date", today);
+
+            if (reactionError) {
+                console.error("Error fetching reactions:", reactionError);
+            }
+
+            if (reactionData) {
+                const counts: Record<string, { like: number; fire: number; clap: number }> = {};
+                const mine: Record<string, string[]> = {};
+
+                reactionData.forEach((r) => {
+                    const targetId = r.target_user_id;
+                    const reactionType = r.reaction as "like" | "fire" | "clap";
+
+                    if (!counts[targetId]) counts[targetId] = { like: 0, fire: 0, clap: 0 };
+
+                    // Only count one reaction per user per type
+                    const key = `${r.reactor_id}_${reactionType}`;
+                    if (!counts[targetId][`_counted_${key}`]) {
+                        counts[targetId][reactionType]++;
+                        counts[targetId][`_counted_${key}`] = true; // temporary marker
+                    }
+
+                    if (r.reactor_id === selfUserId) {
+                        if (!mine[targetId]) mine[targetId] = [];
+                        if (!mine[targetId].includes(reactionType)) mine[targetId].push(reactionType);
+                    }
+                });
+
+                // Remove temporary _counted_ keys
+                Object.values(counts).forEach((c) => {
+                    Object.keys(c).forEach((k) => {
+                        if (k.startsWith("_counted_")) delete c[k];
+                    });
+                });
+
+                console.log("Loaded reaction counts:", counts);
+                console.log("Loaded my reactions:", mine);
+
+                // Update state
+                setReactions(counts);
+                setMyReactions(mine);
+            }
         }
         fetchTop();
         setTopLoading(false);
     }, [today, completed]);
+    useEffect(() => {
+        if (!selfUserId) return;
 
+        const channel = supabase
+            .channel("realtime-trivia-reactions")
+            .on(
+                "postgres_changes",
+                {
+                    event: "*", // listen to INSERT, UPDATE, DELETE
+                    schema: "public",
+                    table: "trivia_reactions",
+                    filter: `attempt_date=eq.${today}`,
+                },
+                (payload: any) => {
+                    console.log("Realtime reaction event:", payload);
+                    if (payload.new?.reactor_id === selfUserId) return;
+                    setReactions((prev) => {
+                        const targetId = payload.new?.target_user_id || payload.old?.target_user_id;
+                        const reactionType = payload.new?.reaction || payload.old?.reaction;
+
+                        if (!targetId || !reactionType) return prev;
+
+                        const current = prev[targetId] || { like: 0, fire: 0, clap: 0 };
+
+                        let updated = { ...current };
+
+                        if (payload.eventType === "INSERT") {
+                            updated[reactionType as "like" | "fire" | "clap"] += 1;
+                        } else if (payload.eventType === "DELETE") {
+                            updated[reactionType as "like" | "fire" | "clap"] = Math.max(0, current[reactionType as "like" | "fire" | "clap"] - 1);
+                        }
+
+                        return { ...prev, [targetId]: updated };
+                    });
+
+                    // Optionally update myReactions if the current user reacted
+                    if (payload.new?.reactor_id === selfUserId || payload.old?.reactor_id === selfUserId) {
+                        setMyReactions((prev) => {
+                            const targetId = payload.new?.target_user_id || payload.old?.target_user_id;
+                            const reactionType = payload.new?.reaction || payload.old?.reaction;
+                            if (!targetId || !reactionType) return prev;
+
+                            const current = prev[targetId] || [];
+                            if (payload.eventType === "INSERT") {
+                                return { ...prev, [targetId]: Array.from(new Set([...current, reactionType])) };
+                            } else if (payload.eventType === "DELETE") {
+                                return { ...prev, [targetId]: current.filter((r) => r !== reactionType) };
+                            }
+                            return prev;
+                        });
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => supabase.removeChannel(channel);
+    }, [selfUserId, today]);
     // Timer
     useEffect(() => {
         if (!started || completed) return;
@@ -176,7 +334,117 @@ export const DailyTriviaCard = () => {
         window.open(whatsappUrl, "_blank");
     };
 
+    const toggleReaction = async (
+        targetUserId: string,
+        reaction: "like" | "fire" | "clap"
+    ) => {
+        if (!selfUserId) return;
 
+        const todayDate = new Date();
+        const yyyy = todayDate.getFullYear();
+        const mm = String(todayDate.getMonth() + 1).padStart(2, "0");
+        const dd = String(todayDate.getDate()).padStart(2, "0");
+
+        const todayString = `${yyyy}-${mm}-${dd}`;
+
+        console.log("Toggling reaction:", {
+            targetUserId,
+            reaction,
+            myReactions,
+            todayString,
+        });
+
+        const alreadyReacted =
+            myReactions[targetUserId]?.includes(reaction) || false;
+
+        console.log("Already reacted?", alreadyReacted);
+
+        if (alreadyReacted) {
+            console.log("Removing reaction from Supabase:", {
+                reactor_id: selfUserId,
+                target_user_id: targetUserId,
+                attempt_date: todayString,
+                reaction,
+            });
+
+            const { data, error } = await supabase
+                .from("trivia_reactions")
+                .delete()
+                .eq("reactor_id", selfUserId)
+                .eq("target_user_id", targetUserId)
+                .eq("reaction", reaction)
+                .eq("attempt_date", todayString);
+
+            console.log("Delete result:", { data, error });
+
+            if (!error) {
+                setMyReactions((prev) => ({
+                    ...prev,
+                    [targetUserId]: (prev[targetUserId] || []).filter(
+                        (r) => r !== reaction
+                    ),
+                }));
+
+                setReactions((prev) => ({
+                    ...prev,
+                    [targetUserId]: {
+                        ...prev[targetUserId],
+                        [reaction]: Math.max(
+                            (prev[targetUserId]?.[reaction] || 1) - 1,
+                            0
+                        ),
+                    },
+                }));
+            }
+
+            return;
+        }
+
+        console.log("Adding reaction to Supabase:", {
+            reactor_id: selfUserId,
+            target_user_id: targetUserId,
+            attempt_date: todayString,
+            reaction,
+        });
+
+        const { data: insertData, error: insertError } = await supabase
+            .from("trivia_reactions")
+            .upsert(
+                {
+                    reactor_id: selfUserId,
+                    target_user_id: targetUserId,
+                    attempt_date: todayString,
+                    reaction,
+                },
+                {
+                    onConflict: [
+                        "reactor_id",
+                        "target_user_id",
+                        "attempt_date",
+                        "reaction",
+                    ],
+                }
+            );
+
+        console.log("Insert result:", { insertData, insertError });
+
+        if (!insertError) {
+            setMyReactions((prev) => ({
+                ...prev,
+                [targetUserId]: [
+                    ...new Set([...(prev[targetUserId] || []), reaction]),
+                ],
+            }));
+
+            setReactions((prev) => ({
+                ...prev,
+                [targetUserId]: {
+                    ...prev[targetUserId],
+                    [reaction]: (prev[targetUserId]?.[reaction] || 0) + 1,
+                },
+            }));
+        }
+    };
     const answerQuestion = (questionId: string, letter: string) => {
         const updatedAnswers = { ...answers, [String(questionId)]: letter };
         setAnswers(updatedAnswers);
@@ -459,6 +727,30 @@ export const DailyTriviaCard = () => {
 
                                         <div className="mt-2 font-bold text-blue-600 dark:text-blue-400">
                                             {s.score} pts
+                                        </div>
+                                        <div className="flex items-center justify-center gap-2 mt-2 text-xl">
+
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleReaction(s.user_id, "like"); }}
+                                                className={`px-3 py-2 rounded ${myReactions[s.user_id]?.includes("like") ? "scale-125" : ""}`}
+                                            >
+                                                👍 {reactions[s.user_id]?.like || 0}
+                                            </button>
+
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleReaction(s.user_id, "fire"); }}
+                                                className={`px-3 py-2 rounded ${myReactions[s.user_id]?.includes("fire") ? "scale-125" : ""}`}
+                                            >
+                                                🔥 {reactions[s.user_id]?.fire || 0}
+                                            </button>
+
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleReaction(s.user_id, "clap"); }}
+                                                className={`px-3 py-2 rounded ${myReactions[s.user_id]?.includes("clap") ? "scale-125" : ""}`}
+                                            >
+                                                👏 {reactions[s.user_id]?.clap || 0}
+                                            </button>
+
                                         </div>
                                         {s.completedAt && (
                                             <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
