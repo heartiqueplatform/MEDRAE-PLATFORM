@@ -278,14 +278,14 @@ export default function Feed() {
       );
     } else if (correctStreak > 0 && correctStreak % 5 === 0) {
       setFeedbackMessage(
-        "🔥 You’re on fire! Fantastic work, keep going! Your effort is paying off and each correct answer is proof of your progress!"
+        "🔥! Fantastic work, keep going! Your effort is paying off and each correct answer is proof of your progress!"
       );
     }
 
     // ✅ Wrong streak encouragement (every 3)
     if (wrongStreak > 0 && wrongStreak % 3 === 0) {
       setFeedbackMessage(
-        "💬 Oops, don’t worry! Mistakes happen and that’s completely okay. Take a deep breath, reflect on what you’ve learned so far, and here’s a helpful hint to guide you forward. You’re doing great, and every attempt makes you stronger!"
+        "💬, Reflect on what you’ve learned so far, and here’s a helpful hint to guide you forward. You’re doing great, and every attempt makes you stronger!"
       );
     }
   }, [correctStreak, wrongStreak]);
