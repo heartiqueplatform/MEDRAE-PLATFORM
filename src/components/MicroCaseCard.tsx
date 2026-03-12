@@ -294,7 +294,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                 )}
             </CardHeader>
 
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 px-2">
                 <p className="font-bold text-gray-900 dark:text-gray-100 whitespace-pre-line">{card.scenario}</p>
                 <p className="text-sm text-gray-700 dark:text-gray-100 whitespace-pre-line"><strong>Q:</strong> {card.question}</p>
                 <p className="text-sm text-gray-700 dark:text-gray-100 whitespace-pre-line"><strong>A:</strong> {card.answer}</p>
@@ -303,29 +303,29 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         <strong>Explanation:</strong> {card.explanation}
                     </p>
                 )}
-                <div className="flex items-center justify-between pt-2">
-                    <div className="flex gap-2 text-sm text-gray-700 dark:text-gray-100">
-                        <p>Views: {counts.views}</p>
-                        <p>Likes: {counts.likes}</p>
-                        <p>Saves: {counts.saves}</p>
-                        <p>Reports: {counts.reports}</p>
-                    </div>
 
-                    <div className="flex gap-4 pt-2 items-center">
-                        <button onClick={() => handleInteraction("save")} className="p-1 transition-transform duration-150 ease-out active:scale-110">
-                            <Bookmark size={24} fill={saved ? "currentColor" : "none"} stroke="currentColor"
-                                className={saved ? "text-green-500" : "text-gray-400 dark:text-gray-400"} />
-                        </button>
-                        <button onClick={() => handleInteraction("like")} className="p-1 transition-transform duration-150 ease-out active:scale-110">
-                            <ThumbsUp size={24} fill={liked ? "currentColor" : "none"} stroke="currentColor"
-                                className={liked ? "text-teal-500" : "text-gray-400 dark:text-gray-400"} />
-                        </button>
-                        <button onClick={() => handleInteraction("report")} className="p-1 transition-transform duration-150 ease-out active:scale-110">
-                            <Flag size={24} fill={reported ? "currentColor" : "none"} stroke="currentColor"
-                                className={reported ? "text-rose-500" : "text-gray-400 dark:text-gray-400"} />
-                        </button>
-                    </div>
+                <div className="flex gap-2 text-sm text-gray-700 dark:text-gray-100">
+                    <p>Views: {counts.views}</p>
+                    <p>Likes: {counts.likes}</p>
+                    <p>Saves: {counts.saves}</p>
+                    <p>Reports: {counts.reports}</p>
                 </div>
+
+                <div className="flex gap-4 pt-2 items-center">
+                    <button onClick={() => handleInteraction("save")} className="p-1 transition-transform duration-150 ease-out active:scale-110">
+                        <Bookmark size={32} fill={saved ? "currentColor" : "none"} stroke="currentColor"
+                            className={saved ? "text-green-500" : "text-gray-400 dark:text-gray-400"} />
+                    </button>
+                    <button onClick={() => handleInteraction("like")} className="p-1 transition-transform duration-150 ease-out active:scale-110">
+                        <ThumbsUp size={32} fill={liked ? "currentColor" : "none"} stroke="currentColor"
+                            className={liked ? "text-teal-500" : "text-gray-400 dark:text-gray-400"} />
+                    </button>
+                    <button onClick={() => handleInteraction("report")} className="p-1 transition-transform duration-150 ease-out active:scale-110">
+                        <Flag size={32} fill={reported ? "currentColor" : "none"} stroke="currentColor"
+                            className={reported ? "text-rose-500" : "text-gray-400 dark:text-gray-400"} />
+                    </button>
+                </div>
+
                 {card.tags && (
                     <div className="flex flex-wrap gap-2">
                         {card.tags.split(",").map((tag) => (
