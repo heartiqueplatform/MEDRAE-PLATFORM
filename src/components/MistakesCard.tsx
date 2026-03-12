@@ -11,6 +11,7 @@ import { Users, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { GlobalLoader } from "@/components/GlobalLoader";
+
 const PAGE_SIZE = 10;
 
 export function MistakesCard() {
@@ -57,25 +58,27 @@ export function MistakesCard() {
         setLoading(true);
 
         // 1️⃣ fetch all mistakes with related question
-        const { data: mistakes, error } = await supabase
+        const { data: mistakes } = await supabase
             .from("user_mistakes")
             .select(`
-        user_id,
-        question_id,
-        times_wrong,
-        last_wrong_at,
-        quiz_questions (
-          id,
-          question_text,
-          option_a,
-          option_b,
-          option_c,
-          option_d,
-          correct_answer,
-          explanation,
-          additional
-        )
-      `);
+    user_id,
+    question_id,
+    times_wrong,
+    last_wrong_at,
+    quiz_questions (
+      id,
+      question_text,
+      option_a,
+      option_b,
+      option_c,
+      option_d,
+      correct_answer,
+      explanation,
+      additional
+    )
+  `)
+            .order("times_wrong", { ascending: false })
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
         if (error || !mistakes) {
             console.error("Supabase fetch error:", error);
@@ -143,7 +146,10 @@ export function MistakesCard() {
 
             // Save updated data to localStorage
             if (typeof window !== "undefined") {
-                localStorage.setItem("mistakesData", JSON.stringify(mergedData));
+                localStorage.setItem(
+                    "mistakesData",
+                    JSON.stringify(mergedData.slice(0, 50))
+                );
             }
 
             return mergedData;
@@ -156,10 +162,7 @@ export function MistakesCard() {
     useEffect(() => {
         fetchMistakes();
     }, [page]);
-    useEffect(() => {
-        const interval = setInterval(fetchMistakes, 10000); // fetch every 10s in background
-        return () => clearInterval(interval);
-    }, []);
+
 
 
     const openDetails = async (questionId: string) => {
@@ -169,7 +172,16 @@ export function MistakesCard() {
             // 1️⃣ get mistake rows
             const { data: mistakes, error } = await supabase
                 .from("user_mistakes")
-                .select("user_id, times_wrong, last_wrong_at")
+                .select(`
+        user_id,
+        times_wrong,
+        last_wrong_at,
+        profiles (
+            name,
+            institution,
+            avatar_url
+        )
+    `)
                 .eq("question_id", questionId)
                 .order("last_wrong_at", { ascending: false });
 
@@ -430,7 +442,7 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
 
             {/* Students Overlay */}
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="max-w-xl">
+                <DialogContent className="max-w-xl border-0">
                     <DialogHeader>
                         <DialogTitle className="flex gap-2 items-center">
                             <Users /> Students who missed this
@@ -439,7 +451,7 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
 
                     <div className="space-y-3 max-h-[420px] overflow-y-auto custom-scrollbar">
                         {selected.map((s, i) => (
-                            <div key={i} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-md">
+                            <div key={i} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-md ">
                                 <div className="flex gap-2 items-center">
                                     <Avatar>
                                         <AvatarImage src={s.profile?.avatar_url || "/UsersAvatar.jpg"} />
@@ -469,7 +481,7 @@ ${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : 
                     onClick={() => setExpandedCard(null)} // tap outside closes
                 >
                     <div
-                        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg max-w-xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-2"
+                        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg max-w-xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-2 border-0"
                         onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
                     >
                         {/* Close Button */}
