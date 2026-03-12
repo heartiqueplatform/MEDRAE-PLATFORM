@@ -236,7 +236,7 @@ export function MistakesCard() {
 
                 <CardHeader className="p-2">
                     <CardTitle className="flex items-center gap-2">
-                        <AlertTriangle className="text-red-500" />
+
                         Most Failed Questions
                     </CardTitle>
                     <CardDescription>High-impact mistakes students struggle with the most. Tap a card to expand and learn more...</CardDescription>
@@ -308,7 +308,7 @@ export function MistakesCard() {
                                         <CardContent className="p-2 flex flex-col h-[360px] justify-between">
 
                                             {/* Swipe hint + Hide Button */}
-                                            <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1">
+                                            <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 ">
 
                                                 <div className="relative inline-block group">
                                                     <div

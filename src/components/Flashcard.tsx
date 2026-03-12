@@ -316,11 +316,11 @@ export function Flashcard({ cardId }: { cardId?: string }) {
     bg-gradient-to-r from-yellow-100 via-pink-100 to-purple-200
     dark:from-purple-900 dark:via-pink-800 dark:to-indigo-800">
 
-            <div className="px-4 py-2  bg-gradient-to-r from-yellow-100 via-pink-100 to-purple-200
-    dark:from-purple-900 dark:via-pink-800 dark:to-indigo-800 font-semibold rounded-t-lg">
+            <div className="px-4 py-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
+dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 text-white font-semibold rounded-t-lg">
                 Flashcard Card
             </div>
-            <CardHeader className="flex flex-row justify-between">
+            <CardHeader className="flex flex-row justify-between py-1">
                 <CardTitle className="text-purple-700 dark:text-gray-100">
                     {card.type.replace("_", " ").toUpperCase()}
                 </CardTitle>
@@ -330,13 +330,13 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                 )}
             </CardHeader>
 
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 py-1">
 
                 {card.title && (
                     <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{card.title}</h3>
                 )}
 
-                <p className="text-sm text-gray-700 dark:text-gray-100 whitespace-pre-line">
+                <p className="text-sm leading-snug text-gray-700 dark:text-gray-100 whitespace-pre-line">
                     {card.text.replace(/\\n/g, "\n")}
                 </p>
 
@@ -348,7 +348,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                 )}
 
                 {card.tags && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                         {card.tags.split(",").map((tag) => (
                             <Badge key={tag} className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                                 #{tag.trim()}
@@ -356,53 +356,58 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                         ))}
                     </div>
                 )}
-                <div className="flex gap-4 text-sm text-gray-700 dark:text-gray-100">
-                    <p>Views: {counts.views}</p>
-                    <p>Likes: {counts.likes}</p>
-                    <p>Saves: {counts.saves}</p>
-                    <p>Reports: {counts.reports}</p>
+                <div className="flex items-center justify-between pt-2">
+
+                    {/* Stats */}
+                    <div className="flex gap-3 text-sm text-gray-700 dark:text-gray-100">
+                        <p>Views: {counts.views}</p>
+                        <p>Likes: {counts.likes}</p>
+                        <p>Saves: {counts.saves}</p>
+                        <p>Reports: {counts.reports}</p>
+                    </div>
+
+                    {/* Action Icons */}
+                    <div className="flex gap-3 items-center">
+                        {/* Save Icon */}
+                        <button
+                            onClick={() => handleInteraction("save")}
+                            className="p-1 transition-transform duration-150 ease-out active:scale-110"
+                        >
+                            <Bookmark
+                                size={24}
+                                fill={saved ? "currentColor" : "none"}
+                                stroke="currentColor"
+                                className={saved ? "text-yellow-500" : "text-gray-400 dark:text-gray-400"}
+                            />
+                        </button>
+
+                        {/* Like Icon */}
+                        <button
+                            onClick={() => handleInteraction("like")}
+                            className="p-1 transition-transform duration-150 ease-out active:scale-110"
+                        >
+                            <ThumbsUp
+                                size={24}
+                                fill={liked ? "currentColor" : "none"}
+                                stroke="currentColor"
+                                className={liked ? "text-blue-500" : "text-gray-400 dark:text-gray-400"}
+                            />
+                        </button>
+
+                        {/* Report Icon */}
+                        <button
+                            onClick={() => handleInteraction("report")}
+                            className="p-1 transition-transform duration-150 ease-out active:scale-110"
+                        >
+                            <Flag
+                                size={24}
+                                fill={reported ? "currentColor" : "none"}
+                                stroke="currentColor"
+                                className={reported ? "text-red-500" : "text-gray-400 dark:text-gray-400"}
+                            />
+                        </button>
+                    </div>
                 </div>
-                <div className="flex gap-4 pt-3 items-center">
-                    {/* Save Icon */}
-                    <button
-                        onClick={() => handleInteraction("save")}
-                        className="p-1 transition-transform duration-150 ease-out active:scale-110"
-                    >
-                        <Bookmark
-                            size={24}
-                            fill={saved ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            className={saved ? "text-yellow-500" : "text-gray-400 dark:text-gray-400"}
-                        />
-                    </button>
-
-                    {/* Like Icon */}
-                    <button
-                        onClick={() => handleInteraction("like")}
-                        className="p-1 transition-transform duration-150 ease-out active:scale-110"
-                    >
-                        <ThumbsUp
-                            size={24}
-                            fill={liked ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            className={liked ? "text-blue-500" : "text-gray-400 dark:text-gray-400"}
-                        />
-                    </button>
-
-                    {/* Report Icon */}
-                    <button
-                        onClick={() => handleInteraction("report")}
-                        className="p-1 transition-transform duration-150 ease-out active:scale-110"
-                    >
-                        <Flag
-                            size={24}
-                            fill={reported ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            className={reported ? "text-red-500" : "text-gray-400 dark:text-gray-400"}
-                        />
-                    </button>
-                </div>
-
                 {card.source && (
                     <p className="text-xs text-gray-600 dark:text-gray-300">
                         Source: {card.source}
