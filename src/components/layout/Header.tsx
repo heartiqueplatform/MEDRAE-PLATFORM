@@ -227,13 +227,15 @@ export function Header({
       <header className="h-14 sm:h-16 bg-card border-b border-border flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 text-sm sm:text-base">
 
         {/* App Logo and Name - Mobile Only */}
-        <div className="flex items-center gap-3 md:hidden">
+        <div className="flex items-center gap-2 md:hidden shrink-0">
           <img
             src="/pwa-192x192.jpeg"
             alt="Medrae Logo"
             className="h-10 w-10 rounded-full object-cover"
           />
-          <span className="text-xl font-semibold text-gray-900">Medrae</span>
+          <span className="text-xl font-semibold text-gray-900 dark:text-white">
+            Medrae
+          </span>
         </div>
 
         <OnlineStatusToast />
