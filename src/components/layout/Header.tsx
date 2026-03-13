@@ -231,7 +231,7 @@ export function Header({
           <img
             src="/pwa-192x192.jpeg"
             alt="Medrae Logo"
-            className="h-10 w-10 rounded-full object-cover"
+            className="h-10 w-10 rounded-lg object-cover"
           />
           <span className="text-xl font-semibold text-gray-900 dark:text-white">
             Medrae
