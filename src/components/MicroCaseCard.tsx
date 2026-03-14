@@ -101,108 +101,60 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
 
     useEffect(() => {
         if (!user) return;
-        // NEW: clear stored batch so refresh loads new cards
-        localStorage.removeItem("cardsBatch");
-        setCardsBatch([]);
-        const loadMicroCases = async () => {
-            let selectedCard: MicroCaseCardType | null = null;
 
-            // Load from localStorage
-            const savedBatch = localStorage.getItem("cardsBatch");
-            if (savedBatch) {
-                const parsedBatch: MicroCaseCardType[] = JSON.parse(savedBatch);
-                setCardsBatch(parsedBatch);
+        const loadMicroCaseCard = async () => {
+            setLoading(true);
+            try {
+                // Call RPC that returns an unseen micro-case card
+                const { data, error } = await supabase
+                    .rpc('get_random_micro_case_card', { p_user_id: user.id });
 
-                selectedCard = cardId
-                    ? parsedBatch.find((c) => c.id === cardId) || parsedBatch[0]
-                    : parsedBatch[Math.floor(Math.random() * parsedBatch.length)];
+                if (error) throw error;
+                if (!data) {
+                    setNoCard(true);
+                    setCard(null);
+                    return;
+                }
 
-                setCard(selectedCard);
+                setCard(data);
+                setNoCard(false);
+
+                // Fetch counts for stats
+                const [views, likes, saves, reports] = await Promise.all([
+                    supabase.from("micro_case_card_views").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                    supabase.from("micro_case_card_likes").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                    supabase.from("micro_case_card_saved_reports").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                    supabase.from("micro_case_card_reports").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                ]);
+
+                setCounts({
+                    views: views.count || 0,
+                    likes: likes.count || 0,
+                    saves: saves.count || 0,
+                    reports: reports.count || 0,
+                });
+
+                // Check if user already interacted
+                const [{ data: saveData }, { data: likeData }, { data: reportData }] = await Promise.all([
+                    supabase.from("micro_case_card_saved_reports").select("id").eq("user_id", user.id).eq("card_id", data.id).maybeSingle(),
+                    supabase.from("micro_case_card_likes").select("id").eq("user_id", user.id).eq("card_id", data.id).maybeSingle(),
+                    supabase.from("micro_case_card_reports").select("id").eq("user_id", user.id).eq("card_id", data.id).maybeSingle(),
+                ]);
+
+                setSaved(!!saveData);
+                setLiked(!!likeData);
+                setReported(!!reportData);
+
+            } catch (err) {
+                console.error("Error fetching micro-case card:", err);
+                setNoCard(true);
+            } finally {
                 setLoading(false);
-            }
-
-            // Fetch from Supabase if no cached card
-            if (!selectedCard) {
-                setLoading(true);
-                try {
-                    const { data, error } = await supabase
-                        .from("micro_case_cards")
-                        .select("*")
-                        .eq("is_active", true)
-                        .order("created_at", { ascending: false }) // NEW
-                        .limit(BATCH_SIZE); // NEW
-                    if (error) throw error;
-                    if (!data || data.length === 0) {
-                        setNoCard(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    const newBatch = [...cardsBatch, ...data];
-                    setCardsBatch(newBatch);
-                    localStorage.setItem("cardsBatch", JSON.stringify(newBatch));
-
-                    selectedCard = cardId
-                        ? data.find((c) => c.id === cardId) || data[0]
-                        : data[Math.floor(Math.random() * data.length)];
-
-                    setCard(selectedCard);
-                } catch (err) {
-                    console.error("Error fetching micro-case cards:", err);
-                } finally {
-                    setLoading(false);
-                }
-            }
-
-            // --- Always record view, even if cached ---
-            if (selectedCard) {
-                try {
-                    const { data: existingView } = await supabase
-                        .from("micro_case_card_views")
-                        .select("id")
-                        .eq("user_id", user.id)
-                        .eq("card_id", selectedCard.id)
-                        .maybeSingle();
-
-                    if (!existingView) {
-                        await supabase.from("micro_case_card_views").insert({
-                            user_id: user.id,
-                            card_id: selectedCard.id,
-                        });
-                    }
-
-                    const [views, likes, saves, reports] = await Promise.all([
-                        supabase.from("micro_case_card_views").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                        supabase.from("micro_case_card_likes").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                        supabase.from("micro_case_card_saved_reports").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                        supabase.from("micro_case_card_reports").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                    ]);
-
-                    setCounts({
-                        views: views.count || 0,
-                        likes: likes.count || 0,
-                        saves: saves.count || 0,
-                        reports: reports.count || 0,
-                    });
-
-                    const [{ data: saveData }, { data: likeData }, { data: reportData }] = await Promise.all([
-                        supabase.from("micro_case_card_saved_reports").select("id").eq("user_id", user.id).eq("card_id", selectedCard.id).maybeSingle(),
-                        supabase.from("micro_case_card_likes").select("id").eq("user_id", user.id).eq("card_id", selectedCard.id).maybeSingle(),
-                        supabase.from("micro_case_card_reports").select("id").eq("user_id", user.id).eq("card_id", selectedCard.id).maybeSingle(),
-                    ]);
-
-                    setSaved(!!saveData);
-                    setLiked(!!likeData);
-                    setReported(!!reportData);
-
-                } catch (err) {
-                    console.error("Error recording micro-case view:", err);
-                }
             }
         };
 
-        loadMicroCases();
-    }, [user, cardId, batchIndex]);
+        loadMicroCaseCard();
+    }, [user, cardId]);
     const handleInteraction = async (type: "save" | "like" | "report") => {
         if (!card || !user) return;
         if (tapSound) tapSound.play();

@@ -113,124 +113,61 @@ export function Flashcard({ cardId }: { cardId?: string }) {
     }, [user, card]);
     useEffect(() => {
         if (!user) return;
-        localStorage.removeItem("flashcardsBatch"); // NEW
-        setCardsBatch([]);
-        const loadFlashcards = async () => {
-            let selectedCard: FlashcardType | null = null;
 
-            // Check localStorage first
-            const savedBatch = localStorage.getItem("flashcardsBatch");
-            if (savedBatch) {
-                const parsedBatch = JSON.parse(savedBatch);
-                setCardsBatch(parsedBatch);
+        const loadFlashcard = async () => {
+            setLoading(true);
+            try {
+                // Call RPC that ensures unseen card for this user
+                const { data, error } = await supabase
+                    .rpc('get_random_flashcard', { p_user_id: user.id });
 
-                selectedCard = cardId
-                    ? parsedBatch.find((c) => c.id === cardId) || parsedBatch[0]
-                    : parsedBatch[Math.floor(Math.random() * parsedBatch.length)];
+                if (error) throw error;
 
-                setCard(selectedCard);
+                if (!data) {
+                    setNoCard(true);
+                    setCard(null);
+                    return;
+                }
+
+                setCard(data);
+                setNoCard(false);
+
+                // Fetch counts
+                const [views, likes, saves, reports] = await Promise.all([
+                    supabase.from("flashcard_views").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                    supabase.from("flashcard_likes").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                    supabase.from("flashcard_saves").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                    supabase.from("flashcard_reports").select("*", { count: "exact", head: true }).eq("card_id", data.id),
+                ]);
+
+                setCounts({
+                    views: views.count || 0,
+                    likes: likes.count || 0,
+                    saves: saves.count || 0,
+                    reports: reports.count || 0,
+                });
+
+                // Check user interactions
+                const [{ data: saveData }, { data: likeData }, { data: reportData }] = await Promise.all([
+                    supabase.from("flashcard_saves").select("id").eq("user_id", user.id).eq("card_id", data.id).maybeSingle(),
+                    supabase.from("flashcard_likes").select("id").eq("user_id", user.id).eq("card_id", data.id).maybeSingle(),
+                    supabase.from("flashcard_reports").select("id").eq("user_id", user.id).eq("card_id", data.id).maybeSingle(),
+                ]);
+
+                setSaved(!!saveData);
+                setLiked(!!likeData);
+                setReported(!!reportData);
+
+            } catch (err) {
+                console.error("Error fetching flashcard:", err);
+                setNoCard(true);
+            } finally {
                 setLoading(false);
-            }
-
-            // If no cached batch, fetch from Supabase
-            if (!selectedCard) {
-                setLoading(true);
-                try {
-                    const { data, error } = await supabase
-                        .from("flashcard_cards")
-                        .select("*")
-                        .eq("is_active", true)
-                        .order("created_at", { ascending: false }) // NEW
-                        .limit(BATCH_SIZE); // NEW
-                    if (error) throw error;
-                    if (!data || data.length === 0) {
-                        setNoCard(true);
-                        setLoading(false);
-                        return;
-                    }
-
-                    const newBatch = [...cardsBatch, ...data];
-                    setCardsBatch(newBatch);
-                    localStorage.setItem("flashcardsBatch", JSON.stringify(newBatch));
-
-                    selectedCard = cardId
-                        ? data.find((c) => c.id === cardId) || data[0]
-                        : data[Math.floor(Math.random() * data.length)];
-
-                    setCard(selectedCard);
-                } catch (err) {
-                    console.error("Error fetching flashcards:", err);
-                } finally {
-                    setLoading(false);
-                }
-            }
-
-            // --- ALWAYS record view, even if cached ---
-            if (selectedCard) {
-                try {
-                    const { data: existingView } = await supabase
-                        .from("flashcard_views")
-                        .select("id")
-                        .eq("user_id", user.id)
-                        .eq("card_id", selectedCard.id)
-                        .maybeSingle();
-
-                    if (!existingView) {
-                        await supabase.from("flashcard_views").insert({
-                            user_id: user.id,
-                            card_id: selectedCard.id,
-                        });
-                    }
-
-                    // Fetch counts
-                    const [views, likes, saves, reports] = await Promise.all([
-                        supabase.from("flashcard_views").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                        supabase.from("flashcard_likes").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                        supabase.from("flashcard_saves").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                        supabase.from("flashcard_reports").select("*", { count: "exact", head: true }).eq("card_id", selectedCard.id),
-                    ]);
-
-                    setCounts({
-                        views: views.count || 0,
-                        likes: likes.count || 0,
-                        saves: saves.count || 0,
-                        reports: reports.count || 0,
-                    });
-                    // NEW: check if user already interacted
-                    const [{ data: saveData }, { data: likeData }, { data: reportData }] = await Promise.all([
-                        supabase
-                            .from("flashcard_saves")
-                            .select("id")
-                            .eq("user_id", user.id)
-                            .eq("card_id", selectedCard.id)
-                            .maybeSingle(),
-
-                        supabase
-                            .from("flashcard_likes")
-                            .select("id")
-                            .eq("user_id", user.id)
-                            .eq("card_id", selectedCard.id)
-                            .maybeSingle(),
-
-                        supabase
-                            .from("flashcard_reports")
-                            .select("id")
-                            .eq("user_id", user.id)
-                            .eq("card_id", selectedCard.id)
-                            .maybeSingle(),
-                    ]);
-
-                    setSaved(!!saveData);
-                    setLiked(!!likeData);
-                    setReported(!!reportData);
-                } catch (err) {
-                    console.error("Error recording flashcard view:", err);
-                }
             }
         };
 
-        loadFlashcards();
-    }, [user, cardId, batchIndex]);
+        loadFlashcard();
+    }, [user, cardId]);
 
     const handleInteraction = async (type: "save" | "like" | "report") => {
         if (!card || !user) return;
