@@ -41,7 +41,7 @@ export default function CountdownCards() {
     // --- Load cache and hidden exams on mount ---
     useEffect(() => {
         const cached = localStorage.getItem("allExams");
-        if (cached) {
+        if (cached && JSON.parse(cached).length > 0) {
             const parsed: CountdownPlan[] = JSON.parse(cached);
             const userExams = parsed.filter(e => e.user_id);
             const universal = parsed.filter(e => !e.user_id);
