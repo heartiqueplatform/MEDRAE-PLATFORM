@@ -731,19 +731,16 @@ This receipt confirms exam participation only and does not represent the final e
                 </h2>
 
                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                    Every challenge you face is an opportunity to grow and refine your knowledge. Take a moment to
-                    reflect on your progress, celebrate the answers you have mastered, and view the areas you can
-                    improve as stepping stones toward mastery. Remember, true learning is not only about the final
-                    score but the effort, perseverance, and insight gained along the way. Embrace this moment with
-                    confidence, curiosity, and the unwavering belief that each step forward strengthens your
-                    professional journey.
+                    Please review your answers carefully before confirming submission. Ensure you have completed all questions to the best of your ability.
+                    Once submitted, your responses will be finalized and cannot be changed. By confirming, you certify that your exam attempt is complete and accurate.
                 </p>
 
                 {pendingAction === "submit" && (
-                    <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">
-                        Your Score Preview: {correctCount}/{questions.length} ({percentageScore}%)
-                    </h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        Please review your answers carefully before confirming submission.
+                    </p>
                 )}
+
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Answered */}
@@ -824,7 +821,7 @@ This receipt confirms exam participation only and does not represent the final e
                 {/* Thank You Marquee — centered */}
                 <div className="w-full h-16 flex items-center justify-center overflow-hidden border-t border-border">
                     <div className="whitespace-nowrap animate-marquee-slow text-lg md:text-xl font-semibold tracking-wide text-foreground">
-                        🌟 Thank you for choosing our website! We appreciate your trust and commitment to learning! 🌟
+                        Thank you for choosing our website! We appreciate your trust and commitment to learning!
                     </div>
                 </div>
 
