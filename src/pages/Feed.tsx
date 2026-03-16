@@ -327,7 +327,6 @@ export default function Feed() {
         return e.returnValue;
       }
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [uploading]);

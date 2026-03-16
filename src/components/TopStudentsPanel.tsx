@@ -334,6 +334,73 @@ export const DailyTriviaCard = () => {
         window.open(whatsappUrl, "_blank");
     };
 
+    const reactionBurst = (emoji: "like" | "fire" | "clap") => {
+
+        playSound("tap");
+
+        const config = {
+            like: { emoji: "👍", color: "#3b82f6" },
+            fire: { emoji: "🔥", color: "#f97316" },
+            clap: { emoji: "👏", color: "#22c55e" },
+        };
+
+        const selected = config[emoji];
+
+        // stronger confetti burst
+        confetti({
+            particleCount: 28,
+            spread: 90,
+            startVelocity: 28,
+            gravity: 1.1,
+            scalar: 1,
+            ticks: 90,
+            origin: { y: 0.85 },
+            colors: [selected.color],
+        });
+
+        // second burst for richer effect
+        setTimeout(() => {
+            confetti({
+                particleCount: 18,
+                spread: 70,
+                startVelocity: 22,
+                gravity: 1.2,
+                scalar: 0.9,
+                ticks: 80,
+                origin: { y: 0.85 },
+                colors: [selected.color],
+            });
+        }, 120);
+
+        // number of floating emojis
+        const emojiCount = 8;
+
+        for (let i = 0; i < emojiCount; i++) {
+
+            const bubble = document.createElement("div");
+            bubble.innerText = selected.emoji;
+
+            bubble.style.position = "fixed";
+            bubble.style.bottom = "80px";
+            bubble.style.left = `${Math.random() * 80 + 10}%`;
+            bubble.style.fontSize = `${22 + Math.random() * 10}px`;
+            bubble.style.pointerEvents = "none";
+            bubble.style.zIndex = "9999";
+            bubble.style.opacity = "1";
+            bubble.style.transition = "all 1.4s ease-out";
+
+            document.body.appendChild(bubble);
+
+            requestAnimationFrame(() => {
+                bubble.style.transform = `translateY(-${120 + Math.random() * 80}px) scale(${1.2 + Math.random()})`;
+                bubble.style.opacity = "0";
+            });
+
+            setTimeout(() => {
+                bubble.remove();
+            }, 1400);
+        }
+    };
     const toggleReaction = async (
         targetUserId: string,
         reaction: "like" | "fire" | "clap"
@@ -688,7 +755,7 @@ export const DailyTriviaCard = () => {
                             topStudents.map((s, idx) => (
                                 <motion.div
                                     key={s.user_id}
-                                    className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-md ${idx === 0 ? "bg-yellow-100 dark:bg-yellow-800"
+                                    className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-md flex flex-col justify-between ${idx === 0 ? "bg-yellow-100 dark:bg-yellow-800"
                                         : idx === 1 ? "bg-gray-100 dark:bg-gray-700"
                                             : idx === 2 ? "bg-orange-100 dark:bg-orange-800"
                                                 : "bg-gray-100 dark:bg-gray-800"
@@ -700,7 +767,7 @@ export const DailyTriviaCard = () => {
                                     onClick={() => setSelectedUserId(s.user_id)}
 
                                 >
-                                    <div className="flex flex-col items-center text-center">
+                                    <div className="flex flex-col items-center text-center flex-1">
                                         {/* Top 3 Icon */}
                                         {idx <= 2 && (
                                             <Stethoscope
@@ -728,30 +795,8 @@ export const DailyTriviaCard = () => {
                                         <div className="mt-2 font-bold text-blue-600 dark:text-blue-400">
                                             {s.score} pts
                                         </div>
-                                        <div className="flex items-center justify-center gap-2 mt-2 text-xl">
 
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); toggleReaction(s.user_id, "like"); }}
-                                                className={`px-3 py-2 rounded ${myReactions[s.user_id]?.includes("like") ? "scale-125" : ""}`}
-                                            >
-                                                👍 {reactions[s.user_id]?.like || 0}
-                                            </button>
 
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); toggleReaction(s.user_id, "fire"); }}
-                                                className={`px-3 py-2 rounded ${myReactions[s.user_id]?.includes("fire") ? "scale-125" : ""}`}
-                                            >
-                                                🔥 {reactions[s.user_id]?.fire || 0}
-                                            </button>
-
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); toggleReaction(s.user_id, "clap"); }}
-                                                className={`px-3 py-2 rounded ${myReactions[s.user_id]?.includes("clap") ? "scale-125" : ""}`}
-                                            >
-                                                👏 {reactions[s.user_id]?.clap || 0}
-                                            </button>
-
-                                        </div>
                                         {s.completedAt && (
                                             <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                                                 Done at {new Date(s.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
@@ -770,6 +815,47 @@ export const DailyTriviaCard = () => {
                                             {idx === 1 && <Badge variant="secondary">🥈</Badge>}
                                             {idx === 2 && <Badge variant="warning">🥉</Badge>}
                                         </div>
+                                    </div>
+                                    <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t text-xl">
+
+                                        <motion.button
+                                            whileTap={{ scale: 1.3 }}
+                                            transition={{ type: "spring", stiffness: 500 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                reactionBurst("like");
+                                                toggleReaction(s.user_id, "like");
+                                            }}
+                                            className="px-3 py-2 rounded"
+                                        >
+                                            👍 <span className="text-xs">{reactions[s.user_id]?.like || 0}</span>
+                                        </motion.button>
+
+                                        <motion.button
+                                            whileTap={{ scale: 1.3 }}
+                                            transition={{ type: "spring", stiffness: 500 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                reactionBurst("fire");
+                                                toggleReaction(s.user_id, "fire");
+                                            }}
+                                            className="px-3 py-2 rounded"
+                                        >
+                                            🔥 <span className="text-xs">{reactions[s.user_id]?.fire || 0}</span>
+                                        </motion.button>
+
+                                        <motion.button
+                                            whileTap={{ scale: 1.3 }}
+                                            transition={{ type: "spring", stiffness: 500 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                reactionBurst("clap");
+                                                toggleReaction(s.user_id, "clap");
+                                            }}
+                                            className="px-3 py-2 rounded"
+                                        >
+                                            👏 <span className="text-xs">{reactions[s.user_id]?.clap || 0}</span>
+                                        </motion.button>
                                     </div>
                                 </motion.div>
                             ))
