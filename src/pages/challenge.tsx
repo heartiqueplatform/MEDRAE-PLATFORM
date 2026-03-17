@@ -142,7 +142,7 @@ function ChallengeTabs({
                                                 className="flex items-center gap-1 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg shadow-md"
                                             >
                                                 <Send size={16} />
-                                                <span>Send Challenge</span>
+                                                <span>Send</span>
                                             </button>
                                         </motion.div>
                                     ))}
@@ -191,7 +191,7 @@ function ChallengeTabs({
                             className="flex items-center gap-1 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg shadow-md transition-colors duration-150"
                         >
                             <Check size={16} />
-                            <span>Accept Challenge</span>
+                            <span>Accept</span>
                         </button>
                     </motion.div>
                 ));
