@@ -33,6 +33,10 @@ function ChallengeTabs({
     sendChallenge,
     inviteCards,
     handleInvite,
+    seenIncomingIds,        // ✅ add this
+    setSeenIncomingIds,
+    unseenIncomingCount,
+    pendingSentCount,   // ✅ add this
 }: any) {
     const [activeTab, setActiveTab] = useState<"find" | "incoming" | "sent" | "completed">("find");
     const renderTabContent = () => {
@@ -161,8 +165,17 @@ function ChallengeTabs({
                         exit={{ opacity: 0, y: 20 }}
                         className="p-3 mb-2 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-sm flex justify-between"
                     >
-                        <div>
-                            <p className="font-medium">{c.from_user?.name || "Player"}</p>
+                        <div className="flex flex-col">
+                            <p className="font-medium flex items-center gap-2">
+                                {c.from_user?.name || "Player"}
+
+                                {/* 🔹 Unseen badge */}
+                                {!seenIncomingIds.has(c.id) && (
+                                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                        New
+                                    </span>
+                                )}
+                            </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Score: {c.score_to_beat}
                             </p>
@@ -232,17 +245,41 @@ function ChallengeTabs({
     return (
         <div className="mt-4">
             {/* TABS */}
+            {/* TABS */}
             <div className="flex border-b border-gray-300 dark:border-gray-700 mb-3">
                 {["find", "incoming", "sent", "completed"].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}
-                        className={`flex-1 py-2 font-medium ${activeTab === tab
+                        className={`flex-1 py-2 font-medium relative text-center ${activeTab === tab
                             ? "border-b-2 border-blue-500 text-blue-600"
                             : "text-gray-500 dark:text-gray-400"
                             }`}
                     >
-                        {tab === "find" ? "Find Players" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        <span className="relative inline-block">
+                            {tab === "find" ? "Find Players" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+
+                            {/* Incoming badge */}
+                            {tab === "incoming" && unseenIncomingCount > 0 && (
+                                <span className="absolute -top-1 -right-5 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    {unseenIncomingCount}
+                                </span>
+                            )}
+
+                            {/* Sent badge (read/unread style) */}
+                            {tab === "sent" && pendingSentCount > 0 && (
+                                <span className="absolute -top-1 -right-5 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    {pendingSentCount}
+                                </span>
+                            )}
+
+                            {/* Completed badge */}
+                            {tab === "completed" && completed.length > 0 && (
+                                <span className="absolute -top-1 -right-5 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    {completed.length}
+                                </span>
+                            )}
+                        </span>
                     </button>
                 ))}
             </div>
@@ -304,6 +341,10 @@ export default function ChallengePage() {
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const seenWins = useRef<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
+
+    // Track which incoming challenges the user has seen
+    const [seenIncomingIds, setSeenIncomingIds] = useState<Set<string>>(new Set());
+
 
     useEffect(() => {
         if (!user) return;
@@ -491,6 +532,7 @@ https://medrae.vercel.app`;
     };
     const acceptChallenge = async (challenge: any) => {
         playSound("start");
+        setSeenIncomingIds((prev) => new Set(prev).add(challenge.id));
         if (!challenge.question_ids || challenge.question_ids.length === 0) return;
 
         const { data: questionsData, error } = await supabase
@@ -672,9 +714,16 @@ https://medrae.vercel.app`;
     const incoming = challenges.filter(
         (c) => c.to_user_id === user?.id && c.status === "pending"
     );
+    // Only count incoming challenges the user has not yet seen
+    const unseenIncomingCount = incoming.filter(c => !seenIncomingIds.has(c.id)).length;
+
+
     const outgoing = challenges.filter(
         (c) => c.from_user_id === user?.id && c.status === "pending"
     );
+
+    // Count pending sent challenges
+    const pendingSentCount = outgoing.length;
     const completed = challenges.filter((c) => c.status === "completed");
 
     // 🎉 CONFETTI ONLY ON NEW WINS
@@ -814,7 +863,7 @@ https://medrae.vercel.app`;
                         </div>
                         <div className="p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
                             <Clock className="mx-auto mb-1" size={18} />
-                            <p className="font-bold">{incoming.length}</p>
+                            <p className="font-bold">{unseenIncomingCount}</p>
                             <p className="text-xs">Pending</p>
                         </div>
                     </>
@@ -840,6 +889,10 @@ https://medrae.vercel.app`;
                     sendChallenge={sendChallenge}
                     inviteCards={inviteCards}
                     handleInvite={handleInvite}
+                    seenIncomingIds={seenIncomingIds}
+                    setSeenIncomingIds={setSeenIncomingIds}
+                    unseenIncomingCount={unseenIncomingCount}
+                    pendingSentCount={pendingSentCount}
                 />
             </div>
 
