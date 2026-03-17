@@ -31,6 +31,7 @@ import {
   AlertCircle,
   Newspaper,
   BarChart3,
+  Swords,
   ShoppingBag
 
 } from "lucide-react";
@@ -272,6 +273,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: HomeFilledIcon, iconTone: "neutral" },
     { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" },
     { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert", badge: mistakeCount > 0 ? mistakeCount : undefined },
+    { title: "Challenges", url: "/challenge", icon: Swords, iconTone: "practice" },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai", badge: "New" },
 
     { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },

@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { Bell, Moon, Sun, User, Menu, RefreshCcw, MoreVertical, Share2, Flame, LayoutGrid } from "lucide-react";
+import { Bell, Moon, Sun, User, Menu, RefreshCcw, MoreVertical, Swords, Share2, Flame, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -339,6 +339,20 @@ export function Header({
                 )}
               </PopoverContent>
             </Popover>
+            {/* Challenge Icon */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                // Vibrate for 50ms
+                if (navigator.vibrate) navigator.vibrate(50);
+                navigate("/challenge");
+              }}
+              className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-3"
+              title="Challenges"
+            >
+              <Swords className="h-6 w-6 text-pink-500" />
+            </Button>
           </div>
           <div className="ml-auto mr-3 sm:mr-4">
             <DropdownMenu>

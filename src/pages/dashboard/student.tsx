@@ -15,7 +15,7 @@ import { toast as sonnerToast } from "sonner"; // ✅ renamed
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import CountdownFloating from "@/components/CountdownFloating";
 import FloatingQuickActions from "@/components/FloatingQuickActions";
-
+import ChallengeCard from "@/components/ChallengeCard";
 import { UnitBreakdown } from "@/components/UnitBreakdown";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -1438,7 +1438,7 @@ export default function StudentDashboard() {
 
         </Card >
         <CountdownFloating />
-
+        <ChallengeCard />
         <DailyTriviaCard />
 
         <DailyImagesTrivia />

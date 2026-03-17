@@ -205,20 +205,45 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
             <Card className="mt-4 border-0 shadow-lg
             bg-gradient-to-r from-green-100 via-teal-200 to-cyan-300
             dark:from-teal-900 dark:via-cyan-800 dark:to-blue-900">
-                <CardContent className="flex flex-col items-center justify-center h-48">
-                    <p className="text-gray-700 dark:text-gray-200 mb-4 font-semibold">Loading Micro Case...</p>
-                    <div className="flex space-x-2">
-                        {[...Array(3)].map((_, i) => (
-                            <span
-                                key={i}
-                                className="w-3 h-3 rounded-full animate-bounce"
-                                style={{
-                                    backgroundColor: i === 0 ? "#2563EB" : i === 1 ? "#14B8A6" : "#FBBF24", // Indigo, Teal, Gold
-                                    animationDelay: `${i * 0.2}s`,
-                                }}
-                            />
-                        ))}
+
+
+
+                {/* Static Heading */}
+                <div className="px-4 py-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500
+                dark:from-teal-700 dark:via-cyan-700 dark:to-blue-700 text-white font-semibold rounded-t-lg">
+                    Micro Case
+                </div>
+
+                {/* Header / Info Skeleton */}
+                <CardHeader className="flex flex-row justify-between py-1">
+                    <CardTitle className="text-blue-700 dark:text-gray-100 text-lg">
+                        CASE TYPE
+                    </CardTitle>
+                    <Badge className="bg-green-500 text-white dark:bg-cyan-700 dark:text-gray-100 text-lg">
+                        UNIT
+                    </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3 py-2 px-2 animate-pulse">
+                    {/* Big skeleton for main description */}
+                    <div className="h-36 w-full bg-gray-300 dark:bg-gray-700 rounded-md relative flex items-center justify-center">
+
+                        {/* Dots loader centered inside the big skeleton */}
+                        <div className="flex space-x-2 absolute">
+                            {[...Array(3)].map((_, i) => (
+                                <span
+                                    key={i}
+                                    className="w-3 h-3 rounded-full animate-bounce"
+                                    style={{
+                                        backgroundColor: i === 0 ? "#2563EB" : i === 1 ? "#14B8A6" : "#FBBF24",
+                                        animationDelay: `${i * 0.2}s`,
+                                    }}
+                                />
+                            ))}
+                        </div>
                     </div>
+
+                    {/* One small skeleton for stats / extra info */}
+                    <div className="h-6 w-1/2 bg-gray-300 dark:bg-gray-700 rounded-md" />
                 </CardContent>
             </Card>
         );

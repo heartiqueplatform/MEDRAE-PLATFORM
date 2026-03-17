@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Brain,
-
+    Swords,
     Heart,
     Calendar,
     FileText,
@@ -322,6 +322,7 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
             items: [
                 { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" },
                 { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content", hasDot: true },
+                { title: "Challenges", url: "/challenge", icon: Swords, iconTone: "practice" },
                 { title: "AI Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai" },
                 { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },
                 { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? formatNumber(mistakeCount) : undefined, iconTone: "alert" },

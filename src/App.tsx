@@ -24,6 +24,7 @@ import CreateListingPage from "./pages/market/create";
 import MyListings from "./pages/market/my-listings";
 import ListingDetail from "./pages/market/[id]";
 // Pages
+import ChallengePage from "./pages/challenge";
 import { AuthProvider } from "@/context/AuthProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { Forum } from "./pages/Forum";
@@ -385,7 +386,7 @@ const AppContent = () => {
                         <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
                         <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
                         <Route path="/exam/results" element={<ResultsListPage />} />
-
+                        <Route path="/challenge" element={<ChallengePage />} />
                         {/* ------------------- TUTOR EXAM CONTROL ------------------- */}
                         <Route path="/tutor/exams" element={<TutorExamList />} />
                         <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />

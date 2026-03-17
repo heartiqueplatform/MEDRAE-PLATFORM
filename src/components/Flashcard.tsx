@@ -219,23 +219,45 @@ export function Flashcard({ cardId }: { cardId?: string }) {
     };
     if (loading)
         return (
-            <Card className="mt-3 border-0  shadow-lg
-    bg-gradient-to-r from-yellow-100 via-pink-100 to-purple-200
-    dark:from-purple-900 dark:via-pink-800 dark:to-indigo-800">
-                <CardContent className="flex flex-col items-center justify-center h-32">
-                    <p className="text-gray-700 dark:text-gray-200 mb-4 font-semibold">Loading Flashcards...</p>
-                    <div className="flex space-x-2">
-                        {[...Array(3)].map((_, i) => (
-                            <span
-                                key={i}
-                                className="w-3 h-3 rounded-full animate-bounce"
-                                style={{
-                                    backgroundColor: i === 0 ? "#2563EB" : i === 1 ? "#14B8A6" : "#FBBF24", // Indigo, Teal, Gold
-                                    animationDelay: `${i * 0.2}s`,
-                                }}
-                            />
-                        ))}
+            <Card className="mt-3 border-0 shadow-lg bg-gradient-to-r from-yellow-100 via-pink-100 to-purple-200 dark:from-purple-900 dark:via-pink-800 dark:to-indigo-800">
+
+
+                {/* Static Heading */}
+                <div className="px-4 py-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
+                dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 text-white font-semibold rounded-t-lg">
+                    Flashcard Card
+                </div>
+
+                {/* Header */}
+                <CardHeader className="flex flex-row justify-between py-1">
+                    <CardTitle className="text-purple-700 dark:text-gray-100  text-lg">
+                        FLASHCARD TYPE
+                    </CardTitle>
+                    <Badge className="bg-blue-500 text-white dark:bg-pink-700 dark:text-gray-100 text-lg">
+                        UNIT
+                    </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3 py-2 px-2 animate-pulse">
+                    {/* Big skeleton for main content */}
+                    <div className="h-32 w-full bg-gray-300 dark:bg-gray-700 rounded-md relative flex items-center justify-center">
+
+                        {/* Dots loader centered inside the big skeleton */}
+                        <div className="flex space-x-2 absolute">
+                            {[...Array(3)].map((_, i) => (
+                                <span
+                                    key={i}
+                                    className="w-3 h-3 rounded-full animate-bounce"
+                                    style={{
+                                        backgroundColor: i === 0 ? "#2563EB" : i === 1 ? "#14B8A6" : "#FBBF24",
+                                        animationDelay: `${i * 0.2}s`,
+                                    }}
+                                />
+                            ))}
+                        </div>
                     </div>
+
+                    {/* Small skeleton for stats, image, or extra info */}
+                    <div className="h-6 w-1/2 bg-gray-300 dark:bg-gray-700 rounded-md" />
                 </CardContent>
             </Card>
         );
