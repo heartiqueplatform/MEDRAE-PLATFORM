@@ -1023,7 +1023,7 @@ Please provide a detailed discussion and guidance.`;
       pointer-events-none
       bg-gray-900 text-white text-[10px]
       px-2 py-1 rounded-md whitespace-nowrap
-      transition shadow-lg z-[9999]"
+      transition shadow-lg  z-[9999]"
             >
               {showUnansweredOnly
                 ? "Showing: Unanswered"
@@ -1075,7 +1075,7 @@ Please provide a detailed discussion and guidance.`;
     pointer-events-none
     bg-gray-900 text-white text-[10px]
     px-2 py-1 rounded-md whitespace-nowrap
-    transition shadow-lg z-50"
+    transition shadow-lg  z-[9999]"
             >
               {resetting ? "Resetting quiz…" : "Reset & restart this quiz"}
             </span>
@@ -1094,7 +1094,7 @@ Please provide a detailed discussion and guidance.`;
           pointer-events-none
           bg-gray-900 text-white text-[10px]
           px-2 py-1 rounded-md whitespace-nowrap
-          transition shadow-lg z-50">
+          transition shadow-lg  z-[9999]">
               Reset Timer
             </span>
           </button>
