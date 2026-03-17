@@ -792,19 +792,23 @@ https://medrae.vercel.app`;
     return (
         <>
 
-            <div className="w-full sm:max-w-4xl sm:mx-auto p-1 sm:p-4 space-y-2 border-0">
+            <div className="w-full sm:max-w-4xl sm:mx-auto p-2 sm:p-4 space-y-2 border-0">
                 {/* FULL-SCREEN QUIZ */}
                 {activeChallenge && (
                     <div
                         className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col justify-center items-center pt-32 sm:pt-0"
                         style={{ height: "100vh" }}
                     >
-                        <h2 className="text-xl font-bold mb-2">
+                        <h2 className="text-xl font-bold mb-1">
                             Answer the Challenge!
                         </h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-md mb-2">
+                            {activeChallenge?.status === "self"
+                                ? "Complete all 10 questions and your score will be sent as a challenge to another player. They will try to beat your score."
+                                : "You are attempting to beat another player's score. Try your best to score higher and win the challenge!"}
+                        </p>
 
-                        <p className="mb-2">Time left: {timeLeft}s</p>
-
+                        <p className="mb-2 font-medium">Time left: {timeLeft}s</p>
 
                         <div className="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar p-2">
 
