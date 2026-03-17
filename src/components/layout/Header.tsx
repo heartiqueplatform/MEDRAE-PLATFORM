@@ -350,7 +350,7 @@ export function Header({
               if (navigator.vibrate) navigator.vibrate(50);
               navigate("/challenge");
             }}
-            className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-4"
+            className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-1"
             title="Challenges"
           >
             <Swords className="h-6 w-6 text-pink-500" />
