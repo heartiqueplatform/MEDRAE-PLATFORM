@@ -340,20 +340,22 @@ export function Header({
               </PopoverContent>
             </Popover>
             {/* Challenge Icon */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                // Vibrate for 50ms
-                if (navigator.vibrate) navigator.vibrate(50);
-                navigate("/challenge");
-              }}
-              className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-3"
-              title="Challenges"
-            >
-              <Swords className="h-6 w-6 text-pink-500" />
-            </Button>
+
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              // Vibrate for 50ms
+              if (navigator.vibrate) navigator.vibrate(50);
+              navigate("/challenge");
+            }}
+            className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-3"
+            title="Challenges"
+          >
+            <Swords className="h-6 w-6 text-pink-500" />
+          </Button>
+
           <div className="ml-auto mr-3 sm:mr-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
