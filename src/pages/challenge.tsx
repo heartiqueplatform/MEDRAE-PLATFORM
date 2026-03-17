@@ -285,7 +285,7 @@ function ChallengeTabs({
             </div>
 
             {/* TAB CONTENT */}
-            <div className="h-96 overflow-y-auto custom-scrollbar">
+            <div className="h-96">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -746,11 +746,6 @@ https://medrae.vercel.app`;
             id: "invite-whatsapp",
             name: "Invite via WhatsApp",
             type: "whatsapp",
-        },
-        {
-            id: "invite-link",
-            name: "Copy Invite Link",
-            type: "link",
         },
     ];
     // ================= UI =================
