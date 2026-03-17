@@ -350,7 +350,7 @@ export function Header({
               if (navigator.vibrate) navigator.vibrate(50);
               navigate("/challenge");
             }}
-            className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-5"
+            className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-4"
             title="Challenges"
           >
             <Swords className="h-6 w-6 text-pink-500" />
@@ -361,8 +361,8 @@ export function Header({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-12 w-12">
                   <LayoutGrid
-                    width={32}
-                    height={32}
+                    width={24}
+                    height={24}
                     stroke="currentColor"
                   />
                 </Button>
