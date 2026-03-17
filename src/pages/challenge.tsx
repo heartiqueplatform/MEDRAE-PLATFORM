@@ -35,6 +35,7 @@ function ChallengeTabs({
     handleInvite,
     seenIncomingIds,        // ✅ add this
     setSeenIncomingIds,
+    cancelChallenge,
     unseenIncomingCount,
     pendingSentCount,   // ✅ add this
 }: any) {
@@ -202,15 +203,30 @@ function ChallengeTabs({
                         </div>
                     );
                 }
+
                 return outgoing.map((c: any) => (
                     <motion.div
                         key={c.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20 }}
-                        className="p-3 mb-2 rounded-lg border-0 shadow-sm bg-gray-50 dark:bg-gray-800"
+                        className="p-3 mb-2 rounded-lg bg-gray-50 dark:bg-gray-800 flex justify-between items-center"
                     >
-                        <p className="text-sm">Waiting for {c.to_user?.name || "player"}</p>
+                        <p className="text-sm">
+                            Waiting for {c.to_user?.name || "player"}
+                        </p>
+
+                        <button
+                            onClick={() => {
+                                const ok = confirm("Are you sure you want to cancel this request?");
+                                if (ok) {
+                                    cancelChallenge(c.id);
+                                }
+                            }}
+                            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs"
+                        >
+                            Cancel
+                        </button>
                     </motion.div>
                 ));
 
@@ -465,6 +481,22 @@ export default function ChallengePage() {
         const username = (p.username || "").toLowerCase();
         return name.includes(term) || username.includes(term);
     });
+
+    const cancelChallenge = async (challengeId: string) => {
+        playSound("tap");
+
+        const { error } = await supabase
+            .from("challenges")
+            .delete()
+            .eq("id", challengeId);
+
+        if (error) {
+            console.error(error);
+            alert("Failed to cancel request");
+        } else {
+            fetchChallenges(); // refresh UI
+        }
+    };
     // ================= ACTIONS =================
     const sendChallenge = async (targetUserId: string) => {
         playSound("tap");
@@ -898,6 +930,7 @@ https://medrae.vercel.app`;
                         setSeenIncomingIds={setSeenIncomingIds}
                         unseenIncomingCount={unseenIncomingCount}
                         pendingSentCount={pendingSentCount}
+                        cancelChallenge={cancelChallenge}
                     />
                 </div>
 
