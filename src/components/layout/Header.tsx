@@ -265,8 +265,8 @@ export function Header({
               <PopoverTrigger asChild>
                 <div className="flex items-center gap-1 cursor-pointer">
                   {isCompact ? (
-                    <Badge className="h-6 px-2 text-sm bg-green-500 text-white flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-full bg-white inline-block"></span>
+                    <Badge className="h-5 px-2 text-xs bg-green-500 text-white flex items-center gap-1 whitespace-nowrap shrink-0">
+                      <span className="w-2 h-2 rounded-full bg-white inline-block"></span>
                       {onlineUsers.length} online
                     </Badge>
                   ) : (
