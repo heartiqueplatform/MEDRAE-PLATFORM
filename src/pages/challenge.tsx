@@ -342,7 +342,21 @@ export default function ChallengePage() {
         setTimeLeft(300); // 5 minutes
 
     };
+    // 🔹 ADD THIS BELOW sendChallenge()
+    const inviteViaWhatsApp = () => {
+        const message = `Hey 👋
 
+Join me on Medrae 🚀
+
+Compete in challenges:
+https://medrae.vercel.app/challenge
+
+Sign up here:
+https://medrae.vercel.app`;
+
+        const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(url, "_blank");
+    };
     const acceptChallenge = async (challenge: any) => {
         playSound("start");
         if (!challenge.question_ids || challenge.question_ids.length === 0) return;
@@ -545,7 +559,11 @@ export default function ChallengePage() {
         return <GlobalLoader />; // keep for non-authenticated users
 
     // If user exists, we render the page immediately with skeletons where data is loading
+    // 🔹 ADD THIS BEFORE return()
+    const inviteCards = [
+        { id: "invite-1", name: "Invite Friend" },
 
+    ];
     // ================= UI =================
     return (
         <div className="max-w-4xl mx-auto p-4 space-y-2 border-0">
@@ -710,6 +728,40 @@ export default function ChallengePage() {
                 {/* SCROLL LIST */}
                 <div className="max-h-72 overflow-y-auto custom-scrollbar pr-1">
                     <AnimatePresence>
+
+                        {/* 🔹 INVITE CARD */}
+                        {!loading && inviteCards.map((card) => (
+                            <motion.div
+                                key={card.id}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={inviteViaWhatsApp}
+                                className="p-3 mb-2 rounded-xl
+            bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500
+            dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600
+            text-white flex justify-between items-center cursor-pointer
+            shadow-md hover:shadow-lg transition-all duration-200"
+                            >
+                                <div className="flex items-center gap-2">
+                                    {/* ICON */}
+                                    <div className="w-9 h-9 rounded-full bg-white/25 backdrop-blur flex items-center justify-center">
+                                        <Send size={16} />
+                                    </div>
+
+                                    {/* TEXT */}
+                                    <div>
+                                        <p className="font-medium text-sm">{card.name}</p>
+                                        <p className="text-xs opacity-90">Grow the community</p>
+                                    </div>
+                                </div>
+
+                                {/* BADGE */}
+                                <span className="text-xs bg-white/25 backdrop-blur px-2 py-1 rounded-md">
+                                    Invite a Friend
+                                </span>
+                            </motion.div>
+                        ))}
+
+
                         {loading
                             ? [0, 1, 2, 3, 4, 5].map((i) => (
                                 <motion.div
