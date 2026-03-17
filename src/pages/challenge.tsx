@@ -18,10 +18,133 @@ import {
     Search,
 } from "lucide-react";
 // ================= CHALLENGE TABS COMPONENT =================
-function ChallengeTabs({ incoming, outgoing, completed, acceptChallenge, user, loading }: any) {
-    const [activeTab, setActiveTab] = useState<"incoming" | "sent" | "completed">("incoming");
+function ChallengeTabs({
+    incoming,
+    outgoing,
+    completed,
+    acceptChallenge,
+    user,
+    loading,
+    search,
+    setSearch,
+    onlyOnline,
+    setOnlyOnline,
+    filteredPlayers,
+    sendChallenge,
+    inviteCards,
+    handleInvite,
+}: any) {
+    const [activeTab, setActiveTab] = useState<"find" | "incoming" | "sent" | "completed">("find");
     const renderTabContent = () => {
+
         switch (activeTab) {
+
+            case "find":
+                return (
+                    <div className="p-2">
+
+                        {/* SEARCH */}
+                        <div className="flex gap-2 mb-3">
+                            <div className="flex items-center border rounded px-2 w-full dark:border-gray-700">
+                                <Search size={16} />
+                                <input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search users..."
+                                    className="w-full p-1 outline-none bg-transparent"
+                                />
+                            </div>
+
+                            <button
+                                onClick={() => setOnlyOnline(!onlyOnline)}
+                                className={`px-2 rounded border ${onlyOnline ? "bg-green-200 dark:bg-green-800" : ""}`}
+                            >
+                                Online
+                            </button>
+                        </div>
+
+                        {/* PLAYER LIST */}
+                        <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar pr-1">
+                            <div className="mt-auto">
+
+                                <AnimatePresence>
+                                    {/* 🔹 INVITE CARD */}
+                                    {!loading && inviteCards.map((card) => (
+                                        <motion.div
+                                            key={card.id}
+                                            whileTap={{ scale: 0.97 }}
+                                            onClick={() => handleInvite(card.type)}
+                                            className="p-3 mb-2 rounded-xl
+            bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500
+            dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600
+            text-white flex justify-between items-center cursor-pointer
+            shadow-md hover:shadow-lg transition-all duration-200"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {/* ICON */}
+                                                <div className="w-9 h-9 rounded-full bg-white/25 backdrop-blur flex items-center justify-center">
+                                                    <Send size={16} />
+                                                </div>
+
+                                                {/* TEXT */}
+                                                <div>
+                                                    <p className="font-medium text-sm">{card.name}</p>
+                                                    <p className="text-xs opacity-90">Grow the community</p>
+                                                </div>
+                                            </div>
+
+                                            {/* BADGE */}
+                                            <span className="text-xs bg-white/25 backdrop-blur px-2 py-1 rounded-md">
+                                                Invite a Friend
+                                            </span>
+                                        </motion.div>
+                                    ))}
+
+                                    {filteredPlayers.map((p: any) => (
+                                        <motion.div
+                                            key={p.user_id}
+                                            whileTap={{ scale: 0.97 }}
+                                            className="p-3 mb-2 rounded-lg bg-gray-50 dark:bg-gray-800 flex justify-between items-center"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="relative">
+                                                    {p.avatar_url ? (
+                                                        <img
+                                                            src={p.avatar_url}
+                                                            className="w-9 h-9 rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-9 h-9 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold">
+                                                            {p.name?.[0] || "U"}
+                                                        </div>
+                                                    )}
+                                                    {p.is_online && (
+                                                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></span>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <p className="font-medium text-sm">{p.name}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        @{p.username || "no-username"}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => sendChallenge(p.user_id)}
+                                                className="flex items-center gap-1 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg shadow-md"
+                                            >
+                                                <Send size={16} />
+                                                <span>Send</span>
+                                            </button>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    </div>
+                );
             case "incoming":
                 if (incoming.length === 0) {
                     return (
@@ -110,7 +233,7 @@ function ChallengeTabs({ incoming, outgoing, completed, acceptChallenge, user, l
         <div className="mt-4">
             {/* TABS */}
             <div className="flex border-b border-gray-300 dark:border-gray-700 mb-3">
-                {["incoming", "sent", "completed"].map((tab) => (
+                {["find", "incoming", "sent", "completed"].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}
@@ -119,13 +242,13 @@ function ChallengeTabs({ incoming, outgoing, completed, acceptChallenge, user, l
                             : "text-gray-500 dark:text-gray-400"
                             }`}
                     >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        {tab === "find" ? "Find Players" : tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </button>
                 ))}
             </div>
 
             {/* TAB CONTENT */}
-            <div className="h-80 overflow-y-auto custom-scrollbar">
+            <div className="h-96 overflow-y-auto custom-scrollbar">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -343,7 +466,9 @@ export default function ChallengePage() {
 
     };
     // 🔹 ADD THIS BELOW sendChallenge()
-    const inviteViaWhatsApp = () => {
+    const handleInvite = (type: string) => {
+        playSound("tap");
+
         const message = `Hey 👋
 
 Join me on Medrae 🚀
@@ -354,8 +479,15 @@ https://medrae.vercel.app/challenge
 Sign up here:
 https://medrae.vercel.app`;
 
-        const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-        window.open(url, "_blank");
+        if (type === "whatsapp") {
+            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(url, "_blank");
+        }
+
+        if (type === "link") {
+            navigator.clipboard.writeText("https://medrae.vercel.app");
+            alert("Invite link copied!");
+        }
     };
     const acceptChallenge = async (challenge: any) => {
         playSound("start");
@@ -561,8 +693,16 @@ https://medrae.vercel.app`;
     // If user exists, we render the page immediately with skeletons where data is loading
     // 🔹 ADD THIS BEFORE return()
     const inviteCards = [
-        { id: "invite-1", name: "Invite Friend" },
-
+        {
+            id: "invite-whatsapp",
+            name: "Invite via WhatsApp",
+            type: "whatsapp",
+        },
+        {
+            id: "invite-link",
+            name: "Copy Invite Link",
+            type: "link",
+        },
     ];
     // ================= UI =================
     return (
@@ -689,139 +829,20 @@ https://medrae.vercel.app`;
                     completed={completed}
                     acceptChallenge={acceptChallenge}
                     user={user}
-                    loading={loading} // <- add this
+                    loading={loading}
 
+                    // NEW PROPS
+                    search={search}
+                    setSearch={setSearch}
+                    onlyOnline={onlyOnline}
+                    setOnlyOnline={setOnlyOnline}
+                    filteredPlayers={filteredPlayers}
+                    sendChallenge={sendChallenge}
+                    inviteCards={inviteCards}
+                    handleInvite={handleInvite}
                 />
-                <h2 className="font-semibold mb-3 flex items-center gap-2">
-                    <Users size={18} /> Find Players
-                </h2>
-
-                {/* SEARCH */}
-                <div className="flex gap-2 mb-3">
-                    <div className="flex items-center border rounded px-2 w-full dark:border-gray-700">
-                        <Search size={16} />
-                        <input
-                            value={search}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setSearch(val);
-
-                            }}
-                            placeholder="Search users..."
-                            className="w-full p-1 outline-none bg-transparent"
-                        />
-                    </div>
-
-                    <button
-                        onClick={() => {
-                            playSound("tap");
-                            setOnlyOnline(!onlyOnline);
-                        }}
-                        className={`px-2 rounded border ${onlyOnline ? "bg-green-200 dark:bg-green-800" : ""
-                            }`}
-                    >
-                        Online
-                    </button>
-                </div>
-
-                {/* SCROLL LIST */}
-                {/* SCROLL LIST */}
-                <div className="max-h-72 overflow-y-auto custom-scrollbar pr-1">
-                    <AnimatePresence>
-
-                        {/* 🔹 INVITE CARD */}
-                        {!loading && inviteCards.map((card) => (
-                            <motion.div
-                                key={card.id}
-                                whileTap={{ scale: 0.97 }}
-                                onClick={inviteViaWhatsApp}
-                                className="p-3 mb-2 rounded-xl
-            bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500
-            dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600
-            text-white flex justify-between items-center cursor-pointer
-            shadow-md hover:shadow-lg transition-all duration-200"
-                            >
-                                <div className="flex items-center gap-2">
-                                    {/* ICON */}
-                                    <div className="w-9 h-9 rounded-full bg-white/25 backdrop-blur flex items-center justify-center">
-                                        <Send size={16} />
-                                    </div>
-
-                                    {/* TEXT */}
-                                    <div>
-                                        <p className="font-medium text-sm">{card.name}</p>
-                                        <p className="text-xs opacity-90">Grow the community</p>
-                                    </div>
-                                </div>
-
-                                {/* BADGE */}
-                                <span className="text-xs bg-white/25 backdrop-blur px-2 py-1 rounded-md">
-                                    Invite a Friend
-                                </span>
-                            </motion.div>
-                        ))}
-
-
-                        {loading
-                            ? [0, 1, 2, 3, 4, 5].map((i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 10 }}
-                                    className="mb-2"
-                                >
-                                    <PlayerCardSkeleton />
-                                </motion.div>
-                            ))
-                            : filteredPlayers.map((p) => (
-                                <motion.div
-                                    key={p.user_id}
-                                    whileTap={{ scale: 0.97 }}
-                                    className="p-3 mb-2 rounded-lg bg-gray-50 dark:bg-gray-800 flex justify-between items-center"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        {/* AVATAR */}
-                                        <div className="relative">
-                                            {p.avatar_url ? (
-                                                <img
-                                                    src={p.avatar_url}
-                                                    className="w-9 h-9 rounded-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-9 h-9 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold">
-                                                    {p.name?.[0] || "U"}
-                                                </div>
-                                            )}
-                                            {p.is_online && (
-                                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></span>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <p className="font-medium text-sm">{p.name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                @{p.username || "no-username"}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => {
-                                            playSound("tap");
-                                            if (navigator.vibrate) navigator.vibrate(30);
-                                            sendChallenge(p.user_id);
-                                        }}
-                                        className="flex items-center gap-1 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg shadow-md transition-colors duration-150"
-                                    >
-                                        <Send size={16} />
-                                        <span>Send</span>
-                                    </button>
-                                </motion.div>
-                            ))}
-                    </AnimatePresence>
-                </div>
             </div>
+
             <AnimatePresence>
                 {showSubmitModal && (
                     <motion.div
