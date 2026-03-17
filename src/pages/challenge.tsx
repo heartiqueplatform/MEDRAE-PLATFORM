@@ -268,14 +268,14 @@ function ChallengeTabs({
 
                             {/* Sent badge (read/unread style) */}
                             {tab === "sent" && pendingSentCount > 0 && (
-                                <span className="absolute -top-1 -right-5 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                <span className="absolute -top-1 -right-6 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
                                     {pendingSentCount}
                                 </span>
                             )}
 
                             {/* Completed badge */}
                             {tab === "completed" && completed.length > 0 && (
-                                <span className="absolute -top-1 -right-5 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                <span className="absolute -top-1 -right-8 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
                                     {completed.length}
                                 </span>
                             )}
@@ -341,7 +341,7 @@ export default function ChallengePage() {
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const seenWins = useRef<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
-
+    const [showWinOverlay, setShowWinOverlay] = useState(false);
     // Track which incoming challenges the user has seen
     const [seenIncomingIds, setSeenIncomingIds] = useState<Set<string>>(new Set());
 
@@ -731,11 +731,19 @@ https://medrae.vercel.app`;
         completed.forEach((c) => {
             if (c.winner_id === user?.id && !seenWins.current.has(c.id)) {
                 seenWins.current.add(c.id);
-                confetti({ particleCount: 80, spread: 70 });
+
+                confetti({ particleCount: 100, spread: 100, origin: { y: 0.6 } });
                 playSound("trivia-finish");
+
+                setShowWinOverlay(true);
+
+                setTimeout(() => {
+                    setShowWinOverlay(false);
+                }, 5000);
             }
         });
-    }, [completed]);
+    }, [completed, user]);
+
     if (!user)
         return <GlobalLoader />; // keep for non-authenticated users
 
@@ -750,186 +758,220 @@ https://medrae.vercel.app`;
     ];
     // ================= UI =================
     return (
-        <div className="w-full sm:max-w-4xl sm:mx-auto p-1 sm:p-4 space-y-2 border-0">
-            {/* FULL-SCREEN QUIZ */}
-            {activeChallenge && (
-                <div
-                    className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 p-4 flex flex-col"
-                    style={{ height: "100vh" }}
-                >
-                    <h2 className="text-xl font-bold mb-2">
-                        Answer the Challenge!
-                    </h2>
+        <>
 
-                    <p className="mb-2">Time left: {timeLeft}s</p>
+            <div className="w-full sm:max-w-4xl sm:mx-auto p-1 sm:p-4 space-y-2 border-0">
+                {/* FULL-SCREEN QUIZ */}
+                {activeChallenge && (
+                    <div
+                        className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 p-4 flex flex-col"
+                        style={{ height: "100vh" }}
+                    >
+                        <h2 className="text-xl font-bold mb-2">
+                            Answer the Challenge!
+                        </h2>
+
+                        <p className="mb-2">Time left: {timeLeft}s</p>
 
 
-                    <div className="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar p-2">
-
-                        {/* Question Header */}
-                        {/* Question + Options + Navigation */}
-                        <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar p-2">
+                        <div className="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar p-2">
 
                             {/* Question Header */}
-                            <div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Question {currentQIndex + 1} / {activeChallenge.questions.length}
-                                </p>
-                                <p className="font-medium text-lg">
-                                    {activeChallenge.questions[currentQIndex].question_text}
-                                </p>
-                            </div>
+                            {/* Question + Options + Navigation */}
+                            <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar p-2">
 
-                            {/* Options - Vertical */}
-                            <div className="flex flex-col gap-2">
-                                {["A", "B", "C", "D"].map((opt) => (
+                                {/* Question Header */}
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Question {currentQIndex + 1} / {activeChallenge.questions.length}
+                                    </p>
+                                    <p className="font-medium text-lg">
+                                        {activeChallenge.questions[currentQIndex].question_text}
+                                    </p>
+                                </div>
+
+                                {/* Options - Vertical */}
+                                <div className="flex flex-col gap-2">
+                                    {["A", "B", "C", "D"].map((opt) => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => handleAnswer(currentQIndex, opt)}
+                                            className={`p-3 border rounded-lg text-left transition-colors duration-150 ${answers[currentQIndex] === opt
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                }`}
+                                        >
+                                            <span className="font-bold">{opt}:</span>{" "}
+                                            {activeChallenge.questions[currentQIndex][`option_${opt.toLowerCase()}`]}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Navigation directly below options */}
+                                {/* Navigation directly below options */}
+                                <div className="flex justify-center gap-2 mt-2">
                                     <button
-                                        key={opt}
-                                        onClick={() => handleAnswer(currentQIndex, opt)}
-                                        className={`p-3 border rounded-lg text-left transition-colors duration-150 ${answers[currentQIndex] === opt
-                                            ? "bg-blue-500 text-white"
-                                            : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                            }`}
+                                        onClick={() => setCurrentQIndex((i) => Math.max(i - 1, 0))}
+                                        disabled={currentQIndex === 0}
+                                        className="px-6 py-2 bg-gray-300 dark:bg-gray-700 rounded disabled:opacity-50"
                                     >
-                                        <span className="font-bold">{opt}:</span>{" "}
-                                        {activeChallenge.questions[currentQIndex][`option_${opt.toLowerCase()}`]}
+                                        Previous
                                     </button>
-                                ))}
+
+                                    {currentQIndex < activeChallenge.questions.length - 1 ? (
+                                        <button
+                                            onClick={() => setCurrentQIndex((i) => Math.min(i + 1, activeChallenge.questions.length - 1))}
+                                            className="px-6 py-2 bg-blue-600 text-white rounded"
+                                        >
+                                            Next
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowSubmitModal(true)}
+                                            className="px-6 py-2 bg-green-600 text-white rounded"
+                                        >
+                                            Submit
+                                        </button>
+                                    )}
+                                </div>
+
                             </div>
+                        </div>
+                    </div>
+                )}
 
-                            {/* Navigation directly below options */}
-                            {/* Navigation directly below options */}
-                            <div className="flex justify-center gap-2 mt-2">
-                                <button
-                                    onClick={() => setCurrentQIndex((i) => Math.max(i - 1, 0))}
-                                    disabled={currentQIndex === 0}
-                                    className="px-6 py-2 bg-gray-300 dark:bg-gray-700 rounded disabled:opacity-50"
-                                >
-                                    Previous
-                                </button>
+                {/* HEADER */}
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
+                        <Swords size={22} /> Challenges
+                    </h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Compete and track performance
+                    </p>
+                </div>
 
-                                {currentQIndex < activeChallenge.questions.length - 1 ? (
+                {/* STATS */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                    {loading ? (
+                        [0, 1, 2].map((i) => <StatCardSkeleton key={i} />)
+                    ) : (
+                        <>
+                            <div className="p-3 rounded-xl bg-green-100 dark:bg-green-900/30">
+                                <Trophy className="mx-auto mb-1" size={18} />
+                                <p className="font-bold">{wins}</p>
+                                <p className="text-xs">Wins</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-red-100 dark:bg-red-900/30">
+                                <Flame className="mx-auto mb-1" size={18} />
+                                <p className="font-bold">{losses}</p>
+                                <p className="text-xs">Losses</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
+                                <Clock className="mx-auto mb-1" size={18} />
+                                <p className="font-bold">{unseenIncomingCount}</p>
+                                <p className="text-xs">Pending</p>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* FIND PLAYERS */}
+                <div className="p-1 rounded-xl border bg-white dark:bg-gray-900 border-0">
+                    <ChallengeTabs
+                        incoming={incoming}
+                        outgoing={outgoing}
+                        completed={completed}
+                        acceptChallenge={acceptChallenge}
+                        user={user}
+                        loading={loading}
+
+                        // NEW PROPS
+                        search={search}
+                        setSearch={setSearch}
+                        onlyOnline={onlyOnline}
+                        setOnlyOnline={setOnlyOnline}
+                        filteredPlayers={filteredPlayers}
+                        sendChallenge={sendChallenge}
+                        inviteCards={inviteCards}
+                        handleInvite={handleInvite}
+                        seenIncomingIds={seenIncomingIds}
+                        setSeenIncomingIds={setSeenIncomingIds}
+                        unseenIncomingCount={unseenIncomingCount}
+                        pendingSentCount={pendingSentCount}
+                    />
+                </div>
+
+                <AnimatePresence>
+                    {showSubmitModal && (
+                        <motion.div
+                            className="fixed inset-0 bg-black/40 flex items-center justify-center z-[10000]"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <motion.div
+                                className="bg-white dark:bg-gray-900 rounded-lg p-6 w-11/12 max-w-md shadow-lg flex flex-col gap-4"
+                                initial={{ scale: 0.8 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0.8 }}
+                            >
+                                <h3 className="text-lg font-bold text-center">Submit Challenge?</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                                    Once submitted, you won't be able to change your answers.
+                                </p>
+                                <div className="flex justify-center gap-4 mt-4">
                                     <button
-                                        onClick={() => setCurrentQIndex((i) => Math.min(i + 1, activeChallenge.questions.length - 1))}
-                                        className="px-6 py-2 bg-blue-600 text-white rounded"
+                                        onClick={() => setShowSubmitModal(false)}
+                                        className="px-4 py-2 rounded bg-gray-300 dark:bg-gray-700"
                                     >
-                                        Next
+                                        Cancel
                                     </button>
-                                ) : (
                                     <button
-                                        onClick={() => setShowSubmitModal(true)}
-                                        className="px-6 py-2 bg-green-600 text-white rounded"
+                                        onClick={() => {
+                                            submitChallenge();
+                                            setShowSubmitModal(false);
+                                        }}
+                                        className="px-4 py-2 rounded bg-green-600 text-white"
                                     >
                                         Submit
                                     </button>
-                                )}
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* HEADER */}
-            <div className="text-center">
-                <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
-                    <Swords size={22} /> Challenges
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Compete and track performance
-                </p>
-            </div>
-
-            {/* STATS */}
-            <div className="grid grid-cols-3 gap-2 text-center">
-                {loading ? (
-                    [0, 1, 2].map((i) => <StatCardSkeleton key={i} />)
-                ) : (
-                    <>
-                        <div className="p-3 rounded-xl bg-green-100 dark:bg-green-900/30">
-                            <Trophy className="mx-auto mb-1" size={18} />
-                            <p className="font-bold">{wins}</p>
-                            <p className="text-xs">Wins</p>
-                        </div>
-                        <div className="p-3 rounded-xl bg-red-100 dark:bg-red-900/30">
-                            <Flame className="mx-auto mb-1" size={18} />
-                            <p className="font-bold">{losses}</p>
-                            <p className="text-xs">Losses</p>
-                        </div>
-                        <div className="p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
-                            <Clock className="mx-auto mb-1" size={18} />
-                            <p className="font-bold">{unseenIncomingCount}</p>
-                            <p className="text-xs">Pending</p>
-                        </div>
-                    </>
-                )}
-            </div>
-
-            {/* FIND PLAYERS */}
-            <div className="p-1 rounded-xl border bg-white dark:bg-gray-900 border-0">
-                <ChallengeTabs
-                    incoming={incoming}
-                    outgoing={outgoing}
-                    completed={completed}
-                    acceptChallenge={acceptChallenge}
-                    user={user}
-                    loading={loading}
-
-                    // NEW PROPS
-                    search={search}
-                    setSearch={setSearch}
-                    onlyOnline={onlyOnline}
-                    setOnlyOnline={setOnlyOnline}
-                    filteredPlayers={filteredPlayers}
-                    sendChallenge={sendChallenge}
-                    inviteCards={inviteCards}
-                    handleInvite={handleInvite}
-                    seenIncomingIds={seenIncomingIds}
-                    setSeenIncomingIds={setSeenIncomingIds}
-                    unseenIncomingCount={unseenIncomingCount}
-                    pendingSentCount={pendingSentCount}
-                />
-            </div>
-
-            <AnimatePresence>
-                {showSubmitModal && (
-                    <motion.div
-                        className="fixed inset-0 bg-black/40 flex items-center justify-center z-[10000]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                    >
-                        <motion.div
-                            className="bg-white dark:bg-gray-900 rounded-lg p-6 w-11/12 max-w-md shadow-lg flex flex-col gap-4"
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0.8 }}
-                        >
-                            <h3 className="text-lg font-bold text-center">Submit Challenge?</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                                Once submitted, you won't be able to change your answers.
-                            </p>
-                            <div className="flex justify-center gap-4 mt-4">
-                                <button
-                                    onClick={() => setShowSubmitModal(false)}
-                                    className="px-4 py-2 rounded bg-gray-300 dark:bg-gray-700"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        submitChallenge();
-                                        setShowSubmitModal(false);
-                                    }}
-                                    className="px-4 py-2 rounded bg-green-600 text-white"
-                                >
-                                    Submit
-                                </button>
-                            </div>
+                                </div>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+                    )}
+                </AnimatePresence>
+                {/* 🔹 WIN OVERLAY */}
+                <AnimatePresence>
+                    {showWinOverlay && (
+                        <motion.div
+                            className="fixed inset-0 z-[99999] bg-black/80 flex items-center justify-center"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <motion.div
+                                className="bg-white dark:bg-gray-900 rounded-2xl p-8 flex flex-col items-center justify-center shadow-2xl"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0 }}
+                            >
+                                <Trophy size={60} className="text-yellow-500 mb-4 animate-bounce" />
+                                <h1 className="text-4xl font-bold text-center text-green-600 mb-2">
+                                    You Won!
+                                </h1>
+                                <p className="text-center text-gray-600 dark:text-gray-300">
+                                    One challenge down, glory earned!
+                                    <br />
+                                    Get ready for the next round.
+                                    <br />
+                                    Challenge more nurses and prove you're the best.
+                                </p>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </>
     );
+
 }
