@@ -39,6 +39,7 @@ function ChallengeTabs({
     unseenIncomingCount,
     pendingSentCount,   // ✅ add this
 }: any) {
+
     const [activeTab, setActiveTab] = useState<"find" | "incoming" | "sent" | "completed">("find");
     const renderTabContent = () => {
 
@@ -259,10 +260,10 @@ function ChallengeTabs({
     };
 
     return (
-        <div className="mt-4">
+        <div className="mt-2">
             {/* TABS */}
             {/* TABS */}
-            <div className="flex border-b border-gray-300 dark:border-gray-700 mb-3">
+            <div className="flex border-b border-gray-300 dark:border-gray-700 mb-3 ">
                 {["find", "incoming", "sent", "completed"].map((tab) => (
                     <button
                         key={tab}
@@ -273,7 +274,7 @@ function ChallengeTabs({
                             }`}
                     >
                         <span className="relative inline-block">
-                            {tab === "find" ? "Find Players" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === "find" ? "Participants" : tab.charAt(0).toUpperCase() + tab.slice(1)}
 
                             {/* Incoming badge */}
                             {tab === "incoming" && unseenIncomingCount > 0 && (
@@ -291,7 +292,7 @@ function ChallengeTabs({
 
                             {/* Completed badge */}
                             {tab === "completed" && completed.length > 0 && (
-                                <span className="absolute -top-1 -right-8 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                <span className="absolute -top-1 -right-5 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
                                     {completed.length}
                                 </span>
                             )}
@@ -360,7 +361,6 @@ export default function ChallengePage() {
     const [showWinOverlay, setShowWinOverlay] = useState(false);
     // Track which incoming challenges the user has seen
     const [seenIncomingIds, setSeenIncomingIds] = useState<Set<string>>(new Set());
-
 
     useEffect(() => {
         if (!user) return;
@@ -796,7 +796,7 @@ https://medrae.vercel.app`;
                 {/* FULL-SCREEN QUIZ */}
                 {activeChallenge && (
                     <div
-                        className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 p-4 flex flex-col"
+                        className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col justify-center items-center pt-32 sm:pt-0"
                         style={{ height: "100vh" }}
                     >
                         <h2 className="text-xl font-bold mb-2">
@@ -810,7 +810,7 @@ https://medrae.vercel.app`;
 
                             {/* Question Header */}
                             {/* Question + Options + Navigation */}
-                            <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar p-2">
+                            <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar px-1">
 
                                 {/* Question Header */}
                                 <div>
@@ -828,7 +828,7 @@ https://medrae.vercel.app`;
                                         <button
                                             key={opt}
                                             onClick={() => handleAnswer(currentQIndex, opt)}
-                                            className={`p-3 border rounded-lg text-left transition-colors duration-150 ${answers[currentQIndex] === opt
+                                            className={`p-2 border rounded-lg text-left transition-colors duration-150 ${answers[currentQIndex] === opt
                                                 ? "bg-blue-500 text-white"
                                                 : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
                                                 }`}
@@ -841,7 +841,7 @@ https://medrae.vercel.app`;
 
                                 {/* Navigation directly below options */}
                                 {/* Navigation directly below options */}
-                                <div className="flex justify-center gap-2 mt-2">
+                                <div className="flex justify-center gap-3 mt-2">
                                     <button
                                         onClick={() => setCurrentQIndex((i) => Math.max(i - 1, 0))}
                                         disabled={currentQIndex === 0}
@@ -859,7 +859,11 @@ https://medrae.vercel.app`;
                                         </button>
                                     ) : (
                                         <button
-                                            onClick={() => setShowSubmitModal(true)}
+                                            onClick={() => {
+                                                if (navigator.vibrate) navigator.vibrate(50); // vibrate
+                                                playSound("tap"); // play tap sound
+                                                setShowSubmitModal(true);
+                                            }}
                                             className="px-6 py-2 bg-green-600 text-white rounded"
                                         >
                                             Submit
@@ -961,6 +965,8 @@ https://medrae.vercel.app`;
                                     </button>
                                     <button
                                         onClick={() => {
+                                            if (navigator.vibrate) navigator.vibrate(50); // vibrate
+                                            playSound("tap"); // play tap sound
                                             submitChallenge();
                                             setShowSubmitModal(false);
                                         }}
