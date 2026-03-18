@@ -348,7 +348,7 @@ export default function MyMistakes() {
     return (
 
 
-        <div className="p-3 max-w-4xl mx-auto  space-y-2  ">
+        <div className="p-1 max-w-4xl mx-auto  space-y-2   ">
             {syncing && (
                 <div className="fixed top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-lg shadow-md text-sm z-50">
                     Syncing changes...
@@ -415,7 +415,7 @@ export default function MyMistakes() {
                                 </CardDescription>
                             </CardHeader>
 
-                            <CardContent className="space-y-2 p-3 text-sm sm:text-base">
+                            <CardContent className="space-y-4 p-2 text-sm sm:text-base">
                                 {["A", "B", "C", "D"].map((letter) => {
                                     const optionText =
                                         m.questions?.[`option_${letter.toLowerCase()}` as keyof Question] ?? "—";

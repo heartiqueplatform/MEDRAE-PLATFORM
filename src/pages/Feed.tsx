@@ -1735,7 +1735,8 @@ export default function Feed() {
                           </span>
                         </div>
                       </div>
-                      <div className="relative w-full h-[420px] sm:h-[520px] bg-black flex items-center justify-center overflow-hidden">
+
+                      <div className="relative w-full h-[420px] sm:h-[520px] bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
                         {/* Show loader while image is loading */}
                         {!loadedImages[img.id] && (
                           <div className="absolute inset-0 flex items-center justify-center scale-[0.45]">
