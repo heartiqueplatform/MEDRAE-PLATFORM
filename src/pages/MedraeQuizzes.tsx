@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Play, BookOpen, RefreshCw } from "lucide-react";
+import { Heart, Play, BookOpen, Shuffle, Compass, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUnitQuestionCount } from "@/hooks/useUnitQuestionCount";
 import { useState } from "react";
@@ -422,10 +422,35 @@ export function MedraeQuizzes() {
       );
     }
   }, [isPremium, subscriptionChecked]);
+  const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }) => {
+    return (
+      <div className="relative group flex items-center justify-center">
+        {children}
 
+        {/* Tooltip */}
+        <div
+          className="
+          absolute bottom-full mb-2
+          hidden group-hover:block
+          whitespace-nowrap
+          px-2 py-1 text-xs rounded-md
+          shadow-lg z-50
+          left-1/2 -translate-x-1/2
+          max-w-[90vw] sm:max-w-xs
+          break-words
+
+          bg-white text-gray-900 border border-gray-200
+          dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700
+        "
+        >
+          {text}
+        </div>
+      </div>
+    );
+  };
   // Only show loader if new user and no cached subscription
   if (!subscriptionChecked && !localStorage.getItem("subscriptionStatus")) {
-    return <GlobalLoader message="Checking subscription..." />;
+    return <GlobalLoader />;
   }
 
 
@@ -483,53 +508,64 @@ export function MedraeQuizzes() {
               </motion.div>
             </div>
 
-            <div className="flex flex-col md:flex-row items-start md:items-center mt-3 gap-2 w-full">
+            <div className="relative w-full mt-3">
+
+              {/* Input */}
               <input
                 type="text"
                 placeholder="Search all papers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 p-3 pl-10 rounded-2xl border border-0 bg-white text-gray-900 placeholder-gray-400 shadow-sm
-               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
-               dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                className="w-full p-3 pl-10 pr-24 rounded-2xl border border-0 bg-white text-gray-900 placeholder-gray-400 shadow-sm
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
+    dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
               />
 
-              <Button
-                onClick={() => {
-                  const allUnits = [...paperOneUnits, ...paperTwoUnits];
-                  const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
-                  navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
-                }}
-                variant="outline"
-                className="flex-shrink-0 w-full md:w-auto mt-2 border-0 md:mt-0"
-              >
-                Random Unit
-              </Button>
+              {/* Icons container (floating on right) */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
 
-              <Button
-                onClick={() => {
-                  const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
-                  let recommendedUnit;
+                {/* Shuffle */}
+                <Tooltip text="Random unit">
+                  <button
+                    onClick={() => {
+                      const allUnits = [...paperOneUnits, ...paperTwoUnits];
+                      const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+                      navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  >
+                    <Shuffle className="w-4 h-4" />
+                  </button>
+                </Tooltip>
 
-                  if (pastUnits.length > 0) {
-                    const allUnits = [...paperOneUnits, ...paperTwoUnits];
-                    recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
-                  }
+                {/* Recommend */}
+                <Tooltip text="Recommended">
+                  <button
+                    onClick={() => {
+                      const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
+                      let recommendedUnit;
 
-                  if (!recommendedUnit) {
-                    const allUnits = [...paperOneUnits, ...paperTwoUnits];
-                    recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
-                  }
+                      if (pastUnits.length > 0) {
+                        const allUnits = [...paperOneUnits, ...paperTwoUnits];
+                        recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
+                      }
 
-                  if (recommendedUnit) {
-                    navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
-                  }
-                }}
-                variant="outline"
-                className="flex-shrink-0 w-full md:w-auto mt-2 border-0 md:mt-0"
-              >
-                Recommend Unit
-              </Button>
+                      if (!recommendedUnit) {
+                        const allUnits = [...paperOneUnits, ...paperTwoUnits];
+                        recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
+                      }
+
+                      if (recommendedUnit) {
+                        navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
+                      }
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  >
+                    <Compass className="w-5 h-5" />
+                  </button>
+                </Tooltip>
+
+              </div>
             </div>
           </CardContent>
         </Card>

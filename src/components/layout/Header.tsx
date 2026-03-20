@@ -224,7 +224,7 @@ export function Header({
 
   return (
     <>
-      <header className="h-14 sm:h-16 bg-card border-b border-border flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 text-sm sm:text-base">
+      <header className="h-14 sm:h-16 bg-card border-0 flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 text-sm sm:text-base">
 
         {/* App Logo and Name - Mobile Only */}
         <div className="flex items-center gap-2 md:hidden shrink-0">

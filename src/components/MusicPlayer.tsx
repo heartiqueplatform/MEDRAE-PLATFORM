@@ -225,7 +225,7 @@ export const MusicPlayer = () => {
                     <button
                         onClick={() => setIsOpen(true)}
                         className="
-        w-14 h-14 rounded-full
+        w-12 h-12 rounded-full
         bg-gray-800 dark:bg-gray-700
         flex items-center justify-center
         shadow-lg

@@ -147,7 +147,7 @@ export function Footer() {
     return (
         <>
             <div
-                className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex justify-around items-center h-16 shadow-md z-50 md:hidden
+                className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-0 flex justify-around items-center h-16 shadow-md z-50 md:hidden
   ${isDrawerOpen ? "pointer-events-none" : ""}`}
             >
 

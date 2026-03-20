@@ -76,8 +76,6 @@ export default function QuizPage() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-
-  const CHECKPOINT_SIZE = 25; // <-- add this here at the top of the component
   const [checkpointOverlay, setCheckpointOverlay] = useState<{
     visible: boolean;
     reached: number;
@@ -113,14 +111,7 @@ export default function QuizPage() {
     "Rushed",
     "Guess"
   ];
-  const getLastCheckpointSaved = (unit: string) => {
-    const saved = localStorage.getItem(`checkpoint-${unit}`);
-    return saved ? JSON.parse(saved) : 0;
-  };
 
-  const saveLastCheckpoint = (unit: string, value: number) => {
-    localStorage.setItem(`checkpoint-${unit}`, JSON.stringify(value));
-  };
 
   useEffect(() => {
     localStorage.setItem("showReasonBox", JSON.stringify(showReasonBox));
@@ -129,7 +120,6 @@ export default function QuizPage() {
   useEffect(() => {
     localStorage.setItem("selectedReason", JSON.stringify(selectedReason));
   }, [selectedReason]);
-
   const [lastCheckpoint, setLastCheckpoint] = useState(0);
 
   // State to control overlay visibility and selected question helpers
@@ -455,6 +445,7 @@ export default function QuizPage() {
       });
 
       setQuestions(enriched);
+      setLastCheckpoint(0);
       setQuestionsSource("remote");
       setLoading(false);
       // Restore offline answers
@@ -594,11 +585,15 @@ export default function QuizPage() {
     setAnswers(updatedAnswers);
     // checkpoint size
     // checkpoint size
-    const CHECKPOINT_SIZE = 25;
+    const CHECKPOINT_SIZE = 10;
+    const previousCount = Object.keys(answers).length;
     const nextCount = Object.keys(updatedAnswers).length;
 
     // only trigger checkpoint when enough answers since last checkpoint
-    if (nextCount - lastCheckpoint >= CHECKPOINT_SIZE) {
+    if (
+      nextCount - lastCheckpoint >= CHECKPOINT_SIZE &&
+      nextCount > previousCount
+    ) {
       // get the IDs of the current checkpoint questions
       const checkpointQuestionIds = Object.keys(updatedAnswers).slice(lastCheckpoint, lastCheckpoint + CHECKPOINT_SIZE);
 

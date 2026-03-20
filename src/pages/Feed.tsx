@@ -24,7 +24,7 @@ import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Input } from "@/components/ui/input";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
-import Confetti from "react-confetti";
+import confetti from "canvas-confetti";
 const safeParse = (key, fallback) => {
   try {
     return JSON.parse(localStorage.getItem(key)) || fallback;
@@ -301,12 +301,12 @@ export default function Feed() {
     loadCount();
   }, [user]);
   useEffect(() => {
-    // ✅ Correct streak rewards (every 5 and 10)
-    if (correctStreak > 0 && correctStreak % 10 === 0) {
+    // ✅ Correct streak rewards (3 → Great, 5 → Outstanding)
+    if (correctStreak > 0 && correctStreak % 5 === 0) {
       setFeedbackMessage(
         "🏆 Outstanding work! Reaching this streak shows excellent focus and consistency. Keep up the great momentum—you’re making impressive progress."
       );
-    } else if (correctStreak > 0 && correctStreak % 5 === 0) {
+    } else if (correctStreak > 0 && correctStreak % 3 === 0) {
       setFeedbackMessage(
         "🔥 Great job! Your effort is clearly paying off. Each correct answer strengthens your understanding—keep going."
       );
@@ -653,7 +653,30 @@ export default function Feed() {
       console.log("✅ markSeen success:", data);
     }
   };
+  const fireConfetti = () => {
+    confetti({
+      particleCount: 120,
+      spread: 70,
+      startVelocity: 60,
+      origin: { y: 0.7 },
+    });
 
+    // optional second burst (makes it feel powerful)
+    setTimeout(() => {
+      confetti({
+        particleCount: 80,
+        spread: 100,
+        startVelocity: 50,
+        origin: { x: 0.3, y: 0.7 },
+      });
+      confetti({
+        particleCount: 80,
+        spread: 100,
+        startVelocity: 50,
+        origin: { x: 0.7, y: 0.7 },
+      });
+    }, 150);
+  };
   // Answer a question - now removes it completely
   const handleAnswer = async (q, option) => {
     if (answers[q.id]) return;
@@ -672,8 +695,7 @@ export default function Feed() {
 
     // 🎉 Existing confetti logic (unchanged)
     if (isCorrect) {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
+      fireConfetti(); // 💥 spray effect
     }
 
     // Save answer locally
@@ -988,7 +1010,7 @@ export default function Feed() {
   };
   return (
     <>
-      <PullToRefresh
+      < PullToRefresh
         onRefresh={() => {
           setPage(0);
           return fetchQuestions(0).then((fresh) => {
@@ -1328,14 +1350,7 @@ export default function Feed() {
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (
                     <>
-                      <Confetti
-                        width={loaderRef.current?.offsetWidth || 350}
-                        height={loaderRef.current?.offsetHeight || 200}
-                        recycle={false}
-                        numberOfPieces={800}
-                        gravity={0.6}
-                        className="absolute top-0 left-0 pointer-events-none z-50"
-                      />
+
                     </>
                   )}
 
