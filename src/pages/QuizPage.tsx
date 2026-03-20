@@ -606,13 +606,17 @@ export default function QuizPage() {
       const percentCompleted = Math.round((correctInCheckpoint / CHECKPOINT_SIZE) * 100);
 
       setLastCheckpoint(nextCount);
-
       setCheckpointOverlay({
         visible: true,
-        reached: correctInCheckpoint,    // ✅ number correct
-        total: CHECKPOINT_SIZE,          // checkpoint size
-        percentCompleted,                // correct % in this checkpoint
+        reached: correctInCheckpoint,
+        total: CHECKPOINT_SIZE,
+        percentCompleted,
       });
+
+      // 🔊 Play checkpoint sound
+      if (!isMuted) {
+        playSound("notification");
+      }
     }
 
 
