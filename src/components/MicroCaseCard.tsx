@@ -39,7 +39,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
     const user = session?.user || null;
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || card) return;
 
         const subscription = supabase
             .channel("micro_case_cards")
@@ -98,9 +98,8 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
             supabase.removeChannel(subscription);
         };
     }, [user, card]);
-
     useEffect(() => {
-        if (!user) return;
+        if (!user || card) return;
 
         const loadMicroCaseCard = async () => {
             setLoading(true);
@@ -242,8 +241,6 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         </div>
                     </div>
 
-                    {/* One small skeleton for stats / extra info */}
-                    <div className="h-6 w-1/2 bg-gray-300 dark:bg-gray-700 rounded-md" />
                 </CardContent>
             </Card>
         );

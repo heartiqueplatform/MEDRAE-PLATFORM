@@ -17,6 +17,12 @@ import {
     Users,
     Search,
 } from "lucide-react";
+let playersMemoryCache: any[] | null = null;
+let challengesMemoryCache: any[] | null = null;
+let playersCacheTime = 0;
+let challengesCacheTime = 0;
+
+const STALE_TIME = 30000; // 30s
 // ================= CHALLENGE TABS COMPONENT =================
 function ChallengeTabs({
     incoming,
@@ -357,7 +363,9 @@ export default function ChallengePage() {
     const [timeLeft, setTimeLeft] = useState(0);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const seenWins = useRef<Set<string>>(new Set());
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // start false
+    const hasLoadedOnce = useRef(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [showWinOverlay, setShowWinOverlay] = useState(false);
     // Track which incoming challenges the user has seen
     const [seenIncomingIds, setSeenIncomingIds] = useState<Set<string>>(new Set());
@@ -366,20 +374,31 @@ export default function ChallengePage() {
         if (!user) return;
 
         const fetchData = async () => {
-            setLoading(true); // start loader
+            // Only show loader if NO cache exists
+            const hasChallengesCache = !!challengesMemoryCache || !!localStorage.getItem("challenges_cache");
+            const hasPlayersCache = !!playersMemoryCache || !!localStorage.getItem("players_cache");
+
+            if (!hasChallengesCache || !hasPlayersCache) {
+                setLoading(true);
+            }
+
             await fetchChallenges();
             await fetchPlayers();
-            setLoading(false); // stop loader
+
+            setLoading(false);
+            hasLoadedOnce.current = true;
+            setIsInitialLoad(false);
         };
 
         fetchData();
-
         const challengeSub = supabase
             .channel("public:challenges")
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "challenges" },
-                () => fetchChallenges()
+                () => {
+                    fetchChallenges(); // no loading toggle
+                }
             )
             .subscribe();
 
@@ -388,7 +407,9 @@ export default function ChallengePage() {
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "profiles" },
-                () => fetchPlayers(search)
+                () => {
+                    fetchPlayers(search); // no loading toggle
+                }
             )
             .subscribe();
 
@@ -415,6 +436,13 @@ export default function ChallengePage() {
             .order("created_at", { ascending: false });
 
         setChallenges(data || []);
+        localStorage.setItem(
+            "challenges_cache",
+            JSON.stringify({
+                data: data || [],
+                timestamp: Date.now(),
+            })
+        );
     };
 
     // ================= FETCH PLAYERS =================
@@ -435,43 +463,74 @@ export default function ChallengePage() {
         const { data, error } = await query;
 
         if (error) console.error(error);
-        else setPlayers(data || []);
+        else {
+            const newData = data || [];
+
+            setPlayers(newData);
+
+            // memory cache
+            playersMemoryCache = newData;
+            playersCacheTime = Date.now();
+
+            // localStorage backup
+            localStorage.setItem(
+                "players_cache",
+                JSON.stringify({
+                    data: newData,
+                    timestamp: Date.now(),
+                })
+            );
+
+        }
     };
     useEffect(() => {
+        const cached = localStorage.getItem("challenges_cache");
+
+        if (challengesMemoryCache) {
+            setChallenges(challengesMemoryCache);
+            return;
+        }
+
+        if (cached) {
+            const parsed = JSON.parse(cached);
+
+            challengesMemoryCache = parsed.data;
+            challengesCacheTime = parsed.timestamp;
+
+            setChallenges(parsed.data || []);
+            return;
+        }
+
+        fetchChallenges();
+    }, []);
+    useEffect(() => {
+        const cached = localStorage.getItem("players_cache");
+
+        if (playersMemoryCache) {
+            setPlayers(playersMemoryCache);
+            return;
+        }
+
+        if (cached) {
+            const parsed = JSON.parse(cached);
+
+            playersMemoryCache = parsed.data;
+            playersCacheTime = parsed.timestamp;
+
+            setPlayers(parsed.data || []);
+            return;
+        }
+
+        fetchPlayers();
+    }, []);
+    useEffect(() => {
         if (!user) return;
-        const handler = setTimeout(() => fetchPlayers(search), 500); // slightly longer delay
+        const handler = setTimeout(() => {
+            fetchPlayers(search); // no loading toggle
+        }, 500); // slightly longer delay
         return () => clearTimeout(handler);
     }, [search, user]);
     // ================= INITIAL FETCH + REALTIME =================
-    useEffect(() => {
-        if (!user) return;
-
-        fetchChallenges();
-        fetchPlayers();
-
-        const challengeSub = supabase
-            .channel("public:challenges")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "challenges" },
-                () => fetchChallenges()
-            )
-            .subscribe();
-
-        const profileSub = supabase
-            .channel("public:profiles")
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "profiles" },
-                () => fetchPlayers(search)
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(challengeSub);
-            supabase.removeChannel(profileSub);
-        };
-    }, [user]);
 
     // ================= FILTER =================
     const filteredPlayers = players.filter((p) => {

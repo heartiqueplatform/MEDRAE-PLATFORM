@@ -49,8 +49,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
     const user = session?.user || null;    // current user from context
 
     useEffect(() => {
-        if (!user) return;
-
+        if (!user || card) return;
         const subscription = supabase
             .channel('flashcards')
             .on(
@@ -112,8 +111,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
         };
     }, [user, card]);
     useEffect(() => {
-        if (!user) return;
-
+        if (!user || card) return;
         const loadFlashcard = async () => {
             setLoading(true);
             try {
@@ -256,8 +254,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                         </div>
                     </div>
 
-                    {/* Small skeleton for stats, image, or extra info */}
-                    <div className="h-6 w-1/2 bg-gray-300 dark:bg-gray-700 rounded-md" />
+
                 </CardContent>
             </Card>
         );
