@@ -306,10 +306,14 @@ export default function Feed() {
       setFeedbackMessage(
         "🏆 Outstanding work! Reaching this streak shows excellent focus and consistency. Keep up the great momentum—you’re making impressive progress."
       );
+
+      playSound("trivia-finish"); // 🔊 sound for big milestone
     } else if (correctStreak > 0 && correctStreak % 3 === 0) {
       setFeedbackMessage(
         "🔥 Great job! Your effort is clearly paying off. Each correct answer strengthens your understanding—keep going."
       );
+
+      playSound("medrae"); // 🔊 sound for medium milestone
     }
 
     // ✅ Wrong streak encouragement (every 3)
@@ -317,6 +321,8 @@ export default function Feed() {
       setFeedbackMessage(
         "💬 Take a moment to review the concept and consider the hint provided. Learning takes practice, and every attempt brings you closer to mastering the topic."
       );
+
+      playSound("alert-sound"); // 🔊 sound for warning/encouragement
     }
   }, [correctStreak, wrongStreak]);
   useEffect(() => {
