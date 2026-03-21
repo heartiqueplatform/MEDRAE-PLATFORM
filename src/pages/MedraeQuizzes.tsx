@@ -462,7 +462,7 @@ export function MedraeQuizzes() {
           <CardHeader>
             <CardTitle className="text-3xl flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
               <Heart className="h-8 w-8 text-red-500 animate-pulse" fill="currentColor" />
-              Medrae Quizzes Bank
+              Quizzes Bank
             </CardTitle>
           </CardHeader>
           <CardContent>
