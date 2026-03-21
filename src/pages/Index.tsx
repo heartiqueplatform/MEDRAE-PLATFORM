@@ -1013,8 +1013,8 @@ const Index = () => {
           <p>© {new Date().getFullYear()} Medrae. All rights reserved.</p>
           <p>
             For inquiries, support, or partnership opportunities, please contact us at
-            <a href="mailto:heartiqueofficial@gmail.com" className="text-blue-500 underline ml-1">
-              heartiqueofficial@gmail.com
+            <a href="mailto:medraenursing@gmail.com" className="text-blue-500 underline ml-1">
+              medraenursing@gmail.com
             </a>
           </p>
           <p>
