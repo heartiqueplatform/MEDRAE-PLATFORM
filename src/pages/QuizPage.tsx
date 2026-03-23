@@ -13,7 +13,7 @@ import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, ChevronDown, Chevron
 import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
-import { MicroCaseCard } from "@/components/MicroCaseCard";
+
 import { useSession } from "@supabase/auth-helpers-react";
 interface Question {
   id: string;
@@ -1439,7 +1439,7 @@ Please provide a detailed discussion and guidance.`;
 
 
                 <Flashcard />
-                <MicroCaseCard />
+
 
                 {/* Load More button — only after last visible question */}
                 {i === visibleCount - 1 && visibleCount < filteredQuestions.length && (

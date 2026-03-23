@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
+import { MicroCaseCard } from "@/components/MicroCaseCard";
 import { Input } from "@/components/ui/input";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
 import confetti from "canvas-confetti";
@@ -1692,7 +1693,9 @@ export default function Feed() {
                       </Button>
 
                     </div>
+
                   </CardContent>
+                  <MicroCaseCard />
                 </Card>
               </motion.div>
 
