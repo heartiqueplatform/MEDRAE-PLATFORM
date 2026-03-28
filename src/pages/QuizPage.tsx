@@ -798,7 +798,7 @@ Please provide a detailed discussion and guidance.`;
     3. There may be a network issue  try reloading the app or checking your internet connection. <br /><br />
     Want to suggest a new unit, request more questions, or suggest a feature?{" "}
     <a
-      href="https://wa.me/254717517371"
+      href="https://wa.me/254704473503"
       target="_blank"
       rel="noopener noreferrer"
       className="text-blue-600 underline"
@@ -2187,12 +2187,12 @@ Please provide a detailed discussion and guidance.`;
                                 />
                                 <div className="flex-1 text-sm">
                                   <p className="font-semibold">Medrae Assistance</p>
-                                  <p className="text-xs text-gray-600 dark:text-gray-400">0717517371</p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400">0704473503</p>
                                 </div>
                                 {/* Message Button */}
                                 <button
                                   onClick={() => {
-                                    const pinnedNumber = "254717517371"; // correct format
+                                    const pinnedNumber = "254704473503"; // correct format
 
                                     const message = encodeURIComponent(
                                       `Hi Medrae! Kindly Help me with this question? #Question copied from Medrae Quizzes page:\n\n${currentQuestionText}`

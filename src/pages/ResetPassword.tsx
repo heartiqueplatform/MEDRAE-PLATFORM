@@ -61,7 +61,7 @@ export default function ResetPassword() {
       .single();
 
     if (error || !userProfile) {
-      const whatsappNumber = "254717517371";
+      const whatsappNumber = "254704473503";
       const prefilledMessage = encodeURIComponent(
         `Hello, I attempted to reset my password for ${email.trim()} but my email is not recognized. Please assist me.`
       );
@@ -92,7 +92,7 @@ export default function ResetPassword() {
   // Step 1: Request reset
   const handleRequestReset = async () => {
     if (!email.trim()) {
-      const whatsappNumber = "254717517371";
+      const whatsappNumber = "254704473503";
       const prefilledMessage = encodeURIComponent(
         `Hello, I attempted to reset my password but didn't enter my email. Please assist me.`
       );
@@ -123,7 +123,7 @@ export default function ResetPassword() {
   // Step 2: Answer security question
   const handleCheckAnswer = async () => {
     if (!resetAnswer.trim()) {
-      const whatsappNumber = "254717517371";
+      const whatsappNumber = "254704473503";
       const prefilledMessage = encodeURIComponent(
         `Hello, I attempted to reset my password but didn't provide an answer to the security question. Please assist me.`
       );
@@ -159,7 +159,7 @@ export default function ResetPassword() {
     }
 
     if ((userProfile.reset_answer || "").trim() !== resetAnswer.trim()) {
-      const whatsappNumber = "254717517371";
+      const whatsappNumber = "254704473503";
       const prefilledMessage = encodeURIComponent(
         `Hello, I attempted to reset my password for ${email.trim()} but answered the security question incorrectly. Please assist me.`
       );

@@ -599,7 +599,7 @@ These results are for your personal review and learning. To maximize your nursin
 • Join study groups – Collaborate with classmates to discuss cases and share insights.
 • Review NCK/NCLEX-style questions – Familiarize yourself with exam formats and tricky scenarios.
 
-For more detailed resources, practice questions, and interactive learning, visit MEDRAE : https://medrae.vercel.app/ or call us at 0717517371.
+For more detailed resources, practice questions, and interactive learning, visit MEDRAE : https://medrae.vercel.app/ or call us at 0704473503.
 
 Keep striving each step you take strengthens your nursing expertise and prepares you for success!`;
 
