@@ -1,5 +1,5 @@
 {
-  "name": "Medrae-Nursing",
+  "name": "medrae-nursing",
   "version": "1.0.3",
   "description": "Structured NCK-style exam practice with 6,000+ questions",
   "author": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/heartiqueplatform/MEDRAE-PLATFORM.git"
   },
   "license": "MIT",
   "main": "build/src/index.js",
@@ -25,7 +25,7 @@
     "electron-is-dev": "~2.0.0",
     "electron-serve": "~1.1.0",
     "electron-unhandled": "~4.0.1",
-    "electron-updater": "^6.8.3",
+    "electron-updater": "^6.3.9",
     "electron-window-state": "^5.0.3"
   },
   "devDependencies": {
