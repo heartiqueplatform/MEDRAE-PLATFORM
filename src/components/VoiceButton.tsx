@@ -14,7 +14,6 @@ function TypingBubbles({ isDark = false }: { isDark?: boolean }) {
         </div>
     );
 }
-
 // Clean text for TTS
 function cleanForSpeech(text: string) {
     return text

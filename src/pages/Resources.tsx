@@ -28,7 +28,13 @@ import {
 } from "@/components/ui/tabs";
 import {
   FileText,
+  Layers,
+  XCircle,
   Video,
+  CheckCircle2,
+  FilePlus,
+  Library,
+  Info,
   Trash2,
   Link,
   Heart,
@@ -36,6 +42,11 @@ import {
   Download,
   Eye,
   X,
+  UploadCloud,
+  DownloadCloud,
+  Calendar,
+  CloudCheck,
+  ChevronDown,
 } from "lucide-react";
 import { saveFile, getFile } from "@/lib/offlineStorage";
 
@@ -347,18 +358,6 @@ export function Resources() {
     const fetchStats = async () => {
       if (!notes.length) return;
 
-      // ✅ Try loading from localStorage first
-      const cachedLikes = localStorage.getItem("likeCounts");
-      const cachedViews = localStorage.getItem("viewCounts");
-      const cachedUserLikes = localStorage.getItem("bookmarkedItems");
-
-      if (cachedLikes && cachedViews && cachedUserLikes) {
-        setLikeCounts(JSON.parse(cachedLikes));
-        setViewCounts(JSON.parse(cachedViews));
-        setBookmarkedItems(JSON.parse(cachedUserLikes));
-        return;
-      }
-
       const [likesRes, viewsRes, userLikesRes] = await Promise.all([
         supabase.from("note_likes").select("note_id"),
         supabase.from("note_views").select("note_id"),
@@ -389,92 +388,10 @@ export function Resources() {
       setLikeCounts(likesMap);
       setViewCounts(viewsMap);
       setBookmarkedItems(userLiked);
-
-      // ✅ Save to localStorage
-      localStorage.setItem("likeCounts", JSON.stringify(likesMap));
-      localStorage.setItem("viewCounts", JSON.stringify(viewsMap));
-      localStorage.setItem("bookmarkedItems", JSON.stringify(userLiked));
     };
 
     fetchStats();
   }, [notes, session]);
-
-  // ✅ Realtime subscription for likes & views
-  useEffect(() => {
-    const likeChannel = supabase
-      .channel("likes-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "note_likes" },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setLikeCounts((prev) => {
-              const updated = {
-                ...prev,
-                [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
-              };
-              localStorage.setItem("likeCounts", JSON.stringify(updated)); // ✅ update cache
-              return updated;
-            });
-
-            if (payload.new.user_id === session?.user?.id) {
-              setBookmarkedItems((prev) => {
-                const updated = [...prev, payload.new.note_id];
-                localStorage.setItem("bookmarkedItems", JSON.stringify(updated)); // ✅ update cache
-                return updated;
-              });
-            }
-          }
-
-          if (payload.eventType === "DELETE") {
-            setLikeCounts((prev) => {
-              const updated = {
-                ...prev,
-                [payload.old.note_id]: Math.max(
-                  (prev[payload.old.note_id] || 1) - 1,
-                  0
-                ),
-              };
-              localStorage.setItem("likeCounts", JSON.stringify(updated)); // ✅ update cache
-              return updated;
-            });
-
-            if (payload.old.user_id === session?.user?.id) {
-              setBookmarkedItems((prev) => {
-                const updated = prev.filter((id) => id !== payload.old.note_id);
-                localStorage.setItem("bookmarkedItems", JSON.stringify(updated)); // ✅ update cache
-                return updated;
-              });
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    const viewChannel = supabase
-      .channel("views-changes")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "note_views" },
-        (payload) => {
-          setViewCounts((prev) => {
-            const updated = {
-              ...prev,
-              [payload.new.note_id]: (prev[payload.new.note_id] || 0) + 1,
-            };
-            localStorage.setItem("viewCounts", JSON.stringify(updated)); // ✅ update cache
-            return updated;
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(likeChannel);
-      supabase.removeChannel(viewChannel);
-    };
-  }, [session?.user?.id]);
-
 
 
   useEffect(() => {
@@ -495,7 +412,7 @@ export function Resources() {
 
   // ✅ Like toggle function with optimistic UI
   const toggleLike = async (noteId: string) => {
-    if (!session?.user?.id) return alert("Login required");
+    if (!session?.user?.id) return alert("Ooops no internet! Reconnect to internet");
 
     const hasLiked = bookmarkedItems.includes(noteId);
 
@@ -679,498 +596,592 @@ export function Resources() {
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
       <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
 
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-0">
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
-              Notes & Resources
-            </CardTitle>
-          </CardHeader>
+        <div className="w-full max-w-6xl mx-auto space-y-4 px-0 sm:px-6 pt-0 sm:pt-4">
 
-          <CardContent>
-            <div>
-              {/* Preview + Learn more button */}
-              <p className="text-muted-foreground text-base leading-relaxed mt-0">
-                {/* First two sentences always visible */}
-                This page provides access to a wide range of study materials and references.
-                While some notes may appear mixed across blocks and semesters, they are
-                organized to align closely with the curriculum used in most Kenyan KMTC and
-                private institutions.
-                <span
-                  className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
-                  onClick={() => setShowDescription(!showDescription)}
-                >
-                  ... Learn more
-                </span>
-              </p>
+          {/* MAIN RESOURCES HEADER CARD */}
+          <Card className="relative overflow-hidden shadow-xl shadow-blue-500/5 transition-all rounded-none sm:rounded-[2.5rem] border-0 bg-white dark:bg-gray-900">
 
-              <AnimatePresence initial={false}>
-                {showDescription && (
-                  <motion.div
-                    key="notes-description-expanded"
-                    className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.35, ease: "easeInOut" }}
-                  >
-                    {/* Full text continuation */}
+            {/* Professional Accent Bar */}
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600" />
+
+            <CardHeader className="pb-2 relative">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
+                  <Library className="h-7 w-7 text-blue-600 animate-pulse" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
+                    Notes & <span className="text-blue-600">Resources</span>
+                  </CardTitle>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">
+                    KMTC & Private Institution Archive
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              {/* Description Area */}
+              <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-3xl p-5 border border-gray-100 dark:border-gray-800">
+                <motion.div layout>
+                  <div className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed font-medium">
                     <p>
-                      This ensures you’ll find diverse, high-quality content to support your learning, research, and personal note uploads.
+                      Access a wide range of study materials and academic references.
+                      Organized to align closely with the curriculum used in most Kenyan institutions.
+                      {!showDescription && (
+                        <button
+                          onClick={() => setShowDescription(true)}
+                          className="text-blue-600 dark:text-blue-400 font-bold ml-1 hover:underline underline-offset-4"
+                        >
+                          ... Read more
+                        </button>
+                      )}
                     </p>
-                    <p className="text-sm italic">
-                      Well-organized notes aligned with KMTC and private institution curricula
-                    </p>
-                  </motion.div>
+
+                    <AnimatePresence>
+                      {showDescription && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-4 space-y-3 mt-3 border-t border-gray-200/50 dark:border-gray-700/50">
+                            <p className="text-sm">
+                              This ensures diverse, high-quality content to support your learning,
+                              research, and personal note uploads. While some notes may appear mixed,
+                              they cover core blocks and semesters comprehensively.
+                            </p>
+                            <div className="flex items-center gap-2 text-[11px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-xl">
+                              <Info className="w-4 h-4" /> Curriculum-aligned study references
+                            </div>
+                            <button
+                              onClick={() => setShowDescription(false)}
+                              className="text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline mt-2"
+                            >
+                              Show less
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* SEARCH & UPLOAD TOOLBAR */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  <Input
+                    placeholder="Search by topic, unit, or file name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-12 pl-12 pr-4 rounded-2xl bg-gray-100 dark:bg-gray-900 border-none
+                text-gray-900 dark:text-white placeholder-gray-400 font-medium
+                focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
+                  />
+                </div>
+
+                <Button
+                  onClick={() => setShowUploadForm(!showUploadForm)}
+                  className={`h-12 px-6 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-lg active:scale-95
+              ${showUploadForm
+                      ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 dark:bg-red-900/20 dark:border-red-900/30 shadow-none"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200 dark:shadow-none"
+                    }`}
+                >
+                  {showUploadForm ? (
+                    <>
+                      <X className="w-4 h-4" />
+                      Cancel Upload
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-4 h-4" />
+                      New Upload
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+
+
+            <AnimatePresence>
+              {showUploadForm && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="mt-4 overflow-hidden rounded-[2rem] border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-2xl"
+                >
+                  <div className="p-6 sm:p-8 space-y-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+                        <UploadCloud className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                        Contribute to Library
+                      </h2>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      {/* Course Input */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Course (Optional)</label>
+                        <Input
+                          placeholder="e.g. Nursing BSc"
+                          value={uploadForm.course}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setUploadForm({ ...uploadForm, course: value });
+                            localStorage.setItem("selectedCourse", value);
+                          }}
+                          className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900 border-none focus:ring-2 focus:ring-emerald-500/50"
+                        />
+                      </div>
+
+                      {/* Block Selection */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Academic Block</label>
+                        <select
+                          value={uploadForm.block}
+                          onChange={(e) => setUploadForm({ ...uploadForm, block: e.target.value })}
+                          className="w-full h-12 rounded-xl bg-gray-50 dark:bg-gray-900 border-none px-4 text-sm font-medium focus:ring-2 focus:ring-emerald-500/50 outline-none appearance-none cursor-pointer"
+                        >
+                          {blockCategories.map((b) => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Description */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Brief Description</label>
+                        <Input
+                          placeholder="What is this resource about?"
+                          value={uploadForm.description}
+                          onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                          className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900 border-none focus:ring-2 focus:ring-emerald-500/50"
+                        />
+                      </div>
+
+                      {/* File Type */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Format Type</label>
+                        <select
+                          value={uploadForm.fileType}
+                          onChange={(e) => setUploadForm({ ...uploadForm, fileType: e.target.value })}
+                          className="w-full h-12 rounded-xl bg-gray-50 dark:bg-gray-900 border-none px-4 text-sm font-medium focus:ring-2 focus:ring-emerald-500/50 outline-none appearance-none cursor-pointer"
+                        >
+                          <option value="pdf">📄 PDF Document</option>
+                          <option value="video">🎥 Video Tutorial</option>
+                          <option value="audio">🎧 Audio Lecture</option>
+                          <option value="link">🔗 Web Link</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Custom File Upload Zone */}
+                    <div className="relative">
+                      <label className="group block w-full border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8 text-center hover:border-emerald-500 dark:hover:border-emerald-500/50 transition-all cursor-pointer bg-gray-50/50 dark:bg-gray-900/30">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => {
+                            if (!e.target.files) return;
+                            const selected = Array.from(e.target.files);
+                            setFiles(selected);
+                            uploadBatchResources(e.target.files);
+                          }}
+                        />
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm group-hover:scale-110 transition-transform">
+                            <FilePlus className="w-6 h-6 text-emerald-500" />
+                          </div>
+                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                            {files.length > 0 ? `${files.length} files selected` : "Click to select or drag PDF files"}
+                          </p>
+                          <p className="text-[10px] font-medium text-gray-400">Supported format: PDF (Max 50MB per file)</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Progress Section */}
+                    {uploadProgress !== null && (
+                      <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest animate-pulse">Uploading to Cloud...</span>
+                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                            {(() => {
+                              const totalSize = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024);
+                              const uploaded = (uploadProgress / 100) * totalSize;
+                              return `${uploaded.toFixed(1)} / ${totalSize.toFixed(1)} MB (${Math.round(uploadProgress)}%)`;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgress}%` }}
+                            className="bg-emerald-500 h-full rounded-full shadow-[0_0_10px_rgba(16,185,129,0.4)]"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-3">
+                      {uploading ? (
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            uploadAbortController.current?.abort();
+                            setUploading(false);
+                            setUploadProgress(null);
+                            setFiles([]);
+                            setUploadForm({
+                              course: localStorage.getItem("selectedCourse") || "",
+                              description: "",
+                              block: "PTS",
+                              fileType: "pdf",
+                            });
+                            alert("Upload process terminated.");
+                          }}
+                          className="flex-1 h-12 rounded-2xl font-bold shadow-lg shadow-red-200 dark:shadow-none"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Stop & Cancel
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={uploadResource}
+                          disabled={files.length === 0}
+                          className="flex-1 h-12 rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 dark:shadow-none disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Complete Submission
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* --- BLOCK SELECTOR TOOLBAR --- */}
+            <div className="relative mt-6 w-full flex justify-center px-2 sm:px-0">
+
+              {/* Trigger Button */}
+              <Button
+                onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
+                className={`
+      relative z-40 h-12 px-6 rounded-2xl transition-all duration-300
+      flex items-center gap-3 w-full sm:w-auto shadow-lg active:scale-95
+      ${floatingBlockOpen
+                    ? "bg-blue-600 text-white shadow-blue-200 dark:shadow-none"
+                    : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-800 hover:border-blue-500"
+                  }
+    `}
+              >
+                <div className={`p-1.5 rounded-lg transition-colors ${floatingBlockOpen ? 'bg-white/20' : 'bg-blue-50 dark:bg-blue-900/30'}`}>
+                  <Layers className={`w-5 h-5 ${floatingBlockOpen ? 'text-white' : 'text-blue-600'}`} />
+                </div>
+
+                <div className="flex flex-col items-start leading-none">
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Category</span>
+                  <span className="text-sm font-bold truncate max-w-[200px]">
+                    {blockCategories.find(c => c.id === selectedBlock)?.name || "Select Block / Semester"}
+                  </span>
+                </div>
+
+                <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-300 ${floatingBlockOpen ? 'rotate-180' : ''}`} />
+              </Button>
+
+              {/* MODAL OVERLAY */}
+              <AnimatePresence>
+                {floatingBlockOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                    {/* Blurred Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setFloatingBlockOpen(false)}
+                      className="absolute inset-0 bg-gray-950/60 backdrop-blur-md"
+                    />
+
+                    {/* Selection Card */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                      className="relative w-full max-w-md bg-white dark:bg-gray-950 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden"
+                    >
+                      {/* Modal Header */}
+                      <div className="px-8 pt-8 pb-4">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                          Select Curriculum <span className="text-blue-600 font-normal underline decoration-2 underline-offset-4">Block</span>
+                        </h3>
+                        <p className="text-xs font-medium text-gray-400 mt-2">Filter resources by your current semester or level.</p>
+                      </div>
+
+                      {/* List Content */}
+                      <div className="px-4 pb-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                        <div className="space-y-1">
+                          {blockCategories.map((cat) => {
+                            const isActive = selectedBlock === cat.id;
+                            return (
+                              <button
+                                key={cat.id}
+                                onClick={() => {
+                                  setSelectedBlock(cat.id);
+                                  setFloatingBlockOpen(false);
+                                }}
+                                className={`
+                      w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all group
+                      ${isActive
+                                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
+                                  }
+                    `}
+                              >
+                                <span className={`text-sm font-bold ${isActive ? 'translate-x-1' : ''} transition-transform`}>
+                                  {cat.name}
+                                </span>
+
+                                {isActive ? (
+                                  <CheckCircle2 className="w-5 h-5 fill-current" />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full border-2 border-gray-100 dark:border-gray-800 group-hover:border-blue-200 transition-colors" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Footer Close (For Mobile UX) */}
+                      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800">
+                        <Button
+                          onClick={() => setFloatingBlockOpen(false)}
+                          className="w-full bg-white dark:bg-gray-800 text-gray-500 font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100"
+                        >
+                          Close Menu
+                        </Button>
+                      </div>
+                    </motion.div>
+                  </div>
                 )}
               </AnimatePresence>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 mt-3 border-0 sm:items-center">
-              <div className="relative flex-1 px-2 sm:px-0">
-
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search resources..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full"
-                />
-
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={() => setShowUploadForm(!showUploadForm)}
-                className="whitespace-nowrap"
-              >
-                {showUploadForm ? "Cancel Upload" : "New Upload"}
-              </Button>
-            </div>
-
-          </CardContent>
-        </Card>
-
-        {showUploadForm && (
-          <div className="p-4 border rounded-lg space-y-4 bg-muted/10 px-2 sm:px-4">
-
-            <h2 className="text-xl font-semibold">Upload New Resource</h2>
-            <div className="grid gap-4 md:grid-cols-2 px-0">
-
-              <Input
-                placeholder="Course (optional)"
-                value={uploadForm.course}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setUploadForm({ ...uploadForm, course: value });
-                  localStorage.setItem("selectedCourse", value); // ✅ remember optional course
-                }}
-              />
-
-              <Input
-                placeholder="Short description"
-                value={uploadForm.description}
-                onChange={(e) =>
-                  setUploadForm({ ...uploadForm, description: e.target.value })
-                }
-              />
-              <select
-                value={uploadForm.block}
-                onChange={(e) =>
-                  setUploadForm({ ...uploadForm, block: e.target.value })
-                }
-                className="border rounded px-3 py-2 text-sm bg-gray-100 text-black"
-              >
-                {blockCategories.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={uploadForm.fileType}
-                onChange={(e) =>
-                  setUploadForm({ ...uploadForm, fileType: e.target.value })
-                }
-                className="border rounded px-3 py-2 text-sm bg-gray-100 text-black"
-              >
-                <option value="pdf">PDF</option>
-                <option value="video">Video</option>
-                <option value="audio">Audio</option>
-                <option value="link">Link</option>
-              </select>
-              <Input
-                type="file"
-                accept=".pdf"
-                multiple
-                onChange={(e) => {
-                  if (!e.target.files) return;
-                  const selected = Array.from(e.target.files);
-                  setFiles(selected); // ✅ keep in state
-                  uploadBatchResources(e.target.files); // ✅ start upload
-                }}
-              />
 
 
-            </div>
-            {uploading ? (
-              <div className="flex gap-2">
-                <Button disabled>
-                  Uploading...
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    uploadAbortController.current?.abort(); // stop Supabase upload
-                    setUploading(false);
-                    setUploadProgress(null);
-                    setFile(null); // ✅ clear file input
-                    setUploadForm({
-                      title: "",
-                      description: "",
-                      block: "PTS",
-                      course: localStorage.getItem("selectedCourse") || "",
-                      fileType: "pdf",
-                    }); // ✅ reset form
-                    alert("Upload canceled!");
-                  }}
-                >
-                  Cancel Upload
-                </Button>
+            {/* Tabs content controlled by selectedBlock */}
+            <div className="space-y-4 mt-2 px-2 sm:px-0">
 
-              </div>
-            ) : (
-              <Button onClick={uploadResource}>
-                Submit Resource
-              </Button>
-            )}
-            {uploadProgress !== null && (
-              <div className="w-full mt-2 space-y-1">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  {(() => {
-                    const totalSize = files.reduce((s, f) => s + f.size, 0) / (1024 * 1024); // MB
-                    const uploaded = (uploadProgress / 100) * totalSize;
-                    return `${uploaded.toFixed(2)} MB / ${totalSize.toFixed(2)} MB (${uploadProgress.toFixed(0)}%)`;
-                  })()}
-                </div>
-              </div>
-            )}
-
-
-          </div>
-        )}
-
-
-
-
-        {/* Static Block Selector Below Search */}
-        <div className="relative mt-4 w-full flex justify-start px-2 sm:px-0">
-
-
-          {/* ✅ Screen Overlay */}
-          {floatingBlockOpen && (
-            <div
-              className="
-        fixed inset-0 z-40
-        bg-black/70
-        transition-opacity
-      "
-              onClick={() => setFloatingBlockOpen(false)}
-            />
-          )}
-
-          {/* Button */}
-          <Button
-            onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
-            className="
-    relative z-40 text-lg
-    bg-gray-100 text-gray-900
-    dark:bg-gray-800 dark:text-gray-100
-    hover:bg-gray-200 dark:hover:bg-gray-700
-    transition-colors
-    w-full sm:w-auto
-    flex items-center gap-2
-  "
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="!w-10 !h-10"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-              />
-            </svg>
-
-            Choose Block OR Semester here
-          </Button>
-
-          {/* Floating Animated Dropdown with Full-Screen Overlay */}
-          {floatingBlockOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              {/* Overlay */}
-              <div
-                className="absolute inset-0 bg-black/60"
-                onClick={() => setFloatingBlockOpen(false)} // click outside closes
-              />
-
-              {/* Dropdown Card */}
-              <div
-                className="
-        relative z-50
-        w-80 sm:w-96
-        bg-white dark:bg-gray-800
-        shadow-xl rounded-lg
-        origin-top
-        animate-in slide-in-from-top-2 fade-in
-        duration-200
-        p-4
-      "
-              >
-
-                {blockCategories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      setSelectedBlock(cat.id);
-                      setFloatingBlockOpen(false);
-                    }}
-                    className={`
-            w-full text-left px-4 py-2 text-sm
-            hover:bg-blue-100 dark:hover:bg-blue-700
-            transition-colors
-            ${selectedBlock === cat.id ? "font-bold" : ""}
-          `}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-
-        {/* Tabs content controlled by selectedBlock */}
-        <div className="space-y-4 mt-2 px-2 sm:px-0">
-
-          {/* Dynamic Heading for Selected Block */}
-          <h2 className="text-2xl font-bold mb-4">
-            {blockCategories.find((cat) => cat.id === selectedBlock)?.name.split("/").pop()}
-          </h2>
-
-          {blockCategories
-            .filter((cat) => cat.id === selectedBlock)
-            .map((cat) => (
-              <div key={cat.id}>
-                <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-2 gap-1 w-full">
-                  {loadingNotes ? (
-                    <div className="flex flex-col items-center justify-center py-20 col-span-full">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                      <p className="text-muted-foreground text-center">
-                        Medrae is preparing your notes...
-                      </p>
-                    </div>
-                  ) : filteredResources.filter((note) =>
-                    cat.id === "OTHER"
-                      ? !blockCategories
-                        .slice(0, 7)
-                        .some((b) => (note.block || "").toUpperCase() === b.id)
-                      : (note.block || "").toUpperCase() === cat.id
-                  ).length === 0 ? (
-                    <Card className="col-span-full flex flex-col items-center justify-center py-12 px-6 border-0 shadow-md rounded-2xl">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-center text-muted-foreground">
-                          No notes available
-                        </CardTitle>
-                        <CardDescription className="text-center text-muted-foreground">
-                          Check back soon for updates!
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
-                  ) : (
-                    filteredResources
-                      .filter((note) =>
+              {/* Dynamic Heading for Selected Block */}
+              <h2 className="text-2xl font-bold mb-4 text-center">
+                {blockCategories.find((cat) => cat.id === selectedBlock)?.name?.split("/").pop()}
+              </h2>
+              {blockCategories
+                .filter((cat) => cat.id === selectedBlock)
+                .map((cat) => (
+                  <div key={cat.id}>
+                    <div className="grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
+                      {loadingNotes ? (
+                        <div className="flex flex-col items-center justify-center py-20 col-span-full">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                          <p className="text-muted-foreground text-center">
+                            Medrae is preparing your notes...
+                          </p>
+                        </div>
+                      ) : filteredResources.filter((note) =>
                         cat.id === "OTHER"
                           ? !blockCategories
                             .slice(0, 7)
                             .some((b) => (note.block || "").toUpperCase() === b.id)
                           : (note.block || "").toUpperCase() === cat.id
-                      )
-                      .map((note) => (
-                        <Card
-                          key={note.id}
-                          className="flex flex-col justify-between transition-all border-0 hover:shadow-lg duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
-                        >
-
-
-                          <CardHeader className="px-2 sm:px-0">
-                            <div className="flex flex-col items-start gap-2">
-                              {/* Icon + title + badge stacked vertically or tightly left-aligned */}
-                              <div className="flex items-center gap-1">
-                                {getTypeIcon(note.file_type)}
-                                <CardTitle className="text-lg">{note.title}</CardTitle>
-                                <Badge className={getTypeColor(note.file_type)}>
-                                  {note.file_type.toUpperCase()}
-                                </Badge>
-                              </div>
-
-                              {/* Description */}
-                              <CardDescription className="text-left">{note.description}</CardDescription>
-
-                              {/* Course + upload date */}
-                              <div className="text-sm text-muted-foreground flex flex-wrap gap-2 text-left">
-                                {note.course && <span>{note.course}</span>}
-                                <span>· Uploaded {new Date(note.created_at).toLocaleDateString()}</span>
-                              </div>
-                            </div>
+                      ).length === 0 ? (
+                        <Card className="col-span-full flex flex-col items-center justify-center py-12 px-6 border-0 shadow-md rounded-2xl">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-center text-muted-foreground">
+                              No notes available
+                            </CardTitle>
+                            <CardDescription className="text-center text-muted-foreground">
+                              Check back soon for updates!
+                            </CardDescription>
                           </CardHeader>
-
-                          <CardContent className="space-y-2 px-2 sm:px-0">
-                            {note.file_type === "pdf" && (
-                              <div className="flex flex-wrap gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-
-                                  onClick={async () => {
-                                    try {
-                                      const file = await getFile(note.id);
-                                      if (file) {
-                                        const url = URL.createObjectURL(file);
-                                        setFullscreenNote({ ...note, file_url: url });
-                                      } else {
-                                        setFullscreenNote(note);
-                                      }
-
-                                      const { error } = await supabase
-                                        .from("note_views")
-                                        .upsert(
-                                          { note_id: note.id, user_id: session?.user?.id || null },
-                                          { onConflict: ['note_id', 'user_id'] }
-                                        );
-
-                                      if (error) console.error("Error recording view:", error);
-                                      else
-                                        setViewCounts((prev) => ({
-                                          ...prev,
-                                          [note.id]: (prev[note.id] || 0) + 1,
-                                        }));
-
-                                      if (!error) {
-                                        setViewCounts((prev) => ({
-                                          ...prev,
-                                          [note.id]: (prev[note.id] || 0) + 1,
-                                        }));
-                                      }
-                                    } catch (err) {
-                                      console.error("Unexpected error recording view:", err);
-                                    }
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />View
-                                </Button>
-
-                                <Button
-                                  size="sm"
-                                  onClick={async () => await handleDownload(note.id, note.file_url)}
-                                  variant="ghost"
-                                  className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  {/* ✅ Updated download icon */}
-                                  <Download className="h-3 w-3" /> Cache
-                                </Button>
-
-                                {offlineFiles.includes(note.id) && (
-                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 w-full sm:w-auto">
-                                    Preserved
-                                  </Badge>
-                                )}
-
-
-                                {session?.user?.id === note.uploaded_by && (
-                                  <Button
-
-                                    size="sm"
-                                    variant="ghost"
-                                    className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-
-                                    onClick={async () => {
-                                      if (!confirm("Are you sure you want to delete this note?")) return;
-
-                                      try {
-                                        const url = note.file_url;
-                                        const parts = url.split("/notes/");
-                                        const storagePath = parts[1];
-
-                                        if (storagePath) {
-                                          const { error: storageError } = await supabase.storage
-                                            .from("notes")
-                                            .remove([storagePath]);
-                                          if (storageError) console.error("Storage deletion error:", storageError);
-                                        }
-
-                                        const { error: dbError } = await supabase
-                                          .from("notes")
-                                          .delete()
-                                          .eq("id", note.id);
-                                        if (dbError) {
-                                          console.error("DB deletion error:", dbError);
-                                          alert("Failed to delete note");
-                                          return;
-                                        }
-
-                                        setNotes((prev) => prev.filter((n) => n.id !== note.id));
-                                        alert("Note deleted successfully!");
-                                      } catch (err) {
-                                        console.error("Unexpected deletion error:", err);
-                                        alert("Something went wrong while deleting the note");
-                                      }
-                                    }}
-                                  >
-                                    {/* ✅ Updated trash icon */}
-                                    <Trash2 className="h-4 w-4 mr-1" />
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-
-                            <div className="text-sm text-muted-foreground flex flex-wrap gap-8 items-center">
-                              <div className="flex items-center gap-1">
-                                <Eye className="h-6 w-6" />
-                                <span>{viewCounts[note.id] || 0}</span>
-                              </div>
-
-                              <button
-                                onClick={() => toggleLike(note.id)}
-                                className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
-                                  }`}
-                              >
-                                <Heart className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
-                                <span>{likeCounts[note.id] || 0}</span>
-                              </button>
-                            </div>
-                          </CardContent>
                         </Card>
-                      ))
-                  )}
-                </div>
-                <TermsButton />
-              </div>
-            ))}
+                      ) : (
+                        filteredResources
+                          .filter((note) =>
+                            cat.id === "OTHER"
+                              ? !blockCategories
+                                .slice(0, 7)
+                                .some((b) => (note.block || "").toUpperCase() === b.id)
+                              : (note.block || "").toUpperCase() === cat.id
+                          )
+                          .map((note) => (
+                            <Card
+                              key={note.id}
+                              className="group flex flex-col justify-between transition-all duration-300 border border-gray-100 dark:border-gray-800 hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm hover:shadow-xl overflow-hidden"
+                            >
+                              <CardHeader className="p-5 pb-2">
+                                <div className="space-y-3">
+                                  {/* Top Row: Type & Meta */}
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
+                                        {getTypeIcon(note.file_type)}
+                                      </div>
+                                      <Badge className={`${getTypeColor(note.file_type)} border-none font-bold text-[10px] tracking-widest`}>
+                                        {note.file_type.toUpperCase()}
+                                      </Badge>
+                                    </div>
+
+                                    {/* Offline Status Indicator */}
+                                    {offlineFiles.includes(note.id) && (
+                                      <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                                        <CloudCheck className="w-3 h-3" /> PRESERVED
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Title & Description */}
+                                  <div className="space-y-1">
+                                    <CardTitle className="text-lg font-bold leading-tight text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors line-clamp-1">
+                                      {note.title}
+                                    </CardTitle>
+                                    <CardDescription className="text-sm font-medium text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                                      {note.description}
+                                    </CardDescription>
+                                  </div>
+
+                                  {/* Metadata Pills */}
+                                  <div className="flex flex-wrap gap-2 pt-1">
+                                    {note.course && (
+                                      <span className="text-[10px] font-bold bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-md">
+                                        {note.course}
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {new Date(note.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardHeader>
+
+                              <CardContent className="p-5 pt-2 space-y-5">
+                                {/* Action Buttons Row */}
+                                <div className="flex flex-wrap items-center gap-2 border-t border-gray-50 dark:border-gray-900 pt-4">
+                                  {note.file_type === "pdf" && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="rounded-xl font-bold gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 transition-all active:scale-95 border-none"
+                                        onClick={async () => {
+                                          try {
+                                            const file = await getFile(note.id);
+                                            const url = file ? URL.createObjectURL(file) : note.file_url;
+                                            setFullscreenNote({ ...note, file_url: url });
+
+                                            // Record View
+                                            const { error } = await supabase.from("note_views").upsert(
+                                              { note_id: note.id, user_id: session?.user?.id || null },
+                                              { onConflict: ['note_id', 'user_id'] }
+                                            );
+
+                                            if (!error) {
+                                              setViewCounts(prev => ({ ...prev, [note.id]: (prev[note.id] || 0) + 1 }));
+                                            }
+                                          } catch (err) { console.error("View error:", err); }
+                                        }}
+                                      >
+                                        <Eye className="h-4 w-4" /> View
+                                      </Button>
+
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => handleDownload(note.id, note.file_url)}
+                                        className="rounded-xl font-bold gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 transition-all active:scale-95 border-none"
+                                      >
+                                        <DownloadCloud className="h-4 w-4" /> Cache
+                                      </Button>
+                                    </>
+                                  )}
+
+                                  {/* Delete Button (Owner Only) */}
+                                  {session?.user?.id === note.uploaded_by && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="rounded-xl p-2 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-all ml-auto"
+                                      onClick={async () => {
+                                        if (!confirm("Delete this resource forever?")) return;
+                                        try {
+                                          const storagePath = note.file_url.split("/notes/")[1];
+                                          if (storagePath) await supabase.storage.from("notes").remove([storagePath]);
+
+                                          const { error: dbError } = await supabase.from("notes").delete().eq("id", note.id);
+                                          if (dbError) throw dbError;
+
+                                          setNotes(prev => prev.filter(n => n.id !== note.id));
+                                        } catch (err) { alert("Failed to delete resource"); }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {/* Social Stats Row */}
+                                <div className="flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-1.5 group/stat">
+                                      <div className="p-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                                        <Eye className="h-3.5 w-3.5 text-blue-500" />
+                                      </div>
+                                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                        {viewCounts[note.id] || 0}
+                                      </span>
+                                    </div>
+
+                                    <button
+                                      onClick={() => toggleLike(note.id)}
+                                      className="flex items-center gap-1.5 group/like transition-transform active:scale-125"
+                                    >
+                                      <div className={`p-1.5 rounded-lg shadow-sm transition-colors ${bookmarkedItems.includes(note.id) ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white dark:bg-gray-800'}`}>
+                                        <Heart className={`h-3.5 w-3.5 ${bookmarkedItems.includes(note.id) ? "text-red-500 fill-current" : "text-gray-400"}`} />
+                                      </div>
+                                      <span className={`text-xs font-bold ${bookmarkedItems.includes(note.id) ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                        {likeCounts[note.id] || 0}
+                                      </span>
+                                    </button>
+                                  </div>
+
+                                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Library
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                      )}
+                    </div>
+                    <TermsButton />
+                  </div>
+                ))}
+            </div>
+
+          </Card>
         </div>
-
-
 
 
         {fullscreenNote && (

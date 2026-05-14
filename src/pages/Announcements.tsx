@@ -120,7 +120,7 @@ export function Announcements() {
   const regularAnnouncements = announcements.filter((a) => !a.pinned);
 
   if (loading) {
-    return <GlobalLoader message="Fetching announcements..." />;
+    return <GlobalLoader />;
   }
 
   return (

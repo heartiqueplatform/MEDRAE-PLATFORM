@@ -8,6 +8,17 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { saveLoginInfo, getLoginInfo } from "@/lib/offlineAuth";
 import sha256 from "crypto-js/sha256"; // For hashing passwords offline
+import React from 'react';
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  LogIn,
+  KeyRound,
+  Eye,
+  EyeOff,
+  LogOut
+} from 'lucide-react';
 
 export function Login() {
   useEffect(() => {
@@ -191,72 +202,172 @@ export function Login() {
       setIsLoading(false);
     }
   };
+  const handleExitApp = () => {
+    const confirmed = window.confirm("Are you sure you want to exit the Medrae Nursing?");
+    if (confirmed) {
+      // Check if we are running as a laptop app
+      if ((window as any).electronAPI) {
+        (window as any).electronAPI.quitApp();
+      } else {
+        // If we are just in a browser, just alert
+        alert("Exit command sent (This only works in the Desktop App)");
+      }
+    }
+  };
+
+
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden font-sans flex justify-center items-center">
-      {/* Background image */}
+    <div className="relative min-h-screen w-full overflow-hidden font-sans flex flex-col justify-center items-center p-4">
+      {/* FLOATING EXIT BUTTON */}
+      <button
+        onClick={handleExitApp}
+        className="fixed top-4 left-4 z-[9999] bg-red-600 hover:bg-red-700 text-white p-3 rounded-2xl shadow-2xl transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] border-2 border-white"
+      >
+        <LogOut className="h-4 w-4" />
+        EXIT MEDRAE
+      </button>
+      {/* Background image with refined transition */}
       <div
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${fade ? "opacity-100" : "opacity-0"}`}
-        style={{ backgroundImage: `url('${backgroundImages[bgIndex]}')` }}
+        className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 scale-105 ${fade ? "opacity-100" : "opacity-0"
+          }`}
+        style={{
+          backgroundImage: `url('${backgroundImages[bgIndex]}')`,
+          filter: 'brightness(0.7)' // Darken for better contrast
+        }}
       ></div>
 
-      {/* Optional overlay for readability */}
-      <div className="absolute inset-0 bg-black opacity-20"></div>
+      {/* Modern Radial Overlay for depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60"></div>
 
-      {/* Your card */}
-      <div className="relative z-10 w-full flex justify-center items-center px-3 pt-40">
-        <Card className="w-full max-w-xl bg-white shadow-lg rounded-2xl">
-          {/* Keep your CardHeader and CardContent exactly as is */}
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-3 text-2xl font-bold">
-              <img
-                src="/pwa-192x192.jpeg"
-                alt="Logo"
-                className="w-8 h-8 object-contain"
-              />
-              <span>Hey there, welcome back! Log in</span>
+      {/* Form Container */}
+      <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
+
+        {/* Branding/Logo above the card */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-2xl p-3 mb-4 animate-bounce-slow">
+            <img
+              src="/pwa-192x192.jpeg"
+              alt="Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <h1 className="text-white text-3xl font-black tracking-tight drop-shadow-md">
+            Welcome Back
+          </h1>
+        </div>
+
+        <Card className="w-full bg-white/95 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-none rounded-[2.5rem] overflow-hidden">
+          <CardHeader className="pt-10 px-8 pb-2 text-center">
+            <CardTitle className="text-2xl font-bold text-slate-800">
+              Sign In
             </CardTitle>
-            <CardDescription>Enter your email and password</CardDescription>
+            <CardDescription className="text-slate-500 font-medium pt-1">
+              Please enter your credentials to continue
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Label>Email</Label>
-              <Input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
 
-              <Label>Password</Label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your secure password"
-              />
+          <CardContent className="p-8">
+            <div className="space-y-5">
 
-              <Button disabled={isLoading} onClick={handleLogin}>
-                {isLoading ? "Logging in..." : "Login"}
+              {/* Email Field */}
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 ml-1">
+                  Email Address
+                </Label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  <Input
+                    className="pl-12 h-12 bg-slate-50 border-slate-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center ml-1">
+                  <Label className="text-xs uppercase tracking-widest font-bold text-slate-500">
+                    Password
+                  </Label>
+                  <button
+                    onClick={handleForgotPassword}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    Forgot?
+                  </button>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  <Input
+                    type="password"
+                    className="pl-12 h-12 bg-slate-50 border-slate-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              {/* Login Button */}
+              <Button
+                disabled={isLoading}
+                onClick={handleLogin}
+                className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg shadow-lg shadow-blue-200 transition-all active:scale-[0.98] mt-4"
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Authenticating...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Log In <LogIn className="w-5 h-5" />
+                  </span>
+                )}
               </Button>
 
-              <p
-                className="text-sm text-blue-600 hover:underline cursor-pointer mt-2"
-                onClick={handleForgotPassword}
-              >
-                Forgot Password?
-              </p>
-            </div>
+              {/* Registration Link */}
+              <div className="pt-6 text-center">
+                <p className="text-sm text-slate-500 font-medium">
+                  New to the platform?{" "}
+                  <Link to="/register" className="text-blue-600 hover:text-blue-700 font-bold inline-flex items-center gap-1 group">
+                    Create account <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </p>
+              </div>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don’t have an account?{" "}
-                <Link to="/register" className="text-blue-600 hover:underline font-medium">
-                  Register here
-                </Link>
-              </p>
             </div>
           </CardContent>
         </Card>
+
+        {/* Support Footer */}
+        <div className="mt-8 flex justify-center gap-6">
+          <span
+            className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-white hover:text-blue-800 transition-colors font-bold"
+            onClick={() => navigate("/privacy")}
+          >
+            Privacy & Policy
+          </span>.
+          <span
+            className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-white hover:text-blue-800 transition-colors font-bold"
+            onClick={() => navigate("/terms")}
+          >
+            Terms & Conditions
+          </span>.
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-slow {
+          animation: bounce-slow 4s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

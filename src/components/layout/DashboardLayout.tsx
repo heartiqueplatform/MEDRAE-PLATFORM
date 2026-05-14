@@ -1,6 +1,8 @@
 "use client";
 import { useLocation } from "react-router-dom";
+import VoiceRoom from "@/components/voice/VoiceRoom";
 // DashboardLayout.tsx
+import MistakeCard from "@/components/MistakeCard";
 import { MusicPlayerProvider } from "@/components/MusicPlayerProvider";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { Toaster } from "@/components/ui/toaster";
@@ -31,7 +33,10 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   const isForum = location.pathname === "/forum";
   const disabledPages = ["/login", "/register", "/checkout"]; // pages where music never shows
   const showMusic = !disabledPages.includes(location.pathname);
-
+  const users = [
+    { id: "user-1", name: "You", avatar: "..." },
+    { id: "user-2", name: "Alex", avatar: "..." }
+  ];
   // ------------------------------
   // Auth redirect
   // ------------------------------
@@ -126,7 +131,7 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   };
 
   if (!cachedProfile && loading) {
-    return <GlobalLoader message="Loading profile..." />;
+    return <GlobalLoader />;
   }
 
   // Fallback user data
@@ -172,57 +177,69 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
 // THIS COMPONENT CAN NOW SAFELY USE useSidebar()
 // -------------------------------------------------------------
 import { useSidebar } from "@/components/ui/sidebar";
+import FloatingChat from "../FloatingChat";
 function DashboardContent({ user, role, streak, isDarkMode, toggleDarkMode, children, isForum }: any) {
-
   const location = useLocation();
-  // Pages where the music player should never appear
+
+  // CHECK FOR FEED PAGE HERE
+  const isFeed = location.pathname === "/feed"; // Change "/feed" to your actual route path
+
   const disabledPages = ["/login", "/register", "/simulation/candidate", "/quiz-simulation/instructions"];
-  const showMusic = !disabledPages.includes(window.location.pathname);
-  const { isSidebarOpen, toggleSidebar } = useSidebar();
+  const showMusic = !disabledPages.includes(location.pathname);
+  const { isSidebarOpen } = useSidebar();
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background relative ">
-
-      {/* Medical Doodle Background */}
       <MedicalDoodles className="-z-10 pointer-events-none" />
       <div className="relative z-10 flex w-full">
         <AppSidebar userRole={role} className="flex-shrink-0 w-64 md:w-72" />
 
         <div className="flex flex-col flex-1 overflow-hidden">
-
           <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
+
           <main
             data-scroll-container
             className={`
-    flex-1 box-border
-    px-0
-    py-4
-    ${!isForum ? "pb-14" : ""}
-    overflow-auto
-    custom-scrollbar
-  `}
+              flex-1 box-border
+              px-0
+              py-4
+              ${(!isForum && !isFeed) ? "pb-14" : "pb-0"}
+              overflow-auto
+              custom-scrollbar
+            `}
           >
-            {/* This renders the child route */}
             <Outlet />
 
-            {/* Footer spacer — only on non-forum pages */}
-            {!isForum && <div className="h-20 shrink-0" />}
+            {/* Removed spacer for Forum and Feed */}
+            {!isForum && !isFeed && <div className="h-20 shrink-0" />}
           </main>
 
           {!isSidebarOpen && (
-            <BottomBar userRole={role}
-              unreadCount={0}
-              unreadAnnouncements={0}
-            />
+            <BottomBar userRole={role} unreadCount={0} unreadAnnouncements={0} />
           )}
           <Toaster />
           <Footer mistakeCount={0} />
-
-          {/* ------------------- Floating Music Player ------------------- */}
           {showMusic && <MusicPlayer />}
         </div>
       </div>
 
+      <div className="hidden lg:flex w-[34rem] max-w-[40vw] border-0 p-3 overflow-auto custom-scrollbar bg-background">
+        <RightPanel userId={user?.id} />
+      </div>
     </div>
+  );
+}
+function RightPanel({ userId }: { userId: string }) {
+  return (
+    <div className="h-full flex flex-col">
 
+      {/* TOP AREA */}
+      <div className="flex-1 overflow-auto  custom-scrollbar space-y-4 w-[400px] -mt-2 p-0">
+        <FloatingChat currentUserId={userId} />
+      </div>
+
+
+
+    </div>
   );
 }

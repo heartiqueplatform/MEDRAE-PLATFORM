@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 1. The Background Color -->
+    <item android:drawable="@color/capacitor_background_color"/>
+
+    <!-- 2. The Logo with PADDING (Insets) -->
+    <item>
+        <inset
+            android:insetLeft="100dp"
+            android:insetRight="100dp"
+            android:insetTop="100dp"
+            android:insetBottom="100dp">
+            <bitmap
+                android:gravity="center"
+                android:src="@drawable/splash"/>
+        </inset>
+    </item>
+
+</layer-list>

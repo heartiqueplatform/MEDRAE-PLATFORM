@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, Volume, VolumeX, GraduationCap } from "lucide-react";
+import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, LogOut, Volume, VolumeX, GraduationCap, CheckCircle2, Eye, Target, ExternalLink, Mail, Facebook, Linkedin, Instagram, Twitter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -27,27 +27,21 @@ const HeroSkeleton = () => {
 
 const Index = () => {
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(true);
-
   const [joyrideReady, setJoyrideReady] = useState(false);
   const [ready, setReady] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
-
   // ✅ track loading state PER hero slide
   const [heroMediaLoaded, setHeroMediaLoaded] = useState<Record<number, boolean>>({});
-
-
   const [activeHeroStory, setActiveHeroStory] = useState(0);
   const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
-
-
   const [isMuted, setIsMuted] = useState(false); // always start unmuted
   const [isMobile, setIsMobile] = useState(false);
   const [notificationAudioReady, setNotificationAudioReady] = useState(false);
-
   // Add these states for media tracking
   const [totalMedia, setTotalMedia] = useState(0);
   const [loadedMedia, setLoadedMedia] = useState(0);
   const [allMediaReady, setAllMediaReady] = useState(false);
+  const currentYear = new Date().getFullYear();
   const handleMediaLoad = () => {
     setLoadedMedia(prev => prev + 1);
   };
@@ -58,12 +52,10 @@ const Index = () => {
   }, [loadedMedia, totalMedia]);
   useEffect(() => {
     const mediaUrls = [
-      ...heroStorySlides.flatMap(s => s.video ? [s.video] : [s.bg]),
+      ...heroStorySlides.flatMap(s => [s.bg]),
       "/sounds/notification.mp3",
     ];
-
     setTotalMedia(mediaUrls.length);
-
     mediaUrls.forEach(url => {
       if (url.endsWith(".mp3")) {
         const audio = new Audio(url);
@@ -82,18 +74,14 @@ const Index = () => {
       }
     });
   }, []);
-
-
   useEffect(() => {
     setIsMobile(window.innerWidth < 768);
   }, []);
-
   const navigate = useNavigate();
   useEffect(() => {
     const preloadMedia = async () => {
       if (!heroStorySlides?.length) return;
-      const mediaUrls = heroStorySlides.flatMap(slide => (slide.video ? [slide.video] : [slide.bg]));
-
+      const mediaUrls = heroStorySlides.flatMap(slide => [slide.bg]);
       const loadPromises = mediaUrls.map(url => {
         return new Promise<void>((resolve) => {
           if (url.endsWith('.mp4')) {
@@ -139,13 +127,11 @@ const Index = () => {
   useEffect(() => {
     setVideoVisible(true);
   }, []);
-
   useEffect(() => {
     if (allMediaReady) { // or any other condition when elements are mounted
       setJoyrideReady(true);
     }
   }, [allMediaReady]);
-
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
@@ -158,12 +144,10 @@ const Index = () => {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
-
-
   const heroStorySlides = [
 
     {
-      bg: "/background8.jpg",
+      bg: "/indexbackground2.jpg",
       text: (
         <div className="w-full h-full flex items-end justify-center text-center pb-3 md:pb-12 lg:pb-16">
           <div className="px-3 py-1 rounded-lg bg-white/5 backdrop-blur-none shadow-sm">
@@ -171,7 +155,7 @@ const Index = () => {
               className="text-4xl md:text-6xl font-bold"
               style={{
                 WebkitTextStroke: "0.5px blue",
-                color: "rgb(24, 14, 158)",
+                color: "rgb(233, 0, 0)",
               }}
             >
               <div className="flex items-center justify-center gap-2 mb-2 md:mb-2">
@@ -188,12 +172,11 @@ const Index = () => {
       ),
     },
 
-
     {
       bg: "/indexbackground3.jpg",
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
-          Medrae is built for serious NCK exam preparation. Practice 5,000+ updated NCK-style questions, get instant explanations after every answer, and focus directly on your weakest and most tested units.
+          Medrae is built for serious NCK,FQEs exam preparation. Practice 5,000+ updated NCK-style questions, get instant explanations after every answer, and focus directly on your weakest and most tested units.
 
         </h2>
       ),
@@ -228,8 +211,7 @@ const Index = () => {
       bg: "/background03.jpg",
       text: (
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 md:text-white">
-          Kenya’s Structured NCK Exam Practice Platform
-
+          Kenya’s Structured NCK AND FQEs Exam Practice Platform
         </h2>
       ),
     },
@@ -260,7 +242,6 @@ const Index = () => {
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
           Train in DigiProctor-style exam mode with timed practice, unit-based revision, and automatic tracking of every question you fail. Review smarter. Practice faster. Improve strategically.
-
         </h2>
       ),
     },
@@ -270,7 +251,6 @@ const Index = () => {
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
           Access the full NCK revision system—structured units, instant explanations, weak-topic tracking, and a growing bank of 5,000+ questions updated regularly to match exam trends.
-
         </h2>
       ),
     },
@@ -376,138 +356,167 @@ const Index = () => {
       description: "Medrae offers affordable institutional online exam hosting powered by a secure DigiProctor system. Upload revision questions, CATs, assignments, mock exams, and internal assessments — all fully digitized, automatically tracked, and easy to manage. Save time on marking, go fully digital, and train your students to confidently sit any computer-based exam, including NCK, without fear."
     }
   ];
-
+  const handleExitApp = () => {
+    const confirmed = window.confirm("Are you sure you want to exit the Medrae Nursing?");
+    if (confirmed) {
+      // Check if we are running as a laptop app
+      if ((window as any).electronAPI) {
+        (window as any).electronAPI.quitApp();
+      } else {
+        // If we are just in a browser, just alert
+        alert("Exit command sent (This only works in the Desktop App)");
+      }
+    }
+  };
 
   if (!ready) return null;
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative">
+    <div className="min-h-screen w-full overflow-x-hidden relative bg-slate-50">
+      {/* FLOATING EXIT BUTTON */}
+      <button
+        onClick={handleExitApp}
+        className="fixed top-4 left-4 z-[9999] bg-red-600 hover:bg-red-700 text-white p-3 rounded-2xl shadow-2xl transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] border-2 border-white"
+      >
+        <LogOut className="h-4 w-4" />
+        EXIT MEDRAE
+      </button>
       {showWelcomeOverlay && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-        >
-          <div className="bg-white rounded-3xl md:rounded-3xl p-4 md:p-8 w-full max-w-md md:max-w-lg mx-2 md:mx-4 text-center space-y-6 shadow-2xl">
-            {/* Logo */}
-            <img
-              src="/pwa-192x192.jpeg"
-              alt="Medrae Logo"
-              className="mx-auto h-16 w-16 rounded-lg"
-            />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Refined Backdrop */}
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500" />
 
-            {/* Welcome Message */}
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Welcome to MEDRAE!
-            </h2>
+          {/* Main Modal Card */}
+          <div className="relative bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-lg shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] text-center space-y-8 animate-in zoom-in-95 slide-in-from-bottom-10 duration-700">
 
-            {/* Marketing Question */}
-            <p className="text-lg text-gray-700 text-left">
-              Ready to join Kenya’s No.1 Nursing Network and boost your skills, career, and confidence? Before you proceed, please make sure you have read and understood our <span
-                className="underline cursor-pointer text-blue-600 hover:text-blue-800"
-                onClick={() => navigate("/terms")}
-              >
-                Terms & Conditions
-              </span>. Don’t miss this exclusive chance to connect with thousands of peers and professionals!
-            </p>
+            {/* Branding Section */}
+            <div className="space-y-4">
+              <div className="relative mx-auto w-20 h-20">
+                <img
+                  src="/pwa-192x192.jpeg"
+                  alt="Medrae Logo"
+                  className="mx-auto h-20 w-20 rounded-2xl shadow-xl border-4 border-white"
+                />
+                <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1.5 border-4 border-white shadow-sm">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                </div>
+              </div>
 
+              <div className="space-y-1">
+                <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">
+                  Welcome to <span className="text-red-600">MEDRAE </span> <span className="text-black">NURSING</span>
+                </h2>
+                <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">
+                  Kenya’s No.1 Nursing Network
+                </p>
+              </div>
+            </div>
 
-            {/* Buttons */}
-
-            <div className="flex flex-col justify-center items-center gap-4 mt-4">
-
-              <button
-                className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-2xl transition-all ${!allMediaReady ? "opacity-50 cursor-not-allowed" : ""}`}
-                disabled={!allMediaReady}
-                onClick={() => {
-                  setShowWelcomeOverlay(false);
-                  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-
-                  // Create audio and play once
-                  const notificationAudio = new Audio("/sounds/notification.mp3");
-                  notificationAudio.volume = 1;
-                  notificationAudio.loop = false;
-                  notificationAudio.play().catch(() => console.warn("Audio blocked"));
-                }}
-              >
-                {allMediaReady ? "Yes, I agree!" : "Downloading..."}
-              </button>
-
-              <p className="text-gray-700 dark:text-gray-900 text-base md:text-lg">
-                Already have an account?{" "}
+            {/* Marketing / Terms Text */}
+            <div className="bg-slate-50 rounded-3xl p-5 md:p-6 text-left border border-slate-100">
+              <p className="text-slate-600 leading-relaxed text-sm md:text-base font-medium">
+                Ready to boost your skills, career, and confidence? Before you proceed, please make sure you have read and understood our
                 <span
-                  className="text-blue-500 font-bold cursor-pointer hover:underline transition-all"
-                  onClick={() => window.location.href = "/login"}
+                  className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
+                  onClick={() => navigate("/terms")}
                 >
-                  Log in
-                </span>
+                  Terms & Conditions
+                </span>.
+                Connect with thousands of peers and professionals today!
               </p>
+            </div>
 
-              {/* Progress bar */}
+            {/* Action Area */}
+            <div className="flex flex-col items-center gap-6">
+              <div className="w-full space-y-4">
+                <button
+                  className={`w-full h-16 rounded-2xl font-black text-lg transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-2 ${!allMediaReady
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
+                    }`}
+                  disabled={!allMediaReady}
+                  onClick={() => {
+                    setShowWelcomeOverlay(false);
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-              {/* Progress bar */}
-              <div className="flex flex-col mt-4 w-full max-w-xs">
-                {/* Percentage text */}
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Loading media
+                    const notificationAudio = new Audio("/sounds/notification.mp3");
+                    notificationAudio.volume = 1;
+                    notificationAudio.loop = false;
+                    notificationAudio.play().catch(() => console.warn("Audio blocked"));
+                  }}
+                >
+                  {allMediaReady ? (
+                    <>Yes, I agree! <div className="w-2 h-2 bg-white rounded-full animate-ping" /></>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
+                      Downloading Assets...
+                    </span>
+                  )}
+                </button>
+
+                <p className="text-slate-500 text-sm md:text-base font-medium">
+                  Already have an account?{" "}
+                  <span
+                    className="text-blue-600 font-black cursor-pointer hover:underline transition-all"
+                    onClick={() => window.location.href = "/login"}
+                  >
+                    Log in here
                   </span>
-                  <span className="text-sm font-medium text-gray-700">
-                    {allMediaReady
-                      ? "100%"
-                      : `${Math.floor((loadedMedia / totalMedia) * 100)}%`}
+                </p>
+              </div>
+
+              {/* Progress Bar Container */}
+              <div className="w-full max-w-sm space-y-3 pt-2">
+                <div className="flex justify-between items-end px-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Media Initialization
+                  </span>
+                  <span className="text-sm font-black text-slate-700 tabular-nums">
+                    {allMediaReady ? "100%" : `${Math.floor((loadedMedia / totalMedia) * 100)}%`}
                   </span>
                 </div>
 
-                {/* Bar background */}
-                <div className="w-full bg-gray-300 rounded-full h-3 overflow-hidden">
-                  {/* Bar fill */}
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200/50 p-0.5">
                   <div
-                    className="h-3 rounded-full transition-all duration-300"
+                    className="h-full rounded-full transition-all duration-500 ease-out"
                     style={{
-                      width: allMediaReady
-                        ? "100%"
-                        : `${(loadedMedia / totalMedia) * 100}%`,
+                      width: allMediaReady ? "100%" : `${(loadedMedia / totalMedia) * 100}%`,
                       backgroundColor: allMediaReady
-                        ? "green"
+                        ? "#10b981" // green
                         : loadedMedia / totalMedia <= 0.25
-                          ? "red"
+                          ? "#f43f5e" // red
                           : loadedMedia / totalMedia <= 0.75
-                            ? "blue"
-                            : "yellow",
+                            ? "#3b82f6" // blue
+                            : "#f59e0b", // yellow
                     }}
                   />
                 </div>
 
-                {/* Count text */}
-                <p className="text-sm text-gray-600 mt-2 text-center">
-                  Progress: {loadedMedia} / {totalMedia}
+                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-tighter">
+                  Synchronizing {loadedMedia} of {totalMedia} data points
                 </p>
               </div>
-
             </div>
           </div>
         </div>
       )}
 
       {/* Hero Section */}
-      <div
-        className="
-    relative w-full overflow-hidden
-    min-h-[80vh]
-    bg-white
-    md:bg-[linear-gradient(135deg,#1e3a8a_0%,#051f58ff_100%)]
-  "
-      >
-        {/* Marquee background */}
-        <div className="absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
+      <div className="relative w-full overflow-hidden min-h-[85vh] bg-white md:bg-[linear-gradient(135deg,#1e3a8a_0%,#051f58_100%)]">
 
-          <div className="absolute whitespace-nowrap animate-marquee text-[60px] md:text-[40px] lg:text-[50px] font-extrabold text-white/10 select-none pointer-events-none">
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
+        {/* Marquee background - Toned down for better look */}
+        <div className="absolute w-full left-0 top-[70%] overflow-hidden z-0 pointer-events-none opacity-20 md:opacity-10">
+          <div className="absolute whitespace-nowrap animate-marquee text-[60px] md:text-[50px] lg:text-[70px] font-black text-slate-900 md:text-white select-none pointer-events-none tracking-tighter">
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
           </div>
         </div>
+
+        {/* Audio Toggle - Modern Floating Design */}
         <button
-          className="absolute top-4 right-4 bg-black/30 text-white p-2 rounded-full z-30 hover:bg-black/50 transition"
+          className="absolute top-6 right-6 bg-white/10 backdrop-blur-md border border-white/20 text-white p-3 rounded-2xl z-50 hover:bg-white/20 transition-all shadow-xl active:scale-95"
           onClick={() => {
             setIsMuted(prev => {
               const newMuted = !prev;
@@ -516,171 +525,160 @@ const Index = () => {
             });
           }}
         >
-          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume className="h-5 w-5" />}
+          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume className="h-5 w-5 animate-pulse" />}
         </button>
-
-
+        {/* --- HERO CONTENT AREA --- */}
         {isMobile ? (
-          <HeroMobileCard />
-
+          /* Mobile View Wrapper */
+          <div className="relative z-10 px-4 pt-8 pb-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+            <HeroMobileCard />
+          </div>
         ) : (
-          <>
-            {/* Desktop / Laptop view: keep current hero slides */}
+          <div className="relative w-full min-h-[75vh] flex flex-col justify-center items-center pt-10 pb-20">
+            {/* Desktop / Laptop Slider */}
             <animated.div
               {...bind()}
               style={{ touchAction: "pan-y pinch-zoom" }}
-
-              className="relative w-full min-h-[70vh] flex justify-start items-center overflow-x-auto custom-scrollbar touch-pan-y select-none z-10"
+              className="relative w-full h-[550px] flex justify-start items-center overflow-visible touch-pan-y select-none z-10"
             >
               {heroStorySlides.map((slide, idx) => {
                 const offset = idx - activeHeroStory;
                 const absOffset = Math.abs(offset);
                 const scale = offset === 0 ? 1 : 0.85 ** absOffset;
-                const gap = 15;
-                const maxSlideWidth = 400;
-                const slideWidth = Math.min(window.innerWidth * 0.9, maxSlideWidth);
+                const gap = 30; // Increased gap for a cleaner look
+                const maxSlideWidth = 420;
+                const slideWidth = Math.min(window.innerWidth * 0.8, maxSlideWidth);
                 const zIndex = 100 - absOffset;
 
                 return (
                   <div
                     key={idx}
-                    className="absolute top-0 left-1/2 rounded-2xl shadow-lg transition-all duration-500 hover:scale-105 cursor-pointer select-none"
+                    className="absolute top-0 left-1/2 rounded-[2.5rem] border-2 border-white shadow-2xl transition-all duration-700 ease-out cursor-pointer select-none overflow-hidden group"
                     style={{
                       transform: `translate3d(${offset * (slideWidth + gap) + spring.x.get()}px, 0, 0) scale(${scale})`,
                       zIndex,
-                      opacity: 1,
+                      opacity: absOffset > 2 ? 0 : 1, // Fade out distant slides
                       width: `${slideWidth}px`,
-                      maxWidth: '100%',
                       height: '100%',
                     }}
                   >
-                    <div className="relative w-full h-full">
+                    {/* Image / Media Container */}
+                    <div className="relative w-full h-full bg-slate-100">
                       {!heroMediaLoaded[idx] && (
                         <div className="absolute inset-0 z-10">
                           <HeroSkeleton />
                         </div>
                       )}
-                      {slide.video ? (
-                        <video
-                          className="w-full h-full max-h-screen object-cover rounded-2xl transition-opacity duration-500"
-                          autoPlay
-                          muted
-                          loop
-                          playsInline
-                          preload="auto"
-                          onLoadedData={() =>
-                            setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
-                          }
-                          style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
-                        >
-                          <source src={slide.video} type="video/mp4" />
-                          Your browser does not support the video tag.
-                        </video>
-                      ) : (
-                        <img
-                          src={slide.bg}
-                          alt={`Slide ${idx + 1}`}
-                          onLoad={() =>
-                            setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))
-                          }
-                          className="w-full h-full max-h-screen object-cover rounded-3xl transition-opacity duration-500"
-                          style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
-                        />
-                      )}
+                      <img
+                        src={slide.bg}
+                        alt={`Slide ${idx + 1}`}
+                        onLoad={() => setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }))}
+                        className="w-full h-full object-cover transition-transform duration-2000 group-hover:scale-110"
+                        style={{ opacity: heroMediaLoaded[idx] ? 1 : 0 }}
+                      />
+
+                      {/* Premium Scrim Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                     </div>
 
-                    <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 text-white text-left space-y-2 text-base md:text-lg lg:text-xl">
-                      {typeof slide.text === "string"
-                        ? slide.text
-                        : React.isValidElement(slide.text)
+                    {/* Content Overlay */}
+                    <div className="absolute inset-0 flex flex-col justify-end p-10 text-white text-left space-y-4">
+                      <div className="w-12 h-1 bg-blue-500 rounded-full mb-2 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+                      <div className="text-xl md:text-2xl font-black leading-tight tracking-tight drop-shadow-lg">
+                        {typeof slide.text === "string"
                           ? slide.text
-                          : null}
+                          : React.isValidElement(slide.text)
+                            ? slide.text
+                            : null}
+                      </div>
                     </div>
-
+                    {/* Navigation Buttons (Only visible on active slide) */}
                     {idx === activeHeroStory && (
-                      <>
+                      <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
                         <button
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
-                          onClick={() => {
+                          className="w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-md text-white rounded-full pointer-events-auto hover:bg-white/40 transition-all active:scale-90 border border-white/30 shadow-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setActiveHeroStory((prev) => Math.max(prev - 1, 0));
-
                           }}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="size-6">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-6 h-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
                           </svg>
-
                         </button>
                         <button
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white rounded-full p-2 md:p-3 lg:p-4"
-                          onClick={() => {
-                            setActiveHeroStory((prev) =>
-                              Math.min(prev + 1, heroStorySlides.length - 1)
-                            );
-
+                          className="w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-md text-white rounded-full pointer-events-auto hover:bg-white/40 transition-all active:scale-90 border border-white/30 shadow-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveHeroStory((prev) => Math.min(prev + 1, heroStorySlides.length - 1));
                           }}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="size-6">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-6 h-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                           </svg>
-
                         </button>
-                      </>
+                      </div>
                     )}
-
                   </div>
                 );
               })}
             </animated.div>
-            {/* Pagination Dots */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+
+            {/* Pagination: Modern Pill-style Indicators */}
+            <div className="mt-12 flex gap-3 z-20">
               {heroStorySlides.map((_, idx) => (
-                <div
+                <button
                   key={idx}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${idx === activeHeroStory ? 'bg-white' : 'bg-white/40'
+                  onClick={() => setActiveHeroStory(idx)}
+                  className={`transition-all duration-500 rounded-full h-2.5 ${idx === activeHeroStory
+                    ? 'w-10 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]'
+                    : 'w-2.5 bg-white/30 hover:bg-white/50'
                     }`}
                 />
               ))}
             </div>
-          </>
+          </div>
         )}
 
-
-        {/* Bottom Marquee just below hero cards */}
-        <div className="hidden md:block absolute w-full left-0 top-[70%] overflow-hidden z-5 pointer-events-none">
-
-
-          <div className="whitespace-nowrap animate-marquee-reverse text-[60px] md:text-[40px] lg:text-[50px] font-extrabold text-white/10 select-none">
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
-            <span className="mx-16">MEDRAE KENYA NURSING NETWORK</span>
+        {/* Bottom Marquee Overlay */}
+        <div className="hidden md:block absolute w-full left-0 bottom-10 overflow-hidden z-0 pointer-events-none select-none opacity-10">
+          <div className="whitespace-nowrap animate-marquee-reverse text-[60px] md:text-[50px] lg:text-[70px] font-black text-white tracking-tighter">
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
+            <span className="mx-16">MEDRAE NURSING KENYA NETWORK</span>
           </div>
         </div>
-
       </div>
-
-
-      {/* Features Section */}
-      <section className="py-2 px-3 bg-white text-gray-900">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-xl mb-2">
-            <h2 className="text-3xl md:text-4xl text-center font-bold mb-4">
-              Everything You Need to Pass the NCK Exam
-
+      {/* --- FEATURES SECTION --- */}
+      <section className="py-24 px-4 bg-white text-slate-900 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-16 space-y-4">
+            <div className="inline-flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+              <span className="text-xs font-black uppercase tracking-widest text-blue-600">The Medrae Advantage</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter text-slate-800">
+              Everything You Need to <br />
+              <span className="text-blue-600 italic">Pass the NCK,,FQEs Exams</span>
             </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-              Stop wasting time searching through random PDFs. Medrae organizes NCK revision into structured units, instant-answer explanations, and smart performance analytics so you know exactly what to fix before exam day.
-
+            <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
+              Stop wasting time searching through random PDFs. Medrae organizes revision into structured units and smart analytics.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-            {/* Special Video Card */}
-            <div className="w-full my-8 flex justify-center">
-              <div className="w-full max-w-md bg-gray-800  rounded-3xl shadow-lg overflow-hidden">
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {/* Special Video Card - Refined */}
+            <div className="lg:col-span-1 group relative">
+              <div className="h-full min-h-[300px] bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden border-4 border-white ring-1 ring-slate-100">
                 <video
-                  className="w-full h-[200px] md:h-[250px] lg:h-[300px] object-cover"
+                  className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                   autoPlay
                   muted
                   loop
@@ -689,44 +687,50 @@ const Index = () => {
                   controls
                 >
                   <source src="/videos/Medrae1.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
                 </video>
+                <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-widest">
+                  Platform Demo
+                </div>
               </div>
             </div>
 
-            {/* First Feature Card */}
+            {/* First Feature Card (Logic Preserved) */}
             <Card
-              className="bg-white text-gray-900 border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md rounded-3xl hover:scale-105 cursor-pointer"
+              className="bg-slate-50/50 hover:bg-white border-none transition-all duration-500 shadow-sm hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-[2.5rem] hover:-translate-y-2 cursor-pointer p-2 group"
               onClick={() => navigate('/register')}
             >
-              <CardHeader>
-                <div className="h-12 w-12 bg-gradient-medical  rounded-3xl flex items-center justify-center mb-4">
-                  <Brain className="h-6 w-6 text-white" />
+              <CardHeader className="pt-8">
+                <div className="h-14 w-14 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-100 group-hover:rotate-6 transition-transform">
+                  <Brain className="h-7 w-7 text-white" />
                 </div>
-                <CardTitle className="text-lg">{features[0].title}</CardTitle>
+                <CardTitle className="text-xl font-bold tracking-tight text-slate-800">{features[0].title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>{features[0].description}</CardDescription>
+                <CardDescription className="text-slate-500 font-medium leading-relaxed">
+                  {features[0].description}
+                </CardDescription>
               </CardContent>
             </Card>
 
-            {/* Remaining Feature Cards */}
+            {/* Remaining Feature Cards (Logic Preserved) */}
             {features.slice(1).map((feature, index) => {
-              const IconComponent = feature.icon; // assign to capitalized variable
+              const IconComponent = feature.icon;
               return (
                 <Card
                   key={index + 1}
-                  className="bg-white text-gray-900 border border-blue-400 hover:border-blue-600 transition-transform duration-300 shadow-sm hover:shadow-md rounded-3xl hover:scale-105 cursor-pointer"
+                  className="bg-slate-50/50 hover:bg-white border-none transition-all duration-500 shadow-sm hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-[2.5rem] hover:-translate-y-2 cursor-pointer p-2 group"
                   onClick={() => navigate('/register')}
                 >
-                  <CardHeader>
-                    <div className="h-12 w-12 bg-gradient-medical  rounded-3xl flex items-center justify-center mb-4">
-                      <IconComponent className="h-6 w-6 text-white" />
+                  <CardHeader className="pt-8">
+                    <div className="h-14 w-14 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-100 group-hover:rotate-6 transition-transform">
+                      <IconComponent className="h-7 w-7 text-white" />
                     </div>
-                    <CardTitle className="text-lg">{feature.title}</CardTitle>
+                    <CardTitle className="text-xl font-bold tracking-tight text-slate-800">{feature.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>{feature.description}</CardDescription>
+                    <CardDescription className="text-slate-500 font-medium leading-relaxed text-balance">
+                      {feature.description}
+                    </CardDescription>
                   </CardContent>
                 </Card>
               );
@@ -735,295 +739,360 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Mission & Vision with Video Section */}
-      <section className="py-16 px-1 bg-gradient-to-tr from-purple-100 to-pink-500">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-10">
+      {/* --- MISSION & VISION SECTION --- */}
+      <section className="py-24 px-4 bg-slate-50 relative overflow-hidden">
+        {/* Abstract Background Shapes */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-100/40 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
-          {/* Text Side */}
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 relative z-10">
 
+          {/* Text Content Column */}
+          <div className="lg:w-3/5 space-y-10 order-2 lg:order-1">
 
-          {/* Container */}
-          <div className="lg:w-1/2 space-y-12 p-2 lg:p-10">
-
-            {/* Mission */}
-            <div>
-              <h3 className="text-3xl lg:text-4xl font-extrabold mb-2 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c1.657 0 3-1.343 3-3S13.657 2 12 2 9 3.343 9 5s1.343 3 3 3zM12 14v8m0 0h-3m3 0h3" />
-                </svg>
-                Our Mission
-              </h3>
-              <p className="text-gray-700 dark:text-gray-800">
-                To eliminate random, unstructured revision and replace it with a focused NCK exam system that builds confidence through repeated, intelligent practice.
-
-              </p>
+            {/* Section Badge */}
+            <div className="inline-flex items-center gap-2 text-purple-600 font-black text-xs uppercase tracking-[0.2em]">
+              <div className="h-px w-8 bg-purple-600" /> Our Purpose
             </div>
 
-            {/* Vision */}
-            <div>
-              <h3 className="text-3xl lg:text-4xl font-extrabold mb-2 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Our Vision
-              </h3>
-              <p className="text-gray-700 dark:text-gray-800">
-                To become Kenya’s most trusted NCK exam preparation platform by helping students pass faster through structured, measurable, and performance-driven practice.
-
-              </p>
-            </div>
-
-            {/* Slogan */}
-            <div>
-              <h3 className="text-3xl lg:text-4xl font-extrabold mb-2 drop-shadow-xl flex items-center gap-3 transform transition-all duration-500 hover:scale-105 shine-text">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Our Slogan
-              </h3>
-              <p className="text-gray-700 dark:text-gray-800 font-semibold">
-                Stop Guessing. Start Passing.
-              </p>
-            </div>
-
-          </div>
-          {/* Image Side */}
-          <div className="flex justify-center w-full">
-            <div className="relative w-[220px] sm:w-[250px] md:w-[300px] lg:w-[350px] aspect-[9/16] rounded-3xl overflow-hidden shadow-lg">
-
-              {/* Skeleton while loading */}
-              {!heroMediaLoaded[activeHeroStory] && (
-                <div className="absolute inset-0 z-10">
-                  <HeroSkeleton />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+              {/* Mission Item */}
+              <div className="space-y-4 group">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white rounded-xl shadow-sm text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-500">
+                    <Target className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800">Our Mission</h3>
                 </div>
-              )}
-
-              {/* Image */}
-              <img
-                src="high5.png" // replace with your image path
-                alt="Medrae Hero"
-                className="w-full h-full object-cover transition-opacity duration-500"
-                onLoad={() =>
-                  setHeroMediaLoaded(prev => ({ ...prev, [activeHeroStory]: true }))
-                }
-                style={{ opacity: heroMediaLoaded[activeHeroStory] ? 1 : 0 }}
-              />
-
-              {/* Top Watermark */}
-              <div className="absolute top-2 left-0 w-full overflow-hidden pointer-events-none z-20">
-                <div className="inline-block whitespace-nowrap animate-marquee text-white/30 font-bold text-lg">
-                  <span className="mx-8">MEDRAE</span>
-                  <span className="mx-8">MEDRAE</span>
-                  <span className="mx-8">MEDRAE</span>
-                  <span className="mx-8">MEDRAE</span>
-                </div>
+                <p className="text-slate-500 font-medium leading-relaxed">
+                  To eliminate random, unstructured revision and replace it with a focused NCK exam system that builds confidence through repeated, intelligent practice (I.P).
+                </p>
               </div>
 
-              {/* Bottom Watermark */}
-              <div className="absolute bottom-2 left-0 w-full overflow-hidden pointer-events-none z-20">
-                <div className="inline-block whitespace-nowrap animate-marquee text-white/30 font-bold text-sm">
-                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
-                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
-                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
-                  <span className="mx-8">KENYA NURSING NETWORK PLATFORM</span>
+              {/* Vision Item */}
+              <div className="space-y-4 group">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white rounded-xl shadow-sm text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
+                    <Eye className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800">Our Vision</h3>
+                </div>
+                <p className="text-slate-500 font-medium leading-relaxed">
+                  To become Kenya’s most trusted NCK, FQEs exams preparation platform by helping students pass faster through structured, measurable, and performance-driven practice (P.D.P).
+                </p>
+              </div>
+
+              {/* Slogan Item - Full Width */}
+              <div className="md:col-span-2 p-8 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white shadow-xl shadow-slate-200/50 flex flex-col md:flex-row items-center gap-6 group hover:border-purple-200 transition-colors">
+                <div className="p-4 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-purple-200">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-xs uppercase font-black tracking-widest text-slate-400 mb-1">Our Core Slogan</h4>
+                  <p className="text-3xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent italic">
+                    "Advancing nursing education and student success."
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Image Side - Fixed Phone Aspect Ratio */}
+          <div className="lg:w-2/5 flex justify-center order-1 lg:order-2">
+            <div className="relative w-[280px] md:w-[320px] aspect-[9/18.5] rounded-[3rem] p-3 bg-slate-800 shadow-2xl ring-4 ring-slate-100 ring-offset-4 ring-offset-slate-50">
 
+              <div className="w-full h-full relative rounded-[2.2rem] overflow-hidden bg-slate-100">
+                {/* Skeleton Loader (Preserved Logic) */}
+                {!heroMediaLoaded[activeHeroStory] && (
+                  <div className="absolute inset-0 z-10">
+                    <HeroSkeleton />
+                  </div>
+                )}
 
-        </div>
-      </section >
+                <img
+                  src="high5.png"
+                  alt="Medrae Success"
+                  className="w-full h-full object-cover transition-opacity duration-1000"
+                  onLoad={() => setHeroMediaLoaded(prev => ({ ...prev, [activeHeroStory]: true }))}
+                  style={{ opacity: heroMediaLoaded[activeHeroStory] ? 1 : 0 }}
+                />
 
+                {/* Top Watermark Marquee (Preserved Logic) */}
+                <div className="absolute top-4 left-0 w-full overflow-hidden pointer-events-none z-20">
+                  <div className="inline-block whitespace-nowrap animate-marquee text-white/40 font-black text-sm tracking-widest">
+                    <span className="mx-8 uppercase">Medrae</span>
+                    <span className="mx-8 uppercase">Medrae</span>
+                  </div>
+                </div>
 
+                {/* Bottom Watermark Marquee (Preserved Logic) */}
+                <div className="absolute bottom-4 left-0 w-full overflow-hidden pointer-events-none z-20">
+                  <div className="inline-block whitespace-nowrap animate-marquee text-white/40 font-bold text-[8px] tracking-[0.3em]">
+                    <span className="mx-8 uppercase">Kenya Nursing Network</span>
+                    <span className="mx-8 uppercase">Kenya Nursing Network</span>
+                  </div>
+                </div>
+              </div>
 
-      {/* CTA Section */}
-      < section className="py-20 px-4 bg-gradient-to-tr from-blue-500 to-blue-200 text-gray-900" >
-        <div className="max-w-4xl mx-auto text-xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2">
-            Ready to Pass Your NCK Exam?
-
-          </h2>
-          <p className="text-xl text-white mb-2">
-            Stop scrolling through PDFs. Start practicing with structure. Join Medrae and train daily with instant explanations, unit-based drills, and exam-style simulations designed for NCK success.
-
-          </p>
-
-          <Button
-            size="lg"
-            className="bg-gradient-medical"
-            onClick={() => navigate('/register')}
-          >
-            Get Started
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </div>
-        {/* Special Video Card 2 */}
-        <div className="w-full my-2 flex justify-center">
-          <div className="w-full max-w-md bg-gray-800  rounded-3xl shadow-lg overflow-hidden">
-            <video
-              className="w-full h-[250px] md:h-[250px] lg:h-[300px] object-cover"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              controls
-            >
-              <source src="/videos/Medrae2.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+              {/* Physical phone buttons aesthetics */}
+              <div className="absolute -right-1 top-24 w-1 h-12 bg-slate-700 rounded-l-md" />
+              <div className="absolute -left-1 top-24 w-1 h-20 bg-slate-700 rounded-r-md" />
+            </div>
           </div>
         </div>
+      </section>
+      {/* --- PREMIUM CTA SECTION --- */}
+      <section className="relative py-24 px-6 overflow-hidden">
+        {/* Background: Professional Deep Blue Gradient */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-400 via-blue-600 to-blue-800" />
 
-      </section >
-      <footer className="bg-white text-gray-900 border-t py-12 px-3">
+        {/* Decorative Light Flares */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-[120px] -translate-y-1/2" />
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-300/20 rounded-full blur-[80px] translate-y-1/2" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+
+            {/* Text Content */}
+            <div className="lg:w-1/2 text-center lg:text-left space-y-8">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-100">Final Step</span>
+              </div>
+
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] tracking-tighter">
+                Ready to Pass Your <br />
+                <span className="text-blue-200 italic">NCK Exam?</span>
+              </h2>
+
+              <p className="text-lg md:text-xl text-blue-50 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
+                Stop scrolling through confusing PDFs. Join Medrae and train daily with
+                <span className="text-white font-bold"> instant explanations</span>,
+                unit-based drills, and simulations designed for clinical success.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                <Button
+                  size="xl"
+                  className="h-16 px-10 rounded-2xl bg-white text-blue-700 hover:bg-blue-50 font-black text-lg shadow-2xl shadow-blue-900/20 transition-all active:scale-[0.98] group"
+                  onClick={() => navigate('/register')}
+                >
+                  Get Started Now
+                  <ArrowRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1" />
+                </Button>
+
+                <div className="flex -space-x-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-10 h-10 rounded-full border-2 border-blue-600 bg-slate-200 overflow-hidden">
+                      <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="user" />
+                    </div>
+                  ))}
+                  <div className="h-10 px-3 rounded-full border-2 border-blue-600 bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white tracking-tighter">
+                    +2k Students
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Video Showcase Card */}
+            <div className="lg:w-1/2 w-full flex justify-center lg:justify-end">
+              <div className="relative group w-full max-w-md">
+                {/* Decorative Frame */}
+                <div className="absolute -inset-4 bg-white/5 rounded-[3rem] blur-xl group-hover:bg-blue-400/10 transition-colors" />
+
+                <div className="relative bg-slate-900 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden border-2 border-white/10 ring-1 ring-white/20">
+                  <video
+                    className="w-full h-[300px] md:h-[400px] object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="auto"
+                    controls
+                  >
+                    <source src="/videos/Medrae2.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+
+                  {/* Floating Video Badge */}
+                  <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                      <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
+                    </div>
+                    <div>
+                      <p className="text-white text-xs font-black uppercase tracking-widest">Tutorial Preview</p>
+                      <p className="text-blue-200 text-[10px] font-bold italic">See how the Medrae Engine works</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+
+      <footer className="bg-slate-50 text-slate-900 border-t border-slate-200 pt-16 pb-8 px-4">
         <TooltipProvider>
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-10">
+          <div className="max-w-7xl mx-auto">
 
-            {/* Brand */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <img src="/pwa-192x192.jpeg" className="h-7 w-7 rounded-3xl" alt="Medrae" />
-                <span className="text-xl font-bold">Medrae</span>
+            {/* Top Section: Navigation & Brand */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+
+              {/* Brand Column */}
+              <div className="md:col-span-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <img
+                    src="/pwa-192x192.jpeg"
+                    className="h-8 w-8 rounded-lg shadow-sm"
+                    alt="Medrae Logo"
+                  />
+                  <span className="text-2xl font-bold tracking-tight">Medrae</span>
+                </div>
+                <p className="text-slate-600 text-sm leading-relaxed mb-6 max-w-sm">
+                  Kenya’s premier Nursing Network Platform. We empower students and professionals
+                  through integrated learning, seamless collaboration, and clinical innovation.
+                </p>
+                <div className="flex gap-4">
+                  <Facebook className="w-5 h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors" />
+                  <Twitter className="w-5 h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors" />
+                  <Linkedin className="w-5 h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors" />
+                  <Instagram className="w-5 h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors" />
+                </div>
               </div>
-              <p className="text-gray-700 text-sm leading-relaxed">
-                Kenya’s Nursing Network Platform  empowering students and professionals through learning, collaboration, and innovation.We make sure you Learn. Practice. Advance.
+
+              {/* Links Columns */}
+              <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-8">
+                {/* Platform */}
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wider mb-4 text-slate-900">Platform</h3>
+                  <ul className="space-y-3 text-sm text-slate-600">
+                    {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Announcements"].map((item) => (
+                      <li key={item}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-pointer hover:text-blue-600 transition-colors">{item}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>Login to access {item}</TooltipContent>
+                        </Tooltip>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Learning */}
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wider mb-4 text-slate-900">Learning</h3>
+                  <ul className="space-y-3 text-sm text-slate-600">
+                    {["Assessment Notes", "Quiz Units", "Simulation Mode", "Resources"].map((item) => (
+                      <li key={item}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-pointer hover:text-blue-600 transition-colors">{item}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>Login to access {item}</TooltipContent>
+                        </Tooltip>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Support */}
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-wider mb-4 text-slate-900">Support</h3>
+                  <ul className="space-y-3 text-sm text-slate-600">
+                    {["Login", "Register", "Subscription", "Feedback", "Settings"].map((item) => (
+                      <li key={item}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-pointer hover:text-blue-600 transition-colors">{item}</span>
+                          </TooltipTrigger>
+                          <TooltipContent>Login to access</TooltipContent>
+                        </Tooltip>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Middle Section: Regulatory Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <h4 className="font-bold mb-3 text-slate-900 flex items-center gap-2">
+                  College & Licensing Prep
+                </h4>
+                <p className="text-xs leading-relaxed text-slate-600 mb-4">
+                  Structured support for college finals and NCK licensing exams. We align with Ministry of Health standards to ensure high-quality preparation.
+                </p>
+                <a href="https://www.kmtc.ac.ke" target="_blank" rel="noopener noreferrer"
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
+                  KMTC Resources <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <h4 className="font-bold mb-3 text-slate-900">NCK & Professional Guidance</h4>
+                <p className="text-xs leading-relaxed text-slate-600 mb-4">
+                  Sample questions and exam tips tailored for the NCK licensing exam. Stay updated with regulatory policies and ethical standards in Kenya.
+                </p>
+                <a href="https://www.nckenya.com" target="_blank" rel="noopener noreferrer"
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
+                  NCK Official <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <h4 className="font-bold mb-3 text-slate-900">Global Mobility</h4>
+                <p className="text-xs leading-relaxed text-slate-600 mb-4">
+                  Introducing NCLEX preparation and international licensing pathways for nurses aiming to expand their careers globally.
+                </p>
+                <a href="https://www.ncsbn.org/nclex.htm" target="_blank" rel="noopener noreferrer"
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
+                  NCLEX Info <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Bottom Section */}
+            <div className="pt-8 border-t border-slate-200 text-center">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+                <p>© {currentYear} Medrae Kenya. All rights reserved.</p>
+
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  <span>Contact:</span>
+                  <a href="mailto:medraenursing@gmail.com" className="text-slate-900 font-medium hover:underline">
+                    medraenursing@gmail.com
+                  </a>
+                </div>
+
+                <div className="flex gap-6 text-xs font-medium">
+                  <span
+                    className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
+                    onClick={() => navigate("/privacy")}
+                  >
+                    Privacy & Policy
+                  </span>.
+                  <span
+                    className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
+                    onClick={() => navigate("/terms")}
+                  >
+                    Terms & Conditions
+                  </span>.
+                </div>
+              </div>
+              <p className="mt-6 text-[10px] text-slate-400 max-w-2xl mx-auto uppercase tracking-widest">
+                Learn. Practice. Advance.
               </p>
-            </div>
-
-            {/* Platform */}
-            <div>
-              <h3 className="font-semibold mb-2">Platform</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Announcements"].map((item) => (
-                  <li key={item}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-pointer hover:text-primary">{item}</span>
-                      </TooltipTrigger>
-                      <TooltipContent>Login to access</TooltipContent>
-                    </Tooltip>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Learning Tools */}
-            <div>
-              <h3 className="font-semibold mb-2">Learning</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                {["Assessment Notes", "Quiz Units", "Simulation Mode", "Calendar", "Study Progress", "Resources"].map((item) => (
-                  <li key={item}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-pointer hover:text-primary">{item}</span>
-                      </TooltipTrigger>
-                      <TooltipContent>Login to access</TooltipContent>
-                    </Tooltip>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Account & Support */}
-            <div>
-              <h3 className="font-semibold mb-2">Support</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                {["Login", "Register", "Subscription", "Notifications", "Feedback", "Settings"].map((item) => (
-                  <li key={item}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-pointer hover:text-primary">{item}</span>
-                      </TooltipTrigger>
-                      <TooltipContent>Login to access</TooltipContent>
-                    </Tooltip>
-                  </li>
-                ))}
-              </ul>
             </div>
 
           </div>
-
-          {/* Regulatory Info Section Below */}
-          <div className="max-w-7xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-10">
-
-            {/* College & Licensing Prep */}
-            <div className="p-2 bg-white text-gray-900 rounded-3xl shadow-sm">
-
-              <h4 className="font-semibold mb-1 text-lg text-gray-900">
-                College & Licensing Prep
-              </h4>
-              <p className="text-sm text-gray-700 mb-1">
-                Medrae provides structured support for students completing their college final exams, including NCK licensing exams. The platform offers study materials, practice tests, and guidance to ensure students are well-prepared for their professional assessments.
-              </p>
-              <p className="text-sm text-gray-700 mb-2">
-                Through interactive tutorials and exam simulations, users gain confidence in clinical skills, theoretical knowledge, and practical application. Medrae’s tools align with Ministry of Health standards and NCK regulations to ensure high-quality exam preparation.
-              </p>
-              <p className="text-sm text-gray-700">
-                Learn more about your exam requirements and preparation tips via official resources: <a href="https://www.kmtc.ac.ke" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
-                  KMTC & Ministry Resources
-                </a>
-              </p>
-            </div>
-
-            {/* NCK Exam & Professional Guidance */}
-            <div className="p-2 bg-white text-gray-900 rounded-3xl shadow-sm">
-
-              <h4 className="font-semibold mb-1 text-gray-900">
-                NCK Exam & Professional Guidance</h4>
-              <p className="text-sm text-gray-700 mb-1">
-                Medrae helps nurses and midwives prepare for the NCK licensing exam by providing sample questions, exam tips, and professional guidance. Users can track progress and focus on areas that require more attention.
-              </p>
-              <p className="text-sm text-gray-700 mb-1">
-                The platform also explains regulatory policies in Kenya, including registration, licensing, and ethical standards, helping users comply with all statutory requirements.
-              </p>
-              <p className="text-sm text-gray-700">
-                Access online resources for NCK exam updates and professional registration: <a href="https://www.nckenya.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
-                  NCK Official Website
-                </a>
-              </p>
-            </div>
-
-            {/* NCLEX Familiarity & Global Mobility */}
-            <div className="p-2 bg-white text-gray-900 rounded-3xl shadow-sm">
-
-              <h4 className="font-semibold mb-1 text-gray-900">
-                NCLEX Familiarity & Global Mobility</h4>
-              <p className="text-sm text-gray-700 mb-1">
-                For users aiming to practice nursing internationally, Medrae introduces NCLEX exam content and preparation strategies. This includes practice questions, test-taking strategies, and guidance on international licensing requirements.
-              </p>
-              <p className="text-sm text-gray-700 mb-2">
-                While focused on Kenyan regulations and licensing, the platform also supports nurses in understanding global pathways, enabling smoother transitions for work abroad.
-              </p>
-              <p className="text-sm text-gray-700">
-                Learn more about NCLEX and international nursing licensure via official resources: <a href="https://www.ncsbn.org/nclex.htm" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">
-                  NCLEX Official Website
-                </a>
-              </p>
-            </div>
-
-          </div>
-
         </TooltipProvider>
-
-        {/* Bottom */}
-        <div className="mt-12 text-center text-sm text-gray-700 space-y-2">
-          <p>© {new Date().getFullYear()} Medrae. All rights reserved.</p>
-          <p>
-            For inquiries, support, or partnership opportunities, please contact us at
-            <a href="mailto:medraenursing@gmail.com" className="text-blue-500 underline ml-1">
-              medraenursing@gmail.com
-            </a>
-          </p>
-          <p>
-            Medrae  Kenya’s Nursing Network Platform empowering students and professionals through learning, collaboration, and innovation.
-          </p>
-        </div>
-
       </footer>
+
     </div >
   );
 };
+
 export default Index;

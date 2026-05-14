@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { Bell, Moon, Sun, User, Menu, RefreshCcw, MoreVertical, Swords, Share2, Flame, LayoutGrid } from "lucide-react";
+import { Bell, Moon, Sun, User, Menu, RefreshCcw, MoreVertical, Swords, Share2, Flame, LayoutGrid, Settings2, Star, CogIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -69,27 +69,6 @@ export function Header({
 
   const [previousOnline, setPreviousOnline] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    if (previousOnline === null) {
-      // First load, just set the state
-      setPreviousOnline(isOnline);
-      return;
-    }
-
-    if (isOnline !== previousOnline) {
-      // Online status changed, show toast
-      toast({
-        title: isOnline ? "You're back online!" : "You are offline",
-        description: isOnline
-          ? "Welcome back! Your connection is restored."
-          : "Some features may be unavailable until you are online.",
-        variant: isOnline ? "default" : "destructive",
-        duration: 4000, // visible for 4s
-      });
-
-      setPreviousOnline(isOnline);
-    }
-  }, [isOnline, previousOnline, toast]);
   useEffect(() => {
     if (authUser?.id) {
       fetchStreak();
@@ -224,20 +203,28 @@ export function Header({
 
   return (
     <>
-      <header className="h-14 sm:h-16 bg-card border-0 flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-card/95 text-sm sm:text-base">
+      <header className="h-14 sm:h-16 bg- border-0 flex items-center justify-between xl:justify-evenly px-3 sm:px-6 sticky top-0 z-40 backdrop-blur-sm bg-background text-sm sm:text-base">
 
+        {/* App Logo and Name - Mobile Only */}
         {/* App Logo and Name - Mobile Only */}
         <div className="flex items-center gap-2 md:hidden shrink-0">
           <img
             src="/pwa-192x192.jpeg"
             alt="Medrae Logo"
-            className="h-10 w-10 rounded-lg object-cover"
+            className="h-8 w-8 rounded-lg object-cover"
           />
-          <span className="text-xl font-semibold text-gray-900 dark:text-white">
-            Medrae
-          </span>
-        </div>
+          <div className="text-lg font-black tracking-widest flex items-center gap-2">
+            {/* MEDRAE - RED 3D */}
+            <span className="text-red-500 [text-shadow:0px_0px_0px_#7f1d1d,0px_0px_0px_#450a0a,3px_3px_2px_rgba(0,0,0,0.3)]">
+              MEDRAE
+            </span>
 
+            {/* NURSING - BLACK 3D */}
+            <span className="text-gray-900 dark:text-white [text-shadow:1px_1px_0px_#374151,1px_1px_0px_#111827,3px_3px_2px_rgba(0,0,0,0.3)]">
+              NURSING
+            </span>
+          </div>
+        </div>
         <OnlineStatusToast />
 
         <div className="flex items-center flex-1">
@@ -253,7 +240,7 @@ export function Header({
           {/* Center scrolling text */}
           <div className="hidden md:flex md:justify-center md:max-w-[400px] overflow-hidden">
             <div className="whitespace-nowrap animate-marquee text-base font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
-              🌟 Welcome to Medrae.... Stop Guessing. Start Passing.🌟
+              🌟 Advancing nursing education and student success.🌟
             </div>
           </div>
 
@@ -263,20 +250,27 @@ export function Header({
 
             <Popover open={showOnlineUsers} onOpenChange={setShowOnlineUsers}>
               <PopoverTrigger asChild>
-                <div className="flex items-center gap-1 cursor-pointer">
-                  {isCompact ? (
-                    <Badge className="h-5 px-2 text-xs bg-green-500 text-white flex items-center gap-1 whitespace-nowrap shrink-0">
+                <div className="flex items-center shrink-0 cursor-pointer select-none">
+                  <Badge
+                    className="h-4 sm:h-5 px-1.5 sm:px-2 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-none flex items-center gap-2 transition-all rounded-full shadow-sm shrink-0"
+                  >
+                    {/* Pulsing Dot */}
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                    </span>
 
-                      {onlineUsers.length} online
-                    </Badge>
-                  ) : (
-                    <Badge className="h-5 px-2 text-xs bg-green-500 text-white flex items-center gap-1">
-
-                      {onlineUsers.length} online
-                    </Badge>
-                  )}
+                    {/* Number + Label */}
+                    <span className="font-black leading-none flex items-center">
+                      {onlineUsers.length}
+                      <span className="hidden lg:inline ml-1 tracking-tighter">ONLINE</span>
+                    </span>
+                  </Badge>
                 </div>
               </PopoverTrigger>
+
+              {/* Popover content logic remains the same... */}
+
 
               <PopoverContent className="w-72 max-h-80 overflow-y-auto custom-scrollbar p-2 bg-card">
                 <h4 className="font-semibold text-sm mb-2">Online Users</h4>
@@ -346,147 +340,140 @@ export function Header({
             variant="ghost"
             size="icon"
             onClick={() => {
-              // Vibrate for 50ms
               if (navigator.vibrate) navigator.vibrate(50);
               navigate("/challenge");
             }}
-            className="h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-1"
-            title="Challenges"
+            className="group relative h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center ml-1 rounded-full transition-all duration-300 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+            title="Clinical Challenges"
           >
-            <Swords className="h-6 w-6 text-pink-500" />
+            <Star
+              className="w-8 h-8 text-slate-500 dark:text-slate-400 transition-transform duration-500 group-hover:rotate-90 group-hover:text-primary"
+              fill="currentColor"
+            />
+            {/* Active Challenge Indicator */}
+            <span className="absolute top-2 right-2 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+
+            {/* Hover Glow */}
+            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_15px_rgba(244,63,94,0.3)] dark:shadow-[0_0_20px_rgba(244,63,94,0.15)]" />
           </Button>
 
-          <div className="ml-auto mr-3 sm:mr-4">
+          <div className="ml-0 mr-3 sm:mr-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-12 w-12">
-                  <LayoutGrid
-                    width={24}
-                    height={24}
-                    stroke="currentColor"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                >
+                  {/* The Settings Gear - It rotates 90 degrees on hover */}
+                  <CogIcon
+                    className="w-8 h-8 text-slate-500 dark:text-slate-400 transition-transform duration-500 group-hover:rotate-90 group-hover:text-primary"
                   />
+
+                  {/* Notification Indicator - Repositioned for the Gear icon */}
+                  {notificationCount > 0 && (
+                    <span className="absolute top-2 right-2 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white dark:border-slate-950"></span>
+                    </span>
+                  )}
+
+                  <span className="sr-only">Settings and Preferences</span>
                 </Button>
               </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end" className="w-56">
-                {/* Streak */}
+              <DropdownMenuContent
+                align="end"
+                className="w-64 p-2 mt-2 rounded-xl border-0 bg-white dark:bg-slate-900 shadow-xl dark:shadow-2xl"
+              >
+                {/* Dynamic Streak Widget */}
                 {streak > 0 && isOnline && (
-                  <>
-                    <DropdownMenuItem className="flex items-center gap-2 cursor-default">
-                      <span className="text-yellow-600 dark:text-yellow-400 text-sm font-semibold">
-                        🔥 Streak {streak} day{streak !== 1 ? "s" : ""}
-                      </span>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-                  </>
+                  <div className="px-3 py-3 mb-2 rounded-lg border-0 bg-orange-50/50 dark:bg-orange-950/20">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-orange-900 shadow-sm border border-orange-100 dark:border-orange-800">
+                        <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-tight text-orange-600 dark:text-orange-400">Daily Streak</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-orange-100">{streak} Day{streak !== 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
-                {/* Notifications */}
+
+                {/* Notifications - Theme Responsive */}
                 <DropdownMenuItem
                   onClick={() => navigate("/notifications")}
-                  className="flex items-center justify-between"
+                  className="flex items-center justify-between py-2.5 px-3 cursor-pointer rounded-lg transition-colors focus:bg-slate-100 dark:focus:bg-slate-800 group"
                 >
-                  <div className="flex items-center gap-2">
-                    <Bell
-                      width={18}
-                      height={18}
-                      stroke="none"
-                      fill={isDarkMode ? "#FBBF24" : "#FACC15"}
-                    />
-                    Notifications
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60">
+                      <Bell className="w-4 h-4 fill-current" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Notifications</span>
                   </div>
-
                   {notificationCount > 0 && (
-                    <Badge className="h-5 w-5 rounded-full p-0 text-xs bg-destructive flex items-center justify-center">
+                    <Badge className="h-5 min-w-[20px] rounded-full bg-red-500 hover:bg-red-500 text-[10px] font-bold text-white border-none">
                       {notificationCount}
                     </Badge>
                   )}
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
 
-                {/* Share App */}
+                {/* Share - Theme Responsive */}
                 <DropdownMenuItem
                   onClick={() => {
-                    const shareMessage = `Medrae – The Professional Medical Education & Career Network
-
-• Structured learning modules across clinical disciplines
-• Evidence-based resources and expert-led video lectures
-• Comprehensive notes and case studies for clinical excellence
-• Exam simulations and certification pathways for professional growth
-
-Advance your medical journey today: https://medrae.vercel.app`;
-
+                    const shareMessage = `Medrae – The Professional Medical Education & Career Network\n\n• Clinical modules\n• Exam simulations\n• Expert-led lectures\n\nJoin us: https://medrae.vercel.app`;
                     if (navigator.share) {
-                      navigator
-                        .share({
-                          title: "Medrae – Medical Education & Career Network",
-                          text: shareMessage,
-                          url: "https://medrae.vercel.app",
-                        })
-                        .catch((err) => console.log("Share cancelled:", err));
+                      navigator.share({ title: "Medrae Network", text: shareMessage, url: "https://medrae.vercel.app" }).catch(() => { });
                     } else {
                       navigator.clipboard.writeText(shareMessage);
-                      alert("Medrae link and overview copied to clipboard!");
+                      alert("Medrae info copied to clipboard!");
                     }
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-3 py-2.5 px-3 cursor-pointer rounded-lg focus:bg-slate-100 dark:focus:bg-slate-800 group"
                 >
-                  <Share2 width={18} height={18} stroke="#3B82F6" />
-                  Share App
+                  <div className="p-1.5 rounded-md bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60">
+                    <Share2 className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Invite Colleagues</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
-
-                {/* Dark Mode Toggle */}
+                {/* Dark Mode Toggle - Dynamic UI */}
                 <DropdownMenuItem
                   onClick={onToggleDarkMode}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-between py-2.5 px-3 cursor-pointer rounded-lg focus:bg-slate-100 dark:focus:bg-slate-800 group"
                 >
-                  {isDarkMode ? (
-                    <>
-                      <Sun width={18} height={18} stroke="#FBBF24" />
-                      Light Mode
-                    </>
-                  ) : (
-                    <>
-                      <Moon width={18} height={18} stroke="none" fill="#071016" />
-                      Dark Mode
-                    </>
-                  )}
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'bg-amber-900/40 text-amber-400' : 'bg-slate-100 text-slate-600'}`}>
+                      {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      {isDarkMode ? "Light Mode" : "Dark Mode"}
+                    </span>
+                  </div>
+                  <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full relative">
+                    <div className={`absolute top-1 w-2 h-2 rounded-full transition-all duration-200 ${isDarkMode ? 'right-1 bg-amber-400' : 'left-1 bg-slate-400'}`} />
+                  </div>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
 
-                {/* Update App */}
+                <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
+
+                {/* Update App - Specialized Loading State */}
                 <DropdownMenuItem
                   onClick={handleReload}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-3 py-2.5 px-3 cursor-pointer rounded-lg focus:bg-emerald-50 dark:focus:bg-emerald-950/30 group"
                 >
-                  {rotating ? (
-                    <svg
-                      className="animate-spin h-4 w-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v8H4z"
-                      />
-                    </svg>
-                  ) : (
-                    <RefreshCcw className="h-4 w-4 text-green-500" />
-                  )}
-                  Update App
+                  <div className={`p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 ${rotating ? "animate-spin" : ""}`}>
+                    <RefreshCcw className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">System Update</span>
+                    <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 font-medium">Refresh platform content</span>
+                  </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

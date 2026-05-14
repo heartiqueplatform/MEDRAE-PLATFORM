@@ -1,20 +1,26 @@
 "use client";
-
+import { ExplanationOverlay } from "@/components/QuizPage/ExplanationOverlay";
+import { QuestionInsights } from "@/components/QuizPage/QuestionInsights";
+import { SubmitQuizButton } from "@/components/QuizPage/SubmitQuizButton.tsx";
+import { CheckpointOverlay } from "@/components/QuizPage/CheckpointOverlay";
+import { QuizProgressOverlay } from "@/components/QuizPage/QuizProgressOverlay";
+import { QuizResultsPanel } from "@/components/QuizPage/QuizResultsPanel";
+import { HelpMeOverlay } from "@/components/QuizPage/HelpMeOverlay";
 import { openDB } from "idb";
 import { playSound } from "@/lib/soundManager";
 import { GlobalLoader } from "@/components/GlobalLoader";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-import { Flashcard } from "@/components/Flashcard";
 import Countdown from "react-countdown";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI";
-import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, ChevronDown, ChevronUp, TimerReset, RotateCcw, Save, Users, MessageCircle, X, Cpu, AlertTriangle, Volume, VolumeX, Filter } from "lucide-react";
+import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, BookOpen, Timer, GraduationCap, ChevronDown, ChevronUp, TimerReset, RotateCcw, Save, Users, MessageCircle, X, Cpu, AlertTriangle, Volume, VolumeX, Filter, ChevronLeft, ChevronRight, AlertCircle, Volume2, Sparkles } from "lucide-react";
 import FloatingChat from "@/components/FloatingChat";
 import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb"; // adjust path if needed
-
+import { NotesEvaluationPanel } from "@/components/QuizPage/NotesEvaluationPanel";
 import { useSession } from "@supabase/auth-helpers-react";
+import { cn } from "@/lib/utils";
 interface Question {
   id: string;
   quiz_id: string;
@@ -33,7 +39,7 @@ interface Attempt {
   submitted_at: string;
   answers_json: Record<string, string>;
 }
-const TIMER_DURATION = 10_800_000; // 3 hours
+const TIMER_DURATION = 300_000; // 3 hours
 export default function QuizPage() {
   const session = useSession();
   const user = session?.user;
@@ -46,7 +52,6 @@ export default function QuizPage() {
   const [resetting, setResetting] = useState(false); // ✅ added
   const params = new URLSearchParams(location.search);
   const unit = params.get("unit");
-
   const [saving, setSaving] = useState(false);
   const [isAIOverlayOpen, setAIOverlayOpen] = useState(false);
   const [aiPrefillQuestion, setAIPrefillQuestion] = useState("");
@@ -63,26 +68,30 @@ export default function QuizPage() {
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [confidenceLevels, setConfidenceLevels] = useState<Record<string, string>>({});
   const [questionsSource, setQuestionsSource] = useState<"remote" | "local" | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const navigate = useNavigate(); // Add this line
+
   const [feedbackShown, setFeedbackShown] = useState<Record<string, boolean>>({});
   const [quizFinished, setQuizFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
-
+  const [explanationOverlayOpen, setExplanationOverlayOpen] = useState(false);
+  const [openExplanationFor, setOpenExplanationFor] = useState<string | null>(null);
   const [showUnansweredOnly, setShowUnansweredOnly] = useState(false);
   const [recentlyAnsweredId, setRecentlyAnsweredId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  // --- NEW ---
+  const [loading, setLoading] = useState(true);
+  const [isPremium, setIsPremium] = useState(false); // Track if user has pro/premium plan
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [checkpointOverlay, setCheckpointOverlay] = useState<{
     visible: boolean;
     reached: number;
     total: number;
   } | null>(null);
-
-
   const circleRefs = useRef([]);
 
   useEffect(() => {
@@ -94,9 +103,6 @@ export default function QuizPage() {
       });
     }
   }, [currentQuestionIndex]);
-
-
-
   const [showReasonBox, setShowReasonBox] = useState<{ [key: string]: boolean }>(() => {
     const saved = localStorage.getItem("showReasonBox");
     return saved ? JSON.parse(saved) : {};
@@ -116,7 +122,6 @@ export default function QuizPage() {
   useEffect(() => {
     localStorage.setItem("showReasonBox", JSON.stringify(showReasonBox));
   }, [showReasonBox]);
-
   useEffect(() => {
     localStorage.setItem("selectedReason", JSON.stringify(selectedReason));
   }, [selectedReason]);
@@ -185,7 +190,6 @@ export default function QuizPage() {
 
   async function syncOfflineAnswers() {
     const offline = await getAnswersOffline(unit);
-
     if (!offline || !offline.pending) return;
 
     // updated: upload pending answers to supabase
@@ -240,7 +244,7 @@ export default function QuizPage() {
               understood: understood[questionId] || false,
               is_not_understood: notUnderstood[questionId] || false,
               attempts: attemptsCount[questionId] || 0,
-            }], { onConflict: ["question_id", "user_id"] });
+            }], { onConflict: "question_id,user_id" });
 
           // Optionally, mark as synced (clear localStorage only if successful)
           // delete offlineNotes[questionId];
@@ -384,8 +388,36 @@ export default function QuizPage() {
 
     const loadQuiz = async () => {
       if (!unit) return;
-
       setLoading(true);
+
+      // 1. Set default state
+      setIsPremium(false);
+
+      if (userId) {
+        // We fetch the subscription
+        const { data: sub, error: subError } = await supabase
+          .from("subscriptions")
+          .select("plan_type, is_active, expires_at")
+          .eq("user_id", userId)
+          .maybeSingle(); // .maybeSingle() is better than .single() because it won't throw a console error if the row is missing
+
+        // Check if sub exists. If sub is null, the code below is skipped and isPremium stays FALSE
+        if (sub && !subError) {
+          const now = new Date();
+          const expiry = sub.expires_at ? new Date(sub.expires_at) : null;
+
+          const hasActivePlan = sub.is_active === true;
+          const isPaidTier = sub.plan_type === 'pro' || sub.plan_type === 'premium';
+          const isNotExpired = expiry ? expiry > now : true;
+
+          // Only if ALL conditions are met do we unlock the quiz
+          if (hasActivePlan && isPaidTier && isNotExpired) {
+            setIsPremium(true);
+          }
+        }
+      }
+
+      // ... rest of your loadQuiz logic (fetching questions)
 
       /** ✅ STEP 1: Try IndexedDB first */
       const offlineUnit = await getUnitOffline(unit);
@@ -492,7 +524,7 @@ export default function QuizPage() {
     return () => {
       cancelled = true;
     };
-  }, [unit]);
+  }, [unit, userId, session]);
 
   useEffect(() => {
     const saved = localStorage.getItem("confidenceLevels");
@@ -635,8 +667,6 @@ export default function QuizPage() {
       }));
     }
   };
-
-
 
   const handleReportQuestion = async (question: Question) => {
     // Single alert before opening overlay
@@ -784,8 +814,6 @@ Please provide a detailed discussion and guidance.`;
       setResetting(false); // ✅ stop animation
     }, 600);
   };
-
-
   if (loading && questions.length === 0) {
     return <GlobalLoader message="Medrae is Loading quiz..." />;
   }
@@ -815,1548 +843,726 @@ Please provide a detailed discussion and guidance.`;
   return (
     <div className="space-y-0 max-w-8xl mx-auto px-3 sm:px-6 lg:px-8  ">
       <div className="flex flex-wrap justify-between items-center gap-2">
-        <h1 className="w-full sm:w-auto uppercase text-xl sm:text-2xl md:text-3xl font-bold tracking-tight leading-snug text-blue-700 dark:text-blue-400">
-          {unit}
-        </h1>
-        {/* Always show the timer, even if timerEnd is undefined or after submission */}
-        <Countdown
-          date={timerEnd ?? new Date().getTime() + 1000 * 60 * 60 * 3} // fallback 1 hour if undefined
-          onComplete={() => handleSubmit(true)}
-          renderer={({ hours, minutes, seconds }) => (
-            <div className="flex items-center gap-2 text-sm sm:text-base font-bold text-red-600 dark:text-red-400 flex-shrink-0">
-              {/* Label */}
-              <span className="uppercase tracking-wide">Time:</span>
+        <header className="sticky top-0 rounded-xl z-[100] w-full bg-white/80 dark:bg-background backdrop-blur-md border-b border-gray-200 dark:border-gray-900 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4  py-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 
-              {/* Countdown bar / numbers */}
-              <div className="flex items-center gap-1 sm:gap-2">
-                <span>{hours ?? '--'}</span>:
-                <span>{minutes ?? '--'}</span>:
-                <span>{seconds !== undefined ? (seconds < 10 ? `0${seconds}` : seconds) : '--'}</span>
+              {/* 1. Unit Title Section */}
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                  <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-white truncate max-w-[250px] sm:max-w-none uppercase">
+                  {unit}
+                </h1>
               </div>
 
-              {/* Optional thin underline bar matching heading */}
-              <div className="flex-1 h-[2px] bg-red-500 dark:bg-red-400 rounded-full"></div>
-            </div>
-          )}
-        />
-        {/* 🔹 Sticky Quiz Progress Button + Centered Overlay */}
-        <div className="sticky top-0 z-50 flex flex-col w-60">
-
-          {/* Toggleable Progress Button */}
-          <button
-            onClick={() => setProgressOpen(!progressOpen)}
-            className={`flex items-center gap-2 px-3 h-8 rounded-full text-white shadow-lg transition
-      ${Object.keys(answers).length / questions.length < 0.5
-                ? 'bg-red-600 hover:bg-red-700'
-                : Object.keys(answers).length / questions.length < 0.7
-                  ? 'bg-yellow-500 hover:bg-yellow-600'
-                  : 'bg-green-600 hover:bg-green-700'}
-    `}
-            title="Click to view full progress"
-          >
-            <span className="font-bold">{Object.keys(answers).length}/{questions.length}</span>
-            <span className="font-medium">Q's Answered</span>
-            {progressOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-
-          {/* Centered Overlay */}
-          {progressOpen && (
-            <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-70 p-4 pt-10">
-
-              <div className="relative bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-3xl max-h-[80vh] text-center shadow-lg overflow-auto  custom-scrollbar">
-
-                {/* ❌ Top-right Close Button */}
-                <button
-                  onClick={() => setProgressOpen(false)}
-                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-200 dark:hover:text-white text-xl font-bold transition"
-                  title="Close"
-                >
-                  ×
-                </button>
-
-                {/* Header */}
-                <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
-                  Quiz Progress
-                </h2>
-
-                {/* Stats */}
-                <div className="flex justify-center gap-6 mb-4 text-gray-700 dark:text-gray-300">
-                  <div>Answered: {Object.keys(answers).length}</div>
-                  <div>Unanswered: {questions.length - Object.keys(answers).length}</div>
-                  <div>Total: {questions.length}</div>
-                </div>
-
-                {/* Horizontal Circle Tracker */}
-                <div className="flex flex-wrap justify-center gap-2">
-                  {questions.map((q, index) => {
-                    const userAnswer = answers[q.id];
-                    let circleColor = "bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
-
-                    if (userAnswer !== undefined) {
-                      circleColor = userAnswer === q.correct_answer
-                        ? "bg-green-500 text-white"
-                        : "bg-red-500 text-white";
-                    }
-
-                    return (
-                      <div
-                        key={q.id}
-                        ref={(el) => (circleRefs.current[index] = el)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold ${circleColor}`}
-                        title={`Question ${index + 1} ${userAnswer !== undefined ? `(Your answer: ${userAnswer})` : ""}`}
-                      >
-                        {index + 1}
-                      </div>
-                    );
-                  })}
-
-                  {/* Total circle */}
-                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 text-white font-bold">
-                    {questions.length}
-                  </div>
-                </div>
-
-                {/* Close button */}
-                <button
-                  className="mt-6 px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-bold transition"
-                  onClick={() => setProgressOpen(false)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      {checkpointOverlay?.visible && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-80 text-white p-4">
-          <div className="bg-gray-900 dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full text-center shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Checkpoint Reached!</h2>
-            <p className="mb-4 text-lg">
-              You completed {checkpointOverlay.reached} / {checkpointOverlay.total} questions in this checkpoint.
-            </p>
-            <p className="mb-4 text-lg">
-              Progress in this checkpoint: {checkpointOverlay.percentCompleted}%
-            </p>
-            <p className="mb-6 text-base text-gray-300">
-              Submit your answers for this batch, or continue if you want to review more questions.
-            </p>
-
-            <div className="flex justify-center gap-4">
-              {/* Submit button */}
-              <button
-                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-md transition"
-                onClick={async () => {
-                  if (!quizId || !userId || !checkpointOverlay) return;
-
-                  // --- Strong vibration ---
-                  if (navigator.vibrate) {
-                    navigator.vibrate([200, 100, 200]); // vibrate pattern: 200ms, pause 100ms, 200ms
-                  }
-                  // --- SOUND ---
-                  playSound("start"); // ⚡ reuse the same sound used for "Load More"
-
-                  // Calculate the IDs for this checkpoint batch
-                  const startIndex = lastCheckpoint - checkpointOverlay.total;
-                  const checkpointQuestionIds = Object.keys(answers).slice(startIndex, startIndex + checkpointOverlay.total);
-
-                  // Count correct answers in this checkpoint
-                  const correctInCheckpoint = checkpointQuestionIds.reduce((count, qid) => {
-                    const q = questions.find(q => q.id === qid);
-                    return q && answers[qid] === q.correct_answer ? count + 1 : count;
-                  }, 0);
-
-                  // Insert into quiz_results
-                  await supabase.from("quiz_results").insert([{
-                    quiz_id: quizId,
-                    user_id: userId,
-                    unit: unit,
-                    score: correctInCheckpoint,
-                    total_questions: checkpointOverlay.total
-                  }]);
-
-                  // Close overlay
-                  setCheckpointOverlay(null);
-                }}
-              >
-                Submit Results
-              </button>
-
-              {/* Cancel / Continue button */}
-              <button
-                className="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded-md transition"
-                onClick={() => {
-                  setCheckpointOverlay(null); // just close overlay
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* 🔹 React Hooks for smooth scroll */}
-
-
-      <div className="mt-2 flex justify-between items-center w-full gap-4">
-        {/* Left side: Question actions */}
-        <div className="flex items-center gap-4">
-          {/* Show Filtered / Unanswered button */}
-          <button
-            onClick={() => setShowUnansweredOnly(!showUnansweredOnly)}
-            className="relative group flex items-center gap-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition"
-          >
-            <Filter className="w-5 h-5 text-gray-800 dark:text-gray-200" />
-
-            {/* Text label always visible */}
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-              {showUnansweredOnly ? "Filter On" : "Showing All"}
-            </span>
-
-            {/* Tooltip (unchanged logic) */}
-            <span
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-      opacity-0 group-hover:opacity-100
-      pointer-events-none
-      bg-gray-900 text-white text-[10px]
-      px-2 py-1 rounded-md whitespace-nowrap
-      transition shadow-lg  z-[9999]"
-            >
-              {showUnansweredOnly
-                ? "Showing: Unanswered"
-                : "Showing: All Questions"}
-            </span>
-          </button>
-          {/* Reset Quiz button */}
-          <button
-            onClick={handleReset}
-            disabled={resetting}
-            className={`relative group p-2 rounded-full transition flex items-center gap-2
-    ${resetting ? "opacity-70 cursor-not-allowed" : "hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95"}
-  `}
-          >
-            {resetting ? (
-              // 🔄 SPINNER (YOUR SVG – UNCHANGED)
-              <svg
-                className="animate-spin h-4 w-4 text-gray-700 dark:text-gray-200"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                />
-              </svg>
-            ) : (
-              <RotateCcw className="w-5 h-5 text-gray-800 dark:text-gray-200" />
-            )}
-
-            <span className="text-sm text-gray-800 dark:text-gray-200">
-              {resetting ? "Resetting…" : "Reset & Restart"}
-            </span>
-
-            {/* Tooltip */}
-            <span
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-    opacity-0 group-hover:opacity-100
-    pointer-events-none
-    bg-gray-900 text-white text-[10px]
-    px-2 py-1 rounded-md whitespace-nowrap
-    transition shadow-lg  z-[9999]"
-            >
-              {resetting ? "Resetting quiz…" : "Reset & restart this quiz"}
-            </span>
-          </button>
-        </div>
-
-        {/* Right side: Timer action */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleResetTimer}
-            className="relative group p-2 rounded-full hover:bg-green-100 dark:hover:bg-green-700 active:scale-95 transition"
-          >
-            <TimerReset className="w-5 h-5 text-green-600 dark:text-green-300" />
-            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-          opacity-0 group-hover:opacity-100
-          pointer-events-none
-          bg-gray-900 text-white text-[10px]
-          px-2 py-1 rounded-md whitespace-nowrap
-          transition shadow-lg  z-[9999]">
-              Reset Timer
-            </span>
-          </button>
-        </div>
-      </div>
-      <div className="flex flex-col space-y-4">
-        {filteredQuestions.slice(0, visibleCount).map((q, i) => {
-          const selectedAnswer = answers[q.id];
-          const isCorrect = selectedAnswer === q.correct_answer;
-          const showFeedback = feedbackShown[q.id];
-          return (
-            <div key={q.id} className="flex flex-col lg:flex-row gap-2 w-full">
-
-              {/* Question Card */}
-              <div
-                className={`
-    flex-1
-     px-0 py-2
-    rounded-none
-    shadow-none
-    border-0
-    text-black dark:text-white
-    transition-colors
-    ${understood[q.id]
-                    ? "bg-green-300 dark:bg-green-800"
-                    : notUnderstood[q.id]
-                      ? "bg-[#FF4C4C] dark:bg-[#800000]"
-                      : "bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900"
-
-                  }
-    sm:px-4 sm:py-4 sm:rounded-md sm:shadow-none sm:border-0
-  `} >
-                <p className="font-bold mb-2">Q{i + 1}: {q.question_text}</p>
-                <div className="space-y-2 text-sm">
-                  {["A", "B", "C", "D"].map((letter) => {
-                    const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
-                    const isSelected = selectedAnswer === letter;
-                    const correct = q.correct_answer === letter;
-                    return (
-                      <button
-                        key={letter}
-                        className={`w-full text-left px-4 py-3 rounded-none sm:rounded-md font-semibold
-border-l-4 transition-all duration-150
-${isSelected
-                            ? correct
-                              ? "bg-green-500 dark:bg-green-600 border-l-green-800 text-black dark:text-white"
-                              : "bg-red-500 dark:bg-red-600 border-l-red-800 text-black dark:text-white"
-                            : "bg-yellow-400 dark:bg-amber-700 border-l-yellow-600 text-black dark:text-white hover:bg-blue-500 dark:hover:bg-blue-800"
-                          }
-${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
-                        onClick={async () => {
-                          if (!!selectedAnswer || quizFinished) return;
-                          // ✅ PLAY SOUND IMMEDIATELY
-                          if (!isMuted) {
-                            playSound(q.correct_answer === letter ? "tap-correct" : "tap-wrong");
-                          }
-                          const correct = q.correct_answer === letter;
-                          // ✅ SHOW REASON BOX IMMEDIATELY (NO DELAY)
-                          if (!correct) {
-                            setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
-                          }
-                          // ✅ VIBRATION
-                          if (navigator.vibrate) {
-                            if (correct) {
-                              navigator.vibrate(50); // short for correct
-                            } else {
-                              navigator.vibrate([100, 50, 100]); // stronger for wrong
-                            }
-                          }
-                          // 1️⃣ TIME TAKEN
-                          const endTime = Date.now();
-                          const timeTaken = (endTime - questionStartTime) / 1000;
-
-                          // 2️⃣ CONFIDENCE LOGIC
-                          let confidence = "";
-                          let accuracy = 0;
-                          if (correct) {
-                            confidence = "High confidence";
-                            accuracy = 100;
-                          } else if (timeTaken <= 10) {
-                            confidence = "Overconfident";
-                            accuracy = Math.floor(Math.random() * 20);
-                          } else if (timeTaken <= 20) {
-                            confidence = "Medium confidence";
-                            accuracy = Math.floor(Math.random() * 30) + 50;
-                          } else {
-                            confidence = "Low confidence";
-                            accuracy = Math.floor(Math.random() * 30) + 20;
-                          }
-
-                          // 3️⃣ SAVE CONFIDENCE FOR THIS QUESTION
-                          setConfidenceLevels((prev) => {
-                            const updated = { ...prev, [q.id]: confidence };
-                            localStorage.setItem("confidenceLevels", JSON.stringify(updated));
-                            return updated;
-                          });
-
-                          // 4️⃣ ORIGINAL ANSWER LOGIC
-                          handleAnswer(q.id, letter);
-
-                          // 🔴 LIVE ANSWER EVENT (for floating activity feed)
-                          if (!userId) return; // userId from const userId = session?.user?.id;
-
-                          try {
-                            await supabase.from("live_answer_events").insert({
-                              user_id: userId,
-                              question_id: q.id,
-                              event_type: correct ? "answered_correct" : "answered_wrong",
-                              is_correct: correct,
-                              streak_count: null,
-                              points: correct ? 1 : 0,
-                            });
-                          } catch (err) {
-                            console.error("Error inserting live event:", err);
-                          }
-
-                          // 5️⃣ RECORD MISTAKE IF WRONG
-                          if (!correct) {
-                            // ✅ SHOW REASON BOX IMMEDIATELY (NO WAIT)
-                            setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
-
-                            // 🔄 SAVE TO SUPABASE IN BACKGROUND (PRESERVES TAGGING)
-                            if (!userId) return; // userId from session
-
-                            (async () => {
-                              try {
-                                // Upsert first attempt
-                                await supabase.from("user_mistakes").upsert(
-                                  {
-                                    user_id: userId,
-                                    question_id: q.id,
-                                    quiz_id: q.quiz_id,
-                                    last_wrong_at: new Date(),
-                                    times_wrong: 1,
-                                    user_selected: letter,
-                                  },
-                                  { onConflict: "user_id,question_id" }
-                                );
-
-                                // Increment times_wrong using RPC
-                                await supabase.rpc("increment_mistake", {
-                                  user_uuid: userId,
-                                  question_uuid: q.id,
-                                  selected_option: letter,
-                                });
-
-                              } catch (error) {
-                                console.error("Error recording mistake:", error);
-                              }
-                            })();
-                          }
-                        }}
-                      >
-                        <div className="flex justify-between items-center relative">
-                          <span>{letter}. {optionText}</span>
-                          {/* Emoji reaction */}
-                          {isSelected && correct && <span className="ml-2 text-4xl animate-emoji-zoom">😊</span>}
-                          {isSelected && !correct && <span className="ml-2 text-4xl animate-emoji-zoom">😢</span>}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                {/* Confidence Label with Accuracy */}
-                {confidenceLevels[q.id] && (
-                  <div
-                    className={`mt-3 px-4 py-2 rounded-2xl text-center
-${confidenceLevels[q.id]?.startsWith("High confidence")
-                        ? "bg-green-600 text-white"
-                        : confidenceLevels[q.id]?.startsWith("Overconfident")
-                          ? "bg-red-600 text-white"
-                          : confidenceLevels[q.id]?.startsWith("Medium confidence")
-                            ? "bg-yellow-500 text-black"
-                            : "bg-gray-600 text-white"
-                      }`}
-                  >
-                    <span className="text-xl font-extrabold">
-                      Confidence Rating: {confidenceLevels[q.id].toUpperCase()}
-                      {(() => {
-                        let accuracyText = "";
-                        if (confidenceLevels[q.id]?.startsWith("High confidence")) accuracyText = "100% Accuracy";
-                        else if (confidenceLevels[q.id]?.startsWith("Overconfident")) accuracyText = `${Math.floor(Math.random() * 20)}% Accuracy`;
-                        else if (confidenceLevels[q.id]?.startsWith("Medium confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 50}% Accuracy`;
-                        else if (confidenceLevels[q.id]?.startsWith("Low confidence")) accuracyText = `${Math.floor(Math.random() * 30) + 20}% Accuracy`;
-                        return accuracyText ? ` (${accuracyText})` : "";
-                      })()}
-                    </span>
-                  </div>
-                )}
-                {/* Reason Box */}
-                {showReasonBox[q.id] && !selectedReason[q.id] && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <p className="text-lg font-medium">What went wrong!?</p>
-                    {reasonOptions.map((reason) => (
-                      <button
-                        key={reason}
-                        className={`px-3 py-1 rounded-none sm:rounded-md
-    ${selectedReason[q.id] === reason
-                            ? "bg-blue-500 text-white dark:bg-blue-700"
-                            : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600"
-                          }`}
-                        onClick={async () => {
-                          setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
-                          setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
-
-                          if (!userId) return; // userId from useSession()
-                          try {
-                            const { error } = await supabase
-                              .from("user_mistakes")
-                              .update({ mistake_reason: reason })
-                              .eq("user_id", userId)
-                              .eq("question_id", q.id);
-                            if (error) throw error;
-                          } catch (err) {
-                            console.error("Error saving mistake reason:", err);
-                          }
-                        }}
-                      >
-                        {reason}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-2 flex gap-2">
-                  <button
-                    onClick={() => handleReportQuestion(q)}
-                    className="
-    flex items-center gap-2
-    px-3 h-8
-    rounded-md
-    bg-transparent
-    text-red-600
-
-    dark:border-red-400 dark:text-red-400
-    dark:hover:bg-red-500 dark:hover:text-white
-    transition
-  " >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
-                    </svg>
-
-                    <span className="text-xs font-medium whitespace-nowrap">
-                      Report Question
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const optionsText = ["A", "B", "C", "D"]
-                        .map(
-                          letter =>
-                            `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]
-                            }`
-                        )
-                        .join("\n");
-                      const chunkText = (text: string, maxLength = 200) => {
-                        const chunks: string[] = [];
-                        let start = 0;
-                        while (start < text.length) {
-                          chunks.push(text.slice(start, start + maxLength));
-                          start += maxLength;
-                        }
-                        return chunks.join("\n\n");
-                      };
-                      const fullText = `Let's discuss this question in NCK format:
-Question: ${q.question_text}
-Options:
-${optionsText}
-User Answer: ${answers[q.id] || "No answer selected"}
-Please provide a detailed discussion and guidance.`;
-                      setAIPrefillQuestion(chunkText(fullText, 200));
-                      setAIOverlayOpen(true);
-                    }}
-                    className="
-    flex items-center gap-2
-    px-3 h-8
-    rounded-md
-    text-gray-700 dark:text-gray-300
-    transition
-  "
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
-                    </svg>
-
-                    <span className="text-xs font-medium whitespace-nowrap">
-                      AI Assistance
-                    </span>
-                  </button>
-
-
-
-                  <button
-                    onClick={toggleMute}
-                    className="relative group w-8 h-8 flex items-center justify-center rounded-md text-gray-700 dark:text-gray-300 transition"
-                  >
-                    {isMuted ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                      </svg>
-
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                      </svg>
-
-                    )}
-
-                    {/* Tooltip */}
-                    <span
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-               opacity-0 group-hover:opacity-100
-               pointer-events-none
-               bg-gray-900 text-white text-[10px]
-               px-2 py-1 rounded-md whitespace-nowrap
-               transition shadow-lg z-50"
-                    >
-                      {isMuted ? "Unmute sounds" : "Mute sounds"}
-                    </span>
-                  </button>
-                </div>
-
-                {showFeedback && (
-                  <div className="mt-3">
-                    <p className={`font-semibold ${isCorrect ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                      {isCorrect ? "Correct!" : `Wrong. Correct answer is ${q.correct_answer}`}
-                    </p>
-                    {q.explanation && <p className="mt-1"><span className="font-semibold">Explanation:</span> {q.explanation}</p>}
-                    {q.additional && (
-                      <div className="mt-2">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
-                          Additional Explanation
-                        </h3>
-                        <pre className="text-base font-sans p-0 m-0 whitespace-pre-wrap text-black dark:text-white">
-                          {q.additional}
-                        </pre>
-
-                      </div>
-                    )}
-                  </div>
-                )}
-
-
-                <Flashcard />
-
-
-                {/* Load More button — only after last visible question */}
-                {i === visibleCount - 1 && visibleCount < filteredQuestions.length && (
-                  <div className="flex justify-center mt-8">
-                    <button
-                      id="loadMoreBtn"
-                      className="mt-4 px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2"
-                      onClick={async (e) => {
-                        const button = e.currentTarget as HTMLButtonElement;
-                        button.disabled = true;
-
-                        // Show spinner inside button
-                        const originalContent = button.innerHTML;
-                        button.innerHTML = `
-        <span className="flex items-center gap-1">
-        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-        </svg>
-        Loading...
-        </span>`;
-
-                        // Vibrate device (60-70ms)
-                        if (navigator.vibrate) {
-                          const duration = Math.floor(Math.random() * (70 - 60 + 1) + 60);
-                          navigator.vibrate(duration);
-                        }
-
-                        // Play sound
-                        await playSound("tap");
-
-                        // Load more questions
-                        setVisibleCount(prev => prev + QUESTIONS_PER_BATCH);
-
-                        // Restore button content and enable
-                        button.innerHTML = originalContent;
-                        button.disabled = false;
-                      }}
-                    >
-                      Load more questions
-
-                    </button>
-
-
-                  </div>
-                )}
-              </div>
-
-              {/* Small Note Card */}
-              <div className="w-full lg:w-1/3 p-1.5 sm:px-6 sm:py-4 rounded-md shadow-none border-0 bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900 text-black dark:text-white flex flex-col">
-
-                {/* Header */}
-                <div className="flex justify-between items-center mb-2 px-2 lg:px-0">
-
-                  <h2 className="font-bold">Notes Evaluation Panel</h2>
-                </div>
-
-                {/* ------------------------------NOTES TEXTAREA------------------------------ */}
-                <textarea
-                  value={notes[q.id] || ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-
-                    // Update React state
-                    setNotes(prev => ({ ...prev, [q.id]: value }));
-
-                    // Save offline immediately (non-blocking, no await)
-                    saveNoteOffline(q.id, value).catch(err => console.error(err));
-                  }}
-
-                  className="w-full flex-1 p-2 border-0 resize-none bg-transparent overflow-x-auto  custom-scrollbar text-black dark:text-white mb-2 min-h-[200px]"
-                  placeholder="Take notes here..."
-                />
-                <div className="flex gap-2 justify-end">
-
-                  {/* ------------------------------Expand Notes Overlay------------------------------ */}
-                  <button
-                    onClick={() => setNotesOverlay(q.id)}
-                    className="relative group w-8 h-8 flex items-center justify-center rounded-md  text-gray-700 dark:text-gray-300 transition"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                    </svg>
-
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                      Expand Notes
-                    </span>
-                  </button>
-
-                  {/* ------------------------------ Understood Button------------------------------ */}
-                  <button
-                    onClick={async () => {
-                      if (!userId) return;
-                      const newState = !understood[q.id];
-                      // Update local state
-                      setUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                      setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
-                      // Save offline
-                      await saveNoteOffline(q.id, notes[q.id] || "");
-                      // Mark offline understood/not-understood locally
-                      await saveAnswersOffline(q.id, {
-                        understood: newState,
-                        not_understood: false,
-                        attempts: attempts[q.id] || 0,
-                      });
-                      // Attempt online sync
-                      try {
-                        await supabase
-                          .from("question_notes")
-                          .upsert([{
-                            user_id: userId,
-                            question_id: q.id,
-                            note_text: notes[q.id] || "",
-                            understood: newState,
-                            is_not_understood: false,
-                            attempts: attempts[q.id] || 0,
-                            help_others: helpOthersDisabled[q.id] ? "saved" : null
-                          }], { onConflict: "question_id, user_id" });
-                      } catch (err) {
-                        console.error("Error syncing Understood:", err);
-                      }
-                    }}
-                    className={`relative group w-8 h-8 flex items-center justify-center rounded-md by-transparent text-gray-700 dark:text-gray-300 transition ${understood[q.id] ? "ring-2 ring-green-500" : ""}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-8 h-8 text-blue-500">
-                      <path strokeLinecap="round" strokeLinejoin="round" fill="#2ad31a" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                      Understood
-                    </span>
-                  </button>
-
-                  {/* ------------------------------Not Understood Button------------------------------ */}
-                  <button
-                    onClick={async () => {
-                      if (!userId) return;
-                      const newState = !notUnderstood[q.id];
-                      // Update local state
-                      setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                      setUnderstood(prev => ({ ...prev, [q.id]: false }));
-                      // Save offline
-                      await saveNoteOffline(q.id, notes[q.id] || "");
-                      await saveAnswersOffline(q.id, {
-                        understood: false,
-                        not_understood: newState,
-                        attempts: attempts[q.id] || 0,
-                      });
-                      // Attempt online sync
-                      try {
-                        await supabase
-                          .from("question_notes")
-                          .upsert([{
-                            user_id: userId,
-                            question_id: q.id,
-                            note_text: notes[q.id] || "",
-                            understood: false,
-                            is_not_understood: newState,
-                            attempts: attempts[q.id] || 0,
-                            help_others: helpOthersDisabled[q.id] ? "saved" : null
-                          }], { onConflict: "question_id, user_id" });
-                      } catch (err) {
-                        console.error("Error syncing Not Understood:", err);
-                      }
-                    }}
-                    className={`relative group w-8 h-8 flex items-center justify-center rounded-md  text-gray-700 dark:text-gray-300 transition ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8 text-white">
-                      <path strokeLinecap="round" strokeLinejoin="round" fill="#e60e0e" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-                    </svg>
-
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                      Not Understood
-                    </span>
-                  </button>
-
-                  {/* ------------------------------ Attempts Button------------------------------ */}
-                  <button
-                    onClick={async () => {
-                      if (!userId) return;
-                      const newCount = (attempts[q.id] || 0) + 1;
-                      setAttempts(prev => ({ ...prev, [q.id]: newCount }));
-                      // Save offline
-                      await saveAnswersOffline(q.id, {
-                        understood: understood[q.id] || false,
-                        not_understood: notUnderstood[q.id] || false,
-                        attempts: newCount,
-                      });
-                      await saveNoteOffline(q.id, notes[q.id] || "");
-                      // Attempt online sync
-                      try {
-                        await supabase
-                          .from("question_notes")
-                          .upsert([{
-                            user_id: userId,
-                            question_id: q.id,
-                            note_text: notes[q.id] || "",
-                            understood: understood[q.id] || false,
-                            is_not_understood: notUnderstood[q.id] || false,
-                            attempts: newCount,
-                            help_others: helpOthersDisabled[q.id] ? "saved" : null
-                          }], { onConflict: "question_id, user_id" });
-                      } catch (err) {
-                        console.error("Error syncing Attempts:", err);
-                      }
-                    }}
-                    className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-transparent  text-gray-700 dark:text-gray-300 transition" >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8 text-white">
-                      <path strokeLinecap="round" strokeLinejoin="round" fill="#4aca0f" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                    </svg>
-
-
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                      Attempted: {attempts[q.id] || 0}
-                    </span>
-                  </button>
-
-                  {/* ------------------------------Save Notes Button------------------------------ */}
-                  <button
-                    onClick={async () => {
-                      if (!userId) return;
-                      setSaving(true);
-                      setSaved(false);
-                      // 1. Save offline first
-                      await saveNoteOffline(q.id, notes[q.id] || "");
-                      try {
-                        // 2. Upsert online directly — no need to check existing
-                        await supabase
-                          .from("question_notes")
-                          .upsert([{
-                            question_id: q.id,
-                            user_id: userId,
-                            note_text: notes[q.id] || "",
-                            understood: understood[q.id] || false,
-                            is_not_understood: notUnderstood[q.id] || false,
-                            attempts: attempts[q.id] || 0,
-                            help_others: helpOthersDisabled[q.id] ? "saved" : null
-                          }], { onConflict: ["question_id", "user_id"] }); // <- handles both insert & update
-                      } catch (err) {
-                        console.error("Error syncing Save Notes:", err);
-                      }
-                      setSaving(false);
-                      setSaved(true);
-                      setTimeout(() => setSaved(false), 1000);
-                    }}
-                    className="relative group w-8 h-8 flex items-center justify-center rounded-md text-gray-700 dark:text-gray-300 transition" >
-                    {saving ? (
-                      <div className="flex space-x-1">
-                        <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
-                        <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
-                        <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
-                      </div>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
-                        <path strokeLinecap="round" strokeLinejoin="round" fill="#1013cc" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
-                      </svg>
-
-                    )}
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                      {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
-                    </span>
-                  </button>
-
-                  {/* ------------------------------Help Others Button------------------------------ */}
-                  <button
-                    onClick={async () => {
-                      if (!userId || helpOthersDisabled[q.id]) return;
-
-                      const phone = prompt("To help others in this question, Kindly Enter your WhatsApp number (with country code, e.g., +254712345678):");
-                      if (!phone) return;
-                      await saveNoteOffline(q.id, notes[q.id] || "");
-                      try {
-                        await supabase
-                          .from("question_notes")
-                          .upsert([{
-                            user_id: userId,
-                            question_id: q.id,
-                            note_text: notes[q.id] || "",
-                            understood: understood[q.id] || false,
-                            is_not_understood: notUnderstood[q.id] || false,
-                            attempts: attempts[q.id] || 0,
-                            help_others: phone
-                          }], { onConflict: "question_id, user_id" });
-                        setHelpOthersDisabled(prev => ({ ...prev, [q.id]: true }));
-                      } catch (err) {
-                        console.error("Error saving Help Others:", err);
-                      }
-                    }}
-                    disabled={helpOthersDisabled[q.id]}
-                    className={`relative group w-8 h-8 flex items-center justify-center rounded-md text-gray-700 dark:text-gray-300 transition ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}`} >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
-                      <path strokeLinecap="round" strokeLinejoin="round" fill="#0caae9" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                    </svg>
-
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                      {helpOthersDisabled[q.id] ? "Already shared" : "Help Others"}
-                    </span>
-                  </button>
-                  {/* ------------------------------Help Me Button------------------------------ */}
-                  <button
-                    onClick={async () => {
-                      if (!userId) return;
-
-                      const { data, error } = await supabase
-                        .from("question_notes")
-                        .select(`id, help_others, profiles:user_id(name, avatar_url)`)
-                        .eq("question_id", q.id)
-                        .not("help_others", "eq", "none");
-
-                      if (error) {
-                        console.error("Error fetching helpers:", error);
-                        alert("Failed to fetch helpers.");
-                        return;
-                      }
-
-                      // Map helpers if any exist
-                      const helpers = data?.map((d: any) => ({
-                        id: d.id,
-                        whatsapp: d.help_others,
-                        profiles: d.profiles
-                      })) || [];
-
-                      setHelpMeHelpers(helpers); // This can be empty
-                      setCurrentQuestionText(q.question_text);
-                      setHelpMeOverlayOpen(true); // Always open the overlay
-                    }}
-                    className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-transparent text-gray-700 dark:text-gray-300 transition">
-                    <svg
-                      role="img"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{ width: "32px", height: "32px" }} // ✅ pixel control
-                    >
-                      <title>WhatsApp</title>
-                      <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                    </svg>
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                      Help Me
-                    </span>
-                  </button>
-                  {notesOverlay === q.id && (
-                    <div
-                      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-0"
-                      onClick={() => setNotesOverlay(null)} >
-                      <div
-                        className="bg-gray-50 dark:bg-gray-900 w-full h-[90vh] rounded-none sm:rounded-none shadow-lg flex flex-col p-4 overflow-auto"
-                        onClick={(e) => e.stopPropagation()}  >
-
-                        {/* ============================HEADER SECTION============================ */}
-                        <div className="flex justify-between items-center mb-4">
-                          <h2 className="font-bold text-xl text-blue-700 dark:text-blue-300">
-                            Expanded Notes Panel
-                          </h2>
-                          <button
-                            onClick={() => setNotesOverlay(null)}
-                            className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition hover:bg-gray-400 dark:hover:bg-gray-600"
-                          >
-                            <X className="w-4 h-4" />
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                              Close
-                            </span>
-                          </button>
-                        </div>
-
-                        {/* ============================GUIDE / INSTRUCTION SECTION============================ */}
-                        <div className="w-full mb-4 border-0 bg-transparent text-black dark:text-white text-sm">
-                          <p className="font-semibold mb-1 pt-1">How to Use This Panel:</p>
-                          <ul className="list-disc ml-5 mb-4">
-                            <li><strong>Take deeper notes</strong> about why you got it wrong/right.</li>
-                            <li>Mark the question as <strong>Understood</strong> or <strong>Not Understood</strong>.</li>
-                            <li>Track how many times you have <strong>Attempted</strong> it.</li>
-                            <li>You can even <strong>Offer Help</strong> to others or request help using <strong>Help Me</strong>.</li>
-                            <li>Everything is auto-synced online and stored offline.</li>
-                          </ul>
-                        </div>
-                        {/* ============================NOTES TEXTAREA ============================ */}
-                        <textarea
-                          value={notes[q.id] || ""}
-                          onChange={async (e) => {
-                            const value = e.target.value;
-                            setNotes(prev => ({ ...prev, [q.id]: value }));
-
-                            // Save offline immediately
-                            await saveNoteOffline(q.id, value);
-                          }}
-                          className="w-full flex-1 p-2 border-0 resize-none bg-transparent text-black dark:text-white mb-2 min-h-[200px]"
-
-                          placeholder="Take notes here..."
-                        />
-
-                        {/* ============================ BOTTOM BUTTONS============================ */}
-                        <div className="flex flex-wrap gap-2 mt-2">
-
-                          {/* -----------------------------Understood Button----------------------------- */}
-                          <button
-                            onClick={async () => {
-                              if (!userId) return;
-
-                              const newState = !understood[q.id];
-                              setUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                              setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-                              // Save offline
-                              await saveAnswersOffline(q.id, { understood: newState, not_understood: false, attempts: attempts[q.id] || 0 });
-                              await saveNoteOffline(q.id, notes[q.id] || "");
-
-                              // Sync online
-                              try {
-                                await supabase
-                                  .from("question_notes")
-                                  .upsert([{
-                                    user_id: userId,
-                                    question_id: q.id,
-                                    note_text: notes[q.id] || "",
-                                    understood: newState,
-                                    is_not_understood: false,
-                                    attempts: attempts[q.id] || 0,
-                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                  }], { onConflict: "question_id, user_id" });
-                              } catch (err) {
-                                console.error("Error syncing Understood:", err);
-                              }
-                            }}
-                            className={`relative group w-8 h-8 flex items-center justify-center rounded-md  text-gray-700 dark:text-gray-300 transition ${understood[q.id] ? "ring-2 ring-green-500" : ""}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-8 h-8 text-blue-500">
-                              <path strokeLinecap="round" strokeLinejoin="round" fill="#2ad31a" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                            </svg>
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                              Understood
-                            </span>
-                          </button>
-
-                          {/* ----------------------------- Not Understood Button----------------------------- */}
-                          <button
-                            onClick={async () => {
-                              if (!userId) return;
-
-                              const newState = !notUnderstood[q.id];
-                              setNotUnderstood(prev => ({ ...prev, [q.id]: newState }));
-                              setUnderstood(prev => ({ ...prev, [q.id]: false }));
-
-                              await saveAnswersOffline(q.id, { understood: false, not_understood: newState, attempts: attempts[q.id] || 0 });
-                              await saveNoteOffline(q.id, notes[q.id] || "");
-
-                              try {
-                                await supabase
-                                  .from("question_notes")
-                                  .upsert([{
-                                    user_id: userId,
-                                    question_id: q.id,
-                                    note_text: notes[q.id] || "",
-                                    understood: false,
-                                    is_not_understood: newState,
-                                    attempts: attempts[q.id] || 0,
-                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                  }], { onConflict: "question_id, user_id" });
-                              } catch (err) {
-                                console.error("Error syncing Not Understood:", err);
-                              }
-                            }}
-                            className={`relative group w-8 h-8 flex items-center justify-center rounded-md  text-gray-700 dark:text-gray-300 transition ${notUnderstood[q.id] ? "ring-2 ring-red-500" : ""}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8 text-white">
-                              <path strokeLinecap="round" strokeLinejoin="round" fill="#e60e0e" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-                            </svg>
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                              Not Understood
-                            </span>
-                          </button>
-
-                          {/* -----------------------------Attempts Button----------------------------- */}
-                          <button
-                            onClick={async () => {
-                              if (!userId) return;
-
-                              const newCount = (attempts[q.id] || 0) + 1;
-                              setAttempts(prev => ({ ...prev, [q.id]: newCount }));
-
-                              await saveAnswersOffline(q.id, { understood: understood[q.id] || false, not_understood: notUnderstood[q.id] || false, attempts: newCount });
-                              await saveNoteOffline(q.id, notes[q.id] || "");
-
-                              try {
-                                await supabase
-                                  .from("question_notes")
-                                  .upsert([{
-                                    user_id: userId,
-                                    question_id: q.id,
-                                    note_text: notes[q.id] || "",
-                                    understood: understood[q.id] || false,
-                                    is_not_understood: notUnderstood[q.id] || false,
-                                    attempts: newCount,
-                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                  }], { onConflict: "question_id, user_id" });
-                              } catch (err) {
-                                console.error("Error syncing Attempts:", err);
-                              }
-                            }}
-                            className="relative group w-8 h-8 flex items-center justify-center rounded-md  text-gray-700 dark:text-gray-300 transition"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8 text-white">
-                              <path strokeLinecap="round" strokeLinejoin="round" fill="#4aca0f" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                            </svg>
-
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                              Attempted: {attempts[q.id] || 0}
-                            </span>
-                          </button>
-
-                          {/* -----------------------------Save Notes Button----------------------------- */}
-                          <button
-                            onClick={async () => {
-                              if (!userId) return;
-                              setSaving(true);
-                              setSaved(false);
-
-                              // 1. Save offline first
-                              await saveNoteOffline(q.id, notes[q.id] || "");
-
-                              try {
-                                // 2. Upsert online directly — no need to check existing
-                                await supabase
-                                  .from("question_notes")
-                                  .upsert([{
-                                    question_id: q.id,
-                                    user_id: userId,
-                                    note_text: notes[q.id] || "",
-                                    understood: understood[q.id] || false,
-                                    is_not_understood: notUnderstood[q.id] || false,
-                                    attempts: attempts[q.id] || 0,
-                                    help_others: helpOthersDisabled[q.id] ? "saved" : null
-                                  }], { onConflict: ["question_id", "user_id"] }); // <- handles both insert & update
-
-                              } catch (err) {
-                                console.error("Error syncing Save Notes:", err);
-                              }
-
-                              setSaving(false);
-                              setSaved(true);
-                              setTimeout(() => setSaved(false), 1000);
-                            }}
-                            className="relative group w-8 h-8 flex items-center justify-center rounded-md  text-gray-700 dark:text-gray-300 transition"
-                          >
-                            {saving ? (
-                              <div className="flex space-x-1">
-                                <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-0"></span>
-                                <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-150"></span>
-                                <span className="w-1 h-1 bg-gray-700 dark:bg-gray-300 rounded-full animate-bounce delay-300"></span>
-                              </div>
-                            ) : (
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
-                                <path strokeLinecap="round" strokeLinejoin="round" fill="#1013cc" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
-                              </svg>
-                            )}
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                              {saving ? "Saving..." : saved ? "Saved" : "Save Notes"}
-                            </span>
-                          </button>
-
-                          {/* ------------------------------Help Others Button------------------------------ */}
-                          <button
-                            onClick={async () => {
-                              if (!userId || helpOthersDisabled[q.id]) return;
-
-                              const phone = prompt("To help others in this question, Kindly Enter your WhatsApp number (with country code, e.g., +254712345678):");
-                              if (!phone) return;
-                              await saveNoteOffline(q.id, notes[q.id] || "");
-                              try {
-                                await supabase
-                                  .from("question_notes")
-                                  .upsert([{
-                                    user_id: userId,
-                                    question_id: q.id,
-                                    note_text: notes[q.id] || "",
-                                    understood: understood[q.id] || false,
-                                    is_not_understood: notUnderstood[q.id] || false,
-                                    attempts: attempts[q.id] || 0,
-                                    help_others: phone
-                                  }], { onConflict: "question_id, user_id" });
-                                setHelpOthersDisabled(prev => ({ ...prev, [q.id]: true }));
-                              } catch (err) {
-                                console.error("Error saving Help Others:", err);
-                              }
-                            }}
-                            disabled={helpOthersDisabled[q.id]}
-                            className={`relative group w-8 h-8 flex items-center justify-center rounded-md text-gray-700 dark:text-gray-300 transition ${helpOthersDisabled[q.id] ? "opacity-50 cursor-not-allowed" : ""}`} >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
-                              <path strokeLinecap="round" strokeLinejoin="round" fill="#0caae9" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                            </svg>
-
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                              {helpOthersDisabled[q.id] ? "Already shared" : "Help Others"}
-                            </span>
-                          </button>
-                          {/* ------------------------------Help Me Button------------------------------ */}
-                          <button
-                            onClick={async () => {
-                              if (!userId) return;
-
-                              const { data, error } = await supabase
-                                .from("question_notes")
-                                .select(`id, help_others, profiles:user_id(name, avatar_url)`)
-                                .eq("question_id", q.id)
-                                .not("help_others", "eq", "none");
-
-                              if (error) {
-                                console.error("Error fetching helpers:", error);
-                                alert("Failed to fetch helpers.");
-                                return;
-                              }
-
-                              // Map helpers if any exist
-                              const helpers = data?.map((d: any) => ({
-                                id: d.id,
-                                whatsapp: d.help_others,
-                                profiles: d.profiles
-                              })) || [];
-
-                              setHelpMeHelpers(helpers); // This can be empty
-                              setCurrentQuestionText(q.question_text);
-                              setHelpMeOverlayOpen(true); // Always open the overlay
-                            }}
-                            className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-transparent text-gray-700 dark:text-gray-300 transition">
-                            <svg
-                              role="img"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                              style={{ width: "32px", height: "32px" }} // ✅ pixel control
-                            >
-                              <title>WhatsApp</title>
-                              <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                            </svg>
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                              Help Me
-                            </span>
-                          </button>
-                        </div>
+              {/* 2. Timer & Progress Controls */}
+              <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6">
+
+                {/* The Countdown Widget */}
+                <Countdown
+                  date={timerEnd ?? new Date().getTime() + TIMER_DURATION}
+                  onComplete={() => handleSubmit(true)}
+                  renderer={({ hours, minutes, seconds }) => (
+                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-full border border-red-100 dark:border-red-900/30">
+                      <Timer className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
+                      <div className="flex items-center font-mono font-bold text-red-600 dark:text-red-400 text-sm sm:text-base">
+                        <span>{String(hours).padStart(2, '0')}</span>
+                        <span className="mx-0.5 animate-none">:</span>
+                        <span>{String(minutes).padStart(2, '0')}</span>
+                        <span className="mx-0.5 animate-none">:</span>
+                        <span>{String(seconds).padStart(2, '0')}</span>
                       </div>
                     </div>
                   )}
+                />
 
-                  {/* Help Me Overlay */}
-                  {helpMeOverlayOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2">
-                      <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-none sm:rounded-md shadow-lg p-4 flex flex-col space-y-3 h-[90vh] overflow-auto">
+                {/* 3. Progress Button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setProgressOpen(!progressOpen)}
+                    className={`group flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-full text-white shadow-md transition-all active:scale-95
+              ${Object.keys(answers).length / questions.length < 0.5
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : Object.keys(answers).length / questions.length < 0.7
+                          ? 'bg-amber-500 hover:bg-amber-600'
+                          : 'bg-green-600 hover:bg-green-700'}
+            `}
+                  >
+                    <div className="flex flex-col items-start leading-none">
+                      <span className="text-[10px] uppercase font-bold opacity-80">Progress</span>
+                      <span className="text-sm font-bold">
+                        {Object.keys(answers).length}/{questions.length}
+                      </span>
+                    </div>
 
-                        {/* Header */}
-                        <div className="flex justify-between items-center">
-                          <h2 className="text-lg font-bold text-blue-700 dark:text-blue-300">Helpers Available</h2>
+                    <div className="h-6 w-px bg-white/20" />
+
+                    {progressOpen ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+
+                    {/* Subtle Visual Progress Fill (Background Layer) */}
+                    <div
+                      className="absolute inset-0 bg-black/10 rounded-full transition-all duration-1000"
+                      style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+                    />
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Simple Linear Progress Bar (Under header) */}
+            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gray-100 dark:bg-gray-800">
+              <div
+                className="h-full bg-blue-600 transition-all duration-500 ease-out"
+                style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        </header>
+        <QuizProgressOverlay
+          progressOpen={progressOpen}
+          setProgressOpen={setProgressOpen}
+          answers={answers}
+          questions={questions}
+          circleRefs={circleRefs}
+          setCurrentQuestionIndex={setCurrentQuestionIndex}
+        />
+      </div>
+      <CheckpointOverlay
+        checkpointOverlay={checkpointOverlay}
+        quizId={quizId}
+        userId={userId}
+        unit={unit}
+        lastCheckpoint={lastCheckpoint}
+        answers={answers}
+        questions={questions}
+        supabase={supabase}
+        setCheckpointOverlay={setCheckpointOverlay}
+        playSound={playSound}
+      />
+      <div className="mt-2 flex justify-between items-center w-full gap-4">
+
+
+      </div>
+      <div className="flex flex-col items-center">
+        <div className="w-full max-w-6xl min-h-[500px] relative">
+
+
+          {
+            filteredQuestions.map((q, i) => {
+              // 1. Define these variables first at the top of the map
+              const selectedAnswer = answers[q.id];
+              const isCorrect = selectedAnswer === q.correct_answer;
+              const showFeedback = feedbackShown[q.id]; // This fixes the Uncaught ReferenceError
+
+              // 2. If it's not the current question, don't render anything
+              if (i !== currentQuestionIndex) return null;
+
+              // 3. Now check the Lock logic
+              const isLocked = !isPremium && i >= 20;
+
+              if (isLocked) {
+                return (
+                  <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16 bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-xl text-center">
+                    <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-6">
+                      <Sparkles className="w-10 h-10 text-amber-600 dark:text-amber-400 animate-pulse" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                      Unit Limit Reached
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-sm">
+                      You've mastered the first 20 questions! To access the remaining <b>{questions.length - 20} questions</b> in this unit and unlock full clinical rationales, upgrade to a Pro plan.
+                    </p>
+
+                    <button
+                      onClick={() => navigate("/subscription")} // Smooth internal navigation
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-10 rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2 group"
+                    >
+                      <span>Access Full Unit Content</span>
+                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={q.id} className="relative flex flex-col gap-0 w-full rounded-lg overflow-hidden">
+                  {/* ... the rest of your original code ... */}
+                  {/* Question Card */}
+                  <div
+                    className={cn(
+                      "flex-1 px-4 py-2 transition-all duration-300 border-0", // Base: added border-2
+                      "shadow-sm rounded-xl", // Modern "App" feel with larger rounded corners
+
+                      // STATUS: UNDERSTOOD (Clinical Green Outline)
+                      understood[q.id]
+                        ? "border-emerald-500 bg-emerald-50/30 dark:border-emerald-500/50 dark:bg-emerald-500/5"
+
+                        // STATUS: NOT UNDERSTOOD (Observation Red Outline)
+                        : notUnderstood[q.id]
+                          ? "border-rose-500 bg-rose-50/30 dark:border-rose-500/50 dark:bg-rose-500/5"
+
+                          // STATUS: DEFAULT (Neutral Slate Outline)
+                          : "border-slate-100 bg-white dark:border-slate-800 dark:bg-gray-900",
+
+                      "text-slate-900 dark:text-slate-100"
+                    )}>
+
+                    <div className="min-h-[70px] flex items-start">
+                      <p className="font-bold mb-2 leading-relaxed">
+                        Q{i + 1}: {q.question_text}
+                      </p>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      {["A", "B", "C", "D"].map((letter) => {
+                        const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
+                        const isSelected = selectedAnswer === letter;
+                        const correct = q.correct_answer === letter;
+                        return (
                           <button
-                            onClick={() => setHelpMeOverlayOpen(false)}
-                            className="
-    relative group
-    w-8 h-8 flex items-center justify-center
-    rounded-md
-    bg-gray-300 dark:bg-gray-700
-    text-gray-700 dark:text-gray-300
-    transition
-    hover:bg-gray-400 dark:hover:bg-gray-600
-  " >
-                            <X className="w-4 h-4" />
+                            key={letter}
+                            className={`w-full text-left px-4 py-3 rounded-none sm:rounded-md font-semibold
+border-l-4 transition-all duration-150
 
-                            {/* Tooltip above */}
-                            <span
-                              className="
-      absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-      opacity-0 group-hover:opacity-100
-      pointer-events-none
-      bg-gray-900 text-white text-[10px]
-      px-2 py-1 rounded-md whitespace-nowrap
-      transition
-      shadow-lg z-50
-    "
-                            >
-                              Close
-                            </span>
-                          </button>
-                        </div>
-                        {/* Help Me Overlay */}
-                        {helpMeOverlayOpen && (
-                          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2">
-                            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-none sm:rounded-md shadow-lg p-4 flex flex-col space-y-3 h-[90vh] overflow-auto">
+${selectedAnswer
+                                ? correct
+                                  ? "bg-transparent border-l-blue-500 text-black dark:text-white"
+                                  : "bg-transparent border-l-gray-400 text-black dark:text-white"
+                                : "bg-transparent border-l-gray-200 dark:border-l-gray-700 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                              }
 
-                              {/* Header */}
-                              <div className="flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                                  Helpers Available
-                                </h2>
-                                <button
-                                  onClick={() => setHelpMeOverlayOpen(false)}
-                                  className="relative group w-8 h-8 flex items-center justify-center rounded-md bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 transition hover:bg-gray-400 dark:hover:bg-gray-600"
-                                >
-                                  <X className="w-4 h-4" />
-                                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap transition shadow-lg z-50">
-                                    Close
-                                  </span>
-                                </button>
-                              </div>
+${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
+                            onClick={async () => {
+                              if (!!selectedAnswer || quizFinished) return;
+                              //  PLAY SOUND IMMEDIATELY
+                              if (!isMuted) {
+                                playSound(q.correct_answer === letter ? "tap-correct" : "tap-wrong");
+                              }
+                              const correct = q.correct_answer === letter;
+                              //  SHOW REASON BOX IMMEDIATELY (NO DELAY)
+                              if (!correct) {
+                                setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
+                              }
+                              //  VIBRATION
+                              if (navigator.vibrate) {
+                                if (correct) {
+                                  navigator.vibrate(50); // short for correct
+                                } else {
+                                  navigator.vibrate([100, 50, 100]); // stronger for wrong
+                                }
+                              }
+                              // 1️ TIME TAKEN
+                              const endTime = Date.now();
+                              const timeTaken = (endTime - questionStartTime) / 1000;
 
-                              {/* ============================== Group Card ============================== */}
-                              <div className="flex items-center gap-3 p-3 border rounded-none sm:rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                <img
-                                  src="/UsersAvatar.jpg"
-                                  alt="Medrae Nursing Group"
-                                  className="w-10 h-10 rounded-md object-cover"
-                                />
-                                <div className="flex-1 text-sm">
-                                  <p className="font-semibold">Medrae Nursing Group</p>
-                                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                                    Join the group to request help
-                                  </p>
-                                </div>
-                                <div className="flex gap-1">
-                                  {/* Copy Question Button */}
-                                  <button
-                                    onClick={() => {
-                                      const prefilledMessage = `Hi Group! Can anyone help me with this question? #Question  copied from Medrae Quizzes page\n\n${currentQuestionText}\n\nThanks!`;
-                                      navigator.clipboard.writeText(prefilledMessage);
-                                      alert(
-                                        "Question copied! Now open the group using the 'Join Group' button and paste your question."
-                                      );
-                                    }}
-                                    className="px-2 py-1 text-xs bg-yellow-500 text-white rounded-none sm:rounded-md hover:bg-yellow-600 transition"
-                                  >
-                                    Copy Question
-                                  </button>
+                              // 2️ CONFIDENCE LOGIC
+                              let confidence = "";
+                              let accuracy = 0;
+                              if (correct) {
+                                confidence = "High confidence";
+                                accuracy = 100;
+                              } else if (timeTaken <= 10) {
+                                confidence = "Overconfident";
+                                accuracy = Math.floor(Math.random() * 20);
+                              } else if (timeTaken <= 20) {
+                                confidence = "Medium confidence";
+                                accuracy = Math.floor(Math.random() * 30) + 50;
+                              } else {
+                                confidence = "Low confidence";
+                                accuracy = Math.floor(Math.random() * 30) + 20;
+                              }
 
-                                  {/* Join Group Button */}
-                                  <button
-                                    onClick={() => {
-                                      window.open("https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV", "_blank");
-                                    }}
-                                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded-none sm:rounded-md hover:bg-blue-600 transition"
-                                  >
-                                    Join Group
-                                  </button>
+                              // 3️ SAVE CONFIDENCE FOR THIS QUESTION
+                              setConfidenceLevels((prev) => {
+                                const updated = { ...prev, [q.id]: confidence };
+                                localStorage.setItem("confidenceLevels", JSON.stringify(updated));
+                                return updated;
+                              });
 
+                              // 4️ ORIGINAL ANSWER LOGIC
+                              handleAnswer(q.id, letter);
 
-                                </div>
-                              </div>
-                              {/* ============================== Pinned Contact Card ============================== */}
-                              <div className="flex items-center gap-3 p-3 border rounded-none sm:rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition mt-2">
-                                <img
-                                  src="/UsersAvatar.jpg"
-                                  alt="Medrae Assistance"
-                                  className="w-10 h-10 rounded-md object-cover"
-                                />
-                                <div className="flex-1 text-sm">
-                                  <p className="font-semibold">Medrae Assistance</p>
-                                  <p className="text-xs text-gray-600 dark:text-gray-400">0704473503</p>
-                                </div>
-                                {/* Message Button */}
-                                <button
-                                  onClick={() => {
-                                    const pinnedNumber = "254704473503"; // correct format
+                              //  LIVE ANSWER EVENT (for floating activity feed)
+                              if (!userId) return; // userId from const userId = session?.user?.id;
 
-                                    const message = encodeURIComponent(
-                                      `Hi Medrae! Kindly Help me with this question? #Question copied from Medrae Quizzes page:\n\n${currentQuestionText}`
+                              try {
+                                await supabase.from("live_answer_events").insert({
+                                  user_id: userId,
+                                  question_id: q.id,
+                                  event_type: correct ? "answered_correct" : "answered_wrong",
+                                  is_correct: correct,
+                                  streak_count: null,
+                                  points: correct ? 1 : 0,
+                                });
+                              } catch (err) {
+                                console.error("Error inserting live event:", err);
+                              }
+
+                              // 5️ RECORD MISTAKE IF WRONG
+                              if (!correct) {
+                                //  SHOW REASON BOX IMMEDIATELY (NO WAIT)
+                                setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
+
+                                //  SAVE TO SUPABASE IN BACKGROUND (PRESERVES TAGGING)
+                                if (!userId) return; // userId from session
+
+                                (async () => {
+                                  try {
+                                    // Upsert first attempt
+                                    await supabase.from("user_mistakes").upsert(
+                                      {
+                                        user_id: userId,
+                                        question_id: q.id,
+                                        quiz_id: q.quiz_id,
+                                        last_wrong_at: new Date(),
+                                        times_wrong: 1,
+                                        user_selected: letter,
+                                      },
+                                      { onConflict: "user_id,question_id" }
                                     );
-                                    window.open(`https://wa.me/${pinnedNumber}?text=${message}`, "_blank");
 
-                                  }}
-                                  className="px-2 py-1 text-xs bg-green-500 text-white rounded-none sm:rounded-md hover:bg-green-600 transition"
-                                >
-                                  Message
-                                </button>
+                                    // Increment times_wrong using RPC
+                                    await supabase.rpc("increment_mistake", {
+                                      user_uuid: userId,
+                                      question_uuid: q.id,
+                                      selected_option: letter,
+                                    });
+
+                                  } catch (error) {
+                                    console.error("Error recording mistake:", error);
+                                  }
+                                })();
+                              }
+                            }}
+                          >
+                            <div
+                              className={`
+    flex justify-between items-center p-2.5 px-3.5 rounded-lg border transition-all duration-200
+    ${!selectedAnswer
+                                  ? "border-0 bg-white hover:border-blue-400  dark:bg-slate-800 dark:hover:border-blue-500"
+                                  : "border-0 bg-white dark:bg-slate-800" // Keep background neutral after selection
+                                }
+    ${selectedAnswer && q.correct_answer !== letter && selectedAnswer !== letter ? "opacity-50" : "opacity-100"}
+  `}
+                            >
+                              <div className="flex items-center gap-3">
+                                {/* HIGHLIGHTED LETTER BOX - The main visual indicator */}
+                                <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-md border transition-colors duration-300 ${selectedAnswer && q.correct_answer === letter
+                                  ? "bg-emerald-500 border-0 text-white" // Correct answer (always show green)
+                                  : selectedAnswer === letter && q.correct_answer !== letter
+                                    ? "bg-rose-500 border-0 text-white" // User's wrong pick (show red)
+                                    : "bg-slate-100 dark:bg-slate-700 border-0 text-slate-500 dark:text-slate-400"
+                                  }`}>
+                                  {letter}
+                                </span>
+
+                                {/* Option Text - Stays clean/neutral */}
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                  {optionText}
+                                </span>
                               </div>
-                              {/* ============================== Helpers List ============================== */}
-                              <div className="flex flex-col gap-2 max-h-[70vh] overflow-y-auto mt-2">
-                                {helpMeHelpers.length > 0 ? (
-                                  helpMeHelpers.map((helper) => (
-                                    <div
-                                      key={helper.id}
-                                      className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-2 border rounded-none sm:rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                                    >
-                                      {/* Avatar */}
-                                      <img
-                                        src={helper.profiles.avatar_url || "/UsersAvatar.jpg"}
-                                        alt={helper.profiles.name}
-                                        className="w-10 h-10 rounded-none sm:rounded-md-full object-cover"
-                                      />
-                                      {/* Name and number */}
-                                      <div className="flex-1 text-sm">
-                                        <p className="font-semibold">{helper.profiles.name}</p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">{helper.whatsapp}</p>
-                                      </div>
-                                      {/* WhatsApp button */}
-                                      <button
-                                        onClick={() => {
-                                          const message = encodeURIComponent(
-                                            `Hi! Can you help me with this question?\n\n${currentQuestionText}\n\nThanks!`
-                                          );
-                                          window.open(`https://wa.me/${helper.whatsapp}?text=${message}`, "_blank");
-                                        }}
-                                        className="px-2 py-1 text-xs bg-green-500 text-white rounded-none sm:rounded-md hover:bg-green-600 transition"
-                                      >
-                                        Message
-                                      </button>
+
+                              {/* FEEDBACK AT THE END */}
+                              <div className="flex items-center ml-4">
+                                {selectedAnswer && (
+                                  q.correct_answer === letter ? (
+                                    <div className="flex items-center gap-1.5 animate-[pop_0.3s_ease-out]">
+                                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Correct</span>
+                                      <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                     </div>
-                                  ))
-                                ) : (
-                                  <div className="p-4 text-center text-sm text-gray-700 dark:text-gray-300">
-                                    No individual helpers yet. You can use the group above to request help.
-                                  </div>
+                                  ) : selectedAnswer === letter ? (
+                                    <div className="flex items-center gap-1.5 animate-[shake_0.4s_ease-in-out]">
+                                      <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-tight">Wrong</span>
+                                      <X className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+                                    </div>
+                                  ) : null
                                 )}
                               </div>
-
                             </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* --- START OF IMPROVED BLOCK --- */}
+                    <div className="mt-1 flex flex-wrap items-center justify-between w-full gap-3 border-0 pt-4">
+
+                      {/* Left Side: Help Buttons */}
+                      <div className="flex items-center gap-2 w-full">
+
+                        {/* --- CLINICAL RATIONALE (EXPLANATION) --- */}
+                        <button
+                          onClick={() => setOpenExplanationFor(q.id)}
+                          disabled={!showFeedback}
+                          className={`relative flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
+    ${showFeedback
+                              ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:border-cyan-200 dark:hover:border-cyan-800"
+                              : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 opacity-50 cursor-not-allowed"
+                            }`}
+                        >
+                          <BookOpen className={`w-4 h-4 transition-colors ${showFeedback ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400"}`} />
+
+                          <span className={`text-[11px] font-bold uppercase tracking-[0.1em] ${showFeedback ? "text-slate-700 dark:text-slate-300 group-hover:text-cyan-700 dark:group-hover:text-cyan-300" : "text-slate-400"}`}>
+                            Clinical Rationale
+                          </span>
+
+                          {/* TOOLTIP */}
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3
+    opacity-0 group-hover:opacity-100
+    pointer-events-none
+    bg-slate-900 text-white text-[9px]
+    px-2 py-1 rounded-md whitespace-nowrap
+    transition-all shadow-xl z-[9999] border border-slate-700 uppercase tracking-tighter">
+                            {showFeedback ? "View scientific breakdown" : "Complete quiz to unlock insight"}
+                          </span>
+                        </button>
+
+
+                        {/* --- AI CONSULTATION (AI ASSISTANCE) --- */}
+                        <button
+                          onClick={() => {
+                            const optionsText = ["A", "B", "C", "D"]
+                              .map(letter => `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`)
+                              .join("\n");
+                            const fullText = `Let's discuss this question:\nQuestion: ${q.question_text}\nOptions:\n${optionsText}\nUser Answer: ${answers[q.id] || "No answer selected"}`;
+
+                            setAIPrefillQuestion(fullText);
+                            setAIOverlayOpen(true);
+                          }}
+                          className="relative flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all duration-300 group hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:border-purple-800 shadow-sm active:scale-95"
+                        >
+                          <Sparkles className="w-4 h-4 text-purple-500 dark:text-purple-400 group-hover:animate-spin-slow transition-transform" />
+
+                          <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300 group-hover:text-purple-700 dark:group-hover:text-purple-300">
+                            AI Consultation
+                          </span>
+
+                          {/* TOOLTIP */}
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3
+    opacity-0 group-hover:opacity-100
+    pointer-events-none
+    bg-slate-900 text-white text-[9px]
+    px-2 py-1 rounded-md whitespace-nowrap
+    transition-all shadow-xl z-[9999] border border-slate-700 uppercase tracking-tighter">
+                            Initiate Virtual MD analysis
+                          </span>
+                        </button>
+                        {/* Mute Toggle */}
+                        <button
+                          onClick={toggleMute}
+                          className={`ml-auto relative flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
+    ${isMuted
+                              ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
+                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800"}
+  `}
+                        >
+                          {/* Dynamic Icon with Clinical Styling */}
+                          <div className="relative">
+                            {isMuted ? (
+                              <VolumeX className="w-4 h-4 text-slate-400 dark:text-slate-500 transition-colors" />
+                            ) : (
+                              <>
+                                <Volume2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                                {/* Subtle animation ring for "Active" sound */}
+                                <span className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-20" />
+                              </>
+                            )}
                           </div>
-                        )}
 
+                          <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300">
+                            {isMuted ? "Audio Muted" : "Monitor Active"}
+                          </span>
 
+                          {/* PROFESSIONAL TOOLTIP */}
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3
+    opacity-0 group-hover:opacity-100
+    pointer-events-none
+    bg-slate-900 text-white text-[9px]
+    px-2 py-1 rounded-md whitespace-nowrap
+    transition-all shadow-xl z-[9999] border border-slate-700 uppercase tracking-tighter">
+                            {isMuted ? "Enable system telemetry sounds" : "Silence audio monitoring"}
+                          </span>
+                        </button>
+
+                      </div>
+
+                      {/* Right Side: System Buttons */}
+                      <div className="flex items-center gap-2 w-full">
+                        {/* Reset Quiz button */}
+                        <button
+                          onClick={handleReset}
+                          disabled={resetting}
+                          className={`relative flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 group shadow-sm
+    ${resetting
+                              ? "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-70 cursor-not-allowed"
+                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 active:scale-95"}
+  `}
+                        >
+                          {resetting ? (
+                            // 🔄 REFINED SPINNER
+                            <svg
+                              className="animate-spin h-4 w-4 text-slate-500"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                            </svg>
+                          ) : (
+                            <RotateCcw className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:rotate-[-180deg] transition-transform duration-500" />
+                          )}
+
+                          <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300">
+                            {resetting ? "Resetting Session..." : "Reset & Restart"}
+                          </span>
+
+                          {/* MEDICAL STYLE TOOLTIP */}
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3
+    opacity-0 group-hover:opacity-100
+    pointer-events-none
+    bg-slate-900 text-white text-[9px]
+    px-2 py-1 rounded-md whitespace-nowrap
+    transition-all shadow-xl z-[9999] border border-slate-700 uppercase tracking-tighter">
+                            {resetting ? "Purging current progress..." : "Wipe progress and start over"}
+                          </span>
+                        </button>
+                        <button
+                          onClick={handleResetTimer}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-800/50 active:scale-95 transition-all group shadow-sm"
+                        >
+                          <TimerReset className="w-4 h-4 text-green-600 dark:text-green-300 group-hover:rotate-[-45deg] transition-transform duration-300" />
+
+                          <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-green-700 dark:text-green-300">
+                            Reset Timer
+                          </span>
+
+                          {/* Optional: Subtle Tooltip kept for extra clarity */}
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3
+    opacity-0 group-hover:opacity-100
+    pointer-events-none
+    bg-slate-900 text-white text-[9px]
+    px-2 py-1 rounded-xl whitespace-nowrap
+    transition-all shadow-xl z-[9999] border border-slate-700">
+                            Restart Session Clock
+                          </span>
+                        </button>
+                        {/* Report Button */}
+                        <button
+                          onClick={() => handleReportQuestion(q)}
+                          className="ml-auto relative flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all duration-300 group hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-800 shadow-sm active:scale-95"
+                        >
+                          {/* Warning Icon with a subtle shake animation on hover */}
+                          <AlertCircle className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors group-hover:animate-pulse" />
+
+                          <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-600 dark:text-slate-400 group-hover:text-red-700 dark:group-hover:text-red-400">
+                            Flag Anomaly
+                          </span>
+
+                          {/* TOOLTIP: Explains the clinical purpose */}
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3
+    opacity-0 group-hover:opacity-100
+    pointer-events-none
+    bg-slate-900 text-white text-[9px]
+    px-2 py-1 rounded-md whitespace-nowrap
+    transition-all shadow-xl z-[9999] border border-slate-700 uppercase tracking-tighter">
+                            Report content discrepancy
+                          </span>
+                        </button>
 
 
                       </div>
                     </div>
-                  )}
+                    {/* --- END OF IMPROVED BLOCK --- */}
+
+
+                    <div className="mt-2 flex flex-col items-center gap-3 w-full">
+                      {/* Progress Indicator (Subtle professional touch) */}
+                      <span className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        Question {currentQuestionIndex + 1} of {filteredQuestions.length}
+                      </span>
+
+                      <div className="flex items-center justify-center gap-3 w-full">
+                        {/* PREV BUTTON */}
+                        <button
+                          onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                          disabled={currentQuestionIndex === 0}
+                          className="inline-flex items-center justify-center gap-2 px-6 h-11 rounded-xl
+        border border-gray-200 bg-white text-gray-700
+        dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200
+        hover:bg-gray-50 dark:hover:bg-gray-800
+        active:bg-gray-100 dark:active:bg-gray-700
+        transition-all duration-200 font-semibold shadow-sm
+        disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        >
+                          <ChevronLeft size={18} />
+                          <span>Previous</span>
+                        </button>
+
+
+
+                        {/* --- NEW DYNAMIC NEXT/UNLOCK BUTTON --- */}
+                        <button
+                          onClick={() => {
+                            // If user is at question 20 (index 19) and is NOT premium, send to subscription
+                            if (!isPremium && currentQuestionIndex === 19) {
+                              navigate("/subscription");
+                            } else {
+                              // Otherwise, normal next question logic
+                              setCurrentQuestionIndex(prev =>
+                                prev < filteredQuestions.length - 1 ? prev + 1 : prev
+                              );
+                            }
+                          }}
+                          // We REMOVE the !isPremium check from disabled so the button remains clickable
+                          disabled={currentQuestionIndex === filteredQuestions.length - 1}
+                          className={cn(
+                            "inline-flex items-center justify-center gap-2 px-8 h-11 rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98]",
+                            // Change color to Gold/Amber if it's the "Unlock" state to make it stand out
+                            (!isPremium && currentQuestionIndex === 19)
+                              ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
+                              : "bg-indigo-600 hover:bg-indigo-700 text-white",
+                            "disabled:opacity-30 disabled:cursor-not-allowed"
+                          )}
+                        >
+                          <span>
+                            {(() => {
+                              if (!isPremium && currentQuestionIndex === 19) return "Unlock 100+ Questions";
+                              if (currentQuestionIndex === filteredQuestions.length - 1) return "Finish";
+                              return "Next";
+                            })()}
+                          </span>
+
+                          {/* Show a Sparkle icon if it's the unlock button, otherwise the Chevron */}
+                          {!isPremium && currentQuestionIndex === 19 ? (
+                            <Sparkles size={18} />
+                          ) : (
+                            <ChevronRight size={18} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <QuestionInsights
+                    confidenceLevel={confidenceLevels[q.id]}
+                    showReasonBox={showReasonBox[q.id]}
+                    selectedReason={selectedReason[q.id]}
+                    reasonOptions={reasonOptions}
+                    onReasonSelect={async (reason) => {
+                      setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
+                      setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
+
+                      if (!userId) return;
+
+                      try {
+                        const { error } = await supabase
+                          .from("user_mistakes")
+                          .update({ mistake_reason: reason })
+                          .eq("user_id", userId)
+                          .eq("question_id", q.id);
+
+                        if (error) throw error;
+                      } catch (err) {
+                        console.error("Error saving mistake reason:", err);
+                      }
+                    }}
+                  />
+
+
+                  <div className="w-full border-0 bg-transparent">
+                    <NotesEvaluationPanel
+                      q={q}
+                      userId={userId}
+                      notes={notes}
+                      setNotes={setNotes}
+                      understood={understood}
+                      setUnderstood={setUnderstood}
+                      notUnderstood={notUnderstood}
+                      setNotUnderstood={setNotUnderstood}
+                      attempts={attempts}
+                      setAttempts={setAttempts}
+                      saving={saving}
+                      setSaving={setSaving}
+                      saved={saved}
+                      setSaved={setSaved}
+                      helpOthersDisabled={helpOthersDisabled}
+                      setHelpOthersDisabled={setHelpOthersDisabled}
+                      setHelpMeHelpers={setHelpMeHelpers}
+                      setCurrentQuestionText={setCurrentQuestionText}
+                      setHelpMeOverlayOpen={setHelpMeOverlayOpen}
+                      saveNoteOffline={saveNoteOffline}
+                      saveAnswersOffline={saveAnswersOffline}
+                      supabase={supabase}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {!quizFinished && Object.keys(answers).length === questions.length && (
-        <button
-          onClick={() => handleSubmit(false)}
-          className="px-6 py-3 bg-blue-600 text-white font-bold rounded-none sm:rounded-md hover:bg-blue-700 transition mt-4"
-        >
-          Submit Quiz
-        </button>
-      )
-      }
-
-      {quizFinished && (
-        <>
-          <div className="mt-6 p-3 bg-green-100 dark:bg-green-900 rounded-none sm:rounded-md text-green-800 dark:text-green-200 font-semibold">
-            Well done! You answered {finalScore} out of {questions.length} questions correctly.
-            Keep practicing to strengthen your understanding and improve your score.
-          </div>
-
-          <button
-            onClick={() => {
-              // 🔊 Play tap sound
-              playSound("tap");
-
-              // 📳 Strong vibration (200ms)
-              if (navigator.vibrate) {
-                navigator.vibrate(200);
-              }
-              alert(
-                ` Amazing effort! You scored ${finalScore} out of ${questions.length} questions.\n\n` +
-                (finalScore === questions.length
-                  ? " Perfect score! You’ve shown outstanding focus and knowledge. Keep this energy going — you’re clearly on the path to mastery!"
-                  : finalScore > questions.length / 2
-                    ? " Well done! That’s a strong performance above average. Each quiz is another step forward, and your hard work is paying off. Keep sharpening your mind — you’re capable of even greater results!"
-                    : " Don’t be discouraged! Every great achiever starts somewhere, and each question you attempt makes you stronger. This score is a foundation, not a finish line. Stay consistent, keep practicing, and you’ll surprise yourself with how far you can go!")
-                + "\n\n Remember: progress is about growth, not perfection. The fact that you showed up and tried already puts you ahead. Keep pushing — your future self will thank you! "
               );
-            }}
-            className="mt-4 px-6 py-3 bg-indigo-600 text-white font-bold rounded-none sm:rounded-md-lg shadow-md hover:bg-indigo-700 transition"
-          >
-            View Your Result
-          </button>
-
-        </>
-      )
-      }
-
-      {
-        attempts.length > 0 && (
-          <div className="mt-10">
-            <h2 className="text-lg font-bold mb-2">Past Attempts</h2>
-            <ul className="space-y-2 text-sm text-gray-800">
-              {attempts.map((attempt) => (
-                <li
-                  key={attempt.id}
-                  className="p-2 border rounded-none sm:rounded-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-black dark:text-white"
-                >
-                  Your attempt on {new Date(attempt.submitted_at).toLocaleString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  })} has been recorded. You scored {attempt.score} points for this checkpoint.
-                </li>
-
-              ))}
-            </ul>
-          </div>
-        )
-      }
-      <OverlayAI
-        isOpen={isAIOverlayOpen}
-        onClose={() => setAIOverlayOpen(false)}
-        prefillQuestion={aiPrefillQuestion}
-        isDarkTheme={isDarkMode} // Pass theme flag
-      />
-
-      {
-        showScrollTop && (
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className={`fixed bottom-6 right-6 p-3 rounded-none sm:rounded-md-full shadow-lg hover:scale-110 transition-transform
+            })
+          }
+        </div>
+        <ExplanationOverlay
+          open={!!openExplanationFor}
+          onClose={() => setOpenExplanationFor(null)}
+          isCorrect={
+            questions.find(q => q.id === openExplanationFor)?.correct_answer ===
+            answers[openExplanationFor || ""]
+          }
+          correctAnswer={
+            questions.find(q => q.id === openExplanationFor)?.correct_answer
+          }
+          explanation={
+            questions.find(q => q.id === openExplanationFor)?.explanation
+          }
+          additional={
+            questions.find(q => q.id === openExplanationFor)?.additional
+          }
+        />
+        <HelpMeOverlay
+          helpMeOverlayOpen={helpMeOverlayOpen}
+          setHelpMeOverlayOpen={setHelpMeOverlayOpen}
+          helpMeHelpers={helpMeHelpers}
+          currentQuestionText={currentQuestionText}
+        />
+        <SubmitQuizButton
+          quizFinished={quizFinished}
+          answers={answers}
+          questions={questions}
+          handleSubmit={handleSubmit}
+        />
+        <QuizResultsPanel
+          quizFinished={quizFinished}
+          finalScore={finalScore}
+          questions={questions}
+          attempts={attempts}
+          playSound={playSound}
+        />
+        <OverlayAI
+          isOpen={isAIOverlayOpen}
+          onClose={() => setAIOverlayOpen(false)}
+          prefillQuestion={aiPrefillQuestion}
+          isDarkTheme={isDarkMode} // Pass theme flag
+        />
+        {
+          showScrollTop && (
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className={`fixed bottom-6 right-6 p-3 rounded-none sm:rounded-md-full shadow-lg hover:scale-110 transition-transform
       ${isDarkMode ? "bg-white text-gray-900" : "bg-gray-900 text-white"}`}
-            aria-label="Scroll to top"
-          >
-            <ArrowUp size={20} strokeWidth={2} />
-          </button>
-        )
-      }
-      {
-        userId && (
-          <FloatingChat currentUserId={userId} isOpen={false} />
-        )
-      }
+              aria-label="Scroll to top"
+            >
+              <ArrowUp size={20} strokeWidth={2} />
+            </button>
+          )
+        }
 
+      </div>
     </div >
   );
 }

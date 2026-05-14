@@ -4,27 +4,17 @@ import { TermsButton } from "@/components/ui/TermsButton";
 import { useWindowSize } from "react-use";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, X, Volume2, VolumeX, RotateCcw, Eraser, Trophy, RefreshCcw, ArrowUp, Upload, Star, Heart, MessageCircle, Reply, ThumbsUp, ThumbsDown } from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip"; // added
+import FeedMediaPanel from "@/components/Feed/FeedMediaPanel";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import CommentsModal from "@/components/Feed/CommentsModal";
+import FeedControls from "@/components/Feed/FeedControls";
 import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
 import { MicroCaseCard } from "@/components/MicroCaseCard";
-import { Input } from "@/components/ui/input";
-import { GlobalLoader } from "@/components/GlobalLoader"; // adjust path if needed
+import ShareButtonsGroup from "@/components/Share/ShareButtonsGroup";
 import confetti from "canvas-confetti";
 const safeParse = (key, fallback) => {
   try {
@@ -36,7 +26,7 @@ const safeParse = (key, fallback) => {
 
 // Skeleton loader
 const SkeletonCard = () => (
-  <div className="animate-pulse border rounded-xl p-4 bg-muted/20">
+  <div className="animate-pulse border-0 rounded-xl p-4 bg-muted/20">
     {/* FIXED HEIGHT CARD – NEVER JUMPS */}
     <div className="h-[260px] w-full flex flex-col justify-between">
 
@@ -92,7 +82,7 @@ export default function Feed() {
 
   const { width, height } = useWindowSize();
   const overlayRef = useRef<HTMLDivElement>(null);
-
+  const [knowledgeData, setKnowledgeData] = useState<any[]>([]);
   const [activeQuestion, setActiveQuestion] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
@@ -162,42 +152,51 @@ export default function Feed() {
     setViewerOpen(false);
     setTimeout(() => setActiveImage(null), 300); // smooth exit
   };
+
+  const uploadToCloudinary = async (file) => {
+    const cloudName = "dpj5vprwf"; // 👈 CHANGE THIS
+    const uploadPreset = "js1gxxdv"; // 👈 CHANGE THIS (The Unsigned one)
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body: formData }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error.message);
+    }
+
+    const data = await response.json();
+    return data.secure_url; // This is the URL we need
+  };
   const handleImageUpload = async () => {
     if (!uploadFiles || uploadFiles.length === 0 || !user)
       return alert("Select one or more images first.");
 
     setUploading(true);
-    uploadControllers.current = []; // reset previous controllers
+    // Keep your controller logic if you use it for the UI state
+    uploadControllers.current = [];
 
     try {
       const uploadedImages = [];
 
       for (const file of uploadFiles) {
-        const controller = new AbortController();
-        uploadControllers.current.push(controller); // store controller
+        // 1️⃣ UPLOAD TO CLOUDINARY (Replacing Supabase Storage)
+        // We get the direct URL back immediately
+        const cloudinaryUrl = await uploadToCloudinary(file);
 
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        // 1️⃣ Upload to storage with signal for cancellation
-        const { error: uploadError } = await supabase.storage
-          .from("qfeed-images")
-          .upload(filePath, file, { signal: controller.signal });
-
-        if (uploadError) throw uploadError;
-
-        // 2️⃣ Get public URL
-        const { data: publicUrlData } = supabase.storage
-          .from("qfeed-images")
-          .getPublicUrl(filePath);
-
-        // 3️⃣ Insert record into database
+        // 2️⃣ INSERT RECORD INTO DATABASE
+        // We use the same table, but save the Cloudinary URL
         const { error: insertError, data: insertedData } = await supabase
           .from("qfeed_images")
           .insert({
-            image_url: publicUrlData.publicUrl,
-            storage_path: filePath,
+            image_url: cloudinaryUrl, // 👈 Saved Cloudinary URL
+            storage_path: "cloudinary", // 👈 We can just put a placeholder here now
             added_by: user.id,
           })
           .select()
@@ -208,16 +207,13 @@ export default function Feed() {
         uploadedImages.push(insertedData);
       }
 
+      // Keep your existing state updates so the UI reflects the new post
       setFeedImages((prev) => [...uploadedImages, ...prev]);
       setUploadFiles([]);
-      alert("Images uploaded! Thank you for your contribution.");
+      alert("Images uploaded via Cloudinary! Bandwidth saved.");
     } catch (err: any) {
-      if (err.name === "AbortError") {
-        alert("Upload cancelled by user.");
-      } else {
-        console.error("Upload failed:", err);
-        alert("Some uploads may have failed. Please try again.");
-      }
+      console.error("Upload failed:", err);
+      alert(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
       uploadControllers.current = [];
@@ -225,8 +221,22 @@ export default function Feed() {
   };
 
 
+  const fetchKnowledge = async () => {
+    const { data, error } = await supabase
+      .from('qfeed_knowledge')
+      .select('*, profiles(name, avatar_url)')
+      .order('created_at', { ascending: false });
 
+    if (!error && data) {
+      setKnowledgeData(data);
+    }
+  };
 
+  // Make sure this runs when the page loads
+  useEffect(() => {
+    fetchKnowledge();
+    // ... your other fetch functions
+  }, []);
   const handleDeleteImage = async (img) => {
     if (!confirm("Are you sure you want to delete this image?")) return;
 
@@ -269,10 +279,6 @@ export default function Feed() {
     if (navigator.vibrate) navigator.vibrate(50); // 50ms vibration
   };
 
-
-  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
-  const [leaderboard, setLeaderboard] = useState([]);
-
   const [user, setUser] = useState(null);
   const [questionCount, setQuestionCount] = useState(0);
 
@@ -293,7 +299,7 @@ export default function Feed() {
 
         if (count !== null) {
           setQuestionCount(count);
-          localStorage.setItem(`feed_count_${user.id}`, count);
+          localStorage.setItem(`feed_count_${user.id}`, count.toString());
         }
       } catch (err) {
         console.error("❌ Failed loading question count:", err);
@@ -490,52 +496,6 @@ export default function Feed() {
   }, []);
 
 
-  //  Sync answered questions to qfeed_seen whenever answers change
-  useEffect(() => {
-    if (!user) return;
-    const answeredIds = Object.keys(answers);
-    if (answeredIds.length === 0) return;
-
-    const syncSeen = async () => {
-      try {
-        await supabase
-          .from("qfeed_seen")
-          .upsert(
-            answeredIds.map((id) => ({
-              question_id: id,
-              user_id: user.id,
-            })),
-            { onConflict: "question_id,user_id" }
-          );
-      } catch (err) {
-        console.error(" Failed syncing to qfeed_seen:", err);
-      }
-    };
-
-    syncSeen();
-  }, [user, answers]);
-
-  // On page unload, mark all answered questions as seen in DB
-  useEffect(() => {
-    const handleBeforeUnload = async () => {
-      if (!user) return;
-      const answeredIds = Object.keys(answers);
-      if (answeredIds.length === 0) return;
-
-      for (const id of answeredIds) {
-        await supabase
-          .from("qfeed_seen")
-          .upsert(
-            { question_id: id, user_id: user.id },
-            { onConflict: "question_id,user_id" }
-          );
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [user, answers]);
-
 
   // Replace fetchQuestions
   const fetchQuestions = async (page = 0, limit = 25) => {
@@ -686,64 +646,77 @@ export default function Feed() {
   };
   // Answer a question - now removes it completely
   const handleAnswer = async (q, option) => {
+    // 1. Prevent double-answering
     if (answers[q.id]) return;
 
     const isCorrect = q.correct_answer === option;
-    const newAnswers = { ...answers, [q.id]: option };
 
-    // ✅ Update streaks (logic only)
+    // 2. Play Sound (Only if NOT muted)
+    if (!isMuted) {
+      playSound(isCorrect ? "tap-correct" : "tap-wrong", false);
+    }
+
+    // 3. Haptic Feedback (Vibration)
+    if (navigator.vibrate) {
+      isCorrect ? navigator.vibrate(50) : navigator.vibrate([100, 50, 100]);
+    }
+
+    // 4. Update UI State immediately
+    setAnswers((prev) => ({ ...prev, [q.id]: option }));
+
     if (isCorrect) {
       setCorrectStreak((prev) => prev + 1);
       setWrongStreak(0);
+      fireConfetti();
     } else {
       setWrongStreak((prev) => prev + 1);
       setCorrectStreak(0);
     }
 
-    // 🎉 Existing confetti logic (unchanged)
-    if (isCorrect) {
-      fireConfetti(); // 💥 spray effect
-    }
-
-    // Save answer locally
-    setAnswers(newAnswers);
-    // Save that the user answered this question
-    await supabase.from("qfeed_seen").insert({
+    // 5. SAVE TO DATABASE
+    // We use .upsert with onConflict to prevent the 400 "Bad Request" error.
+    // Note: Ensure you ran the SQL: ALTER TABLE qfeed_seen ADD CONSTRAINT qfeed_seen_user_question_unique UNIQUE (user_id, question_id);
+    await supabase.from("qfeed_seen").upsert({
       question_id: q.id,
       user_id: user.id,
       selected_option: option
-    });
-    // Fetch updated vote counts
-    const counts = await fetchVoteStats(q.id);
+    }, { onConflict: 'user_id,question_id' });
 
-    if (counts) {
-      setVoteStats((prev) => ({
-        ...prev,
-        [q.id]: counts
-      }));
-    }
-    // Increment count only the first time answering this question
-    // Increment count only the first time answering this question
+    // 6. Update Question Count
     setQuestionCount((prev) => {
       const newCount = prev + 1;
-      localStorage.setItem(`feed_count_${user.id}`, newCount);
+      localStorage.setItem(`feed_count_${user.id}`, newCount.toString());
       return newCount;
     });
 
-    // ✅ Fetch questions safely from localStorage
-    const freshData = JSON.parse(localStorage.getItem(`feed_questions_${user.id}`) || '[]');
+    // 7. Fetch updated vote counts for the bars
+    const counts = await fetchVoteStats(q.id);
+    if (counts) {
+      setVoteStats((prev) => ({ ...prev, [q.id]: counts }));
+    }
 
-    // ✅ Ensure it's an array before using .filter
-    const fresh = Array.isArray(freshData) ? freshData : [];
+    // 8. UPDATE LOCAL STORAGE CACHE
+    const storageKey = `feed_questions_${user.id}`;
+    const rawCache = localStorage.getItem(storageKey);
 
-    // ✅ Filter out answered questions
-    const unansweredFresh = fresh.filter(q => !newAnswers[q.id]); // use newAnswers, not old answers
+    if (rawCache) {
+      try {
+        const parsedCache = JSON.parse(rawCache);
 
-    // ✅ Save back to localStorage
-    localStorage.setItem(
-      `feed_questions_${user.id}`,
-      JSON.stringify(unansweredFresh)
-    );
+        // If cache is the object format: { questions: [...], lastSaved: ... }
+        if (parsedCache.questions) {
+          parsedCache.questions = parsedCache.questions.filter(item => item.id !== q.id);
+          localStorage.setItem(storageKey, JSON.stringify(parsedCache));
+        }
+        // If cache is just a flat array: [...]
+        else if (Array.isArray(parsedCache)) {
+          const filtered = parsedCache.filter(item => item.id !== q.id);
+          localStorage.setItem(storageKey, JSON.stringify(filtered));
+        }
+      } catch (err) {
+        console.error("Error updating local cache:", err);
+      }
+    }
   };
 
   const fetchVoteStats = async (questionId) => {
@@ -858,6 +831,7 @@ export default function Feed() {
   };
 
   // Add comment
+  // Add comment
   const addComment = async () => {
     if (!user || !newComment.trim()) return;
     try {
@@ -869,13 +843,21 @@ export default function Feed() {
           parent_id: replyTo,
           comment_text: newComment,
         })
-        .select()
+        // UPDATE THIS LINE BELOW:
+        .select(`
+        id,
+        comment_text,
+        created_at,
+        user_id,
+        parent_id,
+        profiles:user_id(name, avatar_url)
+      `)
         .single();
 
       setNewComment("");
       setReplyTo(null);
 
-      // Update question comment count immediately
+      // Update question comment count
       setQuestions((prev) =>
         prev.map((q) =>
           q.id === activeQuestion
@@ -884,9 +866,11 @@ export default function Feed() {
         )
       );
 
-      // Update comments state & localStorage per question
+      // Update comments state
       setComments((prev) => {
+        // Now 'inserted' includes the 'profiles' object!
         const updated = [...prev, { ...inserted, comment_likes: [] }];
+
         const savedComments = JSON.parse(
           localStorage.getItem(`feed_comments_${user.id}`) || "{}"
         );
@@ -898,7 +882,7 @@ export default function Feed() {
         return updated;
       });
     } catch (err) {
-      console.error(err);
+      console.error("Error adding comment:", err);
     }
   };
 
@@ -947,77 +931,9 @@ export default function Feed() {
     }
   };
 
-  // 🔝 Load leaderboard (top users)
-  const loadLeaderboard = async () => {
-    if (!user) return;
-
-    try {
-      // 1️⃣ Fetch all qfeed_seen entries
-      const { data: seenData, error: seenError } = await supabase
-        .from("qfeed_seen")
-        .select("user_id, question_id"); // no .group() here
-
-      if (seenError) throw seenError;
-
-      // 2️⃣ Count questions answered per user
-      const countsMap: Record<string, number> = {};
-      seenData.forEach((row) => {
-        countsMap[row.user_id] = (countsMap[row.user_id] || 0) + 1;
-      });
-
-      const countsArray = Object.entries(countsMap).map(([user_id, total]) => ({
-        user_id,
-        total,
-      }));
-
-      // 3️ Fetch profiles for these users
-      const userIds = countsArray.map((row) => row.user_id);
-
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("user_id, name, avatar_url")
-        .in("user_id", userIds); //  now matches column name
-
-
-      if (profilesError) throw profilesError;
-
-      // 4️Merge counts with profiles
-      let leaderboardData = countsArray
-        .map((row) => {
-          const profile = profilesData.find((p) => p.user_id === row.user_id);
-
-
-          return {
-            user_id: row.user_id,
-            name: profile?.name ?? "Unknown",
-            avatar: profile?.avatar_url ?? "/UsersAvatar.jpg",
-
-            total: row.total,
-          };
-        })
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 10);
-
-      // Ensure current user is visible even if not top 10
-      if (!leaderboardData.some((u) => u.user_id === user.id)) {
-        const myCount = countsMap[user.id] || 0;
-        const myProfile = profilesData.find((p) => p.user_id === user.id);
-        leaderboardData.push({
-          user_id: user.id,
-          name: myProfile?.name || "You",
-          avatar: myProfile?.avatar_url || "/UsersAvatar.jpg",
-          total: myCount,
-        });
-      }
-
-      setLeaderboard(leaderboardData);
-    } catch (err) {
-      console.error("Failed to load leaderboard:", err);
-    }
-  };
   return (
     <>
-      < PullToRefresh
+      <PullToRefresh
         onRefresh={() => {
           setPage(0);
           return fetchQuestions(0).then((fresh) => {
@@ -1037,8 +953,6 @@ export default function Feed() {
              h-[80vh] overflow-y-auto overflow-x-hidden
              custom-scrollbar  "
         >
-
-
           <AnimatePresence>
             {feedbackMessage && (
               <motion.div
@@ -1107,229 +1021,24 @@ export default function Feed() {
               </motion.div>
             )}
           </AnimatePresence>
-          {/*  Reload Feed + Leaderboard + Reset Section */}
-          <div className="flex flex-row flex-wrap justify-between items-center mt-0 gap-3">
-            {/* Left side: Question count + two buttons */}
-            <div className="flex flex-row flex-wrap items-center gap-3 w-full sm:w-auto">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                Questions Tried: {questionCount}
-              </span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    className="p-2 rounded-full active:scale-95 transition"
-                    variant="ghost"
-                    onClick={async () => {
-                      // ✅ Detailed confirmation message
-                      const confirmed = window.confirm(
-                        "Are you absolutely sure you want to reset all your seen images? " +
-                        "This action cannot be undone. Once reset, you will be able to see all " +
-                        "images you have viewed before, as if you are seeing them for the first time. " +
-                        "Your history of seen images will be completely cleared."
-                      );
-                      if (!confirmed) return; // Stop if user cancels
+          <FeedControls
+            questionCount={questionCount}
+            session={session}
+            supabase={supabase}
+            setFeedImages={setFeedImages}
+            setQuestions={setQuestions}
+            setAnswers={setAnswers}
+            setQuestionCount={setQuestionCount}
+            fetchQuestions={fetchQuestions}
+            user={user}
+            loading={loading}
+            setLoading={setLoading}
+            setPage={setPage}
+          />
 
-                      const userId = session?.user?.id;
-                      if (!userId) return;
-
-                      try {
-                        // Delete all seen images for this user
-                        await supabase.from("seen_images").delete().eq("user_id", userId);
-
-                        // Reload all images
-                        const { data: newImages, error } = await supabase
-                          .from("qfeed_images")
-                          .select("*")
-                          .order("created_at", { ascending: true });
-
-                        if (error) {
-                          console.error("Failed to reload images:", error);
-                          alert("Failed to reload images.");
-                          return;
-                        }
-
-                        setFeedImages(newImages);
-                        alert("Reset complete! You can now see all images again.");
-                      } catch (err) {
-                        console.error("Reset images failed:", err);
-                        alert("Failed to reset images. Check console for details.");
-                      }
-                    }}
-                  >
-                    <RotateCcw size={20} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Reset images</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/*  Reset My Seen Questions Button (mobile + desktop friendly) */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    className="p-2 rounded-full active:scale-95 transition"
-                    variant="ghost"
-                    onClick={async () => {
-                      // ✅ Ask for confirmation
-                      const confirmed = window.confirm(
-                        "Are you sure you want to reset? This will clear all your history and cannot be undone. You will see all previously attempted questions again."
-                      );
-                      if (!confirmed) return; // Stop if user cancels
-
-                      console.log("Starting reset...");
-                      const userId = session?.user?.id;
-                      if (!userId) {
-                        console.warn("No user found!");
-                        alert("Please log in first!");
-                        return;
-                      }
-
-                      try {
-                        // Delete all seen questions for this user
-                        const { error } = await supabase
-                          .from("qfeed_seen")
-                          .delete()
-                          .eq("user_id", userId);
-
-                        if (error) throw error;
-                        console.log("qfeed_seen cleared for user:", userId);
-
-                        // Clear local storage cache
-                        localStorage.removeItem(`feed_questions_${userId}`);
-                        localStorage.removeItem(`feed_answers_${userId}`);
-                        localStorage.removeItem(`feed_count_${userId}`);
-                        console.log("🧹 Local cache cleared.");
-
-                        // Reset state
-                        setQuestions([]);
-                        setAnswers({});
-                        setQuestionCount(0);
-                        alert("All seen questions have been reset!");
-                      } catch (err) {
-                        console.error("Reset failed:", err);
-                        alert("Failed to reset. Check console for details.");
-                      }
-                    }}
-                  >
-                    <Eraser size={20} />
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent>
-                  <p>Reset questions</p>
-                </TooltipContent>
-              </Tooltip>
-
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-
-                  <Button
-                    className="p-2 rounded-full  active:scale-95 transition"
-                    variant="ghost"
-
-                    onClick={async () => {
-                      if (navigator.vibrate) navigator.vibrate(50);
-
-                      if (user) {
-                        await loadLeaderboard();
-                        setLeaderboardOpen(true);
-                      }
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6 ">
-                      <path strokeLinecap="round" strokeLinejoin="round" fill="#ffd413" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0" />
-                    </svg>
-
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent>
-                  <p>Leaderboard</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Right side: Reload Feed button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    className="p-2 rounded-full active:scale-95 transition flex items-center gap-1"
-                    variant="ghost"
-                    onClick={async () => {
-                      if (navigator.vibrate) navigator.vibrate(50);
-
-                      if (!user) return alert("Login first!");
-
-                      setLoading(true); // start loading
-
-                      setPage(0);
-                      setQuestions([]);
-
-                      try {
-                        const fresh = await fetchQuestions(0, 50); // fetch 50 questions
-                        setQuestions(fresh);
-
-                        localStorage.setItem(
-                          `feed_questions_${user.id}`,
-                          JSON.stringify(fresh)
-                        );
-                      } catch (err) {
-                        console.error("Failed to reload feed:", err);
-                        alert("Failed to reload feed.");
-                      } finally {
-                        setLoading(false); // stop loading
-                      }
-                    }}
-                  >
-                    {loading ? (
-                      <span className="flex items-center gap-1">
-                        <svg
-                          className="animate-spin h-4 w-4 text-gray-700"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8v8H4z"
-                          />
-                        </svg>
-                        Loading...
-                      </span>
-                    ) : (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                        </svg>
-                        <span className="text-sm">Reload Feed</span>
-                      </>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-
-                <TooltipContent>
-                  <p>Reload feed</p>
-                </TooltipContent>
-              </Tooltip>
-
-
-            </div>
-
-
-          </div>
-
-          {questions.length === 0 &&
-            Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+          {loading && questions.length === 0 && (
+            Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
+          )}
 
           {questions.map((q, index) => {
             const liked = q.qfeed_likes?.some((l) => l.user_id === user?.id);
@@ -1352,7 +1061,7 @@ export default function Feed() {
                 ref={index === questions.length - 1 ? loaderRef : null}
 
               >
-                <Card className="relative bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900 border border-gray-300/60 dark:border-white/5 shadow-none rounded-xl overflow-visible transition-all">
+                <Card className="relative bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900 border-0 shadow-none rounded-xl overflow-visible transition-all">
 
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (
@@ -1543,7 +1252,6 @@ export default function Feed() {
                         {/* Like count */}
                         <span className="text-gray-700 dark:text-gray-300 font-semibold">{q.qfeed_likes?.length || 0}</span>
                       </Button>
-
                       {/* Comment Button with LiveChat SVG */}
                       <Button
                         variant="ghost"
@@ -1566,134 +1274,16 @@ export default function Feed() {
                         </span>
                         <span className="text-gray-700 dark:text-gray-300 font-semibold">{commentCount}</span>
                       </Button>
-
-
-
-                      {/* Share Button */}
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-2 bg-transparent hover:bg-transparent text-gray-800 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-200"
-
-                        onClick={() => {
-                          if (!user) {
-                            alert("Please log in to share!");
-                            return;
-                          }
-
-                          const siteLink = window.location.origin;
-                          const questionText = q.question_text;
-                          const correctAnswer = q.correct_answer;
-
-                          const prefilledMessage = encodeURIComponent(
-                            `Hey! Have you checked out this website? It has great questions for NCK, KMTC revision, and nursing. Here's one:\n\nQuestion: ${questionText}\nAnswer: ${correctAnswer}\n\nExplore more here: ${siteLink}`
-                          );
-
-                          // Open WhatsApp with prefilled message
-                          const whatsappURL = `https://wa.me/?text=${prefilledMessage}`;
-                          window.open(whatsappURL, "_blank");
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <svg
-                            role="img"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ width: "24px", height: "24px" }} // ✅ pixel control
-                          >
-                            <title>WhatsApp</title>
-                            <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                          </svg>
-                          <span className="hidden md:inline text-[10px]">WhatsApp</span>
-
-                          {/* smaller */}
-                        </div>
-
-                      </Button>
-                      {/* Facebook Share Button */}
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-2 bg-transparent hover:bg-transparent text-gray-800 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-200"
-                        onClick={() => {
-                          if (!user) {
-                            alert("Please log in to share!");
-                            return;
-                          }
-
-                          const siteLink = window.location.origin;
-                          const questionText = q.question_text;
-                          const correctAnswer = q.correct_answer;
-
-                          // Facebook share link prefilled with text via query params
-                          const facebookURL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                            siteLink
-                          )}&quote=${encodeURIComponent(
-                            `Hey! Check out this question:\n\nQuestion: ${questionText}\nAnswer: ${correctAnswer}`
-                          )}`;
-
-                          window.open(facebookURL, "_blank");
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <svg
-                            role="img"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ width: "24px", height: "24px" }}
-                          >
-                            <title>Facebook</title>
-                            <path
-                              fill="#1877F2"
-                              d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"
-                            />
-                          </svg>
-                          <span className="hidden md:inline text-[10px]">Facebook</span> {/* smaller text */}
-                        </div>
-                      </Button>
-                      {/* Telegram Share Button */}
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-2 bg-transparent hover:bg-transparent text-gray-800 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-200"
-                        onClick={() => {
-                          if (!user) {
-                            alert("Please log in to share!");
-                            return;
-                          }
-
-                          const siteLink = window.location.origin;
-                          const questionText = q.question_text;
-                          const correctAnswer = q.correct_answer;
-
-                          // Telegram share link with prefilled message
-                          const telegramURL = `https://t.me/share/url?url=${encodeURIComponent(
-                            siteLink
-                          )}&text=${encodeURIComponent(
-                            `Hey! Check out this question:\n\nQuestion: ${questionText}\nAnswer: ${correctAnswer}`
-                          )}`;
-
-                          window.open(telegramURL, "_blank");
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          {/* Telegram Icon */}
-                          <svg
-                            role="img"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ width: "24px", height: "24px" }}
-                          >
-                            <title>Telegram</title>
-                            <path
-                              fill="#26A5E4"
-                              d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"
-                            />
-                          </svg>
-                          {/* Only show label on medium+ screens */}
-                          <span className="hidden md:inline text-[10px]">Telegram</span>
-                        </div>
-                      </Button>
-
                     </div>
-
+                    {(index + 1) % 10 === 0 && (
+                      <ShareButtonsGroup
+                        user={user}
+                        q={{
+                          question_text: q.question_text,
+                          correct_answer: q.correct_answer,
+                        }}
+                      />
+                    )}
                   </CardContent>
                   <MicroCaseCard />
                 </Card>
@@ -1708,299 +1298,109 @@ export default function Feed() {
             ) {
               cards.push(
                 <div key={`load-more-${index}`} className="flex justify-center py-6">
-
-
                 </div>
               );
             }
-
-            // 🖼️ Fancy image card + delete option + upload always last
             if ((index + 1) % 4 === 0 && feedImages?.length > 0) {
-
-              // updated: show exactly ONE image after every 2 questions
-              if (feedImages?.length > 0) {
-                // pick which image to show for this insertion spot:
-                // imagePosition = 0 for first image spot (after question 2),
-                // 1 for second image spot (after question 4), etc.
-                const imagePosition = Math.floor((index + 1) / 2) - 1;
-                // wrap around if there are fewer images than spots
-                const img = feedImages[imagePosition % feedImages.length];
-
-
-
-                // push single image card
-                cards.push(
-                  <motion.div
-                    key={`image-${img.id}`}
-                    whileHover={{ scale: 1 }}
-                    className="w-full max-w-screen-lg mx-auto mb-6"
-                  >
-                    <Card className="overflow-hidden bg-transparent border-0 shadow-none relative">
-
-                      {/* updated: educational inspiration banner */}
-                      <div className="bg-gradient-to-r from-blue-700 to-cyan-600 text-white text-center py-2 text-sm  font-medium">
-                        Visuals to enhance your knowledge and make learning memorable.
-                      </div>
-                      {/* uploader info */}
-                      <div className="flex items-center gap-3 p-3">
-                        <img
-                          src={img.profiles?.avatar_url || "/UsersAvatar.jpg"}
-                          alt="avatar"
-                          className="w-10 h-10 rounded-full object-cover border"
-                        />
-
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-100">
-                            {img.profiles?.name || "Unknown User"}
-                          </span>
-
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Shared this image
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="relative w-full h-[420px] sm:h-[520px] bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
-                        {/* Show loader while image is loading */}
-                        {!loadedImages[img.id] && (
-                          <div className="absolute inset-0 flex items-center justify-center scale-[0.45]">
-                            <GlobalLoader />
-                          </div>
-                        )}
-
-                        {/* Image */}
-                        <img
-                          src={img.image_url}
-                          alt={img.title || "Feed image"}
-                          onLoad={() => setLoadedImages((prev) => ({ ...prev, [img.id]: true }))}
-                          onClick={async () => {
-                            openViewer(img);
-
-                            const userId = session?.user?.id;
-                            if (!userId) return;
-
-                            const { error } = await supabase.from("seen_images").insert({
-                              user_id: userId,
-                              image_id: img.id,
-                            });
-
-                            if (!error) {
-                              setFeedImages((prev) => prev.filter((i) => i.id !== img.id));
-                            }
-                          }}
-                          className={`w-full h-full object-contain cursor-pointer transition-opacity duration-500 ${loadedImages[img.id] ? "opacity-100" : "opacity-0"
-                            }`}
-                        />
-                      </div>
-
-                      {img.added_by === user?.id && (
-                        <button
-                          onClick={() => handleDeleteImage(img)}
-                          className="absolute top-3 right-3 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full transition-all"
-                          title="Delete Image"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
-
-                      {img.description && (
-                        <p className="p-3 text-center text-sm text-gray-700 dark:text-gray-300">
-                          {img.description}
-                        </p>
-                      )}
-
-                    </Card>
-                  </motion.div>
-                );
-              }
-              // 🌌 Compact, working + preview upload card
               cards.push(
-                <motion.div
-                  key="upload-card"
-                  className="relative flex flex-col items-center justify-center p-4 sm:p-6 w-full bg-transparent mt-4"
+                <FeedMediaPanel
+                  key={`feed-media-${index}`}
 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
-                >
-                  {/* ✨ Subtle rotating glow */}
-                  <motion.div
-                    className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.04)_0%,_transparent_70%)] dark:bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.12)_0%,_transparent_70%)]"
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 50, ease: 'linear' }}
-                  />
+                  index={index}
+                  knowledgePosts={knowledgeData}
+                  feedImages={feedImages}
+                  loadedImages={loadedImages}
+                  setLoadedImages={setLoadedImages}
 
-                  {/* 🌠 Floating stars */}
-                  {[...Array(12)].map((_, i) => (
-                    <motion.span
-                      key={i}
-                      className="absolute w-1 h-1 rounded-full bg-gray-400 dark:bg-white opacity-60"
-                      style={{
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                      }}
-                      animate={{
-                        opacity: [0.3, 1, 0.3],
-                        scale: [0.8, 1.2, 0.8],
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 2 + Math.random() * 2,
-                        delay: Math.random() * 2,
-                      }}
-                    />
-                  ))}
+                  session={session}
+                  supabase={supabase}
+                  user={user}
 
-                  {/* 🌌 Upload dropdown with thin trigger line // updated */}
-                  <div className="relative z-10 w-full flex flex-col items-center text-center">
-                    {/* Thin line button */}
-                    <button
-                      onClick={() => setShowUpload((prev) => !prev)} // updated
-                      className="text-gray-800 dark:text-gray-200 text-sm pb-1 hover:underline"
-                    >
-                      {showUpload ? "Hide Upload ▲" : "Upload Image ▼"}
-                    </button>
-                    {/* Dropdown upload card */}
-                    {showUpload && (
-                      <div className="mt-3 flex flex-col items-center justify-center text-center w-full sm:w-auto p-4 sm:p-5 bg-transparent"
-                      >
-                        <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full">
-                          {uploadFiles && uploadFiles.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
-                              {uploadFiles.map((file, index) => (
-                                <img
-                                  key={index}
-                                  src={URL.createObjectURL(file)}
-                                  alt={`Preview ${index + 1}`}
-                                  className="w-full h-40 sm:h-48 object-cover rounded-lg"
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-start w-full">
-                              <span className="text-gray-700 dark:text-gray-300 font-medium text-xs sm:text-sm">
-                                Tap or click to choose images
-                              </span>
-                            </div>
+                  openViewer={openViewer}
+                  handleDeleteImage={handleDeleteImage}
 
-                          )}
+                  showUpload={showUpload}
+                  setShowUpload={setShowUpload}
 
-                          <input
-                            id="image-upload"
-                            type="file"
-                            accept="image/*"
-                            multiple // ✅ enable multiple file selection
-                            className="hidden"
-                            onChange={(e) => setUploadFiles(Array.from(e.target.files))}
-                          />
-                        </label>
+                  uploadFiles={uploadFiles}
+                  setUploadFiles={setUploadFiles}
 
-                        {/* Upload button */}
-                        <div className="relative w-full flex flex-col items-start">
-
-                          {/* Upload button */}
-                          <Button
-                            onClick={handleImageUpload}
-                            disabled={uploading || uploadFiles.length === 0}
-                            variant="ghost"
-                            className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                          >
-                            {uploading ? (
-                              <>
-                                <svg
-                                  className="animate-spin w-5 h-5 text-gray-700 dark:text-gray-200"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                                  ></path>
-                                </svg>
-                                Uploading...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="w-5 h-5 text-gray-700 dark:text-gray-200" />
-                                Upload
-                              </>
-                            )}
-                          </Button>
-                        </div>
-
-
-                        {/* Subtitle */}
-                        <p className="mt-2 text-gray-600 dark:text-gray-400 text-xs sm:text-sm text-left w-full">
-                          Share your photos & inspire others
-                        </p>
-
-                      </div>
-                    )}
-                  </div>
-
-
-
-                </motion.div>);
+                  uploading={uploading}
+                  handleImageUpload={handleImageUpload}
+                />
+              );
             }
             return cards;
           })}
-          <Button
-            onClick={() => {
-              // Vibrate 60ms
-              if (navigator.vibrate) navigator.vibrate(60);
+          {hasMore && (
+            <div className="flex flex-col items-center justify-center py-12 w-full">
+              <AnimatePresence mode="wait">
+                {!loading ? (
+                  <motion.button
+                    key="load-button"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      if (navigator.vibrate) navigator.vibrate(60);
+                      loadMore();
+                    }}
+                    className="
+            group relative flex items-center gap-3 px-8 py-4
+            bg-white dark:bg-gray-800
+            text-blue-600 dark:text-blue-400
+            font-bold rounded-full
+            shadow-[0_4px_20px_rgba(0,0,0,0.1)]
+            hover:shadow-[0_8px_30px_rgba(37,99,235,0.2)]
+            border border-blue-100 dark:border-gray-700
+            transition-all duration-300
+          "
+                  >
+                    <RotateCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                    <span className="tracking-wide">Explore More</span>
 
-              // Original loadMore function
-              loadMore();
-            }}
-            disabled={loading}
-            className="
-    px-8 py-2
-    text-base font-semibold
-    rounded-full
-    bg-blue-600 hover:bg-blue-700
-    text-white
-    shadow-md
-    transition
-    flex items-center gap-2
-  "
-          >
-            {loading ? (
-              <>
-                <svg
-                  className="animate-spin h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    className="opacity-25"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                    className="opacity-75"
-                  />
-                </svg>
-                Loading more…
-              </>
-            ) : (
-              "Load more questions"
-            )}
-          </Button>
+                    {/* Subtle glow effect */}
+                    <div className="absolute inset-0 rounded-full bg-blue-500/5 blur-xl group-hover:bg-blue-500/10 transition-colors" />
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    key="loader"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0 }}
+                    className="relative flex items-center justify-center"
+                  >
+                    {/* The Outer Rotating Ring */}
+                    <div className="w-16 h-16 border-4 border-blue-100 dark:border-gray-800 rounded-full" />
+                    <motion.div
+                      className="absolute w-16 h-16 border-4 border-t-blue-600 border-r-transparent border-b-transparent border-l-transparent rounded-full"
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    />
+
+                    {/* The Inner Pulsing Icon */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      >
+                        <div className="w-3 h-3 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.6)]" />
+                      </motion.div>
+                    </div>
+
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute -bottom-8 text-xs font-medium text-blue-600 uppercase tracking-widest whitespace-nowrap"
+                    >
+                      Curating Feed...
+                    </motion.p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
           <TermsButton />
           <AnimatePresence>
             {viewerOpen && activeImage && (
@@ -2042,7 +1442,6 @@ export default function Feed() {
                     }}
                     initial={{ y: 10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    variant="ghost"
                     className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={18} />
@@ -2068,276 +1467,58 @@ export default function Feed() {
           >
             {/* infinite scroll observer only – no skeleton UI */}
           </div>
-
-          {/* 💬 Comments Modal */}
-          {/* 💬 Comments Modal */}
-          <Dialog
-            open={!!activeQuestion}
-            onOpenChange={() => setActiveQuestion(null)}
-          >
-            <DialogContent
-              className="max-w-6xl w-[95vw] p-0 overflow-hidden"
-              aria-describedby="comments-dialog-description"
-            >
-              <DialogHeader className="px-4 pt-4">
-                <DialogTitle className="text-lg font-semibold">
-                  Comments
-                </DialogTitle>
-              </DialogHeader>
-
-              {/* Accessible description for screen readers */}
-              <p id="comments-dialog-description" className="sr-only">
-                View and post comments on this question. Replies appear indented under parent comments.
+          <CommentsModal
+            activeQuestion={activeQuestion}
+            setActiveQuestion={setActiveQuestion}
+            questions={questions}
+            comments={comments}
+            user={user}
+            replyTo={replyTo}
+            setReplyTo={setReplyTo}
+            toggleCommentLike={toggleCommentLike}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            addComment={addComment}
+          />
+          {uploading && (
+            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm text-white">
+              <svg
+                className="animate-spin w-12 h-12 mb-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
+              <p className="text-lg font-semibold text-center mb-4">
+                Uploading images…<br />
+                Do not leave the page or close the browser.
               </p>
-
-              <div className="flex flex-col md:flex-row h-[80vh]">
-
-                {/* QUESTION */}
-                <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r dark:border-gray-800 overflow-y-auto custom-scrollbar p-4 max-h-[40vh] md:max-h-full">
-                  {questions
-                    .filter((q) => q.id === activeQuestion)
-                    .map((q) => (
-                      <div key={q.id} className="space-y-4">
-
-                        <p className="text-sm font-semibold text-blue-500 dark:text-blue-400">
-                          {q.quiz_title}
-                        </p>
-
-                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                          {q.question_text}
-                        </p>
-
-                        <div className="flex flex-col gap-2">
-                          {["A", "B", "C", "D"].map((opt) => {
-                            const text = q[`option_${opt.toLowerCase()}`];
-                            if (!text) return null;
-
-                            return (
-                              <div
-                                key={opt}
-                                className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800"
-                              >
-                                <span className="font-semibold">{opt}.</span> {text}
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                      </div>
-                    ))}
-                </div>
-
-                {/* COMMENTS */}
-                <div className="w-full md:w-1/2 flex flex-col flex-1">
-
-                  <div
-                    className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4
-          scrollbar scrollbar-thumb-gray-500/40
-          dark:scrollbar-thumb-gray-400/50
-          scrollbar-track-transparent"
-                  >
-                    {comments.map((c) => {
-                      const isReply = !!c.parent_id;
-                      const liked = c.comment_likes?.some(
-                        (l) => l.user_id === user?.id
-                      );
-
-                      return (
-                        <div
-                          key={c.id}
-                          className={`flex items-start gap-3 ${isReply ? "ml-8" : ""}`}
-                        >
-                          <img
-                            src={c.profiles?.avatar_url || "/UsersAvatar.jpg"}
-                            alt={c.profiles?.name || "User"}
-                            className="w-8 h-8 rounded-full"
-                          />
-
-                          <div className="flex-1">
-                            <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                              {c.profiles?.name || "User"}
-                            </p>
-
-                            <p className="text-gray-700 dark:text-gray-300">
-                              {c.comment_text}
-                            </p>
-
-                            <div className="flex gap-3 text-xs mt-1 text-gray-500 dark:text-gray-400">
-                              <button
-                                className="flex items-center gap-1"
-                                onClick={() => setReplyTo(c.id)}
-                              >
-                                <Reply size={14} /> Reply
-                              </button>
-
-                              <button
-                                className="flex items-center gap-1"
-                                onClick={() => toggleCommentLike(c.id)}
-                              >
-                                {liked ? "❤️" : <ThumbsUp size={14} />}
-                                {c.comment_likes?.length || 0}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* COMMENT INPUT */}
-                  <div className="flex gap-2 p-3 border-t dark:border-gray-800">
-                    <Input
-                      placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                    />
-                    <Button onClick={addComment}>Post</Button>
-                  </div>
-
-                </div>
-
-              </div>
-            </DialogContent>
-          </Dialog>
-          {/* 🏆 Leaderboard Modal */}
-          <Dialog open={leaderboardOpen} onOpenChange={setLeaderboardOpen}>
-            <DialogContent
-              className="max-w-full sm:max-w-md p-4"
-              aria-describedby="leaderboard-desc"
-            >
-              <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-center">
-                  Leaderboard
-                </DialogTitle>
-              </DialogHeader>
-
-              <div
-                id="leaderboard-desc"
-                className="overflow-y-auto scrollbar scrollbar-thumb-gray-500/40 dark:scrollbar-thumb-gray-400/50 scrollbar-track-transparent">
-
-
-                <AnimatePresence>
-                  {Object.values(
-                    leaderboard.reduce((acc: Record<number, typeof leaderboard>, entry) => {
-                      if (!acc[entry.total]) acc[entry.total] = [];
-                      acc[entry.total].push(entry);
-                      return acc;
-                    }, {})
-                  )
-                    .sort((a, b) => b[0].total - a[0].total)
-                    .map((batch, batchIndex) => (
-                      <div key={batchIndex} className="space-y-2">
-                        {batch.map((entry) => {
-                          const position = leaderboard.indexOf(entry) + 1;
-
-                          let badge = null;
-                          if (position === 1) badge = { stars: 5, label: "Gold" };
-                          else if (position === 2) badge = { stars: 4, label: "Diamond" };
-                          else if (position === 3) badge = { stars: 3, label: "Silver" };
-                          else if (position === 4) badge = { stars: 2, label: "Bronze" };
-
-                          return (
-                            <motion.div
-                              key={entry.user_id}
-                              layout
-                              initial={{ opacity: 0, y: -20, scale: 0.9 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                              transition={{ duration: 0.5 }}
-                              className="flex flex-wrap sm:flex-nowrap sm:items-center gap-2 sm:gap-3 p-2 rounded bg-gray-50 dark:bg-gray-800"
-                            >
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="text-lg font-bold">{position}</span>
-                                <motion.img
-                                  src={entry.avatar || "/UsersAvatar.jpg"}
-                                  alt={entry.name}
-                                  className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex-shrink-0"
-                                  layout
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                />
-                              </div>
-
-                              <span className="flex-1 font-medium text-gray-900 dark:text-gray-100 break-words min-w-0">
-                                {entry.name || "Unknown"}
-                              </span>
-
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm text-gray-500">{entry.total} Qs</span>
-                                {badge && (
-                                  <span className="flex items-center gap-1 text-xs font-semibold flex-wrap">
-                                    {Array.from({ length: badge.stars }).map((_, i) => (
-                                      <motion.svg
-                                        key={i}
-                                        className="w-3 h-3 text-yellow-400"
-                                        fill="currentColor"
-                                        viewBox="0 0 20 20"
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{
-                                          delay: i * 0.05,
-                                          type: "spring",
-                                          stiffness: 300,
-                                        }}
-                                      >
-                                        <path d="M10 1l2.39 4.85L18 6.5l-3.9 3.8.92 5.38L10 13.77 5.98 15.68l.92-5.38L3 6.5l5.61-.65L10 1z" />
-                                      </motion.svg>
-                                    ))}
-                                    {badge.label}
-                                  </span>
-                                )}
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                </AnimatePresence>
-              </div>
-            </DialogContent>
-          </Dialog>
+              <button
+                onClick={() => {
+                  // Abort all ongoing uploads
+                  uploadControllers.current.forEach((c) => c.abort());
+                  setUploading(false);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+              >
+                Leave
+              </button>
+            </div>
+          )}
         </div>
-        {uploading && (
-          <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm text-white">
-            <svg
-              className="animate-spin w-12 h-12 mb-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-            <p className="text-lg font-semibold text-center mb-4">
-              Uploading images…<br />
-              Do not leave the page or close the browser.
-            </p>
-            <button
-              onClick={() => {
-                // Abort all ongoing uploads
-                uploadControllers.current.forEach((c) => c.abort());
-                setUploading(false);
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-            >
-              Leave
-            </button>
-          </div>
-        )}
-
-
       </PullToRefresh >
     </>
   );

@@ -1,6 +1,9 @@
+"use client"
+
 import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
+import { AlertCircle, Info } from "lucide-react" // Added icons for medical clarity
 import {
   Controller,
   ControllerProps,
@@ -78,7 +81,8 @@ const FormItem = React.forwardRef<
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <div ref={ref} className={cn("space-y-2", className)} {...props} />
+      {/* Added: slight margin-bottom for better legibility in long medical forms */}
+      <div ref={ref} className={cn("space-y-2.5 mb-4", className)} {...props} />
     </FormItemContext.Provider>
   )
 })
@@ -93,7 +97,12 @@ const FormLabel = React.forwardRef<
   return (
     <Label
       ref={ref}
-      className={cn(error && "text-destructive", className)}
+      className={cn(
+        // Nursing Update: Heavier font and Slate-700 color for a professional, clinical feel
+        "text-sm font-semibold tracking-tight text-slate-700 transition-colors",
+        error && "text-rose-600",
+        className
+      )}
       htmlFor={formItemId}
       {...props}
     />
@@ -117,6 +126,11 @@ const FormControl = React.forwardRef<
           : `${formDescriptionId} ${formMessageId}`
       }
       aria-invalid={!!error}
+      // Nursing Update: This ensures that inputs look clean and focus with a clinical teal/blue ring
+      className={cn(
+        "focus-visible:ring-teal-500/30 transition-all",
+        error && "border-rose-500 focus-visible:ring-rose-500/20"
+      )}
       {...props}
     />
   )
@@ -130,12 +144,16 @@ const FormDescription = React.forwardRef<
   const { formDescriptionId } = useFormField()
 
   return (
-    <p
-      ref={ref}
-      id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
+    <div className="flex items-start gap-1.5 mt-1">
+      {/* Added a subtle info icon for a "Clinical Note" appearance */}
+      <Info className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+      <p
+        ref={ref}
+        id={formDescriptionId}
+        className={cn("text-[13px] text-slate-500 leading-snug", className)}
+        {...props}
+      />
+    </div>
   )
 })
 FormDescription.displayName = "FormDescription"
@@ -152,14 +170,18 @@ const FormMessage = React.forwardRef<
   }
 
   return (
-    <p
-      ref={ref}
-      id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
-      {...props}
-    >
-      {body}
-    </p>
+    // Nursing Update: Added Alert icon and pinkish background for critical visibility
+    <div className="flex items-center gap-1.5 mt-1.5 px-2 py-1 bg-rose-50 rounded-md border border-rose-100 animate-in fade-in slide-in-from-top-1">
+      <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
+      <p
+        ref={ref}
+        id={formMessageId}
+        className={cn("text-[13px] font-medium text-rose-600", className)}
+        {...props}
+      >
+        {body}
+      </p>
+    </div>
   )
 })
 FormMessage.displayName = "FormMessage"

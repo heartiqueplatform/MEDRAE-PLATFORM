@@ -5,7 +5,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { Bell, Plus, X, RefreshCw } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { RealtimeChannel } from "@supabase/supabase-js";
-
+import { AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 interface CountdownPlan {
     id: string;
     user_id?: string;
@@ -397,7 +398,7 @@ export default function CountdownCards() {
 
         return (
             <div
-                className={`relative border rounded-lg shadow-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center transition
+                className={`relative border rounded-xl shadow-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center transition
       ${highlightNext ? "border-red-500" : ""}
       ${status === "in-progress"
                         ? "bg-green-100 dark:bg-green-900 border-green-500"
@@ -515,116 +516,151 @@ export default function CountdownCards() {
 
     return (
 
+        <div className="relative overflow-hidden w-full px-4 py-6 rounded-xl border-0 bg-white/70 dark:bg-slate-950/50 backdrop-blur-xl shadow-2xl mt-6 transition-all duration-500">
 
-        <div className="space-y-4 w-full px-1 py-2 rounded-lg shadow-lg bg-white dark:bg-gray-900 border-0 dark:border-gray-700 mt-4">
-            {/* Card Heading */}
-            <div className="mb-2 px-1 mt-4">
-                <div className="flex items-center gap-2">
-                    <img
-                        src="/clock.ico"
-                        alt="Exam Countdown"
-                        className="w-8 h-8 object-contain"
-                    />
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                        Exam Countdown
-                    </h2>
+            {/* Background Decorative Element */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 dark:bg-blue-500/10 blur-3xl rounded-full -mr-16 -mt-16" />
+
+            {/* Section Heading */}
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-2 mb-8 px-2">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-500/10 dark:bg-blue-500/20 rounded-xl shadow-inner group transition-all">
+                        <img
+                            src="/clock.ico"
+                            alt="Exam Countdown"
+                            className="w-8 h-8 object-contain group-hover:rotate-12 transition-transform duration-500"
+                        />
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[3px] font-bold text-blue-600 dark:text-blue-400">Academic focus</p>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                            Exam Countdown
+                        </h2>
+                    </div>
                 </div>
-
-                <p className="text-sm text-gray-600 dark:text-gray-400 ml-8">
-                    Stay prepared for your exams. Tap a card to expand and learn more...
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 max-w-xs md:text-right leading-relaxed">
+                    Precision timing for your finals. Tap any card to synchronize your study plan.
                 </p>
             </div>
 
-
-            {/* Analog Clock Grid */}
-            <div className="flex gap-2 overflow-y-auto custom-scrollbar  py-0 px-0 snap-x snap-mandatory scrollbar-hide">
+            {/* Analog Clock Horizontal Grid */}
+            <div className="relative z-10 flex gap-2 overflow-x-auto pb-4 pt-2 custom-scrollbar snap-x snap-mandatory scroll-smooth no-scrollbar">
                 {visibleExams.map((exam) => (
-                    <CountdownRectCard
-                        key={exam.id}
-                        exam={exam}
-                        countdown={countdowns[exam.id]}
-                        onClick={() => setSelectedExam(exam)}
-                        selected={selectedExam?.id === exam.id}
-                    />
-
+                    <div key={exam.id} className="snap-center flex-shrink-0 transition-transform duration-300 hover:scale-[1.02]">
+                        <CountdownRectCard
+                            exam={exam}
+                            countdown={countdowns[exam.id]}
+                            onClick={() => setSelectedExam(exam)}
+                            selected={selectedExam?.id === exam.id}
+                        />
+                    </div>
                 ))}
             </div>
 
-            {
-                selectedExam && (
-                    <div className="mt-4">
-                        <ExamCard
-                            exam={selectedExam}
-                            countdown={countdowns[selectedExam.id]}
-                            showHideButton={true} // now the Hide Irrelevant button will appear
-                            onHide={() => hideExam(selectedExam.id)}
-                            highlightNext={selectedExam.id === nextExamId}
-                        />
+            {/* Detailed View - Transitions & Focus */}
+            <AnimatePresence mode="wait">
+                {selectedExam && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="mt-6 relative z-10"
+                    >
+                        <div className="absolute inset-0 bg-blue-500/5 rounded-[2rem] blur-xl" />
+                        <div className="relative">
+                            <ExamCard
+                                exam={selectedExam}
+                                countdown={countdowns[selectedExam.id]}
+                                showHideButton={true}
+                                onHide={() => hideExam(selectedExam.id)}
+                                highlightNext={selectedExam.id === nextExamId}
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                    </div>
-                )
-            }
-
-
-            <div className="flex flex-col md:flex-row justify-start gap-4">
+            {/* Action Control Panel */}
+            <div className="relative z-10 flex flex-wrap items-center gap-3 mt-8 pt-6 border-t border-slate-100 dark:border-white/5">
                 <button
-                    className="flex items-center space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                    className="group flex items-center space-x-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-2.5 rounded-xl hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300 active:scale-95"
                     onClick={() => setShowForm(!showForm)}
                 >
-                    <Plus className="w-5 h-5" />
-                    <span>Add your Upcoming Exams</span>
+                    <Plus className={`w-4 h-4 transition-transform duration-500 ${showForm ? 'rotate-45' : ''}`} />
+                    <span className="text-[11px] font-bold uppercase tracking-widest">Plan New Exam</span>
                 </button>
 
                 <button
                     onClick={resetHidden}
-                    className="flex items-center space-x-1 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600"
+                    className="flex items-center space-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm"
                 >
-                    <RefreshCw className="w-4 h-4" />
-                    <span>Reset Hidden Exams</span>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest">Reset Views</span>
                 </button>
             </div>
 
-            {
-                showForm && (
-                    <div className="space-y-2 mt-2 border-t pt-4">
-                        <input
-                            type="text"
-                            placeholder="Exam Name"
-                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            value={examName}
-                            onChange={(e) => setExamName(e.target.value)}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Exam Type"
-                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            value={examType}
-                            onChange={(e) => setExamType(e.target.value)}
-                        />
-                        <input
-                            type="date"
-                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            value={examDate}
-                            onChange={(e) => setExamDate(e.target.value)}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Papers (comma separated)"
-                            className="w-full border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            value={papers}
-                            onChange={(e) => setPapers(e.target.value)}
-                        />
-                        <button
-                            onClick={addPlan}
-                            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            disabled={addingExam}
-                        >
-                            {addingExam ? "Adding..." : "Add Exam"}
-                        </button>
-                    </div>
-
-                )
-            }
-        </div >
+            {/* Advanced Add Exam Form */}
+            <AnimatePresence>
+                {showForm && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="space-y-4 mt-6 p-6 rounded-[2rem] bg-slate-50/50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-2">Subject Title</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Clinical Nursing"
+                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
+                                        value={examName}
+                                        onChange={(e) => setExamName(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-2">Category</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. End of Semester"
+                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
+                                        value={examType}
+                                        onChange={(e) => setExamType(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-2">Assessment Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        value={examDate}
+                                        onChange={(e) => setExamDate(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-2">Exam Papers</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Paper 1, Paper 2..."
+                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
+                                        value={papers}
+                                        onChange={(e) => setPapers(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                onClick={addPlan}
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-xl font-bold text-xs uppercase tracking-[2px] shadow-xl shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-50 mt-2"
+                                disabled={addingExam}
+                            >
+                                {addingExam ? "Synchronizing Data..." : "Finalize Exam Schedule"}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

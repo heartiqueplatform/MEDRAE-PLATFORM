@@ -1,6 +1,9 @@
 "use client";
 import { GlobalLoader } from "@/components/GlobalLoader";
-import { ThumbsUp, Bookmark, Flag } from "lucide-react";
+import {
+    ThumbsUp, Bookmark, Eye, Heart, BookmarkIcon, ImageIcon,
+    Brain, Flag, Hash, ExternalLink, Scale, Layers, Activity
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,10 +169,8 @@ export function Flashcard({ cardId }: { cardId?: string }) {
 
         loadFlashcard();
     }, [user, cardId]);
-
     const handleInteraction = async (type: "save" | "like" | "report") => {
         if (!card || !user) return;
-
         if (tapSound) tapSound.play();
 
         const tableMap = {
@@ -177,84 +178,181 @@ export function Flashcard({ cardId }: { cardId?: string }) {
             like: "flashcard_likes",
             report: "flashcard_reports",
         };
-
         const table = tableMap[type];
+        const isActive = type === "save" ? saved : type === "like" ? liked : reported;
 
-        // Determine current state for this type
-        let isActive = false;
-        if (type === "save") isActive = saved;
-        if (type === "like") isActive = liked;
-        if (type === "report") isActive = reported;
-
-        // Optimistically update UI immediately
-        setCounts((prev) => ({
-            ...prev,
-            [type + "s"]: prev[type + "s"] + (isActive ? -1 : 1),
-        }));
-
+        // 1. Optimistic UI
+        setCounts((prev) => ({ ...prev, [type + "s"]: prev[type + "s"] + (isActive ? -1 : 1) }));
         if (type === "save") setSaved(!isActive);
         if (type === "like") setLiked(!isActive);
         if (type === "report") setReported(!isActive);
 
         try {
             if (!isActive) {
-                // Insert or upsert — avoids 409 conflicts
-                await supabase
-                    .from(table)
-                    .upsert({ user_id: user.id, card_id: card.id }, { onConflict: ["user_id", "card_id"] });
+                const payload: any = { user_id: user.id, card_id: card.id };
+                if (type === "report") payload.reason = "User flagged flashcard";
+                await supabase.from(table).upsert(payload, { onConflict: "user_id,card_id" });
             } else {
-                // Undo: delete row
-                await supabase
-                    .from(table)
-                    .delete()
-                    .eq("user_id", user.id)
-                    .eq("card_id", card.id);
+                await supabase.from(table).delete().match({ user_id: user.id, card_id: card.id });
             }
         } catch (error) {
-            console.error("Supabase interaction error:", error);
-            // Optional: rollback optimistic UI if needed
+            console.error(`Error toggling ${type}:`, error);
+            // Rollback on error
+            if (type === "save") setSaved(isActive);
+            if (type === "like") setLiked(isActive);
+            if (type === "report") setReported(isActive);
+            setCounts((prev) => ({ ...prev, [type + "s"]: prev[type + "s"] + (isActive ? 1 : -1) }));
         }
+    };
+
+    // HELPER TO STYLE HEADINGS INSIDE TEXT
+    const renderStyledText = (rawText: string) => {
+        // 1. CLEAN THE TEXT: This replaces the literal "\n" text with actual line breaks
+        const cleanText = rawText.replace(/\\n/g, '\n');
+
+        // 2. SPLIT into lines, then filter out any triple-empty gaps
+        const lines = cleanText.split('\n').filter(line => line.trim() !== '' || line.length > 0);
+
+        return lines.map((line, index) => {
+            const trimmedLine = line.trim();
+            const lowerLine = trimmedLine.toLowerCase();
+
+            // --- PARSER FOR HEADINGS ---
+
+            // A. PATHOPHYSIOLOGY (Indigo)
+            if (lowerLine.startsWith('pathophysiology:') || lowerLine.startsWith('mechanism:')) {
+                return (
+                    <div key={index} className="mt-5 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 bg-indigo-100/50 dark:bg-indigo-900/40 px-2.5 py-1 rounded-md border border-indigo-200/50 dark:border-indigo-800/50">
+                            Pathophysiology
+                        </span>
+                        <p className="mt-2 text-[16px] text-gray-800 dark:text-gray-200 font-medium leading-relaxed italic border-l-2 border-indigo-200 dark:border-indigo-800 pl-3">
+                            {trimmedLine.split(':')[1]?.trim()}
+                        </p>
+                    </div>
+                );
+            }
+
+            // B. EXAM TIPS (Amber/Gold Highlight Box)
+            if (lowerLine.startsWith('exam tip:') || lowerLine.startsWith('key point:')) {
+                return (
+                    <div key={index} className="my-5 p-4 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-900/20 dark:to-transparent border-l-4 border-amber-500 rounded-r-2xl shadow-sm">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">🔥</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">High-Yield Exam Tip</span>
+                        </div>
+                        <p className="text-[15px] text-amber-900 dark:text-amber-200 font-bold leading-relaxed">
+                            {trimmedLine.split(':')[1]?.trim()}
+                        </p>
+                    </div>
+                );
+            }
+
+            // C. CLINICAL FEATURES (Rose/Red)
+            if (lowerLine.startsWith('clinical features:') || lowerLine.startsWith('symptoms:')) {
+                return (
+                    <div key={index} className="mt-5 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400 bg-rose-100/50 dark:bg-rose-900/40 px-2.5 py-1 rounded-md border border-rose-200/50 dark:border-rose-800/50">
+                            Clinical Features
+                        </span>
+                        <p className="mt-2 text-[16px] text-gray-800 dark:text-gray-200 font-medium leading-relaxed pl-1">
+                            {trimmedLine.split(':')[1]?.trim()}
+                        </p>
+                    </div>
+                );
+            }
+
+            // D. MANAGEMENT/TREATMENT (Emerald/Green)
+            if (lowerLine.startsWith('management:') || lowerLine.startsWith('treatment:')) {
+                return (
+                    <div key={index} className="mt-5 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/40 px-2.5 py-1 rounded-md border border-emerald-200/50 dark:border-emerald-800/50">
+                            Management Plan
+                        </span>
+                        <p className="mt-2 text-[16px] text-emerald-900 dark:text-emerald-100 font-bold leading-relaxed pl-1">
+                            {trimmedLine.split(':')[1]?.trim()}
+                        </p>
+                    </div>
+                );
+            }
+
+            // E. DEFAULT BODY TEXT
+            if (trimmedLine.length === 0) return <div key={index} className="h-2" />;
+
+            return (
+                <p key={index} className="text-[16px] leading-relaxed font-medium text-gray-800 dark:text-gray-200 mb-3 last:mb-0">
+                    {trimmedLine}
+                </p>
+            );
+        });
     };
     if (loading)
         return (
-            <Card className="mt-3 border-0 shadow-lg bg-gradient-to-r from-yellow-100 via-pink-100 to-purple-200 dark:from-purple-900 dark:via-pink-800 dark:to-indigo-800">
+            <Card className="mt-4 relative overflow-hidden border-0 bg-white dark:bg-gray-950 rounded-xl shadow-sm animate-pulse">
 
+                {/* Top Indigo Accent Bar (Matching the real Flashcard) */}
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-200 dark:bg-gray-800" />
 
-                {/* Static Heading */}
-                <div className="px-4 py-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
-                dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 text-white font-semibold rounded-t-lg">
-                    Flashcard Card
+                {/* Header Skeleton */}
+                <div className="px-6 pt-6 pb-2">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                            {/* Brain Icon Square Skeleton */}
+                            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+
+                            <div className="space-y-2">
+                                {/* Flashcard Type Label */}
+                                <div className="h-2 w-24 bg-gray-100 dark:bg-gray-800 rounded-full" />
+                                {/* Title Line */}
+                                <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                            </div>
+                        </div>
+
+                        {/* Unit Badge Skeleton */}
+                        <div className="h-6 w-16 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+                    </div>
                 </div>
 
-                {/* Header */}
-                <CardHeader className="flex flex-row justify-between py-1">
-                    <CardTitle className="text-purple-700 dark:text-gray-100  text-lg">
-                        FLASHCARD TYPE
-                    </CardTitle>
-                    <Badge className="bg-blue-500 text-white dark:bg-pink-700 dark:text-gray-100 text-lg">
-                        UNIT
-                    </Badge>
-                </CardHeader>
-                <CardContent className="space-y-3 py-2 px-2 animate-pulse">
-                    {/* Big skeleton for main content */}
-                    <div className="h-32 w-full bg-gray-300 dark:bg-gray-700 rounded-md relative flex items-center justify-center">
+                <CardContent className="px-6 pb-6 space-y-6 flex-1 overflow-y-auto min-h-0">
 
-                        {/* Dots loader centered inside the big skeleton */}
-                        <div className="flex space-x-2 absolute">
-                            {[...Array(3)].map((_, i) => (
-                                <span
-                                    key={i}
-                                    className="w-3 h-3 rounded-full animate-bounce"
-                                    style={{
-                                        backgroundColor: i === 0 ? "#2563EB" : i === 1 ? "#14B8A6" : "#FBBF24",
-                                        animationDelay: `${i * 0.2}s`,
-                                    }}
-                                />
-                            ))}
-                        </div>
+                    {/* Main Content Skeleton (Ghost Text) */}
+                    <div className="space-y-3 py-2">
+                        <div className="h-3.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full" />
+                        <div className="h-3.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full" />
+                        <div className="h-3.5 w-[85%] bg-gray-100 dark:bg-gray-800 rounded-full" />
+                        <div className="h-3.5 w-[60%] bg-gray-100 dark:bg-gray-800 rounded-full" />
                     </div>
 
+                    {/* Optional Image Placeholder (Matches the frame) */}
+                    <div className="h-32 w-full bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-center">
+                        <ImageIcon className="w-8 h-8 text-gray-200 dark:text-gray-800" />
+                    </div>
 
+                    {/* Interaction Footer Skeleton */}
+                    <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+
+                        {/* Interaction Buttons Skeletons */}
+                        <div className="flex gap-2">
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
+                        </div>
+
+                        {/* Stats Pill Skeleton */}
+                        <div className="w-28 h-9 bg-gray-50 dark:bg-gray-900 rounded-full" />
+                    </div>
+
+                    {/* Small Status Indicator */}
+                    <div className="flex items-center justify-center gap-2">
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">
+                            Retrieving Knowledge Asset
+                        </span>
+                        <div className="flex gap-1">
+                            <div className="w-1 h-1 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                            <div className="w-1 h-1 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                            <div className="w-1 h-1 bg-pink-500 rounded-full animate-bounce" />
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         );
@@ -266,111 +364,169 @@ export function Flashcard({ cardId }: { cardId?: string }) {
         );
 
     if (!card) return null;
-
     return (
-        <Card className="mt-3 border-0 shadow-lg
-    bg-gradient-to-r from-yellow-100 via-pink-100 to-purple-200
-    dark:from-purple-900 dark:via-pink-800 dark:to-indigo-800">
+        <Card className="mt-2 relative overflow-hidden transition-all duration-300 border-0 bg-transparent rounded-2xl shadow-2xl shadow-indigo-500/10 flex flex-col h-[700px] max-h-[70vh] -mt-4">
 
-            <div className="px-4 py-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
-dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 text-white font-semibold rounded-t-lg">
-                Flashcard Card
+            {/* 1. BACKGROUND IMAGE LAYER */}
+            <div className="absolute inset-0 z-0">
+                <img
+                    src="/indexbackground5.jpg"
+                    alt=""
+                    className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-white/90 dark:bg-slate-950/95 backdrop-blur-[3px]" />
             </div>
-            <CardHeader className="flex flex-row justify-between py-1">
-                <CardTitle className="text-purple-700 dark:text-gray-100">
-                    {card.type.replace("_", " ").toUpperCase()}
-                </CardTitle>
 
-                {card.related_unit && (
-                    <Badge className="bg-blue-500 text-white dark:bg-pink-700 dark:text-gray-100">{card.related_unit}</Badge>
-                )}
-            </CardHeader>
+            {/* 2. TOP INDIGO ACCENT BAR */}
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 z-20" />
 
-            <CardContent className="space-y-2 py-1 px-2">
+            {/* 3. MAIN FLEX WRAPPER (This manages the layout) */}
+            <div className="relative z-10 flex flex-col h-full w-full overflow-hidden">
 
-                {card.title && (
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{card.title}</h3>
-                )}
+                {/* --- HEADER (STAYS AT TOP, NEVER SCROLLS) --- */}
+                <div className="flex-none px-6 pt-7 pb-3">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-500/30">
+                                <Brain className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-400 leading-none mb-1.5">
+                                    {card.type.replace("_", " ")} Flashcard
+                                </h2>
+                                {card.title && (
+                                    <CardTitle className="text-xl font-extrabold text-gray-900 dark:text-gray-100 line-clamp-1">
+                                        {card.title}
+                                    </CardTitle>
+                                )}
+                            </div>
+                        </div>
 
-                <p className="text-sm leading-snug text-gray-700 dark:text-gray-100 whitespace-pre-line">
-                    {card.text.replace(/\\n/g, "\n")}
-                </p>
-
-                {card.image_url && (
-                    <img
-                        src={card.image_url}
-                        className="rounded-md max-w-xs w-auto"
-                    />
-                )}
-
-                {card.tags && (
-                    <div className="flex flex-wrap gap-1">
-                        {card.tags.split(",").map((tag) => (
-                            <Badge key={tag} className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                                #{tag.trim()}
+                        <div className="flex flex-col items-end gap-2">
+                            {card.difficulty && (
+                                <Badge className={`text-[9px] uppercase font-black border-none px-2 py-0.5 rounded-md ${card.difficulty.toLowerCase() === 'hard' ? 'bg-red-100 text-red-600' :
+                                    card.difficulty.toLowerCase() === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'
+                                    }`}>
+                                    {card.difficulty}
+                                </Badge>
+                            )}
+                            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border-none font-bold text-[10px] px-2 py-0.5 rounded-lg">
+                                {card.related_unit || "General"}
                             </Badge>
-                        ))}
+                        </div>
                     </div>
-                )}
-
-
-                {/* Stats */}
-                <div className="flex gap-3 text-sm text-gray-700 dark:text-gray-100">
-                    <p>Views: {counts.views}</p>
-                    <p>Likes: {counts.likes}</p>
-                    <p>Saves: {counts.saves}</p>
-                    <p>Reports: {counts.reports}</p>
                 </div>
 
-                {/* Action Icons */}
-                <div className="flex gap-3 items-center">
-                    {/* Save Icon */}
-                    <button
-                        onClick={() => handleInteraction("save")}
-                        className="p-1 transition-transform duration-150 ease-out active:scale-110"
-                    >
-                        <Bookmark
-                            size={32}
-                            fill={saved ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            className={saved ? "text-yellow-500" : "text-gray-400 dark:text-gray-400"}
-                        />
-                    </button>
+                {/* --- SCROLLABLE BODY (ONLY THIS AREA SCROLLS) --- */}
+                {/* flex-1 and min-h-0 are the magic keys to stop the cutting */}
+                <CardContent className="flex-1 overflow-y-auto min-h-0 px-6 py-2 space-y-4 custom-scrollbar">
 
-                    {/* Like Icon */}
-                    <button
-                        onClick={() => handleInteraction("like")}
-                        className="p-1 transition-transform duration-150 ease-out active:scale-110"
-                    >
-                        <ThumbsUp
-                            size={32}
-                            fill={liked ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            className={liked ? "text-blue-500" : "text-gray-400 dark:text-gray-400"}
-                        />
-                    </button>
+                    {/* MAIN STUDY AREA */}
+                    <div className="relative p-5 bg-white/40 dark:bg-slate-900/40 rounded-2xl border border-white/20 dark:border-slate-800/40 shadow-sm backdrop-blur-sm">
+                        {/* THE NEW STYLED TEXT RENDERER */}
+                        <div className="space-y-1">
+                            {renderStyledText(card.text)}
+                        </div>
+                    </div>
 
-                    {/* Report Icon */}
-                    <button
-                        onClick={() => handleInteraction("report")}
-                        className="p-1 transition-transform duration-150 ease-out active:scale-110"
-                    >
-                        <Flag
-                            size={32}
-                            fill={reported ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            className={reported ? "text-red-500" : "text-gray-400 dark:text-gray-400"}
-                        />
-                    </button>
+                    {/* IMAGE SECTION */}
+                    {card.image_url && (
+                        <div className="group relative rounded-2xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl bg-white/50 dark:bg-black/20">
+                            <img
+                                src={card.image_url}
+                                alt="Study reference"
+                                className="w-full h-auto max-h-80 object-contain"
+                            />
+                        </div>
+                    )}
+
+                    {/* METADATA GRID (Importance & Source) */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-3 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+                            <Activity className="w-4 h-4 text-amber-500" />
+                            <div>
+                                <p className="text-[8px] uppercase font-black text-amber-500/60">Exam Priority</p>
+                                <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{card.exam_relevance || 'Standard'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-200/50 dark:border-blue-800/30">
+                            <ImageIcon className="w-4 h-4 text-blue-500" />
+                            <div>
+                                <p className="text-[8px] uppercase font-black text-blue-500/60">Reference</p>
+                                <p className="text-xs font-bold text-blue-700 dark:text-blue-300 truncate w-24">{card.source || 'Verified'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* TAGS */}
+                    {card.tags && (
+                        <div className="flex flex-wrap gap-2 pb-4">
+                            {card.tags.split(",").map((tag) => (
+                                <span key={tag} className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-800/50 uppercase">
+                                    <Hash className="w-3 h-3" />
+                                    {tag.trim()}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+
+                {/* --- STICKY FOOTER (LOCKED AT BOTTOM) --- */}
+                <div className="flex-none px-6 py-1 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
+
+                        {/* Interaction Buttons (Perfect Circles) */}
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => handleInteraction("save")}
+                                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 border-2 ${saved
+                                    ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/30'
+                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-amber-500 hover:text-amber-500 shadow-sm'
+                                    }`}
+                            >
+                                <Bookmark size={20} fill={saved ? "currentColor" : "none"} />
+                            </button>
+
+                            <button
+                                onClick={() => handleInteraction("like")}
+                                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 border-2 ${liked
+                                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/30'
+                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-indigo-500 hover:text-indigo-500 shadow-sm'
+                                    }`}
+                            >
+                                <ThumbsUp size={20} fill={liked ? "currentColor" : "none"} />
+                            </button>
+
+                            <button
+                                onClick={() => handleInteraction("report")}
+                                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 border-2 ${reported
+                                    ? 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-600/30'
+                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-rose-500 hover:text-rose-500 shadow-sm'
+                                    }`}
+                            >
+                                <Flag size={20} fill={reported ? "currentColor" : "none"} />
+                            </button>
+                        </div>
+
+                        {/* Stats Pill */}
+                        <div className="flex items-center gap-4 bg-slate-100/80 dark:bg-slate-800/80 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-inner">
+                            <div className="flex items-center gap-2 border-r border-slate-300 dark:border-slate-600 pr-4">
+                                <Eye className="w-4 h-4 text-blue-500" />
+                                <span className="text-xs font-black text-slate-700 dark:text-slate-200">{counts.views}</span>
+                            </div>
+                            <div className="flex items-center gap-2 border-r border-slate-300 dark:border-slate-600 pr-4">
+                                <Heart className="w-4 h-4 text-rose-500" />
+                                <span className="text-xs font-black text-slate-700 dark:text-slate-200">{counts.likes}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <BookmarkIcon className="w-4 h-4 text-amber-500" />
+                                <span className="text-xs font-black text-slate-700 dark:text-slate-200">{counts.saves}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {card.source && (
-                    <p className="text-xs text-gray-600 dark:text-gray-300">
-                        Source: {card.source}
-                    </p>
-                )}
-
-            </CardContent>
+            </div>
         </Card>
     );
 }

@@ -17,6 +17,10 @@ import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
 import MistakeCard from "@/components/MistakeCard";
 import { MistakesCard } from "@/components/MistakesCard";
+import React from 'react';
+import { Trophy, Sparkles, ArrowRight, Heart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
 interface Question {
     id: string;
     question_text: string;
@@ -105,66 +109,82 @@ export default function MyMistakes() {
 
     // 🌟 Fetch mistakes from Supabase in background
     useEffect(() => {
+        if (!user) return;
+
         let isMounted = true;
 
         const fetchMistakes = async () => {
-
-            if (!user) return;
-
             const { data, error } = await supabase
                 .from("user_mistakes")
                 .select(`
+                id,
+                times_wrong,
+                first_wrong_at,
+                last_wrong_at,
+                resolved,
+                quiz_id,
+                user_selected,
+                mistake_reason,
+                questions:question_id (
                     id,
-                    times_wrong,
-                    first_wrong_at,
-                    last_wrong_at,
-                    resolved,
-                    quiz_id,
-                    user_selected,
-                    mistake_reason,
-                    questions:question_id (
-                        id,
-                        question_text,
-                        option_a,
-                        option_b,
-                        option_c,
-                        option_d,
-                        correct_answer,
-                        explanation
-                    )
-                `)
+                    question_text,
+                    option_a,
+                    option_b,
+                    option_c,
+                    option_d,
+                    correct_answer,
+                    explanation
+                )
+            `)
                 .eq("user_id", user.id)
                 .eq("resolved", false)
                 .order("last_wrong_at", { ascending: false });
 
             if (error) {
                 console.error(error);
-            }
-            if (isMounted) {
-                const userMistakes = (data || []).filter((m) => m.questions && Object.keys(m.questions).length > 0);
-                setMistakes(userMistakes);
-                setMistakeCount(userMistakes.length);
-                localStorage.setItem("mistakes", JSON.stringify(userMistakes));
-                localStorage.setItem("mistakeCount", String(userMistakes.length));
-                setLoading(false); // ← Always stop loading, even if no mistakes
+                return;
             }
 
+            if (!isMounted) return;
+
+            const userMistakes = (data || []).filter(
+                (m) => m.questions && Object.keys(m.questions).length > 0
+            );
+
+            setMistakes(userMistakes);
+            setMistakeCount(userMistakes.length);
+
+            localStorage.setItem("mistakes", JSON.stringify(userMistakes));
+            localStorage.setItem("mistakeCount", String(userMistakes.length));
+
+            setLoading(false);
         };
 
         fetchMistakes();
 
+        const channelName = `user_mistakes_${user.id}`;
+
         const channel = supabase
-            .channel('public:user_mistakes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'user_mistakes' }, () => {
-                fetchMistakes();
-            })
+            .channel(channelName)
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "user_mistakes",
+                    filter: `user_id=eq.${user.id}`, // ✅ IMPORTANT FIX
+                },
+                () => {
+                    fetchMistakes();
+                }
+            )
             .subscribe();
 
         return () => {
             isMounted = false;
             supabase.removeChannel(channel);
         };
-    }, [user]);
+    }, [user?.id]);
     const vibrateTap = (duration = 40) => {
         if (typeof navigator !== "undefined" && "vibrate" in navigator) {
             navigator.vibrate(duration);
@@ -307,48 +327,83 @@ export default function MyMistakes() {
         );
 
     if (!mistakes.length)
+
         return (
-            <div className="flex justify-center items-center min-h-[60vh] p-4">
-                <div className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl shadow-md p-6 text-center max-w-md">
-                    <h2 className="text-xl font-bold text-green-700 dark:text-green-300">
-                        Congratulations! You have no mistakes!
-                    </h2>
-                    <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-                        Great job! Keep your streak going by practicing more quizzes.
-                    </p>
-                    <button
-                        onClick={() => navigate("/Medrae-quizzes")}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                    >
-                        {/* Filled red heart icon */}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-8 w-8"
-                            viewBox="0 0 24 24"
-                            fill="red"
-                            stroke="white"
-                            strokeWidth={1}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42
-           4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81
-           14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4
-           6.86-8.55 11.54L12 21.35z" />
-                        </svg>
+            <div className="flex justify-center items-center min-h-[70vh] p-6 bg-transparent">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative w-full max-w-md"
+                >
+                    {/* Background Decorative Glow */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[2rem] blur opacity-20" />
 
-                        Go to Quizzes
-                    </button>
+                    <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] shadow-2xl p-10 text-center overflow-hidden">
 
+                        {/* Top Floating Badge */}
+                        <div className="flex justify-center mb-6">
+                            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
+                                Milestone Achieved
+                            </Badge>
+                        </div>
 
-                </div>
+                        {/* Central Iconography */}
+                        <div className="relative mb-8 flex justify-center">
+                            <div className="bg-emerald-50 dark:bg-emerald-500/10 w-24 h-24 rounded-full flex items-center justify-center">
+                                <Trophy className="w-12 h-12 text-emerald-500" />
+                            </div>
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                            >
+                                <Sparkles className="w-28 h-28 text-emerald-200 dark:text-emerald-500/20" />
+                            </motion.div>
+                        </div>
+
+                        {/* Text Content */}
+                        <div className="space-y-3 mb-10">
+                            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                                Flawless <span className="text-emerald-500">Performance</span>
+                            </h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-medium">
+                                Extraordinary work! You answered every question with 100% accuracy. Your clinical knowledge is currently peaking.
+                            </p>
+                        </div>
+
+                        {/* Primary Action */}
+                        <div className="space-y-4">
+                            <Button
+                                onClick={() => navigate("/Medrae-quizzes")}
+                                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-xl shadow-blue-200 dark:shadow-none transition-all group font-bold text-md"
+                            >
+                                <div className="flex items-center justify-center gap-3">
+                                    <div className="relative">
+                                        <Heart className="w-6 h-6 text-white fill-rose-500 stroke-white stroke-[1.5px] transition-transform group-hover:scale-125" />
+                                    </div>
+                                    Continue My Journey
+                                    <ArrowRight className="w-4 h-4 opacity-50 group-hover:translate-x-1 transition-transform" />
+                                </div>
+                            </Button>
+
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                Streak Active • Keep Practicing
+                            </p>
+                        </div>
+
+                        {/* Subtle Decorative Corners */}
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Sparkles className="w-12 h-12" />
+                        </div>
+                    </div>
+                </motion.div>
             </div>
         );
 
+
     return (
 
-
-        <div className="p-1 max-w-4xl mx-auto  space-y-2   ">
+        <div className="w-full md:max-w-[740px] mx-auto px-3 md:px-0 space-y-2">
             {syncing && (
                 <div className="fixed top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-lg shadow-md text-sm z-50">
                     Syncing changes...
@@ -381,10 +436,13 @@ export default function MyMistakes() {
                     <p className="text-gray-500 dark:text-gray-400 mt-2 text-center font-medium relative z-10">
                         You have <span className="font-bold text-red-600 dark:text-red-400">{mistakeCount}</span> unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
                     </p>
+
+                    <MistakeCard />
+
                 </div>
+
+                <MistakesCard />
             </div>
-            <MistakesCard />
-            <MistakeCard />
 
             <AnimatePresence>
                 {mistakes.map((m, i) => (

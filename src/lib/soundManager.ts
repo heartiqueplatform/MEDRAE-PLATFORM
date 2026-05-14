@@ -2,6 +2,9 @@ let unlocked = false;
 
 const sounds: Record<string, HTMLAudioElement> = {};
 
+// 🎚️ GLOBAL DEFAULT VOLUME (study app friendly)
+const DEFAULT_VOLUME = 0.20;
+
 /**
  * Unlocks audio playback on first user interaction
  */
@@ -9,7 +12,6 @@ export function initSound() {
     if (unlocked) return;
 
     const unlock = () => {
-        // Force all loaded sounds to preload into memory
         Object.values(sounds).forEach((audio) => {
             audio.play().catch(() => { });
             audio.pause();
@@ -33,13 +35,17 @@ export function loadSound(name: string, src: string): HTMLAudioElement {
     if (!sounds[name]) {
         const audio = new Audio(src);
         audio.preload = "auto";
+
+        // 🎚️ set default soft volume for study mode
+        audio.volume = DEFAULT_VOLUME;
+
         sounds[name] = audio;
     }
 
     const audio = sounds[name];
 
-    // If already unlocked, force preload immediately
-    if (unlocked && audio.readyState < 3) { // HAVE_FUTURE_DATA or less
+    // Preload after unlock
+    if (unlocked && audio.readyState < 3) {
         audio.play().catch(() => { });
         audio.pause();
         audio.currentTime = 0;
@@ -50,13 +56,23 @@ export function loadSound(name: string, src: string): HTMLAudioElement {
 
 /**
  * Plays a sound by name
+ * - muted: global mute
+ * - volume: override volume per call (optional)
  */
-export function playSound(name: string, muted = false) {
+export function playSound(
+    name: string,
+    muted = false,
+    volume: number = DEFAULT_VOLUME
+) {
     if (muted) return;
 
     const audio = sounds[name];
     if (!audio) return;
 
     audio.currentTime = 0;
+
+    // 🎚️ enforce soft study volume
+    audio.volume = volume;
+
     audio.play().catch(() => { });
 }

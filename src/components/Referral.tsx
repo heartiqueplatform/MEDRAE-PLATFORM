@@ -4,6 +4,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Gift, UserPlus } from "lucide-react";
+import { Award, BriefcaseMedical, Share2, MessageCircle, Send, GraduationCap, ChevronRight } from "lucide-react";
+
+
 import { motion } from "framer-motion";
 import { playSound, loadSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react"; // ✅ add this
@@ -125,85 +128,121 @@ const Referral: React.FC = () => {
     };
 
     return (
+
+
         <>
             {showPopup && user?.id && scenario && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-0 sm:p-4
-"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4"
                 >
                     <motion.div
-                        initial={{ scale: 0, rotateY: -45, rotateX: 30 }}
-                        animate={{ scale: 1, rotateY: 0, rotateX: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="relative w-full max-w-lg rounded-xl shadow-2xl overflow-hidden bg-gray-900 text-white"
+                        initial={{ y: 50, opacity: 0, scale: 0.9 }}
+                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="relative w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden bg-white dark:bg-slate-900 border border-white/20"
                     >
-                        <Card className="bg-transparent shadow-none">
-                            <CardHeader className="bg-blue-800/70">
-                                <div className="flex items-center gap-2">
-                                    <Gift className="w-6 h-6 text-white" />
-                                    <CardTitle className="text-white"> Referral Weekend Challenge</CardTitle>
+                        {/* Header: Medical Excellence Theme */}
+                        <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-blue-800 p-8 text-white relative overflow-hidden">
+                            {/* Decorative Background Pattern (Optional) */}
+                            <BriefcaseMedical className="absolute -right-4 -top-4 w-32 h-32 opacity-10 rotate-12" />
 
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
+                                        <Award className="w-6 h-6 text-teal-100" />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-teal-100">
+                                        Weekend Clinical Challenge
+                                    </span>
                                 </div>
-                                <CardDescription className="text-gray-300 text-sm">
+                                <h2 className="text-2xl font-black tracking-tight">
+                                    {scenarioAnswered ? "Challenge Mastered!" : "Clinical Case Study"}
+                                </h2>
+
+                                <div className="mt-4">
                                     {scenarioAnswered ? (
-                                        <div className="text-sm leading-snug">
-                                            {/* Line 1 */}
-                                            <div className="flex items-center gap-1 break-words">
-                                                Great! You have earned {tokensToday} <Coin />Study Tokens today.
-                                            </div>
-
-                                            {/* Line 2 */}
-                                            <div className="flex items-center gap-1 break-words">
-                                                Total tokens: {tokens} <Coin /> Study Tokens.
-                                            </div>
+                                        <div className="flex items-center gap-2 bg-black/20 w-fit px-4 py-2 rounded-full border border-white/10">
+                                            <span className="text-sm font-medium">Balance:</span>
+                                            <span className="text-lg font-bold text-yellow-400">{tokens}</span>
+                                            <span className="text-[10px] uppercase font-bold text-teal-100">Tokens</span>
                                         </div>
-
-
                                     ) : (
-                                        <span className="text-gray-300 font-medium">
-                                            It’s Referral Weekend! Answer correctly and earn bonus tokens:
-
-                                        </span>
+                                        <p className="text-teal-50/80 text-sm leading-relaxed max-w-[90%]">
+                                            Analyze the scenario below. A correct diagnosis earns you bonus <span className="text-white font-bold underline decoration-yellow-400">Study Tokens</span>.
+                                        </p>
                                     )}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {!scenarioAnswered ? (
-                                    <div className="flex flex-col gap-3">
-                                        <p className="font-semibold text-white text-lg">{scenario.question}</p>
+                                </div>
+                            </div>
+                        </div>
 
+                        <div className="p-8">
+                            {!scenarioAnswered ? (
+                                <div className="flex flex-col gap-6">
+                                    {/* The Question / Scenario */}
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                                        <p className="text-slate-800 dark:text-slate-100 font-semibold text-lg leading-snug">
+                                            {scenario.question}
+                                        </p>
+                                    </div>
+
+                                    {/* Options */}
+                                    <div className="grid gap-3">
                                         {[scenario.option_1, scenario.option_2, scenario.option_3, scenario.option_4].map((opt, idx) => (
-                                            <motion.div
+                                            <motion.button
                                                 key={idx}
-                                                whileHover={{ scale: 1.03 }}
-                                                whileTap={{ scale: 0.97 }}
+                                                whileHover={{ x: 5 }}
+                                                whileTap={{ scale: 0.98 }}
                                                 onClick={() => handleScenarioAnswer(idx + 1)}
-                                                className="cursor-pointer border-b border-gray-600 py-2 px-3 rounded-md hover:bg-blue-700 text-white transition"
+                                                className="flex items-center justify-between w-full text-left p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-teal-500 hover:bg-teal-50/50 dark:hover:bg-teal-900/20 transition-all group"
                                             >
-                                                {opt}
-                                            </motion.div>
+                                                <span className="text-slate-700 dark:text-slate-300 font-medium group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors">
+                                                    {opt}
+                                                </span>
+                                                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-teal-500" />
+                                            </motion.button>
                                         ))}
                                     </div>
-                                ) : (
-                                    <div className="flex flex-col gap-2">
-                                        <p className="text-gray-300 text-sm">😉 You answered correctly! Challenge a friend today and earn more tokens:</p>
-                                        <div className="flex flex-col gap-2 mt-2">
-                                            <Button className="flex-1 bg-green-500 text-white hover:bg-green-600" onClick={shareOnWhatsApp}>
-                                                <UserPlus className="w-4 h-4 mr-2" /> Invite via WhatsApp (+5 tokens)
-                                            </Button>
-                                            <Button className="flex-1 bg-blue-500 text-white hover:bg-blue-600" onClick={shareOnTelegram}>
-                                                <UserPlus className="w-4 h-4 mr-2" /> Invite via Telegram (+10 tokens)
-                                            </Button>
+                                </div>
+                            ) : (
+                                <div className="text-center">
+                                    <div className="mb-6">
+                                        <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full mb-4">
+                                            <GraduationCap className="w-8 h-8 text-emerald-600" />
                                         </div>
-                                        <Button variant="ghost" className="mt-2 text-sm text-gray-300" onClick={closePopup}>Maybe Tomorrow</Button>
-                                        <Button variant="ghost" className="mt-2 text-sm text-gray-300" onClick={closePopup}>All Done</Button>
+                                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                                            Excellent clinical reasoning! You've earned <span className="text-emerald-600 font-bold">{tokensToday} tokens</span>. Now, invite your colleagues to the challenge.
+                                        </p>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
+
+                                    <div className="flex flex-col gap-3">
+                                        <button
+                                            className="flex items-center justify-center gap-3 w-full py-4 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-2xl font-bold shadow-lg shadow-green-200 dark:shadow-none transition-all"
+                                            onClick={shareOnWhatsApp}
+                                        >
+                                            <MessageCircle className="w-5 h-5" /> Invite via WhatsApp (+5)
+                                        </button>
+
+                                        <button
+                                            className="flex items-center justify-center gap-3 w-full py-4 bg-[#0088cc] hover:bg-[#0077b5] text-white rounded-2xl font-bold transition-all"
+                                            onClick={shareOnTelegram}
+                                        >
+                                            <Send className="w-5 h-5" /> Share on Telegram (+10)
+                                        </button>
+
+                                        <button
+                                            variant="ghost"
+                                            className="mt-4 text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-widest transition-colors"
+                                            onClick={closePopup}
+                                        >
+                                            Dismiss for now
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </motion.div>
                 </motion.div>
             )}

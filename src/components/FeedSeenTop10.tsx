@@ -3,11 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Trophy, Stethoscope } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserProfileModal } from "@/components/UserProfileModal";
-
-
+import { Trophy, Stethoscope, BookOpen, Crown, Star, } from "lucide-react";
 interface TopStudent {
     user_id: string;
     username: string | null;
@@ -79,112 +77,136 @@ export default function FeedSeenTop10() {
 
     return (
 
-        <Card className="rounded-none sm:rounded-md shadow-none w-full max-w-full overflow-hidden
-                 bg-gray-100 dark:bg-gray-900 border-0 mt-4">
+        <Card className="rounded-xl border-0 bg-card shadow-sm w-full max-w-full overflow-hidden mt-2">
+            <CardHeader className="pb-4 px-6 pt-6">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                        <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
+                            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                                <Trophy className="h-5 w-5 text-amber-600" />
+                            </div>
+                            Feed Mastery
+                        </CardTitle>
+                        <CardDescription className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+                            Top 10 Students by Content Engagement
+                        </CardDescription>
+                    </div>
 
-            <CardHeader className="p-2">
-                <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    Top 10 FeedSeen
-                </CardTitle>
-                <CardDescription>Students who have seen the most questions.</CardDescription>
+                    {/* Rank Change Indicator (Integrated into Header) */}
+                    <AnimatePresence>
+                        {rankChangedUser && (
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="hidden md:flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-full text-xs font-bold"
+                            >
+                                <Star className="w-3 h-3 fill-current" />
+                                Leaderboard Updated
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </CardHeader>
 
-            <CardContent className="px-0">
-                <div className="relative w-full h-60 sm:h-64 md:h-56 lg:h-60">
-                    <div className="absolute inset-0 overflow-x-auto overflow-y-auto flex gap-4 p-1 custom-scrollbar">
+            <CardContent className="px-6 pb-6">
+                {/* Horizontal Scroll Container */}
+                <div className="relative w-full">
+                    <div className="flex gap-1 overflow-x-auto pb-4 pt-2 custom-scrollbar">
                         {loading ? (
-                            <div className="flex gap-4 animate-pulse">
-                                {Array.from({ length: 4 }).map((_, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-md bg-gray-200 dark:bg-gray-700"
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
-                                        <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                                        <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                                        <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                                    </div>
+                            <div className="flex gap-1 animate-pulse">
+                                {Array.from({ length: 5 }).map((_, idx) => (
+                                    <div key={idx} className="flex-shrink-0 w-40 h-52 rounded-2xl bg-muted/50 border border-border" />
                                 ))}
                             </div>
                         ) : (
                             topStudents.map((s, idx) => (
                                 <motion.div
                                     key={s.user_id}
-                                    className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-md
-    ${idx === 0 ? "bg-yellow-100 dark:bg-yellow-800" :
-                                            idx === 1 ? "bg-gray-100 dark:bg-gray-700" :
-                                                idx === 2 ? "bg-orange-100 dark:bg-orange-800" :
-                                                    "bg-gray-100 dark:bg-gray-800"
-                                        }
-    transform transition-transform duration-300 ease-in-out
-    hover:shadow-xl`}
-                                    initial={{ opacity: 0, y: 20 }}
+                                    onClick={() => setSelectedUserId(s.user_id)}
+                                    initial={{ opacity: 0, y: 15 }}
                                     animate={{
                                         opacity: 1,
-                                        y: rankChangedUser === s.user_id ? [0, -10, 0] : 0 // wave/bounce for rank changes
+                                        y: rankChangedUser === s.user_id ? [0, -8, 0] : 0,
+                                        scale: rankChangedUser === s.user_id ? [1, 1.05, 1] : 1
                                     }}
                                     transition={{
-                                        delay: idx * 0.05,
+                                        delay: idx * 0.04,
                                         type: "spring",
-                                        stiffness: 120,
-                                        duration: rankChangedUser === s.user_id ? 0.5 : 0.3
+                                        stiffness: 200,
+                                        damping: 15
                                     }}
-                                    whileHover={{ scale: 1.05 }} // zoom on hover
-                                    whileTap={{ scale: 0.95 }}   // tap feedback on mobile
-                                    onClick={() => setSelectedUserId(s.user_id)}
-
+                                    whileHover={{ y: -5 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    className={`relative flex-shrink-0 w-40 p-4 rounded-xl border transition-all cursor-pointer group
+                                ${idx === 0 ? "bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/20 dark:to-card border-amber-200 dark:border-amber-800/50 shadow-md shadow-amber-500/5" :
+                                            idx === 1 ? "bg-card border-slate-200 dark:border-slate-800" :
+                                                idx === 2 ? "bg-card border-orange-100 dark:border-orange-900/30" :
+                                                    "bg-card border-border hover:border-primary/30"}`}
                                 >
+                                    {/* Rank Indicator Badge */}
+                                    <div className={`absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold border-2 shadow-sm
+                                ${idx === 0 ? "bg-amber-500 text-white border-white dark:border-slate-900" :
+                                            idx === 1 ? "bg-slate-400 text-white border-white dark:border-slate-900" :
+                                                idx === 2 ? "bg-orange-500 text-white border-white dark:border-slate-900" :
+                                                    "bg-muted text-muted-foreground border-white dark:border-slate-900"}`}>
+                                        {idx + 1}
+                                    </div>
 
-                                    <div className="flex flex-col items-center text-center">
-                                        {/* Top 3 Stethoscope banner */}
-                                        {idx <= 2 && (
-                                            <Stethoscope
-                                                className={`w-5 h-5 mb-1 animate-bounce ${idx === 0 ? "text-yellow-500" :
-                                                    idx === 1 ? "text-gray-500" :
-                                                        "text-orange-500"
-                                                    }`}
+                                    <div className="flex flex-col items-center">
+                                        {/* Special Icon for Top 3 */}
+                                        <div className="h-6 mb-1">
+                                            {idx === 0 ? <Crown className="w-5 h-5 text-amber-500 animate-pulse" /> :
+                                                idx <= 2 ? <Stethoscope className={`w-4 h-4 ${idx === 1 ? 'text-slate-400' : 'text-orange-400'}`} /> : null}
+                                        </div>
+
+                                        <div className="relative mb-3">
+                                            <img
+                                                src={s.avatar_url || "/UsersAvatar.jpg"}
+                                                alt={s.name}
+                                                className={`w-14 h-14 rounded-full object-cover border-2 p-0.5 transition-transform group-hover:scale-105
+                                            ${idx === 0 ? "border-amber-400" : "border-border"}`}
                                             />
-                                        )}
-
-                                        <img
-                                            src={s.avatar_url || "/UsersAvatar.jpg"}
-                                            alt={s.name || s.username}
-                                            className="w-12 h-12 rounded-full mb-2 object-cover"
-                                        />
-
-                                        <div className="font-semibold text-sm text-gray-800 dark:text-white break-words text-center">
-                                            {s.name || s.username}
                                         </div>
 
-                                        <div className="text-xs text-gray-500 dark:text-gray-300 truncate">
-                                            {s.institution || "No Institution"}
+                                        <div className="text-center space-y-1 w-full mb-3">
+                                            <p className="font-bold text-sm text-foreground truncate px-1">
+                                                {s.name || s.username}
+                                            </p>
+                                            <p className="text-[10px] font-medium text-muted-foreground truncate uppercase tracking-tighter opacity-80">
+                                                {s.institution || "Global Learner"}
+                                            </p>
                                         </div>
 
-                                        <div className="mt-2 font-bold text-yellow-600 dark:text-yellow-400">
-                                            Done {s.seen_count ?? 0} Questions in Feed Page
+                                        {/* Metric Pill */}
+                                        <div className={`w-full py-2 px-1 rounded-xl border flex flex-col items-center gap-0.5
+                                    ${idx === 0 ? "bg-amber-100/50 dark:bg-amber-900/20 border-amber-200/50" : "bg-muted/50 border-transparent"}`}>
+                                            <div className="flex items-center gap-1.5 font-bold text-xs text-primary">
+                                                <BookOpen className="w-3 h-3" />
+                                                {s.seen_count ?? 0}
+                                            </div>
+                                            <span className="text-[9px] font-bold text-muted-foreground uppercase">Questions</span>
                                         </div>
                                     </div>
                                 </motion.div>
-
                             ))
                         )}
                     </div>
-                    {/* Rank change popup */}
-                    <AnimatePresence>
-                        {rankChangedUser && (
-                            <motion.div
-                                className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black px-4 py-2 rounded-md font-semibold shadow-lg z-50"
-                                initial={{ y: -50, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -50, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 120 }}
-                            >
-                                🎉 Your rank just changed!
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
                 </div>
+
+                {/* Mobile Rank Change Notification */}
+                <AnimatePresence>
+                    {rankChangedUser && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            className="md:hidden mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-center text-xs font-bold shadow-lg"
+                        >
+                            🎉 Your rank has moved! Keep up the pace.
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </CardContent>
             <UserProfileModal
                 userId={selectedUserId}

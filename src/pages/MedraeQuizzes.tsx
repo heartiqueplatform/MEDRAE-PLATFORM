@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Play, BookOpen, Shuffle, Compass, RefreshCw } from "lucide-react";
+import { Heart, Play, BookOpen, Shuffle, Compass, ChevronRight, ClipboardCheck, CheckCircle2, Trophy, Zap, Lock, Sparkles, Search, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUnitQuestionCount } from "@/hooks/useUnitQuestionCount";
 import { useState } from "react";
@@ -112,6 +112,7 @@ const paperFourUnits = [
   { code: "FP-01", title: "2026 Newest Mock Paper 1", level: "Professional" },
   { code: "FP-02", title: "2026 Newest Practice Paper 2", level: "Professional" },
   { code: "FP-03", title: "PP1 FQE PRACTICE PAPER 1", level: "Professional" },
+  { code: "FP-04", title: "NCK 001", level: "Professional" },
 ];
 
 
@@ -455,135 +456,161 @@ export function MedraeQuizzes() {
 
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
-      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
+    <div className="min-h-screen w-full flex flex-col items-center ">
+      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6  pt-4 sm:pt-8">
+
+        {/* Popup Notification */}
         {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-none sm:rounded-2xl border-0">
-          <CardHeader>
-            <CardTitle className="text-3xl flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
-              <Heart className="h-8 w-8 text-red-500 animate-pulse" fill="currentColor" />
-              Quizzes Bank
-            </CardTitle>
+
+        {/* HERO HEADER CARD */}
+        <Card className="relative overflow-hidden shadow-xl shadow-blue-500/5 transition-all rounded-none sm:rounded-[2rem] border-0 bg-white dark:bg-gray-900">
+
+          {/* Subtle Background Decoration */}
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          <CardHeader className="relative pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-50 dark:bg-red-900/20 rounded-2xl">
+                <Heart className="h-7 w-7 text-red-500 animate-pulse" fill="currentColor" />
+              </div>
+              <div>
+                <CardTitle className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
+                  Quiz <span className="text-blue-600">Bank</span>
+                </CardTitle>
+                <p className="text-[10px] font-bold text-blue-500/60 uppercase tracking-[0.2em] mt-1.5">
+                  NCK & NCLEX Prep
+                </p>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            {/* Collapsible Description */}
-            <div className="mt-2">
+
+          <CardContent className="relative space-y-2">
+            {/* Collapsible Description Box */}
+            <div className="bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
               <motion.div layout>
-                <p className="text-muted-foreground mt-0 text-base leading-relaxed">
-                  Explore NCK/NCLEX-aligned quizzes for all core nursing units. Each quiz has been carefully curated to reflect the NCLEX and Nursing Council of Kenya (NCK) syllabus
-                  , with questions thoughtfully selected to avoid unnecessary repetition...
-                  <span
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  Explore NCK/NCLEX-aligned quizzes for all core nursing units. Curated to reflect the latest syllabus
+                  and avoid unnecessary repetition...
+                  <button
                     onClick={() => setShowDescription(!showDescription)}
-                    className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
+                    className="text-blue-600 dark:text-blue-400 font-bold ml-1 hover:underline underline-offset-4 inline-flex items-center gap-1 transition-all"
                   >
-                    Learn more
-                  </span>
+                    {showDescription ? "Show less" : "Learn more"}
+                  </button>
                 </p>
 
-                <AnimatePresence initial={false}>
+                <AnimatePresence>
                   {showDescription && (
                     <motion.div
-                      key="quiz-description-expanded"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.35, ease: "easeInOut" }}
-                      className="mt-2 text-muted-foreground text-base leading-relaxed"
+                      className="overflow-hidden"
                     >
-                      This ensures broad topic coverage and mirrors the structure of actual NCK assessments.
-                      Remember these quizzes are not just for memorizing; they are designed to help
-                      you understand concepts deeply. Read each question carefully, and pay attention
-                      to additional points beyond the direct answer.
-
-                      <span className="font-semibold text-primary block mt-2">
-                        Note: You must finish the quiz to unlock the submit button.
-                      </span>
-
-                      <span className="font-semibold text-primary block mt-1">
-                        Your quiz progress is saved locally, so you can resume later anytime without losing your work.
-                      </span>
+                      <div className="pt-4 space-y-3 border-t border-gray-200/50 dark:border-gray-700/50 mt-3">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          These quizzes mirror the structure of actual NCK assessments. Read each question carefully
+                          and pay attention to the rationales provided.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
+                            <CheckCircle2 className="w-4 h-4" /> Finish quiz to unlock submission
+                          </div>
+                          <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 rounded-lg">
+                            <CheckCircle2 className="w-4 h-4" /> Progress saved locally to your device
+                          </div>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.div>
             </div>
 
-            <div className="relative w-full mt-3">
+            {/* SEARCH BAR SECTION */}
+            <div className="relative w-full group">
+              {/* Magnifying Glass Icon */}
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-transform group-focus-within:scale-110">
+                <Search className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
 
-              {/* Input */}
               <input
                 type="text"
-                placeholder="Search all papers..."
+                placeholder="Search papers, units or topics..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-3 pl-10 pr-24 rounded-2xl border border-0 bg-white text-gray-900 placeholder-gray-400 shadow-sm
-    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200
-    dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400"
+                className="w-full h-14 pl-12 pr-28 rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent
+              text-gray-900 dark:text-white placeholder-gray-400 font-medium
+              focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10
+              transition-all duration-300 outline-none shadow-inner"
               />
 
-              {/* Icons container (floating on right) */}
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-
-                {/* Shuffle */}
-                <Tooltip text="Random unit">
+              {/* Floating Utility Buttons */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-6">
+                <Tooltip text="Random">
                   <button
                     onClick={() => {
                       const allUnits = [...paperOneUnits, ...paperTwoUnits];
                       const randomUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
                       navigate(`/quiz?unit=${encodeURIComponent(randomUnit.title)}`);
                     }}
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    className="p-2.5 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-white dark:hover:bg-gray-800 transition-all active:scale-90"
                   >
                     <Shuffle className="w-4 h-4" />
                   </button>
                 </Tooltip>
 
-                {/* Recommend */}
-                <Tooltip text="Recommended">
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-1" />
+
+                <Tooltip text="Recommend">
                   <button
                     onClick={() => {
                       const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
                       let recommendedUnit;
+                      const allUnits = [...paperOneUnits, ...paperTwoUnits];
 
                       if (pastUnits.length > 0) {
-                        const allUnits = [...paperOneUnits, ...paperTwoUnits];
                         recommendedUnit = allUnits.find((u) => !pastUnits.includes(u.code));
                       }
-
                       if (!recommendedUnit) {
-                        const allUnits = [...paperOneUnits, ...paperTwoUnits];
                         recommendedUnit = allUnits[Math.floor(Math.random() * allUnits.length)];
                       }
-
                       if (recommendedUnit) {
                         navigate(`/quiz?unit=${encodeURIComponent(recommendedUnit.title)}`);
                       }
                     }}
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    className="p-2.5 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-white dark:hover:bg-gray-800 transition-all active:scale-90"
                   >
                     <Compass className="w-5 h-5" />
                   </button>
                 </Tooltip>
-
               </div>
             </div>
           </CardContent>
-        </Card>
 
 
-        {/* PAPER ONE */}
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
-          {/* CARD HEADER */}
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-yellow-500">
-              NCK PP1 Course Units
-              <span className="text-sm text-gray-500 ml-2">({totalPaperOne} Questions)</span>
-            </CardTitle>
-          </CardHeader>
+          {/* PAPER ONE SECTION */}
+          <div className="space-y-2">
+            {/* SECTION HEADER */}
+            <div className="flex items-end justify-between px-2 sm:px-0 mt-1">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-500 flex items-center gap-2">
+                  <div className="w-2 h-8 bg-amber-500 rounded-full" />
+                  Paper 1: Core Sciences
+                </h2>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  Foundational Nursing Units
+                </p>
+              </div>
+              <div className="bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+                <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                  {totalPaperOne} Questions Total
+                </span>
+              </div>
+            </div>
 
-          {/* CARD CONTENT */}
-          <CardContent className="space-y-4">
-            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+            {/* UNITS GRID */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 w-full">
               {(!hasLocalCache
                 ? paperOneUnits
                 : paperOneUnits.filter((unit) =>
@@ -592,43 +619,60 @@ export function MedraeQuizzes() {
                 )
               ).map((unit, index) =>
                 !hasLocalCache ? (
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
+                  /* PRO SKELETON LOADER */
+                  <div key={index} className="h-40 w-full rounded-3xl bg-gray-200 dark:bg-gray-800 animate-pulse border border-transparent" />
                 ) : (
+                  /* UNIT CARD */
                   <Card
-                    key={index}
-                    className="shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #e9c80d" }}
+                    key={unit.code}
+                    className="group relative overflow-hidden transition-all duration-300 rounded-[2rem] border-2 border-gray-100 dark:border-gray-800 hover:border-amber-400 dark:hover:border-amber-500/50 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl hover:shadow-amber-500/5"
                   >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-yellow-500" />
-                        {unit.title}
-                      </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">
-                            {cachedCounts[unit.code] !== undefined
-                              ? `${cachedCounts[unit.code]} Questions`
-                              : "0 Questions"}
-                          </Badge>
-
-                          <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
-                          )}
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                          <BookOpen className="h-5 w-5 text-amber-600" />
                         </div>
 
+                        {/* STATUS BADGE */}
+                        {isPremium ? (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                            <CheckCircle2 className="w-3 h-3" /> UNLOCKED
+                          </div>
+                        ) : freeUnits.includes(unit.code.trim()) ? (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                            <Sparkles className="w-3 h-3" /> FREE
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
+                            <Lock className="w-3 h-3" /> PREMIUM
+                          </div>
+                        )}
+                      </div>
+
+                      <CardTitle className="text-lg font-bold leading-tight mt-3 text-gray-900 dark:text-gray-100">
+                        {unit.title}
+                      </CardTitle>
+                      <CardDescription className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                        {unit.code}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent>
+                      <div className="flex flex-col gap-4">
+                        {/* META INFO */}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
+                            {cachedCounts[unit.code] || 0} Questions
+                          </Badge>
+                          <Badge
+                            variant={getLevelVariant(unit.level)}
+                            className="font-bold border-none"
+                          >
+                            {unit.level}
+                          </Badge>
+                        </div>
+
+                        {/* ACTION BUTTON */}
                         {isPremium || freeUnits.includes(unit.code.trim()) ? (
                           <Link
                             to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
@@ -637,18 +681,36 @@ export function MedraeQuizzes() {
                               playSound("start");
                               if (navigator.vibrate) navigator.vibrate(50);
                             }}
+                            className="block w-full"
                           >
                             <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-                        ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
+                              className={`w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2
+                      ${hasStartedQuiz(unit.code)
+                                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 dark:shadow-none"
+                                  : "bg-gray-200 dark:bg-gray-900 text-black dark:text-white hover:opacity-90 shadow-lg shadow-gray-200 dark:shadow-none"
+                                }`}
                             >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                              {hasStartedQuiz(unit.code) ? (
+                                <>
+                                  <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                                  Continue Practicing
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-4 w-4 fill-current" />
+                                  Start Practice
+                                </>
+                              )}
                             </Button>
                           </Link>
                         ) : (
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
+                          <Button
+                            className="w-full h-12 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 font-bold"
+                            variant="outline"
+                            disabled
+                          >
+                            <Lock className="w-4 h-4 mr-2" />
+                            Locked for Pro
                           </Button>
                         )}
                       </div>
@@ -657,21 +719,29 @@ export function MedraeQuizzes() {
                 )
               )}
             </div>
-          </CardContent>
-        </Card>
-        {/* PAPER TWO */}
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
-          {/* CARD HEADER */}
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-blue-600">
-              NCK PP2 Course Units
-              <span className="text-sm text-gray-500 ml-2">({totalPaperTwo} Questions)</span>
-            </CardTitle>
-          </CardHeader>
+          </div>
+          {/* PAPER TWO SECTION */}
+          <div className="space-y-2">
+            {/* SECTION HEADER */}
+            <div className="flex items-end justify-between px-2 sm:px-0 mt-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-500 flex items-center gap-2">
+                  <div className="w-2 h-8 bg-blue-600 rounded-full" />
+                  Paper 2: Community & Management
+                </h2>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  Leadership, Research & Community Health
+                </p>
+              </div>
+              <div className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800">
+                <span className="text-xs font-bold text-blue-700 dark:text-blue-400">
+                  {totalPaperTwo} Questions Total
+                </span>
+              </div>
+            </div>
 
-          {/* CARD CONTENT */}
-          <CardContent className="space-y-4">
-            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+            {/* UNITS GRID */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 w-full">
               {(!hasLocalCache
                 ? paperTwoUnits
                 : paperTwoUnits.filter((unit) =>
@@ -680,43 +750,62 @@ export function MedraeQuizzes() {
                 )
               ).map((unit, index) =>
                 !hasLocalCache ? (
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
+                  /* SKELETON LOADER */
+                  <div key={index} className="h-40 w-full rounded-[2rem] bg-gray-200 dark:bg-gray-800 animate-pulse" />
                 ) : (
+                  /* UNIT CARD */
                   <Card
-                    key={index}
-                    className="shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #191de6" }}
+                    key={unit.code}
+                    className="group relative overflow-hidden transition-all duration-300 rounded-[2rem] border-2 border-gray-100 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500/50 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl hover:shadow-blue-500/5"
                   >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-blue-600" />
-                        {unit.title}
-                      </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">
-                            {cachedCounts[unit.code] !== undefined
-                              ? `${cachedCounts[unit.code]} Questions`
-                              : "0 Questions"}
-                          </Badge>
-
-                          <Badge variant={getLevelVariant(unit.level)}>{unit.level}</Badge>
-
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
-                          )}
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                          <BookOpen className="h-5 w-5 text-blue-600" />
                         </div>
 
+                        {/* STATUS INDICATORS */}
+                        <div className="flex flex-col items-end gap-1">
+                          {isPremium ? (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                              <CheckCircle2 className="w-3 h-3" /> UNLOCKED
+                            </div>
+                          ) : freeUnits.includes(unit.code.trim()) ? (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                              <Sparkles className="w-3 h-3" /> FREE
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
+                              <Lock className="w-3 h-3" /> PREMIUM
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <CardTitle className="text-lg font-bold leading-tight mt-3 text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
+                        {unit.title}
+                      </CardTitle>
+                      <CardDescription className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                        {unit.code}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent>
+                      <div className="flex flex-col gap-4">
+                        {/* UNIT STATS PILLS */}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
+                            {cachedCounts[unit.code] ?? 0} Questions
+                          </Badge>
+                          <Badge
+                            variant={getLevelVariant(unit.level)}
+                            className="font-bold border-none"
+                          >
+                            {unit.level}
+                          </Badge>
+                        </div>
+
+                        {/* ACTION BUTTON LOGIC */}
                         {isPremium || freeUnits.includes(unit.code.trim()) ? (
                           <Link
                             to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
@@ -725,18 +814,36 @@ export function MedraeQuizzes() {
                               playSound("start");
                               if (navigator.vibrate) navigator.vibrate(50);
                             }}
+                            className="block w-full"
                           >
                             <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-                        ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
+                              className={`w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2
+                      ${hasStartedQuiz(unit.code)
+                                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 dark:shadow-none"
+                                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 dark:shadow-none"
+                                }`}
                             >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                              {hasStartedQuiz(unit.code) ? (
+                                <>
+                                  <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                                  Continue Quiz
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-4 w-4 fill-current" />
+                                  Start Practice
+                                </>
+                              )}
                             </Button>
                           </Link>
                         ) : (
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
+                          <Button
+                            className="w-full h-12 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 font-bold"
+                            variant="outline"
+                            disabled
+                          >
+                            <Lock className="w-4 h-4 mr-2" />
+                            Upgrade to Access
                           </Button>
                         )}
                       </div>
@@ -745,26 +852,29 @@ export function MedraeQuizzes() {
                 )
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          {/* PAPER FOUR SECTION - FULL MOCK PAPERS */}
+          <div className="space-y-2">
+            {/* SECTION HEADER */}
+            <div className="flex items-end justify-between px-2 sm:px-0 mt-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-500 flex items-center gap-2">
+                  <div className="w-2 h-8 bg-emerald-600 rounded-full" />
+                  Full Practice Papers
+                </h2>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  2026 Updated Full-Length Mock Exams
+                </p>
+              </div>
+              <div className="bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                  {totalPaperFour.reduce((sum, unit) => sum + unit.totalQuestions, 0)} Total Qs
+                </span>
+              </div>
+            </div>
 
-
-
-        {/* PAPER FOUR – Full Papers */}
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
-          {/* CARD HEADER */}
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-green-600">
-              Full Paper Units
-              <span className="text-sm text-gray-500 ml-2">
-                ({totalPaperFour.reduce((sum, unit) => sum + unit.totalQuestions, 0)} Questions)
-              </span>
-            </CardTitle>
-          </CardHeader>
-
-          {/* CARD CONTENT */}
-          <CardContent className="space-y-4">
-            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+            {/* UNITS GRID */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 w-full">
               {(!hasLocalCache
                 ? paperFourUnits
                 : paperFourUnits.filter((unit) =>
@@ -773,43 +883,70 @@ export function MedraeQuizzes() {
                 )
               ).map((unit, index) =>
                 !hasLocalCache ? (
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
+                  /* SKELETON LOADER */
+                  <div key={index} className="h-44 w-full rounded-[2rem] bg-gray-200 dark:bg-gray-800 animate-pulse" />
                 ) : (
+                  /* FULL PAPER CARD */
                   <Card
-                    key={index}
-                    className="shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #11d111" }}
+                    key={unit.code}
+                    className="group relative overflow-hidden transition-all duration-300 rounded-[2rem] border-2 border-gray-100 dark:border-gray-800 hover:border-emerald-500 dark:hover:border-emerald-500/50 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5"
                   >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-green-600" />
+                    {/* Subtle "New" Badge for Mocks */}
+                    <div className="absolute -right-8 top-4 rotate-45 bg-emerald-500 text-white text-[10px] font-bold px-10 py-1 shadow-sm">
+                      NEW
+                    </div>
+
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                          <ClipboardCheck className="h-5 w-5 text-emerald-600" />
+                        </div>
+
+                        {/* STATUS LOGIC */}
+                        <div className="flex flex-col items-end gap-1 pr-4">
+                          {isPremium ? (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                              <CheckCircle2 className="w-3 h-3" /> UNLOCKED
+                            </div>
+                          ) : freeUnits.includes(unit.code.trim()) ? (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                              <Sparkles className="w-3 h-3" /> FREE
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
+                              <Lock className="w-3 h-3" /> PREMIUM
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <CardTitle className="text-lg font-bold leading-tight mt-3 text-gray-900 dark:text-gray-100 pr-6">
                         {unit.title}
                       </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
+                      <CardDescription className="text-[10px] font-bold tracking-widest text-emerald-600/70 uppercase">
+                        {unit.code}
+                      </CardDescription>
                     </CardHeader>
+
                     <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">{unit.totalQuestions} Questions</Badge>
+                      <div className="flex flex-col gap-4">
+                        {/* MOCK STATS */}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
+                            {unit.totalQuestions} Questions
+                          </Badge>
                           <Badge
-                            variant={unit.level.toLowerCase() === "professional" ? "default" : "outline"}
-                            className={unit.level.toLowerCase() === "professional" ? "bg-teal-500 text-white" : ""}
+                            className={`border-none font-bold
+                    ${unit.level.toLowerCase() === "professional"
+                                ? "bg-teal-500 text-white"
+                                : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                              }`}
                           >
                             {unit.level}
                           </Badge>
-
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Unlocked</Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">Premium/Pro</Badge>
-                          )}
                         </div>
 
+                        {/* ACTION BUTTON */}
                         {isPremium || freeUnits.includes(unit.code.trim()) ? (
                           <Link
                             to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
@@ -818,18 +955,36 @@ export function MedraeQuizzes() {
                               playSound("start");
                               if (navigator.vibrate) navigator.vibrate(50);
                             }}
+                            className="block w-full"
                           >
                             <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-                        ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
+                              className={`w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg
+                      ${hasStartedQuiz(unit.code)
+                                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  : "bg-gray-200 dark:bg-gray-900 text-black dark:text-white hover:opacity-90"
+                                }`}
                             >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                              {hasStartedQuiz(unit.code) ? (
+                                <>
+                                  <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                                  Continue Mock
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-4 w-4 fill-current" />
+                                  Take Exam
+                                </>
+                              )}
                             </Button>
                           </Link>
                         ) : (
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
+                          <Button
+                            className="w-full h-12 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 font-bold bg-transparent"
+                            variant="outline"
+                            disabled
+                          >
+                            <Lock className="w-3 h-3 mr-2" />
+                            Locked Mock
                           </Button>
                         )}
                       </div>
@@ -838,21 +993,29 @@ export function MedraeQuizzes() {
                 )
               )}
             </div>
-          </CardContent>
-        </Card>
-        {/* PAPER THREE */}
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
-          {/* CARD HEADER */}
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-purple-600">
-              NCLEX Mastery Units
-              <span className="text-sm text-gray-500 ml-2">({totalPaperThree} Questions)</span>
-            </CardTitle>
-          </CardHeader>
+          </div>
+          {/* PAPER THREE SECTION - NCLEX MASTERY */}
+          <div className="space-y-2">
+            {/* SECTION HEADER */}
+            <div className="flex items-end justify-between px-2 sm:px-0 mt-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                  <div className="w-2 h-8 bg-purple-600 rounded-full" />
+                  Paper 3: NCLEX Mastery
+                </h2>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  International Nursing Standards & RN Prep
+                </p>
+              </div>
+              <div className="bg-purple-100 dark:bg-purple-900/30 px-3 py-1 rounded-full border border-purple-200 dark:border-purple-800">
+                <span className="text-xs font-bold text-purple-700 dark:text-purple-400 font-mono">
+                  {totalPaperThree} Questions
+                </span>
+              </div>
+            </div>
 
-          {/* CARD CONTENT */}
-          <CardContent className="space-y-4">
-            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] w-full">
+            {/* UNITS GRID */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 w-full">
               {(!hasLocalCache
                 ? paperThreeUnits
                 : paperThreeUnits.filter((unit) =>
@@ -861,68 +1024,69 @@ export function MedraeQuizzes() {
                 )
               ).map((unit, index) =>
                 !hasLocalCache ? (
-                  <div
-                    key={index}
-                    className="h-32 w-full rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
-                  ></div>
+                  /* SKELETON LOADER */
+                  <div key={index} className="h-44 w-full rounded-[2rem] bg-gray-200 dark:bg-gray-800 animate-pulse" />
                 ) : (
+                  /* NCLEX UNIT CARD */
                   <Card
-                    key={index}
-                    className="shadow-md hover:shadow-lg transition-all rounded-2xl"
-                    style={{ border: "1px solid #ce0dd4" }}
+                    key={unit.code}
+                    className="group relative overflow-hidden transition-all duration-300 rounded-[2rem] border-2 border-gray-100 dark:border-gray-800 hover:border-purple-500 dark:hover:border-purple-500/50 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl hover:shadow-purple-500/5"
                   >
-                    <CardHeader>
-                      <CardTitle className="text-md flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-purple-600" />
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-xl group-hover:rotate-12 transition-transform duration-300">
+                          <Trophy className="h-5 w-5 text-purple-600" />
+                        </div>
+
+                        {/* PREMIUM STATUS TAG */}
+                        <div className="flex flex-col items-end gap-1">
+                          {isPremium ? (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                              <CheckCircle2 className="w-3 h-3" /> UNLOCKED
+                            </div>
+                          ) : freeUnits.includes(unit.code.trim()) ? (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                              <Sparkles className="w-3 h-3" /> FREE
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
+                              <Lock className="w-3 h-3" /> PREMIUM
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <CardTitle className="text-lg font-bold leading-tight mt-3 text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
                         {unit.title}
                       </CardTitle>
-                      <CardDescription>{unit.code}</CardDescription>
+                      <CardDescription className="text-[10px] font-bold tracking-widest text-purple-500/70 uppercase">
+                        {unit.code}
+                      </CardDescription>
                     </CardHeader>
+
                     <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">
-                            {cachedCounts[unit.code] !== undefined
-                              ? `${cachedCounts[unit.code]} Questions`
-                              : "0 Questions"}
+                      <div className="flex flex-col gap-4">
+                        {/* MASTERY LEVEL PILLS */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
+                            {cachedCounts[unit.code] ?? 0} Qs
                           </Badge>
 
+                          {/* UPGRADED LEVEL LOGIC */}
                           <Badge
-                            variant={
-                              unit.level.toLowerCase() === "foundation"
-                                ? "default"
+                            className={`border-none font-bold text-[10px] uppercase tracking-tighter
+                    ${unit.level.toLowerCase() === "foundation"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
                                 : unit.level.toLowerCase() === "professional"
-                                  ? "secondary"
-                                  : unit.level.toLowerCase() === "expert"
-                                    ? "destructive"
-                                    : "outline"
-                            }
-                            className={
-                              unit.level.toLowerCase() === "foundation"
-                                ? "bg-yellow-400 text-black"
-                                : unit.level.toLowerCase() === "professional"
-                                  ? "bg-teal-500 text-white"
-                                  : unit.level.toLowerCase() === "expert"
-                                    ? "bg-purple-600 text-white"
-                                    : ""
-                            }
+                                  ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400"
+                                  : "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400"
+                              }`}
                           >
                             {unit.level}
                           </Badge>
-
-                          {isPremium ? (
-                            <Badge variant="default" className="bg-green-600 text-white">
-                              Unlocked
-                            </Badge>
-                          ) : freeUnits.includes(unit.code.trim()) ? (
-                            <Badge variant="default" className="bg-green-600 text-white">Free</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-red-600 border-red-600">
-                              Premium/Pro
-                            </Badge>
-                          )}
                         </div>
 
+                        {/* ACTION BUTTON */}
                         {isPremium || freeUnits.includes(unit.code.trim()) ? (
                           <Link
                             to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
@@ -931,18 +1095,36 @@ export function MedraeQuizzes() {
                               playSound("start");
                               if (navigator.vibrate) navigator.vibrate(50);
                             }}
+                            className="block w-full"
                           >
                             <Button
-                              className={`w-auto px-3 py-1 mt-4 whitespace-nowrap flex items-center justify-center text-sm
-                        ${hasStartedQuiz(unit.code) ? "bg-green-600 text-white hover:bg-green-700" : ""}`}
+                              className={`w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg
+                      ${hasStartedQuiz(unit.code)
+                                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200/50"
+                                  : "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-200/50 dark:shadow-none"
+                                }`}
                             >
-                              <Play className="h-4 w-4 mr-1" />
-                              {hasStartedQuiz(unit.code) ? "Continue Practice" : "Start Practice"}
+                              {hasStartedQuiz(unit.code) ? (
+                                <>
+                                  <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                                  Resume Mastery
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="h-4 w-4 fill-current text-amber-300" />
+                                  Start NCLEX Prep
+                                </>
+                              )}
                             </Button>
                           </Link>
                         ) : (
-                          <Button className="w-full mt-4" variant="outline" disabled>
-                            Premium/Pro Only
+                          <Button
+                            className="w-full h-12 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-400 font-bold bg-transparent"
+                            variant="outline"
+                            disabled
+                          >
+                            <Lock className="w-3 h-3 mr-2" />
+                            Upgrade to Mastery
                           </Button>
                         )}
                       </div>
@@ -951,23 +1133,60 @@ export function MedraeQuizzes() {
                 )
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          {/* PROGRESS & SYNC FOOTER */}
+          <Card className="mt-12 mb-8 overflow-hidden rounded-[2rem] border-0 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  Your Journey
+                </CardTitle>
 
-        {/* Progress */}
-        <Card className="border-0">
-          <CardHeader>
-            <CardTitle>Your Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              You are Connected to Supabase to track your quiz progress and scores.Visit My study progress page after fully submitting your quiz.
-            </p>
-          </CardContent>
-          <TermsButton />
-        </Card>
+                {/* Live Sync Indicator */}
+                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-100 dark:border-emerald-800">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
+                    Cloud Synced
+                  </span>
+                </div>
+              </div>
+            </CardHeader>
 
+            <CardContent className="space-y-6">
+              <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner">
+                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                  You are securely connected to <span className="font-bold text-gray-900 dark:text-white">Supabase Cloud</span>.
+                  Your quiz progress, scores, and custom notes are being tracked in real-time.
+                </p>
+
+                <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Ready to see your results?</span>
+                  <Link
+                    to="/progress"
+                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                  >
+                    View Study Progress <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Terms and Legal */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <div className="flex items-center gap-4">
+                  <TermsButton />
+                </div>
+
+              </div>
+            </CardContent>
+          </Card>
+        </Card>
       </div>
+
     </div>
+
   );
 }

@@ -6,10 +6,10 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,   // keeps you logged in across visits
-    autoRefreshToken: true, //  refreshes expired tokens
+    persistSession: true,
+    autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: localStorage,  // ensures use of browser storage
+    lockAcquireTimeout: 10000,
   },
 });
 

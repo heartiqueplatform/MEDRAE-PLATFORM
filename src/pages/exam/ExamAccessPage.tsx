@@ -1,7 +1,8 @@
 "use client";
 import { Link } from "react-router-dom";
-import { Sun, Moon, RefreshCw, ChevronLeft, ChevronRight, CornerRightDown, Flag, Clock } from "lucide-react";
+import { Sun, Moon, RefreshCw, ChevronLeft, WifiOff, ChevronRight, CornerRightDown, Flag, Lock, Clock, Unlock, ShieldAlert, Video, Home, Mic } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useParams } from "react-router-dom"; // at the top with other imports
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -12,9 +13,19 @@ import ExamProctor from "@/components/ExamProctor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
-
+import React from 'react';
+import { ScrollArea } from "@/components/ui/scroll-area"; // If you have Shadcn ScrollArea, otherwise use div
+import {
+    CheckCircle2,
+    HelpCircle,
+    SkipForward,
+    AlertTriangle,
+    FileCheck,
+    RotateCcw,
+    X
+} from "lucide-react";
 const getStatusVariant = (status: string) => {
     switch (status.toLowerCase()) {
         case "done":
@@ -28,7 +39,36 @@ const getStatusVariant = (status: string) => {
     }
 };
 
-
+// Connectivity Guard UI
+const ConnectivityOverlay = () => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[10000] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center"
+    >
+        <div className="relative mb-8">
+            <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping" />
+            <div className="relative bg-slate-900 border border-slate-800 p-8 rounded-full shadow-2xl">
+                <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
+                <WifiOff className="absolute -top-2 -right-2 w-8 h-8 text-rose-500 animate-bounce" />
+            </div>
+        </div>
+        <div className="space-y-4 max-w-md">
+            <h2 className="text-3xl font-black text-white tracking-tight italic">
+                CONNECTION <span className="text-blue-500">INTERRUPTED</span>
+            </h2>
+            <div className="flex items-center justify-center gap-2 text-slate-400 font-medium uppercase tracking-[0.2em] text-xs">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                Attempting Auto-Reconnect
+            </div>
+            <p className="text-slate-500 text-sm">
+                Your exam progress is <span className="text-slate-300 font-bold">safely paused</span>.
+                The system will resume automatically once your connection is stable.
+            </p>
+        </div>
+    </motion.div>
+);
 export default function ExamAccessPage() {
     // ===== Fullscreen helpers =====
     const enterFullscreen = () => {
@@ -95,6 +135,7 @@ export default function ExamAccessPage() {
     const [loudWarning, setLoudWarning] = useState(false);
     const [mediaAllowed, setMediaAllowed] = useState(false);
     const [examSession, setExamSession] = useState<any>(null);
+
     // State
     const [profile, setProfile] = useState<any>(() => {
         if (typeof window !== "undefined") {
@@ -108,7 +149,20 @@ export default function ExamAccessPage() {
     // 1️⃣ Add this state at the top of your component
 
     const [isDark, setIsDark] = useState(false);
+    const isOnline = useOnlineStatus();
+    const [showConnectionOverlay, setShowConnectionOverlay] = useState(false);
 
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        if (!isOnline) {
+            // Wait 1.5 seconds of "offline" before showing the overlay
+            // This stops the flashing on small glitches
+            timeout = setTimeout(() => setShowConnectionOverlay(true), 1500);
+        } else {
+            setShowConnectionOverlay(false);
+        }
+        return () => clearTimeout(timeout);
+    }, [isOnline]);
     const initMedia = useCallback(async (force = false) => {
         try {
             if (force) {
@@ -696,7 +750,7 @@ This receipt confirms exam participation only and does not represent the final e
             doc.setFontSize(9);
             doc.setTextColor(120);
 
-            const footerText1 = "MEDRAE • Stop Guessing. Start Passing.";
+            const footerText1 = "MEDRAE • Advancing nursing education and student success.";
             const footerText2 = `Page ${i} of ${pageCount}`;
 
             const textWidth1 = doc.getTextWidth(footerText1);
@@ -724,110 +778,167 @@ This receipt confirms exam participation only and does not represent the final e
 
         const totalQuestions = questions.length;
         const percentageScore = totalQuestions > 0 ? ((correctCount / totalQuestions) * 100).toFixed(2) : "0";
+
+
         return (
-            <div className="p-6 space-y-6 bg-background text-foreground dark:bg-gray-900 dark:text-gray-100 min-h-screen  ">
-                <h2 className="text-2xl font-semibold">
-                    Review Before You {pendingAction === "submit" ? "Submit" : "Reset"}
-                </h2>
+            <div className="min-h-screen w-full  bg-slate-50 dark:bg-[#18191a] text-slate-900 dark:text-slate-100 p-4 md:p-8">
+                <div className="max-w-6xl mx-auto space-y-8">
 
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                    Please review your answers carefully before confirming submission. Ensure you have completed all questions to the best of your ability.
-                    Once submitted, your responses will be finalized and cannot be changed. By confirming, you certify that your exam attempt is complete and accurate.
-                </p>
+                    {/* Header Section */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+                        <div className="space-y-1">
+                            <h2 className="text-3xl font-extrabold tracking-tight">
+                                {pendingAction === "submit" ? "Final Submission Review" : "Reset Session Request"}
+                            </h2>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-2xl text-sm leading-relaxed">
+                                {pendingAction === "submit"
+                                    ? "Please conduct a final review of your responses. Once submitted, your attempts are timestamped and locked for grading. Changes cannot be made after this point."
+                                    : "You are about to clear all progress. This action is recorded and cannot be undone."
+                                }
+                            </p>
+                        </div>
 
-                {pendingAction === "submit" && (
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Please review your answers carefully before confirming submission.
-                    </p>
-                )}
-
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Answered */}
-                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                        <h3 className="font-bold text-lg mb-2 text-green-700 dark:text-green-400">
-                            Answered Questions ({answered.length})
-                        </h3>
-                        <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-                            {answered.map((q, i) => (
-                                <li key={q.id}>
-                                    Q{i + 1}: {q.question_text.slice(0, 50)}... – <strong>{answers[q.id]}</strong>
-                                </li>
-                            ))}
-                        </ul>
+                        {/* Security Badge */}
+                        <div className="hidden lg:flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full shadow-sm">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Secure Session Active</span>
+                        </div>
                     </div>
 
-                    {/* Unanswered */}
-                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                        <h3 className="font-bold text-lg mb-2 text-red-600 dark:text-red-400">
-                            Unanswered Questions ({unanswered.length})
-                        </h3>
-                        <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+                    {/* Status Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                            {unanswered.map((q, i) => (
-                                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-                            ))}
-                        </ul>
+                        {/* Answered */}
+                        <Card className="border-0 border-l-4 border-l-emerald-500 shadow-sm bg-white dark:bg-[#242526]">
+                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Answered</CardTitle>
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <div className="text-2xl font-bold mb-3">{answered.length}</div>
+                                <div className="h-48 overflow-y-auto pr-2 space-y-2 scrollbar-thin">
+                                    {answered.map((q, i) => (
+                                        <div key={q.id} className="text-xs p-2 bg-slate-50 dark:bg-slate-800/50 rounded border border-slate-100 dark:border-slate-700">
+                                            <span className="font-bold text-slate-400 mr-2">Q{i + 1}</span>
+                                            <span className="text-slate-600 dark:text-slate-300 italic">Choice: {answers[q.id]}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Unanswered */}
+                        <Card className="border-0 border-l-4 border-l-rose-500 shadow-sm bg-white dark:bg-[#242526]">
+                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Remaining</CardTitle>
+                                <HelpCircle className="h-4 w-4 text-rose-500" />
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <div className="text-2xl font-bold mb-3 text-rose-600">{unanswered.length}</div>
+                                <div className="h-48 overflow-y-auto pr-2 space-y-2">
+                                    {unanswered.length > 0 ? unanswered.map((q, i) => (
+                                        <div key={q.id} className="text-xs p-2 border border-dashed border-slate-200 dark:border-slate-700 rounded text-slate-400">
+                                            Question {i + 1} requires attention
+                                        </div>
+                                    )) : (
+                                        <div className="text-xs text-slate-400 italic">All questions answered.</div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Flagged */}
+                        <Card className="border-0 border-l-4 border-l-amber-500 shadow-sm bg-white dark:bg-[#242526]">
+                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Review Later</CardTitle>
+                                <Flag className="h-4 w-4 text-amber-500" />
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <div className="text-2xl font-bold mb-3">{flaggedQs.length}</div>
+                                <div className="h-48 overflow-y-auto pr-2 space-y-2">
+                                    {flaggedQs.map((q, i) => (
+                                        <div key={q.id} className="text-xs p-2 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-100 dark:border-amber-900/30">
+                                            Question {i + 1} marked for review
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Skipped */}
+                        <Card className="border-0 border-l-4 border-l-blue-500 shadow-sm bg-white dark:bg-[#242526]">
+                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Skipped</CardTitle>
+                                <SkipForward className="h-4 w-4 text-blue-500" />
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <div className="text-2xl font-bold mb-3">{skippedQs.length}</div>
+                                <div className="h-48 overflow-y-auto pr-2 space-y-2">
+                                    {skippedQs.map((q, i) => (
+                                        <div key={q.id} className="text-xs p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-100 dark:border-blue-900/30">
+                                            Question {i + 1} skipped
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
 
-                    {/* Flagged */}
-                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                        <h3 className="font-bold text-lg mb-2 text-yellow-600 dark:text-yellow-400">
-                            Flagged ({flaggedQs.length})
-                        </h3>
-                        <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-                            {flaggedQs.map((q, i) => (
-                                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-                            ))}
-                        </ul>
+                    {/* Actions Section */}
+                    <div className="bg-white dark:bg-[#242526] rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl">
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <Button
+                                size="lg"
+                                className={`flex-[2] h-14 text-base font-bold shadow-lg transition-all ${pendingAction === "submit"
+                                    ? "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                                    : "bg-rose-600 hover:bg-rose-700 text-white"
+                                    }`}
+                                onClick={() => {
+                                    if (pendingAction === "submit") confirmSubmit();
+                                    if (pendingAction === "reset") resetNow();
+                                }}
+                            >
+                                {pendingAction === "submit" ? (
+                                    <span className="flex items-center gap-2">
+                                        <FileCheck className="w-5 h-5" /> Confirm Final Submission & Generate PDF
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-2">
+                                        <RotateCcw className="w-5 h-5" /> Confirm Permanent Reset
+                                    </span>
+                                )}
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                className="flex-1 h-14 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold"
+                                onClick={() => {
+                                    setShowDonePanel(false);
+                                    setPendingAction(null);
+                                }}
+                            >
+                                <X className="w-4 h-4 mr-2" /> Return to Questions
+                            </Button>
+                        </div>
+
+                        <div className="mt-6 flex items-center justify-center gap-4 text-slate-400">
+                            <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                            <span className="text-[10px] uppercase tracking-[0.2em] font-bold">End of Assessment Summary</span>
+                            <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                        </div>
                     </div>
 
-                    {/* Skipped */}
-                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                        <h3 className="font-bold text-lg mb-2 text-blue-600 dark:text-blue-400">
-                            ⏭ Skipped ({skippedQs.length})
-                        </h3>
-                        <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-                            {skippedQs.map((q, i) => (
-                                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-                            ))}
-                        </ul>
+                    {/* Professional Footer — No Marquee for Exam */}
+                    <div className="text-center pb-10">
+                        <p className="text-xs text-slate-400 font-medium italic">
+                            "Your commitment to academic integrity is appreciated. Good luck with your results."
+                        </p>
                     </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                    <Button
-                        className="flex-1 bg-blue-600 text-white hover:bg-green-600 dark:bg-blue-500 dark:hover:bg-green-500 transition-colors"
-                        onClick={() => {
-                            if (pendingAction === "submit") confirmSubmit();
-                            if (pendingAction === "reset") resetNow();
-                        }}
-                    >
-                        Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        className="flex-1"
-                        onClick={() => {
-                            setShowDonePanel(false);
-                            setPendingAction(null);
-                        }}
-                    >
-                        Cancel Request
-                    </Button>
-                </div>
-
-                {/* Thank You Marquee — centered */}
-                <div className="w-full h-16 flex items-center justify-center overflow-hidden border-t border-border">
-                    <div className="whitespace-nowrap animate-marquee-slow text-lg md:text-xl font-semibold tracking-wide text-foreground">
-                        Thank you for choosing our website! We appreciate your trust and commitment to learning!
-                    </div>
-                </div>
-
             </div>
         );
-    }
+    };
 
     // No questions found / Loading questions
     if (loading) {
@@ -845,399 +956,497 @@ This receipt confirms exam participation only and does not represent the final e
             </div>
         );
     }
+
+
     // Main question view
     return (
-        <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
-            <div className="md:col-span-2 space-y-4">
+        <>
+            <AnimatePresence>
+                {showConnectionOverlay && <ConnectivityOverlay />}
+            </AnimatePresence>
+            <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
+                <div className="md:col-span-2 space-y-4">
 
-                <Card className="min-h-[400px] bg-white dark:bg-gray-900 border border-0 shadow-sm rounded-xl">
-                    <CardHeader>
-                        <CardTitle>
-                            Question {currentIndex + 1} of {questions.length}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-base">{currentQuestion.question_text}</p>
-                        <div className="flex flex-col gap-3">
-                            {["A", "B", "C", "D"].map((opt) => {
-                                const isSelected = answers[currentQuestion.id] === opt;
+                    <Card className="min-h-[400px] bg-white dark:bg-gray-900 border border-0 shadow-sm rounded-xl">
+                        <CardHeader>
+                            <CardTitle>
+                                Question {currentIndex + 1} of {questions.length}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="font-barlow text-sm leading-relaxed">{currentQuestion.question_text}</p>
+                            <div className="flex flex-col gap-3">
+                                {["A", "B", "C", "D"].map((opt) => {
+                                    const isSelected = answers[currentQuestion.id] === opt;
 
-                                return (
-                                    <div
-                                        key={opt}
-                                        onClick={() => handleAnswer(opt)}
-                                        className="flex items-start gap-3 cursor-pointer"
-                                    >
-                                        {/* Empty circle */}
+                                    return (
                                         <div
-                                            className={`
+                                            key={opt}
+                                            onClick={() => handleAnswer(opt)}
+                                            className="flex items-start gap-3 cursor-pointer"
+                                        >
+                                            {/* Empty circle */}
+                                            <div
+                                                className={`
             w-5 h-5 flex-shrink-0 rounded-full border-2 mt-1
             transition-colors duration-200
             ${isSelected ? "bg-blue-500 border-blue-500" : "bg-white border-gray-400 dark:bg-black dark:border-gray-500"}
             hover:${!isSelected ? "bg-gray-200 dark:bg-gray-700" : ""}
           `}
-                                        ></div>
+                                            ></div>
 
-                                        {/* Answer text */}
-                                        <span className="whitespace-normal">{currentQuestion[`option_${opt.toLowerCase()}`]}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                            {/* Answer text */}
+                                            <span className="whitespace-normal font-barlow text-sm leading-relaxed">{currentQuestion[`option_${opt.toLowerCase()}`]}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                {/* Centered navigation buttons */}
-                <div className="flex flex-wrap justify-center gap-2 mt-4">
-                    <Button
-                        onClick={goPrev}
-                        disabled={currentIndex === 0}
-                        className="flex items-center gap-2"
-                    >
-                        <ChevronLeft className="w-5 h-5" />
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={handleFlag}
-                        className="flex items-center gap-2"
-                    >
-                        <Flag className="w-5 h-5" />
-                        Flag
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        onClick={handleSkip}
-                        className="flex items-center gap-2"
-                    >
-                        Skip
-                        <CornerRightDown className="w-5 h-5" />
-                    </Button>
-
-                    <Button
-                        onClick={goNext}
-                        disabled={currentIndex === questions.length - 1}
-                        className="flex items-center gap-2"
-                    >
-                        Next
-                        <ChevronRight className="w-5 h-5" />
-                    </Button>
-
-                    <Button
-                        variant="default"
-                        onClick={handleSubmit}
-                        disabled={currentIndex !== questions.length - 1} // disable until last question
-                        title={
-                            currentIndex !== questions.length - 1
-                                ? `You must reach the last question to submit`
-                                : `Submit your answers`
-                        }
-                    >
-                        Submit & Generate PDF
-                    </Button>
-
-                </div>
-
-                {/* Skipped / Flagged question tabs */}
-                <div className="flex justify-center gap-4 mt-2">
-                    <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={skipped.length === 0}
-                        onClick={() => {
-                            if (skipped.length > 0) {
-                                jumpTo(questions.findIndex((q) => q.id === skipped[0]));
-                            }
-                        }}
-                    >
-                        ⏭ Skipped ({skipped.length})
-                    </Button>
-
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={flags.length === 0}
-                        onClick={() => {
-                            if (flags.length > 0) {
-                                jumpTo(questions.findIndex((q) => q.id === flags[0]));
-                            }
-                        }}
-                    >
-                        Flagged ({flags.length})
-                    </Button>
-                </div>
-
-                <div className="flex gap-4 mt-6 items-start">
-                    <ExamProctor
-                        videoStream={cameraStream}
-                        sessionId={examSession?.id ?? null}
-                        paperId={paper_id}  // ← pass it here
-                    />
-                    {/* Sound Wave Panel (Right side) */}
-                    <div className="border border-gray-300 rounded-lg overflow-hidden w-40 h-32 relative flex items-center justify-center">
-                        <canvas ref={canvasRef} width={256} height={192} className="w-full h-full" />
-                        {loudWarning && (
-                            <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
-                                Loud noise detected
-                            </span>
-                        )}
-                    </div>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => initMedia(true)}
-                        className="flex items-center gap-2"
-                    >
-                        <RefreshCw className="w-4 h-4" />
-                        Reset Cam & Mic
-                    </Button>
-
-                </div>
-
-            </div>
-
-            <div className="space-y-2">
-
-                <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none p-2">
-
-                    {/* App Title inside the card with logo */}
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                        <img
-                            src="/pwa-192x192.jpeg"
-                            alt="Medrae Logo"
-                            className="h-6 w-6 rounded-sm object-contain"
-                        />
-                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
-                            Medrae Self-Test: Proctorium Lite
-                        </p>
-                    </div>
-
-                    <CardHeader className="flex justify-between items-center">
-                        <CardTitle>Time Left</CardTitle>
-
-
-                        <button className="p-1 rounded hover:bg-green-100 transition">
-                            <Clock className="w-5 h-5 text-green-600" />
-                        </button>
-                    </CardHeader>
-                    <CardContent className="text-center space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                            {new Date().toLocaleDateString(undefined, {
-                                weekday: "long",
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                            })}
-                        </p>
-
-                        <p className="text-2xl font-bold">{formatTime(timeLeft)}</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="max-h-[400px] overflow-y-auto pr-2 bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none overflow-y-auto custom-scrollbar">
-
-                    <CardHeader className="flex justify-between items-center sticky top-0 bg-background z-10">
-                        <CardTitle>Questions</CardTitle>
-                        <Button size="sm" variant="ghost" onClick={resetAnswers}>
-                            Reset
+                    {/* Centered navigation buttons */}
+                    <div className="flex flex-wrap justify-center gap-2 mt-4">
+                        <Button
+                            onClick={goPrev}
+                            disabled={currentIndex === 0}
+                            className="flex items-center gap-2"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                            Previous
                         </Button>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] gap-2">
-                        {questions.map((q, i) => (
-                            <Button
-                                key={q.id}
-                                size="sm"
-                                variant={
-                                    currentIndex === i
-                                        ? "default"
-                                        : answers[q.id]
-                                            ? "secondary"
-                                            : flags.includes(q.id)
-                                                ? "destructive"
-                                                : "outline"
+                        <Button
+                            variant="outline"
+                            onClick={handleFlag}
+                            className="flex items-center gap-2"
+                        >
+                            <Flag className="w-5 h-5" />
+                            Flag
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={handleSkip}
+                            className="flex items-center gap-2"
+                        >
+                            Skip
+                            <CornerRightDown className="w-5 h-5" />
+                        </Button>
+
+                        <Button
+                            onClick={goNext}
+                            disabled={currentIndex === questions.length - 1}
+                            className="flex items-center gap-2"
+                        >
+                            Next
+                            <ChevronRight className="w-5 h-5" />
+                        </Button>
+
+                        <Button
+                            variant="default"
+                            onClick={handleSubmit}
+                            disabled={currentIndex !== questions.length - 1} // disable until last question
+                            title={
+                                currentIndex !== questions.length - 1
+                                    ? `You must reach the last question to submit`
+                                    : `Submit your answers`
+                            }
+                        >
+                            Submit & Generate PDF
+                        </Button>
+
+                    </div>
+
+                    {/* Skipped / Flagged question tabs */}
+                    <div className="flex justify-center gap-4 mt-2">
+                        <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={skipped.length === 0}
+                            onClick={() => {
+                                if (skipped.length > 0) {
+                                    jumpTo(questions.findIndex((q) => q.id === skipped[0]));
                                 }
-                                onClick={() => jumpTo(i)}
-                            >
-                                {i + 1}
+                            }}
+                        >
+                            ⏭ Skipped ({skipped.length})
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={flags.length === 0}
+                            onClick={() => {
+                                if (flags.length > 0) {
+                                    jumpTo(questions.findIndex((q) => q.id === flags[0]));
+                                }
+                            }}
+                        >
+                            Flagged ({flags.length})
+                        </Button>
+                    </div>
+
+                    <div className="flex gap-4 mt-6 items-start">
+                        <ExamProctor
+                            videoStream={cameraStream}
+                            sessionId={examSession?.id ?? null}
+                            paperId={paper_id}  // ← pass it here
+                        />
+                        {/* Sound Wave Panel (Right side) */}
+                        <div className="border border-gray-300 rounded-lg overflow-hidden w-40 h-32 relative flex items-center justify-center">
+                            <canvas ref={canvasRef} width={256} height={192} className="w-full h-full" />
+                            {loudWarning && (
+                                <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
+                                    Loud noise detected
+                                </span>
+                            )}
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => initMedia(true)}
+                            className="flex items-center gap-2"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            Reset Cam & Mic
+                        </Button>
+
+                    </div>
+
+                </div>
+
+                <div className="space-y-2">
+
+                    <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none p-2">
+
+                        {/* App Title inside the card with logo */}
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                            <img
+                                src="/pwa-192x192.jpeg"
+                                alt="Medrae Logo"
+                                className="h-6 w-6 rounded-sm object-contain"
+                            />
+                            <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                                Medrae Self-Test: Proctorium Lite
+                            </p>
+                        </div>
+
+                        <CardHeader className="flex justify-between items-center">
+                            <CardTitle>Time Left</CardTitle>
+
+
+                            <button className="p-1 rounded hover:bg-green-100 transition">
+                                <Clock className="w-5 h-5 text-green-600" />
+                            </button>
+                        </CardHeader>
+                        <CardContent className="text-center space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                                {new Date().toLocaleDateString(undefined, {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                })}
+                            </p>
+
+                            <p className="text-2xl font-bold">{formatTime(timeLeft)}</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="max-h-[400px] overflow-y-auto pr-2 bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none overflow-y-auto custom-scrollbar">
+
+                        <CardHeader className="flex justify-between items-center sticky top-0 bg-background z-10">
+                            <CardTitle>Questions</CardTitle>
+                            <Button size="sm" variant="ghost" onClick={resetAnswers}>
+                                Reset
                             </Button>
-                        ))}
-                    </CardContent>
-                </Card>
-
-                {/* Encouragement Marquee — Endless Loop */}
-                <div className="w-full overflow-hidden border-t border-border pt-4">
-                    <div className="flex w-max animate-marquee-slow">
-                        <div
-                            dir="rtl"
-                            className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
-                        >
-                            Exam Mode
-                        </div>
-
-                        <div
-                            dir="rtl"
-                            className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
-                        >
-                            Exam Mode
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-
-            {!mediaAllowed && (
-                <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-40 flex items-center justify-center">
-                    <div className="text-center space-y-6">
-                        {/* HOME BUTTON TOP LEFT */}
-                        <div className="absolute top-4 left-4">
-                            <Link to="/dashboard">
-                                <motion.button
-                                    initial={false}
-                                    whileHover={{ scale: 1.05 }}
-                                    className="px-4 py-2 border border-gray-400 rounded-xl text-white hover:bg-green-500 hover:text-white transition-all duration-300 shadow-md"
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] gap-2">
+                            {questions.map((q, i) => (
+                                <Button
+                                    key={q.id}
+                                    size="sm"
+                                    variant={
+                                        currentIndex === i
+                                            ? "default"
+                                            : answers[q.id]
+                                                ? "secondary"
+                                                : flags.includes(q.id)
+                                                    ? "destructive"
+                                                    : "outline"
+                                    }
+                                    onClick={() => jumpTo(i)}
                                 >
-                                    Go to My Dashboard
-                                </motion.button>
-                            </Link>
-                        </div>
-                        <h2 className="text-white text-2xl font-bold">Camera & Mic Disabled</h2>
-                        <p className="text-gray-300">
-                            Double Click below to enable camera and microphone to start your Exam.
-                            <br />
-                            ⚠️ Pressing <strong>ESC</strong> at any time will immediately end and submit the Exam.
-                        </p>
+                                    {i + 1}
+                                </Button>
+                            ))}
+                        </CardContent>
+                    </Card>
 
-
-                        <div className="flex flex-col gap-4">
-                            {/* Camera Button */}
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                animate={
-                                    cameraStream
-                                        ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
-                                        : { opacity: [0.8, 1, 0.8] }
-                                }
-                                transition={{ repeat: Infinity, duration: 2 }}
-                                onClick={async () => {
-                                    try {
-                                        const cam = await navigator.mediaDevices.getUserMedia({ video: true });
-                                        setCameraStream(cam);
-                                        if (videoRef.current) videoRef.current.srcObject = cam;
-                                    } catch (err) {
-                                        console.error("Camera blocked", err);
-                                    }
-                                }}
-                                className={`block mx-auto w-64 px-3 py-1.5 rounded-3xl font-semibold shadow-lg transition-colors
-    ${cameraStream ? 'bg-green-500 text-white hover:bg-purple-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                    {/* Encouragement Marquee — Endless Loop */}
+                    <div className="w-full overflow-hidden border-t border-border pt-4">
+                        <div className="flex w-max animate-marquee-slow">
+                            <div
+                                dir="rtl"
+                                className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
                             >
-                                Double Click to Enable camera
-                            </motion.button>
-                            {/* Mic Button */}
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                animate={
-                                    audioStream
-                                        ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
-                                        : { opacity: [0.8, 1, 0.8] }
-                                }
-                                transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
-                                onClick={async () => {
-                                    try {
-                                        const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-                                        setAudioStream(mic);
+                                Exam Mode
+                            </div>
 
-                                        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                                        const source = audioCtx.createMediaStreamSource(mic);
-                                        const analyser = audioCtx.createAnalyser();
-                                        source.connect(analyser);
-                                        analyser.fftSize = 256;
-                                        const bufferLength = analyser.frequencyBinCount;
-                                        const dataArray = new Uint8Array(bufferLength);
-
-                                        const canvas = canvasRef.current;
-                                        if (!canvas) return;
-                                        const canvasCtx = canvas.getContext("2d");
-                                        if (!canvasCtx) return;
-
-                                        canvas.width = canvas.clientWidth;
-                                        canvas.height = canvas.clientHeight;
-
-                                        const draw = () => {
-                                            requestAnimationFrame(draw);
-                                            analyser.getByteFrequencyData(dataArray);
-
-                                            canvasCtx.fillStyle = "#f3f4f6";
-                                            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-                                            let maxVolume = 0;
-                                            const barWidth = (canvas.width / bufferLength) * 2.5;
-                                            let x = 0;
-
-                                            for (let i = 0; i < bufferLength; i++) {
-                                                const barHeight = dataArray[i] / 2;
-                                                maxVolume = Math.max(maxVolume, dataArray[i]);
-
-                                                let color = "#ac0e97ff"; // Tailwind green-500
-                                                if (barHeight > 40 && barHeight <= 80) color = "#3b82f6"; // blue-500
-                                                if (barHeight > 80) color = "#ef4444"; // red-500
-
-                                                canvasCtx.fillStyle = color;
-                                                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                                                x += barWidth + 1;
-                                            }
-
-                                            setLoudWarning(maxVolume > 150);
-                                        };
-
-                                        draw();
-                                    } catch (err) {
-                                        console.error("Mic blocked", err);
-                                    }
-                                }}
-                                className={`block mx-auto w-64 px-3 py-1.5 rounded-3xl font-semibold shadow-lg transition-colors
-    ${audioStream ? 'bg-green-500 text-white hover:bg-blue-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                            <div
+                                dir="rtl"
+                                className="whitespace-nowrap text-lg md:text-xl font-semibold tracking-wide text-foreground pr-16"
                             >
-                                Enable mic
-                            </motion.button>
-
-
-                            {/* Final Start Button */}
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                animate={
-                                    cameraStream && audioStream
-                                        ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #fff", "0 0 20px #10b981", "0 0 0px #fff"] }
-                                        : {}
-                                }
-                                transition={{ repeat: Infinity, duration: 2 }}
-                                disabled={!cameraStream || !audioStream}
-                                onClick={() => {
-                                    // Play start sound
-                                    const audio = new Audio("/sounds/start.mp3");
-                                    audio.play().catch(() => { });
-
-                                    // Enter fullscreen (user gesture required)
-                                    enterFullscreen();
-
-                                    // Allow exam to start
-                                    setMediaAllowed(true);
-                                }}
-
-                                className={`block mx-auto w-64 px-3 rounded-3xl py-1.5 font-semibold shadow-lg transition-colors
-    ${cameraStream && audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
-                            >
-                                Hey, I'm ready to start!
-                            </motion.button>
-
+                                Exam Mode
+                            </div>
                         </div>
                     </div>
+
                 </div>
-            )}
-        </div>
+
+
+                <AnimatePresence>
+                    {!mediaAllowed && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-4"
+                        >
+                            {/* TOP NAVIGATION */}
+                            <div className="text-center space-y-4">
+                                <Link to="/dashboard">
+                                    <motion.button
+                                        whileHover={{ x: -5 }}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-2xl text-gray-700 hover:bg-gray-50 transition-all font-semibold text-sm shadow-sm"
+                                    >
+                                        <Home className="w-4 h-4" />
+                                        Exit to Dashboard
+                                    </motion.button>
+                                </Link>
+                            </div>
+
+                            <div className="max-w-4xl w-full space-y-8">
+
+                                {/* HEADER SECTION */}
+                                <div className="text-center space-y-4">
+
+                                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest">
+                                        <ShieldAlert className="w-3.5 h-3.5" /> Security Protocol Active
+                                    </div>
+
+                                    <h2 className="text-gray-900 text-4xl font-extrabold tracking-tight italic">
+                                        Device <span className="text-gray-800">Authorization</span>
+                                    </h2>
+
+                                    <div className="bg-white border border-gray-200 rounded-2xl p-4 max-w-2xl mx-auto shadow-sm">
+                                        <p className="text-gray-600 text-sm leading-relaxed">
+                                            To ensure examination integrity, we require access to your camera and microphone.
+                                            <span className="text-gray-700 block mt-2 font-bold uppercase text-[11px] tracking-wider">
+                                                ⚠️ Critical: Pressing "ESC" during simulation will trigger an immediate auto-submission.
+                                            </span>
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                                {/* INTERACTIVE TILES */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+
+                                    {/* CAMERA CARD */}
+                                    <div className="relative group">
+                                        <div className={`absolute -inset-0.5 rounded-3xl blur opacity-20 transition duration-1000 group-hover:opacity-40 ${cameraStream ? 'bg-green-200' : 'bg-blue-200'}`}></div>
+
+                                        <motion.div className="relative bg-white rounded-3xl p-6 border border-gray-200 h-full flex flex-col items-center shadow-sm">
+
+                                            <div className={`mb-4 p-4 rounded-2xl ${cameraStream ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                <Video className="w-8 h-8" />
+                                            </div>
+
+                                            <h3 className="text-gray-900 font-bold mb-1">Visual Identity</h3>
+
+                                            <p className="text-gray-500 text-xs text-center mb-6 px-4">
+                                                Proctoring layer uses facial detection to verify candidate presence.
+                                            </p>
+
+                                            <motion.button
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={async () => {
+                                                    try {
+                                                        const cam = await navigator.mediaDevices.getUserMedia({ video: true });
+                                                        setCameraStream(cam);
+                                                        if (videoRef.current) videoRef.current.srcObject = cam;
+                                                    } catch (err) {
+                                                        console.error("Camera blocked", err);
+                                                    }
+                                                }}
+                                                className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border
+                 ${cameraStream
+                                                        ? 'bg-green-600 text-white border-green-600 cursor-default'
+                                                        : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {cameraStream ? "Camera Synced" : "Enable Camera"}
+                                            </motion.button>
+
+                                        </motion.div>
+                                    </div>
+
+                                    {/* MICROPHONE CARD */}
+                                    <div className="relative group">
+                                        <div className={`absolute -inset-0.5 rounded-3xl blur opacity-20 transition duration-1000 group-hover:opacity-40 ${audioStream ? 'bg-green-200' : 'bg-gray-200'}`}></div>
+
+                                        <motion.div className="relative bg-white rounded-3xl p-6 border border-gray-200 h-full flex flex-col items-center shadow-sm">
+
+                                            {/* VISUALIZER */}
+                                            <div className="relative w-full h-24 mb-4 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                                                <canvas ref={canvasRef} className="w-full h-full" />
+
+                                                {!audioStream && (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Mic className="w-8 h-8 text-gray-400 animate-pulse" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <h3 className="text-gray-900 font-bold mb-1">Audio Environment</h3>
+
+                                            <p className="text-gray-500 text-xs text-center mb-6 px-4">
+                                                Detects excessive ambient noise and external assistance.
+                                            </p>
+
+                                            <motion.button
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={async () => {
+                                                    try {
+                                                        const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                                        setAudioStream(mic);
+
+                                                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                                                        const source = audioCtx.createMediaStreamSource(mic);
+                                                        const analyser = audioCtx.createAnalyser();
+
+                                                        source.connect(analyser);
+                                                        analyser.fftSize = 256;
+
+                                                        const bufferLength = analyser.frequencyBinCount;
+                                                        const dataArray = new Uint8Array(bufferLength);
+
+                                                        const canvas = canvasRef.current;
+                                                        if (!canvas) return;
+
+                                                        const canvasCtx = canvas.getContext("2d");
+                                                        if (!canvasCtx) return;
+
+                                                        canvas.width = canvas.clientWidth;
+                                                        canvas.height = canvas.clientHeight;
+
+                                                        const draw = () => {
+                                                            requestAnimationFrame(draw);
+
+                                                            analyser.getByteFrequencyData(dataArray);
+
+                                                            canvasCtx.fillStyle = "rgba(255, 255, 255, 0.6)";
+                                                            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                                                            let maxVolume = 0;
+                                                            let x = 0;
+                                                            const barWidth = (canvas.width / bufferLength) * 2;
+
+                                                            for (let i = 0; i < bufferLength; i++) {
+                                                                const barHeight = dataArray[i] / 2;
+                                                                maxVolume = Math.max(maxVolume, dataArray[i]);
+
+                                                                canvasCtx.fillStyle =
+                                                                    barHeight > 60 ? "#ef4444" : "#3b82f6";
+
+                                                                canvasCtx.fillRect(
+                                                                    x,
+                                                                    canvas.height - barHeight,
+                                                                    barWidth,
+                                                                    barHeight
+                                                                );
+
+                                                                x += barWidth + 1;
+                                                            }
+
+                                                            setLoudWarning(maxVolume > 150);
+                                                        };
+
+                                                        draw();
+                                                    } catch (err) {
+                                                        console.error("Mic blocked", err);
+                                                    }
+                                                }}
+                                                className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border
+                 ${audioStream
+                                                        ? 'bg-green-600 text-white border-green-600 cursor-default'
+                                                        : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {audioStream ? "Mic Calibrated" : "Enable Microphone"}
+                                            </motion.button>
+
+                                        </motion.div>
+                                    </div>
+
+                                </div>
+
+                                {/* FINAL BUTTON */}
+                                <div className="flex flex-col items-center pt-6">
+
+                                    <motion.button
+                                        disabled={!cameraStream || !audioStream}
+                                        onClick={() => {
+                                            const audio = new Audio("/sounds/start.mp3");
+                                            audio.play().catch(() => { });
+                                            enterFullscreen();
+                                            setMediaAllowed(true);
+                                        }}
+                                        whileHover={cameraStream && audioStream ? { scale: 1.05 } : {}}
+                                        whileTap={{ scale: 0.95 }}
+                                        className={`relative group px-12 py-5 rounded-full font-black text-sm uppercase tracking-[0.3em] transition-all border
+             ${cameraStream && audioStream
+                                                ? 'bg-gray-900 text-white shadow-md hover:bg-black'
+                                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {cameraStream && audioStream ? (
+                                                <Unlock className="w-5 h-5" />
+                                            ) : (
+                                                <Lock className="w-5 h-5" />
+                                            )}
+                                            Initiate Simulation Session
+                                        </div>
+                                    </motion.button>
+
+                                    <div className="mt-6 flex items-center gap-4">
+
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-2 h-2 rounded-full ${cameraStream ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase">
+                                                Video Sync
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-2 h-2 rounded-full ${audioStream ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase">
+                                                Audio Calibration
+                                            </span>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </>
     );
 }

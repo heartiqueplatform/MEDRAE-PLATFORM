@@ -199,18 +199,50 @@ export default function GreetingsCard() {
 
     }, [name]);
     return (
-        <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-black rounded-xl p-2 text-white">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                {typedWelcome || "Loading..."}
+        <div className="relative group overflow-hidden rounded-xl  transition-all duration-500
+    bg-white/70 border-0 shadow-sm hover:shadow-xl hover:shadow-blue-500/10
+    dark:bg-[#0a0f1d]  dark:hover:shadow-[0_0_40px_-10px_rgba(30,58,138,0.5)]
+    backdrop-blur-md p-6">
 
-                {loading && (
-                    <span className="ml-3 inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 rounded-lg animate-pulse">
-                        Updating…
-                    </span>
-                )}
-            </h1>
-            <p className="text-white/90">{typedNursing || "Loading..."}</p>
+            {/* Animated Background Mesh - Color adjusted for light/dark */}
+            <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full blur-[80px] transition-all duration-700
+        bg-blue-400/10 dark:bg-blue-600/10 group-hover:bg-blue-300/20 dark:group-hover:bg-blue-500/20" />
+            <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full blur-[80px]
+        bg-indigo-100/30 dark:bg-indigo-900/20" />
 
+            <div className="relative z-10 flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br
+                /* High-contrast gradient for Light mode, Glowing for Dark */
+                from-slate-900 via-blue-800 to-slate-900
+                dark:from-white dark:via-blue-100 dark:to-blue-300/80">
+                        {typedWelcome || "Initializing..."}
+                    </h1>
+
+                    {loading && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border transition-colors
+                    bg-blue-50 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                            </span>
+                            <span className="text-[10px] uppercase tracking-widest font-bold
+                        text-blue-600 dark:text-blue-400">
+                                Live Sync
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                <p className="text-sm md:text-base font-medium leading-relaxed max-w-[90%]
+            text-slate-600 dark:text-slate-400">
+                    <span className="text-blue-500 dark:text-blue-400/80 mr-1">✦</span>
+                    {typedNursing || "Awaiting system data..."}
+                </p>
+            </div>
+
+            {/* Subtle Inner Glow Border */}
+            <div className="absolute inset-0 rounded-2xl border border-white/40 dark:border-white/5 pointer-events-none" />
         </div>
     );
 }

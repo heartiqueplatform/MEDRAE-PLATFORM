@@ -90,23 +90,27 @@ export function Footer() {
             icon: { light: "text-indigo-700", dark: "text-indigo-300" },
         },
     };
-
     useEffect(() => {
-        let subscription: any;
+        let mounted = true;
+        let channel: any;
 
-        const fetchCount = async () => {
+        const setupMistakesSubscription = async () => {
+            // 1. Only proceed if user is logged in
             if (!user?.id) return;
 
+            // 2. Initial Fetch
             const { count, error } = await supabase
                 .from("user_mistakes")
                 .select("*", { count: "exact", head: true })
                 .eq("user_id", user.id)
                 .eq("resolved", false);
 
-            if (!error) setMistakeCount(count || 0);
+            if (mounted && !error) setMistakeCount(count || 0);
 
-            subscription = supabase
-                .channel(`user_mistakes_footer_${user.id}`)
+            // 3. STRICT CHAINING: .channel -> .on -> .subscribe
+            // Use a unique name including user.id and 'footer'
+            channel = supabase
+                .channel(`footer_mistakes_${user.id}`)
                 .on(
                     "postgres_changes",
                     {
@@ -116,23 +120,28 @@ export function Footer() {
                         filter: `user_id=eq.${user.id}`,
                     },
                     async () => {
-                        const { count } = await supabase
+                        // Re-fetch when database changes
+                        const { count: newCount } = await supabase
                             .from("user_mistakes")
                             .select("*", { count: "exact", head: true })
                             .eq("user_id", user.id)
                             .eq("resolved", false);
-                        setMistakeCount(count || 0);
+
+                        if (mounted) setMistakeCount(newCount || 0);
                     }
                 )
                 .subscribe();
         };
 
-        fetchCount();
+        setupMistakesSubscription();
 
         return () => {
-            if (subscription) supabase.removeChannel(subscription);
+            mounted = false;
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
         };
-    }, [user]);
+    }, [user?.id]); // Only re-run if the User ID actually changes
 
     const items = [
         { icon: Heart, label: "Quizzes", url: "/Medrae-quizzes", iconTone: "practice" },
@@ -147,73 +156,104 @@ export function Footer() {
     return (
         <>
             <div
-                className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-0 flex justify-around items-center h-16 shadow-md z-50 md:hidden
-  ${isDrawerOpen ? "pointer-events-none" : ""}`}
+                className={`fixed bottom-0 left-0 right-0 z-[2147483647] md:hidden transition-all duration-300
+bg-white/80 dark:bg-gray-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-gray-900
+h-20 pb-4 flex justify-around items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)]
+${isDrawerOpen
+                        ? "translate-y-[110%] opacity-0 pointer-events-none"
+                        : "translate-y-0 opacity-100"}`}
             >
-
-                {/* Menu button */}
+                {/* --- 1. MENU / DRAWER BUTTON --- */}
                 <button
                     onClick={() => {
                         vibrate();
                         setIsDrawerOpen(prev => !prev);
                     }}
-                    className="flex flex-col items-center justify-center relative text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
+                    className="flex flex-col items-center justify-center flex-1 gap-1 group transition-all active:scale-90"
                 >
                     <div
                         className={`
-            flex items-center justify-center p-2 rounded-md
-            ${ICON_TONE_STYLES["system"].box.light}
-            dark:${ICON_TONE_STYLES["system"].box.dark}
-        `}
+                flex items-center justify-center p-2 rounded-2xl transition-colors
+                ${ICON_TONE_STYLES["system"].box.light}
+                dark:${ICON_TONE_STYLES["system"].box.dark}
+                ${isDrawerOpen ? "ring-2 ring-blue-500/20" : ""}
+            `}
                     >
                         <Menu
                             className={`
-                h-6 w-6
-                ${ICON_TONE_STYLES["system"].icon.light}
-                dark:${ICON_TONE_STYLES["system"].icon.dark}
-            `}
+                    h-6 w-6
+                    ${ICON_TONE_STYLES["system"].icon.light}
+                    dark:${ICON_TONE_STYLES["system"].icon.dark}
+                `}
                         />
                     </div>
-                    <span className="mt-1 text-xs">Menu</span>
+                    <span className={`text-[10px] font-bold uppercase tracking-tighter transition-colors
+            ${isDrawerOpen ? "text-blue-600" : "text-gray-400 dark:text-gray-500"}`}>
+                        Menu
+                    </span>
                 </button>
 
+                {/* --- 2. DYNAMIC NAVIGATION ITEMS --- */}
+                {items.map((item) => {
+                    const active = isActive(item.url);
+                    const tone = item.iconTone || "neutral";
 
-                {items.map((item) => (
-                    <button
-                        key={item.url}
-                        onClick={() => {
-                            vibrate();
-                            navigate(item.url);
-                        }}
-                        className={`flex flex-col items-center justify-center relative text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 ${isActive(item.url) ? "text-blue-500 dark:text-blue-400" : ""
-                            }`}
-                    >
-                        <div
-                            className={`
-        flex items-center justify-center p-2 rounded-md
-        ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
-        dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
-    `}
+                    return (
+                        <button
+                            key={item.url}
+                            onClick={() => {
+                                vibrate();
+                                navigate(item.url);
+                            }}
+                            className="flex flex-col items-center justify-center flex-1 gap-1 relative group transition-all active:scale-90"
                         >
-                            <item.icon
+                            {/* Icon Container */}
+                            <div
                                 className={`
-            h-6 w-6
-            ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
-            dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
-        `}
-                            />
-                        </div>
+                        flex items-center justify-center p-2 rounded-2xl transition-all duration-300
+                        ${active
+                                        ? ICON_TONE_STYLES[tone].box.light + " dark:" + ICON_TONE_STYLES[tone].box.dark
+                                        : "bg-transparent"}
+                    `}
+                            >
+                                <item.icon
+                                    className={`
+                            h-6 w-6 transition-colors duration-300
+                            ${active
+                                            ? ICON_TONE_STYLES[tone].icon.light + " dark:" + ICON_TONE_STYLES[tone].icon.dark
+                                            : "text-gray-400 dark:text-gray-500 group-hover:text-blue-500"}
+                        `}
+                                />
 
-                        <span className="text-xs">{item.label || item.title}</span>
-                        {item.badge && (
-                            <Badge className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 text-[10px] flex items-center justify-center bg-green-500 text-white">
-                                {item.badge}
-                            </Badge>
-                        )}
-                    </button>
-                ))}
+                                {/* Notification Badge (Pulse for Alerts) */}
+                                {item.badge && (
+                                    <span className={`absolute -top-1 right-2 min-w-[18px] h-[18px] px-1 text-[10px] font-bold flex items-center justify-center bg-red-500 text-white rounded-full border-2 border-white dark:border-gray-950 shadow-sm
+                        ${tone === 'alert' ? 'animate-pulse' : ''}`}>
+                                        {item.badge}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Label */}
+                            <span className={`text-[10px] font-bold uppercase tracking-tighter transition-colors duration-300
+                    ${active ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>
+                                {item.label || item.title}
+                            </span>
+
+                            {/* Active Indicator Dot */}
+                            {active && (
+                                <div className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.8)]" />
+                            )}
+                        </button>
+                    );
+                })}
             </div>
-
+            {isDrawerOpen && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm md:hidden"
+                    onClick={() => setIsDrawerOpen(false)}
+                />
+            )}
             {/* Mobile Drawer */}
             <MobileDrawer
                 userRole="student" // update dynamically if needed

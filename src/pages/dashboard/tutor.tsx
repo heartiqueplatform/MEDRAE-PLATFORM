@@ -218,7 +218,7 @@ export default function TutorDashboard() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center bg-transparent py-1 pt-0 px-2 sm:px-2">
+    <div className="min-h-screen max-w-2xl mx-auto flex justify-center bg-transparent py-1 pt-0 px-2 sm:px-2">
       <div className="w-full max-w-none sm:max-w-4xl space-y-2">
         {/* Welcome */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white shadow-lg">

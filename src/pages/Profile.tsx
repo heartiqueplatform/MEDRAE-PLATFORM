@@ -16,7 +16,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react"; // ✅ updated
+import { useSession, useSupabaseClient, useSessionContext } from "@supabase/auth-helpers-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -218,24 +218,16 @@ export function Profile() {
   };
 
   // Wait until Supabase finishes loading the user
-  const [checkingUser, setCheckingUser] = useState(true);
+  const { isLoading: sessionLoading } = useSessionContext();
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
   useEffect(() => {
-    setCheckingUser(false);
-  }, [user]);
-
-  useEffect(() => {
-    if (checkingUser) return; // wait until user check is complete
-
-    if (!user) {
+    // Only redirect if: we aren't loading, there's no user, AND we are online.
+    // If we are offline, we stay on the page and use cached data.
+    if (!sessionLoading && !user && !isOffline) {
       navigate("/login", { replace: true });
-    } else {
-      const cached = JSON.parse(localStorage.getItem("userProfile") || "null");
-      if (cached) setProfileState(cached);
     }
-  }, [user, checkingUser, navigate]);
-
-  // Show loader only if still checking user OR no profile data yet
+  }, [user, sessionLoading, isOffline, navigate]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -304,11 +296,26 @@ export function Profile() {
 
 
   // Only show loader if we have no cached profile yet
-  if (!profileState) {
-    return <GlobalLoader message="Medrae is aligning your content..." />;
+  // Show loader ONLY if we are actually loading the session and have no cache
+  if (sessionLoading && !profileState) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen w-full">
+        <GlobalLoader message="Checking connection..." />
+      </div>
+    );
   }
 
-
+  // If session finished loading but we STILL have no profile state (even from cache)
+  if (!profileState) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen w-full text-center p-6">
+        <h2 className="text-xl font-bold">Profile not found</h2>
+        <p className="text-muted-foreground mb-4">We couldn't find your profile data.</p>
+        {isOffline && <Badge variant="destructive">Offline Mode</Badge>}
+        <Button onClick={() => navigate("/login")} className="mt-4">Go to Login</Button>
+      </div>
+    );
+  }
   return (
     <div className="space-y-2 px-2 border-0 max-w-3xl mx-auto w-full">
 

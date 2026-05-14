@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageCircle, Trophy, Stethoscope, Book, Eye } from "lucide-react";
+import { Brain, MessageCircle, Timer, Award, Stethoscope, ArrowRight, Zap, TrendingUp, Book, Target, Eye, Trophy } from "lucide-react";
 import confetti from "canvas-confetti";
 import { playSound } from "@/lib/soundManager";
 import { useNavigate } from "react-router-dom";
@@ -328,7 +329,7 @@ export const DailyTriviaCard = () => {
     const shareOnWhatsApp = () => {
         const appUrl = window.location.origin; // Automatically gets your app URL
         const message = encodeURIComponent(
-            `I just completed today's Medrae Daily MindRush! 🧠🎉\nStop Guessing. Start Passing.\nCheck out Medrae here: ${appUrl}`
+            `I just completed today's Medrae Daily MindRush! 🧠🎉\nAdvancing nursing education and student success.\nCheck out Medrae here: ${appUrl}`
         );
         const whatsappUrl = `https://wa.me/?text=${message}`;
         window.open(whatsappUrl, "_blank");
@@ -662,15 +663,15 @@ export const DailyTriviaCard = () => {
                                 <div className="w-full bg-gray-50 bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] 0 text-black dark:text-white rounded-3xl">
 
                                     {/* Question number */}
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 p-4">
                                         Question {currentIndex + 1} of {questions.length}
                                     </p>
 
                                     {/* Question text */}
-                                    <p className="font-semibold text-lg mb-6">{questions[currentIndex]?.question_text}</p>
+                                    <p className="font-semibold text-lg mb-6 mt-6 p-2">{questions[currentIndex]?.question_text}</p>
 
                                     {/* Answers */}
-                                    <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-8 p-4">
 
                                         {(["A", "B", "C", "D"] as const).map((letter) => {
                                             if (!currentQuestion) return null;
@@ -719,147 +720,129 @@ export const DailyTriviaCard = () => {
                             </motion.div>
                         </div>
                     )}
-                    {/* Students attempted info */}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-8 mb-3 px-0">
-                        <Eye className="w-4 h-4" />
-                        {topStudents.length === 0
-                            ? "No students attempted yet"
-                            : `${topStudents.length} students attempted today`}
-                    </div>
-                    {/* Daily Top Students Heading */}
-                    <div className="flex items-center gap-2 mb-2 px-0">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        <span className="font-semibold">Daily Top Students</span>
-                    </div>
-                    {/* Scrollable Top Students Cards */}
-                    <div className="w-full overflow-x-auto flex gap-4 py-2 custom-scrollbar">
-                        {topLoading ? (
-                            <div className="flex gap-4 animate-pulse">
-                                {Array.from({ length: 4 }).map((_, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex-shrink-0 w-36 sm:w-40 p-3 rounded-md bg-gray-200 dark:bg-gray-700"
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 mb-2"></div>
-                                        <div className="h-4 w-24 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                                        <div className="h-3 w-20 bg-gray-300 dark:bg-gray-600 rounded mb-1"></div>
-                                        <div className="h-3 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                                    </div>
-                                ))}
+
+
+                    {/* Students attempted info - Refined Header */}
+                    <div className="mt-10 mb-6 px-1">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="w-5 h-5 text-amber-500" />
+                                    <h2 className="text-lg font-bold tracking-tight text-foreground">Daily Leaderboard</h2>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-1">
+                                    <Eye className="w-3.5 h-3.5" />
+                                    {topStudents.length === 0
+                                        ? "Be the first to challenge today's trivia"
+                                        : `${topStudents.length} medical students competing today`}
+                                </div>
                             </div>
-                        ) : topStudents.length === 0 ? (
-                            <p className="text-sm text-gray-500 px-2">
-                                No students have attempted today's trivia yet. Be the first!
-                            </p>
-                        ) : (
-                            topStudents.map((s, idx) => (
-                                <motion.div
-                                    key={s.user_id}
-                                    className={`flex-shrink-0 w-36 sm:w-40 p-3 rounded-md flex flex-col justify-between ${idx === 0 ? "bg-yellow-100 dark:bg-yellow-800"
-                                        : idx === 1 ? "bg-gray-100 dark:bg-gray-700"
-                                            : idx === 2 ? "bg-orange-100 dark:bg-orange-800"
-                                                : "bg-gray-100 dark:bg-gray-800"
-                                        }`}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05, type: "spring", stiffness: 120 }}
-                                    whileHover={{ scale: 1.05 }}
-                                    onClick={() => setSelectedUserId(s.user_id)}
+                        </div>
 
-                                >
-                                    <div className="flex flex-col items-center text-center flex-1">
-                                        {/* Top 3 Icon */}
-                                        {idx <= 2 && (
-                                            <Stethoscope
-                                                className={`w-5 h-5 mb-1 animate-bounce ${idx === 0 ? "text-yellow-500"
-                                                    : idx === 1 ? "text-gray-500"
-                                                        : "text-orange-500"
-                                                    }`}
-                                            />
-                                        )}
-
-                                        <img
-                                            src={s.avatar_url || "/UsersAvatar.jpg"}
-                                            alt={s.name || s.username}
-                                            className="w-12 h-12 rounded-full mb-2 object-cover"
-                                        />
-
-                                        <div className="font-semibold text-sm text-gray-800 dark:text-white break-words">
-                                            {s.name || s.username}
-                                        </div>
-
-                                        <div className="text-xs text-gray-500 dark:text-gray-300 truncate">
-                                            {s.institution || "No Institution"}
-                                        </div>
-
-                                        <div className="mt-2 font-bold text-blue-600 dark:text-blue-400">
-                                            {s.score} pts
-                                        </div>
-
-
-                                        {s.completedAt && (
-                                            <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                                                Done at {new Date(s.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        {/* Scrollable Container with improved visibility */}
+                        <div className="w-full overflow-x-auto flex gap-1 pb-4 pt-2 custom-scrollbar mask-fade-right">
+                            {topLoading ? (
+                                <div className="flex gap-4 animate-pulse">
+                                    {Array.from({ length: 4 }).map((_, idx) => (
+                                        <div key={idx} className="flex-shrink-0 w-40 h-64 rounded-xl bg-muted/50 border border-border" />
+                                    ))}
+                                </div>
+                            ) : topStudents.length === 0 ? (
+                                <div className="w-full py-8 text-center border-2 border-dashed border-muted rounded-xl">
+                                    <p className="text-sm text-muted-foreground italic">
+                                        The leaderboard is empty. Step up and lead the way!
+                                    </p>
+                                </div>
+                            ) : (
+                                <AnimatePresence>
+                                    {topStudents.map((s, idx) => (
+                                        <motion.div
+                                            key={s.user_id}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                            whileHover={{ y: -4 }}
+                                            onClick={() => setSelectedUserId(s.user_id)}
+                                            className={`relative flex-shrink-0 w-40 p-4 rounded-2xl border flex flex-col items-center cursor-pointer transition-all
+                            ${idx === 0 ? "bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-900/10 dark:to-background border-amber-200 dark:border-amber-800 shadow-md shadow-amber-500/10"
+                                                    : "bg-card border-border shadow-sm hover:shadow-md"}`}
+                                        >
+                                            {/* Rank Badge - Top Left */}
+                                            <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border
+                            ${idx === 0 ? "bg-amber-500 text-white border-amber-600"
+                                                    : idx === 1 ? "bg-slate-400 text-white border-slate-500"
+                                                        : idx === 2 ? "bg-orange-500 text-white border-orange-600"
+                                                            : "bg-muted text-muted-foreground border-border"}`}>
+                                                {idx + 1}
                                             </div>
-                                        )}
-                                        {s.timeUsed !== undefined && (
-                                            <div className="text-xs text-gray-500 dark:text-gray-300">
-                                                Spent {formatTimeReadable(s.timeUsed)}
+
+                                            {/* Avatar Section */}
+                                            <div className="relative mb-3">
+                                                <img
+                                                    src={s.avatar_url || "/UsersAvatar.jpg"}
+                                                    alt={s.name}
+                                                    className={`w-16 h-16 rounded-full object-cover border-2 p-0.5
+                                    ${idx === 0 ? "border-amber-400" : "border-transparent"}`}
+                                                />
+                                                {idx === 0 && (
+                                                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 rounded-full p-1 shadow-sm">
+                                                        <Award className="w-4 h-4 text-amber-500" />
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
 
+                                            {/* Student Info */}
+                                            <div className="text-center w-full space-y-1 mb-3">
+                                                <div className="font-bold text-sm text-foreground truncate w-full px-1">
+                                                    {s.name || s.username}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate w-full">
+                                                    {s.institution || "Independent"}
+                                                </div>
+                                            </div>
 
-                                        {/* Top 3 badges */}
-                                        <div className="mt-1">
-                                            {idx === 0 && <Badge variant="destructive">🥇</Badge>}
-                                            {idx === 1 && <Badge variant="secondary">🥈</Badge>}
-                                            {idx === 2 && <Badge variant="warning">🥉</Badge>}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t text-xl">
+                                            {/* Stats Pill */}
+                                            <div className="flex flex-col items-center gap-1 w-full pt-2 border-t border-border/50">
+                                                <div className="text-sm font-bold text-primary">
+                                                    {s.score.toLocaleString()} <span className="text-[10px] font-medium opacity-70">PTS</span>
+                                                </div>
 
-                                        <motion.button
-                                            whileTap={{ scale: 1.3 }}
-                                            transition={{ type: "spring", stiffness: 500 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                reactionBurst("like");
-                                                toggleReaction(s.user_id, "like");
-                                            }}
-                                            className="px-3 py-2 rounded"
-                                        >
-                                            👍 <span className="text-xs">{reactions[s.user_id]?.like || 0}</span>
-                                        </motion.button>
+                                                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                                                    <Timer className="w-3 h-3" />
+                                                    {s.timeUsed !== undefined ? formatTimeReadable(s.timeUsed) : "--"}
+                                                </div>
+                                            </div>
 
-                                        <motion.button
-                                            whileTap={{ scale: 1.3 }}
-                                            transition={{ type: "spring", stiffness: 500 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                reactionBurst("fire");
-                                                toggleReaction(s.user_id, "fire");
-                                            }}
-                                            className="px-3 py-2 rounded"
-                                        >
-                                            🔥 <span className="text-xs">{reactions[s.user_id]?.fire || 0}</span>
-                                        </motion.button>
-
-                                        <motion.button
-                                            whileTap={{ scale: 1.3 }}
-                                            transition={{ type: "spring", stiffness: 500 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                reactionBurst("clap");
-                                                toggleReaction(s.user_id, "clap");
-                                            }}
-                                            className="px-3 py-2 rounded"
-                                        >
-                                            👏 <span className="text-xs">{reactions[s.user_id]?.clap || 0}</span>
-                                        </motion.button>
-                                    </div>
-                                </motion.div>
-                            ))
-                        )}
+                                            {/* Professional Reaction Bar */}
+                                            <div className="flex items-center justify-center gap-1 mt-4 w-full bg-muted/30 rounded-full py-1 border border-border/50">
+                                                {[
+                                                    { type: 'like', emoji: '👍' },
+                                                    { type: 'fire', emoji: '🔥' },
+                                                    { type: 'clap', emoji: '👏' }
+                                                ].map((react) => (
+                                                    <motion.button
+                                                        key={react.type}
+                                                        whileTap={{ scale: 1.4 }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            reactionBurst(react.type);
+                                                            toggleReaction(s.user_id, react.type);
+                                                        }}
+                                                        className="flex items-center gap-1 px-1.5 py-0.5 hover:bg-background rounded-full transition-colors"
+                                                    >
+                                                        <span className="text-xs">{react.emoji}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground">
+                                                            {reactions[s.user_id]?.[react.type] || 0}
+                                                        </span>
+                                                    </motion.button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            )}
+                        </div>
                     </div>
                     {
                         !started && !completed && (
@@ -890,41 +873,89 @@ export const DailyTriviaCard = () => {
                             </Button>
                         )
                     }
-                    {
-                        completed && (
-                            <div className="mt-4 p-2 bg-transparent dark:bg-transparent text-left font-semibold animate-fade-in">
-                                <span className="text-lg font-bold">Congratulations! You finished today's trivia!</span>
-                                <br />
-                                {/* Score display */}
-                                {savedScore
-                                    ? `${savedScore.correct_answers}/${savedScore.total_questions} correct! 🌟`
-                                    : "0/0 correct! 🌟"}
-                                <br />
-                                {/* Time spent display */}
-                                {timeUsedToday !== null ? `${timeUsedToday}s spent ⏱` : "0s spent ⏱"}
-                                <br /><br />
-
-
-                                {/* Description for bars */}
-                                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                    Bars show your performance: <strong>green</strong> is good, <strong>yellow</strong> is average, <strong>red</strong> is below expectations.
-                                    <br />
-                                    Correct answers bar: how many questions you got right. <br />
-                                    Time used bar: how fast you completed the quiz.
+                    {completed && (
+                        <div className="mt-2 w-full max-w-2xl mx-auto animate-fade-in overflow-hidden rounded-xl border-0 bg-white dark:bg-slate-900 shadow-xl">
+                            {/* Header Section with background05.jpg */}
+                            <div className="relative overflow-hidden p-8 text-center text-white">
+                                <div
+                                    className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
+                                    style={{ backgroundImage: "url('/background05.jpg')" }}
+                                >
+                                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[1px]"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
                                 </div>
 
-                                {/* Progress bars */}
-                                <div className="mt-2 space-y-4">
-                                    {/* Correct answers bar */}
-                                    <div className="flex flex-col items-start">
-                                        <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
+                                <div className="relative z-10">
+                                    <div className="mb-3 flex justify-center">
+                                        <div className="rounded-full bg-white/20 p-4 backdrop-blur-md border border-white/30 shadow-2xl animate-bounce-subtle">
+                                            {/* UPDATED: Lucide Trophy */}
+                                            <Trophy className="w-10 h-10 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+                                        </div>
+                                    </div>
+                                    <h2 className="text-3xl font-black tracking-tight uppercase drop-shadow-md">
+                                        Congratulations!
+                                    </h2>
+                                    <p className="text-blue-50 font-medium opacity-95 text-lg mt-1 drop-shadow-sm">
+                                        You've successfully completed today's trivia challenge.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-2 md:p-2">
+                                {/* Quick Stats Grid - Preserving your gap-2 layout */}
+                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-4 text-center border border-gray-100 dark:border-gray-700">
+                                        <div className="flex justify-center mb-1">
+                                            <Target className="w-5 h-5 text-blue-500" />
+                                        </div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Score</p>
+                                        <p className="text-2xl font-black text-gray-900 dark:text-white">
+                                            {savedScore ? `${savedScore.correct_answers}/${savedScore.total_questions}` : "0/0"}
+                                        </p>
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1 uppercase tracking-tighter">Streak +1 🔥</p>
+                                    </div>
+                                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-4 text-center border border-gray-100 dark:border-gray-700">
+                                        <div className="flex justify-center mb-1">
+                                            <Timer className="w-5 h-5 text-indigo-500" />
+                                        </div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Time</p>
+                                        <p className="text-2xl font-black text-gray-900 dark:text-white">
+                                            {timeUsedToday !== null ? `${timeUsedToday}s` : "0s"}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1 uppercase tracking-tighter text-[10px]">Total Effort</p>
+                                    </div>
+                                </div>
+
+                                {/* Performance Analysis Section */}
+                                <div className="space-y-2 p-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <TrendingUp className="w-4 h-4 text-gray-400" />
+                                            <h3 className="text-sm font-bold uppercase text-gray-400 tracking-widest">Performance</h3>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <span className="flex items-center text-[10px] font-bold"><span className="w-2 h-2 rounded-full bg-green-500 mr-1"></span> Elite</span>
+                                            <span className="flex items-center text-[10px] font-bold"><span className="w-2 h-2 rounded-full bg-yellow-400 mr-1"></span> Avg</span>
+                                            <span className="flex items-center text-[10px] font-bold"><span className="w-2 h-2 rounded-full bg-red-500 mr-1"></span> Review</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Correct Answers Bar */}
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm font-semibold">
+                                            <span className="text-gray-700 dark:text-gray-300">Accuracy</span>
+                                            <span className="text-blue-600 font-bold">
+                                                {savedScore ? Math.round((savedScore.correct_answers / savedScore.total_questions) * 100) : 0}%
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
                                             <div
-                                                className={`h-4 rounded-full transition-all duration-500 ${savedScore
+                                                className={`h-full rounded-full transition-all duration-1000 ${savedScore
                                                     ? savedScore.correct_answers < 8
-                                                        ? "bg-red-500"
+                                                        ? "bg-gradient-to-r from-red-500 to-orange-500"
                                                         : savedScore.correct_answers <= 12
-                                                            ? "bg-yellow-400"
-                                                            : "bg-green-500"
+                                                            ? "bg-gradient-to-r from-yellow-400 to-orange-400"
+                                                            : "bg-gradient-to-r from-emerald-400 to-green-500"
                                                     : "bg-gray-400"
                                                     }`}
                                                 style={{
@@ -934,25 +965,26 @@ export const DailyTriviaCard = () => {
                                                 }}
                                             ></div>
                                         </div>
-                                        <div className="flex items-center justify-between w-full mt-1">
-                                            <span className="text-sm text-gray-700 dark:text-gray-300">Correct answers</span>
-                                            {savedScore && (
-                                                <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                    {savedScore.correct_answers}/{savedScore.total_questions}
-                                                </span>
-                                            )}
-                                        </div>
                                     </div>
-                                    {/* Time used bar */}
-                                    <div className="flex flex-col items-start">
-                                        <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4">
+
+                                    {/* Time Efficiency Bar */}
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm font-semibold">
+                                            <span className="text-gray-700 dark:text-gray-300">Speed Efficiency</span>
+                                            <span className="text-blue-600 font-bold">
+                                                {timeUsedToday !== null && (
+                                                    `${Math.floor(timeUsedToday / 60)}m ${timeUsedToday % 60}s`
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
                                             <div
-                                                className={`h-4 rounded-full transition-all duration-500 ${timeUsedToday !== null
+                                                className={`h-full rounded-full transition-all duration-1000 ${timeUsedToday !== null
                                                     ? timeUsedToday < 150
-                                                        ? "bg-green-500"
+                                                        ? "bg-gradient-to-r from-emerald-400 to-green-500"
                                                         : timeUsedToday <= 210
-                                                            ? "bg-yellow-400"
-                                                            : "bg-red-500"
+                                                            ? "bg-gradient-to-r from-yellow-400 to-orange-400"
+                                                            : "bg-gradient-to-r from-red-500 to-orange-500"
                                                     : "bg-gray-400"
                                                     }`}
                                                 style={{
@@ -962,43 +994,60 @@ export const DailyTriviaCard = () => {
                                                 }}
                                             ></div>
                                         </div>
-                                        <div className="flex items-center justify-between w-full mt-1">
-                                            <span className="text-sm text-gray-700 dark:text-gray-300">Time used</span>
-                                            {timeUsedToday !== null && (
-                                                <span className="text-xs text-gray-700 dark:text-gray-200 font-medium">
-                                                    {Math.floor(timeUsedToday / 60).toString().padStart(2, "0")}:
-                                                    {(timeUsedToday % 60).toString().padStart(2, "0")} min
-                                                </span>
-                                            )}
+                                    </div>
+                                </div>
+
+                                {/* Motivational Message */}
+                                <div className="mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-center italic text-blue-800 dark:text-blue-300 font-medium">
+                                    {(() => {
+                                        const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
+                                        if (score === questions.length) return "🔥 Incredible! You aced it today! Absolute perfection.";
+                                        if (score >= Math.ceil(questions.length * 0.8)) return "💪 Great job! You're getting stronger every day!";
+                                        if (score >= Math.ceil(questions.length * 0.5)) return "🙂 Nice work! Keep practicing and you'll improve!";
+                                        return "👍 Good effort! Remember, every answer helps you learn more!";
+                                    })()}
+                                </div>
+
+                                {/* "THE AD" / PROMOTIONAL SECTION */}
+                                <div className="mt-8 relative overflow-hidden rounded-2xl bg-slate-900 p-6 text-white shadow-2xl group transition-all hover:scale-[1.01]">
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Zap className="w-4 h-4 text-blue-400 fill-blue-400" />
+                                            <span className="inline-block px-3 py-1 rounded-full bg-blue-600 text-[10px] font-bold uppercase tracking-widest">
+                                                Medrae Pro Advantage
+                                            </span>
                                         </div>
+                                        <h3 className="text-xl font-bold mb-2 text-white">Master Your Exams Faster</h3>
+                                        <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+                                            This daily trivia is just a taste. Unlock <strong>thousands of organized questions</strong> and in-depth explanations to guarantee your success.
+                                        </p>
+
+                                        <button
+                                            onClick={() => navigate("/Medrae-quizzes")}
+                                            className="w-full py-4 bg-white text-slate-900 font-black rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-lg"
+                                        >
+                                            EXPLORE MEDRAE QUIZZES
+                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                        </button>
+
+                                        <p className="mt-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            Challenge refreshes in 24 hours
+                                        </p>
                                     </div>
 
+                                    {/* Decorative background glow for the Ad */}
+                                    <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-blue-600/30 rounded-full blur-[80px]"></div>
                                 </div>
-                                <br />
-                                {(() => {
-                                    const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.correct_answer ? 1 : 0), 0);
-                                    if (score === questions.length) return "🔥 Incredible! You aced it today!";
-                                    if (score >= Math.ceil(questions.length * 0.8)) return "💪 Great job! You're getting stronger every day!";
-                                    if (score >= Math.ceil(questions.length * 0.5)) return "🙂 Nice work! Keep practicing and you'll improve!";
-                                    return "👍 Good effort! Remember, every answer helps you learn more!";
-                                })()}
-                                <p className="mt-4 text-sm text-gray-700 dark:text-gray-300">
-                                    Every day, our trivia questions are carefully selected from different units across the app, giving you a mix of topics to challenge your knowledge.
-                                    Here on the <span className="text-blue-600 underline font-medium cursor-pointer" onClick={() => navigate("/Medrae-quizzes")}>
-                                        Medrae Quizzes page
-                                    </span>, you'll find all units fully organized with similar questions.
-                                    It’s like a showcase of the learning product explore, practice, and strengthen your skills at your own pace!
-                                </p>
 
-                                <span className="mt-3 text-sm text-gray-700 dark:text-gray-300 italic">
-                                    Remember: Medrae helps you <strong>Stop Guessing. Start Passing.</strong>
-                                </span>
-
-                                <br />
-                                Come back tomorrow for a new challenge!
+                                {/* Slogan Footer */}
+                                <div className="mt-6 mb-4 text-center">
+                                    <p className="text-gray-400 dark:text-gray-500 text-xs font-bold tracking-widest">
+                                        MEDRAE: <span className="text-gray-900 dark:text-gray-200">Advancing nursing education and student success.</span>
+                                    </p>
+                                </div>
                             </div>
-                        )
-                    }
+                        </div>
+                    )}
 
                     <div className="flex justify-center">
                         <Button
@@ -1027,13 +1076,12 @@ export const DailyTriviaCard = () => {
                         </Button>
 
                     </div>
-
+                    <UserProfileModal
+                        userId={selectedUserId}
+                        onClose={() => setSelectedUserId(null)}
+                    />
                 </CardContent >
             </Card >
-            <UserProfileModal
-                userId={selectedUserId}
-                onClose={() => setSelectedUserId(null)}
-            />
 
         </div >
     );

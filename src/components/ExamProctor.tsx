@@ -298,7 +298,7 @@ export default function ExamProctor({ videoStream, sessionId, paperId }: ExamPro
                                 }
                             }}
                         >
-                            Exit Exam
+                            EXIT MEDRAE
                         </Button>
                     </div>
                 </div>

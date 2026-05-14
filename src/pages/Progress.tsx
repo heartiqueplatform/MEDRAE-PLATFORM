@@ -19,11 +19,17 @@ import {
 } from "@/components/ui/tabs";
 import {
   TrendingUp,
+  Search,
+
+  Flame,
+  Target,
   Star,
   BookOpen,
   Clock,
   Award,
   Heart,
+  RefreshCw,
+  Check,
 } from "lucide-react";
 import { playSound } from "@/lib/soundManager";
 import { motion, AnimatePresence } from "framer-motion";
@@ -217,199 +223,261 @@ export function StudyProgress() {
     ));
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
-      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0">
-          <CardHeader>
-            <CardTitle className="text-3xl flex items-center gap-2 bg-gradient-medical bg-clip-text text-transparent">
-              <Heart className="h-8 w-8 text-red-500 animate-pulse" fill="currentColor" />
-              Study Progress Tracker
-            </CardTitle>
+    <div className="min-h-screen w-full flex mt-0 flex-col items-center ">
+      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6 pt-4 sm:pt-8">
+        {/* MAIN HEADER CARD */}
+        <Card className="relative overflow-hidden shadow-xl shadow-blue-500/5 transition-all rounded-none sm:rounded-xl border-0 bg-white dark:bg-gray-900">
+          {/* Visual Accent */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-50 dark:bg-red-900/20 rounded-2xl">
+                <Heart className="h-7 w-7 text-red-500 animate-pulse" fill="currentColor" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                  Study <span className="text-blue-600">Progress</span>
+                </CardTitle>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">
+                  Real-time Learning Analytics
+                </p>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="mt-2">
+
+          <CardContent className="space-y-2">
+            {/* Metric Explanation Section */}
+            <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-3xl p-5 border-0">
               <motion.div layout>
-                <p className="text-muted-foreground mt-0 text-base leading-relaxed">
-                  This tracker measures your learning journey in three ways:
-                  <br />• <strong>Progress %</strong> = highest quiz score in the unit.
-                  <br />• <strong>Stars</strong> = 5 if at least one quiz attempted.
-                  <br />• <strong>Hours Studied</strong> = 1.5 × number of attempts...
-                  <span
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Metric Guide</h3>
+                  <button
                     onClick={() => setShowProgressDescription(!showProgressDescription)}
-                    className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
+                    className="text-[10px] font-bold text-blue-600 hover:underline px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
                   >
-                    Learn more
-                  </span>
+                    {showProgressDescription ? "Close Info" : "How is this calculated?"}
+                  </button>
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed font-medium">
+                  Track your journey through core nursing units. Your activity is measured across three key performance indicators.
                 </p>
 
-                <AnimatePresence initial={false}>
+                <AnimatePresence>
                   {showProgressDescription && (
                     <motion.div
-                      key="progress-description-expanded"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.35, ease: "easeInOut" }}
-                      className="mt-2 text-muted-foreground text-base leading-relaxed"
+                      className="overflow-hidden"
                     >
-                      <br />
-                      To earn scores and update your progress, you must complete and submit quizzes in the Medrae Quizzes App  your results will automatically update here.
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center text-blue-600 font-bold text-xs">%</div>
+                          <p className="text-[11px] text-gray-500 leading-snug"><strong>Progress:</strong> Highest quiz score achieved per unit.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg flex items-center justify-center text-yellow-600 font-bold text-xs">★</div>
+                          <p className="text-[11px] text-gray-500 leading-snug"><strong>Stars:</strong> 5 Stars awarded for every unit attempted.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-xs">H</div>
+                          <p className="text-[11px] text-gray-500 leading-snug"><strong>Hours:</strong> Calculated as 1.5hrs per unique attempt.</p>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-[10px] italic text-gray-400 border-l-2 border-blue-500 pl-3">
+                        Submit your quizzes in the App to sync results here automatically.
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.div>
             </div>
-            {/* Overall Stats */}
-            <div className="grid gap-2 md:grid-cols-4 w-full">
 
-              <Card className="w-full sm:w-auto  border-0 hover:shadow-lg duration-300">
+            {/* OVERALL STATS GRID */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+              {/* Progress Card */}
+              <StatCard
+                icon={<TrendingUp className="w-5 h-5" />}
+                value={`${Math.round(overallStats.totalProgress)}%`}
+                label="Overall Progress"
+                color="text-blue-600"
+                bgColor="bg-blue-50 dark:bg-blue-900/20"
+              />
+              {/* Hours Card */}
+              <StatCard
+                icon={<Clock className="w-5 h-5" />}
+                value={overallStats.totalHours}
+                label="Hours Studied"
+                color="text-indigo-600"
+                bgColor="bg-indigo-50 dark:bg-indigo-900/20"
+              />
+              {/* Topics Card */}
+              <StatCard
+                icon={<BookOpen className="w-5 h-5" />}
+                value={`${overallStats.completedTopics}/${overallStats.totalTopics}`}
+                label="Topics Done"
+                color="text-emerald-600"
+                bgColor="bg-emerald-50 dark:bg-emerald-900/20"
+              />
+              {/* Stars Card */}
+              <StatCard
+                icon={<Star className="w-5 h-5" />}
+                value={`${overallStats.totalStars}`}
+                label="Stars Earned"
+                color="text-amber-500"
+                bgColor="bg-amber-50 dark:bg-amber-900/20"
+              />
+            </div>
+          </CardContent>
 
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="text-2xl font-bold">{Math.round(overallStats.totalProgress)}%</p>
-                      <p className="text-sm text-muted-foreground">Overall Progress</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
-
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-8 w-8 text-blue-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{overallStats.totalHours}</p>
-                      <p className="text-sm text-muted-foreground">Hours Studied</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
-
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <BookOpen className="h-8 w-8 text-green-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{overallStats.completedTopics}/{overallStats.totalTopics}</p>
-                      <p className="text-sm text-muted-foreground">Topics Done</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
-
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <Star className="h-8 w-8 text-yellow-500" />
-                    <div>
-                      <p className="text-2xl font-bold">{overallStats.totalStars}★</p>
-                      <p className="text-sm text-muted-foreground">Total Stars Earned</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
+          <SimulationAndTriviaSummary user={user} />
+          <Tabs defaultValue="subjects" className="space-y-2">
+            {/* --- TAB NAVIGATION --- */}
+            <div className="flex justify-center">
+              <TabsList className="bg-gray-100 dark:bg-gray-900 p-1 rounded-2xl h-12 inline-flex border-0">
+                <TabsTrigger
+                  value="subjects"
+                  className="rounded-xl px-6 font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                >
+                  By Unit
+                </TabsTrigger>
+                <TabsTrigger
+                  value="timeline"
+                  className="rounded-xl px-6 font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                >
+                  Timeline View
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-          </CardContent>
-        </Card>
-
-        {/* --- NEW SUMMARY CARDS (Simulation + Trivia) --- */}
-        <SimulationAndTriviaSummary user={user} />
-
-        <Tabs defaultValue="subjects" className="space-y-2">
-          <TabsList>
-            <TabsTrigger value="subjects">By Unit</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="subjects" className="space-y-2">
-            {subjects.length === 0 && loading ? (
-              <div className="flex justify-center items-center py-10">
-                <GlobalLoader />
-              </div>
-            ) : (
-              <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(250px,1fr))] w-full px-0 sm:px-0">
-                {subjects.map((subject) => (
-                  <Card key={subject.id} className=" border-0 hover:shadow-lg duration-300">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{subject.name}</CardTitle>
-                          <CardDescription>
-                            {subject.topicsCompleted} of {subject.totalTopics} completed Atempt
-                          </CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1 mb-1">
-                            {renderStars(subject.rating)}
+            {/* --- BY UNIT CONTENT --- */}
+            <TabsContent value="subjects" className="space-y-2 outline-none">
+              {subjects.length === 0 && loading ? (
+                <div className="flex flex-col justify-center items-center py-20 space-y-4">
+                  <GlobalLoader />
+                  <p className="text-sm font-medium text-gray-400 animate-pulse">Analysing your data...</p>
+                </div>
+              ) : (
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full px-0">
+                  {subjects.map((subject) => (
+                    <Card
+                      key={subject.id}
+                      className="group relative overflow-hidden border-2 border-gray-100 dark:border-gray-900 hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-[2rem] transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/5"
+                    >
+                      <CardHeader className="pb-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1 max-w-[65%]">
+                            <CardTitle className="text-base font-bold leading-tight group-hover:text-blue-600 transition-colors">
+                              {subject.name}
+                            </CardTitle>
+                            <CardDescription className="text-[10px] font-bold uppercase tracking-wider">
+                              {subject.topicsCompleted} of {subject.totalTopics} Attempts
+                            </CardDescription>
                           </div>
-                          <Badge variant="secondary">{subject.progress}% Complete</Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Progress</span>
-                          <span>{subject.progress}%</span>
-                        </div>
-                        <Progress value={subject.progress} className="h-2 [&>div]:bg-blue-500" />
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div className="text-center">
-                          <p className="font-semibold text-lg">{subject.hoursStudied}</p>
-                          <p className="text-muted-foreground">Hours</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="font-semibold text-lg">{subject.topicsCompleted}</p>
-                          <p className="text-muted-foreground">Atempt</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="font-semibold text-lg">{subject.rating}/5</p>
-                          <p className="text-muted-foreground">Rating</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
 
-          <TabsContent value="timeline">
-            <Card className="w-full sm:w-auto border-0 hover:shadow-lg duration-300">
+                          <div className="flex flex-col items-end gap-1.5">
+                            <div className="flex items-center gap-0.5 text-amber-400">
+                              {renderStars(subject.rating)}
+                            </div>
+                            {subject.progress >= 80 && (
+                              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[9px] font-bold border-none">
+                                MASTERED
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
 
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Learning Timeline
-                </CardTitle>
-                <CardDescription>Your progress over the past weeks</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border-l-2 border-primary pl-4">
-                  <div className="relative">
-                    <div className="absolute -left-6 w-3 h-3 bg-primary rounded-full" />
-                    <div className="space-y-1">
-                      <p className="font-medium">Completed latest quiz</p>
-                      <p className="text-sm text-muted-foreground">Recently • Updated</p>
+                      <CardContent className="space-y-6">
+                        {/* Progress Section */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-tighter">
+                            <span className="text-gray-400">Total Mastery</span>
+                            <span className="text-blue-600">{subject.progress}%</span>
+                          </div>
+                          <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${subject.progress}%` }}
+                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-3 gap-2 py-3 border-t border-gray-50 dark:border-gray-900">
+                          <div className="text-center">
+                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.hoursStudied}</p>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase mt-1">Hours</p>
+                          </div>
+                          <div className="text-center border-x border-gray-50 dark:border-gray-900">
+                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.topicsCompleted}</p>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase mt-1">Attempts</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.rating}/5</p>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase mt-1">Rating</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* --- TIMELINE CONTENT --- */}
+            <TabsContent value="timeline" className="outline-none">
+              <Card className="rounded-xl border-0 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-2xl">
+                      <Award className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-bold tracking-tight">Learning Journey</CardTitle>
+                      <CardDescription className="text-xs italic">A history of your academic breakthroughs</CardDescription>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <div className="relative border-l-2 border-dashed border-gray-200 dark:border-gray-800 ml-4 space-y-12">
+                    {/* Latest Event Node */}
+                    <div className="relative pl-8">
+                      <div className="absolute -left-[9px] top-0 w-4 h-4 bg-blue-500 rounded-full ring-4 ring-blue-100 dark:ring-blue-900/30 shadow-[0_0_15px_rgba(59,130,246,0.6)]" />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-blue-600 text-[10px] font-bold">LATEST ACTIVITY</Badge>
+                          <span className="text-[10px] font-bold text-gray-400">Just Now</span>
+                        </div>
+                        <p className="text-base font-bold text-gray-900 dark:text-white">Completed Unit Assessment</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-md">
+                          Your performance has been synced to the cloud. You've earned new stars for this session!
+                        </p>
+                      </div>
+                    </div>
 
+                    {/* Placeholder for future nodes */}
+                    <div className="relative pl-8 opacity-40">
+                      <div className="absolute -left-[9px] top-0 w-4 h-4 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                      <p className="text-sm font-bold text-gray-400 italic">Previous activity details will appear as you study...</p>
+                    </div>
 
-          <TermsButton />
-        </Tabs>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TermsButton />
+          </Tabs>
+        </Card>
       </div>
+
     </div >
+
   );
 }
-
 // ⭐ Summary item (needed by both cards)
 function SummaryItem({ label, value }) {
   return (
@@ -478,9 +546,6 @@ function SimulationAndTriviaSummary({ user }) {
         setTargetInput(50);
         return;
       }
-
-
-
       setProfile(data);
       setTargetInput(data.target_score ?? 50);
 
@@ -525,7 +590,7 @@ function SimulationAndTriviaSummary({ user }) {
     const inner = document.createElement("div");
     inner.innerHTML = `
       <strong>New target saved: ${targetInput}%!</strong><br />
-      Stop Guessing. Start Passing.
+    Advancing nursing education and student success.
       `;
     inner.className = `
       px-6 py-4 rounded-xl shadow-lg text-center
@@ -716,119 +781,201 @@ Take a moment to review your mistakes and try again improvement comes fast when 
       </div>
     );
   };
-
-
   return (
-    <div>
-      {/* GREETING HEADER */}
-      <div className="flex items-center gap-3 mb-2 p-3  rounded-xl bg-white/40 dark:bg-gray-800/60 backdrop-blur border-0 animate-fade-slide">
-        <img
-          src={profile?.avatar_url || "/UsersAvatar.jpg"}
-          alt="avatar"
-          className="w-12 h-12 rounded-full object-cover"
-        />
-        <div className="text-lg font-semibold">
-          {profile?.name ? `Welcome back, ${profile.name}!` : "Welcome back!"}
-        </div>
-        <div className="ml-auto text-center">
-          <div className="mt-2 flex items-center justify-center gap-2">
-            <label className="text-sm">My Target:</label>
-            <input
-              type="number"
-              min={1}
-              max={100}  // limits the slider input
-              value={targetInput}
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                // clamp between 1 and 100
-                setTargetInput(val > 100 ? 100 : val < 1 ? 1 : val);
-              }}
-              className={`w-16 p-1 rounded border text-center text-sm ${localStorage.getItem("theme") === "dark"
-                ? "border-gray-600 text-white bg-gray-800"
-                : "border-gray-300 text-black bg-white"
-                }`}
+    <div className="space-y-3 animate-in fade-in duration-500">
+      {/* --- SECTION 1: GREETING & GOALS --- */}
+      <div className="flex flex-col lg:flex-row gap-2 items-stretch">
+        {/* Welcome Profile Card */}
+        <div className="flex-1 flex items-center gap-2 p-4 rounded-[2rem] bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-800 shadow-sm">
+          <div className="relative">
+            <img
+              src={profile?.avatar_url || "/UsersAvatar.jpg"}
+              alt="avatar"
+              className="w-14 h-14 rounded-full object-cover ring-2 ring-blue-500/20 p-0.5"
             />
-            <button
-              onClick={saveTarget}
-              disabled={savingTarget}
-              className={`px-3 py-1 rounded text-white ${localStorage.getItem("theme") === "dark"
-                ? "bg-blue-700 hover:opacity-80"
-                : "bg-blue-600 hover:opacity-80"
-                } transition`}
-            >
-              {savingTarget ? "..." : "Save"}
-            </button>
+            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-950 rounded-full"></div>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
+              {profile?.name ? `Hi, ${profile.name.split(' ')[0]}!` : "Welcome back!"}
+            </h1>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Ready for today's challenge?</p>
+          </div>
+        </div>
+        {/* Goals & Streak Card */}
+        <div className="flex-[1.5] flex flex-wrap items-center justify-between gap-4 p-4 rounded-[2rem] bg-blue-600 dark:bg-blue-700 text-white shadow-lg shadow-blue-200 dark:shadow-none">
+
+          {/* Target Setting Area */}
+          <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/10">
+            <Target className="w-5 h-5 text-blue-100" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Daily Goal</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={targetInput}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setTargetInput(val > 100 ? 100 : val < 1 ? 1 : val);
+                  }}
+                  className="w-12 bg-transparent border-b border-white/40 focus:border-white outline-none text-sm font-bold text-center"
+                />
+                <span className="text-xs font-bold">%</span>
+                <button
+                  onClick={saveTarget}
+                  disabled={savingTarget}
+                  className="ml-1 p-1 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition active:scale-90"
+                >
+                  {savingTarget ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Streak */}
-          <div className="text-sm bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full font-semibold mt-2">
-            🔥 {streak}-day streak
-          </div>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-            Active attempt days this week
-          </p>
+          {/* Streak Area */}
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="flex items-center justify-end gap-1.5">
+                <span className="text-2xl font-bold">{streak}</span>
+                <Flame className="w-6 h-6 text-orange-400 fill-orange-400 animate-bounce" />
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-tight opacity-80">Day Streak</p>
+            </div>
 
-          {/* Mobile-friendly streak tip */}
-          <p className="text-[10px] sm:text-[11px] text-gray-600 dark:text-gray-300 mt-1 px-1">
-            Keep your streak by attempting at least one simulation or trivia each day.
-          </p>
+            <div className="hidden sm:block w-px h-10 bg-white/20" />
+
+            <p className="hidden sm:block max-w-[140px] text-[10px] leading-tight opacity-90 font-medium">
+              Don't break the chain! Complete 1 test today.
+            </p>
+          </div>
         </div>
       </div>
 
-
-      {/* CARD GRID */}
-      <div className="grid gap-1 md:grid-cols-2 w-full">
-        {/* SIMULATION CARD */}
-        <Card className="hover:shadow-lg  border-0 ">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-blue-500" /> Simulation Paper Summary</CardTitle>
-            <CardDescription>Your overall performance in full mock exams</CardDescription>
+      {/* --- SECTION 2: PERFORMANCE CARDS --- */}
+      <div className="grid gap-2 md:grid-cols-2 ">
+        {/* SIMULATION SUMMARY */}
+        <Card className="rounded-xl border-0 shadow-xl shadow-gray-200/50 dark:shadow-none bg-white dark:bg-gray-800 overflow-hidden group">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                <Award className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold tracking-tight">Mock Simulations</CardTitle>
+                <CardDescription className="text-xs">Full-length NCK/NCLEX Exams</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            {!simSummary || simSummary === "empty" ? <p className="text-muted-foreground">No simulation papers done yet.</p> :
-              <>
-                <ProgressRing value={simSummary.latest} />
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                  <SummaryItem label="Best" value={`${simSummary.best}%`} />
-                  <SummaryItem label="Worst" value={`${simSummary.worst}%`} />
-                  <SummaryItem label="Average" value={`${simSummary.average}%`} />
-                  <SummaryItem label="Attempts" value={simSummary.attempts} />
-                </div>
-                <p className={`mt-4 text-center text-sm font-medium ${getMessage(simSummary, simLow).warning ? "text-red-600" : "text-primary"}`}>
-                  {getMessage(simSummary, simLow).text}
-                </p>
 
+          <CardContent className="space-y-6 pt-4">
+            {!simSummary || simSummary === "empty" ? (
+              <div className="py-10 text-center space-y-3">
+                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-full mx-auto flex items-center justify-center">
+                  <Search className="w-5 h-5 text-gray-300" />
+                </div>
+                <p className="text-sm text-gray-400 font-medium italic">No simulation data yet.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center transform group-hover:scale-105 transition-transform duration-500">
+                  <ProgressRing value={simSummary.latest} />
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  <StatPill label="Best" value={`${simSummary.best}%`} color="text-green-600" />
+                  <StatPill label="Worst" value={`${simSummary.worst}%`} color="text-red-500" />
+                  <StatPill label="Avg" value={`${simSummary.average}%`} color="text-blue-600" />
+                  <StatPill label="Tries" value={simSummary.attempts} color="text-gray-900 dark:text-white" />
+                </div>
+
+                <div className={`p-4 rounded-2xl text-center text-xs font-bold leading-relaxed border
+              ${getMessage(simSummary, simLow).warning
+                    ? "bg-red-50 border-red-100 text-red-600 dark:bg-red-900/10 dark:border-red-900/30"
+                    : "bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/10 dark:border-blue-900/30"}`}
+                >
+                  {getMessage(simSummary, simLow).text}
+                </div>
               </>
-            }
+            )}
           </CardContent>
         </Card>
 
-        {/* TRIVIA CARD */}
-        <Card className="hover:shadow-lg  border-0">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-yellow-500" /> Daily Short Test Summary</CardTitle>
-            <CardDescription>Your performance in quick daily tests</CardDescription>
+        {/* TRIVIA SUMMARY */}
+        <Card className="rounded-xl border-0 shadow-xl shadow-gray-200/50 dark:shadow-none bg-white dark:bg-gray-800 overflow-hidden group">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-2xl">
+                <Star className="h-6 w-6 text-amber-500 fill-amber-500" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Daily Trivia</CardTitle>
+                <CardDescription className="text-xs">Quick concept check tests</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            {!triviaSummary || triviaSummary === "empty" ? <p className="text-muted-foreground">No daily tests attempted yet.</p> :
-              <>
-                <ProgressRing value={triviaSummary.latest} />
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                  <SummaryItem label="Best" value={`${triviaSummary.best}%`} />
-                  <SummaryItem label="Worst" value={`${triviaSummary.worst}%`} />
-                  <SummaryItem label="Average" value={`${triviaSummary.average}%`} />
-                  <SummaryItem label="Attempts" value={triviaSummary.attempts} />
-                </div>
-                <p className={`mt-4 text-center text-sm font-medium ${getMessage(triviaSummary, triviaLow).warning ? "text-red-600" : "text-primary"}`}>
-                  {getMessage(triviaSummary, triviaLow).text}
-                </p>
 
+          <CardContent className="space-y-6 pt-4">
+            {!triviaSummary || triviaSummary === "empty" ? (
+              <div className="py-10 text-center space-y-3">
+                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-full mx-auto flex items-center justify-center">
+                  <Search className="w-5 h-5 text-gray-300" />
+                </div>
+                <p className="text-sm text-gray-400 font-medium italic">No trivia attempts yet.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center transform group-hover:scale-105 transition-transform duration-500">
+                  <ProgressRing value={triviaSummary.latest} />
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  <StatPill label="Best" value={`${triviaSummary.best}%`} color="text-green-600" />
+                  <StatPill label="Worst" value={`${triviaSummary.worst}%`} color="text-red-500" />
+                  <StatPill label="Avg" value={`${triviaSummary.average}%`} color="text-blue-600" />
+                  <StatPill label="Tries" value={triviaSummary.attempts} color="text-gray-900 dark:text-white" />
+                </div>
+
+                <div className={`p-4 rounded-2xl text-center text-xs font-bold border
+              ${getMessage(triviaSummary, triviaLow).warning
+                    ? "bg-red-50 border-red-100 text-red-600 dark:bg-red-900/10 dark:border-red-900/30"
+                    : "bg-amber-50 border-amber-100 text-amber-700 dark:bg-amber-900/10 dark:border-amber-900/30"}`}
+                >
+                  {getMessage(triviaSummary, triviaLow).text}
+                </div>
               </>
-            }
+            )}
           </CardContent>
         </Card>
       </div>
-
-    </div >
+    </div>
+  );
+}
+/* --- UTILITY COMPONENT FOR STAT PILLS --- */
+function StatPill({ label, value, color }: { label: string, value: string | number, color: string }) {
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
+      <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-tighter">{label}</span>
+      <span className={`text-xs font-bold ${color}`}>{value}</span>
+    </div>
+  );
+}
+// Reusable Sub-component for Stats to keep code clean
+function StatCard({ icon, value, label, color, bgColor }: any) {
+  return (
+    <Card className="border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-300 rounded-[1.5rem] overflow-hidden">
+      <CardContent className="p-4 sm:p-5 flex flex-col items-center text-center">
+        <div className={`p-3 rounded-2xl ${bgColor} ${color} mb-3`}>
+          {icon}
+        </div>
+        <h4 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-none">
+          {value}
+        </h4>
+        <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-tight mt-2">
+          {label}
+        </p>
+      </CardContent>
+    </Card>
   );
 }

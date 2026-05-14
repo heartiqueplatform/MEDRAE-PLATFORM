@@ -233,12 +233,7 @@ export function Forum() {
     if (!existing) {
       const { error: insertError } = await supabase
         .from("group_memberships")
-        .insert(
-          [{ unit_id: unitId, user_id: currentUserId }],
-          {
-            onConflict: ['unit_id', 'user_id'], // ignores if combination exists
-          }
-        );
+        .insert([{ unit_id: unitId, user_id: currentUserId }]);
 
       if (insertError) {
         console.error("Insert membership failed:", insertError);
@@ -409,7 +404,9 @@ export function Forum() {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedUnit]);
 
   const handleDeleteMessage = async (messageId: number) => {

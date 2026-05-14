@@ -1,109 +1,547 @@
 "use client";
 
 import { useNavigate } from "react-router-dom";
+import {
+    ChevronLeft,
+    Compass,
+    Fingerprint,
+    Eye,
+    Database,
+    LockKeyhole,
+    UserCheck,
+    Cookie,
+    Baby,
+    Mail,
+    ExternalLink,
+    HelpCircle,
+    ShieldAlert,
+    Smartphone,
+    MessageSquare,
+    ShieldCheck,
+    ArrowRight,
+    ScrollText,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export default function PrivacyPolicyPage() {
     const navigate = useNavigate();
     const currentYear = new Date().getFullYear();
 
+    const sections = [
+        { id: "collect", title: "1. Information Collection", icon: <Database className="h-5 w-5" /> },
+        { id: "use", title: "2. How We Use Data", icon: <Fingerprint className="h-5 w-5" /> },
+        { id: "sharing", title: "3. Data Sharing", icon: <Eye className="h-5 w-5" /> },
+        { id: "security", title: "4. Data Security", icon: <LockKeyhole className="h-5 w-5" /> },
+        { id: "rights", title: "5. Your Rights", icon: <UserCheck className="h-5 w-5" /> },
+        { id: "cookies", title: "6. Cookies & Tracking", icon: <Cookie className="h-5 w-5" /> },
+        { id: "children", title: "7. Children's Privacy", icon: <Baby className="h-5 w-5" /> },
+        { id: "updates", title: "8. Policy Updates", icon: <ScrollText className="h-5 w-5" /> },
+        { id: "Survival Hub", title: "9. Student Survival Hub (Educational Support Tools", icon: <Compass className="h- 5 w-5" /> },
+        { id: "contact", title: "10. Contact Us", icon: <Mail className="h-5 w-5" /> },
+    ];
+
+    const scrollToSection = (id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+
     return (
-        <div className="w-full min-h-screen bg-white text-gray-900 py-2 px-2  ">
-            <div className="max-w-4xl mx-auto space-y-2 text-sm text-gray-700">
-
-                <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-
-                <section className="space-y-1">
-
-                    <h2 className="font-semibold text-xl">1. Information We Collect</h2>
-                    <p>
-                        Medrae collects information that you provide when creating an account, uploading content, or interacting with the platform. This includes:
-                        <ul className="list-disc list-inside mt-1">
-                            <li>Personal details such as name, email, and phone number</li>
-                            <li>Profile information including educational background and study interests</li>
-                            <li>Uploaded content such as notes, images, and marketplace listings</li>
-                            <li>Usage data such as login times, features used, and interactions on the platform</li>
-                        </ul>
-                    </p>
-
-                    <h2 className="font-semibold text-xl">2. How We Use Your Information</h2>
-                    <p>
-                        We use the information to:
-                        <ul className="list-disc list-inside mt-1">
-                            <li>Provide and improve platform services</li>
-                            <li>Ensure a safe and secure environment for all users</li>
-                            <li>Enable marketplace transactions between users</li>
-                            <li>Communicate important updates, notifications, or announcements</li>
-                            <li>Analyze usage trends to enhance learning resources and features</li>
-                        </ul>
-                    </p>
-
-                    <h2 className="font-semibold text-xl">3. Data Sharing & Third Parties</h2>
-                    <p>
-                        Medrae does not sell your personal information. We may share data only when necessary for:
-                        <ul className="list-disc list-inside mt-1">
-                            <li>Facilitating marketplace transactions safely</li>
-                            <li>Complying with legal obligations or government requests</li>
-                            <li>Protecting the rights, safety, or property of Medrae and users</li>
-                        </ul>
-                        We may also use third-party services (e.g., hosting, analytics) that require limited access to your data under strict privacy terms.
-                    </p>
-
-                    <h2 className="font-semibold text-xl">4. Data Security</h2>
-                    <p>
-                        Medrae implements reasonable technical and organizational measures to protect user data against unauthorized access, alteration, disclosure, or destruction. However, no system is completely secure, and users are encouraged to exercise caution when sharing sensitive information.
-                    </p>
-
-                    <h2 className="font-semibold text-xl">5. User Rights</h2>
-                    <p>
-                        Users have the right to:
-                        <ul className="list-disc list-inside mt-1">
-                            <li>Access their personal data stored on Medrae</li>
-                            <li>Update or correct inaccurate information</li>
-                            <li>Request deletion of personal data (subject to platform operation requirements)</li>
-                            <li>Opt-out of non-essential communications and notifications</li>
-                        </ul>
-                        Requests can be submitted via the contact methods listed on the platform.
-                    </p>
-
-                    <h2 className="font-semibold text-xl">6. Cookies & Tracking</h2>
-                    <p>
-                        Medrae may use cookies or similar tracking technologies to enhance user experience, understand usage patterns, and deliver relevant content. Users can manage cookie preferences through their browser settings, but some platform functionality may be affected.
-                    </p>
-
-                    <h2 className="font-semibold text-xl">7. Children’s Privacy</h2>
-                    <p>
-                        Medrae is intended for users aged 13 and above. We do not knowingly collect personal data from children under 13. If we become aware of such data, we will take immediate steps to delete it.
-                    </p>
-
-                    <h2 className="font-semibold text-xl">8. Changes to this Privacy Policy</h2>
-                    <p>
-                        Medrae may update this Privacy Policy from time to time. Users are encouraged to review the latest version regularly. Continued use of the platform constitutes acceptance of any changes.
-                    </p>
-
-                    <h2 className="font-semibold text-xl">9. Contact Us</h2>
-                    <p>
-                        For questions, concerns, or requests regarding this Privacy Policy, users may contact Medrae via email or the support section on the platform. We will respond promptly and assist with any privacy-related issues.
-                    </p>
-
-                </section>
-
-                {/* Footer with back link and date */}
-                <div className="mt-10 text-center space-y-2 text-gray-500 text-xs">
-                    <p>
-                        © {currentYear} <span className="font-semibold">Medrae Nursing</span>. All rights reserved.
-                    </p>
-                    <p>
-                        Medrae collects and uses personal information solely to provide educational support safely and responsibly. Users must adhere to all rules and local laws while using the platform.
-                    </p>
-                    <p
+        <div className="min-h-screen w-full py-2 bg-white text-gray-900 px-2">
+            {/* Sticky Navigation Header */}
+            <header className="sticky top-0 z-50 w-full border-0 bg-white/95 backdrop-blur-md">
+                <div className="container mx-auto flex h-16 items-center justify-between px-4">
+                    <Button
+                        size="sm"
                         onClick={() => navigate(-1)}
-                        className="underline cursor-pointer hover:text-gray-900 dark:hover:text-gray-700"
+                        className="gap-2 bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
                     >
+                        <ChevronLeft className="h-4 w-4" />
                         Back
-                    </p>
-                    <p>Last Updated: February 2026</p>
+                    </Button>
+                    <div className="flex items-center gap-2 text-black font-bold">
+                        <ShieldAlert className="h-5 w-5" />
+                        <span>Privacy Center</span>
+                    </div>
+                    <div className="w-20" />
                 </div>
-            </div>
-        </div>
+            </header>
+
+            <main className="container mx-auto px-4 py-2 lg:py-2">
+                <div className="flex flex-col lg:flex-row gap-28">
+
+                    {/* Desktop Sidebar Navigation */}
+                    <aside className="hidden lg:block w-64 shrink-0 h-fit sticky top-2">
+                        <div className="relative overflow-hidden rounded-xl bg-white/60 border border-slate-100 p-5 shadow-sm">
+
+                            {/* Background Illustration - Tucked in the corner */}
+                            <div className="absolute -bottom-8 -right-8 w-40 h-40 opacity-40 pointer-events-none select-none">
+                                <img
+                                    src="/terms%20(1).png"
+                                    alt=""
+                                    className="w-full h-full object-contain transform -rotate-12"
+                                    style={{
+                                        maskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)',
+                                        WebkitMaskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)'
+                                    }}
+                                />
+                            </div>
+
+                            {/* Content Layer */}
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-5 px-3 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                    Sections
+                                </p>
+
+                                <nav className="space-y-1.5">
+                                    {sections.map((section) => (
+                                        <button
+                                            key={section.id}
+                                            onClick={() => scrollToSection(section.id)}
+                                            className="flex items-center gap-3 w-full text-left px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-700 hover:bg-white rounded-xl transition-all duration-200 group border border-transparent hover:border-blue-50 hover:shadow-sm"
+                                        >
+                                            <span className="text-slate-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-200">
+                                                {section.icon}
+                                            </span>
+                                            {section.title}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                        </div>
+
+                        {/* Optional: A small "Help" or "Support" card below the nav */}
+                        <div className="mt-1 p-4 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-200/50 relative overflow-hidden group cursor-pointer">
+                            <div className="relative z-10">
+                                <p className="text-xs font-bold opacity-80 mb-1">Need help?</p>
+                                <p className="text-[11px] leading-tight">Contact our legal team for clarification.</p>
+                            </div>
+                            <div className="absolute -right-2 -bottom-2 opacity-20 transform group-hover:scale-110 transition-transform">
+                                <ScrollText className="h-12 w-12" />
+                            </div>
+                        </div>
+
+                        <Separator className="my-2" />
+
+
+                        <div className="px-3 mt-2">
+                            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md w-full overflow-hidden">
+
+                                {/* Header */}
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="p-2 rounded-lg bg-gray-100 text-gray-700">
+                                        <HelpCircle className="h-4 w-4" />
+                                    </div>
+
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-600">
+                                        Support Center
+                                    </span>
+                                </div>
+
+                                <p className="text-xs text-gray-600 leading-relaxed mb-4">
+                                    Have questions about your data or these terms? Reach out directly.
+                                </p>
+
+                                {/* Contact Actions */}
+                                <div className="grid gap-2 w-full">
+
+                                    <a
+                                        href="mailto:medraenursing@gmail.com?subject=Support%20Inquiry%20-%20Medrae"
+                                        className="group flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 transition-all hover:bg-gray-50 active:scale-[0.98] w-full overflow-hidden"
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <Mail className="h-4 w-4 text-gray-500 group-hover:text-gray-700 transition-colors" />
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-[10px] font-medium text-gray-500 uppercase">
+                                                    Email Us
+                                                </span>
+                                                <span className="text-xs font-semibold text-gray-800 truncate">
+                                                    medraenursing@gmail.com
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <ExternalLink className="h-3 w-3 text-gray-400 group-hover:text-gray-600 transition-opacity flex-shrink-0" />
+                                    </a>
+
+                                    <a
+                                        href="https://wa.me/254704473503"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2.5 transition-all hover:bg-gray-50 active:scale-[0.98] w-full overflow-hidden"
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <MessageSquare className="h-4 w-4 text-gray-500 group-hover:text-green-600 transition-colors" />
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-[10px] font-medium text-gray-500 uppercase">
+                                                    WhatsApp
+                                                </span>
+                                                <span className="text-xs font-semibold text-gray-800">
+                                                    0704 473 503
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <Smartphone className="h-3 w-3 text-gray-400 group-hover:text-gray-600 transition-opacity flex-shrink-0" />
+                                    </a>
+
+                                </div>
+
+                                <p className="mt-4 text-[10px] text-center text-gray-500 italic">
+                                    Typical response time: &lt; 24 hours
+                                </p>
+
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 max-w-3xl">
+                        <div className="relative overflow-hidden rounded-xl bg-slate-50/50 p-16 -mb-2 border border-slate-100">
+                            {/* The Background Image/Illustration */}
+                            <div className="absolute top-0 right-0 w-1/2 h-full opacity-40 pointer-events-none">
+                                <img
+                                    src="/terms%20(3).png"
+                                    alt=""
+                                    className="w-full h-full object-contain object-right-top transform translate-x-10 -translate-y-4"
+                                    style={{
+                                        maskImage: 'linear-gradient(to left, black 20%, transparent 100%)',
+                                        WebkitMaskImage: 'linear-gradient(to left, black 20%, transparent 100%)'
+                                    }}
+                                />
+                            </div>
+
+                            {/* The Content (Privacy Policy Text) */}
+                            <div className="relative z-10 max-w-2xl">
+                                <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4 text-gray-900">
+                                    Privacy Policy
+                                </h1>
+                                <div className="flex items-center gap-2 text-slate-500 font-medium">
+                                    <p className="bg-white/80 px-3 py-1 rounded-full text-sm shadow-sm border border-slate-100">
+                                        Effective Date: Feb 2026
+                                    </p>
+                                    <span className="text-slate-300">•</span>
+                                    <p className="text-sm">v1.0.2</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-2 pb-4">
+
+                            {/* Section 1 */}
+                            <section id="collect" className="scroll-mt-2">
+                                <h2 className="text-2xl font-bold mb-2 flex items-center gap-3">
+                                    <Database className="h-6 w-6 text-primary" />
+                                    1. Information We Collect
+                                </h2>
+                                <div className="space-y-4 text-gray-600 leading-relaxed">
+                                    <p className="text-gray-700">
+                                        Medrae collects information that you provide when creating an account, uploading content, or interacting with the platform. This includes:
+                                    </p>
+
+                                    <ul className="grid gap-3 list-none p-0">
+                                        {[
+                                            "Personal details such as name, email, and phone number",
+                                            "Profile information including educational background",
+                                            "Uploaded content such as notes and marketplace listings",
+                                            "Usage data such as login times and feature interactions"
+                                        ].map((item, i) => (
+                                            <li
+                                                key={i}
+                                                className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-3"
+                                            >
+                                                <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
+                                                <span className="text-sm text-gray-700">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </section>
+
+                            {/* Section 2 */}
+                            <section id="use" className="scroll-mt-28">
+                                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+                                    <Fingerprint className="h-6 w-6 text-gray-700" />
+                                    2. How We Use Your Information
+                                </h2>
+
+                                <div className="space-y-4 text-gray-600 leading-relaxed">
+                                    <p className="text-gray-700">
+                                        We process your information to maintain a secure and effective learning ecosystem:
+                                    </p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+
+                                        {[
+                                            "Improve platform services",
+                                            "Ensure a safe environment",
+                                            "Enable marketplace transactions",
+                                            "Communicate critical updates",
+                                            "Analyze learning trends"
+                                        ].map((text, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center gap-3 border border-gray-200 bg-white rounded-lg px-4 py-2 text-sm italic text-gray-700 w-full"
+                                            >
+                                                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
+                                                {text}
+                                            </div>
+                                        ))}
+
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Section 4 - Security (Highlighted) */}
+                            <section
+                                id="security"
+                                className="scroll-mt-28 bg-white p-2 rounded-xl border border-gray-200 w-full"
+                            >
+                                <h2 className="text-2xl font-bold mb-4 flex items-center gap-3 text-gray-900">
+                                    <LockKeyhole className="h-6 w-6 text-gray-700" />
+                                    4. Data Security
+                                </h2>
+
+                                <p className="text-gray-600 leading-relaxed">
+                                    Medrae implements enterprise-grade technical and organizational measures to protect user data.
+                                    While no system is 100% secure, we use encryption and strict access controls to prevent unauthorized disclosure.
+                                </p>
+                            </section>
+
+                            {/* Section 5 - Rights */}
+                            <section id="rights" className="scroll-mt-28">
+                                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+                                    <UserCheck className="h-6 w-6 text-gray-700" />
+                                    5. User Rights
+                                </h2>
+
+                                <div className="grid gap-4">
+                                    {[
+                                        { t: "Access", d: "View all personal data stored on our servers." },
+                                        { t: "Rectify", d: "Update or correct inaccurate profile details." },
+                                        { t: "Erasure", d: "Request deletion of your data (Right to be forgotten)." }
+                                    ].map((right, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex flex-col p-4 rounded-xl border border-gray-200 bg-white"
+                                        >
+                                            <span className="font-bold text-gray-900 text-sm uppercase tracking-wider">
+                                                {right.t}
+                                            </span>
+
+                                            <span className="text-sm text-gray-600">
+                                                {right.d}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                            {/* 6. Cookies & Tracking */}
+                            <section id="cookies" className="scroll-mt-28">
+                                <h2 className="text-2xl font-bold mb-4 flex items-center gap-3 text-gray-900">
+                                    <Cookie className="h-6 w-6 text-gray-700" />
+                                    6. Cookies & Tracking
+                                </h2>
+
+                                <div className="space-y-4 text-gray-600 leading-relaxed">
+                                    <p className="text-gray-700">
+                                        Medrae uses cookies and similar technologies to improve performance,
+                                        remember your preferences, and enhance your overall experience on the platform.
+                                    </p>
+
+                                    <p>
+                                        Cookies help us keep you signed in, understand how users interact with
+                                        the platform, and identify technical issues that may affect usability.
+                                    </p>
+
+                                    <p>
+                                        We may use essential cookies, analytics tools, and security-related
+                                        tracking technologies. These tools do not sell your personal data
+                                        to third parties.
+                                    </p>
+
+                                    <p>
+                                        You can control or disable cookies through your browser settings,
+                                        although some parts of Medrae may not function properly if cookies
+                                        are restricted.
+                                    </p>
+                                </div>
+                            </section>
+                            {/* Section 7 - Children */}
+                            <section id="children" className="scroll-mt-28 border-t border-gray-200 pt-10 w-full">
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-3 text-gray-900">
+                                    <Baby className="h-5 w-5 text-gray-700" />
+                                    7. Children’s Privacy
+                                </h2>
+
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Medrae is intended for users aged 13 and above. If we discover data from children under 13 has been collected, it is immediately purged from our active databases.
+                                </p>
+                            </section>
+
+                            {/* 8. Policy Updates */}
+                            <section id="updates" className="scroll-mt-28">
+                                <h2 className="text-2xl font-bold mb-4 flex items-center gap-3 text-gray-900">
+                                    <ScrollText className="h-6 w-6 text-gray-700" />
+                                    8. Policy Updates
+                                </h2>
+
+                                <div className="space-y-4 text-gray-600 leading-relaxed">
+                                    <p className="text-gray-700">
+                                        We may update this Privacy Policy from time to time to reflect
+                                        changes in our services, legal obligations, or security practices.
+                                    </p>
+
+                                    <p>
+                                        When significant changes are made, we will notify users through
+                                        the platform, email, or other appropriate communication channels.
+                                    </p>
+
+                                    <p>
+                                        Continued use of Medrae after an updated Privacy Policy becomes
+                                        effective constitutes acceptance of the revised terms.
+                                    </p>
+                                </div>
+                            </section>
+                            <section id="survival-hub-privacy" className="scroll-mt-28">
+                                <h2 className="text-2xl font-bold mb-4 flex items-center gap-3 text-gray-900">
+                                    <Compass className="h- 5 w-5" />
+                                    9. Student Survival Hub Data & Location Usage
+                                </h2>
+
+                                <div className="text-sm text-gray-600 leading-relaxed">
+
+                                    <p className="text-gray-700">
+                                        The Student Survival Hub collects and processes limited data to provide educational support features such as exam centers, student housing, nearby hospitals, clinical placement sites, and student reviews.
+                                    </p>
+
+                                    <p>
+                                        This may include general location data, user preferences, and interaction activity within the Survival Hub. This data is used strictly to improve relevance, recommendations, and user experience.
+                                    </p>
+
+                                    <p>
+                                        Medrae does not use Survival Hub data for surveillance, advertising profiling, or unrelated commercial tracking purposes.
+                                    </p>
+
+                                    <p>
+                                        Listings such as housing, hospitals, and placement sites may be provided by third-party or user-generated sources. While we aim to keep information accurate, Medrae does not guarantee real-time availability, correctness, or suitability of any listing.
+                                    </p>
+
+                                    <p>
+                                        Users are responsible for verifying critical details before making decisions related to accommodation, clinical attendance, travel, or academic placement.
+                                    </p>
+
+                                    <p>
+                                        By using the Survival Hub, users acknowledge that all recommendations are for educational and informational support only and should not be treated as official or guaranteed data.
+                                    </p>
+
+                                </div>
+                            </section>
+                            {/* Section 9 - Contact */}
+
+                            <section id="contact" className="scroll-mt-28">
+                                <div className="relative overflow-hidden bg-primary text-primary-foreground p-1 md:p-10 rounded-[2rem] shadow-xl shadow-primary/20">
+                                    {/* Decorative Background Icon */}
+                                    <ShieldCheck className="absolute -right-10 -bottom-10 h-64 w-64 opacity-10 -rotate-12 pointer-events-none" />
+
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                                                <Mail className="h-6 w-6 text-white" />
+                                            </div>
+                                            <h2 className="text-xl md:text-3xl font-bold m-0 tracking-tight">
+                                                10. Contact Us
+                                            </h2>
+                                        </div>
+
+                                        <p className="mb-2 opacity-90 leading-relaxed text-base max-w-xl">
+                                            Have specific questions about your data, or wish to exercise your right to erasure?
+                                            Our compliance team is ready to assist you through our official channels.
+                                        </p>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Email Action Card */}
+                                            <a
+                                                href="mailto:medraenursing@gmail.com?subject=Privacy%20Request%20-%20Medrae"
+                                                className="group flex items-center justify-between bg-white/10 hover:bg-white/20 border border-white/20 p-5 rounded-2xl transition-all active:scale-[0.98]"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-12 w-12 rounded-full bg-white text-primary flex items-center justify-center shadow-lg">
+                                                        <Mail className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-widest font-bold opacity-70 mb-0.5">Official Email</p>
+                                                        <p className="text-sm md:text-base font-bold">medraenursing@gmail.com</p>
+                                                    </div>
+                                                </div>
+                                                <ArrowRight className="h-5 w-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                            </a>
+
+                                            {/* WhatsApp Action Card */}
+                                            <a
+                                                href="https://wa.me/254704473503"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group flex items-center justify-between bg-white/10 hover:bg-white/20 border border-white/20 p-5 rounded-2xl transition-all active:scale-[0.98]"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-12 w-12 rounded-full bg-white text-green-600 flex items-center justify-center shadow-lg">
+                                                        <MessageSquare className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-widest font-bold opacity-70 mb-0.5">WhatsApp Support</p>
+                                                        <p className="text-sm md:text-base font-bold">0704 473 503</p>
+                                                    </div>
+                                                </div>
+                                                <ArrowRight className="h-5 w-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                            </a>
+                                        </div>
+
+                                        <p className="mt-8 text-xs opacity-70 italic">
+                                            * We aim to respond to all formal privacy requests within 24-48 business hours.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+
+                        {/* Footer Context */}
+                        {/* Footer Context */}
+                        <footer className="mt-20 pt-10 border-t border-gray-200">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-xs text-gray-500">
+
+                                <div className="text-center md:text-left space-y-1">
+                                    <p className="font-bold text-gray-900 uppercase tracking-tighter italic">
+                                        Medrae Nursing
+                                    </p>
+                                    <p>© {currentYear} All Rights Reserved.</p>
+                                </div>
+
+                                <div className="flex gap-4">
+
+                                    <button
+                                        onClick={() => navigate("/terms")}
+                                        className="px-3 py-1.5 rounded-md bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
+                                    >
+                                        Terms of Service
+                                    </button>
+
+                                    <button
+                                        onClick={() => navigate(-1)}
+                                        className="px-3 py-1.5 rounded-md bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold transition"
+                                    >
+                                        Back to App
+                                    </button>
+
+                                </div>
+                            </div>
+                        </footer>
+                    </div>
+                </div >
+            </main >
+        </div >
     );
 }

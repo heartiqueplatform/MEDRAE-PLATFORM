@@ -11,73 +11,105 @@ export type Profile = {
     institution?: string;
     course?: string;
     specialization?: string;
-    is_online: boolean;
+    is_online: boolean; // We will treat this as the "intended" status
+    last_seen?: string;
 };
 
 export const useOnlineUsers = () => {
     const { user } = useAuth();
-    const [users, setUsers] = useState<Profile[]>([]);
+    const [profiles, setProfiles] = useState<Profile[]>([]);
+    const [liveOnlineIds, setLiveOnlineIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (!user) return;
 
-        let channel: any;
+        // 1. Fetch initial profiles from your table
+        const fetchProfiles = async () => {
+            const { data, error } = await supabase
+                .from("profiles") // Matches your table name
+                .select(`
+          user_id, name, username, role, avatar_url,
+          institution, course, specialization, is_online, last_seen
+        `);
 
-        // Fetch initial users immediately
-        supabase
-            .from<Profile>("profiles")
-            .select(`
-        user_id,
-        name,
-        username,
-        role,
-        avatar_url,
-        institution,
-        course,
-        specialization,
-        is_online
-      `)
-            .then(({ data, error }) => {
-                if (error) {
-                    console.error("Error fetching users:", error);
-                    return;
-                }
-                if (data) setUsers(data); // instant set
-            });
+            if (error) {
+                console.error("Error fetching profiles:", error);
+            } else if (data) {
+                setProfiles(data as Profile[]);
+            }
+        };
 
-        // Subscribe to real-time changes
-        channel = supabase.channel("online-users");
+        fetchProfiles();
+
+        // 2. Initialize Presence Channel
+        // This detects actual socket connections (kills the "glitch")
+        const channel = supabase.channel("global_presence", {
+            config: {
+                presence: {
+                    key: user.id,
+                },
+            },
+        });
 
         channel
-            .on(
-                "postgres_changes",
-                {
-                    event: "*", // insert, update, delete
-                    schema: "public",
-                    table: "profiles",
-                },
-                (payload: any) => {
-                    const updated = payload.new as Profile;
-                    setUsers((prev) => {
-                        const exists = prev.find((u) => u.user_id === updated.user_id);
-                        if (exists) {
-                            return prev.map((u) =>
-                                u.user_id === updated.user_id ? updated : u
-                            );
-                        } else {
-                            return [...prev, updated];
-                        }
+            .on("presence", { event: "sync" }, () => {
+                const state = channel.presenceState();
+                // These are the users who are PHYSICALLY connected right now
+                const onlineIds = new Set(Object.keys(state));
+                setLiveOnlineIds(onlineIds);
+            })
+            .on("postgres_changes", {
+                event: "*",
+                schema: "public",
+                table: "profiles"
+            }, (payload: any) => {
+                // Update local state if a profile changes in the DB
+                const updated = payload.new as Profile;
+                setProfiles((prev) => {
+                    const exists = prev.find((u) => u.user_id === updated.user_id);
+                    if (exists) {
+                        return prev.map((u) => (u.user_id === updated.user_id ? updated : u));
+                    }
+                    return [...prev, updated];
+                });
+            })
+            .subscribe(async (status) => {
+                if (status === "SUBSCRIBED") {
+                    // 3. Mark the current user as "Present"
+                    await channel.track({
+                        user_id: user.id,
+                        online_at: new Date().toISOString(),
                     });
+
+                    // OPTIONAL: Update your DB column to true when they connect
+                    // But remember: Presence is what actually handles the "Offline" logic
+                    await supabase
+                        .from("profiles")
+                        .update({ is_online: true, last_seen: new Date().toISOString() })
+                        .eq("user_id", user.id);
                 }
-            )
-            .subscribe();
+            });
 
         return () => {
-            if (channel) supabase.removeChannel(channel);
+            // When the component unmounts or user leaves, Supabase Presence
+            // automatically broadcasts that this user is gone.
+            supabase.removeChannel(channel);
         };
     }, [user]);
 
-    const onlineUsers = users.filter((u) => u.is_online);
+    // 4. MAPPING LOGIC: This is the most important part!
+    // We don't trust the "is_online" column. We check if they are in liveOnlineIds.
+    const usersWithCorrectStatus = profiles.map((p) => ({
+        ...p,
+        is_online: liveOnlineIds.has(p.user_id), // If their socket is active, they are online
+    }));
 
-    return { users, onlineUsers };
+    const onlineUsers = usersWithCorrectStatus.filter((u) => u.is_online);
+
+    return {
+        users: usersWithCorrectStatus,
+        onlineUsers,
+        totalCount: usersWithCorrectStatus.length,
+        onlineCount: onlineUsers.length
+    };
 };

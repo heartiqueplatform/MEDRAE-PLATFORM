@@ -1,4 +1,7 @@
 "use client";
+import { ShieldCheck, AlertCircle, ChevronRight, Zap, Target } from "lucide-react";
+import { motion } from "framer-motion";
+
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -15,19 +18,11 @@ export default function MistakeCard() {
     const navigate = useNavigate();
     const session = useSession();                // ✅ gets session
     const supabaseClient = useSupabaseClient();  // optional but recommended
-    const user = session?.user || null;          // current user
-    const [mistakes, setMistakes] = useState<Mistake[]>(() => {
-        const stored = localStorage.getItem("mistakes");
-        const storedDate = localStorage.getItem("mistakesDate");
-        const today = new Date().toDateString();
+    const user = session?.user || null;
+    const [mistakes, setMistakes] = useState<Mistake[]>([]);
+    const mistakeCount = mistakes.length;
+    const isClean = mistakeCount === 0;      // current user
 
-        if (stored && storedDate === today) {
-            return JSON.parse(stored);
-        }
-        return [];
-    });
-
-    const [mistakeCount, setMistakeCount] = useState<number>(() => mistakes.length);
     const [loading, setLoading] = useState(mistakes.length === 0);
     const [animate, setAnimate] = useState(false);
     const prevCountRef = useRef<number>(mistakeCount);
@@ -70,7 +65,7 @@ export default function MistakeCard() {
     const fetchMistakes = async () => {
         if (!user) return; // ✅ stop if not logged in
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from("user_mistakes")
             .select("id, mistake_reason, times_wrong, resolved")
             .eq("user_id", user.id)
@@ -82,14 +77,21 @@ export default function MistakeCard() {
             if (count !== prevCountRef.current) setAnimate(true);
             prevCountRef.current = count;
             setMistakes(data || []);
-            setMistakeCount(count);
             localStorage.setItem("mistakes", JSON.stringify(data || []));
             localStorage.setItem("mistakesDate", new Date().toDateString());
         }
 
         setLoading(false);
     };
+    useEffect(() => {
+        const stored = localStorage.getItem("mistakes");
+        const storedDate = localStorage.getItem("mistakesDate");
+        const today = new Date().toDateString();
 
+        if (stored && storedDate === today) {
+            setMistakes(JSON.parse(stored));
+        }
+    }, []);
     useEffect(() => {
         if (!user) return;
 
@@ -97,81 +99,119 @@ export default function MistakeCard() {
 
         const channel = supabase
             .channel("public:user_mistakes")
-            .on("postgres_changes", { event: "*", schema: "public", table: "user_mistakes" }, () => {
-                fetchMistakes();
-            })
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "user_mistakes"
+                },
+                () => {
+                    fetchMistakes();
+                }
+            )
             .subscribe();
 
-        return () => supabase.removeChannel(channel);
-    }, [user]);
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id]);
 
     const baseCardClass =
         "cursor-pointer rounded-xl p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between transition-all select-none";
     const themedCardClass = `${baseCardClass} bg-gray-100 dark:bg-gray-900 mt-4 shadow-md`;
     const handleAnimationEnd = () => setAnimate(false);
 
+
     return (
-        <div onClick={() => navigate("/my-mistakes")} className={themedCardClass}>
-            <div className="flex-1">
-                {mistakeCount === 0 ? (
-                    <>
-                        <h2 className="text-lg font-bold text-green-700 dark:text-green-300">
-                            No unresolved mistakes 🎉
-                        </h2>
-                        <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                            Keep up the good work!
-                        </p>
-                    </>
-                ) : (
-                    <>
-                        <h2
-                            className={`text-lg font-bold text-red-700 dark:text-red-300 animate-pulse-sentence ${animate ? "animate-number-pop" : ""
-                                }`}
-                            onAnimationEnd={handleAnimationEnd}
-                        >
-                            You have {mistakeCount} unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}
-                        </h2>
-                        <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
-                            Tap to review and learn from your mistakes.
-                        </p>
-
-                        <div className="mt-3 space-y-1">
-                            {mistakes.slice(0, 3).map((m) => (
-                                <div key={m.id} className="text-sm text-gray-800 dark:text-gray-300">
-                                    <span className="font-semibold">{getProgressSignal(m)}:</span>{" "}
-                                    {getInsightSentence(m)}
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-            </div>
-            <div className="ml-0 mt-2 sm:mt-0 text-gray-700 dark:text-gray-300 font-bold text-xl">
-                Review
-            </div>
-
-            <style>
-                {`
-          @keyframes pulse-sentence {
-              0%, 100% { transform: scale(1); }
-              50% { transform: scale(1.05); }
-          }
-          .animate-pulse-sentence {
-              display: inline-block;
-              animation: pulse-sentence 1.2s ease-in-out infinite;
-          }
-
-          @keyframes number-pop {
-              0% { transform: scale(1); }
-              50% { transform: scale(1.3); color: #f87171; }
-              100% { transform: scale(1); color: inherit; }
-          }
-          .animate-number-pop {
-              animation: number-pop 0.6s ease-in-out;
-              display: inline-block;
-          }
+        <motion.div
+            whileHover={{ scale: 1.01, translateY: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate("/my-mistakes")}
+            className={`
+            relative overflow-hidden cursor-pointer p-5 rounded-xl border-0 transition-all duration-300
+            ${isClean
+                    ? "bg-emerald-50/50 dark:bg-emerald-500/5 border-0  shadow-emerald-500/5"
+                    : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none"
+                }
         `}
-            </style>
-        </div>
+        >
+            {/* Background Decorative Element */}
+            <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-20 ${isClean ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+
+                {/* --- ICON SECTION --- */}
+                <div className="shrink-0">
+                    {isClean ? (
+                        <div className="h-16 w-16 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                            <ShieldCheck size={32} />
+                        </div>
+                    ) : (
+                        <div className="relative">
+                            <span className="absolute inset-0 rounded-2xl bg-rose-500 animate-ping opacity-20" />
+                            <div className="relative h-16 w-16 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-500/30">
+                                <AlertCircle size={32} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* --- CONTENT SECTION --- */}
+                <div className="flex-1 space-y-1">
+                    {isClean ? (
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-black tracking-tight text-emerald-800 dark:text-emerald-400 uppercase">
+                                Clinical Excellence
+                            </h2>
+                            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-500/80">
+                                Zero unresolved mistakes. Your performance is optimal! 🎉
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">
+                                        Action Required
+                                    </span>
+                                </div>
+                                <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                                    {mistakeCount} <span className="text-slate-400">Weak Points Found</span>
+                                </h2>
+                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                    Practice makes permanent. Let's fix these clinical errors.
+                                </p>
+                            </div>
+
+                            {/* Mistakes Preview Snippets */}
+                            <div className="hidden md:grid grid-cols-1 gap-2 border-l-2 border-slate-100 dark:border-slate-800 pl-4 py-1">
+                                {mistakes.slice(0, 2).map((m) => (
+                                    <div key={m.id} className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-400 group">
+                                        <Target size={12} className="text-rose-500" />
+                                        <span className="truncate opacity-80 group-hover:opacity-100">{getInsightSentence(m)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* --- ACTION BUTTON --- */}
+                <div className="w-full sm:w-auto pt-2 sm:pt-0">
+                    <div className={`
+                    flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all
+                    ${isClean
+                            ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                            : "bg-slate-900 dark:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                        }
+                `}>
+                        {isClean ? "History" : "Fix Now"}
+                        <ChevronRight size={14} className={isClean ? "" : "group-hover:translate-x-1 transition-transform"} />
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+
     );
 }

@@ -4,6 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { Swords, X, Activity, Zap, ChevronRight } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 // SVG Icons
 const CorrectIcon = () => (
     <svg className="w-6 h-6 text-green-500 inline-block ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -110,129 +113,139 @@ export default function LiveReactions() {
         return null;
     };
 
+
+
     return (
         <>
-            {/* Floating Avatar Button */}
-            <div className="hidden lg:block fixed bottom-40 right-2 z-50">
-
+            {/* --- FLOATING STATUS BUTTON --- */}
+            <div className="hidden lg:block fixed bottom-40 right-6 z-50">
                 <button
                     onClick={handleTogglePanel}
-                    className="relative w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center hover:scale-110 transition-transform overflow-visible"
+                    className="group relative h-12 w-12 flex items-center justify-center transition-all duration-300 active:scale-90"
                 >
-                    <img
-                        src="/UsersAvatar.jpg"
-                        alt="Live"
-                        className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-gray-700"
-                    />
+                    {/* Pulsing Outer Ring */}
+                    <span className="absolute inset-0 rounded-2xl bg-blue-500/20 dark:bg-blue-400/10 animate-pulse" />
 
-                    {/* Real Bubble Particles */}
-                    {/* Real Bubble Particles */}
+                    <div className="relative h-12 w-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+                        <img
+                            src="/UsersAvatar.jpg"
+                            alt="Live"
+                            className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all"
+                        />
+
+                        {/* Status Indicator */}
+                        <div className="absolute bottom-1 right-1 h-3 w-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
+                    </div>
+
+                    {/* Bubble Particles (Preserved Logic) */}
                     {bubbleEvents.map((id) => (
                         <span
                             key={id}
-                            className="bubble"
+                            className="bubble bg-blue-500/40 dark:bg-blue-400/40"
                             style={{
-                                left: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 0.5}s`,
-                                animationDuration: `${1.5 + Math.random() * 1.5}s`, // 1.5s to 3s
-                                width: `${6 + Math.random() * 8}px`,
-                                height: `${6 + Math.random() * 8}px`,
+                                left: `${Math.random() * 80 + 10}%`,
+                                animationDuration: `${1.5 + Math.random() * 1}s`,
+                                width: `${4 + Math.random() * 6}px`,
+                                height: `${4 + Math.random() * 6}px`,
                             }}
                         />
                     ))}
 
-
-                    {/* Optional event count badge */}
-                    {newEventCount > 1 && (
-                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                            {newEventCount}
+                    {/* Compact Event Count Badge */}
+                    {newEventCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] h-5 min-w-[20px] px-1 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white dark:border-slate-950">
+                            {newEventCount > 9 ? '9+' : newEventCount}
                         </span>
                     )}
                 </button>
             </div>
 
-
-            {/* Overlay Panel */}
+            {/* --- OVERLAY ACTIVITY PANEL --- */}
             <AnimatePresence>
                 {panelOpen && (
                     <motion.div
                         ref={panelRef}
-                        initial={{ opacity: 0, scale: 0.9, y: 50 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 50 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed bottom-10 right-16 w-72 max-h-[70vh] p-0 bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-y-auto z-50 flex flex-col space-y-2 custom-scrollbar"
+                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                        className="fixed bottom-24 right-24 w-80 max-h-[60vh] flex flex-col bg-white/95 dark:bg-gray-900 backdrop-blur-xl border-0 shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-xl overflow-hidden z-50"
                     >
-                        {/* Panel Header */}
-                        <div className="flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 px-3 py-2">
-
-
-                            <div>
-                                <h3 className="font-bold text-lg dark:text-white">Live Quizzes Activity</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                    Watch your peers answering questions in real-time
-                                </p>
+                        {/* Sticky Header */}
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-950/50">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                                    <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Live Activity</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Peers Online Now</p>
+                                </div>
                             </div>
-
-                            {/* Close button */}
                             <button
                                 onClick={() => setPanelOpen(false)}
-                                className="ml-2 text-gray-500 hover:text-gray-900 dark:hover:text-white font-bold"
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
                             >
-                                ✕
+                                <X className="w-4 h-4 text-slate-400" />
                             </button>
                         </div>
 
-                        {/* Event cards */}
-                        <AnimatePresence initial={false}>
-                            {events.map((event) => {
-                                const isStreakPopup = event.is_streak_popup;
-                                return (
-                                    <motion.div
-                                        layout
-                                        key={event.id}
-                                        initial={{ opacity: 0, x: 50 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -50 }}
-                                        transition={{ duration: 0.3 }}
-                                        className={`flex items-start gap-3 px-3 py-2 rounded-lg shadow-md ${isStreakPopup
-                                            ? "bg-yellow-400 text-black font-semibold"
-                                            : "bg-gray-100 dark:bg-gray-900 dark:text-white text-gray-900"
-                                            }`}
-                                    >
-                                        {event.user_avatar ? (
-                                            <img
-                                                src={event.user_avatar}
-                                                alt={event.user_name || "User"}
-                                                className="w-10 h-10 flex-shrink-0 rounded-full object-cover border border-gray-300 dark:border-gray-700"
-                                            />
-                                        ) : (
-                                            <img
-                                                src="/UsersAvatar.jpg"   // <-- default avatar here
-                                                alt="Default User"
-                                                className="w-10 h-10 flex-shrink-0 rounded-full object-cover border border-gray-300 dark:border-gray-700"
-                                            />
-                                        )}
+                        {/* Activity List */}
+                        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+                            <AnimatePresence initial={false}>
+                                {events.map((event) => {
+                                    const isStreak = event.is_streak_popup;
+                                    return (
+                                        <motion.div
+                                            layout
+                                            key={event.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isStreak
+                                                ? "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20"
+                                                : "bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800"
+                                                }`}
+                                        >
+                                            <div className="relative shrink-0">
+                                                <img
+                                                    src={event.user_avatar || "/UsersAvatar.jpg"}
+                                                    alt={event.user_name}
+                                                    className="w-10 h-10 rounded-xl object-cover border border-white dark:border-slate-800 shadow-sm"
+                                                />
+                                                {isStreak && (
+                                                    <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-0.5 border border-white dark:border-slate-900">
+                                                        <Zap size={8} className="text-white fill-current" />
+                                                    </div>
+                                                )}
+                                            </div>
 
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                                                    {event.user_name || "Peering Nurse"}
+                                                </p>
+                                                <p className={`text-[10px] leading-tight mt-0.5 ${isStreak ? "text-amber-700 dark:text-amber-400 font-bold" : "text-slate-500"}`}>
+                                                    {isStreak
+                                                        ? `Aced ${event.streak_count} questions in a row!`
+                                                        : `Solving clinical quizzes...`
+                                                    }
+                                                </p>
+                                            </div>
 
-                                        {/* Text */}
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold">{event.user_name || "Someone"}</span>
-                                            {isStreakPopup ? (
-                                                <span className="text-sm">
-                                                    🎉 Hit a streak of {event.streak_count} correct answers!
-                                                </span>
-                                            ) : (
-                                                <span className="text-sm text-gray-600 dark:text-gray-300">
-                                                    is answering in quizzes page {getEventIcon(event.event_type)}
-
-                                                </span>
+                                            {!isStreak && (
+                                                <div className="shrink-0 text-slate-300 dark:text-slate-700">
+                                                    <ChevronRight size={14} />
+                                                </div>
                                             )}
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </AnimatePresence>
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Footer Hint */}
+                        <div className="p-3 text-center bg-slate-50 dark:bg-slate-900/80">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time Sync Active</p>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

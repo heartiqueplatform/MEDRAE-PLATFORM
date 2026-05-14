@@ -1,0 +1,37 @@
+name: Build and Release
+on:
+  push:
+    tags:
+      - 'v*' # This runs whenever you push a version tag like v1.0.1
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20 # Stable version for builders
+
+      - name: Install Dependencies
+        run: |
+          npm install
+          cd electron
+          npm install
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync electron
+
+      - name: Build and Publish Electron App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd electron
+          npm run build
+          npm run electron:make

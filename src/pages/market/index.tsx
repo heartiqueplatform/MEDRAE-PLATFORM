@@ -6,14 +6,7 @@ import { toast } from "react-hot-toast";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useNavigate } from "react-router-dom";
 import { TermsButton } from "@/components/ui/TermsButton";
-import {
-    Heart,
-    Phone,
-    CheckCircle,
-    Trash2,
-    Pencil,
-} from "lucide-react";
-
+import { Heart, Phone, CheckCircle, Trash2, Pencil, Loader2, ImageIcon, Tag, Plus, } from "lucide-react";
 interface Listing {
     id: string;
     title: string;
@@ -63,13 +56,10 @@ export default function MarketFeed({ user }: any) {
                 }
             )
             .subscribe();
-
         return () => {
             supabase.removeChannel(channel);
         };
     }, []);
-
-
     useEffect(() => {
         const checkSubscription = async () => {
             if (!user?.id) {
@@ -84,7 +74,7 @@ export default function MarketFeed({ user }: any) {
                 .eq("is_active", true)
                 .gt("expires_at", new Date().toISOString()) // active and not expired
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (error || !data) {
                 setHasAccess(false);
@@ -92,9 +82,9 @@ export default function MarketFeed({ user }: any) {
                 setHasAccess(true);
             }
         };
-
         checkSubscription();
     }, [user]);
+
     useEffect(() => {
         if (user?.id) {
             fetchSaved(); // fetch saved listings for this user
@@ -152,7 +142,6 @@ export default function MarketFeed({ user }: any) {
         }
 
         const alreadySaved = savedIds.includes(listing.id);
-
         if (alreadySaved) {
             const { error } = await supabase
                 .from("market_saves")
@@ -183,22 +172,18 @@ export default function MarketFeed({ user }: any) {
                     { onConflict: ['user_id', 'listing_id'], ignoreDuplicates: true }
                 )
                 .select();
-
             if (error) {
                 return toast.error("Failed to save listing");
             }
-
             await supabase
                 .from("market_listings")
                 .update({ saves_count: listing.saves_count + 1 })
                 .eq("id", listing.id);
-
             await supabase.from("market_activity").insert({
                 listing_id: listing.id,
                 user_id: user.id,
                 action: "save",
             });
-
             setSavedIds([...savedIds, listing.id]);
             toast.success("Saved");
         }
@@ -219,26 +204,21 @@ export default function MarketFeed({ user }: any) {
 
     const handleContact = async (listing: Listing, e: any) => {
         e.stopPropagation();
-
         if (!user?.id) {
             toast.error("You must be logged in to contact the seller");
             return;
         }
-
         // Increment contact_clicks
         const { error } = await supabase
             .from("market_listings")
             .update({ contact_clicks: listing.contact_clicks + 1 })
             .eq("id", listing.id);
-
         if (error) return toast.error("Failed to register contact");
-
         await supabase.from("market_activity").insert({
             listing_id: listing.id,
             user_id: user.id,
             action: "contact",
         });
-
         setListings((prev) =>
             prev.map((l) =>
                 l.id === listing.id
@@ -246,61 +226,49 @@ export default function MarketFeed({ user }: any) {
                     : l
             )
         );
-
         // Construct WhatsApp URL with prefilled message
         const phone = listing.seller_phone.replace(/\D/g, ""); // remove non-numeric chars
         const message = encodeURIComponent(
             `Hi ${listing.seller_name}, I am interested in your "${listing.title}" listed on NursMartt. Could we discuss?`
         );
-
         // Open WhatsApp Web / App
         window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
     };
 
     const markSold = async (id: string, e: any, currentStatus: string) => {
         e.stopPropagation();
-
         const newStatus = currentStatus === "sold" ? "active" : "sold";
-
         await supabase
             .from("market_listings")
             .update({ status: newStatus })
             .eq("id", id);
-
         toast.success(
             newStatus === "sold" ? "Marked as sold" : "Reverted to active"
         );
-
         fetchListings();
     };
 
     const deleteListing = async (id: string, e: any) => {
         e.stopPropagation();
-
         const confirmDelete = window.confirm("Are you sure you want to delete this listing?");
         if (!confirmDelete) return;
-
         try {
             setDeletingIds((prev) => [...prev, id]); // start indicator
-
             const { data, error } = await supabase
                 .from("market_listings")
                 .delete()
                 .eq("id", id);
-
             if (error) {
                 console.error("Supabase delete error:", error);
                 toast.error("Failed to delete listing: " + error.message);
                 setDeletingIds((prev) => prev.filter((d) => d !== id));
                 return;
             }
-
             if (!data || data.length === 0) {
                 toast.error("Listing not found or already deleted");
                 setDeletingIds((prev) => prev.filter((d) => d !== id));
                 return;
             }
-
             setListings((prev) => prev.filter((l) => l.id !== id));
             toast.success("Listing deleted successfully");
             setDeletingIds((prev) => prev.filter((d) => d !== id));
@@ -312,199 +280,242 @@ export default function MarketFeed({ user }: any) {
     };
 
     if (hasAccess === null) return <GlobalLoader />; // optional loader while checking
-
-    if (hasAccess === false) {
+    { /*   if (hasAccess === false) {
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 text-white p-6 ">
-                {/* INFO SECTION */}
-                <div className="bg-gray-900 bg-opacity-70 p-5 rounded-xl max-w-md w-full space-y-6 text-center">
-                    {/* OVERLAY CONTENT */}
-                    <div className="flex flex-col items-center justify-center w-full space-y-4">
-                        {/* HEADER — Logo + Page Title */}
-                        <div className="flex flex-col items-center gap-4 mb-2">
+           <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50 text-white p-6 ">
+            < div className = "fixed inset-0 bg-slate-50 dark:bg-gray-950 flex flex-col items-center justify-center z-50 p-6 overflow-y-auto" >
+                <div className="max-w-md w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl rounded-3xl p-8 text-center">
+                    <div className="flex flex-col items-center mb-8">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl mb-4">
                             <img
                                 src="/Nurvia_logo.png"
                                 alt="Nurvia Logo"
-                                className="h-12 w-12 object-contain"
+                                className="h-16 w-16 object-contain"
                             />
-                            <h1 className="text-4xl font-bold">NursMartt</h1>
                         </div>
-
-                        <h2 className="text-3xl font-bold">Access Restricted</h2>
-                        <p className="text-md text-gray-300 max-w-md">
-                            This page is currently under construction, will be available soon!
-                        </p>
-
-                        <div className="text-left w-full">
-                            <h3 className="text-xl font-semibold mb-2">What’s Coming</h3>
-                            <ul className="list-disc list-inside text-gray-200 space-y-1">
-                                <li>Listings from fellow nursing students and nurses selling second-hand items.</li>
-                                <li>Textbooks, uniforms, NCK materials, and hostel essentials for your studies.</li>
-                                <li>Real-time updates so you never miss newly added items.</li>
-                                <li>Save your favorite listings for easy access later.</li>
-                            </ul>
-                        </div>
+                        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">NursMartt</h1>
+                        <div className="h-1 w-12 bg-blue-600 rounded-full mt-2"></div>
                     </div>
 
-                    {/* Centered Go Back Button */}
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">Access Restricted</h2>
+                    <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+                        This specialized market for nursing students is currently under clinical development. We'll be live soon!
+                    </p>
+
+                    <div className="text-left bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 mb-8 space-y-4 border border-gray-100 dark:border-gray-800">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">What to Expect</h3>
+                        <ul className="space-y-3">
+                            {[
+                                "Second-hand nursing gear & textbooks",
+                                "NCK study materials & uniforms",
+                                "Real-time item availability updates",
+                                "Safe contact options for buyers"
+                            ].map((item, i) => (
+                                <li key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                    <CheckCircle className="text-blue-500 mt-0.5" size={16} />
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
                     <button
                         onClick={() => navigate(-1)}
-                        className="px-6 py-3 bg-gray-700 text-white font-semibold rounded-xl hover:opacity-90 transition mx-auto"
+                        className="w-full py-4 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
                     >
                         Go Back
                     </button>
                 </div>
-            </div>
+                </div >
+            </div >
         );
     }
+    */
+    }
+
     return (
-        <div className="max-w-8xl py-0 px-4  ">
-            {/* HEADER — PRESERVED */}
-            <div className="flex justify-between items-center mb-2 flex-wrap gap-4">
-                <h1 className="flex items-center gap-2 text-4xl font-bold text-gray-900 dark:text-white">
-                    <img
-                        src="/Nurvia_logo.png"
-                        alt="Nurvia Logo"
-                        className="h-8 w-8 object-contain"
-                    />
-                    NursMartt
-                </h1>
-
-                <div className="flex gap-4 flex-wrap">
-                    <select
-                        className="border rounded px-3 py-2 bg-white text-gray-900 dark:bg-gray-800 dark:text-white rounded-xl border-0"
-                        value={categoryFilter || ""}
-                        onChange={(e) =>
-                            setCategoryFilter(e.target.value || null)
-                        }
-                    >
-                        <option value="">All Categories</option>
-                        <option value="textbook">Textbook</option>
-                        <option value="equipment">Equipment</option>
-                        <option value="uniform">Uniform</option>
-                        <option value="hostel_item">Hostel Item</option>
-                        <option value="nck_material">NCK Material</option>
-                    </select>
-
-                    <select
-                        className="border rounded px-3 py-2 bg-white text-gray-900 dark:bg-gray-800 dark:text-white rounded-xl border-0"
-                        value={conditionFilter || ""}
-                        onChange={(e) =>
-                            setConditionFilter(e.target.value || null)
-                        }
-                    >
-                        <option value="">All Conditions</option>
-                        <option value="new">New</option>
-                        <option value="like_new">Like New</option>
-                        <option value="good">Good</option>
-                        <option value="fair">Fair</option>
-                    </select>
-
+        <div className="max-w-5xl mx-auto py-6 px-4">
+            {/* HEADER SECTION */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-2 gap-2">
+                <div className="flex items-center gap-3">
+                    <img src="/Nurvia_logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+                    <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">NursMartt</h1>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Filter Dropdowns */}
+                    <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <select
+                            className="bg-transparent text-sm dark:bg-gray-800 font-semibold px-3 py-2 outline-none rounded-xl text-gray-700 dark:text-gray-200 cursor-pointer"
+                            value={categoryFilter || ""}
+                            onChange={(e) => setCategoryFilter(e.target.value || null)}
+                        >
+                            <option value="">All Categories</option>
+                            <option value="textbook">Textbook</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="uniform">Uniform</option>
+                            <option value="hostel_item">Hostel Item</option>
+                            <option value="nck_material">NCK Material</option>
+                        </select>
+                        <div className="w-[1px] bg-gray-300 dark:bg-gray-600 my-2"></div>
+                        <select
+                            className="bg-transparent text-sm dark:bg-gray-800 font-semibold px-3 py-2 outline-none text-gray-700 dark:text-gray-200 cursor-pointer"
+                            value={conditionFilter || ""}
+                            onChange={(e) => setConditionFilter(e.target.value || null)}
+                        >
+                            <option value="">All Conditions</option>
+                            <option value="new">New</option>
+                            <option value="like_new">Like New</option>
+                            <option value="good">Good</option>
+                            <option value="fair">Fair</option>
+                        </select>
+                    </div>
+                    {/* Action Buttons */}
                     <button
                         onClick={() => navigate("/market/create")}
-                        className="px-4 py-2 bg-black text-white rounded-xl hover:opacity-90 transition dark:bg-gray-800 dark:text-white"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-md transition-all active:scale-95"
                     >
-                        + Sell Item
+                        <Plus size={20} /> Sell Item
                     </button>
-
                     <button
                         onClick={() => navigate("/market/my-listings")}
-                        className="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-100 transition dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white"
+                        className="px-5 py-2.5 border-2 border-gray-200 dark:border-gray-700 rounded-xl font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                     >
                         My Listings
                     </button>
                 </div>
             </div>
 
-            {/* GRID — PRESERVED */}
+            {/* GRID SECTION */}
             {listings.length === 0 ? (
-                <div className="text-center text-gray-500 dark:text-gray-400 py-20">
-                    No listings found.
+                <div className="flex flex-col items-center justify-center py-32 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
+                    <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                        <Tag size={40} className="text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">No listings found</h3>
+                    <p className="text-gray-500">Try adjusting your filters or be the first to post!</p>
                 </div>
             ) : (
-                <div className="grid md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
                     {listings.map((l) => {
                         const isOwner = user?.id === l.seller_id;
                         const isSaved = savedIds.includes(l.id);
 
                         return (
-
                             <div
                                 key={l.id}
-                                className="bg-white dark:bg-gray-900 shadow rounded-xl overflow-hidden hover:shadow-lg transition"
+                                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-2xl transition-all duration-300"
                             >
-                                {l.thumbnail_url ? (
-                                    <img
-                                        src={l.thumbnail_url}
-                                        className="h-48 w-full object-cover cursor-pointer"
-                                        onClick={() => navigate(`/market/${l.id}`)} // only image clickable
-                                    />
-                                ) : (
-                                    <div
-                                        className="h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-300 cursor-pointer"
-                                        onClick={() => navigate(`/market/${l.id}`)} // only placeholder clickable
-                                    >
-                                        No Image
-                                    </div>
-                                )}
+                                {/* Image Container */}
+                                <div className="relative h-56 w-full overflow-hidden">
+                                    {l.thumbnail_url ? (
+                                        <img
+                                            src={l.thumbnail_url}
+                                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer"
+                                            onClick={() => navigate(`/market/${l.id}`)}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="h-full w-full bg-gray-100 dark:bg-gray-800 flex flex-col items-center justify-center text-gray-400 gap-2 cursor-pointer"
+                                            onClick={() => navigate(`/market/${l.id}`)}
+                                        >
+                                            <ImageIcon size={32} />
+                                            <span className="text-xs font-bold uppercase tracking-widest">No Image</span>
+                                        </div>
+                                    )}
 
-                                <div className="p-4 space-y-2">
-                                    <div className="space-y-1">
+                                    {/* Status Badges */}
+                                    <div className="absolute top-3 left-3 flex flex-col gap-2">
                                         {l.is_featured && (
-                                            <div className="bg-yellow-300 text-black px-3 py-1 rounded-xl inline-block font-bold">
+                                            <span className="bg-yellow-400 text-black text-[10px] font-black px-2.5 py-1 rounded-lg uppercase shadow-sm">
                                                 Featured
-                                            </div>
+                                            </span>
                                         )}
-
                                         {l.status === "sold" && (
-                                            <div className="bg-red-500 text-white px-3 py-1 rounded-xl inline-block font-bold">
-                                                SOLD
-                                            </div>
+                                            <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase shadow-sm">
+                                                Sold Out
+                                            </span>
                                         )}
                                     </div>
 
-                                    <h2
-                                        className="font-semibold text-lg truncate text-gray-900 dark:text-white cursor-pointer"
-                                        onClick={() => navigate(`/market/${l.id}`)} // only title clickable
-                                    >
-                                        {l.title}
-                                    </h2>
+                                    {/* Category Badge Over Image */}
+                                    <div className="absolute bottom-3 right-3">
+                                        <span className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full border border-white/20 uppercase">
+                                            {l.category}
+                                        </span>
+                                    </div>
+                                </div>
 
-                                    <p className="text-gray-500 dark:text-gray-300">
-                                        {l.category} • {l.condition}
-                                    </p>
-
-                                    <div className="font-bold text-xl text-gray-900 dark:text-white">
-                                        KES {l.price}
+                                {/* Content */}
+                                <div className="p-5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h2
+                                            className="font-bold text-xl text-gray-900 dark:text-white line-clamp-1 cursor-pointer hover:text-blue-600 transition-colors"
+                                            onClick={() => navigate(`/market/${l.id}`)}
+                                        >
+                                            {l.title}
+                                        </h2>
+                                        <span className="text-xs font-bold px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md">
+                                            {l.condition}
+                                        </span>
                                     </div>
 
-                                    <div className="text-gray-500 text-sm dark:text-gray-300">
-                                        Seller: {l.seller_name} ({l.seller_role})
+                                    <div className="text-2xl font-black text-gray-900 dark:text-white mb-4">
+                                        <span className="text-sm font-normal text-gray-500 mr-1">KES</span>
+                                        {Number(l.price).toLocaleString()}
                                     </div>
-                                    <div className="text-gray-500 text-sm dark:text-gray-300 flex gap-4 mt-2">
-                                        <div>{l.views_count} views</div>
-                                        <div>{l.saves_count} saves</div>
-                                        <div>{l.report_count} reports</div>
-                                        <div>{l.contact_clicks} contacts</div>
+
+                                    {/* Seller Info */}
+                                    <div className="flex items-center gap-2 mb-4 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                                            {l.seller_name?.[0]}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-gray-900 dark:text-gray-100">{l.seller_name}</span>
+                                            <span className="text-[10px] text-gray-500 uppercase tracking-tighter">{l.seller_role}</span>
+                                        </div>
                                     </div>
-                                    {/* BUTTONS — PRESERVED */}
-                                    <div className="flex gap-2 mt-4 flex-wrap">
+
+                                    {/* Dashboard Stats */}
+                                    <div className="grid grid-cols-4 gap-2 py-3 border-t border-gray-100 dark:border-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-gray-900 dark:text-gray-200 text-xs">{l.views_count}</span>
+                                            <span>Views</span>
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-gray-900 dark:text-gray-200 text-xs">{l.saves_count}</span>
+                                            <span>Saves</span>
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-gray-900 dark:text-gray-200 text-xs">{l.contact_clicks}</span>
+                                            <span>Inquiry</span>
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-gray-900 dark:text-gray-200 text-xs text-red-500">{l.report_count}</span>
+                                            <span>Reports</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Buttons */}
+                                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                                         {!isOwner && (
                                             <>
                                                 <button
                                                     onClick={(e) => handleSave(l, e)}
-                                                    className="flex items-center gap-1 px-3 py-1 bg-black text-white rounded-xl"
+                                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl font-bold transition-all border ${isSaved
+                                                        ? "bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800"
+                                                        : "border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                                                        }`}
                                                 >
-                                                    <Heart size={16} fill={isSaved ? "white" : "none"} />
+                                                    <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
                                                     {isSaved ? "Saved" : "Save"}
                                                 </button>
 
                                                 <button
                                                     onClick={(e) => handleContact(l, e)}
-                                                    className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-xl"
+                                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-100 dark:shadow-none transition-all"
                                                 >
-                                                    <Phone size={16} />
-                                                    Contact
+                                                    <Phone size={18} />
+                                                    Chat
                                                 </button>
                                             </>
                                         )}
@@ -513,19 +524,23 @@ export default function MarketFeed({ user }: any) {
                                             <>
                                                 <button
                                                     onClick={(e) => markSold(l.id, e, l.status)}
-                                                    className={`flex items-center gap-1 px-3 py-1 rounded-xl text-white ${l.status === "sold" ? "bg-gray-700" : "bg-green-600"
+                                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl font-bold text-white transition-all ${l.status === "sold" ? "bg-gray-500" : "bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 dark:shadow-none"
                                                         }`}
                                                 >
-                                                    <CheckCircle size={16} />
+                                                    <CheckCircle size={18} />
                                                     {l.status === "sold" ? "Sold" : "Mark Sold"}
                                                 </button>
 
                                                 <button
                                                     onClick={(e) => deleteListing(l.id, e)}
-                                                    className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white rounded-xl"
+                                                    className="px-3 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl font-bold hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
                                                     disabled={deletingIds.includes(l.id)}
                                                 >
-                                                    {deletingIds.includes(l.id) ? "Remove..." : <><Trash2 size={16} /> Remove</>}
+                                                    {deletingIds.includes(l.id) ? (
+                                                        <Loader2 className="animate-spin" size={18} />
+                                                    ) : (
+                                                        <Trash2 size={18} />
+                                                    )}
                                                 </button>
                                             </>
                                         )}
@@ -535,10 +550,11 @@ export default function MarketFeed({ user }: any) {
                         );
                     })}
                 </div>
-            )
-            }
+            )}
 
-            <TermsButton />
-        </div >
+            <div className="mt-20 py-10 border-t border-gray-100 dark:border-gray-900 text-center">
+                <TermsButton />
+            </div>
+        </div>
     );
 }

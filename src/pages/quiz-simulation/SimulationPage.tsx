@@ -1,7 +1,34 @@
 "use client";
 import { Link } from "react-router-dom";
-import { Sun, Moon, RefreshCw, ChevronLeft, ChevronRight, CornerRightDown, Flag, Clock } from "lucide-react";
+import {
+  Sun, Moon, FileText, RefreshCw, Lock, RotateCcw, LayoutDashboard, Crown, Zap,
+  Unlock, ChevronLeft, ChevronRight, CornerRightDown, Flag, Clock,
+  CheckCircle,
+  Home,
+  ShieldAlert,
+  Video,
+  Mic,
+  Sparkles
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+import React from 'react';
+import {
+  CheckCircle2,
+  XCircle,
+
+  FastForward,
+  AlertCircle,
+  FileCheck,
+
+  X,
+  Trophy,
+  ArrowRight
+} from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+
+
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -9,10 +36,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GlobalLoader } from "@/components/GlobalLoader";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 const totalDuration = 60 * 60;
 
 const getStatusVariant = (status: string) => {
@@ -647,7 +674,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
     // Footer + page numbers AFTER all content
     const pageCount = doc.internal.getNumberOfPages();
     const footerLine1 = "MEDRAE";
-    const footerLine2 = "Stop Guessing. Start Passing.";
+    const footerLine2 = "S";
 
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -686,111 +713,197 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
     const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 
+
+
+
     return (
-      <div className="p-6 space-y-6 bg-background text-foreground dark:bg-gray-900 dark:text-gray-100 min-h-screen  ">
-        <h2 className="text-2xl font-semibold">
-          Review Before You {pendingAction === "submit" ? "Submit" : "Reset"}
-        </h2>
+      <div className="min-h-screen w-full   bg-[#F8FAFC] p-4 md:p-8 font-sans">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* TOP NAVIGATION & TITLE */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest uppercase text-[10px] mb-1">
+                <FileCheck className="w-4 h-4" /> Final Audit Phase
+              </div>
+              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                Review Before You <span className={pendingAction === "submit" ? "text-green-600" : "text-rose-600"}>
+                  {pendingAction === "submit" ? "Submit" : "Reset"}
+                </span>
+              </h2>
+            </div>
 
-        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-          Every challenge you face is an opportunity to grow and refine your knowledge. Take a moment to
-          reflect on your progress, celebrate the answers you have mastered, and view the areas you can
-          improve as stepping stones toward mastery. Remember, true learning is not only about the final
-          score but the effort, perseverance, and insight gained along the way. Embrace this moment with
-          confidence, curiosity, and the unwavering belief that each step forward strengthens your
-          professional journey.
-        </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100"
+              onClick={() => {
+                setShowDonePanel(false);
+                setPendingAction(null);
+              }}
+            >
+              <X className="w-4 h-4 mr-2" /> Cancel Request
+            </Button>
+          </div>
 
-        {pendingAction === "submit" && (
-          <h3 className="text-xl font-bold text-blue-700 dark:text-blue-400">
-            Your Score Preview: {correctCount}/{questions.length} ({percentageScore}%)
-          </h3>
-        )}
+          {/* MOTIVATIONAL BOX */}
+          <Card className="border border-slate-200 shadow-sm bg-gradient-to-br from-white to-slate-100 text-slate-700 overflow-hidden rounded-3xl">
+            <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                <Trophy className="w-10 h-10 text-amber-500" />
+              </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Answered */}
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <h3 className="font-bold text-lg mb-2 text-green-700 dark:text-green-400">
-              Answered Questions ({answered.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-              {answered.map((q, i) => (
-                <li key={q.id}>
-                  Q{i + 1}: {q.question_text.slice(0, 50)}... – <strong>{answers[q.id]}</strong>
+              <div className="space-y-2">
+                <h4 className="text-slate-900 font-bold text-lg">
+                  Knowledge Refinement
+                </h4>
+
+                <p className="text-sm leading-relaxed text-slate-600 max-w-3xl">
+                  Every challenge you face is an opportunity to grow. Take a moment to reflect on your progress.
+                  Remember, true learning is not only about the final score but the effort, perseverance, and insight gained along the way.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* SCORE PREVIEW (Only for Submit) */}
+          {pendingAction === "submit" && (
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full border-4 border-blue-500 flex items-center justify-center font-black text-blue-600">
+                  {percentageScore}%
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Score Preview</h3>
+                  <p className="text-sm text-slate-500">Based on your current responses</p>
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                {correctCount} <span className="text-slate-300">/</span> {questions.length} Questions
+              </div>
+            </div>
+          )}
+
+          {/* AUDIT GRID */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            <AuditCard
+              title="Answered"
+              count={answered.length}
+              icon={<CheckCircle2 className="w-4 h-4" />}
+              color="green"
+              list={answered}
+              answers={answers}
+            />
+
+            <AuditCard
+              title="Unanswered"
+              count={unanswered.length}
+              icon={<XCircle className="w-4 h-4" />}
+              color="rose"
+              list={unanswered}
+            />
+
+            <AuditCard
+              title="Flagged"
+              count={flaggedQs.length}
+              icon={<Flag className="w-4 h-4" />}
+              color="amber"
+              list={flaggedQs}
+            />
+
+            <AuditCard
+              title="Skipped"
+              count={skippedQs.length}
+              icon={<FastForward className="w-4 h-4" />}
+              color="blue"
+              list={skippedQs}
+            />
+          </div>
+
+          {/* ACTION BUTTONS */}
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <Button
+              size="lg"
+              className={`flex-1 h-16 rounded-2xl text-lg font-bold transition-all shadow-xl ${pendingAction === "submit"
+                ? "bg-blue-600 hover:bg-green-600 shadow-blue-100"
+                : "bg-rose-600 hover:bg-rose-700 shadow-rose-100"
+                }`}
+              onClick={() => {
+                if (pendingAction === "submit") confirmSubmit();
+                if (pendingAction === "reset") resetNow();
+              }}
+            >
+              {pendingAction === "submit" ? (
+                <>Confirm Final Submission <ArrowRight className="ml-2 w-5 h-5" /></>
+              ) : (
+                <>Reset All Progress <RotateCcw className="ml-2 w-5 h-5" /></>
+              )}
+            </Button>
+          </div>
+
+          {/* MODERN MARQUEE */}
+          <div className="relative mt-12 py-6 overflow-hidden">
+            <Separator className="absolute top-0 opacity-50" />
+            <div className="flex justify-center">
+              <div className="flex items-center gap-8 whitespace-nowrap animate-marquee-slow">
+                {[1, 2, 3].map((i) => (
+                  <span key={i} className="flex items-center gap-2 text-slate-400 text-sm font-medium">
+                    🌟 Thank you for choosing our platform. We appreciate your trust and commitment to excellence! 🌟
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // Sub-component for individual audit categories
+  function AuditCard({ title, count, icon, color, list, answers }: any) {
+    const colorMap: any = {
+      green: "text-green-600 bg-green-50 border-green-100",
+      rose: "text-rose-600 bg-rose-50 border-rose-100",
+      amber: "text-amber-600 bg-amber-50 border-amber-100",
+      blue: "text-blue-600 bg-blue-50 border-blue-100",
+    };
+
+    return (
+      <Card className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
+        <CardHeader className={`${colorMap[color]} border-b py-4`}>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              {icon} {title}
+            </div>
+            <Badge className={`${colorMap[color]} border shadow-none px-2 py-0`}>{count}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ScrollArea className="h-48 p-4">
+            <ul className="space-y-3">
+              {list.map((q: any, i: number) => (
+                <li key={q.id} className="text-[11px] leading-tight group">
+                  <span className="font-bold text-slate-400 mr-1">Q{i + 1}</span>
+                  <span className="text-slate-600 group-hover:text-slate-900 transition-colors">
+                    {q.question_text.slice(0, 45)}...
+                  </span>
+                  {answers && answers[q.id] && (
+                    <div className="mt-1 text-[10px] font-black text-blue-600 bg-blue-50/50 rounded px-1.5 py-0.5 inline-block">
+                      {answers[q.id]}
+                    </div>
+                  )}
                 </li>
               ))}
+              {list.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-32 opacity-20 italic text-xs">
+                  No items recorded
+                </div>
+              )}
             </ul>
-          </div>
-
-          {/* Unanswered */}
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <h3 className="font-bold text-lg mb-2 text-red-600 dark:text-red-400">
-              Unanswered Questions ({unanswered.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
-
-              {unanswered.map((q, i) => (
-                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Flagged */}
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <h3 className="font-bold text-lg mb-2 text-yellow-600 dark:text-yellow-400">
-              Flagged ({flaggedQs.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-              {flaggedQs.map((q, i) => (
-                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Skipped */}
-          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <h3 className="font-bold text-lg mb-2 text-blue-600 dark:text-blue-400">
-              ⏭ Skipped ({skippedQs.length})
-            </h3>
-            <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
-              {skippedQs.map((q, i) => (
-                <li key={q.id}>Q{i + 1}: {q.question_text.slice(0, 50)}...</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 mt-6">
-          <Button
-            className="flex-1 bg-blue-600 text-white hover:bg-green-600 dark:bg-blue-500 dark:hover:bg-green-500 transition-colors"
-            onClick={() => {
-              if (pendingAction === "submit") confirmSubmit();
-              if (pendingAction === "reset") resetNow();
-            }}
-          >
-            Confirm {pendingAction === "submit" ? "Submit & Generate PDF" : "Reset Answers"}
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="flex-1"
-            onClick={() => {
-              setShowDonePanel(false);
-              setPendingAction(null);
-            }}
-          >
-            Cancel Request
-          </Button>
-        </div>
-
-        {/* Thank You Marquee — centered */}
-        <div className="w-full h-16 flex items-center justify-center overflow-hidden border-t border-border">
-          <div className="whitespace-nowrap animate-marquee-slow text-lg md:text-xl font-semibold tracking-wide text-foreground">
-            🌟 Thank you for choosing our website! We appreciate your trust and commitment to learning! 🌟
-          </div>
-        </div>
-
-      </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     );
   }
   // Render paper selection
@@ -805,122 +918,169 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
       );
     }
+
+
+    // Note: I'm assuming getStatusVariant, supabase, setSelectedPaper,
+    // setPaperList, resettingPaper, etc. are available in your scope.
     return (
-      <div className="min-h-screen bg-background text-foreground p-4  ">
-        <h2 className="text-xl font-bold mb-4">Choose a Paper</h2>
-        {/* Dashboard Button */}
-        <div className="mb-4">
+      <div className="min-h-screen w-full bg-[#F8FAFC] p-6 lg:p-10 font-sans">
+        {/* Header Section */}
+        <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest uppercase text-xs mb-2">
+              <Zap className="w-4 h-4 fill-current" /> Examination Portal
+            </div>
+            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+              Available <span className="text-blue-600">Papers</span>
+            </h1>
+            <p className="text-slate-500 mt-2 font-medium">
+              Select an assessment module to begin your simulation session.
+            </p>
+          </div>
+
           <Link to="/dashboard">
             <motion.button
-              initial={false}
-              whileHover={{ scale: 1.05 }}
-              className="px-4 py-2 border border-gray-400 rounded-xl text-foreground dark:text-white hover:bg-green-500 hover:text-white dark:hover:text-white transition-all duration-300"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm text-slate-700 font-bold hover:bg-slate-50 transition-all"
             >
-              Go to My Dashboard
+              <LayoutDashboard className="w-4 h-4 text-blue-600" />
+              Candidate Dashboard
             </motion.button>
           </Link>
-
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {paperList.map((paper) => {
+
+        {/* Grid Section */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {paperList.map((paper: any) => {
             const canAccess = profile?.subscription_active ? true : paper.is_free;
+            const isLocked = !canAccess && !paper.is_done;
 
             return (
-              <Card
+              <motion.div
                 key={paper.id}
-                className={`cursor-pointer hover:shadow-md transition ${paper.is_done ? "opacity-60" : canAccess ? "" : "opacity-50 cursor-not-allowed"
-                  }`}
-                onClick={async () => {
-                  if (!paper.is_done && canAccess) {
-                    setSelectedPaper(paper);
-                    // Insert visit row
-                    const { data: userData } = await supabase.auth.getUser();
-                    if (userData?.user?.id) {
-                      await supabase.from("simulation_visits").insert({
-                        paper_id: paper.id,
-                        user_id: userData.user.id,
-                        visited_at: new Date().toISOString(), // optional timestamp column
-                      });
-                    }
-                  }
-                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                layout
               >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {paper.title}
-                    {paper.is_done ? (
-                      <Badge variant={getStatusVariant("done")}>Done</Badge>
-                    ) : profile?.subscription_active ? (
-                      <Badge className="bg-green-600 text-white">Unlocked</Badge>
-                    ) : paper.is_free ? (
-                      <Badge className="bg-emerald-500 text-white">Free</Badge>
-                    ) : (
-                      <Badge variant="destructive">Premium / Pro</Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
+                <Card
+                  className={`group relative h-full flex flex-col border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-white ${paper.is_done ? "bg-slate-50/50" : isLocked ? "bg-slate-50" : "hover:-translate-y-1"
+                    }`}
+                >
+                  {/* Status Bar */}
+                  <div className={`h-1.5 w-full ${paper.is_done ? "bg-green-500" : isLocked ? "bg-slate-300" : "bg-blue-600"
+                    }`} />
 
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{paper.description}</p>
+                  <CardHeader className="pb-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`p-3 rounded-2xl ${paper.is_done ? "bg-green-100 text-green-600" : isLocked ? "bg-slate-200 text-slate-500" : "bg-blue-50 text-blue-600"
+                        }`}>
+                        <FileText className="w-6 h-6" />
+                      </div>
 
-                  {paper.is_done && (
-                    <div className="mt-2 space-y-2">
-                      <p className="text-xs text-green-600">
-                        You’ve already submitted this paper.
-                      </p>
-                      <Badge variant="secondary">Completed</Badge>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-
-                          setResettingPaper(paper.id); // ← start showing "Reseting..."
-
-                          const { data: userData } = await supabase.auth.getUser();
-                          if (!userData?.user?.id) {
-                            setResettingPaper(null);
-                            return;
-                          }
-
-                          // 1️⃣ Delete results from Supabase
-                          await supabase
-                            .from("simulation_results")
-                            .delete()
-                            .eq("paper_id", paper.id)
-                            .eq("user_id", userData.user.id);
-
-                          // 2️⃣ Remove saved answers in localStorage
-                          const localKey = `sim-answers-${paper.id}`;
-                          localStorage.removeItem(localKey);
-
-                          // 3️⃣ Update paperList state to reflect UI immediately
-                          setPaperList((prev) =>
-                            prev.map((p) =>
-                              p.id === paper.id ? { ...p, is_done: false } : p
-                            )
-                          );
-
-                          alert("Paper reset successfully. You can now retake it.");
-
-                          setResettingPaper(null); // ← done resetting
-                        }}
-                        disabled={resettingPaper === paper.id} // optional: prevent double clicks
-                      >
-                        {resettingPaper === paper.id ? "Reseting..." : "Reset Paper"}
-                      </Button>
-
+                      {/* Dynamic Badge Logic */}
+                      <div className="flex flex-col items-end gap-2">
+                        {paper.is_done ? (
+                          <Badge className="bg-green-100 text-green-700 border-green-200 uppercase text-[10px] font-bold">Completed</Badge>
+                        ) : profile?.subscription_active ? (
+                          <Badge className="bg-blue-100 text-blue-700 border-blue-200 uppercase text-[10px] font-bold flex gap-1 items-center">
+                            <Crown className="w-3 h-3" /> Premium Access
+                          </Badge>
+                        ) : paper.is_free ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 uppercase text-[10px] font-bold">Standard Free</Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 uppercase text-[10px] font-bold flex gap-1 items-center">
+                            <Lock className="w-3 h-3" /> Pro Required
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+
+                    <CardTitle className={`text-xl font-bold leading-tight ${isLocked ? "text-slate-400" : "text-slate-800"}`}>
+                      {paper.title}
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardContent className="flex-1">
+                    <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
+                      {paper.description || "Comprehensive NCK-aligned simulation paper covering core nursing competencies and clinical reasoning."}
+                    </p>
+                  </CardContent>
+
+                  <CardFooter className="pt-0 pb-6 px-6">
+                    {paper.is_done ? (
+                      <div className="w-full space-y-3">
+                        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-xl border border-green-100">
+                          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-xs font-bold uppercase tracking-tight">Record on file</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-bold group"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setResettingPaper(paper.id);
+                            const { data: userData } = await supabase.auth.getUser();
+                            if (!userData?.user?.id) { setResettingPaper(null); return; }
+
+                            await supabase.from("simulation_results").delete().eq("paper_id", paper.id).eq("user_id", userData.user.id);
+                            localStorage.removeItem(`sim-answers-${paper.id}`);
+                            setPaperList((prev: any) => prev.map((p: any) => p.id === paper.id ? { ...p, is_done: false } : p));
+                            setResettingPaper(null);
+                          }}
+                          disabled={resettingPaper === paper.id}
+                        >
+                          <RotateCcw className={`w-4 h-4 mr-2 ${resettingPaper === paper.id ? "animate-spin" : "group-hover:-rotate-45 transition-transform"}`} />
+                          {resettingPaper === paper.id ? "Wiping Data..." : "Reset Submission"}
+                        </Button>
+                      </div>
+                    ) : (
+                      // --- NEW CODE (CLICKABLE & SMOOTH) ---
+                      <Button
+                        className={`w-full h-12 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] ${canAccess
+                          ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100 group"
+                          : "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-100" // Changed from gray to Amber
+                          }`}
+                        // Removed disabled={!canAccess} so users can click to upgrade
+                        onClick={async () => {
+                          if (canAccess) {
+                            // Original Logic for Paid Users
+                            setSelectedPaper(paper);
+                            const { data: userData } = await supabase.auth.getUser();
+                            if (userData?.user?.id) {
+                              await supabase.from("simulation_visits").insert({
+                                paper_id: paper.id,
+                                user_id: userData.user.id,
+                                visited_at: new Date().toISOString(),
+                              });
+                            }
+                          } else {
+                            // Smooth navigation for Free Users
+                            navigate("/subscription");
+                          }
+                        }}
+                      >
+                        {canAccess ? (
+                          <>
+                            Begin Assessment <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-2 animate-pulse" /> Unlock Assessment
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </CardFooter>
+                </Card>
+              </motion.div>
             );
           })}
         </div>
       </div>
     );
   }
-
   // No questions found / Loading questions
   if (!currentQuestion) {
     if (questions.length === 0 && timeLeft > 0) {
@@ -954,7 +1114,9 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-base">{currentQuestion.question_text}</p>
+            <p className="font-barlow text-sm leading-relaxed">
+              {currentQuestion.question_text}
+            </p>
             <div className="flex flex-col gap-3">
               {["A", "B", "C", "D"].map((opt) => {
                 const isSelected = answers[currentQuestion.id] === opt;
@@ -976,7 +1138,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                     ></div>
 
                     {/* Answer text */}
-                    <span className="whitespace-normal">{currentQuestion[`option_${opt.toLowerCase()}`]}</span>
+                    <span className="whitespace-normal font-barlow text-sm leading-relaxed">{currentQuestion[`option_${opt.toLowerCase()}`]}</span>
                   </div>
                 );
               })}
@@ -1191,159 +1353,248 @@ Keep striving each step you take strengthens your nursing expertise and prepares
         </div>
 
       </div>
-
-
-      {!mediaAllowed && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center">
-          <div className="text-center space-y-6">
-            {/* HOME BUTTON TOP LEFT */}
-            <div className="absolute top-4 left-4">
+      <AnimatePresence>
+        {!mediaAllowed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-4"
+          >
+            {/* TOP NAVIGATION */}
+            <div className="text-center space-y-4">
               <Link to="/dashboard">
                 <motion.button
-                  initial={false}
-                  whileHover={{ scale: 1.05 }}
-                  className="px-4 py-2 border border-gray-400 rounded-xl text-white hover:bg-green-500 hover:text-white transition-all duration-300 shadow-md"
+                  whileHover={{ x: -5 }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-2xl text-gray-700 hover:bg-gray-50 transition-all font-semibold text-sm shadow-sm"
                 >
-                  Go to My Dashboard
+                  <Home className="w-4 h-4" />
+                  Exit to Dashboard
                 </motion.button>
               </Link>
             </div>
-            <h2 className="text-white text-2xl font-bold">Camera & Mic Disabled</h2>
-            <p className="text-gray-300">
-              Double Click below to enable camera and microphone to start your simulation.
-              <br />
-              ⚠️ Pressing <strong>ESC</strong> at any time will immediately end and submit the simulation.
-            </p>
 
+            <div className="max-w-4xl w-full space-y-8">
 
-            <div className="flex flex-col gap-4">
-              {/* Camera Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                animate={
-                  cameraStream
-                    ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
-                    : { opacity: [0.8, 1, 0.8] }
-                }
-                transition={{ repeat: Infinity, duration: 2 }}
-                onClick={async () => {
-                  try {
-                    const cam = await navigator.mediaDevices.getUserMedia({ video: true });
-                    setCameraStream(cam);
-                    if (videoRef.current) videoRef.current.srcObject = cam;
-                  } catch (err) {
-                    console.error("Camera blocked", err);
-                  }
-                }}
-                className={`block mx-auto w-64 px-3 py-1.5 rounded-3xl font-semibold shadow-lg transition-colors
-    ${cameraStream ? 'bg-green-500 text-white hover:bg-purple-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
-              >
-                Double Click to Enable camera
-              </motion.button>
-              {/* Mic Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                animate={
-                  audioStream
-                    ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #10b981", "0 0 20px #10b981", "0 0 0px #10b981"] }
-                    : { opacity: [0.8, 1, 0.8] }
-                }
-                transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
-                onClick={async () => {
-                  try {
-                    const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    setAudioStream(mic);
+              {/* HEADER SECTION */}
+              <div className="text-center space-y-4">
 
-                    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                    const source = audioCtx.createMediaStreamSource(mic);
-                    const analyser = audioCtx.createAnalyser();
-                    source.connect(analyser);
-                    analyser.fftSize = 256;
-                    const bufferLength = analyser.frequencyBinCount;
-                    const dataArray = new Uint8Array(bufferLength);
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest">
+                  <ShieldAlert className="w-3.5 h-3.5" /> Security Protocol Active
+                </div>
 
-                    const canvas = canvasRef.current;
-                    if (!canvas) return;
-                    const canvasCtx = canvas.getContext("2d");
-                    if (!canvasCtx) return;
+                <h2 className="text-gray-900 text-4xl font-extrabold tracking-tight italic">
+                  Device <span className="text-gray-800">Authorization</span>
+                </h2>
 
-                    canvas.width = canvas.clientWidth;
-                    canvas.height = canvas.clientHeight;
+                <div className="bg-white border border-gray-200 rounded-2xl p-4 max-w-2xl mx-auto shadow-sm">
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    To ensure examination integrity, we require access to your camera and microphone.
+                    <span className="text-gray-700 block mt-2 font-bold uppercase text-[11px] tracking-wider">
+                      ⚠️ Critical: Pressing "ESC" during simulation will trigger an immediate auto-submission.
+                    </span>
+                  </p>
+                </div>
 
-                    const draw = () => {
-                      requestAnimationFrame(draw);
-                      analyser.getByteFrequencyData(dataArray);
+              </div>
 
-                      canvasCtx.fillStyle = "#f3f4f6";
-                      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+              {/* INTERACTIVE TILES */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
 
-                      let maxVolume = 0;
-                      const barWidth = (canvas.width / bufferLength) * 2.5;
-                      let x = 0;
+                {/* CAMERA CARD */}
+                <div className="relative group">
+                  <div className={`absolute -inset-0.5 rounded-3xl blur opacity-20 transition duration-1000 group-hover:opacity-40 ${cameraStream ? 'bg-green-200' : 'bg-blue-200'}`}></div>
 
-                      for (let i = 0; i < bufferLength; i++) {
-                        const barHeight = dataArray[i] / 2;
-                        maxVolume = Math.max(maxVolume, dataArray[i]);
+                  <motion.div className="relative bg-white rounded-3xl p-6 border border-gray-200 h-full flex flex-col items-center shadow-sm">
 
-                        let color = "#ac0e97ff"; // Tailwind green-500
-                        if (barHeight > 40 && barHeight <= 80) color = "#3b82f6"; // blue-500
-                        if (barHeight > 80) color = "#ef4444"; // red-500
+                    <div className={`mb-4 p-4 rounded-2xl ${cameraStream ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                      <Video className="w-8 h-8" />
+                    </div>
 
-                        canvasCtx.fillStyle = color;
-                        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                        x += barWidth + 1;
-                      }
+                    <h3 className="text-gray-900 font-bold mb-1">Visual Identity</h3>
 
-                      setLoudWarning(maxVolume > 150);
-                    };
+                    <p className="text-gray-500 text-xs text-center mb-6 px-4">
+                      Proctoring layer uses facial detection to verify candidate presence.
+                    </p>
 
-                    draw();
-                  } catch (err) {
-                    console.error("Mic blocked", err);
-                  }
-                }}
-                className={`block mx-auto w-64 px-3 py-1.5 rounded-3xl font-semibold shadow-lg transition-colors
-    ${audioStream ? 'bg-green-500 text-white hover:bg-blue-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
-              >
-                Enable mic
-              </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={async () => {
+                        try {
+                          const cam = await navigator.mediaDevices.getUserMedia({ video: true });
+                          setCameraStream(cam);
+                          if (videoRef.current) videoRef.current.srcObject = cam;
+                        } catch (err) {
+                          console.error("Camera blocked", err);
+                        }
+                      }}
+                      className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border
+                ${cameraStream
+                          ? 'bg-green-600 text-white border-green-600 cursor-default'
+                          : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+                        }`}
+                    >
+                      {cameraStream ? "Camera Synced" : "Enable Camera"}
+                    </motion.button>
 
+                  </motion.div>
+                </div>
 
-              {/* Final Start Button */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                animate={
-                  cameraStream && audioStream
-                    ? { scale: [1, 1.05, 1], boxShadow: ["0 0 0px #fff", "0 0 20px #10b981", "0 0 0px #fff"] }
-                    : {}
-                }
-                transition={{ repeat: Infinity, duration: 2 }}
-                disabled={!cameraStream || !audioStream}
-                onClick={() => {
-                  // Play start sound
-                  const audio = new Audio("/sounds/start.mp3");
-                  audio.play().catch(() => { });
+                {/* MICROPHONE CARD */}
+                <div className="relative group">
+                  <div className={`absolute -inset-0.5 rounded-3xl blur opacity-20 transition duration-1000 group-hover:opacity-40 ${audioStream ? 'bg-green-200' : 'bg-gray-200'}`}></div>
 
-                  // Enter fullscreen (user gesture required)
-                  enterFullscreen();
+                  <motion.div className="relative bg-white rounded-3xl p-6 border border-gray-200 h-full flex flex-col items-center shadow-sm">
 
-                  // Allow exam to start
-                  setMediaAllowed(true);
-                }}
+                    {/* VISUALIZER */}
+                    <div className="relative w-full h-24 mb-4 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                      <canvas ref={canvasRef} className="w-full h-full" />
 
-                className={`block mx-auto w-64 px-3 rounded-3xl py-1.5 font-semibold shadow-lg transition-colors
-    ${cameraStream && audioStream ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}`}
-              >
-                Hey, I'm ready to start!
-              </motion.button>
+                      {!audioStream && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Mic className="w-8 h-8 text-gray-400 animate-pulse" />
+                        </div>
+                      )}
+                    </div>
+
+                    <h3 className="text-gray-900 font-bold mb-1">Audio Environment</h3>
+
+                    <p className="text-gray-500 text-xs text-center mb-6 px-4">
+                      Detects excessive ambient noise and external assistance.
+                    </p>
+
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={async () => {
+                        try {
+                          const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+                          setAudioStream(mic);
+
+                          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                          const source = audioCtx.createMediaStreamSource(mic);
+                          const analyser = audioCtx.createAnalyser();
+
+                          source.connect(analyser);
+                          analyser.fftSize = 256;
+
+                          const bufferLength = analyser.frequencyBinCount;
+                          const dataArray = new Uint8Array(bufferLength);
+
+                          const canvas = canvasRef.current;
+                          if (!canvas) return;
+
+                          const canvasCtx = canvas.getContext("2d");
+                          if (!canvasCtx) return;
+
+                          canvas.width = canvas.clientWidth;
+                          canvas.height = canvas.clientHeight;
+
+                          const draw = () => {
+                            requestAnimationFrame(draw);
+
+                            analyser.getByteFrequencyData(dataArray);
+
+                            canvasCtx.fillStyle = "rgba(255, 255, 255, 0.6)";
+                            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                            let maxVolume = 0;
+                            let x = 0;
+                            const barWidth = (canvas.width / bufferLength) * 2;
+
+                            for (let i = 0; i < bufferLength; i++) {
+                              const barHeight = dataArray[i] / 2;
+                              maxVolume = Math.max(maxVolume, dataArray[i]);
+
+                              canvasCtx.fillStyle =
+                                barHeight > 60 ? "#ef4444" : "#3b82f6";
+
+                              canvasCtx.fillRect(
+                                x,
+                                canvas.height - barHeight,
+                                barWidth,
+                                barHeight
+                              );
+
+                              x += barWidth + 1;
+                            }
+
+                            setLoudWarning(maxVolume > 150);
+                          };
+
+                          draw();
+                        } catch (err) {
+                          console.error("Mic blocked", err);
+                        }
+                      }}
+                      className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border
+                ${audioStream
+                          ? 'bg-green-600 text-white border-green-600 cursor-default'
+                          : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+                        }`}
+                    >
+                      {audioStream ? "Mic Calibrated" : "Enable Microphone"}
+                    </motion.button>
+
+                  </motion.div>
+                </div>
+
+              </div>
+
+              {/* FINAL BUTTON */}
+              <div className="flex flex-col items-center pt-6">
+
+                <motion.button
+                  disabled={!cameraStream || !audioStream}
+                  onClick={() => {
+                    const audio = new Audio("/sounds/start.mp3");
+                    audio.play().catch(() => { });
+                    enterFullscreen();
+                    setMediaAllowed(true);
+                  }}
+                  whileHover={cameraStream && audioStream ? { scale: 1.05 } : {}}
+                  whileTap={{ scale: 0.95 }}
+                  className={`relative group px-12 py-5 rounded-full font-black text-sm uppercase tracking-[0.3em] transition-all border
+            ${cameraStream && audioStream
+                      ? 'bg-gray-900 text-white shadow-md hover:bg-black'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {cameraStream && audioStream ? (
+                      <Unlock className="w-5 h-5" />
+                    ) : (
+                      <Lock className="w-5 h-5" />
+                    )}
+                    Initiate Simulation Session
+                  </div>
+                </motion.button>
+
+                <div className="mt-6 flex items-center gap-4">
+
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${cameraStream ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <span className="text-[10px] font-bold text-gray-500 uppercase">
+                      Video Sync
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${audioStream ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <span className="text-[10px] font-bold text-gray-500 uppercase">
+                      Audio Calibration
+                    </span>
+                  </div>
+
+                </div>
+
+              </div>
 
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

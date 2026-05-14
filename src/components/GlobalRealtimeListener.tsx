@@ -58,7 +58,7 @@ export default function GlobalRealtimeListener() {
                     ) {
                         playSound("alert-sound")
 
-                        toast("📢 New Announcement Posted", {
+                        toast("s New Announcement Posted", {
                             description:
                                 payload.new?.title || "Check the announcements page.",
                         })

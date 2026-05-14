@@ -27,13 +27,12 @@ const HeroMobileCard = () => {
     }, []);
 
     return (
-        <Card className="relative w-full min-h-[100vh] overflow-hidden text-white border-0 rounded-none">
-
+        <Card className="relative w-full  min-h-screen overflow-hidden text-white border-0 rounded-3xl bg-slate-950">
             {/* Background Images (Smooth Fade) */}
             {backgroundImages.map((img, index) => (
                 <div
                     key={index}
-                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentImage ? "opacity-100" : "opacity-0"
+                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentImage ? "opacity-40" : "opacity-0"
                         }`}
                     style={{
                         backgroundImage: `url(/${img})`,
@@ -43,82 +42,88 @@ const HeroMobileCard = () => {
                 />
             ))}
 
-            {/* Dark Overlay */}
-            <div className="absolute inset-0 bg-black/65" />
+            {/* Elegant Gradient Overlay for Text Contrast */}
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/40 to-slate-950" />
 
-            {/* Content */}
-            <CardContent className="relative z-10 flex flex-col justify-center min-h-[100vh] px-2 py-12 space-y-2 font-sans">
+            {/* Content Container */}
+            <CardContent className="relative z-10 flex flex-col min-h-screen px-4 pt-16 pb-10 justify-between">
 
-                {/* Logo + Title */}
-                <div className="flex flex-col items-center space-y-3">
-                    <img
-                        src="/pwa-192x192.jpeg"
-                        alt="Medrae Logo"
-                        className="w-16 h-16 rounded-xl shadow-lg"
-                    />
-
-                    <h1 className="text-3xl font-extrabold tracking-wide">
-                        MEDRAE
-                    </h1>
+                {/* 1. Header Section */}
+                <div className="flex flex-col items-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-1000">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-full" />
+                        <img
+                            src="/pwa-192x192.jpeg"
+                            alt="Medrae Logo"
+                            className="relative w-20 h-20 rounded-2xl shadow-2xl border border-white/10"
+                        />
+                    </div>
+                    <div className="text-center">
+                        <h1 className="text-4xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+                            MEDRAE
+                        </h1>
+                        <p className="text-blue-400 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+                            Learn • Practice • Advance
+                        </p>
+                    </div>
                 </div>
 
-                {/* Description */}
-                <div className="space-y-2 text-base leading-relaxed text-white/95 text-start ">
-                    <p>
-                        Medrae is built for serious NCK exam preparation. Practice 5,000+
-                        updated NCK-style questions with instant explanations after every answer.
-                    </p>
+                {/* 2. Main Value Prop (Glass Card) */}
+                <div className="space-y-6 mt-8 flex-grow">
+                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-blue-100 leading-tight">
+                            Master the NCK Exam with Precision.
+                        </h2>
+                        <p className="mt-3 text-slate-300 text-sm leading-relaxed">
+                            Practice with <span className="text-white font-bold">5,000+ updated questions</span>.
+                            Train in DigiProctor-style timed modes with instant explanations.
+                        </p>
 
-                    <p className="font-semibold text-white">
-                        Kenya’s Structured NCK Exam Practice & Digital Testing Platform
-                    </p>
+                        {/* Feature Chips */}
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            {["Timed Exams", "Failed-Question Tracking", "Unit Revision"].map((tag) => (
+                                <span key={tag} className="text-[10px] font-bold py-1 px-3 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-full">
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
 
-                    <p>
-                        Train in DigiProctor-style exam mode with timed practice,
-                        unit-based revision, and automatic tracking of every failed question —
-                        helping students master exam strategy and build real confidence.
-                    </p>
-
-                    <p>
-                        Access structured units, weak-topic tracking, and a growing
-                        5,000+ question bank updated to match current NCK exam trends.
-                    </p>
-
-                    <p className="font-semibold text-2xl text-white">
-                        For Tutors & Institutions
-                    </p>
-
-                    <p>
-                        Medrae also offers affordable institutional online exam hosting with a powerful
-                        DigiProctor system. Tutors can upload revision questions, CATs, assignments,
-                        mock exams, and internal assessments  all fully digitized and automatically tracked.
-                    </p>
-
-                    <p>
-                        Save time on marking, go fully digital, and train your students to confidently
-                        sit any computer-based exam  including NCK without fear.
-                    </p>
+                    {/* 3. Secondary Info: Institutions */}
+                    <div className="px-2">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <span className="h-px w-8 bg-blue-500" />
+                            For Institutions
+                        </h3>
+                        <p className="mt-2 text-slate-400 text-sm leading-relaxed">
+                            Host revision CATs, assignments, and mock exams.
+                            Digitize your internal assessments and track student progress automatically.
+                        </p>
+                    </div>
                 </div>
-                {/* Buttons */}
-                <div className="flex flex-col gap-2 pt-0">
+
+                {/* 4. Sticky-Style Footer Buttons */}
+                <div className="flex flex-col gap-3 pt-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-1000">
                     <Button
                         size="lg"
-                        className="bg-blue-500 text-white font-bold text-lg md:text-2xl px-8 py-3 rounded-3xl shadow-lg
-  transition-all duration-300 md:hover:bg-blue-600 md:hover:scale-105"
+                        className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-95"
                         onClick={() => navigate('/register')}
                     >
-                        Create Account
+                        Get Started Now
                     </Button>
 
                     <Button
                         size="lg"
-                        variant="outline"
-                        className="border-yellow-500 text-blue-500 font-bold text-base md:text-lg px-8 py-3 rounded-3xl shadow-lg
-  transition-all duration-300 md:hover:bg-blue-500 md:hover:text-white md:hover:scale-105"
+                        variant="ghost"
+                        className="w-full h-14 text-white/70 font-semibold text-base hover:text-white transition-all"
                         onClick={() => navigate('/login')}
                     >
-                        Sign In to Continue
+                        Already have an account? <span className="text-blue-400 ml-1 underline decoration-2 underline-offset-4">Log In</span>
                     </Button>
+
+                    <p className="text-[10px] text-center text-slate-500 font-medium">
+                        Join thousands of students across Kenya.
+                    </p>
                 </div>
 
             </CardContent>

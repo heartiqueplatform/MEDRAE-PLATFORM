@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 
 import {
+  Compass,
   Brain,
   Heart,
   Calendar,
@@ -45,8 +46,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-  toggleSidebar
+
+  toggleSidebar,
 } from "@/components/ui/sidebar";
+import { Link } from 'react-router-dom';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabaseClient";
@@ -75,6 +78,8 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   // ✅ At the top of your AppSidebar component
   const [mistakeCount, setMistakeCount] = useState(0);
+
+
   // 🎨 Semantic icon tone system
   type IconTone =
     | "neutral"
@@ -149,24 +154,25 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   // ✅ Sync with localStorage and update in real-time
   useEffect(() => {
-    const fetchCount = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+    let mounted = true;
+    let channel: any;
 
-      // Initial fetch
-      const { count, error } = await supabase
+    const fetchAndSubscribeMistakes = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !mounted) return;
+
+      // 1. Initial Fetch
+      const { count } = await supabase
         .from("user_mistakes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .eq("resolved", false);
 
-      if (!error) setMistakeCount(count || 0);
+      if (mounted) setMistakeCount(count || 0);
 
-      // Subscribe to changes for this user
-      const subscription = supabase
-        .channel(`user_mistakes_real_time_${user.id}`)
+      // 2. Chained Subscription
+      channel = supabase
+        .channel(`sidebar_mistakes_${user.id}`) // Unique name
         .on(
           "postgres_changes",
           {
@@ -175,24 +181,27 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
             table: "user_mistakes",
             filter: `user_id=eq.${user.id}`,
           },
-          () => {
-            // Refetch count whenever a row is inserted, updated, or deleted
-            supabase
+          async () => {
+            // Re-fetch count on change
+            const { count: newCount } = await supabase
               .from("user_mistakes")
               .select("*", { count: "exact", head: true })
               .eq("user_id", user.id)
-              .eq("resolved", false)
-              .then(({ count }) => setMistakeCount(count || 0));
+              .eq("resolved", false);
+
+            if (mounted) setMistakeCount(newCount || 0);
           }
         )
         .subscribe();
-
-      return () => supabase.removeChannel(subscription);
     };
 
-    fetchCount();
-  }, []);
+    fetchAndSubscribeMistakes();
 
+    return () => {
+      mounted = false;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -275,8 +284,16 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
     { title: "Challenges", url: "/challenge", icon: Swords, iconTone: "practice" },
     { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert", badge: mistakeCount > 0 ? mistakeCount : undefined },
     { title: "AI Study Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai", badge: "New" },
+    // 🎯 ADD THIS NEW ITEM HERE:
+    {
+      title: "Survival Hub",
+      url: "/survival-hub",
+      icon: Compass,
+      iconTone: "learning",
+      badge: "New"
+    },
 
-    { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },
+    // { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },
   ];
 
 
@@ -336,6 +353,7 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
   ];
 
   const otherItems = [
+
     {
       title: "NursMartt",
       url: "/market",
@@ -455,92 +473,55 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
 
   // ----- TOTAL STARS -----
   useEffect(() => {
-    let isMounted = true; // avoid state updates if unmounted
+    let isMounted = true;
+    let channel: any;
 
-    // 1️⃣ Load cached stars immediately
-    const cached = localStorage.getItem("study_progress_cache");
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.totalStarsEarned !== undefined) setTotalStars(parsed.totalStarsEarned);
-      } catch (e) {
-        console.error("Error reading cached stars for sidebar:", e);
-      }
-    }
-
-    // 2️⃣ Function to fetch latest stars from Supabase
     const fetchStars = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        console.error("User not found or auth error in sidebar");
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !isMounted) return;
 
       const { data, error } = await supabase
         .from("quiz_results")
-        .select("unit, score, total_questions")
+        .select("unit, score")
         .eq("user_id", user.id);
 
-      if (error) {
-        console.error("Error fetching quiz results for sidebar:", error.message);
-        return;
-      }
+      if (error || !isMounted) return;
 
-      // Group results by unit
-      const grouped: Record<string, { count: number }> = {};
+      // Logic to calculate stars...
+      const grouped: Record<string, boolean> = {};
       data?.forEach((res) => {
-        const key = res.unit || "Unknown";
-        if (!grouped[key]) grouped[key] = { count: 1 };
-        else grouped[key].count += 1;
+        if (res.score > 0) grouped[res.unit || "Unknown"] = true;
       });
 
-      // Only include units whose latest attempt > 0
-      const unitsToInclude = Object.keys(grouped).filter((unitName) => {
-        const attempts = data?.filter((r) => r.unit === unitName) || [];
-        const latestAttempt = attempts[attempts.length - 1]; // assume last is latest
-        return latestAttempt?.score && latestAttempt.score > 0;
-      });
+      const totalStarsCount = Object.keys(grouped).length * 5;
+      setTotalStars(totalStarsCount);
 
-      const totalStars = unitsToInclude.length * 5;
+      // Update Cache
+      localStorage.setItem("study_progress_cache", JSON.stringify({
+        totalStarsEarned: totalStarsCount,
+        userId: user.id
+      }));
 
-      if (isMounted) setTotalStars(totalStars);
-
-      // Update localStorage cache for other components
-      try {
-        const cached = JSON.parse(localStorage.getItem("study_progress_cache") || "{}");
-        localStorage.setItem(
-          "study_progress_cache",
-          JSON.stringify({ ...cached, totalStarsEarned: totalStars, userId: user.id })
-        );
-      } catch (e) {
-        console.error("Error saving sidebar stars to cache:", e);
+      // Define subscription AFTER logic but return the channel
+      if (!channel) {
+        channel = supabase
+          .channel(`sidebar_stars_${user.id}`)
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "quiz_results", filter: `user_id=eq.${user.id}` },
+            () => fetchStars()
+          )
+          .subscribe();
       }
     };
 
-    fetchStars(); // initial fetch
-
-    // 3️⃣ Realtime subscription for updates
-    const channel = supabase
-      .channel("quiz_results_changes_sidebar")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "quiz_results" },
-        fetchStars
-      )
-      .subscribe();
+    fetchStars();
 
     return () => {
       isMounted = false;
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
-
-
-
   // Reset unread count when clicking Chat Room
   const handleChatClick = async () => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -596,11 +577,19 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
           {/* Text info */}
           {!isCollapsed && (
             <div>
-              <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 relative inline-block">
-                MEDRAE
-              </h2>
+              <div className="text-sm font-black tracking-widest flex items-center gap-2">
+                {/* MEDRAE - RED 3D */}
+                <span className="text-red-500 [text-shadow:0px_0px_0px_#7f1d1d,0px_0px_0px_#450a0a,3px_3px_2px_rgba(0,0,0,0.3)]">
+                  MEDRAE
+                </span>
+
+                {/* NURSING - BLACK 3D */}
+                <span className="text-gray-900 dark:text-white [text-shadow:1px_1px_0px_#374151,1px_1px_0px_#111827,3px_3px_2px_rgba(0,0,0,0.3)]">
+                  NURSING
+                </span>
+              </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Kenya Nursing Network Platform (MKN)
+                Kenya Nursing Network Platform (KNN)
               </p>
             </div>
 
@@ -1078,9 +1067,46 @@ export function AppSidebar({ userRole }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-
       </SidebarContent>
+
+      {/* ================= LEFT BOTTOM PANEL (LEGAL & VERSION) ================= */}
+      <div className="mt-auto py-6 text-center select-none border-t border-slate-100 dark:border-slate-900/40">
+
+        {/* Registry Text */}
+        <p className="text-[6px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
+          MEDRAE • ALL RIGHTS RESERVED • CLINICAL INTEGRITY
+        </p>
+
+        {/* Minimalist Legal Links - NOW CONNECTED */}
+        <div className="mt-3 flex items-center justify-center gap-4">
+          <Link
+            to="/privacy"
+            className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors uppercase tracking-widest font-mono"
+          >
+            Privacy
+          </Link>
+
+          <span className="h-1 w-1 rounded-full bg-slate-200 dark:bg-slate-800" />
+
+          <Link
+            to="/terms"
+            className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors uppercase tracking-widest font-mono"
+          >
+            Terms
+          </Link>
+        </div>
+
+        {/* Footer Tagline */}
+        <div className="mt-4 flex flex-col gap-0.5">
+          <p className="text-[6px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600 opacity-40 font-medium">
+            STUDY PURPOSES ONLY
+          </p>
+          <p className="text-[5px] uppercase tracking-[0.1em] text-slate-300 dark:text-slate-700 font-bold">
+            SYSTEM BUILD V2.4.0_STABLE
+          </p>
+        </div>
+      </div>
+
     </Sidebar>
   );
 }

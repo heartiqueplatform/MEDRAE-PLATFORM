@@ -6,8 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, AlertTriangle, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Users, AlertTriangle, Loader2, PlusCircle, ChevronRight, CheckCircle, ArchiveRestore, X, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { GlobalLoader } from "@/components/GlobalLoader";
@@ -58,7 +58,7 @@ export function MistakesCard() {
         setLoading(true);
 
         // 1️⃣ fetch all mistakes with related question
-        const { data: mistakes } = await supabase
+        const { data: mistakes, error } = await supabase
             .from("user_mistakes")
             .select(`
     user_id,
@@ -134,27 +134,27 @@ export function MistakesCard() {
         const start = page * PAGE_SIZE;
         const end = start + PAGE_SIZE;
         const newQuestions = merged.slice(start, end);
-
+        // 5️⃣ Corrected: Merge with existing data
+        // We don't slice 'merged' here because 'merged' already only contains
+        // the unique questions from the specific range we fetched from Supabase.
         setData((prev) => {
-            // Avoid duplicates
-            const mergedData = [...prev];
-            newQuestions.forEach((q) => {
-                if (!mergedData.some((item) => item.question_id === q.question_id)) {
-                    mergedData.push(q);
+            const updatedData = [...prev];
+
+            merged.forEach((newQ) => {
+                // Check if we already have this question in our list
+                const exists = updatedData.some((item) => item.question_id === newQ.question_id);
+                if (!exists) {
+                    updatedData.push(newQ);
                 }
             });
 
-            // Save updated data to localStorage
+            // Save to localStorage
             if (typeof window !== "undefined") {
-                localStorage.setItem(
-                    "mistakesData",
-                    JSON.stringify(mergedData.slice(0, 50))
-                );
+                localStorage.setItem("mistakesData", JSON.stringify(updatedData.slice(0, 100)));
             }
 
-            return mergedData;
+            return updatedData;
         });
-
 
         setLoading(false);
     };
@@ -225,332 +225,341 @@ export function MistakesCard() {
     return (
         <>
             {/* Full-screen loading overlay */}
-            {/* Full-screen loading overlay */}
             {loadingStudents && (
-                <div
-                    className="fixed inset-0 z-[9999] flex flex-col items-center justify-center
-               bg-white/40 dark:bg-black/40 backdrop-blur-sm"
-                >
-                    {/* Close button */}
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/60 dark:bg-black/60 backdrop-blur-md transition-all">
                     <button
                         onClick={() => setLoadingStudents(false)}
-                        className="absolute top-4 right-4 text-2xl font-bold text-gray-700 dark:text-white hover:text-red-500"
+                        className="absolute top-6 right-6 p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-red-500 transition-colors"
                     >
-                        ✕
+                        <X size={24} />
                     </button>
-
-                    {/* Loader spinner */}
-                    <GlobalLoader />
+                    <div className="flex flex-col items-center gap-4">
+                        <GlobalLoader />
+                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400 animate-pulse uppercase tracking-widest">
+                            Analyzing Student Data...
+                        </p>
+                    </div>
                 </div>
             )}
 
-            <Card className="rounded-md border-0 shadow-md bg-gray-100 dark:bg-gray-900 mt-4">
+            <Card className="rounded-xl border-0 shadow-xl bg-white dark:bg-gray-900 mt-2 overflow-hidden">
+                <CardHeader className="p-6 pb-2 border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="flex items-center gap-2 text-2xl font-black text-gray-900 dark:text-white">
+                                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600">
+                                    <AlertTriangle size={24} />
+                                </div>
+                                High-Frequency Mistakes
+                            </CardTitle>
+                            <CardDescription className="mt-2 text-gray-500 dark:text-gray-400">
+                                Questions nursing students struggle with most. Focus your revision here.
+                            </CardDescription>
+                        </div>
 
-                <CardHeader className="p-2">
-                    <CardTitle className="flex items-center gap-2">
-
-                        Most Failed Questions
-                    </CardTitle>
-                    <CardDescription>High-impact mistakes students struggle with the most. Tap a card to expand and learn more...</CardDescription>
+                        {/* Restore Hidden Button - Placed at top right for cleaner UI */}
+                        {hiddenIds.length > 0 && (
+                            <div className="group relative">
+                                <button
+                                    onClick={() => {
+                                        setData((prev) => {
+                                            const allHidden = hiddenIds.map((id) => {
+                                                const savedData = JSON.parse(localStorage.getItem("mistakesData") || "[]");
+                                                return savedData.find((q: any) => q.question_id === id);
+                                            }).filter(Boolean);
+                                            return [...prev, ...allHidden];
+                                        });
+                                        setHiddenIds([]);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all active:scale-95 border border-gray-200 dark:border-gray-700"
+                                >
+                                    <ArchiveRestore size={18} className="text-blue-600" />
+                                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                        Restore {hiddenIds.length}
+                                    </span>
+                                </button>
+                                <span className="absolute bottom-full right-0 mb-2 scale-0 group-hover:scale-100 transition-all bg-gray-900 text-white text-[10px] px-2 py-1 rounded">
+                                    Bring back mastered questions
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </CardHeader>
 
-                <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-2 custom-scrollbar pb-2 scroll-smooth px-1">
-
-
+                <CardContent className="flex overflow-x-auto snap-x snap-mandatory gap-2 custom-scrollbar py-2 px-2 scroll-smooth">
                     {data
                         .filter((item) => !hiddenIds.includes(item.question_id))
                         .map((item, i) => {
-
                             const q = item.quiz_questions;
                             return (
                                 <motion.div
                                     key={item.question_id}
+                                    layout
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
                                     onClick={() => setExpandedCard({ ...item, index: i })}
-                                    className="w-[calc(100vw-1rem)] sm:w-[80%] md:w-[320px] flex-shrink-0 hover:mistake-card-glow transition-all mt-4 first:ml-0"
-                                    initial={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 120 }}
-                                    transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                                    className="w-[300px] md:w-[350px] flex-shrink-0 snap-center"
                                 >
+                                    <Card className="h-[420px] flex flex-col relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group rounded-2xl overflow-hidden">
 
-                                    <Card
-                                        className="w-full relative
-    bg-white
-    dark:bg-gradient-to-b dark:from-gray-700 dark:to-gray-900
-    shadow-md rounded-xl hover:glow-effect"
-                                    >
+                                        {/* Archive/Achieve Button */}
+                                        <div className="absolute top-3 right-3 z-20">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setHiddenIds((prev) => {
+                                                        const updated = [...prev, item.question_id];
+                                                        localStorage.setItem("hiddenMistakeQuestions", JSON.stringify(updated));
+                                                        return updated;
+                                                    });
+                                                    setData((prev) => prev.filter((q) => q.question_id !== item.question_id));
+                                                }}
+                                                className="p-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors group/btn"
+                                            >
+                                                <CheckCircle size={18} />
+                                                <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 scale-0 group-hover/btn:scale-100 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap">
+                                                    Mark as Mastered
+                                                </span>
+                                            </button>
+                                        </div>
 
-                                        {/* Restore Hidden Button */}
-                                        {hiddenIds.length > 0 && (
-                                            <div className="flex text-[10px] justify-start mb-2 mt-2">
-                                                <div className="relative inline-block group">
-                                                    <div
-                                                        onClick={() => {
-                                                            setData((prev) => {
-                                                                const allHidden = hiddenIds.map((id) => {
-                                                                    const savedData = JSON.parse(localStorage.getItem("mistakesData") || "[]");
-                                                                    return savedData.find((q: any) => q.question_id === id);
-                                                                }).filter(Boolean);
-                                                                return [...prev, ...allHidden];
-                                                            });
-                                                            setHiddenIds([]);
-                                                        }}
-                                                        className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 active:scale-95 transition px-2 py-1 relative"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-                                                        </svg>
-
-                                                        {/* Badge */}
-                                                        {hiddenIds.length > 0 && (
-                                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-[1px]">
-                                                                {hiddenIds.length}
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Tooltip */}
-                                                    <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-all bg-gray-900 text-white text-xs px-2 py-1 rounded">
-                                                        Achieved
-                                                    </span>
-                                                </div>
-
-
-                                            </div>
-                                        )}
-                                        <CardContent className="p-2 flex flex-col h-[360px] justify-between">
-
-                                            {/* Swipe hint + Hide Button */}
-                                            <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1 ">
-
-                                                <div className="relative inline-block group">
-                                                    <div
-                                                        onClick={(e) => {
-                                                            e.stopPropagation(); // Prevent triggering card click
-                                                            setHiddenIds((prev) => {
-                                                                const updated = [...prev, item.question_id];
-                                                                localStorage.setItem(
-                                                                    "hiddenMistakeQuestions",
-                                                                    JSON.stringify(updated)
-                                                                );
-                                                                return updated;
-                                                            });
-                                                            setData((prev) =>
-                                                                prev.filter((q) => q.question_id !== item.question_id)
-                                                            );
-                                                        }}
-                                                        className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 active:scale-95 transition px-2 py-1"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0-3-3m3 3 3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-                                                        </svg>
-                                                    </div>
-
-                                                    {/* Tooltip */}
-                                                    <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-all bg-gray-900 text-white text-xs px-2 py-1 rounded">
-                                                        Achieve
-                                                    </span>
-                                                </div>
-
+                                        <div className="p-5 flex flex-col h-full">
+                                            {/* Header: Number + Last Attempt */}
+                                            <div className="flex items-center justify-between mb-4">
+                                                <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-lg text-[10px] font-black uppercase tracking-tighter">
+                                                    Question {i + 1}
+                                                </span>
+                                                <span className="text-[10px] font-medium text-gray-400 italic">
+                                                    {item.lastWrong ? formatDistanceToNow(new Date(item.lastWrong)) + " ago" : "No attempts"}
+                                                </span>
                                             </div>
 
-                                            {/* Question */}
-                                            {/* Question */}
-                                            <div className="flex items-start gap-3 mt-4 mb-1">
-                                                {/* Number badge */}
-                                                <div className="
-        min-w-[24px] h-6
-        flex items-center justify-center
-        rounded-full
-        bg-gray-200 text-gray-700
-        dark:bg-gray-800 dark:text-gray-300
-        text-xs font-bold
-        flex-shrink-0
-    ">
-                                                    Q.{i + 1}
-                                                </div>
+                                            {/* Question Text */}
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-snug line-clamp-3 mb-4">
+                                                {q.question_text}
+                                            </p>
 
-                                                {/* Question text */}
-                                                <p className="text-sm font-semibold leading-snug">
-                                                    {q.question_text}
-                                                </p>
-                                            </div>
-
-
-
-
-                                            {/* Options */}
-                                            <div className="flex flex-col gap-1 mb-2">
+                                            {/* Options List */}
+                                            <div className="flex flex-col gap-1.5 flex-grow">
                                                 {["A", "B", "C", "D"].map((key) => (
                                                     <div
                                                         key={key}
-                                                        className={`flex items-start gap-2 px-2 py-2 text-xs
-border-b last:border-b-0
-border-gray-200 dark:border-gray-700
-${key === q.correct_answer ? "text-green-700 dark:text-green-400 font-medium" : "text-gray-700 dark:text-gray-300"}
-`}
-
+                                                        className={`flex items-start gap-3 p-2.5 rounded-xl text-[11px] transition-colors border ${key === q.correct_answer
+                                                            ? "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800 text-green-700 dark:text-green-400 font-bold"
+                                                            : "bg-gray-50 dark:bg-gray-800/40 border-transparent text-gray-600 dark:text-gray-400"
+                                                            }`}
                                                     >
-                                                        <strong>{key}.</strong> {q[`option_${key.toLowerCase()}`]}
+                                                        <span className="opacity-50">{key}.</span>
+                                                        <span className="line-clamp-2">{q[`option_${key.toLowerCase()}`]}</span>
                                                     </div>
                                                 ))}
                                             </div>
 
-                                            {/* Explanation + additional scrollable */}
-
-
-                                            {/* Stats */}
-                                            <div className="flex justify-between items-center pt-2">
-                                                <div className="relative inline-block group">
-                                                    <div
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            openDetails(item.question_id);
-                                                        }}
-                                                        className="inline-flex items-center justify-center cursor-pointer hover:opacity-80 active:scale-95 transition"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-8 h-8">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" fill="#0caae9" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                                                        </svg>
+                                            {/* Bottom Info: Who failed + Expand */}
+                                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openDetails(item.question_id);
+                                                    }}
+                                                    className="flex items-center gap-2 group/who"
+                                                >
+                                                    <div className="flex -space-x-2">
+                                                        {[1, 2, 3].map((n) => (
+                                                            <div key={n} className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[8px] font-bold">
+                                                                {n}
+                                                            </div>
+                                                        ))}
                                                     </div>
-
-                                                    {/* Tooltip */}
-                                                    <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-all bg-gray-900 text-white text-xs px-2 py-1 rounded">
-                                                        Who?
+                                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover/who:underline">
+                                                        See Peers
                                                     </span>
+                                                </button>
+
+                                                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 group-hover:text-blue-500 transition-colors">
+                                                    Details <ChevronRight size={14} />
                                                 </div>
-
-
-
-                                                <span className="text-xs text-muted-foreground">
-                                                    {item.lastWrong ? formatDistanceToNow(new Date(item.lastWrong)) + " ago" : "No attempts yet"}
-                                                </span>
                                             </div>
-                                        </CardContent>
+                                        </div>
                                     </Card>
                                 </motion.div>
                             );
                         })}
 
                     {/* Load More Button */}
-                    <div className="flex items-center justify-center min-w-[320px]">
-                        <Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={loading}>
-                            {loading ? <Loader2 className="animate-spin" /> : "Load more"}
+                    <div className="flex items-center justify-center min-w-[200px] pr-8">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setPage((p) => p + 1)}
+                            disabled={loading}
+                            className="flex flex-col gap-2 h-auto py-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                        >
+                            {loading ? (
+                                <Loader2 className="animate-spin" size={24} />
+                            ) : (
+                                <>
+                                    <PlusCircle size={24} />
+                                    <span className="font-bold text-xs">Load More</span>
+                                </>
+                            )}
                         </Button>
                     </div>
                 </CardContent>
             </Card>
-
-            {/* Students Overlay */}
+            {/* --- Students Overlay (Peer Analytics) --- */}
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="max-w-xl border-0">
-                    <DialogHeader>
-                        <DialogTitle className="flex gap-2 items-center">
-                            <Users /> Students who missed this
+                <DialogContent
+                    aria-describedby={undefined}
+                    className="max-w-xl border-0 bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-0 overflow-hidden">
+                    <DialogHeader className="p-6 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                        <DialogTitle className="flex gap-3 items-center text-xl font-black text-gray-900 dark:text-white">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg">
+                                <Users size={20} />
+                            </div>
+                            Student Analytics
                         </DialogTitle>
+                        <DialogDescription className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                            Peers who struggled with this concept
+                        </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-3 max-h-[420px] overflow-y-auto custom-scrollbar">
-                        {selected.map((s, i) => (
-                            <div key={i} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded-md ">
-                                <div className="flex gap-2 items-center">
-                                    <Avatar>
-                                        <AvatarImage src={s.profile?.avatar_url || "/UsersAvatar.jpg"} />
-                                        <AvatarFallback>{s.profile?.name?.[0] || "?"}</AvatarFallback>
-                                    </Avatar>
+                    <div className="p-4 space-y-3 max-h-[450px] overflow-y-auto custom-scrollbar">
+                        {selected.length === 0 ? (
+                            <p className="text-center py-10 text-gray-400 italic">No student data available</p>
+                        ) : (
+                            selected.map((s, i) => (
+                                <div
+                                    key={i}
+                                    className="flex justify-between items-center bg-white dark:bg-gray-800/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-200 transition-colors shadow-sm"
+                                >
+                                    <div className="flex gap-3 items-center">
+                                        <Avatar className="h-10 w-10 border-2 border-white dark:border-gray-700 shadow-sm">
+                                            <AvatarImage src={s.profile?.avatar_url || "/UsersAvatar.jpg"} />
+                                            <AvatarFallback className="bg-blue-50 text-blue-600 font-bold">
+                                                {s.profile?.name?.[0] || "?"}
+                                            </AvatarFallback>
+                                        </Avatar>
 
-                                    <div>
-                                        <p className="text-sm font-medium">{s.profile?.name}</p>
-                                        <p className="text-xs text-muted-foreground">{s.profile?.institution}</p>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{s.profile?.name}</p>
+                                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-tight">
+                                                {s.profile?.institution || "Medical Student"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col items-end gap-1">
+                                        <Badge className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800 font-black px-2 py-0.5">
+                                            {s.times_wrong}× Fail
+                                        </Badge>
+                                        <p className="text-[10px] font-medium text-gray-400">
+                                            {formatDistanceToNow(new Date(s.last_wrong_at))} ago
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <Badge variant="secondary">{s.times_wrong}×</Badge>
-                                    <p className="text-xs text-muted-foreground">
-                                        {formatDistanceToNow(new Date(s.last_wrong_at))} ago
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
-            {/* Expanded Card Overlay */}
+
+            {/* --- Expanded Card Overlay (Detailed Review) --- */}
             {expandedCard && (
                 <div
-                    className="fixed mt-4 inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-1"
-                    onClick={() => setExpandedCard(null)} // tap outside closes
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/60 backdrop-blur-md p-4"
+                    onClick={() => setExpandedCard(null)}
                 >
-                    <div
-                        className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg max-w-xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-2 border-0"
-                        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="relative bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden border border-white/20 flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Close Button */}
-                        {/* Top Header */}
-                        <div className="flex justify-end mb-2">
+                        {/* Header / Top Bar */}
+                        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 dark:border-gray-800">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full flex items-center justify-center font-black">
+                                    {expandedCard.index + 1}
+                                </div>
+                                <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Question Review</span>
+                            </div>
                             <button
                                 onClick={() => setExpandedCard(null)}
-                                className="text-xl font-bold text-gray-700 dark:text-white hover:text-red-500"
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-red-500 transition-all"
                             >
-                                ✕
+                                <X size={24} />
                             </button>
                         </div>
 
-                        {/* Question */}
-                        {/* Overlay Question */}
-                        <div className="flex items-start gap-3 mb-3">
-                            {/* Number badge */}
-                            <div
-                                className="
-      min-w-[28px] h-7
-      flex items-center justify-center
-      rounded-full
-      bg-gray-200 text-gray-700
-      dark:bg-gray-800 dark:text-gray-300
-      text-sm font-bold
-      flex-shrink-0
-    "
-                            >
-                                Q.{expandedCard.index + 1}
+                        {/* Content Area */}
+                        <div className="p-8 overflow-y-auto custom-scrollbar space-y-2 text-left">
 
-                            </div>
-
-                            {/* Question text */}
-                            <h2 className="text-lg font-semibold leading-snug">
+                            {/* Question Text */}
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">
                                 {expandedCard.quiz_questions.question_text}
                             </h2>
-                        </div>
 
+                            {/* Options Grid */}
+                            <div className="grid grid-cols-1 gap-1">
+                                {["A", "B", "C", "D"].map((key) => {
+                                    const isCorrect = key === expandedCard.quiz_questions.correct_answer;
+                                    return (
+                                        <div
+                                            key={key}
+                                            className={`group flex items-start gap-4 p-4 rounded-2xl border-2 transition-all ${isCorrect
+                                                ? "bg-green-50 dark:bg-green-900/20 border-green-500 text-green-900 dark:text-green-400"
+                                                : "bg-gray-50 dark:bg-gray-800/40 border-transparent text-gray-600 dark:text-gray-400"
+                                                }`}
+                                        >
+                                            <div className={`h-6 w-6 rounded-md flex items-center justify-center text-xs font-black shrink-0 ${isCorrect ? "bg-green-500 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                                                }`}>
+                                                {key}
+                                            </div>
+                                            <span className="text-sm md:text-base font-semibold leading-relaxed">
+                                                {expandedCard.quiz_questions[`option_${key.toLowerCase()}`]}
+                                            </span>
+                                            {isCorrect && <CheckCircle size={20} className="ml-auto text-green-500 shrink-0" />}
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
-                        {/* Options */}
-                        <div className="flex flex-col gap-2 mb-4">
-                            {["A", "B", "C", "D"].map((key) => (
-                                <div
-                                    key={key}
-                                    className={`px-3 py-2 rounded border ${key === expandedCard.quiz_questions.correct_answer
-                                        ? "border-0 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 font-medium"
-                                        : "border-0 text-gray-700 dark:text-gray-300"
-                                        }`}
-                                >
-                                    <strong>{key}.</strong> {expandedCard.quiz_questions[`option_${key.toLowerCase()}`]}
+                            {/* Clinical Explanation Section */}
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] p-8 border border-blue-100 dark:border-blue-800/50">
+                                <div className="flex items-center gap-2 mb-4 text-blue-600 dark:text-blue-400">
+                                    <BookOpen size={20} />
+                                    <h3 className="font-black text-sm uppercase tracking-widest">Rational & Explanation</h3>
                                 </div>
-                            ))}
+
+                                <div className="space-y-4">
+                                    <p className="text-gray-800 dark:text-gray-200 text-lg leading-relaxed font-medium">
+                                        {expandedCard.quiz_questions.explanation}
+                                    </p>
+
+                                    {expandedCard.quiz_questions.additional && (
+                                        <div className="pt-4 border-t border-blue-200/50 dark:border-blue-800/50">
+                                            <p className="text-blue-800/70 dark:text-blue-300/70 italic text-sm leading-relaxed">
+                                                <strong>Note:</strong> {expandedCard.quiz_questions.additional}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Explanation + additional */}
-                        <div className="text-sm sm:text-base md:text-lg text-gray-800 dark:text-gray-200 mt-4">
-                            <p>
-                                <strong>Explanation:</strong> {expandedCard.quiz_questions.explanation}
-                            </p>
-                            {expandedCard.quiz_questions.additional && (
-                                <p className="italic mt-1">{expandedCard.quiz_questions.additional}</p>
-                            )}
+                        {/* Footer */}
+                        <div className="p-6 bg-gray-50 dark:bg-gray-800/30 text-center">
+                            <button
+                                onClick={() => setExpandedCard(null)}
+                                className="px-8 py-3 bg-gray-200 dark:bg-gray-900 text-black dark:text-white font-bold rounded-2xl hover:scale-105 transition-transform"
+                            >
+                                Understood
+                            </button>
                         </div>
-
-                    </div>
+                    </motion.div>
                 </div>
             )}
-
-
         </>
     );
 }

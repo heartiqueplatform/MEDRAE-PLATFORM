@@ -1,9 +1,14 @@
 "use client";
+import { motion, AnimatePresence } from "framer-motion";
+
+
 import { playSound } from "@/lib/soundManager";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Brain,
+    X,
+    Compass,
     Swords,
     Heart,
     Calendar,
@@ -92,55 +97,54 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
         }
     > = {
         neutral: {
-            box: { light: "bg-slate-100", dark: "bg-slate-800" },
-            icon: { light: "text-slate-700", dark: "text-slate-200" },
+            box: { light: "bg-slate-50", dark: "bg-slate-900/40" },
+            icon: { light: "text-slate-600", dark: "text-slate-400" },
         },
         ai: {
-            box: { light: "bg-purple-200", dark: "bg-purple-800" },
-            icon: { light: "text-purple-700", dark: "text-purple-300" },
+            box: { light: "bg-purple-50", dark: "bg-purple-900/40" },
+            icon: { light: "text-purple-600", dark: "text-purple-400" },
         },
         learning: {
-            box: { light: "bg-blue-200", dark: "bg-blue-800" },
-            icon: { light: "text-blue-700", dark: "text-blue-300" },
+            box: { light: "bg-blue-50", dark: "bg-blue-900/40" },
+            icon: { light: "text-blue-600", dark: "text-blue-400" },
         },
         progress: {
-            box: { light: "bg-emerald-200", dark: "bg-emerald-800" },
-            icon: { light: "text-emerald-700", dark: "text-emerald-300" },
+            box: { light: "bg-emerald-50", dark: "bg-emerald-900/40" },
+            icon: { light: "text-emerald-600", dark: "text-emerald-400" },
         },
         practice: {
-            box: { light: "bg-rose-200", dark: "bg-rose-800" },
-            icon: { light: "text-rose-700", dark: "text-rose-300" },
+            box: { light: "bg-rose-50", dark: "bg-rose-900/40" },
+            icon: { light: "text-rose-600", dark: "text-rose-400" },
         },
         alert: {
-            box: { light: "bg-amber-200", dark: "bg-amber-800" },
-            icon: { light: "text-amber-700", dark: "text-amber-300" },
+            box: { light: "bg-amber-50", dark: "bg-amber-900/40" },
+            icon: { light: "text-amber-600", dark: "text-amber-400" },
         },
         communication: {
-            box: { light: "bg-cyan-200", dark: "bg-cyan-800" },
-            icon: { light: "text-cyan-700", dark: "text-cyan-300" },
+            box: { light: "bg-cyan-50", dark: "bg-cyan-900/40" },
+            icon: { light: "text-cyan-600", dark: "text-cyan-400" },
         },
         media: {
-            box: { light: "bg-violet-200", dark: "bg-violet-800" },
-            icon: { light: "text-violet-700", dark: "text-violet-300" },
+            box: { light: "bg-violet-50", dark: "bg-violet-900/40" },
+            icon: { light: "text-violet-600", dark: "text-violet-400" },
         },
         finance: {
-            box: { light: "bg-emerald-200", dark: "bg-emerald-800" },
-            icon: { light: "text-emerald-700", dark: "text-emerald-300" },
+            box: { light: "bg-emerald-50", dark: "bg-emerald-900/40" },
+            icon: { light: "text-emerald-600", dark: "text-emerald-400" },
         },
         system: {
-            box: { light: "bg-gray-200", dark: "bg-gray-700" },
-            icon: { light: "text-gray-700", dark: "text-gray-300" },
+            box: { light: "bg-slate-100", dark: "bg-slate-800" },
+            icon: { light: "text-slate-500", dark: "text-slate-300" },
         },
         people: {
-            box: { light: "bg-indigo-200", dark: "bg-indigo-800" },
-            icon: { light: "text-indigo-700", dark: "text-indigo-300" },
+            box: { light: "bg-indigo-50", dark: "bg-indigo-900/40" },
+            icon: { light: "text-indigo-600", dark: "text-indigo-400" },
         },
         content: {
-            box: { light: "bg-indigo-200", dark: "bg-indigo-800" },
-            icon: { light: "text-indigo-700", dark: "text-indigo-300" },
+            box: { light: "bg-indigo-50", dark: "bg-indigo-900/40" },
+            icon: { light: "text-indigo-600", dark: "text-indigo-400" },
         },
     };
-
     useEffect(() => {
         if (!user) return;
 
@@ -326,7 +330,15 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
                 { title: "AI Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai" },
                 { title: "Forum", url: "/forum", icon: MessageSquare, iconTone: "communication" },
                 { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, badge: mistakeCount > 0 ? formatNumber(mistakeCount) : undefined, iconTone: "alert" },
+                {
+                    title: "Survival Hub",
+                    url: "/survival-hub",
+                    icon: Compass,
+                    iconTone: "learning",
+                    badge: "New"
+                },
             ],
+
         },
         {
             label: "Learning",
@@ -415,89 +427,126 @@ export function MobileDrawer({ userRole, isOpen, setIsOpen }: MobileDrawerProps)
             ],
         },
     ];
-
-
     return (
-        <>
-            {isOpen && <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setIsOpen(false)} />}
-            <div
-                ref={drawerRef}
-                className={`fixed bottom-0 left-0 w-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 shadow-xl transition-transform duration-300 rounded-t-xl z-40 md:hidden ${isOpen ? "translate-y-0" : "translate-y-full"}`}
-                style={{ maxHeight: "75vh", bottom: "4rem" }}
-            >
-                {/* Header */}
-                <div className="flex items-center gap-3 p-4 border-b border-white/20 bg-transparent z-10">
-                    <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
-                        <img
-                            src="/pwa-192x192.jpeg"
-                            alt="Logo"
-                            className="h-full w-full object-cover"
-                        />
-                    </div>
-                    <div>
-                        <h2 className="font-bold text-lg text-white">
-                            MEDRAE
-                        </h2>
-                        <p className="text-xs text-white/70">
-                            Kenya Nursing Network Platform (MKN)
-                        </p>
-                    </div>
-                </div>
-                {/* Scrollable content */}
-                <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar" style={{ maxHeight: "calc(70vh - 80px)" }}>
-                    {sections.map(section => section.items.length > 0 && (
-                        <div key={section.label}>
-                            <h3 className="text-white/80 text-xs font-semibold mb-2 uppercase">{section.label}</h3>
-                            <div className="flex flex-wrap justify-start gap-x-2 gap-y-2">
-                                {section.items.map(item => (
-                                    <div key={item.title} className="relative">
-                                        <button
-                                            className="relative flex flex-col items-center text-xs text-white w-16 h-18"
-                                            onClick={() => {
-                                                tapFeedback();
-                                                navigate(item.url);
-                                                setIsOpen(false);
-                                            }}
-                                        >
-                                            {/* Icon with tone */}
-                                            <div
-                                                className={`
-            flex items-center justify-center p-2 rounded-md
-            ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
-            dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
-        `}
-                                            >
-                                                <item.icon
-                                                    className={`
-                h-6 w-6
-                ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
-                dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
-            `}
-                                                />
-                                            </div>
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* 1. BLURRED BACKDROP */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsOpen(false)}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[50] md:hidden"
+                    />
 
-                                            {/* Badge */}
-                                            {item.badge && (
-                                                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full -translate-x-1/2 -translate-y-3/4">
-                                                    {item.badge}
-                                                </span>
-                                            )}
+                    {/* 2. THE BOTTOM SHEET */}
+                    <motion.div
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="fixed bottom-0 left-0 right-0 z-[120] bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-gray-200 dark:border-gray-800 rounded-t-[2.5rem] md:hidden overflow-hidden"
+                        style={{ maxHeight: "85vh" }}
+                    >
+                        {/* Drag Handle Indicator */}
+                        <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mt-4 mb-2" />
 
-                                            {/* Small red dot */}
-                                            {item.hasDot && (
-                                                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full -translate-x-1/2 -translate-y-3/4" />
-                                            )}
+                        {/* DRAWER HEADER */}
+                        <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 dark:border-gray-900">
+                            <div className="h-12 w-12 rounded-2xl overflow-hidden shadow-lg ring-2 ring-blue-500/10">
+                                <img
+                                    src="/pwa-192x192.jpeg"
+                                    alt="Logo"
+                                    className="h-full w-full object-cover"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <h2 className="font-bold text-lg text-gray-900 dark:text-white leading-none">
+                                    MEDRAE <span className="text-blue-600">HUB</span>
+                                </h2>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                    Nursing Excellence Network
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
-                                            {/* Title */}
-                                            <span className="mt-1 text-white/90">{item.title}</span>
-                                        </button>
+                        {/* SCROLLABLE CONTENT */}
+                        <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar max-h-[calc(85vh-100px)] pb-12">
+                            {sections.map((section: any) => section.items.length > 0 && (
+                                <div key={section.label} className="space-y-4">
+                                    {/* Section Label */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-1 w-4 bg-blue-500 rounded-full" />
+                                        <h3 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
+                                            {section.label}
+                                        </h3>
                                     </div>
-                                ))}
+
+                                    {/* Items Grid (4 columns) */}
+                                    <div className="grid grid-cols-4 gap-x-2 gap-y-6">
+                                        {section.items.map((item: any) => (
+                                            <button
+                                                key={item.title}
+                                                className="group flex flex-col items-center gap-2 transition-all active:scale-90"
+                                                onClick={() => {
+                                                    tapFeedback();
+                                                    navigate(item.url);
+                                                    setIsOpen(false);
+                                                }}
+                                            >
+                                                {/* Icon Wrapper */}
+                                                <div className="relative">
+                                                    <div className={`
+                                                        w-14 h-14 flex items-center justify-center rounded-2xl transition-all shadow-sm
+                                                        ${ICON_TONE_STYLES[item.iconTone || "neutral"].box.light}
+                                                        dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].box.dark}
+                                                        group-hover:scale-110
+                                                    `}>
+                                                        <item.icon className={`
+                                                            h-6 w-6
+                                                            ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.light}
+                                                            dark:${ICON_TONE_STYLES[item.iconTone || "neutral"].icon.dark}
+                                                        `} />
+                                                    </div>
+
+                                                    {/* Badge / Notification Dot */}
+                                                    {item.badge && (
+                                                        <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] px-1.5 items-center justify-center bg-red-500 text-[10px] font-bold text-white rounded-full border-2 border-white dark:border-gray-950 shadow-sm">
+                                                            {item.badge}
+                                                        </span>
+                                                    )}
+                                                    {item.hasDot && (
+                                                        <span className="absolute top-0 right-0 h-3 w-3 bg-blue-500 rounded-full border-2 border-white dark:border-gray-950" />
+                                                    )}
+                                                </div>
+
+                                                {/* Title */}
+                                                <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400 text-center leading-tight">
+                                                    {item.title}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Drawer Footer Info */}
+                            <div className="pt-4 text-center">
+                                <p className="text-[9px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">
+                                    Version 2026.04 • Medrae Learning System
+                                </p>
                             </div>
                         </div>
-                    ))}
-                </div>
-            </div>
-        </>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
     );
 }

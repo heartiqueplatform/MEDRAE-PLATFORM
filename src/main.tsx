@@ -8,7 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthProvider";
 
 // App version for cache control
-const APP_VERSION = "140";
+const APP_VERSION = "1.0.0"; // Increment this on each release
 const storedVersion = localStorage.getItem("appVersion");
 
 if (storedVersion !== APP_VERSION) {
@@ -20,6 +20,7 @@ if (storedVersion !== APP_VERSION) {
 if (typeof window !== "undefined") {
     (window as any).__APP_OFFLINE__ = !navigator.onLine;
 }
+
 
 const root = createRoot(document.getElementById("root")!);
 

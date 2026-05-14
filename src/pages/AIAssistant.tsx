@@ -302,112 +302,128 @@ User's message: ${inputMessage}
     return <GlobalLoader message="Loading chat history..." />;
   }
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col w-full max-w-3xl mx-auto  ">
-
+    <div className="h-[calc(100vh-4rem)] flex flex-col w-full max-w-3xl mx-auto bg-background border border-0 shadow-sm rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="w-full flex items-center gap-3 p-4 bg-background border-b shadow-sm">
-        <div className="h-10 w-10 bg-gradient-medical rounded-full flex items-center justify-center">
-          {/* Icon */}
+      <div className="w-full flex items-center gap-4 p-4 bg-card border-b">
+        <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
           <img
-            src="/pwa-192x192.jpeg"   // <-- replace with your icon file name in public/
+            src="/pwa-192x192.jpeg" // <-- replace with your icon file name in public/
             alt="Accent Icon"
-            className="w-10 h-10 object-contain opacity-80"
+            className="w-10 h-10 object-contain mix-blend-luminosity brightness-110"
           />
-
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">Medrae AI Study Assistant</h1>
-          <p className="text-muted-foreground">Your personal nursing education companion</p>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">Medrae AI Study Assistant</h1>
+          <p className="text-sm text-muted-foreground font-medium">Your personal nursing education companion</p>
         </div>
-        <Badge className="ml-auto">Powered by AI</Badge>
+        <Badge
+          variant="secondary"
+          className="ml-auto bg-primary/10 text-primary hover:bg-primary/20 border-transparent text-xs font-semibold px-2.5 py-0.5"
+        >
+          Powered by AI
+        </Badge>
       </div>
-      {/* Layout: Sidebar + Chat */}
-      <div className="flex flex-1 gap-4 overflow-hidden">
-        {/* Chat */}
-        <Card className="flex-1 flex flex-col h-full w-full overflow-hidden relative rounded-none">
-          {/* Quick Topics Dropdown (inside chat card, below heading) */}
-          <div
-            className={`px-4 py-2 border-b bg-background shadow-sm mb-2 flex justify-start relative`}
-          >
-            <div
-              className={`absolute inset-0 rounded-md border-2 border-blue-400 pointer-events-none
-      ${isLoading ? 'animate-pulse-outline' : 'opacity-0'}`}
-            ></div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg transform transition-transform duration-300 hover:scale-105 w-10 h-10 p-0 relative">
-                  < Sparkles className="w-4 h-4 absolute inset-0 m-auto transition-opacity duration-300 hover:opacity-0" />
-                  <ShoppingBag className="w-4 h-4 absolute inset-0 m-auto opacity-0 transition-opacity duration-300 hover:opacity-100" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-60">
-                {quickQuestions.map((q, i) => (
-                  <DropdownMenuItem key={i} onClick={() => handleQuickQuestion(q)}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {i % 4 === 0 && <Heart className="h-4 w-4 text-red-500" />}
-                      {i % 4 === 1 && <Pill className="h-4 w-4 text-blue-500" />}
-                      {i % 4 === 2 && <BookOpen className="h-4 w-4 text-green-500" />}
-                      {i % 4 === 3 && <Brain className="h-4 w-4 text-purple-500" />}
-                      <span className="text-sm">{q}</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Delete button floating at top-right */}
-            <div className="flex w-full">
-              <Button
-                onClick={handleDeleteChat}
-                variant="ghost"
-                className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed ml-auto"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
 
-          </div>
+      {/* Layout: Sidebar + Chat */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Toolbar: Quick Topics Dropdown & Actions */}
+        <div className="px-4 py-2.5 border-b bg-muted/20 flex items-center justify-between gap-2 relative">
           <div
-            ref={scrollRef}
-            className="flex-1 overflow-y-auto space-y-3 mb-2 p-2 custom-scrollbar relative"
+            className={`absolute inset-0 border-2 border-blue-400/30 pointer-events-none transition-opacity duration-300 ${isLoading ? 'animate-pulse opacity-100' : 'opacity-0'}`}
+          ></div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="group relative flex items-center gap-2 bg-background hover:bg-accent border-border/60 shadow-sm transition-all"
+              >
+                <div className="relative w-4 h-4">
+                  <Sparkles className="w-4 h-4 absolute inset-0 transition-all duration-300 scale-100 group-hover:scale-0 opacity-100 group-hover:opacity-0 text-amber-500" />
+                  <ShoppingBag className="w-4 h-4 absolute inset-0 transition-all duration-300 scale-0 group-hover:scale-100 opacity-0 group-hover:opacity-100 text-blue-500" />
+                </div>
+                <span className="text-xs font-semibold hidden sm:inline">Quick Topics</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-60" align="start">
+              {quickQuestions.map((q, i) => (
+                <DropdownMenuItem key={i} onClick={() => handleQuickQuestion(q)} className="cursor-pointer py-2.5">
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="flex-shrink-0">
+                      {i % 4 === 0 && <Heart className="h-4 w-4 text-rose-500" />}
+                      {i % 4 === 1 && <Pill className="h-4 w-4 text-blue-500" />}
+                      {i % 4 === 2 && <BookOpen className="h-4 w-4 text-emerald-500" />}
+                      {i % 4 === 3 && <Brain className="h-4 w-4 text-purple-500" />}
+                    </div>
+                    <span className="text-sm truncate text-foreground/90">{q}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Delete button floating at top-right */}
+          <Button
+            onClick={handleDeleteChat}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
+            title="Delete Chat"
           >
-            {isHistoryLoading ? (
-              <div className="absolute inset-0 flex justify-center items-center">
-                <TypingBubbles isDarkTheme={isDarkTheme} />
-              </div>
-            ) : (
-              messages.map((msg, index) => (
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Messages */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto space-y-6 p-4 custom-scrollbar relative bg-card/50"
+        >
+          {isHistoryLoading ? (
+            <div className="absolute inset-0 flex flex-col justify-center items-center text-muted-foreground gap-3">
+              <TypingBubbles isDarkTheme={isDarkTheme} />
+              <p className="text-sm font-medium animate-pulse">Loading chat history...</p>
+            </div>
+          ) : (
+            messages.map((msg, index) => {
+              const isUser = msg.sender === "user";
+              return (
                 <div
                   key={index}
-                  className={`flex items-end gap-2 ${msg.sender === "user"
-                    ? "justify-end"
-                    : "justify-start"
-                    }`}
-
+                  className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
                 >
-                  {/* Message Bubble */}
-                  <div className="flex flex-col w-full">
+                  {/* Message Bubble Container */}
+                  <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] gap-1.5 ${isUser ? "items-end" : "items-start"}`}>
+
                     <div
-
-                      className={`break-words ${msg.sender === "user"
-                        ? `${userBubbleClass} ml-auto px-4 py-2 rounded-lg inline-block max-w-full lg:max-w-[70%]`
-                        : `${aiBubbleClass} px-4 py-2 rounded-lg inline-block max-w-full lg:max-w-[70%]`
-
+                      className={`px-4 py-2.5 shadow-md transition-all duration-200 ${isUser
+                        ? "bg-primary bg-gradient-to-br from-primary via-primary to-primary/90 text-primary-foreground rounded-2xl rounded-tr-none shadow-primary/20"
+                        : "bg-muted/80 backdrop-blur-sm border border-border/50 text-foreground rounded-2xl rounded-tl-none"
                         }`}
                     >
-
                       {msg.content === "<TypingBubbles />" ? (
                         <TypingBubbles isDarkTheme={isDarkTheme} />
                       ) : (
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        <div
+                          className={`prose prose-sm break-words max-w-none ${isUser
+                            ? 'prose-headings:text-primary-foreground text-primary-foreground prose-strong:text-primary-foreground prose-a:text-primary-foreground/80'
+                            : 'dark:prose-invert text-foreground'
+                            }`}
+                        >
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
                       )}
                     </div>
+
+                    {/* Timestamp */}
                     <span
-                      className={`text-xs text-gray-500 mt-1
-      ${msg.sender === "user" ? "text-right" : "text-left"}`}
+                      className={`text-[10px] font-bold uppercase tracking-wider px-1 ${isUser
+                        ? "text-primary/70" // Ties the timestamp color to the theme's primary color
+                        : "text-muted-foreground/70"
+                        }`}
                     >
                       {new Date(msg.timestamp).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
                         hour: "numeric",
                         minute: "2-digit",
                         hour12: true,
@@ -415,28 +431,32 @@ User's message: ${inputMessage}
                     </span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-          {/* Input */}
-          <div className="flex items-center gap-2 p-4 border-t bg-background w-full">
+              );
+            })
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="p-4 bg-card border-t">
+          <div className="relative flex items-center gap-2 max-w-4xl mx-auto w-full">
             <Input
               placeholder="Ask me anything about nursing..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              className="flex-1 border-blue-300 focus:ring-blue-500 h-10"
+              onKeyDown={(e) => e.key === "Enter" && !isLoading && inputMessage.trim() && handleSendMessage()}
+              className="flex-1 pr-12 h-11 bg-background border-border/60 focus-visible:ring-primary focus-visible:ring-offset-0 rounded-xl"
             />
             <Button
               onClick={handleSendMessage}
               disabled={isLoading || !inputMessage.trim()}
-              variant="ghost"
-              className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              variant="default"
+              size="icon"
+              className="absolute right-1.5 top-1.5 h-8 w-8 rounded-lg transition-transform active:scale-95 disabled:opacity-40 bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Send className="h-4 w-4" />
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

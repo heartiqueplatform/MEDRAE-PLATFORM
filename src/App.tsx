@@ -40,6 +40,13 @@ import { StudyProgress } from "./pages/Progress";
 import { Resources } from "./pages/Resources";
 import { MedTube } from "./pages/MedTube";
 import StudentAnalyticsPage from "@/pages/analytics/StudentAnalyticsPage";
+
+// Import your new pages
+import SurvivalHubDashboard from './pages/survival-hub/index';
+
+import HousingPage from './pages/survival-hub/Housing';
+import HospitalsPage from './pages/survival-hub/Hospitals';
+import PlacementsPage from './pages/survival-hub/Placements';
 // STUDENT EXAM FLOW
 import RouteScrollManager from "@/components/RouteScrollManager";
 import ExamCandidateInfo from "./pages/exam/CandidateInfo";
@@ -60,7 +67,7 @@ import { Subscription } from "./pages/Subscription";
 import { Notifications } from "./pages/Notifications";
 import { Profile } from "./pages/Profile";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { initSound, loadSound } from "@/lib/soundManager";
 
 import SplashScreen from "./SplashScreen";
@@ -79,6 +86,13 @@ import StudentDashboard from "./pages/dashboard/student";
 import TutorDashboard from "./pages/dashboard/tutor";
 import StaffDashboard from "./pages/dashboard/staff";
 import { toast } from "sonner"; // make sure Sonner is imported
+import AddHousingPage from "./pages/survival-hub/AddHousing";
+import ReviewsPage from "./pages/survival-hub/ReviewsPage";
+import ExamCenters from "./pages/survival-hub/ExamCenters";
+import AddPlacementPage from "./pages/survival-hub/AddPlacement";
+import PlacementDetailPage from "./pages/survival-hub/PlacementDetail";
+import ExamBuddiesPage from "./pages/survival-hub/ExamBuddiesPage";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -143,7 +157,7 @@ const BottomBarWrapper = () => {
 const AppContent = () => {
   const { user } = useAuth();
   const [forceLogout, setForceLogout] = useState(false);
-
+  const realtimeChannelRef = useRef<any>(null); // updated
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
@@ -287,6 +301,10 @@ const AppContent = () => {
         .eq("user_id", user.id)
         .eq("resolved", false);
       if (!error) updateBadge(count || 0);
+      if (realtimeChannelRef.current) {
+        await supabase.removeChannel(realtimeChannelRef.current);
+      }
+
       subscription = supabase
         .channel(`user_mistakes_real_time_${user.id}`)
         .on(
@@ -302,12 +320,16 @@ const AppContent = () => {
           }
         )
         .subscribe();
+
+      realtimeChannelRef.current = subscription; // updated
     };
 
     fetchCount();
 
     return () => {
-      if (subscription) supabase.removeChannel(subscription);
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+      }
     };
   }, [user]);
 
@@ -345,94 +367,106 @@ const AppContent = () => {
       )}
 
       <SessionContextProvider supabaseClient={supabase}>
-        <AuthProvider>
-          <QueryClientProvider client={queryClient}>
-            <GlobalRealtimeListener />
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <SidebarProvider>
-                <MusicPlayerProvider>
-                  <AIWrapper>
-                    <FirstTimeGuide />
-                    <RouteScrollManager />
-                    <Routes>
-                      {/* ------------------- Public Routes ------------------- */}
-                      <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
-                      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-                      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-                      <Route path="/redirect" element={<RedirectToRoleDashboard />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
 
-                      {/* ------------------- Dashboard Redirect ------------------- */}
-                      <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
+        <QueryClientProvider client={queryClient}>
+          <GlobalRealtimeListener />
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <SidebarProvider>
+              <MusicPlayerProvider>
+                <AIWrapper>
+                  <FirstTimeGuide />
+                  <RouteScrollManager />
+                  <Routes>
+                    {/* ------------------- Public Routes ------------------- */}
+                    <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                    <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                    <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+                    <Route path="/redirect" element={<RedirectToRoleDashboard />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
-                      {/* ------------------- Persistent Dashboard Layout ------------------- */}
-                      <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-                        <Route path="/dashboard/student" element={<StudentDashboard />} />
-                        <Route path="/dashboard/tutor" element={<TutorDashboard />} />
-                        <Route path="/dashboard/staff" element={<StaffDashboard />} />
+                    {/* ------------------- Dashboard Redirect ------------------- */}
+                    <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
 
-                        <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
-                        {user && profile && (
-                          <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
-                        )}
-                        <Route path="/market/my-listings" element={<MyListings />} />
-                        <Route path="/market/:id" element={<ListingDetail />} />
+                    {/* ------------------- Persistent Dashboard Layout ------------------- */}
+                    <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+                      <Route path="/dashboard/student" element={<StudentDashboard />} />
+                      <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+                      <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
-                        {/* ------------------- STUDENT EXAM FLOW ------------------- */}
-                        <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
-                        <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
-                        <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
-                        <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
-                        <Route path="/exam/results" element={<ResultsListPage />} />
-                        <Route path="/challenge" element={<ChallengePage />} />
-                        {/* ------------------- TUTOR EXAM CONTROL ------------------- */}
-                        <Route path="/tutor/exams" element={<TutorExamList />} />
-                        <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
-                        <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
-                        <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
-                        <Route path="/analytics" element={<StudentAnalyticsPage />} />
+                      <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
+                      {user && profile && (
+                        <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
+                      )}
+                      <Route path="/market/my-listings" element={<MyListings />} />
+                      <Route path="/market/:id" element={<ListingDetail />} />
 
-                        <Route path="/my-mistakes" element={<MyMistakes />} />
-                        <Route path="/ai-assistant" element={<AIAssistant />} />
-                        <Route path="/calendar" element={<Calendar />} />
-                        <Route path="/progress" element={<StudyProgress />} />
-                        <Route path="/resources" element={<Resources />} />
-                        <Route path="/medtube" element={<MedTube />} />
-                        <Route path="/announcements" element={<Announcements />} />
-                        <Route path="/feedback" element={<Feedback />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/subscription" element={<Subscription />} />
-                        <Route path="/notifications" element={<Notifications />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/quiz" element={<QuizPage />} />
-                        <Route path="/assessment-notes" element={<AssessmentNotes />} />
-                        <Route path="/forum" element={<Forum />} />
-                        <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
-                        <Route path="/feed" element={<Feed />} />
-                        <Route path="/simulation/candidate" element={<CandidateInfo />} />
-                        <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
-                      </Route>
+                      {/* ------------------- STUDENT EXAM FLOW ------------------- */}
+                      <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
+                      <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
+                      <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
+                      <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
+                      <Route path="/exam/results" element={<ResultsListPage />} />
+                      <Route path="/challenge" element={<ChallengePage />} />
+                      {/* ------------------- TUTOR EXAM CONTROL ------------------- */}
+                      <Route path="/tutor/exams" element={<TutorExamList />} />
+                      <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
+                      <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
+                      <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
+                      <Route path="/analytics" element={<StudentAnalyticsPage />} />
 
-                      {/* ------------------- Full-screen / Independent Pages ------------------- */}
-                      <Route path="/terms" element={<TermsPage />} />
-                      <Route path="/simulation/:paper_id" element={<SimulationPage />} />
-                      <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                      <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
-                      {/* ------------------- FULLSCREEN EXAM PAGE ------------------- */}
+                      <Route path="/my-mistakes" element={<MyMistakes />} />
+                      <Route path="/ai-assistant" element={<AIAssistant />} />
+                      <Route path="/calendar" element={<Calendar />} />
+                      <Route path="/progress" element={<StudyProgress />} />
+                      <Route path="/resources" element={<Resources />} />
+                      <Route path="/medtube" element={<MedTube />} />
+                      <Route path="/announcements" element={<Announcements />} />
+                      <Route path="/feedback" element={<Feedback />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/subscription" element={<Subscription />} />
+                      <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/quiz" element={<QuizPage />} />
+                      <Route path="/assessment-notes" element={<AssessmentNotes />} />
+                      <Route path="/forum" element={<Forum />} />
+                      <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
+                      <Route path="/feed" element={<Feed />} />
+                      <Route path="/simulation/candidate" element={<CandidateInfo />} />
+                      <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
+                      {/* Survival Hub Module */}
+                      <Route path="/survival-hub" element={<SurvivalHubDashboard />} />
+                      <Route path="/survival-hub/exam-centers" element={<ExamCenters />} />
+                      <Route path="/survival-hub/housing" element={<HousingPage />} />
+                      <Route path="/survival-hub/hospitals" element={<HospitalsPage />} />
+                      <Route path="/survival-hub/placements" element={<PlacementsPage />} />
+                      <Route path="/survival-hub/add-housing" element={<AddHousingPage />} />
+                      <Route path="/survival-hub/reviews/:targetId" element={<ReviewsPage />} />
+                      <Route path="/survival-hub/add-placement" element={<AddPlacementPage />} />
+                      <Route path="/survival-hub/placements/:id" element={<PlacementDetailPage />} />
+                      <Route path="/survival-hub/buddies" element={<ExamBuddiesPage />} />
 
-                      {/* ------------------- Catch-all ------------------- */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
+                    </Route>
 
-                    <BottomBarWrapper />
-                  </AIWrapper>
-                </MusicPlayerProvider>
-              </SidebarProvider>
-            </TooltipProvider>
-          </QueryClientProvider>
-        </AuthProvider>
+                    {/* ------------------- Full-screen / Independent Pages ------------------- */}
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/simulation/:paper_id" element={<SimulationPage />} />
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
+                    {/* ------------------- FULLSCREEN EXAM PAGE ------------------- */}
+
+                    {/* ------------------- Catch-all ------------------- */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+
+                  <BottomBarWrapper />
+                </AIWrapper>
+              </MusicPlayerProvider>
+            </SidebarProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+
       </SessionContextProvider>
     </>
 

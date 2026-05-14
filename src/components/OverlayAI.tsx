@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Send, User, Stethoscope, Brain, X } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/lib/supabaseClient";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Brain, Send, Sparkles, User, Stethoscope, Copy, RotateCcw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface OverlayAIProps {
   isOpen: boolean;
@@ -284,111 +286,170 @@ User's message: ${inputMessage}
 
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50"
-      onClick={handleClose} // ✅ clicking the overlay triggers close
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={handleClose}
     >
-      <Card className="w-full sm:w-[95%] max-w-2xl h-[75vh] flex flex-col relative"
-        onClick={(e) => e.stopPropagation()} // ✅ prevent clicks inside card from closing
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl h-[85vh] flex flex-col bg-white dark:bg-gray-950 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-800"
       >
-        <button
-          onClick={handleClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-900 dark:hover:text-white"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="flex items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-600">
-          <Brain className="h-5 w-5 text-green-600" />
-          <h2 className="text-lg font-bold text-black dark:text-white">Medrae AI Assistant</h2>
+        {/* --- HEADER --- */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <Brain className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-white leading-none">Medrae AI</h2>
+              <span className="text-[10px] text-green-500 font-medium flex items-center gap-1 uppercase tracking-wider">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                Assistant Active
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
+        {/* --- CHAT BODY --- */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto space-y-3 mb-2 p-2
-     scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+          className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth custom-scrollbar"
         >
           {loadingHistory ? (
-            <div className="flex justify-center items-center w-full h-full">
-              <TypingBubbles isDarkTheme={isDarkTheme} />
+            <div className="flex flex-col justify-center items-center h-full space-y-4">
+              <div className="relative">
+                <div className="h-12 w-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin" />
+              </div>
+              <p className="text-sm text-muted-foreground animate-pulse">Syncing clinical records...</p>
             </div>
           ) : !hasRealMessages ? (
-            /* 🧠 EMPTY CHAT STATE */
-            <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground px-4">
-              <img
-                src="/icon-512.jpg"
-                alt="Chat Icon"
-                className="w-12 h-12 mb-3 object-contain"
-              />
+            /* --- EMPTY STATE --- */
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="h-full flex flex-col items-center justify-center text-center px-4"
+            >
+              <div className="w-20 h-20 bg-gradient-to-tr from-green-500 to-emerald-400 rounded-3xl flex items-center justify-center shadow-lg mb-6 rotate-3">
+                <Sparkles className="w-10 h-10 text-white" />
+              </div>
 
-              <h2 className="text-lg font-semibold mb-1">
-                Chat with your Medrae AI
-              </h2>
-              <p className="text-sm max-w-sm">
-                Ask anything about nursing concepts, medications, exams,
-                or clinical practice. I’m ready when you are
+              <h2 className="text-2xl font-bold mb-2 dark:text-white">How can I help today?</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-8">
+                Ask about nursing concepts, drug dosages, or exam prep. I'm trained on clinical guidelines.
               </p>
-            </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+                {["Explain Heart Failure", "Dosage Calculation", "NCLEX Study Tips", "Pharmacology help"].map((tip) => (
+                  <button
+                    key={tip}
+                    onClick={() => setInputMessage(tip)}
+                    className="text-xs p-3 text-left border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all text-gray-600 dark:text-gray-300 hover:border-green-300"
+                  >
+                    {tip}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
           ) : (
-            messages.map((msg) => (
-
-              <div
-                key={msg.id}
-                className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`
-    break-words
-    ${msg.sender === "user"
-                      ? "max-w-[80%] px-4 py-2 rounded-lg " + userBubbleClass
-                      : "w-full sm:max-w-[80%] px-4 py-2 rounded-lg " + aiBubbleClass
-
-                    }
-    ${msg.pinned ? "ring-2 ring-yellow-400 dark:ring-yellow-300" : ""}
-  `}
+            <div className="space-y-6">
+              {messages.map((msg, idx) => (
+                <motion.div
+                  key={msg.id || idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {msg.content === "<TypingBubbles />" ? (
-                    <TypingBubbles isDarkTheme={isDarkTheme} />
-                  ) : (
-                    <div className="prose prose-sm max-w-none text-inherit [&_a]:text-inherit [&_a]:underline">
-                      <ReactMarkdown>
-                        {msg.content}
-                      </ReactMarkdown>
+                  <div className={`flex gap-3 max-w-[85%] ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                    {/* Avatar icons */}
+                    <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${msg.sender === "user" ? "bg-gray-800" : "bg-green-600"
+                      }`}>
+                      {msg.sender === "user" ? <User className="w-4 h-4 text-white" /> : <Brain className="w-4 h-4 text-white" />}
                     </div>
 
-                  )}
-                </div>
+                    <div className="space-y-1">
+                      <div
+                        className={`px-4 py-3 rounded-2xl shadow-sm ${msg.sender === "user"
+                          ? "bg-green-600 text-white rounded-tr-none"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700"
+                          } ${msg.pinned ? "ring-2 ring-yellow-400" : ""}`}
+                      >
+                        {/* ✅ FIX: DETECT TYPING BUBBLES STRING */}
+                        {msg.content === "<TypingBubbles />" ? (
+                          <TypingBubbles isDarkTheme={isDarkTheme} />
+                        ) : (
+                          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
 
-              </div>
-            ))
-
+                      {/* Message Actions (Only for AI and only if not typing) */}
+                      {msg.sender !== "user" && msg.content !== "<TypingBubbles />" && (
+                        <div className="flex gap-2 px-1">
+                          <button
+                            onClick={() => navigator.clipboard.writeText(msg.content)}
+                            className="p-1 text-gray-400 hover:text-green-500 transition-colors"
+                            title="Copy to clipboard"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button className="p-1 text-gray-400 hover:text-green-500 transition-colors">
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           )}
         </div>
 
+        {/* --- INPUT AREA --- */}
+        <div className="p-4 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800">
+          <div className="relative flex items-end gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-green-500/20 focus-within:border-green-500 transition-all shadow-inner">
+            <textarea
+              placeholder="Ask a nursing question..."
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+              rows={1}
+              className="flex-1 max-h-32 p-2 bg-transparent border-none focus:outline-none focus:ring-0 text-sm dark:text-white resize-none custom-scrollbar"
+              onInput={(e) => {
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              }}
+            />
 
-        <div className="flex gap-2 p-2 border-t border-gray-300 dark:border-gray-600">
-          <textarea
-            placeholder="Type your question..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-            className="flex-1 p-1 sm:p-2 rounded resize-y break-words overflow-y-auto
-             border border-gray-300 bg-white text-black placeholder-gray-700
-             dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400
-             focus:outline-none focus:ring-2 focus:ring-green-500
-             custom-scrollbar"
-            rows={2}  // smaller height on mobile
-          />
-
-
-          <Button
-            onClick={handleSendMessage}
-            disabled={isLoading || !inputMessage.trim()}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+            <Button
+              onClick={handleSendMessage}
+              disabled={isLoading || !inputMessage.trim()}
+              className="h-10 w-10 rounded-xl bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20 shrink-0 flex items-center justify-center transition-transform active:scale-95"
+            >
+              {isLoading ? (
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          <p className="text-[10px] text-center text-gray-400 mt-2">
+            Medrae AI can make mistakes. Verify clinical decisions with a professional.
+          </p>
         </div>
-      </Card>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

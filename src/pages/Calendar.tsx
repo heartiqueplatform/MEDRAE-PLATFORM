@@ -1,4 +1,10 @@
 "use client";
+import { Calendar as CalendarIcon, Tag, AlertCircle, AlignLeft, Type, CalendarDays, Clock, MapPin, Bell, Share2, Trash2, Info, MoreHorizontal, Activity, ChevronRight, CheckCircle2 } from "lucide-react";
+
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -15,14 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
-import { CalendarDays, Clock, MapPin, Bell, Share2, Info, Trash2 } from "lucide-react";
+
 
 export function Calendar() {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -229,155 +229,266 @@ export function Calendar() {
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
       <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">
-            Assessment Calendar
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Track your upcoming assessments and important dates
-          </p>
-        </div>
-        <div className="grid gap-2 grid-cols-1 w-full">
-          {/* Calendar */}
-          <Card className="w-full border-0 overflow-hidden">
 
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5" />
-                Calendar
-              </CardTitle>
-              <CardDescription>Click a date to add a new assessment</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CalendarComponent
-                mode="single"
-                selected={date}
-                onSelect={(d) => {
-                  setDate(d);
-                  handleDateSelect(d);
-                }}
-                className="rounded-md border"
-                modifiers={{
-                  eventDay: (d) => eventDates.has(d.toDateString()),
-                }}
-                modifiersClassNames={{
-                  eventDay: "rounded-full ring-2 ring-offset-1",
-                }}
-                modifiersStyles={{
-                  eventDay: (date) => {
-                    const colorClass = getDayColor(date);
-                    return { className: colorClass };
-                  },
-                }}
-              />
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          {/* Header Section with Nurse/Medical Background */}
+          <div className="relative overflow-hidden rounded-2xl border-0 bg-background p-8 shadow-sm">
+            {/* Subtle Medical Background Image */}
+            <div
+              className="absolute inset-0 z-0 opacity-10 dark:opacity-20 pointer-events-none"
+              style={{
+                backgroundImage: `url('https://images.unsplash.com/photo-1584982324572-755d14c59ff0?auto=format&fit=crop&q=80&w=1000')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+            {/* Gradient Overlay for Text Readability */}
+            <div className="absolute inset-0 z-10 bg-gradient-to-r from-background via-background/90 to-transparent" />
 
-          {/* Upcoming Assessments */}
+            <div className="relative z-20 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-0 px-3 py-1">
+                    <Activity className="h-3 w-3 mr-1" />
+                    Medical Portal
+                  </Badge>
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
+                  Assessment Calendar
+                </h1>
+                <p className="text-muted-foreground mt-2 max-w-md">
+                  Manage your clinical rotations, exams, and practical assessments in one unified schedule.
+                </p>
+              </div>
 
-          <Card className="w-full border-0 overflow-hidden">
+              {/* Quick Stats (The "Smart" part) */}
+              <div className="flex gap-2">
+                <div className="bg-background/50 backdrop-blur-sm border rounded-xl p-4 flex items-center gap-4 shadow-sm">
+                  <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600">
+                    <CalendarDays className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Tasks</p>
+                    <p className="text-2xl font-bold">{events.length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <CardHeader>
-              <CardTitle>Upcoming Assessments</CardTitle>
-              <CardDescription>
-                {events.length > 0
-                  ? `Next ${events.length} assessments scheduled`
-                  : "No upcoming assessments"}
-              </CardDescription>
+          <div className="grid gap-2 md:grid-cols-12">
+            {/* Calendar Card - Spans 7 columns */}
+            <Card className="md:col-span-7 border-muted/40 shadow-sm overflow-hidden">
+              <CardHeader className="border-b bg-muted/20 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CalendarDays className="h-5 w-5 text-primary" />
+                      Schedule Overview
+                    </CardTitle>
+                    <CardDescription>Select a date to manage your workload</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 pt-6">
+                <CalendarComponent
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => {
+                    setDate(d);
+                    handleDateSelect(d);
+                  }}
+                  className="p-0 flex justify-center"
+                  // Professional "Smart" Modifiers
+                  modifiers={{
+                    eventDay: (d) => eventDates.has(d.toDateString()),
+                  }}
+                  modifiersClassNames={{
+                    eventDay: `relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-primary after:rounded-full font-bold text-primary`,
+                  }}
+                  classNames={{
+                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                    day_today: "bg-accent text-accent-foreground font-extrabold ring-2 ring-primary/20",
+                  }}
+                />
+              </CardContent>
+            </Card>
 
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {events.map((event) => (
-                <div key={event.id} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="space-y-1">
-                      <h3 className="font-medium">{event.title}</h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {new Date(event.start_time).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+            {/* Today's Focus Card - Spans 5 columns (The "Smart" sidebar) */}
+            <Card className="md:col-span-5 border-muted/40 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Focus for Today
+                </CardTitle>
+                <CardDescription>{new Date().toDateString()}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {events.filter(e => new Date(e.start_time).toDateString() === new Date().toDateString()).length > 0 ? (
+                  events
+                    .filter(e => new Date(e.start_time).toDateString() === new Date().toDateString())
+                    .map(event => (
+                      <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/10">
+                        <div className={`h-10 w-1 bg-primary rounded-full ${getPriorityColor(event.priority)}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{event.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {event.description || "Not Specified"}
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl border-muted">
+                    <CheckCircle2 className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">No assessments scheduled<br />for today.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          {/*   </div>Upcoming Assessments */}
+
+
+          <Card className="w-full shadow-sm border-muted/40 overflow-hidden">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-semibold tracking-tight">Upcoming Assessments</CardTitle>
+                  <CardDescription className="text-sm">
+                    {events.length > 0
+                      ? `You have ${events.length} assessments scheduled`
+                      : "No upcoming assessments found"}
+                  </CardDescription>
+                </div>
+                <CalendarIcon className="h-5 w-5 text-muted-foreground/50" />
+              </div>
+            </CardHeader>
+
+            <CardContent className="grid gap-4">
+              {events.length === 0 && (
+                <div className="py-10 text-center border-2 border-dashed rounded-xl">
+                  <p className="text-muted-foreground text-sm">No tasks on the horizon.</p>
+                </div>
+              )}
+
+              {events.map((event) => (
+                <div
+                  key={event.id}
+                  className="group relative flex flex-col space-y-3 rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:border-primary/20"
+                >
+                  {/* Top Row: Title and Badges */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${getPriorityColor(event.priority)} animate-pulse`} />
+                        <h3 className="font-semibold leading-none tracking-tight">{event.title}</h3>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>
+                            {new Date(event.start_time).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span className="truncate max-w-[150px] sm:max-w-none">
+                            {event.description || "Not Specified"}
+                          </span>
                         </div>
                       </div>
                     </div>
+
+                    <Badge
+                      variant="secondary"
+                      className={`${typeColors[event.type] || "bg-gray-100"} font-medium px-2.5 py-0.5 rounded-full border-none`}
+                    >
+                      {event.type}
+                    </Badge>
+                  </div>
+
+                  <Separator className="opacity-50" />
+
+                  {/* Bottom Row: Actions */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setShowReminder(true)}
+                              className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            >
+                              <Bell className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Set Reminder</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Share Assessment</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+
                     <div className="flex items-center gap-2">
-                      <div
-                        className={`h-2 w-2 rounded-full ${getPriorityColor(event.priority)}`}
-                      />
-                      <Badge className={typeColors[event.type] || "bg-gray-500 text-white"}>
-                        {event.type}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    {/* Left stack: Remind Me + Share */}
-                    <div className="flex flex-col gap-2 sm:flex-row">
                       <Button
                         size="sm"
-
-                        onClick={() => setShowReminder(true)}
-                        variant="ghost"
-                        className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        variant={showDetailsId === event.id ? "secondary" : "ghost"}
+                        onClick={() => setShowDetailsId(showDetailsId === event.id ? null : event.id)}
+                        className="h-8 text-xs font-medium gap-1.5"
                       >
-                        <Bell className="h-3 w-3" />
+                        <Info className="h-3.5 w-3.5" />
+                        {showDetailsId === event.id ? "Hide Details" : "Details"}
                       </Button>
-                      <Button size="sm"
-                        variant="ghost"
-                        className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        <Share2 className="h-3 w-3" />
 
-                      </Button>
-                    </div>
-
-                    {/* Right stack: View Details + Delete */}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:ml-auto">
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
-                        onClick={() =>
-                          setShowDetailsId(showDetailsId === event.id ? null : event.id)
-                        }
-                      >
-                        <Info className="h-3 w-3" />
-                        info
-                      </Button>
-                      <Button
-                        size="sm"
-
                         onClick={() => handleDelete(event.id)}
-                        variant="ghost"
-                        className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
+                  {/* Expandable Section */}
                   {showDetailsId === event.id && (
-                    <div className="text-sm mt-2 border-t pt-2 text-muted-foreground">
-                      <p>
-                        <strong>Description:</strong> {event.description || "N/A"}
-                      </p>
-                      <p>
-                        <strong>Type:</strong> {event.type}
-                      </p>
-                      <p>
-                        <strong>Priority:</strong> {event.priority}
-                      </p>
-                      <p>
-                        <strong>Date:</strong> {new Date(event.start_time).toDateString()}
-                      </p>
-                      <p>
-                        <strong>Time:</strong>{" "}
-                        {new Date(event.start_time).toLocaleTimeString()}
-                      </p>
+                    <div className="mt-2 grid grid-cols-2 gap-4 rounded-lg bg-muted/30 p-4 text-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</p>
+                        <p className="text-foreground">{event.description || "No description provided."}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full Date</p>
+                        <p className="text-foreground">{new Date(event.start_time).toDateString()}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Priority</p>
+                        <p className="capitalize text-foreground">{event.priority}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full Time</p>
+                        <p className="text-foreground">{new Date(event.start_time).toLocaleTimeString()}</p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -386,74 +497,128 @@ export function Calendar() {
           </Card>
         </div>
 
-        {/* Add Event Dialog */}
+
         <Dialog open={showModal} onOpenChange={setShowModal}>
-          <DialogContent>
-            <DialogTitle className="text-lg font-semibold">
-              Add Event for {selectedDate?.toDateString()}
-            </DialogTitle>
-            <DialogDescription>Fill in the event details below</DialogDescription>
+          <DialogContent className="sm:max-w-[425px] border-muted/40 shadow-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <CalendarIcon className="h-5 w-5 text-primary" />
+                <span>Add Assessment</span>
+              </DialogTitle>
+              <DialogDescription>
+                Schedule a new task for {selectedDate?.toLocaleDateString(undefined, {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </DialogDescription>
+            </DialogHeader>
 
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
+            <div className="grid gap-5 py-4">
+              {/* Title Field */}
+              <div className="space-y-2">
+                <Label htmlFor="title" className="flex items-center gap-2">
+                  <Type className="h-3.5 w-3.5 text-muted-foreground" />
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  placeholder="e.g., Final Mathematics Exam"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  className="bg-background focus-visible:ring-primary"
+                />
+              </div>
+
+              {/* Description Field */}
+              <div className="space-y-2">
+                <Label htmlFor="desc" className="flex items-center gap-2">
+                  <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                  Description
+                </Label>
+                <Textarea
+                  id="desc"
+                  placeholder="Topics to cover, location, or notes..."
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="min-h-[80px] bg-background resize-none focus-visible:ring-primary"
+                />
+              </div>
+
+              {/* Row: Time and Type */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="time" className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    Time
+                  </Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={form.time}
+                    onChange={(e) => setForm({ ...form, time: e.target.value })}
+                    className="bg-background focus-visible:ring-primary block w-full"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="flex items-center gap-2">
+                    <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                    Type
+                  </Label>
+                  <select
+                    id="type"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  >
+                    <option value="exam">Exam</option>
+                    <option value="assignment">Assignment</option>
+                    <option value="practical">Practical</option>
+                    <option value="project">Project</option>
+                    <option value="event">Event</option>
+                    <option value="revision">Revision</option>
+                    <option value="graduation">Graduation</option>
+                    <option value="meeting">Meeting</option>
+                    <option value="others">Others</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Priority Field */}
+              <div className="space-y-2">
+                <Label htmlFor="priority" className="flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                  Priority Level
+                </Label>
+                <select
+                  id="priority"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all"
+                  value={form.priority}
+                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                >
+                  <option value="high">🔴 High Priority</option>
+                  <option value="medium">🟡 Medium Priority</option>
+                  <option value="low">🟢 Low Priority</option>
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Time</Label>
-              <Input
-                type="time"
-                value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <select
-                className="w-full border p-2 rounded text-black"
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowModal(false)}
+                className="w-full sm:w-auto"
               >
-                <option value="exam">Exam</option>
-                <option value="assignment">Assignment</option>
-                <option value="practical">Practical</option>
-                <option value="project">Project</option>
-                <option value="event">Event</option>
-                <option value="revision">Revision</option>
-                <option value="graduation">Graduation</option>
-                <option value="meeting">Meeting</option>
-                <option value="others">Others</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <select
-                className="w-full border p-2 rounded text-black"
-                value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                className="w-full sm:w-auto bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
               >
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
+                Create Event
+              </Button>
             </div>
-
-            <Button onClick={handleSubmit} className="w-full">
-              Submit
-            </Button>
           </DialogContent>
         </Dialog>
 
@@ -476,6 +641,6 @@ export function Calendar() {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </div >
   );
 }

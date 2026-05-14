@@ -1,5 +1,7 @@
 "use client";
+import { createPortal } from 'react-dom'; // 1. Add this import
 
+import { useMemo } from "react";
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -8,6 +10,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import confetti from "canvas-confetti";
 import {
+    Inbox,
+
+    History,
     Swords,
     Trophy,
     Flame,
@@ -16,7 +21,11 @@ import {
     Clock,
     Users,
     Search,
+    Zap,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 let playersMemoryCache: any[] | null = null;
 let challengesMemoryCache: any[] | null = null;
 let playersCacheTime = 0;
@@ -50,189 +59,178 @@ function ChallengeTabs({
     const renderTabContent = () => {
 
         switch (activeTab) {
-
             case "find":
                 return (
-                    <div className="p-2">
-
-                        {/* SEARCH */}
-                        <div className="flex gap-2 mb-3">
-                            <div className="flex items-center border rounded px-2 w-full dark:border-gray-700">
-                                <Search size={16} />
+                    <div className="space-y-4">
+                        {/* --- SEARCH & FILTER --- */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="relative flex-1 group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                 <input
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search users..."
-                                    className="w-full p-1 outline-none bg-transparent"
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setSearch(value);
+
+                                        if (!value.trim()) {
+                                            setSearch("");
+                                        }
+                                    }}
+                                    placeholder="Search peers..."
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border-none text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
                                 />
                             </div>
 
                             <button
                                 onClick={() => setOnlyOnline(!onlyOnline)}
-                                className={`px-2 rounded border ${onlyOnline ? "bg-green-200 dark:bg-green-800" : ""}`}
+                                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${onlyOnline
+                                    ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
+                                    }`}
                             >
-                                Online
+                                <span className={`h-2 w-2 rounded-full ${onlyOnline ? "bg-white animate-pulse" : "bg-slate-300"}`} />
+                                Online Only
                             </button>
                         </div>
 
-                        {/* PLAYER LIST */}
-                        <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar pr-1">
-                            <div className="mt-auto">
-
-                                <AnimatePresence>
-                                    {/* 🔹 INVITE CARD */}
-                                    {!loading && inviteCards.map((card) => (
-                                        <motion.div
-                                            key={card.id}
-                                            whileTap={{ scale: 0.97 }}
-                                            onClick={() => handleInvite(card.type)}
-                                            className="p-3 mb-2 rounded-xl
-            bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500
-            dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600
-            text-white flex justify-between items-center cursor-pointer
-            shadow-md hover:shadow-lg transition-all duration-200"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                {/* ICON */}
-                                                <div className="w-9 h-9 rounded-full bg-white/25 backdrop-blur flex items-center justify-center">
-                                                    <Send size={16} />
-                                                </div>
-
-                                                {/* TEXT */}
-                                                <div>
-                                                    <p className="font-medium text-sm">{card.name}</p>
-                                                    <p className="text-xs opacity-90">Grow the community</p>
-                                                </div>
+                        {/* --- PLAYER LIST --- */}
+                        <div className="space-y-3">
+                            <AnimatePresence>
+                                {/* 🔹 INVITE CARD (High-End CTA) */}
+                                {!loading && inviteCards.map((card) => (
+                                    <motion.div
+                                        key={card.id}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => handleInvite(card.type)}
+                                        className="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white flex justify-between items-center cursor-pointer shadow-lg group"
+                                    >
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent pointer-events-none" />
+                                        <div className="relative flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                                                <Send size={18} className="rotate-[-20deg]" />
                                             </div>
+                                            <div>
+                                                <p className="font-black text-sm uppercase tracking-tight">{card.name}</p>
+                                                <p className="text-[10px] font-bold text-white/70 uppercase">Strengthen the network</p>
+                                            </div>
+                                        </div>
+                                        <span className="relative text-[10px] font-black bg-black/20 px-3 py-1.5 rounded-lg border border-white/10 group-hover:bg-black/30 transition-colors">
+                                            INVITE NOW
+                                        </span>
+                                    </motion.div>
+                                ))}
 
-                                            {/* BADGE */}
-                                            <span className="text-xs bg-white/25 backdrop-blur px-2 py-1 rounded-md">
-                                                Invite a Friend
-                                            </span>
-                                        </motion.div>
-                                    ))}
-
-                                    {filteredPlayers.map((p: any) => (
-                                        <motion.div
-                                            key={p.user_id}
-                                            whileTap={{ scale: 0.97 }}
-                                            className="p-3 mb-2 rounded-lg bg-gray-50 dark:bg-gray-800 flex justify-between items-center"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <div className="relative">
+                                {filteredPlayers.map((p: any) => (
+                                    <motion.div
+                                        key={p.user_id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="p-3 rounded-2xl bg-white dark:bg-slate-900 border-0 flex justify-between items-center hover:border-blue-500/30 transition-all shadow-sm group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative">
+                                                <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-inner">
                                                     {p.avatar_url ? (
-                                                        <img
-                                                            src={p.avatar_url}
-                                                            className="w-9 h-9 rounded-full object-cover"
-                                                        />
+                                                        <img src={p.avatar_url} className="w-full h-full object-cover" alt={p.name} />
                                                     ) : (
-                                                        <div className="w-9 h-9 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-sm font-bold">
-                                                            {p.name?.[0] || "U"}
+                                                        <div className="w-full h-full flex items-center justify-center text-slate-400 font-black">
+                                                            {p.name?.[0]}
                                                         </div>
                                                     )}
-                                                    {p.is_online && (
-                                                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></span>
-                                                    )}
                                                 </div>
-
-                                                <div>
-                                                    <p className="font-medium text-sm">{p.name}</p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        @{p.username || "no-username"}
-                                                    </p>
-                                                </div>
+                                                {p.is_online && (
+                                                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-lg border-2 border-white dark:border-slate-900 shadow-sm" />
+                                                )}
                                             </div>
 
-                                            <button
-                                                onClick={() => sendChallenge(p.user_id)}
-                                                className="flex items-center gap-1 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg shadow-md"
-                                            >
-                                                <Send size={16} />
-                                                <span>Send</span>
-                                            </button>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
+                                            <div className="space-y-0.5">
+                                                <p className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-500 transition-colors">{p.name}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                    @{p.username || "nurse"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            onClick={() => sendChallenge(p.user_id)}
+                                            size="sm"
+                                            className="h-9 px-4 rounded-xl bg-slate-900 dark:bg-blue-600 text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-blue-500/10"
+                                        >
+                                            Challenge
+                                        </Button>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         </div>
                     </div>
                 );
+
             case "incoming":
                 if (incoming.length === 0) {
                     return (
-                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                            No incoming challenges. Sit tight or ask a friend to challenge you!
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50">
+                            <Inbox size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Active Invasions</p>
                         </div>
                     );
                 }
                 return incoming.map((c: any) => (
                     <motion.div
                         key={c.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        className="p-3 mb-2 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-sm flex justify-between"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="p-4 mb-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 flex justify-between items-center group"
                     >
-                        <div className="flex flex-col">
-                            <p className="font-medium flex items-center gap-2">
-                                {c.from_user?.name || "Player"}
-
-                                {/* 🔹 Unseen badge */}
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <p className="font-black text-sm dark:text-white uppercase tracking-tight">{c.from_user?.name || "Player"}</p>
                                 {!seenIncomingIds.has(c.id) && (
-                                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                        New
-                                    </span>
+                                    <span className="bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">New Battle</span>
                                 )}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Score: {c.score_to_beat}
+                            </div>
+                            <p className="text-xs font-bold text-blue-500 uppercase tracking-widest">
+                                Target Score: <span className="text-slate-900 dark:text-white ml-1">{c.score_to_beat}</span>
                             </p>
                         </div>
-                        <button
+                        <Button
                             onClick={() => {
-                                playSound("tap");
                                 if (navigator.vibrate) navigator.vibrate(30);
                                 acceptChallenge(c);
                             }}
-                            className="flex items-center gap-1 px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-lg shadow-md transition-colors duration-150"
+                            className="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase transition-all shadow-lg shadow-blue-500/20"
                         >
-                            <Check size={16} />
-                            <span>Accept</span>
-                        </button>
+                            Accept
+                        </Button>
                     </motion.div>
                 ));
 
             case "sent":
                 if (outgoing.length === 0) {
                     return (
-                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                            No sent challenges. Choose a friend and start a challenge!
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50">
+                            <Send size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Quiet in the Arena</p>
                         </div>
                     );
                 }
-
                 return outgoing.map((c: any) => (
                     <motion.div
                         key={c.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        className="p-3 mb-2 rounded-lg bg-gray-50 dark:bg-gray-800 flex justify-between items-center"
+                        className="p-4 mb-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-white/5 flex justify-between items-center"
                     >
-                        <p className="text-sm">
-                            Waiting for {c.to_user?.name || "player"}
-                        </p>
-
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                <Clock size={16} className="text-blue-500 animate-spin-slow" />
+                            </div>
+                            <p className="text-xs font-bold dark:text-slate-300">
+                                Waiting for <span className="text-blue-500 uppercase">{c.to_user?.name}</span>
+                            </p>
+                        </div>
                         <button
-                            onClick={() => {
-                                const ok = confirm("Are you sure you want to cancel this request?");
-                                if (ok) {
-                                    cancelChallenge(c.id);
-                                }
-                            }}
-                            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs"
+                            onClick={() => confirm("Cancel request?") && cancelChallenge(c.id)}
+                            className="text-[10px] font-black text-rose-500 uppercase hover:underline p-2"
                         >
-                            Cancel
+                            Recall
                         </button>
                     </motion.div>
                 ));
@@ -240,8 +238,9 @@ function ChallengeTabs({
             case "completed":
                 if (completed.length === 0) {
                     return (
-                        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                            No completed challenges yet. Play a challenge and see your results here!
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50">
+                            <History size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Battle Records</p>
                         </div>
                     );
                 }
@@ -250,74 +249,99 @@ function ChallengeTabs({
                     return (
                         <motion.div
                             key={c.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className={`p-3 mb-2 rounded-lg border-0 shadow-sm ${won ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"}`}
+                            className={`p-4 mb-3 rounded-2xl border flex flex-col gap-2 ${won
+                                ? "bg-emerald-50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20"
+                                : "bg-rose-50 dark:bg-rose-500/5 border-rose-100 dark:border-rose-500/20"
+                                }`}
                         >
-                            <p className="font-medium">{won ? "You won" : "You lost"}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Opponent: {c.score_to_beat} | You: {c.opponent_score}
-                            </p>
+                            <div className="flex justify-between items-center">
+                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${won ? "text-emerald-600" : "text-rose-600"}`}>
+                                    {won ? "Victory Secured" : "Defeat Incurred"}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Opponent: {c.score_to_beat}</span>
+                            </div>
+                            <div className="flex justify-between items-baseline">
+                                <p className="text-sm font-bold dark:text-slate-200">Against {c.opponent_name || "Peer"}</p>
+                                <p className={`text-xl font-black ${won ? "text-emerald-600" : "text-rose-600"}`}>{c.opponent_score}</p>
+                            </div>
                         </motion.div>
                     );
                 });
         }
     };
-
     return (
-        <div className="mt-2">
-            {/* TABS */}
-            {/* TABS */}
-            <div className="flex border-b border-gray-300 dark:border-gray-700 mb-3 ">
-                {["find", "incoming", "sent", "completed"].map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab as any)}
-                        className={`flex-1 py-2 font-medium relative text-center ${activeTab === tab
-                            ? "border-b-2 border-blue-500 text-blue-600"
-                            : "text-gray-500 dark:text-gray-400"
-                            }`}
-                    >
-                        <span className="relative inline-block">
-                            {tab === "find" ? "Participants" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+        <div className="mt-1">
+            {/* --- PROFESSIONAL SEGMENTED TABS --- */}
+            <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-1 gap-1 overflow-x-auto custom-scrollbar">
+                {[
+                    { id: "find", label: "Participants", icon: Users },
+                    { id: "incoming", label: "Incoming", icon: Inbox, badge: unseenIncomingCount, color: "bg-rose-500" },
+                    { id: "sent", label: "Sent", icon: Send, badge: pendingSentCount, color: "bg-blue-500" },
+                    { id: "completed", label: "History", icon: History, badge: completed.length, color: "bg-emerald-500" }
+                ].map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    const Icon = tab.icon;
 
-                            {/* Incoming badge */}
-                            {tab === "incoming" && unseenIncomingCount > 0 && (
-                                <span className="absolute -top-1 -right-5 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                    {unseenIncomingCount}
-                                </span>
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => {
+                                if (navigator.vibrate) navigator.vibrate(30);
+                                setActiveTab(tab.id as any);
+                            }}
+                            className={`
+                            relative flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-300 whitespace-nowrap
+                            ${isActive ? "text-blue-600 dark:text-white" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}
+                        `}
+                        >
+                            {/* Smooth Animated Slider Background */}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeTabBackground"
+                                    className="absolute inset-0 bg-white dark:bg-blue-600 shadow-sm rounded-xl z-0"
+                                    transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+                                />
                             )}
 
-                            {/* Sent badge (read/unread style) */}
-                            {tab === "sent" && pendingSentCount > 0 && (
-                                <span className="absolute -top-1 -right-6 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                    {pendingSentCount}
-                                </span>
-                            )}
+                            <div className="relative z-10 flex items-center gap-2">
+                                {/* Icon (Optional but makes it look pro) */}
+                                {Icon && <Icon size={14} className={isActive ? "text-blue-600 dark:text-white" : "text-slate-400"} />}
 
-                            {/* Completed badge */}
-                            {tab === "completed" && completed.length > 0 && (
-                                <span className="absolute -top-1 -right-5 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                    {completed.length}
+                                <span className="uppercase tracking-tight">
+                                    {tab.label}
                                 </span>
-                            )}
-                        </span>
-                    </button>
-                ))}
+
+                                {/* Badge Pips */}
+                                {tab.badge > 0 && (
+                                    <span className={`
+                                    flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full text-[10px] font-black text-white border-2 border-white dark:border-slate-800
+                                    ${tab.color || 'bg-slate-500'}
+                                `}>
+                                        {tab.badge}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* TAB CONTENT */}
-            <div className="h-96">
+            {/* --- TAB CONTENT --- */}
+            <div className="min-h-[400px]">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                     >
                         {loading ? (
-                            [0, 1, 2, 3].map((i) => <ChallengeItemSkeleton key={i} />)
+                            <div className="space-y-3">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="h-20 w-full bg-slate-50 dark:bg-slate-900/50 rounded-2xl animate-pulse border border-slate-100 dark:border-white/5" />
+                                ))}
+                            </div>
                         ) : (
                             renderTabContent()
                         )}
@@ -532,14 +556,19 @@ export default function ChallengePage() {
     }, [search, user]);
     // ================= INITIAL FETCH + REALTIME =================
 
-    // ================= FILTER =================
-    const filteredPlayers = players.filter((p) => {
+    const filteredPlayers = useMemo(() => {
         const term = search.trim().toLowerCase();
-        if (!term) return true;
-        const name = (p.name || "").toLowerCase();
-        const username = (p.username || "").toLowerCase();
-        return name.includes(term) || username.includes(term);
-    });
+
+        // ✅ If search is empty → ALWAYS return full list
+        if (!term) return players;
+
+        return players.filter((p) => {
+            const name = (p.name || "").toLowerCase();
+            const username = (p.username || "").toLowerCase();
+
+            return name.includes(term) || username.includes(term);
+        });
+    }, [players, search]);
 
     const cancelChallenge = async (challengeId: string) => {
         playSound("tap");
@@ -850,229 +879,347 @@ https://medrae.vercel.app`;
     // ================= UI =================
     return (
         <>
-
-            <div className="w-full sm:max-w-4xl sm:mx-auto p-2 sm:p-4 space-y-2 border-0">
-                {/* FULL-SCREEN QUIZ */}
-                {activeChallenge && (
-                    <div
-                        className="fixed inset-0 z-[9999] bg-white dark:bg-gray-900 flex flex-col justify-center items-center pt-32 sm:pt-0"
-                        style={{ height: "100vh" }}
-                    >
-                        <h2 className="text-xl font-bold mb-1">
-                            Answer the Challenge!
-                        </h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-md mb-2">
-                            {activeChallenge?.status === "self"
-                                ? "Complete all 10 questions and your score will be sent as a challenge to another player. They will try to beat your score."
-                                : "You are attempting to beat another player's score. Try your best to score higher and win the challenge!"}
-                        </p>
-
-                        <p className="mb-2 font-medium">Time left: {timeLeft}s</p>
-
-                        <div className="flex-1 flex flex-col justify-between overflow-y-auto custom-scrollbar p-2">
-
-                            {/* Question Header */}
-                            {/* Question + Options + Navigation */}
-                            <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar px-1">
-
-                                {/* Question Header */}
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Question {currentQIndex + 1} / {activeChallenge.questions.length}
-                                    </p>
-                                    <p className="font-medium text-lg">
-                                        {activeChallenge.questions[currentQIndex].question_text}
-                                    </p>
+            {/* --- FULL-SCREEN BATTLE INTERFACE --- */}
+            {activeChallenge && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[9999] bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden"
+                >
+                    {/* 1. TOP STATUS BAR (HUD) */}
+                    <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 p-4 shadow-sm">
+                        <div className="max-w-3xl mx-auto flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                    <Swords className="text-blue-600 dark:text-blue-400 w-5 h-5" />
                                 </div>
-
-                                {/* Options - Vertical */}
-                                <div className="flex flex-col gap-2">
-                                    {["A", "B", "C", "D"].map((opt) => (
-                                        <button
-                                            key={opt}
-                                            onClick={() => handleAnswer(currentQIndex, opt)}
-                                            className={`p-2 border rounded-lg text-left transition-colors duration-150 ${answers[currentQIndex] === opt
-                                                ? "bg-blue-500 text-white"
-                                                : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                                }`}
-                                        >
-                                            <span className="font-bold">{opt}:</span>{" "}
-                                            {activeChallenge.questions[currentQIndex][`option_${opt.toLowerCase()}`]}
-                                        </button>
-                                    ))}
+                                <div className="hidden xs:block">
+                                    <h2 className="text-sm font-black dark:text-white uppercase tracking-tight leading-none">
+                                        Medrae Arena
+                                    </h2>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        {activeChallenge?.status === "self" ? "Setting Target" : "Beat the Peer"}
+                                    </span>
                                 </div>
+                            </div>
 
-                                {/* Navigation directly below options */}
-                                {/* Navigation directly below options */}
-                                <div className="flex justify-center gap-3 mt-2">
-                                    <button
-                                        onClick={() => setCurrentQIndex((i) => Math.max(i - 1, 0))}
-                                        disabled={currentQIndex === 0}
-                                        className="px-6 py-2 bg-gray-300 dark:bg-gray-700 rounded disabled:opacity-50"
-                                    >
-                                        Previous
-                                    </button>
-
-                                    {currentQIndex < activeChallenge.questions.length - 1 ? (
-                                        <button
-                                            onClick={() => setCurrentQIndex((i) => Math.min(i + 1, activeChallenge.questions.length - 1))}
-                                            className="px-6 py-2 bg-blue-600 text-white rounded"
-                                        >
-                                            Next
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                if (navigator.vibrate) navigator.vibrate(50); // vibrate
-                                                playSound("tap"); // play tap sound
-                                                setShowSubmitModal(true);
-                                            }}
-                                            className="px-6 py-2 bg-green-600 text-white rounded"
-                                        >
-                                            Submit
-                                        </button>
-                                    )}
+                            {/* Visual Timer */}
+                            <div className="flex flex-col items-center">
+                                <div className={`text-xl font-black tabular-nums transition-colors ${timeLeft < 10 ? 'text-rose-500 animate-pulse' : 'text-slate-900 dark:text-white'}`}>
+                                    {timeLeft}s
                                 </div>
+                                <div className="h-1 w-12 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
+                                    <motion.div
+                                        className={`h-full ${timeLeft < 10 ? 'bg-rose-500' : 'bg-blue-500'}`}
+                                        initial={{ width: "100%" }}
+                                        animate={{ width: `${(timeLeft / 60) * 100}%` }} // Adjust 60 to your max time
+                                    />
+                                </div>
+                            </div>
 
+                            {/* Question Progress */}
+                            <div className="text-right">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progress</p>
+                                <p className="text-sm font-black dark:text-white">
+                                    {currentQIndex + 1} <span className="text-slate-400">/ {activeChallenge.questions.length}</span>
+                                </p>
                             </div>
                         </div>
+
+                        {/* Global Progress Line */}
+                        <div className="absolute bottom-0 left-0 h-[2px] bg-blue-500 transition-all duration-300"
+                            style={{ width: `${((currentQIndex + 1) / activeChallenge.questions.length) * 100}%` }}
+                        />
                     </div>
-                )}
 
-                {/* HEADER */}
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
-                        <Swords size={22} /> Challenges
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Compete and track performance
-                    </p>
-                </div>
+                    {/* 2. QUESTION SCROLL AREA */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50 dark:bg-slate-950">
+                        <div className="max-w-2xl mx-auto px-6 py-8 md:py-16 space-y-6">
 
-                {/* STATS */}
-                <div className="grid grid-cols-3 gap-2 text-center">
-                    {loading ? (
-                        [0, 1, 2].map((i) => <StatCardSkeleton key={i} />)
-                    ) : (
-                        <>
-                            <div className="p-3 rounded-xl bg-green-100 dark:bg-green-900/30">
-                                <Trophy className="mx-auto mb-1" size={18} />
-                                <p className="font-bold">{wins}</p>
-                                <p className="text-xs">Wins</p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-red-100 dark:bg-red-900/30">
-                                <Flame className="mx-auto mb-1" size={18} />
-                                <p className="font-bold">{losses}</p>
-                                <p className="text-xs">Losses</p>
-                            </div>
-                            <div className="p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
-                                <Clock className="mx-auto mb-1" size={18} />
-                                <p className="font-bold">{unseenIncomingCount}</p>
-                                <p className="text-xs">Pending</p>
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {/* FIND PLAYERS */}
-                <div className="p-1 rounded-xl border bg-white dark:bg-gray-900 border-0">
-                    <ChallengeTabs
-                        incoming={incoming}
-                        outgoing={outgoing}
-                        completed={completed}
-                        acceptChallenge={acceptChallenge}
-                        user={user}
-                        loading={loading}
-
-                        // NEW PROPS
-                        search={search}
-                        setSearch={setSearch}
-                        onlyOnline={onlyOnline}
-                        setOnlyOnline={setOnlyOnline}
-                        filteredPlayers={filteredPlayers}
-                        sendChallenge={sendChallenge}
-                        inviteCards={inviteCards}
-                        handleInvite={handleInvite}
-                        seenIncomingIds={seenIncomingIds}
-                        setSeenIncomingIds={setSeenIncomingIds}
-                        unseenIncomingCount={unseenIncomingCount}
-                        pendingSentCount={pendingSentCount}
-                        cancelChallenge={cancelChallenge}
-                    />
-                </div>
-
-                <AnimatePresence>
-                    {showSubmitModal && (
-                        <motion.div
-                            className="fixed inset-0 bg-black/40 flex items-center justify-center z-[10000]"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                        >
-                            <motion.div
-                                className="bg-white dark:bg-gray-900 rounded-lg p-6 w-11/12 max-w-md shadow-lg flex flex-col gap-4"
-                                initial={{ scale: 0.8 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0.8 }}
-                            >
-                                <h3 className="text-lg font-bold text-center">Submit Challenge?</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                                    Once submitted, you won't be able to change your answers.
-                                </p>
-                                <div className="flex justify-center gap-4 mt-4">
-                                    <button
-                                        onClick={() => setShowSubmitModal(false)}
-                                        className="px-4 py-2 rounded bg-gray-300 dark:bg-gray-700"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (navigator.vibrate) navigator.vibrate(50); // vibrate
-                                            playSound("tap"); // play tap sound
-                                            submitChallenge();
-                                            setShowSubmitModal(false);
-                                        }}
-                                        className="px-4 py-2 rounded bg-green-600 text-white"
-                                    >
-                                        Submit
-                                    </button>
+                            {/* Question Card */}
+                            <div className="space-y-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+                                    <Zap size={12} className="text-blue-600 fill-current" />
+                                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Clinical Scenario</span>
                                 </div>
-                            </motion.div>
+                                <h3 className="text-lg md:text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                                    {activeChallenge.questions[currentQIndex].question_text}
+                                </h3>
+                            </div>
+
+                            {/* Options List */}
+                            <div className="grid grid-cols-1 gap-3">
+                                {["A", "B", "C", "D"].map((opt) => (
+                                    <button
+                                        key={opt}
+                                        onClick={() => {
+                                            if (navigator.vibrate) navigator.vibrate(30);
+                                            handleAnswer(currentQIndex, opt);
+                                        }}
+                                        className={`group relative p-4 md:p-5 rounded-2xl text-left transition-all duration-200 border-2 flex items-center gap-4
+                                ${answers[currentQIndex] === opt
+                                                ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20 scale-[1.02]"
+                                                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-500/50 dark:text-slate-300"
+                                            }`}
+                                    >
+                                        <span className={`h-8 w-8 shrink-0 rounded-lg flex items-center justify-center font-black text-sm transition-colors
+                                ${answers[currentQIndex] === opt ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800 text-slate-500"}
+                            `}>
+                                            {opt}
+                                        </span>
+                                        <span className="font-semibold text-sm md:text-base leading-snug">
+                                            {activeChallenge.questions[currentQIndex][`option_${opt.toLowerCase()}`]}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Desktop Help Hint */}
+                            <p className="hidden md:block text-center text-xs text-slate-400 font-medium">
+                                Click an option to select your answer. Use the buttons below to navigate.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* 3. NAVIGATION FOOTER (STAY FIXED) */}
+                    <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 p-4 pb-8 md:pb-6">
+                        <div className="max-w-2xl mx-auto flex items-center gap-4">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setCurrentQIndex((i) => Math.max(i - 1, 0))}
+                                disabled={currentQIndex === 0}
+                                className="flex-1 h-12 rounded-xl font-bold dark:text-white"
+                            >
+                                <ChevronLeft className="mr-2 w-4 h-4" /> Previous
+                            </Button>
+
+                            {currentQIndex < activeChallenge.questions.length - 1 ? (
+                                <Button
+                                    onClick={() => setCurrentQIndex((i) => Math.min(i + 1, activeChallenge.questions.length - 1))}
+                                    className="flex-1 h-12 rounded-xl bg-slate-900 dark:bg-blue-600 text-white font-bold"
+                                >
+                                    Next <ChevronRight className="ml-2 w-4 h-4" />
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={() => {
+                                        if (navigator.vibrate) navigator.vibrate(50);
+                                        playSound("tap");
+                                        setShowSubmitModal(true);
+                                    }}
+                                    className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-500/20"
+                                >
+                                    Submit Battle
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* --- HEADER --- */}
+            <div className="flex flex-col  items-center text-center space-y-1 mb-3">
+                <div className="h-12 w-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 mb-2">
+                    <Swords size={24} />
+                </div>
+                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                    Arena Challenges
+                </h1>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+                    Compete • Track • Dominate
+                </p>
+            </div>
+
+            {/* --- STATS DASHBOARD --- */}
+            <div className="grid grid-cols-3 gap-3 text-center max-w-2xl mx-auto mb-3">
+                {loading ? (
+                    [0, 1, 2].map((i) => <StatCardSkeleton key={i} />)
+                ) : (
+                    <>
+                        {/* Wins Card */}
+                        <div className="relative overflow-hidden p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+                            <Trophy className="mx-auto mb-2 text-emerald-600 dark:text-emerald-400" size={20} />
+                            <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 leading-none">
+                                {wins}
+                            </p>
+                            <p className="text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest mt-2">
+                                Wins
+                            </p>
+                        </div>
+
+                        {/* Losses Card */}
+                        <div className="relative overflow-hidden p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20">
+                            <Flame className="mx-auto mb-2 text-rose-600 dark:text-rose-400" size={20} />
+                            <p className="text-2xl font-black text-rose-700 dark:text-rose-400 leading-none">
+                                {losses}
+                            </p>
+                            <p className="text-[10px] font-bold text-rose-600/60 uppercase tracking-widest mt-2">
+                                Losses
+                            </p>
+                        </div>
+
+                        {/* Pending Card */}
+                        <div className="relative overflow-hidden p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20">
+                            <Clock className="mx-auto mb-2 text-amber-600 dark:text-amber-400" size={20} />
+                            <p className="text-2xl font-black text-amber-700 dark:text-amber-400 leading-none">
+                                {unseenIncomingCount}
+                            </p>
+                            <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-widest mt-2">
+                                Pending
+                            </p>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* FIND PLAYERS */}
+            <div className="p-0 rounded-xl max-w-2xl mx-auto border bg-white dark:bg-gray-900 border-0">
+                <ChallengeTabs
+                    incoming={incoming}
+                    outgoing={outgoing}
+                    completed={completed}
+                    acceptChallenge={acceptChallenge}
+                    user={user}
+                    loading={loading}
+
+                    // NEW PROPS
+                    search={search}
+                    setSearch={setSearch}
+                    onlyOnline={onlyOnline}
+                    setOnlyOnline={setOnlyOnline}
+                    filteredPlayers={filteredPlayers}
+                    sendChallenge={sendChallenge}
+                    inviteCards={inviteCards}
+                    handleInvite={handleInvite}
+                    seenIncomingIds={seenIncomingIds}
+                    setSeenIncomingIds={setSeenIncomingIds}
+                    unseenIncomingCount={unseenIncomingCount}
+                    pendingSentCount={pendingSentCount}
+                    cancelChallenge={cancelChallenge}
+                />
+            </div>
+
+            <AnimatePresence>
+                {showSubmitModal && (
+                    <motion.div
+                        className="fixed inset-0 bg-black/40 flex items-center justify-center z-[10000]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            className="bg-white dark:bg-gray-900 rounded-lg p-6 w-11/12 max-w-md shadow-lg flex flex-col gap-4"
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.8 }}
+                        >
+                            <h3 className="text-lg font-bold text-center">Submit Challenge?</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                                Once submitted, you won't be able to change your answers.
+                            </p>
+                            <div className="flex justify-center gap-4 mt-4">
+                                <button
+                                    onClick={() => setShowSubmitModal(false)}
+                                    className="px-4 py-2 rounded bg-gray-300 dark:bg-gray-700"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (navigator.vibrate) navigator.vibrate(50); // vibrate
+                                        playSound("tap"); // play tap sound
+                                        submitChallenge();
+                                        setShowSubmitModal(false);
+                                    }}
+                                    className="px-4 py-2 rounded bg-green-600 text-white"
+                                >
+                                    Submit
+                                </button>
+                            </div>
                         </motion.div>
-                    )}
-                </AnimatePresence>
-                {/* 🔹 WIN OVERLAY */}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* --- 🏆 CINEMATIC WIN OVERLAY --- */}
+            {typeof document !== 'undefined' && createPortal(
                 <AnimatePresence>
                     {showWinOverlay && (
                         <motion.div
-                            className="fixed inset-0 z-[99999] bg-black/80 flex items-center justify-center"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-6"
                         >
+                            {/* Animated Background Glow Orbs */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-amber-500/20 rounded-full blur-[100px] animate-pulse" />
+                            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-[80px]" />
+
                             <motion.div
-                                className="bg-white dark:bg-gray-900 rounded-2xl p-8 flex flex-col items-center justify-center shadow-2xl"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0 }}
+                                initial={{ scale: 0.8, y: 40, opacity: 0 }}
+                                animate={{ scale: 1, y: 0, opacity: 1 }}
+                                exit={{ scale: 0.8, y: 40, opacity: 0 }}
+                                transition={{ type: "spring", damping: 15 }}
+                                className="relative bg-white dark:bg-slate-900 border-0 rounded-[3rem] p-10 md:p-16 flex flex-col items-center justify-center shadow-[0_32px_128px_-12px_rgba(0,0,0,0.5)] w-full max-w-lg text-center overflow-hidden"
                             >
-                                <Trophy size={60} className="text-yellow-500 mb-4 animate-bounce" />
-                                <h1 className="text-4xl font-bold text-center text-green-600 mb-2">
-                                    You Won!
-                                </h1>
-                                <p className="text-center text-gray-600 dark:text-gray-300">
-                                    One challenge down, glory earned!
-                                    <br />
-                                    Get ready for the next round.
-                                    <br />
-                                    Challenge more nurses and prove you're the best.
+                                {/* Sparkle Decorative Element */}
+                                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+
+                                {/* Trophy Section */}
+                                <div className="relative mb-8">
+                                    <div className="absolute inset-0 bg-amber-400/30 blur-2xl rounded-full" />
+                                    <motion.div
+                                        animate={{ y: [0, -15, 0] }}
+                                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                                    >
+                                        <Trophy size={80} className="relative text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
+                                    </motion.div>
+                                </div>
+
+                                {/* Text Content */}
+                                <div className="space-y-4 mb-10">
+                                    <div>
+                                        <p className="text-amber-500 text-xs font-black uppercase tracking-[0.4em] mb-2">
+                                            Arena Champion
+                                        </p>
+                                        <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">
+                                            Victory!
+                                        </h1>
+                                    </div>
+
+                                    <div className="h-px w-12 bg-slate-200 dark:bg-slate-700 mx-auto" />
+
+                                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-xs mx-auto">
+                                        Clinical dominance established. You’ve out-performed your peer and earned your place at the top.
+                                    </p>
+                                </div>
+
+                                {/* Primary Action Button */}
+                                <Button
+                                    size="lg"
+                                    onClick={() => {
+                                        if (navigator.vibrate) navigator.vibrate(50);
+                                        setShowWinOverlay(false);
+                                    }}
+                                    className="
+                        h-14 px-12 rounded-2xl bg-slate-900 dark:bg-white
+                        text-white dark:text-slate-900 font-black uppercase tracking-widest
+                        hover:scale-105 active:scale-95 transition-all shadow-xl
+                    "
+                                >
+                                    Continue
+                                </Button>
+
+                                {/* Subtle Branding */}
+                                <p className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+                                    Medrae Challenge Arena
                                 </p>
                             </motion.div>
                         </motion.div>
                     )}
-                </AnimatePresence>
-            </div>
+                </AnimatePresence>,
+                document.body // 2. Teleport this to the document body
+            )}
         </>
     );
 

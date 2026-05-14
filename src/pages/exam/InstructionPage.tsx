@@ -2,18 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, X, ChevronLeft } from "lucide-react";
+
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/components/ui/use-toast";
 
+import React from 'react';
+
+import { X, LockKeyhole, AlertCircle, ChevronLeft, Badge, ShieldAlert, KeyRound, ArrowLeft } from "lucide-react";
+
 export default function ExamInstructions() {
     const navigate = useNavigate();
     const { toast } = useToast();
-
+    const [sessionExpired, setSessionExpired] = useState(false);
     const [examKey, setExamKey] = useState("");
     const [paperId, setPaperId] = useState<string | null>(null);
     const [instructions, setInstructions] = useState<string>("");
@@ -87,22 +91,44 @@ export default function ExamInstructions() {
             .eq("user_id", user.id)
             .single();
 
+        // ... after fetching sessionData ...
         if (sessionData) {
             setExistingSession(sessionData);
 
-            const startedAt = new Date(sessionData.started_at).getTime();
-            const durationSec = paper.duration * 60;
-            const now = Date.now();
-            const elapsed = Math.floor((now - startedAt) / 1000);
-            const remaining = durationSec - elapsed;
-            setSecondsLeft(remaining > 0 ? remaining : 0);
-            setCanStart(remaining > 0);
+            // 1. Check if the session was already manually finished
+            if (sessionData.status === "completed" || sessionData.status === "submitted") {
+                setSessionExpired(true);
+                setCanStart(false);
+                return;
+            }
 
-            toast({
-                title: "Exam Already Started",
-                description: "You have an existing session. You can continue the exam.",
-                variant: "destructive",
-            });
+            // 2. Calculate time remaining
+            const startedAt = new Date(sessionData.started_at).getTime();
+            const durationMs = paper.duration * 60 * 1000;
+            const now = Date.now();
+            const expiryTime = startedAt + durationMs;
+            const remainingSecs = Math.floor((expiryTime - now) / 1000);
+
+            if (remainingSecs <= 0) {
+                // SESSION EXPIRED
+                setSecondsLeft(0);
+                setCanStart(false);
+                setSessionExpired(true);
+                toast({
+                    title: "Session Expired",
+                    description: "The time limit for your exam session has reached.",
+                    variant: "destructive",
+                });
+            } else {
+                // SESSION ALIVE
+                setSecondsLeft(remainingSecs);
+                setCanStart(true);
+                setSessionExpired(false);
+                toast({
+                    title: "Exam in Progress",
+                    description: `You have ${Math.floor(remainingSecs / 60)} minutes remaining.`,
+                });
+            }
         }
     };
 
@@ -162,35 +188,79 @@ export default function ExamInstructions() {
         <div className="min-h-screen bg-transparen pt-0 t p-6 flex justify-center items-start">
             <div className="w-full max-w-3xl space-y-2 relative">
 
-
-
                 {/* Exam Key Overlay */}
                 {!keyVerified && (
-                    <div className="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-50 px-4">
-                        <Card className="max-w-md w-full p-6 relative">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        {/* Modern Backdrop: Dark Slate with a heavy blur for focus */}
+                        <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md" />
+
+                        <Card className="relative w-full max-w-md border-0 shadow-2xl bg-white dark:bg-[#1c1e21] overflow-hidden">
+                            {/* Top decorative security bar */}
+                            <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700" />
+
                             <button
                                 onClick={() => navigate(-1)}
-                                className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800"
+                                className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                title="Go back"
                             >
-                                <X className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+                                <X className="h-5 w-5" />
                             </button>
-                            <CardHeader>
-                                <CardTitle className="text-center text-2xl font-bold">Enter Exam Key</CardTitle>
-                                <CardDescription className="text-center text-sm text-muted-foreground">
-                                    Please enter your school's exam key to access instructions.
+
+                            <CardHeader className="pt-8 pb-4 text-center">
+                                <div className="mx-auto w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                    <LockKeyhole className="h-6 w-6 text-slate-600 dark:text-slate-300" />
+                                </div>
+                                <CardTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                                    Secure Access Required
+                                </CardTitle>
+                                <CardDescription className="text-slate-500 dark:text-slate-400">
+                                    This examination is protected. Please enter the unique Access Key provided by your institution.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <Input
-                                    placeholder="Enter Exam Key"
-                                    value={examKey}
-                                    onChange={(e) => setExamKey(e.target.value)}
-                                />
-                                {keyError && <p className="text-red-500 text-sm">{keyError}</p>}
-                                <Button className="w-full mt-2" onClick={verifyKey}>
-                                    Verify Key
+
+                            <CardContent className="space-y-4 pb-8">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
+                                        Authorization Key
+                                    </label>
+                                    <div className="relative">
+                                        <KeyRound className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                                        <Input
+                                            type="password"
+                                            placeholder="e.g. EXAM-992-K82"
+                                            className="pl-10 h-12 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-slate-400 font-mono text-lg tracking-widest uppercase"
+                                            value={examKey}
+                                            onChange={(e) => setExamKey(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                {keyError && (
+                                    <div className="flex items-center gap-2 p-3 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50">
+                                        <ShieldAlert className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                        <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                                            {keyError}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <Button
+                                    className="w-full h-12 bg-white dark:bg-slate-900 text-black dark:text-white hover:bg-slate-200 dark:hover:bg-gray-800 font-bold transition-all shadow-lg"
+                                    onClick={verifyKey}
+                                >
+                                    Unlock Examination
                                 </Button>
                             </CardContent>
+
+                            <CardFooter className="bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 p-4">
+                                <button
+                                    onClick={() => navigate(-1)}
+                                    className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 transition-colors mx-auto"
+                                >
+                                    <ArrowLeft className="h-3 w-3" />
+                                    Cancel and return to dashboard
+                                </button>
+                            </CardFooter>
                         </Card>
                     </div>
                 )}
@@ -215,25 +285,69 @@ export default function ExamInstructions() {
                                     {examInfo.course || "-"} | {examInfo.block || "-"}
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                                <div><strong>Description:</strong> {examInfo.description || "-"}</div>
-                                <div><strong>Duration:</strong> {examInfo.duration} mins</div>
-                                <div><strong>Public Exam:</strong> {examInfo.is_public ? "Yes" : "No"}</div>
-                                <div><strong>Free Exam:</strong> {examInfo.is_free ? "Yes" : "No"}</div>
-                                <div><strong>Active:</strong> {examInfo.is_active ? "Yes" : "No"}</div>
-                                <div><strong>Released:</strong> {examInfo.is_released ? "Yes" : "No"}</div>
-                                <div><strong>Results Released:</strong> {examInfo.results_released ? "Yes" : "No"}</div>
-                                <div><strong>Closed At:</strong> {examInfo.closed_at ? new Date(examInfo.closed_at).toLocaleString() : "-"}</div>
-                                <div><strong>Scheduled:</strong> {examInfo.scheduled_start ? new Date(examInfo.scheduled_start).toLocaleString() : "-"} - {examInfo.scheduled_end ? new Date(examInfo.scheduled_end).toLocaleString() : "-"}</div>
-                                <div><strong>Max Tab Switch:</strong> {examInfo.max_tab_switch}</div>
-                                <div><strong>Auto Submit on Violation:</strong> {examInfo.auto_submit_on_violation ? "Yes" : "No"}</div>
-                                <div><strong>Strict Mode:</strong> {examInfo.strict_mode ? "Yes" : "No"}</div>
-                                <div><strong>Max Violation Limit:</strong> {examInfo.max_violation_limit}</div>
-                                {secondsLeft !== null && secondsLeft > 0 && (
-                                    <div className="col-span-full text-center font-bold text-orange-600">
-                                        Exam starts in: {formatCountdown(secondsLeft)}
+                            <CardContent className="space-y-6 text-sm text-gray-700">
+                                {/* 1. DESCRIPTION SECTION (Full Width) */}
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                    <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Exam Description</h4>
+                                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                        {examInfo.description || "No description provided."}
+                                    </p>
+                                </div>
+
+                                {/* 2. METADATA GRID (2 Columns) */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                                        <span className="font-semibold text-slate-500">Duration:</span>
+                                        <span className="font-bold text-slate-900 dark:text-slate-100">{examInfo.duration} mins</span>
                                     </div>
-                                )}
+                                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                                        <span className="font-semibold text-slate-500">Public Exam:</span>
+                                        <Badge variant="outline" className="text-[10px]">{examInfo.is_public ? "Yes" : "No"}</Badge>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                                        <span className="font-semibold text-slate-500">Free Exam:</span>
+                                        <span>{examInfo.is_free ? "Yes" : "No"}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                                        <span className="font-semibold text-slate-500">Active:</span>
+                                        <span>{examInfo.is_active ? "Yes" : "No"}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                                        <span className="font-semibold text-slate-500">Released:</span>
+                                        <span>{examInfo.is_released ? "Yes" : "No"}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-50 pb-1">
+                                        <span className="font-semibold text-slate-500">Results:</span>
+                                        <span>{examInfo.results_released ? "Released" : "Pending"}</span>
+                                    </div>
+
+                                    {/* Full width items inside the grid */}
+                                    <div className="sm:col-span-2 flex flex-col gap-1 pt-2">
+                                        <span className="font-semibold text-slate-500 text-xs uppercase tracking-tighter">Scheduled Window:</span>
+                                        <span className="text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 p-2 rounded-lg">
+                                            {examInfo.scheduled_start ? new Date(examInfo.scheduled_start).toLocaleString() : "-"}
+                                            <span className="mx-2">→</span>
+                                            {examInfo.scheduled_end ? new Date(examInfo.scheduled_end).toLocaleString() : "-"}
+                                        </span>
+                                    </div>
+
+                                    <div className="sm:col-span-2 grid grid-cols-2 gap-4 mt-2">
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400">Max Tab Switches</p>
+                                            <p className="text-lg font-black">{examInfo.max_tab_switch}</p>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400">Strict Mode</p>
+                                            <p className="text-lg font-black">{examInfo.strict_mode ? "ON" : "OFF"}</p>
+                                        </div>
+                                    </div>
+
+                                    {secondsLeft !== null && secondsLeft > 0 && (
+                                        <div className="col-span-full mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl text-center font-bold text-orange-600 animate-pulse">
+                                            Exam starts in: {formatCountdown(secondsLeft)}
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -249,11 +363,24 @@ export default function ExamInstructions() {
                                 </div>
                             ))}
                                 <Button
-                                    className={`w-full mt-4 text-white font-bold ${canStart && paperId ? "bg-green-600 hover:bg-green-700" : "bg-red-600 cursor-not-allowed"}`}
+                                    className={`w-full mt-4 text-white font-bold h-12 rounded-xl transition-all ${sessionExpired
+                                        ? "bg-slate-500 cursor-not-allowed"
+                                        : (canStart ? "bg-green-600 hover:bg-green-700 shadow-lg" : "bg-blue-600")
+                                        }`}
                                     onClick={handleStartExam}
-                                    disabled={!canStart || !paperId}
+                                    disabled={!canStart || sessionExpired}
                                 >
-                                    {existingSession ? "Continue Exam" : canStart ? "Begin Exam" : "Please wait..."}
+                                    {sessionExpired ? (
+                                        <span className="flex items-center gap-2">
+                                            <X className="w-4 h-4" /> Session Expired / Already Submitted
+                                        </span>
+                                    ) : existingSession ? (
+                                        "Continue Exam Session"
+                                    ) : canStart ? (
+                                        "Begin Examination Now"
+                                    ) : (
+                                        `Starts in ${formatCountdown(secondsLeft || 0)}`
+                                    )}
                                 </Button>
                             </CardContent>
                         </Card>

@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react"; // ✅ add
-import { ChevronLeft, ChevronRight, Maximize, Eye, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, Eye, X, Sparkles, ChevronDown, Maximize2, Users, ArrowRight } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserProfileModal } from "@/components/UserProfileModal";
@@ -428,221 +428,188 @@ export default function DailyImagesTrivia() {
 
     return (
         <>
-            {/* Card Header */}
-            <div
-                className="w-full max-w-5xl mx-auto mb-4 px-4 py-4 mt-4 cursor-pointer
-               bg-white dark:bg-gray-900 rounded-xl shadow-md
-               flex flex-col"
-                onClick={() => {
-                    if (isLargeScreen) setIsCollapsed(!isCollapsed);
-                }}
-            >
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Daily 3Ree Visual Trivia
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Swipe through today’s images to enhance your memory and learn new concepts!
-                </p>
-                {isLargeScreen && (
-                    <div className="mt-2 inline-flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                        {isCollapsed ? (
-                            <>
-                                {/* Down arrow */}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth={1.5}
-                                    stroke="currentColor"
-                                    className="w-5 h-5"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M19.5 8.25L12 15.75 4.5 8.25"
-                                    />
-                                </svg>
-                                <span>Click to expand</span>
-                            </>
-                        ) : (
-                            <>
-                                {/* Up arrow */}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    strokeWidth={1.5}
-                                    stroke="currentColor"
-                                    className="w-5 h-5"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M4.5 15.75L12 8.25 19.5 15.75"
-                                    />
-                                </svg>
-                                <span>Click to collapse</span>
-                            </>
-                        )}
-                    </div>
-                )}
+            {/* --- VISUAL TRIVIA SECTION --- */}
+            <div className="w-full max-w-5xl rounded-xl mx-auto mt-3 px-2">
+                {/* Card Header - Interactive Toggle */}
+                <div
+                    className="group relative overflow-hidden bg-white dark:bg-slate-900 rounded-xl p-6 shadow-xl border-0 cursor-pointer transition-all hover:shadow-2xl"
+                    onClick={() => { if (isLargeScreen) setIsCollapsed(!isCollapsed); }}
+                >
+                    {/* Animated Background Accent */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-3xl transition-colors group-hover:bg-indigo-500/10" />
 
-            </div>
-
-
-            {/* Collapsible Card Body */}
-            <AnimatePresence initial={false}>
-                {(!isLargeScreen || !isCollapsed) && (
-                    <motion.div
-                        key="card-body"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        ref={containerRef}
-                        className="relative w-full flex flex-col items-center justify-center
-   overflow-visible max-w-5xl mx-auto px-1 py-1 sm:py-6
-   bg-gradient-to-b from-white to-gray-100 dark:from-gray-700 dark:to-gray-900
-   rounded-xl shadow-md"
-                    >
-
-
-
-                        {/* Story Circles */}
-                        <div className="flex gap-4 overflow-x-auto py-2 px-4">
-                            {images.map((img, idx) => (
-                                <div
-                                    key={img.id}
-                                    className={`flex-shrink-0 cursor-pointer relative transition-transform duration-300 ${activeIndex === idx ? "scale-110" : "scale-100"
-                                        }`}
-                                    onClick={async () => {
-                                        setActiveIndex(idx);
-                                        openFullscreen(img.image_url);
-
-                                        // Auto-mark as seen for this specific image
-                                        if (!seenData[img.id]) {
-                                            vibrateSafe(50);
-
-                                            if (!user) return;
-
-
-                                            try {
-                                                await supabase.from("qfeed_seen_comments").insert({
-                                                    image_id: img.id,
-                                                    user_id: user.id,
-                                                    comment: "Seen",
-                                                });
-
-                                                // Update local state immediately
-                                                setSeenData(prev => ({ ...prev, [img.id]: true }));
-
-                                            } catch (err) {
-                                                console.error("Failed to mark seen:", err);
-                                            }
-                                        }
-                                    }}
-                                >
-                                    <div
-                                        className={`p-1 rounded-full ${!seenData[img.id]
-                                            ? "rainbow-border animate-rainbow-glow" // rainbow if unseen
-                                            : "border-2 border-gray-400"           // grey if seen
-                                            }`}
-                                    >
-                                        <img
-                                            src={img.image_url}
-                                            alt={`Story ${idx + 1}`}
-                                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover"
-                                            loading="lazy"
-                                        />
-                                    </div>
-
-                                    {/* Optional: small seen dot if you want */}
-                                    {/* <span
-      className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
-        seenData[img.id] ? "bg-gray-400" : "bg-blue-500"
-      }`}
-    ></span> */}
-                                </div>
-                            ))}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-indigo-500/10 rounded-2xl">
+                                <Sparkles className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-[3px] font-bold text-indigo-600 dark:text-indigo-500">Daily Insight</p>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Visual Trivia</h2>
+                            </div>
                         </div>
 
-                        {/* Top 10 Students Panel */}
-                        <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mt-6">
-                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                                Top 10 Students Who Marked Seen
-                            </h3>
-
-                            {topUsers.length === 0 ? (
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    No students marked seen yet. Mark all seen to appear here.
-                                </p>
-                            ) : (
-                                <ul className="flex flex-col gap-2">
-                                    {topUsers.map((u, index) => (
-                                        <li
-                                            key={u.id}
-                                            className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md p-1"
-                                            onClick={() => setSelectedUserId(u.id)} // ✅ open modal
-                                        >
-                                            <span className="font-semibold w-5 text-gray-700 dark:text-gray-300">
-                                                {index + 1}
-                                            </span>
-                                            <img
-                                                src={u.avatar_url || "/UsersAvatar.jpg"}
-                                                alt={u.name}
-                                                className="w-8 h-8 rounded-full object-cover"
-                                            />
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {u.name} {u.institution && `(${u.institution})`}
-                                                </p>
-                                                {u.comments?.length > 0 && (
-                                                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                        {u.comments.map((c, i) => (
-                                                            <span key={i}>
-                                                                Marked: {c}
-                                                                {i < u.comments.length - 1 && <br />}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
+                        <div className="flex items-center gap-3">
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 hidden md:block italic">
+                                Tap images to reveal high-resolution concepts.
+                            </p>
+                            {isLargeScreen && (
+                                <div className="p-2 rounded-full bg-slate-100 dark:bg-white/5 text-slate-400">
+                                    <ChevronDown className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? "" : "rotate-180"}`} />
+                                </div>
                             )}
                         </div>
-
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Fullscreen View */}
-            {activeImage && (
-                <div
-                    className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center transition-opacity duration-300"
-                    onClick={() => setActiveImage(null)}
-                >
-                    <button
-                        onClick={() => setActiveImage(null)}
-                        className="absolute top-4 right-4 z-[10000] p-2 rounded-full bg-white/80 hover:bg-white text-black transition-transform duration-200 hover:scale-110"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-                    <img
-                        src={activeImage}
-                        alt="Fullscreen"
-                        className="max-w-full max-h-full object-contain transition-transform duration-300 transform scale-90 animate-scale-up"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                    </div>
                 </div>
-            )}
-            {selectedUserId && (
-                <UserProfileModal
-                    userId={selectedUserId}
-                    onClose={() => setSelectedUserId(null)} // closes the modal
-                />
-            )}
+
+                {/* Collapsible Card Body */}
+                <AnimatePresence>
+                    {(!isLargeScreen || !isCollapsed) && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="mt-1 bg-slate-50/50 dark:bg-slate-900 backdrop-blur-xl border-0 rounded-xl p-4 sm:p-8">
+
+                                {/* 1. STORY NAVIGATION (The Top Circles) */}
+                                <div className="flex gap-2 overflow-x-auto pb-6 px-2 no-scrollbar snap-x">
+                                    {images.map((img, idx) => {
+                                        const isSeen = seenData[img.id];
+                                        return (
+                                            <div
+                                                key={img.id}
+                                                className="flex-shrink-0 flex flex-col items-center gap-2 snap-center"
+                                                onClick={async () => {
+                                                    setActiveIndex(idx);
+                                                    // Logic preserved: mark as seen
+                                                    if (!isSeen && user) {
+                                                        vibrateSafe(50);
+                                                        try {
+                                                            await supabase.from("qfeed_seen_comments").insert({
+                                                                image_id: img.id, user_id: user.id, comment: "Seen",
+                                                            });
+                                                            setSeenData(prev => ({ ...prev, [img.id]: true }));
+                                                        } catch (err) { console.error(err); }
+                                                    }
+                                                }}
+                                            >
+                                                <div className={`relative p-1 rounded-full transition-all duration-500 ${activeIndex === idx ? "scale-110" : "scale-100 hover:scale-105"}`}>
+                                                    {/* Outer Ring: Glowing if Unseen, Muted if Seen */}
+                                                    <div className={`absolute inset-0 rounded-full animate-pulse-slow ${!isSeen ? "bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[2px]" : "bg-slate-300 dark:bg-slate-700 p-[1px]"}`} />
+
+                                                    <div className="relative p-1 bg-white dark:bg-slate-900 rounded-full">
+                                                        <img
+                                                            src={img.image_url}
+                                                            alt=""
+                                                            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shadow-lg ${activeIndex === idx ? "grayscale-0" : "grayscale-[50%]"}`}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <span className={`text-[9px] font-bold uppercase tracking-widest ${activeIndex === idx ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`}>
+                                                    Visual {idx + 1}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* 2. THE MAIN STAGE (Insta-style Full View) */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-1 mt-4">
+                                    <div className="lg:col-span-8 group relative">
+                                        <div
+                                            className="relative aspect-video sm:aspect-square md:aspect-video rounded-xl overflow-hidden border-0 bg-slate-200 dark:bg-slate-800 shadow-2xl cursor-zoom-in"
+                                            onClick={() => openFullscreen(images[activeIndex].image_url)}
+                                        >
+                                            <img
+                                                src={images[activeIndex]?.image_url}
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                alt="Visual Trivia Content"
+                                            />
+
+                                            {/* Overlay Controls */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-8">
+                                                <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                                                    <Maximize2 className="w-4 h-4 text-white" />
+                                                    <span className="text-white text-xs font-bold uppercase tracking-widest">Expand Visual</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. THE INTERACTION FEED (Top Students) */}
+                                    <div className="lg:col-span-4 flex flex-col h-full">
+                                        <div className="flex-1 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/10 p-6 shadow-xl">
+                                            <div className="flex items-center gap-2 mb-6">
+                                                <Users className="w-4 h-4 text-indigo-500" />
+                                                <h3 className="font-bold text-xs uppercase tracking-[2px] text-slate-900 dark:text-white">Active Learners</h3>
+                                            </div>
+
+                                            <div className="space-y-4 max-h-[300px] lg:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {topUsers.length === 0 ? (
+                                                    <p className="text-xs font-medium text-slate-400 italic py-4">No activity recorded for this visual yet.</p>
+                                                ) : (
+                                                    topUsers.map((u, index) => (
+                                                        <div
+                                                            key={u.id}
+                                                            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-white/5 group"
+                                                            onClick={() => setSelectedUserId(u.id)}
+                                                        >
+                                                            <div className="relative">
+                                                                <img
+                                                                    src={u.avatar_url || "/UsersAvatar.jpg"}
+                                                                    alt={u.name}
+                                                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover:ring-indigo-500 transition-all"
+                                                                />
+                                                                <div className="absolute -top-1 -left-1 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+                                                                    {index + 1}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1 overflow-hidden">
+                                                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{u.name}</p>
+                                                                <p className="text-[10px] text-slate-500 font-medium truncate uppercase tracking-tighter">
+                                                                    {u.institution || "Student"}
+                                                                </p>
+                                                            </div>
+                                                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Fullscreen View - Preserved with Upgraded Styling */}
+                <AnimatePresence>
+                    {activeImage && (
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[9999] bg-slate-950/95 flex items-center justify-center p-4 backdrop-blur-2xl"
+                            onClick={() => setActiveImage(null)}
+                        >
+                            <button className="absolute top-10 right-10 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-xl transition-all active:scale-95">
+                                <X className="w-8 h-8" />
+                            </button>
+                            <motion.img
+                                initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                                src={activeImage}
+                                className="max-w-full max-h-[85vh] rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {selectedUserId && (
+                    <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+                )}
+            </div>
         </>
     );
 

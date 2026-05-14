@@ -1,92 +1,173 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { useSession } from "@supabase/auth-helpers-react"; // ✅ added
+import { useSession } from "@supabase/auth-helpers-react";
+import { Trophy, Target, TrendingUp, Sparkles, ArrowUpRight, Flame } from "lucide-react";
+
 function FriendlyProgressCard({ userTheme, name }) {
     const navigate = useNavigate();
-    const session = useSession();       // ✅ get current session
-    const user = session?.user || null; // ✅ current user
-    const [message, setMessage] = useState(
-        "View your progress, track your quizzes, and keep improving."
-    );
+    const session = useSession();
+    const user = session?.user || null;
+
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({ latest: 0, target: 50 });
+    const [message, setMessage] = useState("Your learning journey...");
 
     useEffect(() => {
         if (!user) return;
+
         async function fetchUserData() {
+            try {
+                setLoading(true);
 
-            if (!user) return;
+                // 1. Fetch Target Score
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("target_score")
+                    .eq("user_id", user.id)
+                    .single();
 
-            // Fetch profile for target_score
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("target_score")
-                .eq("user_id", user.id)
-                .single();
+                const userTarget = profile?.target_score ?? 50;
 
-            const userTarget = profile?.target_score ?? 50;
+                // 2. Fetch Latest Results
+                const { data: sim } = await supabase
+                    .from("simulation_results")
+                    .select("score, total_questions")
+                    .eq("user_id", user.id)
+                    .order("submitted_at", { ascending: false })
+                    .limit(1);
 
-            // Fetch latest simulation
-            const { data: sim } = await supabase
-                .from("simulation_results")
-                .select("score, total_questions, submitted_at")
-                .eq("user_id", user.id)
-                .order("submitted_at", { ascending: false })
-                .limit(1);
+                const { data: trivia } = await supabase
+                    .from("daily_trivia_results")
+                    .select("score")
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false })
+                    .limit(1);
 
-            // Fetch latest trivia
-            const { data: trivia } = await supabase
-                .from("daily_trivia_results")
-                .select("score, created_at")
-                .eq("user_id", user.id)
-                .order("created_at", { ascending: false })
-                .limit(1);
+                // 3. Safe Calculation Logic (Prevents NaN)
+                let latestSim = 0;
+                if (sim?.[0] && sim[0].total_questions > 0) {
+                    latestSim = Math.round((Number(sim[0].score || 0) / Number(sim[0].total_questions)) * 100);
+                }
 
-            const latestSim = sim?.[0] ? Math.round((sim[0].score / sim[0].total_questions) * 100) : null;
-            const TOTAL_TRIVIA_QUESTIONS = 15;
-            const latestTrivia = trivia?.[0] ? Math.round((trivia[0].score / TOTAL_TRIVIA_QUESTIONS) * 100) : null;
+                let latestTrivia = 0;
+                if (trivia?.[0]) {
+                    // Assuming daily trivia is always out of 15
+                    latestTrivia = Math.round((Number(trivia[0].score || 0) / 15) * 100);
+                }
 
-            const latest = Math.max(latestSim ?? 0, latestTrivia ?? 0);
+                // Final score is the best of the two most recent activities
+                const latest = Math.max(latestSim, latestTrivia);
 
-            // Set message depending on score vs target
-            if ((latestSim !== null && latestSim < userTarget) || (latestTrivia !== null && latestTrivia < userTarget)) {
-                setMessage(
-                    `Hi ${name || "there"}! Your latest score  is below your target of ${userTarget}%. Keep focusing and try again to reach your goal!`
-                );
-            } else {
-                setMessage(
-                    `Hi ${name || "there"}! Great job! Your latest score is meeting or exceeding your target of ${userTarget}%. Keep up the good work!`
-                );
+                // 4. Update Stats State
+                setStats({
+                    latest: isNaN(latest) ? 0 : latest,
+                    target: userTarget
+                });
+
+                // 5. Update Message
+                if (latest >= userTarget) {
+                    setMessage(`Amazing ${name || "Champion"}! You've surpassed your ${userTarget}% goal. You're a pro!`);
+                } else {
+                    setMessage(`Hi ${name || "there"}! You're at ${latest}%. Just a little more hard work to reach ${userTarget}%!`);
+                }
+
+            } catch (error) {
+                console.error("Error fetching user progress:", error);
+            } finally {
+                setLoading(false);
             }
         }
 
         fetchUserData();
     }, [user, name]);
 
+    const hasReachedTarget = stats.latest >= stats.target;
+
     return (
         <div
             onClick={() => navigate("/progress")}
-            className="flex flex-col md:flex-row bg-white dark:bg-gray-900 rounded-2xl shadow-lg overflow-hidden cursor-pointer transition-transform hover:scale-[0.98] mt-4"
+            className="group relative w-full min-h-[320px] rounded-xl overflow-hidden cursor-pointer shadow-xl transition-all duration-500 hover:shadow-2xl mt-2 border-0 bg-slate-50 dark:bg-slate-900"
         >
-            {/* Text section */}
-            <div className="flex-1 p-6 flex flex-col justify-center gap-4">
-
-                <p className="text-gray-700 dark:text-gray-300 text-base md:text-lg">
-                    {message}
-                </p>
-                <span
-                    className={`mt-2 px-6 py-2 rounded-full font-medium text-white ${userTheme.buttonBg || "bg-blue-600"}`}
-                >
-                    View Progress
-                </span>
-            </div>
-
-            {/* Image section */}
-            <div className="flex-1">
+            {/* 1. BACKGROUND IMAGE LAYER */}
+            <div className="absolute inset-0 z-0">
                 <img
                     src="/high1.png"
-                    alt="Illustration"
-                    className="w-full h-full object-cover"
+                    alt="Student Success"
+                    className="w-full h-full object-cover object-right opacity-40 dark:opacity-30 grayscale-[30%]"
                 />
+                {/* Soft Muted Gradient Mask */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-50 via-slate-50/95 to-transparent dark:from-slate-950 dark:via-slate-950/90 dark:to-transparent" />
+            </div>
+
+            {/* 2. CONTENT LAYER */}
+            <div className="relative z-10 flex flex-col justify-between h-full min-h-[320px] p-8 md:p-10">
+
+                {/* TOP: Badges and Header */}
+                <div className="max-w-[75%] space-y-4">
+                    <div className="flex items-center gap-3">
+                        {hasReachedTarget ? (
+                            <div className="flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 animate-pulse">
+                                <Trophy className="h-4 w-4" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Target Unlocked</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-4 py-1.5 rounded-full border border-amber-200 dark:border-amber-800 shadow-sm">
+                                <TrendingUp className="h-4 w-4 animate-bounce" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Keep Climbing</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                        {loading ? "Checking your scores..." : message}
+                    </h2>
+
+                    {!hasReachedTarget && !loading && (
+                        <p className="text-xs font-bold text-slate-500 flex items-center gap-1 opacity-80">
+                            <Flame className="h-3 w-3 text-orange-500" /> Focus on your weak spots to improve!
+                        </p>
+                    )}
+                </div>
+
+                {/* BOTTOM LEFT: Progress Details */}
+                <div className="w-full max-w-sm space-y-2">
+                    <div className="flex items-end justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recent Performance</span>
+                            <div className="flex items-baseline gap-1">
+                                <span className={`text-5xl font-black tracking-tighter ${hasReachedTarget ? 'text-emerald-600' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                    {stats.latest}%
+                                </span>
+                                <span className="text-slate-400 font-bold">/ {stats.target}%</span>
+                            </div>
+                        </div>
+
+                        {/* Achievement Stamp */}
+                        {hasReachedTarget && (
+                            <div className="bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 rotate-12 -translate-y-4">
+                                <Sparkles className="h-6 w-6 text-amber-500" />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Progress Bar Container */}
+                    <div className="space-y-3">
+                        <div className="h-3 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-300/30 dark:border-slate-700">
+                            <div
+                                className={`h-full rounded-full transition-all duration-[1.5s] ease-out ${hasReachedTarget ? 'bg-emerald-500' : userTheme.buttonBg || 'bg-indigo-600'}`}
+                                style={{ width: `${Math.min(stats.latest, 100)}%` }}
+                            >
+                                {/* Subtle shine animation on the bar */}
+                                <div className="w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                            </div>
+                        </div>
+
+                        <button className="flex items-center gap-1.5 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest hover:text-indigo-500 transition-colors">
+                            Full Score Breakdown <ArrowUpRight className="h-3 w-3" />
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

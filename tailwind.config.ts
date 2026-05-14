@@ -91,7 +91,12 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-
+      // ADD THIS SECTION HERE 👇
+      transitionDuration: {
+        '2000': '2000ms',
+        '3000': '3000ms',
+        '5000': '5000ms',
+      },
       /* ----------------------------- */
       /* ⭐ COMBINED KEYFRAMES         */
       /* ----------------------------- */

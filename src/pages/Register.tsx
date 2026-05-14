@@ -7,9 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, UserCheck, Stethoscope, Eye, EyeOff } from "lucide-react";
+import { GraduationCap, UserCheck, Stethoscope, Eye, EyeOff, User, Mail, Phone, Lock, MoreHorizontal, ShieldQuestion, School, MapPin, FileText, ChevronRight, Target, BookOpen, Layers, CheckCircle2, Info, ArrowRight, LogOut } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { institutions } from "@/components/forms/institutions.data";
+import { counties } from "@/components/forms/institutions.data";
+import { Separator } from "@/components/ui/separator";
 import { useEffect } from "react";
 import sha256 from "crypto-js/sha256";
 const backgroundImages = [
@@ -30,23 +33,18 @@ export function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
   const courseOptions = [
-    // DEGREE LEVEL
-    { value: "bsc-nursing", label: "Bachelor of Science in Nursing (BScN) ★★★★★" },
-    // DIPLOMA / CORE NURSING
-    { value: "krchn", label: "Kenya Registered Community Health Nursing (KRCHN)  ★★★★" },
-    // POST-BASIC NURSING SPECIALIZATIONS
-    { value: "midwifery", label: "Midwifery ★★★" },
-    { value: "critical-care-nursing", label: "Critical Care Nursing ★★★" },
-    { value: "mental-health-nursing", label: "Mental Health & Psychiatry Nursing  ★★★" },
-    { value: "pediatric-nursing", label: "Pediatric Nursing ★★★" },
-    { value: "oncology-nursing", label: "Oncology Nursing ★★★" },
-    { value: "palliative-care-nursing", label: "Palliative Care Nursing ★★★" },
-    { value: "community-health-nursing", label: "Community Health Nursing ★★★" },
-    // OTHER NURSING OPTIONS
-    { value: "perioperative-nursing", label: "Perioperative (Theatre) Nursing  ★★★" },
-    { value: "renal-nursing", label: "Renal Nursing  ★★★" },
-    // FALLBACK
-    { value: "other", label: "Other (Nursing Related) ★★" },
+    { value: "bsc-nursing", label: "BScN ★★★★★" },
+    { value: "krchn", label: "KRCHN  ★★★★" },
+    { value: "midwifery", label: "Midwifery ★★★★" },
+    { value: "critical-care-nursing", label: "Critical Care Nursing ★★★★" },
+    { value: "mental-health-nursing", label: "Mental Health & Psychiatry Nursing  ★★★★" },
+    { value: "pediatric-nursing", label: "Pediatric Nursing ★★★★" },
+    { value: "oncology-nursing", label: "Oncology Nursing ★★★★" },
+    { value: "palliative-care-nursing", label: "Palliative Care Nursing ★★★★" },
+    { value: "community-health-nursing", label: "Community Health Nursing ★★★★" },
+    { value: "perioperative-nursing", label: "Perioperative (Theatre) Nursing  ★★★★" },
+    { value: "renal-nursing", label: "Renal Nursing  ★★★★" },
+    { value: "other", label: "Other (Nursing Related) ★★★" },
 
 
   ];
@@ -188,123 +186,216 @@ export function Register() {
   };
 
 
-
-
+  const handleExitApp = () => {
+    const confirmed = window.confirm("Are you sure you want to exit the Medrae Nursing?");
+    if (confirmed) {
+      // Check if we are running as a laptop app
+      if ((window as any).electronAPI) {
+        (window as any).electronAPI.quitApp();
+      } else {
+        // If we are just in a browser, just alert
+        alert("Exit command sent (This only works in the Desktop App)");
+      }
+    }
+  };
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row transition-all duration-1000 bg-white text-gray-900">
+      {/* FLOATING EXIT BUTTON */}
+      <button
+        onClick={handleExitApp}
+        className="fixed top-4 left-4 z-[9999] bg-red-600 hover:bg-red-700 text-white p-3 rounded-2xl shadow-2xl transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] border-2 border-white"
+      >
+        <LogOut className="h-4 w-4" />
+        EXIT MEDRAE
+      </button>
       {/* LEFT IMAGE SIDE (DESKTOP) */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden">
-
+      <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
         {backgroundImages.map((img, index) => (
           <div
             key={index}
-            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${index === bgIndex ? "opacity-100" : "opacity-0"
+            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
               }`}
-            style={{ backgroundImage: `url(${img})` }}
+            style={{
+              backgroundImage: `url(${img})`,
+              transition: 'opacity 1s ease-in-out, transform 10s linear'
+            }}
           />
         ))}
 
-        <div className="absolute inset-0 bg-black/40"></div>
-
+        {/* Improved Overlay: Gradient for better readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40">
+          <div className="absolute bottom-16 left-12 right-12 text-white space-y-4">
+            <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-xs font-semibold tracking-wider uppercase">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+              Join our growing community
+            </div>
+            <h1 className="text-5xl font-bold leading-tight">
+              Empowering the next <br />
+              <span className="text-blue-400">generation of experts.</span>
+            </h1>
+            <p className="text-gray-300 text-lg max-w-md">
+              Access premium learning resources and connect with professional tutors from across the country.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* RIGHT FORM SIDE */}
-      <div className="w-full md:w-1/2 flex justify-center items-start bg-white p-2 min-h-screen">
-        <div className="w-full max-w-4xl">
-          <Card className="w-full max-w-4xl bg-white text-gray-900 border border-gray-200 rounded-2xl shadow-lg max-h-[90vh] flex flex-col">
-            <CardHeader className="flex justify-between items-center">
-              <CardTitle className="flex items-center space-x-3 text-2xl font-bold">
-                <img
-                  src="/pwa-192x192.jpeg"
-                  alt="Logo"
-                  className="w-8 h-8 object-contain"
-                />
-                <span>Create Your Account</span>
-              </CardTitle>
-              <Link
-                to="/login"
-                className="text-blue-600 hover:underline font-medium text-sm"
-              >
-                I have an account, login in
-              </Link>
+      <div className="w-full md:w-1/2 flex justify-center items-center p-4 md:p-8 lg:p-12 overflow-y-auto">
+        <div className="w-full max-w-2xl animate-in fade-in slide-in-from-right-4 duration-700">
+
+          <Card className="w-full bg-white text-gray-900 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] overflow-hidden flex flex-col">
+
+            <CardHeader className="space-y-6 pt-10 px-8 pb-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 p-2 shadow-lg shadow-blue-200">
+                    <img
+                      src="/pwa-192x192.jpeg"
+                      alt="Logo"
+                      className="w-full h-full object-contain invert"
+                    />
+                  </div>
+                  <CardTitle className="text-2xl font-black tracking-tight text-slate-800">
+                    Get Started
+                  </CardTitle>
+                </div>
+                <Link
+                  to="/login"
+                  className="text-blue-600 hover:text-blue-700 font-bold text-sm bg-blue-50 px-4 py-2 rounded-full transition-colors"
+                >
+                  Log In
+                </Link>
+              </div>
+
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold text-slate-700">Create your account</h2>
+                <CardDescription className="text-slate-500 font-medium">
+                  Select your role to personalize your experience.
+                </CardDescription>
+              </div>
             </CardHeader>
 
-            <CardDescription className="p-4 ">
-              Register as a Student, Tutor or Staff
-            </CardDescription>
-            <CardContent className="pb-8 md:pb-6 px-2 sm:px-4 lg:px-6 overflow-y-auto custom-scrollbar">
-              <Tabs defaultValue="student">
+            <CardContent className="px-8 pb-10">
+              <Tabs defaultValue="student" className="w-full">
 
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  <TabsTrigger value="student">
-                    <GraduationCap className="mr-2" /> Student
+                <TabsList className="grid w-full grid-cols-3 mb-8 bg-slate-100/80 p-1.5 rounded-2xl h-14">
+                  <TabsTrigger
+                    value="student"
+                    className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all"
+                  >
+                    <GraduationCap className="w-4 h-4 mr-2" /> Student
                   </TabsTrigger>
 
-                  <TabsTrigger value="tutor">
-                    <UserCheck className="mr-2" /> Tutor
+                  <TabsTrigger
+                    value="tutor"
+                    className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all"
+                  >
+                    <UserCheck className="w-4 h-4 mr-2" /> Tutor
                   </TabsTrigger>
 
-                  <TabsTrigger value="staff">
-                    <Stethoscope className="mr-2" /> Staff
+                  <TabsTrigger
+                    value="staff"
+                    className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 font-bold transition-all"
+                  >
+                    <Stethoscope className="w-4 h-4 mr-2" /> Staff
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="student">
-                  <StudentForm
-                    handleRegister={handleRegister}
-                    isLoading={isLoading}
-                    usernameEdited={usernameEdited}
-                    setUsernameEdited={setUsernameEdited}
-                    courseOptions={courseOptions}
-                  />
-                </TabsContent>
+                {/* Content Areas */}
+                <div className="min-h-[400px]">
+                  <TabsContent value="student" className="mt-0 focus-visible:outline-none animate-in fade-in-50 duration-500">
+                    <StudentForm
+                      handleRegister={handleRegister}
+                      isLoading={isLoading}
+                      usernameEdited={usernameEdited}
+                      setUsernameEdited={setUsernameEdited}
+                      courseOptions={courseOptions}
+                    />
+                  </TabsContent>
 
-                <TabsContent value="tutor">
-                  <TutorForm
-                    handleRegister={handleRegister}
-                    isLoading={isLoading}
-                    usernameEdited={usernameEdited}
-                    setUsernameEdited={setUsernameEdited}
-                  />
-                </TabsContent>
-                <TabsContent value="staff">
-                  <div className="p-0 text-left text-lg font-semibold text-gray-700 space-y-4">
-                    <p>
-                      Our Staff registration portal is currently under development as we work to create a seamless and robust experience for our administrative and support team.
-                    </p>
+                  <TabsContent value="tutor" className="mt-0 focus-visible:outline-none animate-in fade-in-50 duration-500">
+                    <TutorForm
+                      handleRegister={handleRegister}
+                      isLoading={isLoading}
+                      usernameEdited={usernameEdited}
+                      setUsernameEdited={setUsernameEdited}
+                    />
+                  </TabsContent>
 
-                    <p>
-                      In the meantime, you can explore the platform to familiarize yourself with its features, review content, and get an overview of the student experience. This will help you prepare for your role once staff access is available.
-                    </p>
+                  <TabsContent value="staff" className="mt-0 focus-visible:outline-none">
+                    <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 relative overflow-hidden">
+                      {/* Abstract Background Icon */}
+                      <Stethoscope className="absolute -right-8 -bottom-8 w-40 h-40 text-slate-200/50 -rotate-12" />
 
-                    <p>
-                      Your contribution is highly valued, and we look forward to providing you with full access to staff features very soon.
-                    </p>
-                  </div>
-                </TabsContent>
+                      <div className="relative z-10 space-y-6">
+                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100">
+                          <Info className="w-6 h-6 text-blue-500" />
+                        </div>
 
+                        <div className="space-y-3">
+                          <h3 className="text-xl font-bold text-slate-800">Staff Portal Coming Soon</h3>
+                          <div className="space-y-4 text-slate-600 leading-relaxed font-medium text-sm">
+                            <p>
+                              Our Staff registration portal is currently under development to ensure a robust experience for our administrative team.
+                            </p>
+                            <p>
+                              In the meantime, feel free to explore the student dashboard to familiarize yourself with the platform features.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 flex flex-wrap gap-3">
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-100">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Administrative Tools
+                          </div>
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-100">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> User Management
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </div>
               </Tabs>
 
-              <div className="mt-6 mb-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{" "}
-                  <Link to="/login" className="text-blue-600 hover:underline font-medium">
-                    Log in here
-                  </Link>
-                </p>
+              {/* Bottom Footer Section */}
+              <div className="mt-10 pt-8 border-t border-slate-100">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <p className="text-sm text-slate-500 font-medium">
+                    Already have an account?{" "}
+                    <Link to="/login" className="text-blue-600 hover:text-blue-700 font-bold inline-flex items-center gap-1 group">
+                      Sign in here <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </p>
+
+                  <div className="flex gap-6">
+                    <span
+                      className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
+                      onClick={() => navigate("/privacy")}
+                    >
+                      Privacy & Policy
+                    </span>.
+                    <span
+                      className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
+                      onClick={() => navigate("/terms")}
+                    >
+                      Terms & Conditions
+                    </span>.
+                  </div>
+                </div>
               </div>
 
             </CardContent>
-
           </Card>
         </div>
-
       </div>
-
     </div>
   );
 }
-
 export default Register;
 
 const PasswordField = ({ label, value, onChange }) => {
@@ -340,261 +431,284 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
   });
 
   return (
-    <div className="space-y-3  ">
-      <div className="grid grid-cols-2 gap-4">
-        <div><Label>Full Name *</Label><Input
-          placeholder="John Doe"
-          value={formData.fullName}
-          onChange={e => {
-            const fullName = e.target.value;
-            setFormData({
-              ...formData,
-              fullName,
-              username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
-            });
-          }}
-        />
+
+    <div className="max-w-2xl mx-auto bg-white">
+      <div className="space-y-8">
+
+        {/* --- SECTION 1: ACCOUNT DETAILS --- */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-1">
+            <User className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-800">Account Information</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold">Full Name *</Label>
+              <Input
+                placeholder="Jackline Mildred "
+                className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
+                value={formData.fullName}
+                onChange={e => {
+                  const fullName = e.target.value;
+                  setFormData({
+                    ...formData,
+                    fullName,
+                    username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
+                  });
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold">Username *</Label>
+              <div className="relative">
+                <Input
+                  placeholder="JacklineMildred21"
+                  className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all pl-8"
+                  value={formData.username}
+                  onChange={e => {
+                    setUsernameEdited(true);
+                    setFormData({ ...formData, username: e.target.value });
+                  }}
+                />
+                <span className="absolute left-3 top-2.5 text-gray-400 text-sm">@</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold">Email Address *</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Input
+                  type="email"
+                  placeholder="example@email.com"
+                  className="pl-10 bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold">Phone Number *</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Input
+                  className="pl-10 bg-gray-50/50 border-gray-200 focus:bg-white transition-all font-mono"
+                  value={formData.phone}
+                  onChange={e => {
+                    let value = e.target.value;
+                    if (!value.startsWith("+254")) value = "+254";
+                    setFormData({ ...formData, phone: value });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-        <div><Label>Username *</Label><Input
-          placeholder="johndoe123"
-          value={formData.username}
-          onChange={e => {
-            setUsernameEdited(true); // NEW: stop auto-fill after manual edit
-            setFormData({ ...formData, username: e.target.value });
-          }}
-        />
+
+        <Separator className="opacity-50" />
+
+        {/* --- SECTION 2: SECURITY --- */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-1">
+            <Lock className="w-5 h-5 text-amber-600" />
+            <h3 className="font-semibold text-gray-800">Security</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <PasswordField
+              label="Password *"
+              value={formData.password}
+              onChange={e => setFormData({ ...formData, password: e.target.value })}
+            />
+            <PasswordField
+              label="Confirm Password *"
+              value={formData.confirmPassword}
+              onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
+                <ShieldQuestion className="w-3 h-3" /> Security Question *
+              </Label>
+              <Select
+                value={formData.resetQuestion}
+                onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
+              >
+                <SelectTrigger className="bg-gray-50/50 border-gray-200">
+                  <SelectValue placeholder="Select a question" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mother_maiden">What is your mother’s maiden name?</SelectItem>
+                  <SelectItem value="first_pet">What was the name of your first pet?</SelectItem>
+                  <SelectItem value="birth_city">In which city were you born?</SelectItem>
+                  <SelectItem value="favorite_teacher">Who was your favorite teacher?</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold">Your Answer *</Label>
+              <Input
+                placeholder="Enter answer"
+                className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
+                value={formData.resetAnswer}
+                onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+
+        <Separator className="opacity-50" />
+
+        {/* --- SECTION 3: ACADEMIC PROFILE --- */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-1">
+            <School className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-semibold text-gray-800">Academic Profile</h3>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
+              <Target className="w-3 h-3" /> Target Score (%) *
+            </Label>
+            <div className="relative max-w-[200px]">
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all pr-8 font-bold text-emerald-700"
+                value={formData.targetScore}
+                onChange={e => setFormData({ ...formData, targetScore: Number(e.target.value) })}
+              />
+              <span className="absolute right-3 top-2.5 text-gray-400 text-sm">%</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
+                <School className="w-3 h-3" /> Institution *
+              </Label>
+              <Select value={formData.institution} onValueChange={v => setFormData({ ...formData, institution: v })}>
+                <SelectTrigger className="bg-gray-50/50 border-gray-200">
+                  <SelectValue placeholder="Choose institution" />
+                </SelectTrigger>
+                <SelectContent>
+                  {institutions.map((inst) => (
+                    <SelectItem key={inst.value} value={inst.value}>{inst.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> County *
+              </Label>
+              <Select value={formData.county} onValueChange={v => setFormData({ ...formData, county: v })}>
+                <SelectTrigger className="bg-gray-50/50 border-gray-200">
+                  <SelectValue placeholder="Choose county" />
+                </SelectTrigger>
+                <SelectContent>
+                  {counties.map((county) => (
+                    <SelectItem key={county.value} value={county.value}>{county.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
+                <BookOpen className="w-3 h-3" /> Course *
+              </Label>
+              <Select value={formData.course} onValueChange={v => setFormData({ ...formData, course: v })}>
+                <SelectTrigger className="bg-gray-50/50 border-gray-200">
+                  <SelectValue placeholder="Select course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courseOptions.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {formData.course === "other" && (
+                <Input
+                  placeholder="Type your course name"
+                  className="mt-2 animate-in slide-in-from-top-1"
+                  value={formData.otherCourse}
+                  onChange={e => setFormData({ ...formData, otherCourse: e.target.value })}
+                />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
+                <Layers className="w-3 h-3" /> Level / Block *
+              </Label>
+              <Select value={formData.block} onValueChange={v => setFormData({ ...formData, block: v })}>
+                <SelectTrigger className="bg-gray-50/50 border-gray-200">
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="px-2 py-1.5 text-xs font-bold text-gray-400 uppercase">Semesters</div>
+                  <SelectItem value="year1_sem1">Year 1 Sem 1</SelectItem>
+                  <SelectItem value="year1_sem2">Year 1 Sem 2</SelectItem>
+                  <SelectItem value="year2_sem1">Year 2 Sem 1</SelectItem>
+                  <SelectItem value="year2_sem2">Year 2 Sem 2</SelectItem>
+                  <SelectItem value="year3_sem1">Year 3 Sem 1</SelectItem>
+                  <SelectItem value="year3_sem2">Year 3 Sem 2</SelectItem>
+                  <Separator className="my-1" />
+                  <div className="px-2 py-1.5 text-xs font-bold text-gray-400 uppercase">Blocks</div>
+                  <SelectItem value="block1">Block 1</SelectItem>
+                  <SelectItem value="block2">Block 2</SelectItem>
+                  <SelectItem value="block3">Block 3</SelectItem>
+                  <SelectItem value="block4">Block 4</SelectItem>
+                  <SelectItem value="block5">Block 5</SelectItem>
+                  <SelectItem value="block6">Block 6</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold flex items-center gap-1">
+              <FileText className="w-3 h-3" /> Short Bio
+            </Label>
+            <Textarea
+              placeholder="Tell us a bit about your academic goals..."
+              className="bg-gray-50/50 border-gray-200 min-h-[100px] resize-none"
+              value={formData.bio}
+              onChange={e => setFormData({ ...formData, bio: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* --- SUBMIT BUTTON --- */}
+        <div className="pt-2">
+          <Button
+            className="w-full h-12 text-md font-bold transition-all shadow-md hover:shadow-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.99]"
+            disabled={isLoading}
+            onClick={() => handleRegister("student", formData)}
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Processing...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                Create Student Account
+                <ChevronRight className="w-4 h-4 ml-1 opacity-50" />
+              </div>
+            )}
+          </Button>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>Email *</Label>
-          <Input
-            type="email"
-            placeholder="example@email.com"
-            value={formData.email}
-            onChange={e => setFormData({ ...formData, email: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <Label>Phone Number *</Label>
-          <Input
-            value={formData.phone}
-            onChange={e => {
-              let value = e.target.value;
-              if (!value.startsWith("+254")) value = "+254";
-              setFormData({ ...formData, phone: value });
-            }}
-          />
-        </div>
-      </div>
-
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <PasswordField
-          label="Password *"
-          value={formData.password}
-          onChange={e => setFormData({ ...formData, password: e.target.value })}
-        />
-
-        <PasswordField
-          label="Confirm Password *"
-          value={formData.confirmPassword}
-          onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-        />
-      </div>
-
-      <Label>Security Question *</Label>
-      <Select
-        value={formData.resetQuestion}
-        onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Select a security question" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="mother_maiden">What is your mother’s maiden name?</SelectItem>
-          <SelectItem value="first_pet">What was the name of your first pet?</SelectItem>
-          <SelectItem value="birth_city">In which city were you born?</SelectItem>
-          <SelectItem value="favorite_teacher">Who was your favorite teacher?</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Label>Answer *</Label>
-      <Input
-        placeholder="Enter answer"
-        value={formData.resetAnswer}
-        onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
-      />
-      <Label>Choose your Target Score (%) *</Label>
-      <Input
-        type="number"
-        min={1}
-        max={100}
-        placeholder="Set your target score"
-        value={formData.targetScore}
-        onChange={e => setFormData({ ...formData, targetScore: Number(e.target.value) })}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Institution *</Label>
-          <Select value={formData.institution} onValueChange={v => setFormData({ ...formData, institution: v })}>
-            <SelectTrigger><SelectValue placeholder="Choose institution" /></SelectTrigger>
-            <SelectContent>
-              {/* All KMTC campuses */}
-              <SelectItem value="kmtc_amboseli">KMTC Amboseli</SelectItem>
-              <SelectItem value="kmtc_bomet">KMTC Bomet</SelectItem>
-              <SelectItem value="kmtc_busia">KMTC Busia</SelectItem>
-              <SelectItem value="kmtc_eldoret">KMTC Eldoret</SelectItem>
-              <SelectItem value="kmtc_embu">KMTC Embu</SelectItem>
-              <SelectItem value="kmtc_garissa">KMTC Garissa</SelectItem>
-              <SelectItem value="kmtc_homa_bay">KMTC Homa Bay</SelectItem>
-              <SelectItem value="kmtc_kakamega">KMTC Kakamega</SelectItem>
-              <SelectItem value="kmtc_kajiado">KMTC Kajiado</SelectItem>
-              <SelectItem value="kmtc_kamulu">KMTC Kamulu</SelectItem>
-              <SelectItem value="kmtc_kericho">KMTC Kericho</SelectItem>
-              <SelectItem value="kmtc_kilifi">KMTC Kilifi</SelectItem>
-              <SelectItem value="kmtc_kitui">KMTC Kitui</SelectItem>
-              <SelectItem value="kmtc_kisii">KMTC Kisii</SelectItem>
-              <SelectItem value="kmtc_kisumu">KMTC Kisumu</SelectItem>
-              <SelectItem value="kmtc_kitale">KMTC Kitale</SelectItem>
-              <SelectItem value="kmtc_koibatek">KMTC Koibatek</SelectItem>
-              <SelectItem value="kmtc_kuresoi">KMTC Kuresoi</SelectItem>
-              <SelectItem value="kmtc_lamu">KMTC Lamu</SelectItem>
-              <SelectItem value="kmtc_malindi">KMTC Malindi</SelectItem>
-              <SelectItem value="kmtc_marsabit">KMTC Marsabit</SelectItem>
-              <SelectItem value="kmtc_meru">KMTC Meru</SelectItem>
-              <SelectItem value="kmtc_migori">KMTC Migori</SelectItem>
-              <SelectItem value="kmtc_mombasa">KMTC Mombasa</SelectItem>
-              <SelectItem value="kmtc_murang'a">KMTC Murang'a</SelectItem>
-              <SelectItem value="kmtc_nairobi">KMTC Nairobi</SelectItem>
-              <SelectItem value="kmtc_nakuru">KMTC Nakuru</SelectItem>
-              <SelectItem value="kmtc_nandi">KMTC Nandi</SelectItem>
-              <SelectItem value="kmtc_narok">KMTC Narok</SelectItem>
-              <SelectItem value="kmtc_nyandarua">KMTC Nyandarua</SelectItem>
-              <SelectItem value="kmtc_nyeri">KMTC Nyeri</SelectItem>
-              <SelectItem value="kmtc_samburu">KMTC Samburu</SelectItem>
-              <SelectItem value="kmtc_sotik">KMTC Sotik</SelectItem>
-              <SelectItem value="kmtc_thika">KMTC Thika</SelectItem>
-              <SelectItem value="kmtc_trans_nzoia">KMTC Trans Nzoia</SelectItem>
-              <SelectItem value="kmtc_ujiji">KMTC Ujiji</SelectItem>
-              <SelectItem value="kmtc_uar">KMTC Uasin Gishu</SelectItem>
-
-              {/* Fidenza School of Nursing Kyeni */}
-              <SelectItem value="fidenza_kyeni">Fidenza School of Nursing Kyeni</SelectItem>
-
-              {/* Other institutions */}
-              <SelectItem value="kenyatta_university">Kenyatta University</SelectItem>
-              <SelectItem value="mount_kenya_university">Mount Kenya University</SelectItem>
-              <SelectItem value="university_of_nairobi">University of Nairobi</SelectItem>
-              <SelectItem value="strathmore_university">Strathmore University</SelectItem>
-              <SelectItem value="private_nursing_school">Private Nursing School</SelectItem>
-              <SelectItem value="consolata_kyeni">Consolata Hospital Kyeni</SelectItem>
-
-              {/* Other */}
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-
-          </Select>
-        </div>
-        <div>
-          <Label>County *</Label>
-          <Select value={formData.county} onValueChange={v => setFormData({ ...formData, county: v })}>
-            <SelectTrigger><SelectValue placeholder="Choose county" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="mombasa">Mombasa</SelectItem>
-              <SelectItem value="kwale">Kwale</SelectItem>
-              <SelectItem value="kilifi">Kilifi</SelectItem>
-              <SelectItem value="tsamaku">Tana River</SelectItem>
-              <SelectItem value="lamu">Lamu</SelectItem>
-              <SelectItem value="taita-taveta">Taita-Taveta</SelectItem>
-              <SelectItem value="garissa">Garissa</SelectItem>
-              <SelectItem value="wajir">Wajir</SelectItem>
-              <SelectItem value="mandera">Mandera</SelectItem>
-              <SelectItem value="marsabit">Marsabit</SelectItem>
-              <SelectItem value="isiolo">Isiolo</SelectItem>
-              <SelectItem value="meri">Meru</SelectItem>
-              <SelectItem value="tharaka-nithi">Tharaka-Nithi</SelectItem>
-              <SelectItem value="embu">Embu</SelectItem>
-              <SelectItem value="kitui">Kitui</SelectItem>
-              <SelectItem value="machakos">Machakos</SelectItem>
-              <SelectItem value="mata">Makueni</SelectItem>
-              <SelectItem value="nyandarua">Nyandarua</SelectItem>
-              <SelectItem value="nyeri">Nyeri</SelectItem>
-              <SelectItem value="kirinyaga">Kirinyaga</SelectItem>
-              <SelectItem value="murang'a">Murang'a</SelectItem>
-              <SelectItem value="kiambu">Kiambu</SelectItem>
-              <SelectItem value="turkana">Turkana</SelectItem>
-              <SelectItem value="west-pokot">West Pokot</SelectItem>
-              <SelectItem value="samburu">Samburu</SelectItem>
-              <SelectItem value="trans-nzoia">Trans Nzoia</SelectItem>
-              <SelectItem value="ucegelo">Uasin Gishu</SelectItem>
-              <SelectItem value="elgeyo-marakwet">Elgeyo Marakwet</SelectItem>
-              <SelectItem value="nandi">Nandi</SelectItem>
-              <SelectItem value="bomet">Bomet</SelectItem>
-              <SelectItem value="kericho">Kericho</SelectItem>
-              <SelectItem value="kakamega">Kakamega</SelectItem>
-              <SelectItem value="vihiga">Vihiga</SelectItem>
-              <SelectItem value="bungoma">Bungoma</SelectItem>
-              <SelectItem value="busia">Busia</SelectItem>
-              <SelectItem value="siaya">Siaya</SelectItem>
-              <SelectItem value="kisumu">Kisumu</SelectItem>
-              <SelectItem value="homabay">Homa Bay</SelectItem>
-              <SelectItem value="migori">Migori</SelectItem>
-              <SelectItem value="kisii">Kisii</SelectItem>
-              <SelectItem value="nyamira">Nyamira</SelectItem>
-              <SelectItem value="nairobi">Nairobi</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-
-          </Select>
-        </div>
-      </div>
-
-      <Label>Course *</Label>
-      <Select value={formData.course} onValueChange={v => setFormData({ ...formData, course: v })}>
-        <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
-        <SelectContent>
-          {courseOptions.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
-      {formData.course === "other" && (
-        <Input placeholder="Enter your course" value={formData.otherCourse} onChange={e => setFormData({ ...formData, otherCourse: e.target.value })} />
-      )}
-
-      <Label>Block *</Label>
-      <Select value={formData.block} onValueChange={v => setFormData({ ...formData, block: v })}>
-        <SelectTrigger><SelectValue placeholder="Select block" /></SelectTrigger>
-        <SelectContent>
-          {/* Year and Semester */}
-          <SelectItem value="year1_sem1">Year 1 Semester 1</SelectItem>
-          <SelectItem value="year1_sem2">Year 1 Semester 2</SelectItem>
-          <SelectItem value="year2_sem1">Year 2 Semester 1</SelectItem>
-          <SelectItem value="year2_sem2">Year 2 Semester 2</SelectItem>
-          <SelectItem value="year3_sem1">Year 3 Semester 1</SelectItem>
-          <SelectItem value="year3_sem2">Year 3 Semester 2</SelectItem>
-          <SelectItem value="year4_sem1">Year 4 Semester 1</SelectItem>
-          <SelectItem value="year4_sem2">Year 4 Semester 2</SelectItem>
-
-          {/* Blocks */}
-          <SelectItem value="block1">Block 1</SelectItem>
-          <SelectItem value="block2">Block 2</SelectItem>
-          <SelectItem value="block3">Block 3</SelectItem>
-          <SelectItem value="block4">Block 4</SelectItem>
-          <SelectItem value="block5">Block 5</SelectItem>
-          <SelectItem value="block6">Block 6</SelectItem>
-        </SelectContent>
-
-      </Select>
-
-      <Label>Short Bio</Label>
-      <Textarea placeholder="Tell us a bit about yourself..." value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} />
-
-      <Button className="w-full" disabled={isLoading} onClick={() => handleRegister("student", formData)}>
-        {isLoading ? "Registering..." : "Register as student"}
-      </Button>
     </div>
+
   );
 }
 function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdited }) {
@@ -613,221 +727,223 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
   });
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div><Label>Full Name *</Label><Input
-          placeholder="John Doe"
-          value={formData.fullName}
-          onChange={e => {
-            const fullName = e.target.value;
-            setFormData({
-              ...formData,
-              fullName,
-              username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
-            });
-          }}
-        />
-        </div>
-        <div><Label>Username *</Label><Input
-          placeholder="johndoe123"
-          value={formData.username}
-          onChange={e => {
-            setUsernameEdited(true); // NEW: stop auto-fill after manual edit
-            setFormData({ ...formData, username: e.target.value });
-          }}
-        />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>Email *</Label>
-          <Input
-            type="email"
-            placeholder="example@email.com"
-            value={formData.email}
-            onChange={e => setFormData({ ...formData, email: e.target.value })}
-          />
-        </div>
+    <div className="max-w-2xl mx-auto p-1">
+      <Card className="border-none shadow-none bg-transparent">
+        <CardContent className="p-0 space-y-8">
 
-        <div>
-          <Label>Phone Number *</Label>
-          <Input
-            value={formData.phone}
-            onChange={e => {
-              let value = e.target.value;
-              if (!value.startsWith("+254")) value = "+254";
-              setFormData({ ...formData, phone: value });
-            }}
-          />
-        </div>
-      </div>
+          {/* Section 1: Personal Identity */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Personal Identity</h3>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Full Name <span className="text-destructive">*</span></Label>
+                <Input
+                  className="bg-white/50 focus-visible:ring-blue-500"
+                  placeholder="Jackline Mildred "
+                  value={formData.fullName}
+                  onChange={e => {
+                    const fullName = e.target.value;
+                    setFormData({
+                      ...formData,
+                      fullName,
+                      username: usernameEdited ? formData.username : fullName.toLowerCase().replace(/\s+/g, "")
+                    });
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Username <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Input
+                    className="bg-white/50 focus-visible:ring-blue-500 pl-8"
+                    placeholder="JacklineMildred21"
+                    value={formData.username}
+                    onChange={e => {
+                      setUsernameEdited(true);
+                      setFormData({ ...formData, username: e.target.value });
+                    }}
+                  />
+                  <span className="absolute left-2.5 top-2.5 text-slate-400 text-sm">@</span>
+                </div>
+              </div>
+            </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <PasswordField
-          label="Password *"
-          value={formData.password}
-          onChange={e => setFormData({ ...formData, password: e.target.value })}
-        />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Email Address <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Input
+                    type="email"
+                    className="bg-white/50 focus-visible:ring-blue-500 pl-9"
+                    placeholder="example@email.com"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  />
+                  <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Phone Number <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Input
+                    className="bg-white/50 focus-visible:ring-blue-500 pl-9"
+                    value={formData.phone}
+                    onChange={e => {
+                      let value = e.target.value;
+                      if (!value.startsWith("+254")) value = "+254";
+                      setFormData({ ...formData, phone: value });
+                    }}
+                  />
+                  <Phone className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+            </div>
+          </section>
 
-        <PasswordField
-          label="Confirm Password *"
-          value={formData.confirmPassword}
-          onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-        />
-      </div>
+          <MoreHorizontal className="bg-slate-100" />
 
-      <Label>Security Question *</Label>
-      <Select
-        value={formData.resetQuestion}
-        onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Select a security question" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="mother_maiden">What is your mother’s maiden name?</SelectItem>
-          <SelectItem value="first_pet">What was the name of your first pet?</SelectItem>
-          <SelectItem value="birth_city">In which city were you born?</SelectItem>
-          <SelectItem value="favorite_teacher">Who was your favorite teacher?</SelectItem>
-        </SelectContent>
-      </Select>
+          {/* Section 2: Account Security */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <Lock className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Security</h3>
+            </div>
 
-      <Label>Answer *</Label>
-      <Input
-        placeholder="Enter answer"
-        value={formData.resetAnswer}
-        onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
-      />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <PasswordField
+                label="Password *"
+                value={formData.password}
+                onChange={e => setFormData({ ...formData, password: e.target.value })}
+              />
+              <PasswordField
+                label="Confirm Password *"
+                value={formData.confirmPassword}
+                onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+              />
+            </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Institution *</Label>
-          <Select value={formData.institution} onValueChange={v => setFormData({ ...formData, institution: v })}>
-            <SelectTrigger><SelectValue placeholder="Choose institution" /></SelectTrigger>
-            <SelectContent>
-              {/* All KMTC campuses */}
-              <SelectItem value="kmtc_amboseli">KMTC Amboseli</SelectItem>
-              <SelectItem value="kmtc_bomet">KMTC Bomet</SelectItem>
-              <SelectItem value="kmtc_busia">KMTC Busia</SelectItem>
-              <SelectItem value="kmtc_eldoret">KMTC Eldoret</SelectItem>
-              <SelectItem value="kmtc_embu">KMTC Embu</SelectItem>
-              <SelectItem value="kmtc_garissa">KMTC Garissa</SelectItem>
-              <SelectItem value="kmtc_homa_bay">KMTC Homa Bay</SelectItem>
-              <SelectItem value="kmtc_kakamega">KMTC Kakamega</SelectItem>
-              <SelectItem value="kmtc_kajiado">KMTC Kajiado</SelectItem>
-              <SelectItem value="kmtc_kamulu">KMTC Kamulu</SelectItem>
-              <SelectItem value="kmtc_kericho">KMTC Kericho</SelectItem>
-              <SelectItem value="kmtc_kilifi">KMTC Kilifi</SelectItem>
-              <SelectItem value="kmtc_kitui">KMTC Kitui</SelectItem>
-              <SelectItem value="kmtc_kisii">KMTC Kisii</SelectItem>
-              <SelectItem value="kmtc_kisumu">KMTC Kisumu</SelectItem>
-              <SelectItem value="kmtc_kitale">KMTC Kitale</SelectItem>
-              <SelectItem value="kmtc_koibatek">KMTC Koibatek</SelectItem>
-              <SelectItem value="kmtc_kuresoi">KMTC Kuresoi</SelectItem>
-              <SelectItem value="kmtc_lamu">KMTC Lamu</SelectItem>
-              <SelectItem value="kmtc_malindi">KMTC Malindi</SelectItem>
-              <SelectItem value="kmtc_marsabit">KMTC Marsabit</SelectItem>
-              <SelectItem value="kmtc_meru">KMTC Meru</SelectItem>
-              <SelectItem value="kmtc_migori">KMTC Migori</SelectItem>
-              <SelectItem value="kmtc_mombasa">KMTC Mombasa</SelectItem>
-              <SelectItem value="kmtc_murang'a">KMTC Murang'a</SelectItem>
-              <SelectItem value="kmtc_nairobi">KMTC Nairobi</SelectItem>
-              <SelectItem value="kmtc_nakuru">KMTC Nakuru</SelectItem>
-              <SelectItem value="kmtc_nandi">KMTC Nandi</SelectItem>
-              <SelectItem value="kmtc_narok">KMTC Narok</SelectItem>
-              <SelectItem value="kmtc_nyandarua">KMTC Nyandarua</SelectItem>
-              <SelectItem value="kmtc_nyeri">KMTC Nyeri</SelectItem>
-              <SelectItem value="kmtc_samburu">KMTC Samburu</SelectItem>
-              <SelectItem value="kmtc_sotik">KMTC Sotik</SelectItem>
-              <SelectItem value="kmtc_thika">KMTC Thika</SelectItem>
-              <SelectItem value="kmtc_trans_nzoia">KMTC Trans Nzoia</SelectItem>
-              <SelectItem value="kmtc_ujiji">KMTC Ujiji</SelectItem>
-              <SelectItem value="kmtc_uar">KMTC Uasin Gishu</SelectItem>
-              <SelectItem value="kmtc_Bungoma ">KMTC Bungoma </SelectItem>
-              <SelectItem value="kmtc_Webuye">KMTC Webuye</SelectItem>
-              <SelectItem value="Mp Shah Hospital Nursing School">Mp Shah Hospital Nursing School</SelectItem>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <ShieldQuestion className="w-3.5 h-3.5" /> Security Question *
+                </Label>
+                <Select
+                  value={formData.resetQuestion}
+                  onValueChange={v => setFormData({ ...formData, resetQuestion: v })}
+                >
+                  <SelectTrigger className="bg-white/50 focus:ring-amber-500">
+                    <SelectValue placeholder="Select question" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mother_maiden">Mother’s maiden name?</SelectItem>
+                    <SelectItem value="first_pet">First pet's name?</SelectItem>
+                    <SelectItem value="birth_city">City of birth?</SelectItem>
+                    <SelectItem value="favorite_teacher">Favorite teacher?</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Security Answer *</Label>
+                <Input
+                  className="bg-white/50 focus-visible:ring-amber-500"
+                  placeholder="Your answer"
+                  value={formData.resetAnswer}
+                  onChange={e => setFormData({ ...formData, resetAnswer: e.target.value })}
+                />
+              </div>
+            </div>
+          </section>
 
+          <MoreHorizontal className="bg-slate-100" />
 
-              {/* Fidenza School of Nursing Kyeni */}
-              <SelectItem value="fidenza_kyeni">Fidenza School of Nursing Kyeni</SelectItem>
+          {/* Section 3: Professional Details */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <School className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Professional Profile</h3>
+            </div>
 
-              {/* Other institutions */}
-              <SelectItem value="kenyatta_university">Kenyatta University</SelectItem>
-              <SelectItem value="mount_kenya_university">Mount Kenya University</SelectItem>
-              <SelectItem value="university_of_nairobi">University of Nairobi</SelectItem>
-              <SelectItem value="strathmore_university">Strathmore University</SelectItem>
-              <SelectItem value="private_nursing_school">Private Nursing School</SelectItem>
-              <SelectItem value="consolata_kyeni">Consolata Hospital Kyeni</SelectItem>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <School className="w-3.5 h-3.5" /> Institution *
+                </Label>
+                <Select value={formData.institution} onValueChange={v => setFormData({ ...formData, institution: v })}>
+                  <SelectTrigger className="bg-white/50 focus:ring-emerald-500">
+                    <SelectValue placeholder="Choose institution" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {institutions.map((inst) => (
+                      <SelectItem key={inst.value} value={inst.value}>{inst.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5" /> County *
+                </Label>
+                <Select value={formData.county} onValueChange={v => setFormData({ ...formData, county: v })}>
+                  <SelectTrigger className="bg-white/50 focus:ring-emerald-500">
+                    <SelectValue placeholder="Choose county" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {counties.map((county) => (
+                      <SelectItem key={county.value} value={county.value}>{county.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-              {/* Other */}
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5" /> Short Professional Bio
+              </Label>
+              <Textarea
+                className="min-h-[100px] bg-white/50 focus-visible:ring-emerald-500 resize-none"
+                placeholder="Tell us about your teaching experience and expertise..."
+                value={formData.bio}
+                onChange={e => setFormData({ ...formData, bio: e.target.value })}
+              />
+            </div>
+          </section>
 
-          </Select>
-        </div>
-        <div>
-          <Label>County *</Label>
-          <Select value={formData.county} onValueChange={v => setFormData({ ...formData, county: v })}>
-            <SelectTrigger><SelectValue placeholder="Choose county" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="mombasa">Mombasa</SelectItem>
-              <SelectItem value="kwale">Kwale</SelectItem>
-              <SelectItem value="kilifi">Kilifi</SelectItem>
-              <SelectItem value="tsamaku">Tana River</SelectItem>
-              <SelectItem value="lamu">Lamu</SelectItem>
-              <SelectItem value="taita-taveta">Taita-Taveta</SelectItem>
-              <SelectItem value="garissa">Garissa</SelectItem>
-              <SelectItem value="wajir">Wajir</SelectItem>
-              <SelectItem value="mandera">Mandera</SelectItem>
-              <SelectItem value="marsabit">Marsabit</SelectItem>
-              <SelectItem value="isiolo">Isiolo</SelectItem>
-              <SelectItem value="meri">Meru</SelectItem>
-              <SelectItem value="tharaka-nithi">Tharaka-Nithi</SelectItem>
-              <SelectItem value="embu">Embu</SelectItem>
-              <SelectItem value="kitui">Kitui</SelectItem>
-              <SelectItem value="machakos">Machakos</SelectItem>
-              <SelectItem value="mata">Makueni</SelectItem>
-              <SelectItem value="nyandarua">Nyandarua</SelectItem>
-              <SelectItem value="nyeri">Nyeri</SelectItem>
-              <SelectItem value="kirinyaga">Kirinyaga</SelectItem>
-              <SelectItem value="murang'a">Murang'a</SelectItem>
-              <SelectItem value="kiambu">Kiambu</SelectItem>
-              <SelectItem value="turkana">Turkana</SelectItem>
-              <SelectItem value="west-pokot">West Pokot</SelectItem>
-              <SelectItem value="samburu">Samburu</SelectItem>
-              <SelectItem value="trans-nzoia">Trans Nzoia</SelectItem>
-              <SelectItem value="ucegelo">Uasin Gishu</SelectItem>
-              <SelectItem value="elgeyo-marakwet">Elgeyo Marakwet</SelectItem>
-              <SelectItem value="nandi">Nandi</SelectItem>
-              <SelectItem value="bomet">Bomet</SelectItem>
-              <SelectItem value="kericho">Kericho</SelectItem>
-              <SelectItem value="kakamega">Kakamega</SelectItem>
-              <SelectItem value="vihiga">Vihiga</SelectItem>
-              <SelectItem value="bungoma">Bungoma</SelectItem>
-              <SelectItem value="busia">Busia</SelectItem>
-              <SelectItem value="siaya">Siaya</SelectItem>
-              <SelectItem value="kisumu">Kisumu</SelectItem>
-              <SelectItem value="homabay">Homa Bay</SelectItem>
-              <SelectItem value="migori">Migori</SelectItem>
-              <SelectItem value="kisii">Kisii</SelectItem>
-              <SelectItem value="nyamira">Nyamira</SelectItem>
-              <SelectItem value="nairobi">Nairobi</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
+          {/* Action Button */}
+          <div className="pt-4">
+            <Button
+              className="w-full h-12 text-base font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+              onClick={() => handleRegister("tutor", formData)}
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating Account...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  Complete Registration <ChevronRight className="w-5 h-5" />
+                </span>
+              )}
+            </Button>
+            <p className="text-center text-xs text-slate-500 mt-4">
+              By registering, you agree to our Terms of Service and Privacy Policy.
+            </p>
+          </div>
 
-          </Select>
-        </div>
-      </div>
-
-      <Label>Short Bio</Label>
-      <Textarea placeholder="Your professional background..." value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} />
-
-
-      <Button className="w-full" disabled={isLoading} onClick={() => handleRegister("tutor", formData)}>
-        {isLoading ? "Registering..." : "Register as tutor"}
-      </Button>
-
+        </CardContent>
+      </Card>
     </div>
 
 
