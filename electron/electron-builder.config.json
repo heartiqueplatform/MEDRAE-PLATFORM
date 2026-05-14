@@ -1,6 +1,6 @@
 {
   "appId": "com.medrae.app",
-  "productName": "Medrae Proctor",
+  "productName": "Medrae Nursing",
   "directories": {
     "buildResources": "assets"
   },
@@ -14,7 +14,7 @@
     {
       "provider": "github",
       "owner": "heartiqueplatform",
-      "repo": "HEARTIQUE PLATFORM"
+      "repo": "MEDRAE-PLATFORM"
     }
   ],
   "nsis": {
