@@ -54,8 +54,12 @@ if (electronIsDev) {
   }
 
   // 8. AUTO-UPDATER: Check for updates if not in development mode
+  // 8. AUTO-UPDATER: Check for updates if not in development mode
   if (!electronIsDev) {
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+      // This "catch" stops the red error box from appearing!
+      console.error("Update check failed, but opening app anyway:", error);
+    });
   }
 })();
 
