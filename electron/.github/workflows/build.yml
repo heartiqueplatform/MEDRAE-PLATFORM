@@ -1,9 +1,10 @@
 name: Build and Release
 on:
   push:
+    branches:
+      - main  # This tells it to run every time you push code to main
     tags:
-      - 'v*' # This runs whenever you push a version tag like v1.0.1
-
+      - 'v*'
 jobs:
   release:
     runs-on: windows-latest
