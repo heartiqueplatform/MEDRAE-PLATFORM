@@ -2,12 +2,17 @@ name: Build and Release
 on:
   push:
     branches:
-      - main  # This tells it to run every time you push code to main
+      - main
     tags:
       - 'v*'
+
 jobs:
   release:
     runs-on: windows-latest
+    # --- ADD THIS SECTION BELOW ---
+    permissions:
+      contents: write
+    # ------------------------------
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -15,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20 # Stable version for builders
+          node-version: 20
 
       - name: Install Dependencies
         run: |
