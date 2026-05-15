@@ -358,13 +358,19 @@ const Index = () => {
   ];
   const handleExitApp = () => {
     const confirmed = window.confirm("Are you sure you want to exit the Medrae Nursing?");
+
+    // FIX: Force focus back regardless of what they clicked
+    window.blur();
+    window.focus();
+
     if (confirmed) {
-      // Check if we are running as a laptop app
       if ((window as any).electronAPI) {
         (window as any).electronAPI.quitApp();
       } else {
-        // If we are just in a browser, just alert
         alert("Exit command sent (This only works in the Desktop App)");
+        // Refocus again after the alert!
+        window.blur();
+        window.focus();
       }
     }
   };
