@@ -60,11 +60,12 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 5242880,
+
           globPatterns: ["**/*.{js,css,html,ico,png,svg,jpeg}"],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
           navigateFallback: "index.html",
 
           // ADD THIS SECTION BELOW:
