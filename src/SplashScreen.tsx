@@ -1,13 +1,13 @@
 "use client";
 
-
-
 import { useEffect, useState } from "react";
 
 export default function SplashScreen() {
   const firstVisit = !localStorage.getItem("splashShown");
   const [showSplash, setShowSplash] = useState(firstVisit);
 
+  // You can keep this theme check, but since you want white by default,
+  // we will set the background class directly to bg-white.
   const [theme] = useState<"light" | "dark">(
     (localStorage.getItem("theme") as "light" | "dark" | null) === "dark"
       ? "dark"
@@ -26,10 +26,12 @@ export default function SplashScreen() {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-black"
+      // CHANGED "bg-black" TO "bg-white" BELOW
+      className="fixed inset-0 flex flex-col items-center justify-center z-50 bg-white"
     >
       {/* Logo */}
-      <img src="/pwa-192x192.jpeg" alt="App Logo" className="w-32 h-32 mb-6" />
+      {/* Tip: Ensure your logo image (pwa-192x192.jpeg) looks good on a white background */}
+      <img src="/pwa-192x192.jpeg" alt="App Logo" className="w-32 h-32 mb-6 rounded-2xl" />
 
       {/* Bouncing Hearts Loader */}
       <div className="flex space-x-1">

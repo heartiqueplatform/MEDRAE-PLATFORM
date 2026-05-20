@@ -42,6 +42,8 @@ const Index = () => {
   const [loadedMedia, setLoadedMedia] = useState(0);
   const [allMediaReady, setAllMediaReady] = useState(false);
   const currentYear = new Date().getFullYear();
+  const [showExitOverlay, setShowExitOverlay] = useState(false);
+
   const handleMediaLoad = () => {
     setLoadedMedia(prev => prev + 1);
   };
@@ -356,36 +358,68 @@ const Index = () => {
       description: "Medrae offers affordable institutional online exam hosting powered by a secure DigiProctor system. Upload revision questions, CATs, assignments, mock exams, and internal assessments — all fully digitized, automatically tracked, and easy to manage. Save time on marking, go fully digital, and train your students to confidently sit any computer-based exam, including NCK, without fear."
     }
   ];
+
   const handleExitApp = () => {
-    const confirmed = window.confirm("Are you sure you want to exit the Medrae Nursing?");
-
-    // FIX: Force focus back regardless of what they clicked
-    window.blur();
-    window.focus();
-
-    if (confirmed) {
-      if ((window as any).electronAPI) {
-        (window as any).electronAPI.quitApp();
-      } else {
-        alert("Exit command sent (This only works in the Desktop App)");
-        // Refocus again after the alert!
-        window.blur();
-        window.focus();
-      }
-    }
+    // Instead of a browser popup, we just show our custom screen
+    setShowExitOverlay(true);
   };
 
+  const finalExitAction = () => {
+    if ((window as any).electronAPI) {
+      (window as any).electronAPI.quitApp();
+    } else {
+      // Fallback for Web/PWA where window.close() is often blocked
+      alert("Exit successful. Please close the tab.");
+      window.location.href = "https://google.com"; // Redirect away
+    }
+  };
   if (!ready) return null;
   return (
     <div className="min-h-screen w-full overflow-x-hidden relative bg-slate-50">
       {/* FLOATING EXIT BUTTON */}
+      {/* FLOATING EXIT BUTTON */}
       <button
         onClick={handleExitApp}
-        className="fixed top-4 left-4 z-[9999] bg-red-600 hover:bg-red-700 text-white p-3 rounded-2xl shadow-2xl transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] border-2 border-white"
+        // Added "hidden" to hide by default (mobile)
+        // and "md:flex" to show it on medium screens and up (laptop)
+        className="hidden md:flex fixed top-4 left-4 z-[9999] bg-red-600 hover:bg-red-700 text-white p-3 rounded-2xl shadow-2xl transition-all active:scale-95 items-center gap-2 font-black text-[10px] border-2 border-white"
       >
         <LogOut className="h-4 w-4" />
         EXIT MEDRAE
       </button>
+
+
+      {showExitOverlay && (
+        <div className="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl">
+
+            {/* Sad/Goodbye Icon */}
+            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl">👋</span>
+            </div>
+
+            {/* Message */}
+            <h2 className="text-2xl font-black text-slate-900 mb-2">
+              See you soon!
+            </h2>
+            <p className="text-slate-500 mb-8 leading-relaxed">
+              We're sorry to see you leave Medrae Nursing. We'll be waiting for your return. Have a great day!
+            </p>
+
+            {/* Single Final Exit Button */}
+            <Button
+              onClick={finalExitAction}
+              className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-lg shadow-lg shadow-red-200 transition-all active:scale-95"
+            >
+              OK, Goodbye
+            </Button>
+
+            <p className="mt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+              Thank you for using Medrae
+            </p>
+          </div>
+        </div>
+      )}
       {showWelcomeOverlay && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Refined Backdrop */}
@@ -936,7 +970,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
 
       <footer className="bg-slate-50 text-slate-900 border-t border-slate-200 pt-16 pb-8 px-4">
         <TooltipProvider>
