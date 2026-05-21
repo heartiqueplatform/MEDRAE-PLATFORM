@@ -137,44 +137,24 @@ export default function AssessmentNotes() {
       return alert("You can only delete your own uploads");
     }
 
+    if (!confirm("Are you sure you want to delete this record?")) return;
 
-    if (!confirm("Are you sure you want to delete this file?")) return;
+    try {
+      // We only delete from the Database.
+      // (Actual Cloudinary asset deletion is typically handled via admin or backend)
+      const { error: dbErr } = await supabase
+        .from("notes")
+        .delete()
+        .eq("id", note.id);
 
-    // Extract file path from URL (after /object/public/notes/)
-    const urlParts = note.file_url.split("/object/public/notes/");
-    const filePath = urlParts[1];
+      if (dbErr) throw dbErr;
 
-    if (!filePath) {
-      console.error("File path not found:", note.file_url);
-      return;
+      setNotes((prev) => prev.filter((n) => n.id !== note.id));
+      alert("Record removed successfully!");
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      alert("Failed to delete record.");
     }
-
-    // Delete from storage
-    const { error: storageErr } = await supabase.storage
-      .from("notes")
-      .remove([filePath]);
-
-    if (storageErr) {
-      console.error("Error deleting from storage:", storageErr);
-      alert("Failed to delete file from storage");
-      return;
-    }
-
-    // Delete from table
-    const { error: dbErr } = await supabase
-      .from("notes")
-      .delete()
-      .eq("id", note.id);
-
-    if (dbErr) {
-      console.error("Error deleting from database:", dbErr);
-      alert("Failed to delete file record");
-      return;
-    }
-
-    // Remove from local state
-    setNotes((prev) => prev.filter((n) => n.id !== note.id));
-    alert("File deleted successfully!");
   };
 
   useEffect(() => {
@@ -275,64 +255,76 @@ export default function AssessmentNotes() {
 
     if (!file || !formData.get("title")) return;
 
-    const ext = file.name.split(".").pop();
-    const path = `assessment/${Date.now()}-${file.name}`;
-
     setUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(10); // Start progress bar
 
-    // Simulate progress while uploading
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev === null) return 0;
-        if (prev >= 90) return prev;
-        return prev + 10;
-      });
-    }, 300);
+    try {
+      // 1. Prepare Cloudinary Upload Data
+      const cloudName = "dpj5vprwf"; // Replace with your actual Cloud Name
+      const uploadPreset = "medrae_preset";
 
-    const { error: uploadErr } = await supabase.storage.from("notes").upload(path, file);
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append("file", file);
+      cloudinaryFormData.append("upload_preset", uploadPreset);
+      cloudinaryFormData.append("folder", "assessment_notes");
 
-    clearInterval(progressInterval);
-    setUploadProgress(100);
+      // 2. Execute Cloudinary API Call
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/upload`,
+        {
+          method: "POST",
+          body: cloudinaryFormData,
+        }
+      );
 
-    if (uploadErr) {
-      console.error("Storage error:", uploadErr);
-      setUploading(false);
-      setTimeout(() => setUploadProgress(null), 1000);
-      return;
-    }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error.message || "Cloudinary Upload Failed");
+      }
 
-    const { data: urlData } = supabase.storage.from("notes").getPublicUrl(path);
-    const file_url = urlData.publicUrl;
-    const payload = {
-      uploaded_by: session.user.id,   // ✅ use correct column name
-      title: formData.get("title"),
-      description: formData.get("description"),
-      course: formData.get("course"),
-      institution: formData.get("institution"),
-      unit: formData.get("unit"),
-      category: formData.get("category"),
-      sub_category: selectedSubcategory,
-      block: selectedBlock,
-      file_type: ext,
-      file_url,
-      is_public: true,
-      approved: true,
-    };
+      const data = await response.json();
+      const file_url = data.secure_url;
+      const ext = file.name.split(".").pop();
 
+      // 3. Prepare Database Payload
+      const payload = {
+        uploaded_by: session.user.id,
+        title: formData.get("title"),
+        description: formData.get("description"),
+        course: formData.get("course"),
+        institution: formData.get("institution"),
+        unit: formData.get("unit"),
+        category: formData.get("category"),
+        sub_category: selectedSubcategory,
+        block: selectedBlock,
+        file_type: ext,
+        file_url: file_url, // Using the new Cloudinary link
+        is_public: true,
+        approved: true,
+      };
 
-    const { error: insertErr } = await supabase.from("notes").insert(payload);
-    if (insertErr) console.error("Insert error:", insertErr);
-    else {
+      // 4. Insert into Supabase Database
+      const { data: dbData, error: insertErr } = await supabase
+        .from("notes")
+        .insert(payload)
+        .select()
+        .single();
+
+      if (insertErr) throw insertErr;
+
       alert("Upload successful!");
-      setNotes((prev) => [{ id: Date.now(), ...payload }, ...prev]); // add new note to UI
-      setShowUploadForm(false);  // close upload form
-      setSelectedFile(null);     // reset file
-      setUploadProgress(null);   // reset progress
+      setNotes((prev) => [dbData, ...prev]);
+      setShowUploadForm(false);
+      setSelectedFile(null);
+      setUploadProgress(null);
 
+    } catch (err: any) {
+      console.error("Upload process error:", err);
+      alert(`Upload failed: ${err.message}`);
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
     }
-
-    setUploading(false);
   };
 
   const getTypeIcon = (type: string) => {

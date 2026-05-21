@@ -78,84 +78,99 @@ export function Resources() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   // ✅ Batch upload function with realtime progress
   const uploadBatchResources = async (files: FileList) => {
-    if (!files.length || !session?.user) return alert("Missing files or user.");
+    if (!files.length || !session?.user) return alert("Missing files or user session.");
 
     setUploading(true);
     setUploadProgress(0);
 
-    // Track per-file progress
+    const cloudName = "dpj5vprwf";
+    const uploadPreset = "medrae_preset"; // Replace with your actual unsigned preset name
+    const folderName = "medrae_platform_batch";
+
+    // Calculate total size for progress tracking
     let totalSize = Array.from(files).reduce((sum, f) => sum + f.size, 0);
     let uploadedSize = 0;
 
     const uploads = await Promise.all(
       Array.from(files).map(async (file) => {
-        const filePath = `${Date.now()}_${file.name}`;
+        // Setup AbortController for cancellation
         uploadAbortController.current = new AbortController();
 
-        // Fake per-file progress simulation
+        // Simulated Progress Logic
         const fileSize = file.size;
-        let fileUploaded = 0;
-
         const progressInterval = setInterval(() => {
-          // simulate upload in chunks
-          fileUploaded += fileSize * 0.1;
-          if (fileUploaded > fileSize) fileUploaded = fileSize;
-
-          uploadedSize += fileSize * 0.1;
+          uploadedSize += fileSize * 0.05; // increment total progress
           if (uploadedSize > totalSize) uploadedSize = totalSize;
-
           setUploadProgress((uploadedSize / totalSize) * 100);
-        }, 300);
+        }, 200);
 
         try {
-          const { error: storageError } = await supabase.storage
-            .from("notes")
-            .upload(filePath, file, {
+          // 1. Prepare Cloudinary FormData
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", uploadPreset);
+          formData.append("folder", folderName);
+
+          // 2. Upload to Cloudinary via Fetch
+          const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${cloudName}/upload`,
+            {
+              method: "POST",
+              body: formData,
               signal: uploadAbortController.current.signal,
-            });
+            }
+          );
 
           clearInterval(progressInterval);
 
-          if (storageError) {
-            console.error("Storage error", storageError);
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Cloudinary Error:", errorData.error.message);
             return null;
           }
 
-          const file_url = supabase.storage
-            .from("notes")
-            .getPublicUrl(filePath).data.publicUrl;
+          const cloudinaryData = await response.json();
+          const fileBaseName = file.name.replace(/\.[^/.]+$/, ""); // Removes extension
 
-          const fileBaseName = file.name.replace(/\.pdf$/i, "");
-
+          // 3. Return the payload for Supabase Database
           return {
             title: fileBaseName,
-            description: fileBaseName,
+            description: uploadForm.description || fileBaseName,
             block: uploadForm.block,
             course: uploadForm.course,
-            file_url,
+            file_url: cloudinaryData.secure_url,
             file_type: "pdf",
             uploaded_by: session.user.id,
+            is_public: true,
+            approved: true,
           };
         } catch (err) {
           clearInterval(progressInterval);
-          console.error("Upload aborted or failed:", err);
+          console.error("Upload aborted or failed for file:", file.name, err);
           return null;
         }
       })
     );
 
-    const validUploads = uploads.filter(Boolean);
+    // Filter out any failed uploads
+    const validUploads = uploads.filter((item): item is NonNullable<typeof item> => item !== null);
 
     if (validUploads.length > 0) {
-      const { error } = await supabase.from("notes").insert(validUploads);
+      // 4. Batch Insert into Supabase Database
+      const { data, error } = await supabase
+        .from("notes")
+        .insert(validUploads)
+        .select();
 
       if (error) {
-        console.error("DB insert error", error);
-        alert("Upload failed");
+        console.error("Database sync error:", error);
+        alert("Files uploaded to cloud, but database sync failed.");
       } else {
-        alert("Batch upload successful!");
-        setNotes((prev) => [...validUploads, ...prev]);
+        alert(`Batch upload successful! ${validUploads.length} files processed.`);
+        // Update local UI state with the returned data from Supabase (contains real IDs)
+        setNotes((prev) => [...(data || []), ...prev]);
 
+        // Reset Form State
         setUploadForm({
           title: "",
           description: "",
@@ -167,7 +182,7 @@ export function Resources() {
     }
 
     setUploading(false);
-    setTimeout(() => setUploadProgress(null), 1000); // hide after 1s
+    setTimeout(() => setUploadProgress(null), 1000);
   };
 
   useEffect(() => {
@@ -465,93 +480,72 @@ export function Resources() {
     }
   };
 
-
   const uploadResource = async () => {
+    if (!file || !session?.user) return alert("Missing file or user details.");
 
-    if (!file || !session?.user) return alert("Missing file or user.");
     setUploading(true);
-
-    const filePath = `${Date.now()}_${file.name}`;
-    uploadAbortController.current = new AbortController(); // 🔹 create controller FIRST
-
-    // Fake progress simulation
-    const totalMB = file.size / (1024 * 1024);
-    let uploadedMB = 0;
-
-    const progressInterval = setInterval(() => {
-      uploadedMB += totalMB * 0.1; // simulate 10% progress increment
-      if (uploadedMB >= totalMB) uploadedMB = totalMB;
-      setUploadProgress((uploadedMB / totalMB) * 100);
-    }, 300);
+    setUploadProgress(10); // Initial progress state
 
     try {
-      const { error: storageError } = await supabase.storage
-        .from("notes")
-        .upload(filePath, file, {
-          signal: uploadAbortController.current.signal,
-        });
+      // 1. Prepare FormData for Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "medrae_preset"); // Use your actual preset name
+      formData.append("folder", "medrae_platform");
 
-      clearInterval(progressInterval); // ✅ stop fake progress once done
+      // 2. Upload to Cloudinary API
+      // Replace 'dpj5vprwf' with your actual Cloud Name if different
+      const cloudName = "dpj5vprwf";
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
-      if (storageError) {
-        console.error("Storage error", storageError);
-        setUploading(false);
-        setTimeout(() => setUploadProgress(null), 1000); // hide bar after 1s
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error.message || "Cloudinary upload failed");
       }
 
-      const file_url = supabase.storage
-        .from("notes")
-        .getPublicUrl(filePath).data.publicUrl;
+      const cloudinaryData = await response.json();
+      const file_url = cloudinaryData.secure_url;
 
-      const { error: dbError } = await supabase.from("notes").insert({
-        title: uploadForm.title,
+      // 3. Insert metadata into Supabase Database
+      const { data, error: dbError } = await supabase.from("notes").insert({
+        title: uploadForm.title || file.name,
         description: uploadForm.description,
         block: uploadForm.block,
         course: uploadForm.course,
-        file_url,
+        file_url: file_url, // Store the Cloudinary link
         file_type: uploadForm.fileType,
         uploaded_by: session.user.id,
+        is_public: true,
+        approved: true
+      }).select().single();
+
+      if (dbError) throw dbError;
+
+      // 4. Update UI State
+      setNotes((prev) => [data, ...prev]);
+      setUploadForm({
+        title: "",
+        description: "",
+        block: "PTS",
+        course: localStorage.getItem("selectedCourse") || "",
+        fileType: "pdf",
       });
+      setFile(null);
+      setShowUploadForm(false);
+      alert("Resource uploaded successfully to Cloudinary.");
 
-      if (dbError) {
-        console.error("DB error", dbError);
-        alert("Upload failed");
-      } else {
-        alert("Upload successful!");
-
-        // ✅ Immediately update UI without waiting for subscription
-        setNotes((prev) => [
-          {
-            id: crypto.randomUUID(),
-            title: uploadForm.title,
-            description: uploadForm.description,
-            block: uploadForm.block,
-            course: uploadForm.course,
-            file_type: uploadForm.fileType,
-            file_url,
-            created_at: new Date().toISOString(),
-            uploaded_by: session.user.id,
-          },
-          ...prev,
-        ]);
-
-        // ✅ Reset form + file
-        setUploadForm({
-          title: "",
-          description: "",
-          block: "PTS",
-          course: "",
-          fileType: "pdf",
-        });
-        setFile(null);
-        setShowUploadForm(false);
-      }
-    } catch (err) {
-      console.error("Upload aborted or failed:", err);
+    } catch (err: any) {
+      console.error("Upload process error:", err);
+      alert(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
-      setTimeout(() => setUploadProgress(null), 1000);
+      setUploadProgress(null);
     }
   };
 
