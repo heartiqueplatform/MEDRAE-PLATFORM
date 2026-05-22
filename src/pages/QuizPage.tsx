@@ -32,6 +32,7 @@ interface Question {
   correct_answer: string;
   explanation: string;
   additional: string | null;
+  course_tag?: string;
 }
 interface Attempt {
   id: string;
@@ -82,6 +83,8 @@ export default function QuizPage() {
   const [recentlyAnsweredId, setRecentlyAnsweredId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<string>("All");
+  const courseOptions = ["All", "BSN", "KRCHN", "KRN",];
   // --- NEW ---
   const [loading, setLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false); // Track if user has pro/premium plan
@@ -835,11 +838,16 @@ Please provide a detailed discussion and guidance.`;
     </a>.
   </p>
 
-  const filteredQuestions = showUnansweredOnly
-    ? questions.filter(
-      q => !answers[q.id] || lockedVisible[q.id]
-    )
-    : questions;
+  const filteredQuestions = questions.filter(q => {
+    // 1. Filter by Course Tag (Matches the button selected)
+    const matchesCourse = selectedCourse === "All" || q.course_tag === selectedCourse;
+
+    // 2. Filter by Unanswered (Existing logic)
+    const matchesUnanswered = !showUnansweredOnly || (!answers[q.id] || lockedVisible[q.id]);
+
+    // Only return the question if it passes BOTH filters
+    return matchesCourse && matchesUnanswered;
+  });
   return (
     <div className="space-y-0 max-w-8xl mx-auto px-3 sm:px-6 lg:px-8  ">
       <div className="flex flex-wrap justify-between items-center gap-2">
@@ -952,20 +960,37 @@ Please provide a detailed discussion and guidance.`;
       </div>
       <div className="flex flex-col items-center">
         <div className="w-full max-w-6xl min-h-[500px] relative">
-
-
-          {
+          {/* Course Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide">
+            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+            {courseOptions.map((course) => (
+              <button
+                key={course}
+                onClick={() => {
+                  setSelectedCourse(course);
+                  setCurrentQuestionIndex(0); // Reset to first question when filtering
+                }}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
+                  selectedCourse === course
+                    ? "bg-indigo-600 border-indigo-600 text-white shadow-md"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-indigo-300"
+                )}
+              >
+                {course}
+              </button>
+            ))}
+          </div>
+          {filteredQuestions.length > 0 ? (
             filteredQuestions.map((q, i) => {
-              // 1. Define these variables first at the top of the map
               const selectedAnswer = answers[q.id];
-              const isCorrect = selectedAnswer === q.correct_answer;
-              const showFeedback = feedbackShown[q.id]; // This fixes the Uncaught ReferenceError
+              const showFeedback = feedbackShown[q.id];
 
-              // 2. If it's not the current question, don't render anything
               if (i !== currentQuestionIndex) return null;
 
-              // 3. Now check the Lock logic
+              // PAYWALL LOGIC: First 20 are free, 21+ require Premium
               const isLocked = !isPremium && i >= 20;
+
 
               if (isLocked) {
                 return (
@@ -1505,7 +1530,13 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                 </div>
               );
             })
-          }
+          ) : (
+            <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+              <AlertTriangle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">No questions found for <b>{selectedCourse}</b> in this unit.</p>
+              <button onClick={() => setSelectedCourse("All")} className="mt-4 text-indigo-600 font-bold">View All Questions</button>
+            </div>
+          )}
         </div>
         <ExplanationOverlay
           open={!!openExplanationFor}
