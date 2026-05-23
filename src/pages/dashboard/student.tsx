@@ -205,47 +205,43 @@ export default function StudentDashboard() {
   };;
 
   // Handle posting daily thought
-  // 1. Updated handlePostDaily: Now returns the real data from the database
+  // 1. Updated handlePostDaily: Now uses Cloudinary for images
   const handlePostDaily = async () => {
     if (!user?.id) return null;
 
     let image_url = null;
-    if (dailyImage) {
-      const fileName = `${user.id}/${Date.now()}_status.jpg`;
-      const { data, error: uploadError } = await supabase
-        .storage
-        .from("statuspics")
-        .upload(fileName, dailyImage);
 
-      if (uploadError) {
-        console.error("Error uploading image:", uploadError.message);
-      } else if (data) {
-        const { data: urlData } = supabase.storage
-          .from("statuspics")
-          .getPublicUrl(data.path);
-        image_url = urlData.publicUrl;
+    // 🟢 NEW CLOUDINARY LOGIC
+    if (dailyImage) {
+      try {
+        image_url = await uploadToCloudinary(dailyImage);
+      } catch (uploadError: any) {
+        console.error("DEBUG [handlePostDaily]: Image upload failed:", uploadError.message);
+        return null;
       }
     }
 
+    console.log("DEBUG [Supabase]: Inserting record with URL:", image_url);
     // ✅ Simplified: Just select() without the profiles join to avoid the error
     const { data: post, error: insertError } = await supabase
       .from("daily_posts")
       .insert({
         user_id: user.id,
         content: dailyContent,
-        image_url,
+        image_url, // Now storing the Cloudinary secure_url
         duration: dailyDuration,
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error("Error posting daily content:", insertError.message);
+      console.error("DEBUG [Supabase]: DB Insert Error:", insertError.message);
       return null;
     }
 
     return post;
   };
+
   // 2. Updated handlePostClick: Manages UI state and calls the post function
   const handlePostClick = async () => {
     if (!dailyContent.trim() && !dailyImage) {
@@ -259,12 +255,12 @@ export default function StudentDashboard() {
 
     try {
       setUploading(true);
+      console.log("DEBUG [handlePostClick]: Starting post process...");
 
       const newPostFromDB = await handlePostDaily();
 
       if (newPostFromDB) {
-        // ✅ Manually combine the new post with your existing profile data
-        // This bypasses the database error and makes the avatar show up instantly!
+        // ✅ PRESERVED LOGIC: Manually combine profile data for instant UI update
         const postWithProfile = {
           ...newPostFromDB,
           profiles: {
@@ -288,19 +284,27 @@ export default function StudentDashboard() {
           title: "Success",
           description: "Your daily post was uploaded!",
         });
+      } else {
+        // If newPostFromDB is null, handlePostDaily already logged the error
+        toast({
+          title: "Upload failed",
+          description: "Could not save your post. Please check your connection.",
+          variant: "destructive",
+        });
       }
     } catch (err) {
+      console.error("DEBUG [handlePostClick]: Unexpected Error:", err);
       toast({
         title: "Error",
         description: "Something went wrong while posting.",
         variant: "destructive",
       });
-      console.error(err);
     } finally {
       setUploading(false);
     }
   };
-  // Handle deleting a daily post (only owner)
+
+  // 3. Handle deleting a daily post (only owner)
   const handleDeletePost = async (postId: string, postUserId: string) => {
     if (user?.id !== postUserId) {
       toast({
@@ -313,13 +317,14 @@ export default function StudentDashboard() {
 
     if (!confirm("Are you sure you want to delete this post?")) return;
 
+    console.log("DEBUG [Delete]: Removing post ID:", postId);
     const { error } = await supabase
       .from("daily_posts")
       .delete()
       .eq("id", postId);
 
     if (error) {
-      console.error("Error deleting post:", error.message);
+      console.error("DEBUG [Delete]: DB Error:", error.message);
       toast({
         title: "Error",
         description: "Could not delete the post.",
@@ -2139,6 +2144,34 @@ export default function StudentDashboard() {
 
   );
 }
+
+// 🚀 NEW: Cloudinary Upload Helper
+// Using same credentials as your Feed logic
+const uploadToCloudinary = async (file) => {
+  const cloudName = "dpj5vprwf";
+  const uploadPreset = "js1gxxdv";
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
+
+  console.log("DEBUG: Starting Cloudinary upload for Daily Status..."); // Future Debug
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: "POST", body: formData }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("DEBUG: Cloudinary Error:", errorData); // Future Debug
+    throw new Error(errorData.error.message);
+  }
+
+  const data = await response.json();
+  console.log("DEBUG: Cloudinary Success! URL:", data.secure_url); // Future Debug
+  return data.secure_url;
+};
 // Paste this at the very bottom of your file
 const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<File> => {
   const image = new Image();

@@ -103,58 +103,56 @@ export function Settings() {
     }
   };
 
+  // 🚀 CLOUDINARY UPLOAD LOGIC
+  const uploadToCloudinary = async (file: File) => {
+    const cloudName = "dpj5vprwf";
+    const uploadPreset = "js1gxxdv";
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+
+    console.log("DEBUG [Settings]: Starting Cloudinary Avatar upload...");
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body: formData }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || "Cloudinary upload failed");
+    }
+
+    const data = await response.json();
+    console.log("DEBUG [Settings]: Avatar Upload Success:", data.secure_url);
+    return data.secure_url;
+  };
   // Upload avatar (PRESERVED)
   // Upload avatar (with cache-busting)
+  // 🟢 NEW: Cloudinary based uploadAvatar
   const uploadAvatar = async () => {
     if (!avatarFile || !userId) return null;
 
-    const fileExt = avatarFile.name.split(".").pop();
-    const folder = "avatars";
-    const filePath = `${folder}/${userId}-avatar.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("profilepics")
-      .upload(filePath, avatarFile, {
-        cacheControl: "60", // only cache for 60 seconds
-        upsert: true,
-      });
-
-    if (uploadError) {
-      toast({ title: "Upload Failed", description: uploadError.message });
+    try {
+      const imageUrl = await uploadToCloudinary(avatarFile);
+      return imageUrl; // Returns the permanent Cloudinary link
+    } catch (err: any) {
+      console.error("DEBUG [Settings]: Upload Error:", err.message);
+      toast({ title: "Upload Failed", description: err.message });
       return null;
     }
-
-    const { data } = supabase.storage.from("profilepics").getPublicUrl(filePath);
-
-    // 👇 Add a timestamp to bust browser cache
-    return `${data.publicUrl}?t=${Date.now()}`;
   };
 
 
 
   // Remove avatar with confirmation
+  // 🟢 UPDATED: Simple Remove (Clears the DB reference)
   const handleRemoveAvatar = async () => {
     if (!userId) return;
 
     try {
-      // 👇 figure out the folder + filename convention
-      const folder = "avatars";
-      const fileExt = profile?.avatar_url?.split(".").pop() || "png";
-      const filePath = `${folder}/${userId}-avatar.${fileExt}`;
+      console.log("DEBUG [Settings]: Removing avatar reference from DB...");
 
-      // 1. Delete from storage
-      const { error: storageError } = await supabase
-        .storage
-        .from("profilepics")
-        .remove([filePath]);
-
-      if (storageError) {
-        toast({ title: "Error", description: "Failed to delete file from storage" });
-        console.error(storageError);
-        return;
-      }
-
-      // 2. Clear DB field
+      // 1. Clear DB field
       const { error: dbError } = await supabase
         .from("profiles")
         .update({ avatar_url: null })
@@ -162,25 +160,25 @@ export function Settings() {
 
       if (dbError) {
         toast({ title: "Error", description: "Failed to remove avatar reference" });
-        console.error(dbError);
         return;
       }
 
-      // 3. Update local state
-      setProfile((prev: any) => ({ ...prev, avatar_url: null }));
+      // 2. Update local state and cache
+      const updatedProfile = { ...profile, avatar_url: null };
+      setProfile(updatedProfile);
       setAvatarPreview(null);
       setAvatarFile(null);
+      localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
 
       toast({
         title: "Avatar Removed",
-        description: "Your avatar has been deleted.",
+        description: "Your profile picture has been cleared.",
       });
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "Unexpected error while removing avatar" });
     }
   };
-
 
   // Save profile
   const handleSaveProfile = async () => {
