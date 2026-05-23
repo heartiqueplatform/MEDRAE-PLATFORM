@@ -17,17 +17,14 @@
       "repo": "MEDRAE-PLATFORM"
     }
   ],
-  "nsis": {
-    "oneClick": true,
-    "allowToChangeInstallationDirectory": false,
-    "deleteAppDataOnUninstall": true,
-    "publish": [
-      "github"
-    ]
-  },
   "win": {
     "target": "nsis",
     "icon": "assets/appIcon.ico"
+  },
+  "nsis": {
+    "oneClick": true,
+    "allowToChangeInstallationDirectory": false,
+    "deleteAppDataOnUninstall": true
   },
   "mac": {
     "category": "public.app-category.education",
