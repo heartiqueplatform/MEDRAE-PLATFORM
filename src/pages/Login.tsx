@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { saveLoginInfo, getLoginInfo } from "@/lib/offlineAuth";
 import sha256 from "crypto-js/sha256"; // For hashing passwords offline
-import React from 'react';
+import ExitOverlay from "@/components/ExitOverlay";
 import {
   Mail,
   Lock,
@@ -222,47 +222,27 @@ export function Login() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden font-sans flex flex-col justify-center items-center p-4">
       {/* FLOATING EXIT BUTTON */}
+      {/* MINIMALIST PROFESSIONAL EXIT BUTTON */}
       <button
         onClick={handleExitApp}
-        // Added "hidden" to hide by default (mobile)
-        // and "md:flex" to show it on medium screens and up (laptop)
-        className="hidden md:flex fixed top-4 left-4 z-[9999] bg-red-600 hover:bg-red-700 text-white p-3 rounded-2xl shadow-2xl transition-all active:scale-95 items-center gap-2 font-black text-[10px] border-2 border-white"
+        className="hidden md:flex fixed top-6 left-6 z-[9999]
+             bg-white/10 backdrop-blur-md
+             hover:bg-white/20 border border-white/20
+             text-white/80 hover:text-white
+             py-2 px-4 rounded-xl
+             transition-all duration-300 active:scale-95
+             items-center gap-2.5 group"
       >
-        <LogOut className="h-4 w-4" />
-        EXIT MEDRAE
+        <LogOut className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:text-red-400 transition-all" />
+        <span className="text-[11px] font-medium tracking-widest uppercase">
+          Exit System
+        </span>
       </button>
-
-      {showExitOverlay && (
-        <div className="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
-          <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl">
-
-            {/* Sad/Goodbye Icon */}
-            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">👋</span>
-            </div>
-
-            {/* Message */}
-            <h2 className="text-2xl font-black text-slate-900 mb-2">
-              See you soon!
-            </h2>
-            <p className="text-slate-500 mb-8 leading-relaxed">
-              We're sorry to see you leave Medrae Nursing. We'll be waiting for your return. Have a great day!
-            </p>
-
-            {/* Single Final Exit Button */}
-            <Button
-              onClick={finalExitAction}
-              className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-lg shadow-lg shadow-red-200 transition-all active:scale-95"
-            >
-              OK, Goodbye
-            </Button>
-
-            <p className="mt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-              Thank you for using Medrae
-            </p>
-          </div>
-        </div>
-      )}
+      {/* THE COMPONENT */}
+      <ExitOverlay
+        isOpen={showExitOverlay}
+        onExit={finalExitAction}
+      />
       {/* Background image with refined transition */}
       <div
         className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 scale-105 ${fade ? "opacity-100" : "opacity-0"
