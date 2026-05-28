@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { saveLoginInfo, getLoginInfo } from "@/lib/offlineAuth";
 import sha256 from "crypto-js/sha256"; // For hashing passwords offline
 import ExitOverlay from "@/components/ExitOverlay";
+import GoogleAuthButton from "@/components/google/GoogleAuthButton";
 import {
   Mail,
   Lock,
@@ -326,7 +327,9 @@ export function Login() {
                   />
                 </div>
               </div>
-
+              <div className="mb-4">
+                <GoogleAuthButton />
+              </div>
               {/* Login Button */}
               <Button
                 disabled={isLoading}

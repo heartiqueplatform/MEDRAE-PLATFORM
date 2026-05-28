@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useEffect } from "react";
 import ExitOverlay from "@/components/ExitOverlay";
 import sha256 from "crypto-js/sha256";
-
+import GoogleAuthButton from "@/components/google/GoogleAuthButton";
 const backgroundImages = [
   "high1.png",
   "high2.png",
@@ -282,6 +282,9 @@ export function Register() {
               >
                 Already have an account? Log In here
               </Link>
+              <div className="mb-4">
+                <GoogleAuthButton />
+              </div>
               <div className="space-y-0.5 md:space-y-1">
                 <h2 className="text-lg md:text-xl font-bold text-slate-700">Create your account</h2>
                 <CardDescription className="text-slate-500 font-medium text-xs md:text-sm">

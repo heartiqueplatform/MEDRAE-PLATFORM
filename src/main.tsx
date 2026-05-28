@@ -27,10 +27,8 @@ const root = createRoot(document.getElementById("root")!);
 // Directly render the app — AuthProvider wraps everything
 root.render(
     <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-        <AuthProvider>
-            <AuthGate>
-                <App />
-            </AuthGate>
-        </AuthProvider>
+        <AuthGate>
+            <App />
+        </AuthGate>
     </BrowserRouter>
 );

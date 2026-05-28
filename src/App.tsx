@@ -92,6 +92,7 @@ import ExamCenters from "./pages/survival-hub/ExamCenters";
 import AddPlacementPage from "./pages/survival-hub/AddPlacement";
 import PlacementDetailPage from "./pages/survival-hub/PlacementDetail";
 import ExamBuddiesPage from "./pages/survival-hub/ExamBuddiesPage";
+import AuthCallback from "./pages/AuthCallback";
 
 
 const queryClient = new QueryClient({
@@ -446,7 +447,7 @@ const AppContent = () => {
                       <Route path="/survival-hub/add-placement" element={<AddPlacementPage />} />
                       <Route path="/survival-hub/placements/:id" element={<PlacementDetailPage />} />
                       <Route path="/survival-hub/buddies" element={<ExamBuddiesPage />} />
-
+                      <Route path="/auth/callback" element={<AuthCallback />} />
                     </Route>
 
                     {/* ------------------- Full-screen / Independent Pages ------------------- */}
