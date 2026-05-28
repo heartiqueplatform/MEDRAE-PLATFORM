@@ -1402,6 +1402,7 @@ export default function Feed() {
             </div>
           )}
           <TermsButton />
+
           <AnimatePresence>
             {viewerOpen && activeImage && (
               <motion.div

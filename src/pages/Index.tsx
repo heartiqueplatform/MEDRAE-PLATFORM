@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, LogOut, Volume, VolumeX, GraduationCap, CheckCircle2, Eye, Target, ExternalLink, Mail, Facebook, Linkedin, Instagram, Twitter } from "lucide-react";
+import { Heart, Brain, Users, Star, ArrowRight, CheckCircle, Play, MessageSquare, LogOut, Volume, VolumeX, GraduationCap, CheckCircle2, Eye, Target, ExternalLink, Mail, Facebook, Linkedin, Instagram, Twitter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -784,7 +784,7 @@ const Index = () => {
                   <h3 className="text-2xl font-black text-slate-800">Our Mission</h3>
                 </div>
                 <p className="text-slate-500 font-medium leading-relaxed">
-                  To eliminate random, unstructured revision and replace it with a focused NCK exam system that builds confidence through repeated, intelligent practice (I.P).
+                  To eliminate random, unstructured revision and replace it with a focused NCK exam system that builds confidence through repeated, intelligent practice <span className="text-2xl font-bold tracking-tight text-black">(I.P)</span>.
                 </p>
               </div>
 
@@ -797,7 +797,7 @@ const Index = () => {
                   <h3 className="text-2xl font-black text-slate-800">Our Vision</h3>
                 </div>
                 <p className="text-slate-500 font-medium leading-relaxed">
-                  To become Kenya’s most trusted NCK, FQEs exams preparation platform by helping students pass faster through structured, measurable, and performance-driven practice (P.D.P).
+                  To become Kenya’s most trusted NCK, FQEs exams preparation platform by helping students pass faster through structured, measurable, and performance-driven practice <span className="text-2xl font-bold tracking-tight text-black">(P.D.P)</span>.
                 </p>
               </div>
 
@@ -965,7 +965,7 @@ const Index = () => {
                     className="h-8 w-8 rounded-lg shadow-sm"
                     alt="Medrae Logo"
                   />
-                  <span className="text-2xl font-bold tracking-tight">Medrae</span>
+                  <span className="text-2xl font-bold text-red-500 ">Medrae</span><span className="text-2xl font-bold tracking-tight text-black">Nursing</span>
                 </div>
                 <p className="text-slate-600 text-sm leading-relaxed mb-6 max-w-sm">
                   Kenya’s premier Nursing Network Platform. We empower students and professionals
@@ -985,7 +985,7 @@ const Index = () => {
                 <div>
                   <h3 className="font-bold text-sm uppercase tracking-wider mb-4 text-slate-900">Platform</h3>
                   <ul className="space-y-3 text-sm text-slate-600">
-                    {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Announcements"].map((item) => (
+                    {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Feed Page", "NursMartt", "institutional Exams", "Announcements"].map((item) => (
                       <li key={item}>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1002,7 +1002,7 @@ const Index = () => {
                 <div>
                   <h3 className="font-bold text-sm uppercase tracking-wider mb-4 text-slate-900">Learning</h3>
                   <ul className="space-y-3 text-sm text-slate-600">
-                    {["Assessment Notes", "Quiz Units", "Simulation Mode", "Resources"].map((item) => (
+                    {["Assessment Notes", "Quiz Units", "My Mistakes", "Study Progress", "Challenges", "Simulation Mode", "Resources"].map((item) => (
                       <li key={item}>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1019,7 +1019,7 @@ const Index = () => {
                 <div>
                   <h3 className="font-bold text-sm uppercase tracking-wider mb-4 text-slate-900">Support</h3>
                   <ul className="space-y-3 text-sm text-slate-600">
-                    {["Login", "Register", "Subscription", "Feedback", "Settings"].map((item) => (
+                    {["Survival Hub", "Login", "Register", "Subscription", "Feedback", "Settings"].map((item) => (
                       <li key={item}>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1083,8 +1083,27 @@ const Index = () => {
                   <a href="mailto:medraenursing@gmail.com" className="text-slate-900 font-medium hover:underline">
                     medraenursing@gmail.com
                   </a>
-                </div>
 
+
+                </div>
+                {/* WhatsApp Action Card */}
+                <a
+                  href="https://wa.me/254704473503"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center justify-between bg-white/10 hover:bg-white/20 border border-white/20 p-5 rounded-2xl transition-all active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-white text-green-600 flex items-center justify-center shadow-lg">
+                      <MessageSquare className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest font-bold opacity-70 mb-0.5">WhatsApp Support</p>
+                      <p className="text-sm md:text-base font-bold">0704 473 503</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-5 w-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                </a>
                 <div className="flex gap-6 text-xs font-medium">
                   <span
                     className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"

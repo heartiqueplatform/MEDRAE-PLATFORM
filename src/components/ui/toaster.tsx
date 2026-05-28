@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -9,8 +11,8 @@ import {
   ToastViewport,
 } from "@/components/ui/toast";
 import { playSound } from "@/lib/soundManager";
+import { cn } from "@/lib/utils";
 
-// Component for individual toast with sound effect
 function ToastWithSound({ id, title, description, action, variant, ...props }: any) {
   useEffect(() => {
     if (variant === "destructive") {
@@ -18,38 +20,49 @@ function ToastWithSound({ id, title, description, action, variant, ...props }: a
     } else {
       playSound("toast-sound", false);
     }
-  }, []); // run only once
+  }, [variant]);
 
   return (
     <Toast key={id} variant={variant} {...props}>
-      <div className="flex items-start gap-3 w-full">
+      <div className="flex items-start gap-4 w-full text-left">
+        {/* APP ICON WITH MOOD GLOW */}
+        <div className="relative shrink-0">
+          <img
+            src="/UsersAvatar.jpg"
+            alt="Medrae"
+            className={cn(
+              "w-11 h-11 rounded-xl object-cover border-2 shadow-sm transition-all duration-500",
+              variant === "success" && "border-emerald-500 shadow-emerald-500/40",
+              variant === "destructive" && "border-rose-500 shadow-rose-500/40",
+              variant === "achievement" && "border-purple-500 shadow-purple-500/50 animate-pulse",
+              (!variant || variant === "default") && "border-zinc-200 dark:border-zinc-700"
+            )}
+          />
+        </div>
 
-        {/* App Icon */}
-        <img
-          src="/UsersAvatar.jpg"
-          alt="Medrae"
-          className="w-10 h-10 rounded-xl border border-border object-cover"
-        />
-
-        {/* Text Section */}
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold opacity-70">
+        {/* TEXT SECTION - PERFECTLY ALIGNED TOP-LEFT */}
+        <div className="flex flex-col flex-1 pt-0.5">
+          <span className={cn(
+            "text-[10px] uppercase tracking-[0.1em] font-black mb-0.5",
+            variant === "success" && "text-emerald-600 dark:text-emerald-400",
+            variant === "destructive" && "text-rose-600 dark:text-rose-400",
+            variant === "achievement" && "text-purple-600 dark:text-purple-400",
+            (!variant || variant === "default") && "opacity-40"
+          )}>
             Medrae
           </span>
 
           {title && <ToastTitle>{title}</ToastTitle>}
           {description && (
-            <ToastDescription>{description}</ToastDescription>
+            <ToastDescription className="mt-0.5">{description}</ToastDescription>
           )}
+          {action && <div className="mt-3">{action}</div>}
         </div>
       </div>
-
-      {action}
       <ToastClose />
     </Toast>
   );
 }
-
 
 export function Toaster() {
   const { toasts } = useToast();
@@ -59,13 +72,7 @@ export function Toaster() {
       {toasts.map((toast) => (
         <ToastWithSound key={toast.id} {...toast} />
       ))}
-      <ToastViewport
-        className="
-    fixed z-[100] flex w-full p-4
-    top-0 left-0 flex-col-reverse
-    sm:top-auto sm:bottom-0 sm:right-0 sm:left-auto sm:w-auto sm:max-w-[420px] sm:flex-col
-  "
-      />
+      <ToastViewport />
     </ToastProvider>
   );
 }

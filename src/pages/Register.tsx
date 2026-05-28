@@ -278,17 +278,17 @@ export function Register() {
                     />
                   </div>
                   <CardTitle className="text-2xl font-black tracking-tight text-slate-800">
-                    Get Started
+                    Hello! Love seeing you get started
                   </CardTitle>
                 </div>
-                <Link
-                  to="/login"
-                  className="text-blue-600 hover:text-blue-700 font-bold text-sm bg-blue-50 px-4 py-2 rounded-full transition-colors"
-                >
-                  Log In
-                </Link>
-              </div>
 
+              </div>
+              <Link
+                to="/login"
+                className="text-blue-600 hover:text-blue-700 font-bold text-sm bg-blue-50 px-1 py-2 rounded-full transition-colors"
+              >
+                Already have an account? Log In here
+              </Link>
               <div className="space-y-1">
                 <h2 className="text-xl font-bold text-slate-700">Create your account</h2>
                 <CardDescription className="text-slate-500 font-medium">
@@ -464,7 +464,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
             <div className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold">Full Name *</Label>
               <Input
-                placeholder="Jackline Mildred "
+                placeholder="SN Jackline"
                 className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
                 value={formData.fullName}
                 onChange={e => {
@@ -481,7 +481,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
               <Label className="text-xs uppercase tracking-wider text-gray-500 font-bold">Username *</Label>
               <div className="relative">
                 <Input
-                  placeholder="JacklineMildred21"
+                  placeholder="snJackline"
                   className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all pl-8"
                   value={formData.username}
                   onChange={e => {
@@ -501,7 +501,7 @@ function StudentForm({ handleRegister, isLoading, usernameEdited, setUsernameEdi
                 <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 <Input
                   type="email"
-                  placeholder="example@email.com"
+                  placeholder="examplesnjackline@gmail.com"
                   className="pl-10 bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -763,7 +763,7 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
                 <Label className="text-sm font-medium">Full Name <span className="text-destructive">*</span></Label>
                 <Input
                   className="bg-white/50 focus-visible:ring-blue-500"
-                  placeholder="Jackline Mildred "
+                  placeholder="Tutor Jackline"
                   value={formData.fullName}
                   onChange={e => {
                     const fullName = e.target.value;
@@ -780,7 +780,7 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
                 <div className="relative">
                   <Input
                     className="bg-white/50 focus-visible:ring-blue-500 pl-8"
-                    placeholder="JacklineMildred21"
+                    placeholder="tutorJacklinefns"
                     value={formData.username}
                     onChange={e => {
                       setUsernameEdited(true);
@@ -799,7 +799,7 @@ function TutorForm({ handleRegister, isLoading, usernameEdited, setUsernameEdite
                   <Input
                     type="email"
                     className="bg-white/50 focus-visible:ring-blue-500 pl-9"
-                    placeholder="example@email.com"
+                    placeholder="examplejackline@gmail.com"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                   />
