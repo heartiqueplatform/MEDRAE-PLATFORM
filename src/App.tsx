@@ -94,6 +94,7 @@ import PlacementDetailPage from "./pages/survival-hub/PlacementDetail";
 import ExamBuddiesPage from "./pages/survival-hub/ExamBuddiesPage";
 import AuthCallback from "./pages/AuthCallback";
 import FloatingStreakCandle from "./components/FloatingStreakCandle";
+import { ProfileIncompleteChecker } from "./components/ProfileIncompleteChecker";
 
 
 const queryClient = new QueryClient({
@@ -463,6 +464,7 @@ const AppContent = () => {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   <FloatingStreakCandle />
+                  <ProfileIncompleteChecker />
                   <BottomBarWrapper />
                 </AIWrapper>
               </MusicPlayerProvider>

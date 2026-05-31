@@ -365,7 +365,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
 
     if (!card) return null;
     return (
-        <Card className="mt-2 relative overflow-hidden transition-all duration-300 border-0 dark:bg-muted/30  rounded-2xl shadow-2xl shadow-indigo-500/10 flex flex-col h-[700px] max-h-[70vh] -mt-4">
+        <Card className="mt-2 relative overflow-hidden transition-all duration-300 border-0 dark:bg-muted/30  rounded-2xl shadow-2xl shadow-indigo-500/10 flex flex-col h-auto lg:h-[700px] max-h-none lg:max-h-[70vh] -mt-4">
 
 
             {/* 2. TOP INDIGO ACCENT BAR */}
@@ -463,7 +463,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                 </CardContent>
 
                 {/* --- STICKY FOOTER (LOCKED AT BOTTOM) --- */}
-                <div className="flex-none px-6 py-1 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60">
+                <div className="flex-none px-6 py-1 bg-white/95 dark:bg-muted/80 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
 
                         {/* Interaction Buttons (Perfect Circles) */}
@@ -500,7 +500,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                         </div>
 
                         {/* Stats Pill */}
-                        <div className="flex items-center gap-4 bg-slate-100/80 dark:bg-slate-800/80 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-inner">
+                        <div className="flex items-center gap-4 bg-slate-100/80 dark:bg-muted/80 px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-inner">
                             <div className="flex items-center gap-2 border-r border-slate-300 dark:border-slate-600 pr-4">
                                 <Eye className="w-4 h-4 text-blue-500" />
                                 <span className="text-xs font-black text-slate-700 dark:text-slate-200">{counts.views}</span>

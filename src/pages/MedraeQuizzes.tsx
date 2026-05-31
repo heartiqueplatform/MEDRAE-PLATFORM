@@ -464,7 +464,7 @@ export function MedraeQuizzes() {
         {popup && <PopupMessage message={popup} onClose={() => setPopup(null)} />}
 
         {/* HERO HEADER CARD */}
-        <Card className="relative overflow-hidden shadow-xl shadow-blue-500/5 transition-all rounded-none sm:rounded-[2rem] border-0 bg-white dark:bg-gray-900">
+        <Card className="relative overflow-hidden shadow-xl shadow-blue-500/5 transition-all rounded-none sm:rounded-[2rem] border-0 bg-white dark:bg-muted/30">
 
           {/* Subtle Background Decoration */}
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />

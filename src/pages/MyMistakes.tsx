@@ -329,7 +329,7 @@ export default function MyMistakes() {
     if (!mistakes.length)
 
         return (
-            <div className="flex justify-center items-center min-h-[70vh] p-6 bg-transparent">
+            <div className="flex justify-center items-center min-h-[70vh] p-6 bg-transparent dark:bg-muted/30">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -411,7 +411,7 @@ export default function MyMistakes() {
             )}
 
             <div className="mb-1 ">
-                <div className="relative bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border-0 rounded-2xl shadow-lg p-3 sm:p-8 text-start overflow-hidden">
+                <div className="relative bg-white/50 dark:bg-muted/30 backdrop-blur-md border-0 rounded-2xl shadow-lg p-3 sm:p-8 text-start overflow-hidden">
 
                     {/* Decorative Gradient Accent */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full blur-xl opacity-50"></div>
@@ -455,7 +455,7 @@ export default function MyMistakes() {
                         className="mb-4"
                     >
                         <Card className="overflow-visible border-0 shadow-md rounded-xl
-  bg-white/40 dark:bg-gray-900">
+  bg-white/40 dark:bg-muted/30">
 
                             <CardHeader className="p-2">
 

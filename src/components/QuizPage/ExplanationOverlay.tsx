@@ -167,8 +167,8 @@ export function ExplanationOverlay({
                         </div>
 
                         {/* RIGHT SIDE → FLASHCARD (Desktop Only Side Panel) */}
-                        <div className="lg:w-[480px] xl:w-[540px] border-0 bg-gray-50/50 dark:bg-gray-900/30 p-4 mt-0">
-                            <div className="w-full">
+                        <div className="w-full lg:w-[480px] xl:w-[540px] border-0 bg-gray-50/50 dark:bg-gray-900/30 p-4 mt-0 shrink-0">
+                            <div className="w-full max-h-[250px] lg:max-h-none overflow-y-auto custom-scrollbar">
                                 <Flashcard />
                             </div>
                         </div>

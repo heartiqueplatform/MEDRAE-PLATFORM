@@ -157,7 +157,7 @@ export function Footer() {
         <>
             <div
                 className={`fixed bottom-0 left-0 right-0 z-[2147483647] md:hidden transition-all duration-300
-bg-white/80 dark:bg-gray-950/90 backdrop-blur-xl border-t border-gray-100 dark:border-gray-900
+bg-white/80 dark:bg-muted/30 backdrop-blur-xl border-t border-gray-100 dark:border-gray-900
 h-20 pb-4 flex justify-around items-center shadow-[0_-4px_20px_rgba(0,0,0,0.05)]
 ${isDrawerOpen
                         ? "translate-y-[110%] opacity-0 pointer-events-none"

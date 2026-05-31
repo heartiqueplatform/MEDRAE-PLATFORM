@@ -95,7 +95,7 @@ const ResultsListPage = () => {
         <div className="min-h-screen bg-slate-50 dark:bg-background p-4 md:p-10 transition-colors duration-200">
 
             {/* CONTAINER COLOR PRESERVED: bg-white (Light) | bg-[#242526] (Dark) */}
-            <div className="w-full max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-2xl border-0 shadow-sm overflow-hidden">
+            <div className="w-full max-w-5xl mx-auto bg-white dark:bg-muted/30 rounded-2xl border-0 shadow-sm overflow-hidden">
 
                 {/* Header Section */}
                 <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800">

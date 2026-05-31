@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Draggable from "react-draggable";
 import {
     BarChart,
     Bar,
@@ -325,12 +326,6 @@ function StatsOverlay({
         return "#e8c060";
     };
 
-    // Format x-axis ticks to show only every 2nd day for cleanliness
-    const formatXAxis = (item: ChartPoint, index: number) => {
-        if (index % 2 === 0) return item.day;
-        return "";
-    };
-
     return (
         <AnimatePresence>
             {open && (
@@ -548,6 +543,35 @@ export default function StreakCandle() {
     const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; char: string }[]>([]);
     const [sparkleId, setSparkleId] = useState(0);
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartRef = useRef({ x: 0, y: 0 });
+    const nodeRef = useRef(null);
+
+    // Load saved position from localStorage
+    useEffect(() => {
+        const savedPosition = localStorage.getItem("streakCandlePosition");
+        if (savedPosition) {
+            try {
+                const pos = JSON.parse(savedPosition);
+                setPosition(pos);
+            } catch (e) {
+                console.error("Failed to load position", e);
+            }
+        }
+    }, []);
+
+    // Save position when dragged
+    const handleDragStop = (e: any, data: any) => {
+        setIsDragging(false);
+        const newPosition = { x: data.x, y: data.y };
+        setPosition(newPosition);
+        localStorage.setItem("streakCandlePosition", JSON.stringify(newPosition));
+    };
+
+    const handleDragStart = () => {
+        setIsDragging(true);
+    };
 
     // Detect dark/light mode
     useEffect(() => {
@@ -635,6 +659,9 @@ export default function StreakCandle() {
     }, [sparkleId]);
 
     const handleCandleTap = (e: React.MouseEvent | React.TouchEvent) => {
+        // Don't open if we're dragging
+        if (isDragging) return;
+
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
@@ -648,53 +675,66 @@ export default function StreakCandle() {
 
     return (
         <>
-            {/* Floating Candle */}
-            <div
-                style={{
-                    position: "fixed",
-                    bottom: 80,
-                    right: 20,
-                    zIndex: 50,
-                    cursor: "pointer",
-                    userSelect: "none",
-                    WebkitTapHighlightColor: "transparent",
-                }}
-                onClick={handleCandleTap}
-                role="button"
-                aria-label="View streak stats"
+            {/* Draggable Floating Candle */}
+            <Draggable
+                nodeRef={nodeRef}
+                position={position}
+                onStart={handleDragStart}
+                onStop={handleDragStop}
+                bounds="body"
+                cancel=".no-drag"
             >
-                <div style={{ position: "absolute", inset: -25, pointerEvents: "none", zIndex: 5 }}>
-                    {sparkles.map((s) => (
-                        <Sparkle key={s.id} x={s.x} y={s.y} char={s.char} />
-                    ))}
-                </div>
-
-                <div style={{ position: "relative" }}>
-                    <Smoke visible={!lit} />
-                    <CandleSVG lit={lit} waxDrips={waxDrips} />
-                </div>
-
-                <div style={{ textAlign: "center", marginTop: 4 }}>
-                    <div style={{
-                        fontFamily: "'Inter', -apple-system, sans-serif",
-                        fontSize: 18,
-                        fontWeight: 700,
-                        color: "#2a2a2a",
-                        lineHeight: 1.2,
-                    }}>
-                        {streak}
+                <div
+                    ref={nodeRef}
+                    style={{
+                        position: "fixed",
+                        zIndex: 50,
+                        cursor: isDragging ? "grabbing" : "grab",
+                        userSelect: "none",
+                        WebkitTapHighlightColor: "transparent",
+                    }}
+                >
+                    <div
+                        style={{ position: "absolute", inset: -25, pointerEvents: "none", zIndex: 5 }}
+                    >
+                        {sparkles.map((s) => (
+                            <Sparkle key={s.id} x={s.x} y={s.y} char={s.char} />
+                        ))}
                     </div>
-                    <div style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: 8,
-                        color: "#888888",
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                    }}>
-                        day streak
+
+                    <div
+                        style={{ position: "relative", cursor: "pointer" }}
+                        onClick={handleCandleTap}
+                    >
+                        <Smoke visible={!lit} />
+                        <CandleSVG lit={lit} waxDrips={waxDrips} />
+                    </div>
+
+                    <div
+                        style={{ textAlign: "center", marginTop: 4, cursor: "pointer" }}
+                        onClick={handleCandleTap}
+                    >
+                        <div style={{
+                            fontFamily: "'Inter', -apple-system, sans-serif",
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: "#2a2a2a",
+                            lineHeight: 1.2,
+                        }}>
+                            {streak}
+                        </div>
+                        <div style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: 8,
+                            color: "#888888",
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                        }}>
+                            day streak
+                        </div>
                     </div>
                 </div>
-            </div>
+            </Draggable>
 
             <StatsOverlay
                 open={overlayOpen}

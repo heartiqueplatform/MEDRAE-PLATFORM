@@ -19,10 +19,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  FileText, Video, Link, UploadCloud, Download, Eye, X, Search, Heart, Trash2
+  FileText, Video, Link, UploadCloud, Download, Eye, X, Search, Heart, Trash2, Sparkles, Lock, CheckCircle2
 } from "lucide-react";
 import { saveFile, getFile } from "@/lib/offlineStorage";
-
+import { useSubscription } from "@/hooks/useSubscription";
+import { useNavigate } from "react-router-dom";
 
 const SECTIONS = [
   {
@@ -65,14 +66,19 @@ const SECTIONS = [
 ];
 
 export default function AssessmentNotes() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const { isPremium, loading: subscriptionLoading } = useSubscription();
+  const navigate = useNavigate();
 
+  // State for premium upgrade overlay
+  const [showPremiumOverlay, setShowPremiumOverlay] = useState(false);
+  const [selectedNoteForOverlay, setSelectedNoteForOverlay] = useState<any>(null);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [uploading, setUploading] = useState(false);
   const [fullscreenNote, setFullscreenNote] = useState<any>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
-  // Upload progress & offline caching
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [offlineFiles, setOfflineFiles] = useState<string[]>([]);
@@ -99,7 +105,6 @@ export default function AssessmentNotes() {
     return () => mediaQuery.removeEventListener('change', listener);
   }, []);
 
-
   // Load offline file or fallback to online
   const loadOfflineFile = async (fileId: string, fileUrl: string) => {
     const file = await getFile(fileId);
@@ -111,18 +116,51 @@ export default function AssessmentNotes() {
     window.open(fileUrl, "_blank");
   };
 
-  // Download and save file for offline use
-  const handleDownload = async (fileId: string, url: string) => {
+  // Handle view with premium check
+  const handleViewNote = async (note: any) => {
+    // 🔒 If not premium, show upgrade overlay
+    if (!isPremium) {
+      setSelectedNoteForOverlay(note);
+      setShowPremiumOverlay(true);
+      return;
+    }
+
+    // ✅ Premium user - open normally
+    setFullscreenNote(note);
+    if (session?.user?.id) {
+      const { error } = await supabase
+        .from("note_views")
+        .upsert(
+          { note_id: note.id, user_id: session.user.id },
+          { onConflict: ["note_id", "user_id"] }
+        );
+
+      if (!error) {
+        setViewCounts((prev) => ({
+          ...prev,
+          [note.id]: (prev[note.id] || 0) + 1,
+        }));
+      }
+    }
+  };
+
+  // Handle download with premium check
+  const handleDownloadNote = async (noteId: string, url: string) => {
+    // 🔒 If not premium, show upgrade overlay
+    if (!isPremium) {
+      const note = notes.find(n => n.id === noteId);
+      setSelectedNoteForOverlay(note);
+      setShowPremiumOverlay(true);
+      return;
+    }
+
+    // ✅ Premium user - download normally
     try {
       const res = await fetch(url);
       const blob = await res.blob();
-      await saveFile(fileId, blob);
-
-      console.log(`File ${fileId} saved for offline use`);
-
-      // Mark file as offline in UI
-      setOfflineFiles((prev) => [...prev, fileId]);
-
+      await saveFile(noteId, blob);
+      console.log(`File ${noteId} saved for offline use`);
+      setOfflineFiles((prev) => [...prev, noteId]);
       alert("Saved offline!");
     } catch (err) {
       console.error("Failed to save offline:", err);
@@ -140,8 +178,6 @@ export default function AssessmentNotes() {
     if (!confirm("Are you sure you want to delete this record?")) return;
 
     try {
-      // We only delete from the Database.
-      // (Actual Cloudinary asset deletion is typically handled via admin or backend)
       const { error: dbErr } = await supabase
         .from("notes")
         .delete()
@@ -256,11 +292,10 @@ export default function AssessmentNotes() {
     if (!file || !formData.get("title")) return;
 
     setUploading(true);
-    setUploadProgress(10); // Start progress bar
+    setUploadProgress(10);
 
     try {
-      // 1. Prepare Cloudinary Upload Data
-      const cloudName = "dpj5vprwf"; // Replace with your actual Cloud Name
+      const cloudName = "dpj5vprwf";
       const uploadPreset = "medrae_preset";
 
       const cloudinaryFormData = new FormData();
@@ -268,7 +303,6 @@ export default function AssessmentNotes() {
       cloudinaryFormData.append("upload_preset", uploadPreset);
       cloudinaryFormData.append("folder", "assessment_notes");
 
-      // 2. Execute Cloudinary API Call
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudName}/upload`,
         {
@@ -286,7 +320,6 @@ export default function AssessmentNotes() {
       const file_url = data.secure_url;
       const ext = file.name.split(".").pop();
 
-      // 3. Prepare Database Payload
       const payload = {
         uploaded_by: session.user.id,
         title: formData.get("title"),
@@ -298,12 +331,11 @@ export default function AssessmentNotes() {
         sub_category: selectedSubcategory,
         block: selectedBlock,
         file_type: ext,
-        file_url: file_url, // Using the new Cloudinary link
+        file_url: file_url,
         is_public: true,
         approved: true,
       };
 
-      // 4. Insert into Supabase Database
       const { data: dbData, error: insertErr } = await supabase
         .from("notes")
         .insert(payload)
@@ -351,381 +383,421 @@ export default function AssessmentNotes() {
       (note.description || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Show subscription loading
+  if (subscriptionLoading) {
+    return <GlobalLoader message="Verifying subscription..." />;
+  }
+
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] ">
-      <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
-        <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-0">
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold flex items-center gap-2 bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
-              Assessment Notes & Uploads
-            </CardTitle>
-          </CardHeader>
+    <>
+      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] ">
+        <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
+          <Card className="shadow-md hover:shadow-lg transition-all rounded-2xl border-0 mt-0">
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold flex items-center gap-2 bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text">
+                Assessment Notes & Uploads
+              </CardTitle>
+            </CardHeader>
 
-          <CardContent>
-            <div>
-              {/* Preview + Learn more */}
-              <p className="text-muted-foreground text-base leading-relaxed mt-0">
-                This page is dedicated to assessment guides, case study guides, and research resources.
-                It brings together universal materials designed to support nursing education across all colleges and training institutions
-                <span
-                  className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
-                  onClick={() => setShowDescription(!showDescription)}
-                >
-                  ... Learn more
-                </span>
-              </p>
-
-              {/* Animated dropdown for full text */}
-              <AnimatePresence initial={false}>
-                {showDescription && (
-                  <motion.div
-                    key="assessment-description-expanded"
-                    className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.35, ease: "easeInOut" }}
+            <CardContent>
+              <div>
+                <p className="text-muted-foreground text-base leading-relaxed mt-0">
+                  This page is dedicated to assessment guides, case study guides, and research resources.
+                  It brings together universal materials designed to support nursing education across all colleges and training institutions
+                  <span
+                    className="text-primary font-semibold cursor-pointer ml-1 hover:underline"
+                    onClick={() => setShowDescription(!showDescription)}
                   >
-                    <p>
-                      Here, you’ll find practical guides, structured case studies, and project references curated to
-                      help students prepare effectively, build confidence, and excel both in classroom learning and clinical practice.
-                      And note, this does not give you the right to copy-paste it; it only provides a picture to show you what to expect.
-                    </p>
-
-                    <p className="text-sm italic">
-                      Universal nursing assessment resources for all colleges
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <div className="relative mt-3">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by title or description..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-
-        {showUploadForm && (
-          <form onSubmit={handleUpload} className="border p-4 rounded space-y-4 bg-muted/20">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input name="title" placeholder="Title *" required />
-              <Input name="description" placeholder="Short Description" />
-              <Input name="course" placeholder="Course *" required />
-              <Input name="institution" placeholder="Institution *" required />
-              <Input name="unit" placeholder="Unit *" required />
-              <Input name="category" placeholder="Category *" required />
-              <select
-                className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
-                value={selectedBlock}
-                onChange={(e) => {
-                  setSelectedBlock(e.target.value);
-                  setSelectedSubcategory("");
-                }}
-                required
-              >
-                <option value="">Select Block *</option>
-                {SECTIONS.map((s) => (
-                  <option key={s.title} value={s.title}>
-                    {s.title}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
-                value={selectedSubcategory}
-                onChange={(e) => setSelectedSubcategory(e.target.value)}
-                required
-                disabled={!selectedBlock}
-              >
-                <option value="">Select Subcategory *</option>
-                {SECTIONS.find((s) => s.title === selectedBlock)?.subcategories.map((sub) => (
-                  <option key={sub} value={sub}>
-                    {sub}
-                  </option>
-                ))}
-              </select>
-              <Input
-                type="file"
-                name="file"
-                required
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setSelectedFile(file);
-                }}
-              />
-
-            </div>
-            {uploadProgress !== null && selectedFile && (
-              <div className="mt-2 space-y-1">
-                {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-
-                {/* Percentage + File size */}
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{uploadProgress}%</span>
-                  <span>
-                    {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
-                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                    ... Learn more
                   </span>
-                </div>
-              </div>
-            )}
+                </p>
 
-
-            <Button type="submit" disabled={uploading}>
-              <UploadCloud className="w-4 h-4 mr-1" />
-              {uploading ? "Uploading..." : "Upload Note"}
-            </Button>
-          </form>
-        )}
-
-
-        <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
-          {showUploadForm ? "Cancel Upload" : "New Upload"}
-        </Button>
-        <Accordion type="multiple" className="space-y-6">
-          {SECTIONS.map((section, i) => (
-            <AccordionItem key={i} value={`section-${i}`}>
-              <AccordionTrigger>{section.title}</AccordionTrigger>
-              <AccordionContent>
-                <Tabs defaultValue={section.subcategories[0]}>
-                  {/* Only for Practical Assessments & Case Studies */}
-                  {["Practical Assessments", "Case Studies"].includes(section.title) ? (
-                    <div className="space-y-2">
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() =>
-                          setSelectedSubcategory((prev) =>
-                            prev && section.subcategories.includes(prev) ? "" : section.subcategories[0]
-                          )
-                        }
-                      >
-                        {selectedSubcategory || "Select Subcategory"}
-                      </Button>
-                      {selectedSubcategory === section.subcategories[0] && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-
-                          {section.subcategories.map((sub) => (
-                            <Button
-                              key={sub}
-                              size="sm"
-                              variant="ghost"
-                              className="justify-start"
-                              onClick={() => setSelectedSubcategory(sub)}
-                            >
-                              {sub}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    // Keep original horizontal tabs for others
-                    <TabsList className="flex flex-wrap gap-2 w-full">
-
-                      {section.subcategories.map((sub) => (
-                        <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
-                          {sub}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
+                <AnimatePresence initial={false}>
+                  {showDescription && (
+                    <motion.div
+                      key="assessment-description-expanded"
+                      className="mt-2 text-muted-foreground text-base leading-relaxed space-y-2"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.35, ease: "easeInOut" }}
+                    >
+                      <p>
+                        Here, you'll find practical guides, structured case studies, and project references curated to
+                        help students prepare effectively, build confidence, and excel both in classroom learning and clinical practice.
+                        And note, this does not give you the right to copy-paste it; it only provides a picture to show you what to expect.
+                      </p>
+                      <p className="text-sm italic">
+                        Universal nursing assessment resources for all colleges
+                      </p>
+                    </motion.div>
                   )}
+                </AnimatePresence>
+              </div>
+              <div className="relative mt-3">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by title or description..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
+          {showUploadForm && (
+            <form onSubmit={handleUpload} className="border p-4 rounded space-y-4 bg-muted/20">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input name="title" placeholder="Title *" required />
+                <Input name="description" placeholder="Short Description" />
+                <Input name="course" placeholder="Course *" required />
+                <Input name="institution" placeholder="Institution *" required />
+                <Input name="unit" placeholder="Unit *" required />
+                <Input name="category" placeholder="Category *" required />
+                <select
+                  className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
+                  value={selectedBlock}
+                  onChange={(e) => {
+                    setSelectedBlock(e.target.value);
+                    setSelectedSubcategory("");
+                  }}
+                  required
+                >
+                  <option value="">Select Block *</option>
+                  {SECTIONS.map((s) => (
+                    <option key={s.title} value={s.title}>
+                      {s.title}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="border rounded px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white"
+                  value={selectedSubcategory}
+                  onChange={(e) => setSelectedSubcategory(e.target.value)}
+                  required
+                  disabled={!selectedBlock}
+                >
+                  <option value="">Select Subcategory *</option>
+                  {SECTIONS.find((s) => s.title === selectedBlock)?.subcategories.map((sub) => (
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  type="file"
+                  name="file"
+                  required
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSelectedFile(file);
+                  }}
+                />
+              </div>
+              {uploadProgress !== null && selectedFile && (
+                <div className="mt-2 space-y-1">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{uploadProgress}%</span>
+                    <span>
+                      {((selectedFile.size * (uploadProgress / 100)) / (1024 * 1024)).toFixed(2)} MB /{" "}
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                    </span>
+                  </div>
+                </div>
+              )}
+              <Button type="submit" disabled={uploading}>
+                <UploadCloud className="w-4 h-4 mr-1" />
+                {uploading ? "Uploading..." : "Upload Note"}
+              </Button>
+            </form>
+          )}
 
-                  {section.subcategories.map((sub) => {
-                    const subNotes = filteredNotes.filter(
-                      (n) => n.sub_category === sub && n.block === section.title
-                    );
+          <Button variant="outline" onClick={() => setShowUploadForm(!showUploadForm)}>
+            {showUploadForm ? "Cancel Upload" : "New Upload"}
+          </Button>
 
-                    return (
-                      <TabsContent key={sub} value={sub} className="space-y-4 mt-4">
-                        {subNotes.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
-                        ) : (
-                          <div className="grid gap-1 pb-2 sm:grid-cols-2 lg:grid-cols-2">
-
-                            {subNotes.map((note) => (
-                              <Card
-                                key={note.id}
-                                className="flex flex-col border-0 justify-between transition-all hover:shadow-lg duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+          <Accordion type="multiple" className="space-y-6">
+            {SECTIONS.map((section, i) => (
+              <AccordionItem key={i} value={`section-${i}`}>
+                <AccordionTrigger>{section.title}</AccordionTrigger>
+                <AccordionContent>
+                  <Tabs defaultValue={section.subcategories[0]}>
+                    {["Practical Assessments", "Case Studies"].includes(section.title) ? (
+                      <div className="space-y-2">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() =>
+                            setSelectedSubcategory((prev) =>
+                              prev && section.subcategories.includes(prev) ? "" : section.subcategories[0]
+                            )
+                          }
+                        >
+                          {selectedSubcategory || "Select Subcategory"}
+                        </Button>
+                        {selectedSubcategory === section.subcategories[0] && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {section.subcategories.map((sub) => (
+                              <Button
+                                key={sub}
+                                size="sm"
+                                variant="ghost"
+                                className="justify-start"
+                                onClick={() => setSelectedSubcategory(sub)}
                               >
-
-
-                                <CardHeader className="px-2 sm:px-0">
-                                  <div className="flex flex-col items-start gap-1">
-                                    {/* Icon + title + badge in one line, left-aligned */}
-                                    <div className="flex items-center gap-1">
-                                      {getTypeIcon(note.file_type)}
-                                      <CardTitle className="text-sm  text-left">{note.title}</CardTitle>
-                                      <Badge className={getTypeColor(note.file_type)}>
-                                        {note.file_type.toUpperCase()}
-                                      </Badge>
-                                    </div>
-
-                                    {/* Description */}
-                                    <CardDescription className="mt-1  text-sm text-left">
-                                      {note.description}
-                                    </CardDescription>
-
-                                    {/* Course and date */}
-                                    <p className="text-xs text-muted-foreground text-left">
-                                      {note.course && <span>{note.course} · </span>}
-                                      {new Date(note.created_at).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                </CardHeader>
-
-                                <CardContent>
-                                  {/* Offline download button */}
-                                  <div className="flex gap-2 mt-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={async () => {
-                                        await handleDownload(note.id, note.file_url);
-                                      }}
-                                      variant="ghost"
-                                      className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                    >
-                                      <Download className="h-4 w-4" />
-                                      Cache
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-
-                                      onClick={async () => {
-                                        setFullscreenNote(note);
-                                        if (session?.user?.id) {
-                                          const { error } = await supabase
-                                            .from("note_views")
-                                            .upsert(
-                                              { note_id: note.id, user_id: session.user.id },
-                                              { onConflict: ["note_id", "user_id"] }
-                                            );
-
-                                          if (!error) {
-                                            setViewCounts((prev) => ({
-                                              ...prev,
-                                              [note.id]: (prev[note.id] || 0) + 1,
-                                            }));
-                                          }
-                                        }
-
-                                      }}
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                      View
-                                    </Button>
-                                    {/* Delete button for uploader only */}
-                                    {session?.user?.id === note.uploaded_by && (
-                                      <Button
-                                        size="sm"
-
-                                        onClick={() => handleDelete(note)}
-                                        variant="ghost"
-                                        className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    )}
-
-
-                                    {/* Show badge if file is saved offline */}
-                                    {offlineFiles.includes(note.id) && (
-                                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                        Preserved
-                                      </Badge>
-                                    )}
-                                  </div>
-
-                                  <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
-                                    <div className="flex items-center gap-1">
-                                      <Eye className="h-6 w-6" />
-                                      {viewCounts[note.id] || 0}
-                                    </div>
-
-                                    <button
-                                      className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : ""
-                                        }`}
-                                      onClick={() => toggleLike(note.id)}
-                                    >
-                                      <Heart
-                                        className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""
-                                          }`}
-                                      />
-                                      <span>{likeCounts[note.id] || 0}</span>
-                                    </button>
-                                  </div>
-                                </CardContent>
-
-                              </Card>
+                                {sub}
+                              </Button>
                             ))}
                           </div>
                         )}
-                      </TabsContent>
-                    );
-                  })}
-                </Tabs>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-        {fullscreenNote && (
-          <div
-            ref={fullscreenRef}
-            className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
-          >
-            {/* Close button */}
-            <div className="flex justify-end p-2">
-              <Button
-                onClick={() => setFullscreenNote(null)}
-                variant="ghost"
-                className="text-current hover:bg-muted/20"
-              >
-                <X className="h-6 w-6" />
-              </Button>
-            </div>
+                      </div>
+                    ) : (
+                      <TabsList className="flex flex-wrap gap-2 w-full">
+                        {section.subcategories.map((sub) => (
+                          <TabsTrigger key={sub} value={sub} className="text-sm whitespace-nowrap">
+                            {sub}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    )}
 
-            {/* PDF viewer or iframe */}
-            {fullscreenNote.file_type === "pdf" ? (
-              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <Viewer
-                  fileUrl={fullscreenNote.file_url}
-                  plugins={[defaultLayoutPluginInstance]}
-                  theme={isDarkMode ? "dark" : "light"}
-                  renderLoader={() => (
-                    <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
-                      <GlobalLoader message="Medrae is Loading PDF..." />
-                    </div>
-                  )}
+                    {section.subcategories.map((sub) => {
+                      const subNotes = filteredNotes.filter(
+                        (n) => n.sub_category === sub && n.block === section.title
+                      );
+
+                      return (
+                        <TabsContent key={sub} value={sub} className="space-y-4 mt-4">
+                          {subNotes.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No notes yet in this subcategory.</p>
+                          ) : (
+                            <div className="grid gap-1 pb-2 sm:grid-cols-2 lg:grid-cols-2">
+                              {subNotes.map((note) => (
+                                <Card
+                                  key={note.id}
+                                  className="flex flex-col border-0 justify-between transition-all hover:shadow-lg duration-300 overflow-hidden break-words w-full sm:w-auto px-2 sm:px-4"
+                                >
+                                  <CardHeader className="px-2 sm:px-0">
+                                    <div className="flex flex-col items-start gap-1">
+                                      <div className="flex items-center gap-1">
+                                        {getTypeIcon(note.file_type)}
+                                        <CardTitle className="text-sm text-left">{note.title}</CardTitle>
+                                        <Badge className={getTypeColor(note.file_type)}>
+                                          {note.file_type.toUpperCase()}
+                                        </Badge>
+                                        {!isPremium && (
+                                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 ml-1">
+                                            <Lock className="h-3 w-3 mr-0.5" /> PREMIUM
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <CardDescription className="mt-1 text-sm text-left">
+                                        {note.description}
+                                      </CardDescription>
+                                      <p className="text-xs text-muted-foreground text-left">
+                                        {note.course && <span>{note.course} · </span>}
+                                        {new Date(note.created_at).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </CardHeader>
+
+                                  <CardContent>
+                                    <div className="flex gap-2 mt-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleDownloadNote(note.id, note.file_url)}
+                                        variant="ghost"
+                                        className="mt-3 p-2 rounded-full hover:bg-blue-200 dark:hover:bg-blue-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                      >
+                                        {!isPremium && <Lock className="h-3 w-3 mr-1" />}
+                                        <Download className="h-4 w-4" />
+                                        Cache
+                                      </Button>
+
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="mt-3 p-2 rounded-full hover:bg-purple-200 dark:hover:bg-purple-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        onClick={() => handleViewNote(note)}
+                                      >
+                                        {!isPremium && <Lock className="h-3 w-3 mr-1" />}
+                                        <Eye className="h-4 w-4" />
+                                        View
+                                      </Button>
+
+                                      {session?.user?.id === note.uploaded_by && (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleDelete(note)}
+                                          variant="ghost"
+                                          className="mt-3 p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      )}
+
+                                      {offlineFiles.includes(note.id) && (
+                                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                          Preserved
+                                        </Badge>
+                                      )}
+                                    </div>
+
+                                    <div className="flex justify-between mt-2 text-xs text-muted-foreground items-center">
+                                      <div className="flex items-center gap-1">
+                                        <Eye className="h-6 w-6" />
+                                        {viewCounts[note.id] || 0}
+                                      </div>
+                                      <button
+                                        className={`flex items-center gap-1 ${bookmarkedItems.includes(note.id) ? "text-red-500" : ""}`}
+                                        onClick={() => toggleLike(note.id)}
+                                      >
+                                        <Heart
+                                          className={`h-6 w-6 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`}
+                                        />
+                                        <span>{likeCounts[note.id] || 0}</span>
+                                      </button>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </TabsContent>
+                      );
+                    })}
+                  </Tabs>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+
+          {fullscreenNote && (
+            <div
+              ref={fullscreenRef}
+              className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
+            >
+              <div className="flex justify-end p-2">
+                <Button
+                  onClick={() => setFullscreenNote(null)}
+                  variant="ghost"
+                  className="text-current hover:bg-muted/20"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+              {fullscreenNote.file_type === "pdf" ? (
+                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                  <Viewer
+                    fileUrl={fullscreenNote.file_url}
+                    plugins={[defaultLayoutPluginInstance]}
+                    theme={isDarkMode ? "dark" : "light"}
+                    renderLoader={() => (
+                      <div className="flex items-center justify-center w-full h-full bg-background text-foreground">
+                        <GlobalLoader message="Medrae is Loading PDF..." />
+                      </div>
+                    )}
+                  />
+                </Worker>
+              ) : (
+                <iframe
+                  src={fullscreenNote.file_url}
+                  className="flex-1 w-full bg-background text-foreground"
+                  style={{ border: "none" }}
+                  title={fullscreenNote.title}
                 />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
-              </Worker>
-            ) : (
-              <iframe
-                src={fullscreenNote.file_url}
-                className="flex-1 w-full bg-background text-foreground"
-                style={{ border: "none" }}
-                title={fullscreenNote.title}
-              />
-            )}
+      {/* PREMIUM UPGRADE OVERLAY - Shows when non-premium user tries to view/download */}
+      <AnimatePresence>
+        {showPremiumOverlay && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPremiumOverlay(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-md"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-8 text-center">
+                <div className="absolute top-0 right-0 p-4">
+                  <button onClick={() => setShowPremiumOverlay(false)} className="text-white/80 hover:text-white">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                  <Lock className="w-12 h-12 text-white" />
+                </div>
+
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  Premium Resource
+                </h3>
+                <p className="text-white/90 text-sm">
+                  {selectedNoteForOverlay?.title}
+                </p>
+              </div>
+
+              <div className="p-8">
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>Full access to all {notes.length}+ assessment notes</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>Download for offline study</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>Case studies & practical guides</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>Research project templates</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowPremiumOverlay(false);
+                    navigate("/subscription");
+                  }}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group mb-3"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>Unlock All Features — KES 299 for 3 Months</span>
+                </button>
+
+                <button
+                  onClick={() => setShowPremiumOverlay(false)}
+                  className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium"
+                >
+                  Maybe later
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
-      </div>
-    </div>
+      </AnimatePresence>
+    </>
   );
 }

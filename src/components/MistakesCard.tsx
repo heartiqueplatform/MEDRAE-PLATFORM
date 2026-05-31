@@ -242,7 +242,7 @@ export function MistakesCard() {
                 </div>
             )}
 
-            <Card className="rounded-xl border-0 shadow-xl bg-white dark:bg-gray-900 mt-2 overflow-hidden">
+            <Card className="rounded-xl border-0 shadow-xl bg-white dark:bg-muted/30 mt-2 overflow-hidden">
                 <CardHeader className="p-6 pb-2 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex justify-between items-start">
                         <div>
@@ -301,7 +301,7 @@ export function MistakesCard() {
                                     onClick={() => setExpandedCard({ ...item, index: i })}
                                     className="w-[300px] md:w-[350px] flex-shrink-0 snap-center"
                                 >
-                                    <Card className="h-[420px] flex flex-col relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group rounded-2xl overflow-hidden">
+                                    <Card className="h-[420px] flex flex-col relative bg-white dark:bg-muted/50 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group rounded-2xl overflow-hidden">
 
                                         {/* Archive/Achieve Button */}
                                         <div className="absolute top-3 right-3 z-20">
@@ -393,7 +393,7 @@ export function MistakesCard() {
                             variant="ghost"
                             onClick={() => setPage((p) => p + 1)}
                             disabled={loading}
-                            className="flex flex-col gap-2 h-auto py-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                            className="flex flex-col gap-2 h-auto py-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 text-gray-500 hover:text-blue-600 hover:dark:bg-gray-800 hover:border-blue-400 hover:bg-blue-50 transition-all"
                         >
                             {loading ? (
                                 <Loader2 className="animate-spin" size={24} />

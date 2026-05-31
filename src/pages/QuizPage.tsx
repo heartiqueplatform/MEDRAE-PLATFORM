@@ -658,6 +658,8 @@ export default function QuizPage() {
     setRecentlyAnsweredId(questionId);
     setFeedbackShown(prev => ({ ...prev, [questionId]: true }));
 
+    // NEW - auto open explanation overlay after answering
+    setOpenExplanationFor(questionId);
     // Save unit answers to localStorage
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
 
@@ -961,7 +963,7 @@ Please provide a detailed discussion and guidance.`;
       <div className="flex flex-col items-center">
         <div className="w-full max-w-6xl min-h-[500px] relative">
           {/* Course Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 mt-2 scrollbar-hide">
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
             {courseOptions.map((course) => (
               <button
@@ -1214,7 +1216,65 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                         );
                       })}
                     </div>
+                    <div className="flex items-center justify-center gap-3 w-full">
+                      {/* PREV BUTTON */}
+                      <button
+                        onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                        disabled={currentQuestionIndex === 0}
+                        className="inline-flex items-center justify-center gap-2 px-6 h-11 rounded-xl
+        border border-gray-200 bg-white text-gray-700
+        dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200
+        hover:bg-gray-50 dark:hover:bg-gray-800
+        active:bg-gray-100 dark:active:bg-gray-700
+        transition-all duration-200 font-semibold shadow-sm
+        disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      >
+                        <ChevronLeft size={18} />
+                        <span>Previous</span>
+                      </button>
 
+
+
+                      {/* --- NEW DYNAMIC NEXT/UNLOCK BUTTON --- */}
+                      <button
+                        onClick={() => {
+                          // If user is at question 20 (index 19) and is NOT premium, send to subscription
+                          if (!isPremium && currentQuestionIndex === 19) {
+                            navigate("/subscription");
+                          } else {
+                            // Otherwise, normal next question logic
+                            setCurrentQuestionIndex(prev =>
+                              prev < filteredQuestions.length - 1 ? prev + 1 : prev
+                            );
+                          }
+                        }}
+                        // We REMOVE the !isPremium check from disabled so the button remains clickable
+                        disabled={currentQuestionIndex === filteredQuestions.length - 1}
+                        className={cn(
+                          "inline-flex items-center justify-center gap-2 px-8 h-11 rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98]",
+                          // Change color to Gold/Amber if it's the "Unlock" state to make it stand out
+                          (!isPremium && currentQuestionIndex === 19)
+                            ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
+                            : "bg-indigo-600 hover:bg-indigo-700 text-white",
+                          "disabled:opacity-30 disabled:cursor-not-allowed"
+                        )}
+                      >
+                        <span>
+                          {(() => {
+                            if (!isPremium && currentQuestionIndex === 19) return "Unlock 100+ Questions";
+                            if (currentQuestionIndex === filteredQuestions.length - 1) return "Finish";
+                            return "Next";
+                          })()}
+                        </span>
+
+                        {/* Show a Sparkle icon if it's the unlock button, otherwise the Chevron */}
+                        {!isPremium && currentQuestionIndex === 19 ? (
+                          <Sparkles size={18} />
+                        ) : (
+                          <ChevronRight size={18} />
+                        )}
+                      </button>
+                    </div>
                     {/* --- START OF IMPROVED BLOCK --- */}
                     <div className="mt-1 flex flex-wrap items-center justify-between w-full gap-3 border-0 pt-4">
 
@@ -1413,65 +1473,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                         Question {currentQuestionIndex + 1} of {filteredQuestions.length}
                       </span>
 
-                      <div className="flex items-center justify-center gap-3 w-full">
-                        {/* PREV BUTTON */}
-                        <button
-                          onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                          disabled={currentQuestionIndex === 0}
-                          className="inline-flex items-center justify-center gap-2 px-6 h-11 rounded-xl
-        border border-gray-200 bg-white text-gray-700
-        dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200
-        hover:bg-gray-50 dark:hover:bg-gray-800
-        active:bg-gray-100 dark:active:bg-gray-700
-        transition-all duration-200 font-semibold shadow-sm
-        disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                        >
-                          <ChevronLeft size={18} />
-                          <span>Previous</span>
-                        </button>
 
-
-
-                        {/* --- NEW DYNAMIC NEXT/UNLOCK BUTTON --- */}
-                        <button
-                          onClick={() => {
-                            // If user is at question 20 (index 19) and is NOT premium, send to subscription
-                            if (!isPremium && currentQuestionIndex === 19) {
-                              navigate("/subscription");
-                            } else {
-                              // Otherwise, normal next question logic
-                              setCurrentQuestionIndex(prev =>
-                                prev < filteredQuestions.length - 1 ? prev + 1 : prev
-                              );
-                            }
-                          }}
-                          // We REMOVE the !isPremium check from disabled so the button remains clickable
-                          disabled={currentQuestionIndex === filteredQuestions.length - 1}
-                          className={cn(
-                            "inline-flex items-center justify-center gap-2 px-8 h-11 rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98]",
-                            // Change color to Gold/Amber if it's the "Unlock" state to make it stand out
-                            (!isPremium && currentQuestionIndex === 19)
-                              ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
-                              : "bg-indigo-600 hover:bg-indigo-700 text-white",
-                            "disabled:opacity-30 disabled:cursor-not-allowed"
-                          )}
-                        >
-                          <span>
-                            {(() => {
-                              if (!isPremium && currentQuestionIndex === 19) return "Unlock 100+ Questions";
-                              if (currentQuestionIndex === filteredQuestions.length - 1) return "Finish";
-                              return "Next";
-                            })()}
-                          </span>
-
-                          {/* Show a Sparkle icon if it's the unlock button, otherwise the Chevron */}
-                          {!isPremium && currentQuestionIndex === 19 ? (
-                            <Sparkles size={18} />
-                          ) : (
-                            <ChevronRight size={18} />
-                          )}
-                        </button>
-                      </div>
                     </div>
                   </div>
 

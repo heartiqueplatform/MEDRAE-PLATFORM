@@ -1,6 +1,6 @@
 "use client";
 import { GlobalLoader } from "@/components/GlobalLoader"; // adjust the path if needed
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -45,6 +45,22 @@ export function Settings() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Define required fields that should be completed
+  const requiredFields = [
+    { key: "name", label: "Full Name" },
+    { key: "username", label: "Username" },
+    { key: "phone", label: "Phone Number" },
+    { key: "institution", label: "Institution" },
+    { key: "course", label: "Course" },
+    { key: "block", label: "Block" },
+    { key: "county", label: "County" },
+    { key: "nck_number", label: "NCK Number/Exam number" },
+    { key: "specialization", label: "Specialization" },
+    { key: "workplace", label: "Workplace" },
+    { key: "employment_type", label: "Employment Type" },
+    { key: "license_status", label: "License Status" },
+  ];
+
   // Fetch profile
   useEffect(() => {
     const fetchProfile = async () => {
@@ -73,6 +89,8 @@ export function Settings() {
           setProfile(data);
           setAvatarPreview(data.avatar_url || null);
           localStorage.setItem("userProfile", JSON.stringify(data));
+          // Dispatch event to notify global checker
+          window.dispatchEvent(new CustomEvent('profileUpdated', { detail: data }));
         }
       } else {
         // use cached avatar preview
@@ -82,7 +100,6 @@ export function Settings() {
 
     fetchProfile();
   }, []);
-
 
   // Handle input changes
   const handleChange = (key: string, value: string) => {
@@ -126,9 +143,8 @@ export function Settings() {
     console.log("DEBUG [Settings]: Avatar Upload Success:", data.secure_url);
     return data.secure_url;
   };
+
   // Upload avatar (PRESERVED)
-  // Upload avatar (with cache-busting)
-  // 🟢 NEW: Cloudinary based uploadAvatar
   const uploadAvatar = async () => {
     if (!avatarFile || !userId) return null;
 
@@ -142,10 +158,7 @@ export function Settings() {
     }
   };
 
-
-
   // Remove avatar with confirmation
-  // 🟢 UPDATED: Simple Remove (Clears the DB reference)
   const handleRemoveAvatar = async () => {
     if (!userId) return;
 
@@ -169,6 +182,9 @@ export function Settings() {
       setAvatarPreview(null);
       setAvatarFile(null);
       localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
+
+      // Dispatch event to notify global checker
+      window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
 
       toast({
         title: "Avatar Removed",
@@ -212,6 +228,9 @@ export function Settings() {
       setProfile(updatedProfile);
       localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
 
+      // Dispatch event to notify global checker
+      window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updatedProfile }));
+
       toast({
         title: "Profile Saved!",
         description: "Your profile was updated successfully.",
@@ -226,18 +245,17 @@ export function Settings() {
       setLoading(false);
     }
   };
+
   // Only show loader if profile is not in cache
   if (!profile && !cachedProfile) {
     return <GlobalLoader message="Loading profile..." />;
   }
-
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)]  ">
       <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6">
 
         <Card className="w-full border-0 overflow-hidden p-6">
-
 
           {/* Tabs + profile info: left-aligned */}
           <div className="mt-6">
@@ -288,7 +306,6 @@ export function Settings() {
           </div>
         </Card>
         <Tabs defaultValue="profile" className="space-y-6">
-
 
           <TabsContent value="profile">
             <Card className=" border-0">
@@ -350,20 +367,33 @@ export function Settings() {
                 </div>
 
                 {/* Security / Password Reset Info */}
+                {/* Security / Password Reset Info */}
                 <Separator />
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Security / Recovery Information</h3>
                   <div className="space-y-2">
-                    <Label htmlFor="reset_question">Reset Question</Label>
-                    <Input
+                    <Label htmlFor="reset_question">Security Question</Label>
+                    <select
                       id="reset_question"
                       value={profile.reset_question || ""}
                       onChange={(e) => handleChange("reset_question", e.target.value)}
-                      placeholder="e.g. What is your favorite color?"
-                    />
+                      className="w-full px-3 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">Select a security question</option>
+                      <option value="What was your first pet's name?">What was your first pet's name?</option>
+                      <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                      <option value="What was the name of your first school?">What was the name of your first school?</option>
+                      <option value="What is your favorite book?">What is your favorite book?</option>
+                      <option value="What city were you born in?">What city were you born in?</option>
+                      <option value="What is your favorite color?">What is your favorite color?</option>
+                      <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+                      <option value="What is the name of your favorite teacher?">What is the name of your favorite teacher?</option>
+                      <option value="What is your favorite movie?">What is your favorite movie?</option>
+                      <option value="What is the name of your best friend?">What is the name of your best friend?</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="reset_answer">Reset Answer</Label>
+                    <Label htmlFor="reset_answer">Security Answer</Label>
                     <Input
                       id="reset_answer"
                       value={profile.reset_answer || ""}
@@ -371,6 +401,9 @@ export function Settings() {
                       placeholder="Your answer here"
                       type="password"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      This answer will be used to verify your identity if you forget your password.
+                    </p>
                   </div>
                 </div>
                 <Separator />

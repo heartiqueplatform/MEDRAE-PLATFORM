@@ -70,7 +70,9 @@ export default function Feed() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-
+  // Add these with your other useState declarations
+  const [imageTitle, setImageTitle] = useState("");
+  const [imageDescription, setImageDescription] = useState("");
 
   const [questions, setQuestions] = useState(savedQuestions);
   const [loading, setLoading] = useState(savedQuestions.length === 0);
@@ -190,7 +192,7 @@ export default function Feed() {
         // We get the direct URL back immediately
         const cloudinaryUrl = await uploadToCloudinary(file);
 
-        // 2️⃣ INSERT RECORD INTO DATABASE
+        // 2️⃣ INSERT RECORD INTO DATABASE with TITLE and DESCRIPTION
         // We use the same table, but save the Cloudinary URL
         const { error: insertError, data: insertedData } = await supabase
           .from("qfeed_images")
@@ -198,6 +200,8 @@ export default function Feed() {
             image_url: cloudinaryUrl, // 👈 Saved Cloudinary URL
             storage_path: "cloudinary", // 👈 We can just put a placeholder here now
             added_by: user.id,
+            title: imageTitle || null,        // 👈 ADD THIS - get from state
+            description: imageDescription || null, // 👈 ADD THIS - get from state
           })
           .select()
           .single();
@@ -210,6 +214,8 @@ export default function Feed() {
       // Keep your existing state updates so the UI reflects the new post
       setFeedImages((prev) => [...uploadedImages, ...prev]);
       setUploadFiles([]);
+      setImageTitle("");        // 👈 ADD THIS - reset title
+      setImageDescription("");  // 👈 ADD THIS - reset description
       alert("Images uploaded via Cloudinary! Bandwidth saved.");
     } catch (err: any) {
       console.error("Upload failed:", err);
@@ -1061,7 +1067,7 @@ export default function Feed() {
                 ref={index === questions.length - 1 ? loaderRef : null}
 
               >
-                <Card className="relative bg-transparent dark:bg-transparent lg:bg-gray-100 lg:dark:bg-gray-900 border-0 shadow-none rounded-xl overflow-visible transition-all">
+                <Card className="relative bg-transparent dark:bg-muted/30 lg:bg-gray-100 lg:dark:bg-muted/30 border-0 shadow-none rounded-xl overflow-visible transition-all">
 
                   {/* Confetti overlay */}
                   {selected === q.correct_answer && (
@@ -1305,28 +1311,26 @@ export default function Feed() {
               cards.push(
                 <FeedMediaPanel
                   key={`feed-media-${index}`}
-
                   index={index}
                   knowledgePosts={knowledgeData}
                   feedImages={feedImages}
                   loadedImages={loadedImages}
                   setLoadedImages={setLoadedImages}
-
                   session={session}
                   supabase={supabase}
                   user={user}
-
                   openViewer={openViewer}
                   handleDeleteImage={handleDeleteImage}
-
                   showUpload={showUpload}
                   setShowUpload={setShowUpload}
-
                   uploadFiles={uploadFiles}
                   setUploadFiles={setUploadFiles}
-
                   uploading={uploading}
                   handleImageUpload={handleImageUpload}
+                  imageTitle={imageTitle}
+                  setImageTitle={setImageTitle}
+                  imageDescription={imageDescription}
+                  setImageDescription={setImageDescription}
                 />
               );
             }
@@ -1481,44 +1485,7 @@ export default function Feed() {
             setNewComment={setNewComment}
             addComment={addComment}
           />
-          {uploading && (
-            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm text-white">
-              <svg
-                className="animate-spin w-12 h-12 mb-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                ></path>
-              </svg>
-              <p className="text-lg font-semibold text-center mb-4">
-                Uploading images…<br />
-                Do not leave the page or close the browser.
-              </p>
-              <button
-                onClick={() => {
-                  // Abort all ongoing uploads
-                  uploadControllers.current.forEach((c) => c.abort());
-                  setUploading(false);
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-              >
-                Leave
-              </button>
-            </div>
-          )}
+
         </div>
       </PullToRefresh >
     </>

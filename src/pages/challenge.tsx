@@ -1033,7 +1033,7 @@ https://medrae.vercel.app`;
             </div>
 
             {/* FIND PLAYERS */}
-            <div className="p-0 rounded-xl max-w-2xl mx-auto border bg-white dark:bg-gray-900 border-0">
+            <div className="p-0 rounded-xl max-w-2xl mx-auto border bg-white dark:bg-muted/30 border-0">
                 <ChallengeTabs
                     incoming={incoming}
                     outgoing={outgoing}

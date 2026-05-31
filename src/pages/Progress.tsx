@@ -226,7 +226,7 @@ export function StudyProgress() {
     <div className="min-h-screen w-full flex mt-0 flex-col items-center ">
       <div className="w-full max-w-3xl space-y-2 px-0 sm:px-6 pt-4 sm:pt-8">
         {/* MAIN HEADER CARD */}
-        <Card className="relative overflow-hidden shadow-xl shadow-blue-500/5 transition-all rounded-none sm:rounded-xl border-0 bg-white dark:bg-gray-900">
+        <Card className="relative overflow-hidden shadow-xl shadow-blue-500/5 transition-all rounded-none sm:rounded-xl border-0 bg-white dark:bg-muted/30">
           {/* Visual Accent */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
           <CardHeader className="pb-2">
@@ -271,7 +271,7 @@ export function StudyProgress() {
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex gap-3">
                           <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center text-blue-600 font-bold text-xs">%</div>
                           <p className="text-[11px] text-gray-500 leading-snug"><strong>Progress:</strong> Highest quiz score achieved per unit.</p>
@@ -295,7 +295,7 @@ export function StudyProgress() {
             </div>
 
             {/* OVERALL STATS GRID */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2">
               {/* Progress Card */}
               <StatCard
                 icon={<TrendingUp className="w-5 h-5" />}

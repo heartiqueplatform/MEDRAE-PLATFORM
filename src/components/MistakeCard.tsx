@@ -132,7 +132,7 @@ export default function MistakeCard() {
             relative overflow-hidden cursor-pointer p-5 rounded-xl border-0 transition-all duration-300
             ${isClean
                     ? "bg-emerald-50/50 dark:bg-emerald-500/5 border-0  shadow-emerald-500/5"
-                    : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none"
+                    : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none"
                 }
         `}
         >

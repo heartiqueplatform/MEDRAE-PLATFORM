@@ -3,7 +3,7 @@ let unlocked = false;
 const sounds: Record<string, HTMLAudioElement> = {};
 
 // 🎚️ GLOBAL DEFAULT VOLUME (study app friendly)
-const DEFAULT_VOLUME = 0.20;
+const DEFAULT_VOLUME = 0.80;
 
 /**
  * Unlocks audio playback on first user interaction

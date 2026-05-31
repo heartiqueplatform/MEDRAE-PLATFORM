@@ -122,6 +122,8 @@ export default function SimulationPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const localKey = selectedPaper?.id ? `sim-answers-${selectedPaper.id}` : "";
   const timerKey = selectedPaper?.id ? `sim-timer-${selectedPaper.id}` : "";
+  const [showPremiumOverlay, setShowPremiumOverlay] = useState(false);
+  const [selectedPaperForOverlay, setSelectedPaperForOverlay] = useState<any>(null);
 
   const currentQuestion = questions?.[currentIndex] ?? null;
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -1037,12 +1039,15 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                       </div>
                     ) : (
                       // --- NEW CODE (CLICKABLE & SMOOTH) ---
+                      // --- NEW CODE - Add these states at the top of your component (around line 60-70) ---
+                      // Add these state declarations with your other useState hooks:
+
+                      // --- NEW BUTTON CODE (Replace the Button section) ---
                       <Button
                         className={`w-full h-12 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] ${canAccess
                           ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100 group"
-                          : "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-100" // Changed from gray to Amber
+                          : "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-100"
                           }`}
-                        // Removed disabled={!canAccess} so users can click to upgrade
                         onClick={async () => {
                           if (canAccess) {
                             // Original Logic for Paid Users
@@ -1056,8 +1061,9 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                               });
                             }
                           } else {
-                            // Smooth navigation for Free Users
-                            navigate("/subscription");
+                            // ✅ NEW: Show overlay instead of direct navigation
+                            setSelectedPaperForOverlay(paper);
+                            setShowPremiumOverlay(true);
                           }
                         }}
                       >
@@ -1078,6 +1084,85 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             );
           })}
         </div>
+        {/* PREMIUM UPGRADE OVERLAY - Add this before the final closing </> */}
+        <AnimatePresence>
+          {showPremiumOverlay && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowPremiumOverlay(false)}
+                className="absolute inset-0 bg-black/70 backdrop-blur-md"
+              />
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="relative max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden"
+              >
+                <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-8 text-center">
+                  <div className="absolute top-0 right-0 p-4">
+                    <button onClick={() => setShowPremiumOverlay(false)} className="text-white/80 hover:text-white">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                    <Lock className="w-12 h-12 text-white" />
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    Premium Assessment
+                  </h3>
+                  <p className="text-white/90 text-sm">
+                    {selectedPaperForOverlay?.title}
+                  </p>
+                </div>
+
+                <div className="p-8">
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <span>Full access to all {paperList.length}+ simulation papers</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <span>NCK-aligned examination format</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <span>Detailed performance analytics</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <span>PDF certificate generation</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowPremiumOverlay(false);
+                      navigate("/subscription");
+                    }}
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group mb-3"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    <span>Unlock All Features — KES 299 for 3 Months</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowPremiumOverlay(false)}
+                    className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -1595,6 +1680,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           </motion.div>
         )}
       </AnimatePresence>
+
     </div>
   );
 }
