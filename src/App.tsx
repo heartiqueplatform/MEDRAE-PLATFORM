@@ -389,7 +389,6 @@ const AppContent = () => {
 
                     {/* ------------------- Dashboard Redirect ------------------- */}
                     <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
-
                     {/* ------------------- Persistent Dashboard Layout ------------------- */}
                     <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
                       <Route path="/dashboard/student" element={<StudentDashboard />} />
@@ -447,7 +446,7 @@ const AppContent = () => {
                       <Route path="/survival-hub/add-placement" element={<AddPlacementPage />} />
                       <Route path="/survival-hub/placements/:id" element={<PlacementDetailPage />} />
                       <Route path="/survival-hub/buddies" element={<ExamBuddiesPage />} />
-                      <Route path="/auth/callback" element={<AuthCallback />} />
+
                     </Route>
 
                     {/* ------------------- Full-screen / Independent Pages ------------------- */}
@@ -455,6 +454,8 @@ const AppContent = () => {
                     <Route path="/simulation/:paper_id" element={<SimulationPage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+
                     {/* ------------------- FULLSCREEN EXAM PAGE ------------------- */}
 
                     {/* ------------------- Catch-all ------------------- */}

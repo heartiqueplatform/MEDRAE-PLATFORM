@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { survivalApi } from '../../lib/survivalApi';
+import { cachedSurvivalService } from '../../lib/services/survivalService';
+import { useCachedQuery } from '../../hooks/useCachedQuery';
 import { HousingCard } from '../../components/survival-hub/HousingCard';
 import { ChevronLeft, Filter, Plus, Building2, Search, Loader2 } from 'lucide-react';
 import SmartSelect from '@/components/ui/SmartSelect'; // Adjust path if needed
@@ -9,40 +10,36 @@ const HousingPage = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const centerId = searchParams.get('centerId') || '';
+    const hospitalId = searchParams.get('hospitalId') || '';
+    const placementId = searchParams.get('placementId') || '';
 
-    const [housing, setHousing] = useState([]);
-    const [centers, setCenters] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState(''); // Search state
+    const [triggerRefresh, setTriggerRefresh] = useState(0);
+
+    // Use cached query for housing data
+    const { data: housing = [], loading: housingLoading } = useCachedQuery(
+        `housing-${centerId}-${hospitalId}-${placementId}`,
+        () => cachedSurvivalService.getHousing({
+            centerId: centerId || undefined,
+            hospitalId: hospitalId || undefined,
+            placementId: placementId || undefined
+        }),
+        [centerId, hospitalId, placementId, triggerRefresh],
+        { ttl: 2 * 60 * 1000 } // 2 minute cache for user data
+    );
+
+    // Use cached query for exam centers
+    const { data: centers = [], loading: centersLoading } = useCachedQuery(
+        "exam-centers-housing",
+        () => cachedSurvivalService.getExamCenters(),
+        [triggerRefresh],
+        { ttl: 5 * 60 * 1000 } // 5 minute cache for static data
+    );
+
+    const loading = housingLoading || centersLoading;
 
     // Find the name of the currently selected center for the UI
     const selectedCenter = centers.find(c => c.id === centerId);
-
-    useEffect(() => {
-        async function loadData() {
-            try {
-                setLoading(true);
-
-                const [housingData, centersData] = await Promise.all([
-                    survivalApi.getHousing({
-                        centerId,
-                        hospitalId: searchParams.get('hospitalId'),
-                        placementId: searchParams.get('placementId')
-                    }),
-                    survivalApi.getExamCenters()
-                ]);
-
-                setHousing(housingData);
-                setCenters(centersData);
-            } catch (error) {
-                console.error("Error:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        loadData();
-    }, [centerId, searchParams]);
 
     // PRESERVED LOGIC: Filter housing based on search term
     const displayHousing = housing.filter(item =>
@@ -50,6 +47,7 @@ const HousingPage = () => {
         item.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.contact_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
     const centerOptions = [
         { id: '', name: 'All Kenya Centers', subtext: 'View all available housing' },
         ...centers.map(c => ({
@@ -58,6 +56,16 @@ const HousingPage = () => {
             subtext: c.county // This makes it look like a pro app (e.g. "Nairobi Center (Nairobi County)")
         }))
     ];
+
+    const handleDeleteHousing = async (id: string) => {
+        try {
+            await cachedSurvivalService.deleteHousing(id);
+            setTriggerRefresh(prev => prev + 1);
+        } catch (error) {
+            console.error("Error deleting housing:", error);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 pb-20 dark:bg-background">
             {/* 1. Header Area - PRESERVED */}
@@ -95,8 +103,7 @@ const HousingPage = () => {
                             <span>Filter by Center</span>
                         </div>
                         {/* THE UPGRADED FILTER SELECT */}
-                        {/* THE UPGRADED FILTER SELECT */}
-                        <div className="flex-1 min-w-[200px]"> {/* Removed relative, added flex-1 */}
+                        <div className="flex-1 min-w-[200px]">
                             <SmartSelect
                                 label=""
                                 categoryName="Center"
@@ -147,14 +154,11 @@ const HousingPage = () => {
                 ) : (
                     <>
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-2">
-                            {/* FIXED: We map over displayHousing now */}
                             {displayHousing.map(item => (
                                 <HousingCard
                                     key={item.id}
                                     house={item}
-                                    onDelete={(id) =>
-                                        setHousing(prev => prev.filter(h => h.id !== id))
-                                    }
+                                    onDelete={handleDeleteHousing}
                                 />
                             ))}
                         </div>

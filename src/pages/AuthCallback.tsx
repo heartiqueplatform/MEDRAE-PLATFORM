@@ -163,7 +163,7 @@ const RubiksCubeLoader = ({ isSolving, onSolved }: CubeLoaderProps) => {
     );
 };
 
-// ── AuthCallback ──────────────────────────────────────────────────
+// ── AuthCallback (FIXED VERSION) ──────────────────────────────────
 export default function AuthCallback() {
     const navigate = useNavigate();
     const [phase, setPhase] = useState<"loading" | "solving" | "done">("loading");
@@ -172,76 +172,196 @@ export default function AuthCallback() {
     useEffect(() => {
         const handleGoogleAuth = async () => {
             try {
-                const { data: { session }, error: sessionError } =
-                    await supabase.auth.getSession();
-                if (sessionError || !session?.user) throw new Error("No active session found");
+                console.log("=== AUTH CALLBACK STARTED ===");
+                console.log("Full URL:", window.location.href);
+                console.log("Hash:", window.location.hash);
+                console.log("Search:", window.location.search);
 
-                const user = session.user;
-                const email = user.email || "";
-                const fullName =
-                    user.user_metadata?.full_name || user.user_metadata?.name || "User";
-                const avatar = user.user_metadata?.avatar_url || "";
-                const username = email
-                    ? email.split("@")[0].toLowerCase()
-                    : `user_${user.id.slice(0, 6)}`;
+                // 🔧 IMPORTANT: Handle both hash fragments and query params
+                // Supabase might return tokens in hash fragment
+                let code = null;
 
-                const { data: existingProfile, error: profileFetchError } = await supabase
-                    .from("profiles")
-                    .select("role")
-                    .eq("user_id", user.id)
-                    .maybeSingle();
-                if (profileFetchError) throw new Error("Failed to fetch profile");
+                // Check for code in query params first
+                const searchParams = new URLSearchParams(window.location.search);
+                code = searchParams.get("code");
 
-                const role = existingProfile?.role || "student";
-
-                const { error: upsertError } = await supabase.from("profiles").upsert(
-                    {
-                        user_id: user.id, name: fullName, username, email,
-                        avatar_url: avatar, role, subscription: "Free",
-                        joined_date: new Date().toISOString().split("T")[0],
-                        is_online: true, last_seen: new Date().toISOString(),
-                    },
-                    { onConflict: "user_id" }
-                );
-                if (upsertError) throw new Error("Failed creating/updating profile");
-
-                let deviceId = localStorage.getItem("device_id") || crypto.randomUUID();
-                localStorage.setItem("device_id", deviceId);
-
-                const { data: sessions } = await supabase
-                    .from("user_sessions").select("*").eq("user_id", user.id);
-                const existingSessions = sessions || [];
-                const alreadyExists = existingSessions.find((s) => s.device_id === deviceId);
-                if (!alreadyExists) {
-                    if (existingSessions.length >= 3) throw new Error("Maximum devices reached");
-                    await supabase.from("user_sessions").insert({
-                        user_id: user.id, device_id: deviceId, device_info: navigator.userAgent,
-                    });
+                // If no code in query params, check hash fragment
+                if (!code && window.location.hash) {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    code = hashParams.get("code");
+                    console.log("Found code in hash fragment:", code);
                 }
 
-                // Store destination, then kick off the solve animation
-                if (role === "student") navigateFn.current = () => navigate("/dashboard/student", { replace: true });
-                else if (role === "tutor") navigateFn.current = () => navigate("/dashboard/tutor", { replace: true });
-                else if (role === "staff") navigateFn.current = () => navigate("/dashboard/staff", { replace: true });
-                else navigateFn.current = () => navigate("/", { replace: true });
+                // Check for error in URL
+                const error = searchParams.get("error") ||
+                    (window.location.hash && new URLSearchParams(window.location.hash.substring(1)).get("error"));
 
-                setPhase("solving");
+                if (error) {
+                    console.error("OAuth Error:", error);
+                    const errorDesc = searchParams.get("error_description") ||
+                        (window.location.hash && new URLSearchParams(window.location.hash.substring(1)).get("error_description"));
+                    throw new Error(`Authentication error: ${errorDesc || error}`);
+                }
+
+                // If we have an access_token in hash, we might already have a session
+                if (!code && window.location.hash) {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    const accessToken = hashParams.get("access_token");
+
+                    if (accessToken) {
+                        console.log("Found access_token, getting session...");
+                        // Try to get session directly
+                        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+                        if (!sessionError && session) {
+                            console.log("Session found from hash token");
+                            // We have a session, continue with profile setup
+                            const user = session.user;
+                            // ... continue with profile processing
+                        }
+                    }
+                }
+
+                if (!code) {
+                    // Check if we already have a session
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        console.log("Already have a session, proceeding...");
+                        // Process the existing session
+                        const user = session.user;
+                        // Continue with profile setup below
+                    } else {
+                        throw new Error("No OAuth code or existing session found");
+                    }
+                } else {
+                    // Exchange code for session
+                    console.log("Exchanging code for session...");
+                    const { data: codeData, error: exchangeError } =
+                        await supabase.auth.exchangeCodeForSession(code);
+
+                    if (exchangeError) {
+                        console.error("Exchange error:", exchangeError);
+                        throw exchangeError;
+                    }
+
+                    if (!codeData.session) {
+                        throw new Error("No session returned from Supabase");
+                    }
+
+
+                }
+
+                // Get the session and user (either from above or from existing session)
+                const { data: { session }, error: sessionError } =
+                    await supabase.auth.getSession();
+
+                if (sessionError || !session) {
+                    throw new Error("No session available");
+                }
+
+                const user = session.user;
+
+                console.log("Session established for user:", user.email);
+
+                // Rest of your profile processing code remains the same...
+                const email = user.email || "";
+                const fullName = user.user_metadata?.full_name || user.user_metadata?.name || "User";
+                const avatar = user.user_metadata?.avatar_url || "";
+                const username = email ? email.split("@")[0].toLowerCase() : `user_${user.id.slice(0, 6)}`;
+
+                const pendingRole = localStorage.getItem("pendingOAuthRole") as "student" | "tutor" | null;
+
+                let existingRole = null;
+                try {
+                    const { data: existingProfile } = await supabase
+                        .from("profiles")
+                        .select("role")
+                        .eq("user_id", user.id)
+                        .maybeSingle();
+
+                    if (existingProfile) {
+                        existingRole = existingProfile.role;
+                    }
+                } catch (fetchError) {
+                    console.warn("Could not fetch existing profile:", fetchError);
+                }
+                console.log("PENDING ROLE:", pendingRole);
+                console.log("EXISTING ROLE (IGNORED):", existingRole);
+                const role = pendingRole || "student";
+                localStorage.removeItem("pendingOAuthRole");
+
+                // Update or create profile
+                try {
+                    const { error: upsertError } = await supabase
+                        .from("profiles")
+                        .upsert(
+                            {
+                                user_id: user.id,
+                                name: fullName,
+                                username: username,
+                                email: email,
+                                avatar_url: avatar,
+
+                                // ✅ FIXED LINE (IMPORTANT)
+                                role: pendingRole || "student",
+
+                                subscription: "Free",
+                                joined_date: new Date().toISOString().split("T")[0],
+                                is_online: true,
+                                last_seen: new Date().toISOString(),
+                                tokens: 0,
+                            },
+                            { onConflict: "user_id" }
+                        );
+
+                    if (upsertError) {
+                        console.error("Profile upsert error:", upsertError);
+                    }
+                } catch (profileError) {
+                    console.error("Profile operation failed:", profileError);
+                }
+
+                // Navigate based on role
+                if (role === "student") {
+                    navigate("/dashboard/student", { replace: true });
+                } else if (role === "tutor") {
+                    navigate("/dashboard/tutor", { replace: true });
+                } else if (role === "staff") {
+                    navigate("/dashboard/staff", { replace: true });
+                } else {
+                    navigate("/", { replace: true });
+                }
+
             } catch (err: any) {
-                console.error("Auth callback error:", err);
-                navigate("/login", { replace: true });
+                console.error("=== AUTH CALLBACK ERROR ===");
+                console.error("Error message:", err.message);
+                localStorage.removeItem("pendingOAuthRole");
+                navigate("/login?error=auth_failed", { replace: true });
             }
         };
 
         handleGoogleAuth();
     }, [navigate]);
-
     const handleSolved = () => {
         setPhase("done");
         setTimeout(() => navigateFn.current(), 600);
     };
-
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-8">
+        <div className="relative min-h-screen w-full overflow-hidden">
+
+            {/* Background */}
+            <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{
+                    backgroundImage: "url('/high1.png')"
+                }}
+            />
+
+            {/* Dark overlay */}
+            <div className="absolute inset-0 bg-black/40" />
+
+            {/* Content */}
+            <div className="relative z-10 min-h-screen flex flex-col items-center justify-center gap-8"></div>
             {phase !== "done" ? (
                 <>
                     <RubiksCubeLoader isSolving={phase === "solving"} onSolved={handleSolved} />

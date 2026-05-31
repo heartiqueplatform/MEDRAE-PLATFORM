@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { survivalApi } from '../../lib/survivalApi';
+import { cachedSurvivalService } from '../../lib/services/survivalService';
+import { useCachedQuery } from '../../hooks/useCachedQuery';
 import { ExamCenterCard } from '../../components/survival-hub/ExamCenterCard';
 import { AddCenterModal } from '../../components/survival-hub/AddCenterModal'; // Import modal
 import { Search, ChevronLeft, MapPin, Loader2, Plus } from 'lucide-react';
@@ -11,47 +12,38 @@ const ExamCenters = () => {
     const { user } = useAuth();
 
     // State
-    const [centers, setCenters] = useState([]);
     const [search, setSearch] = useState("");
-    const [loading, setLoading] = useState(true);
+    const [triggerRefresh, setTriggerRefresh] = useState(0);
 
     // Modal & Edit State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCenter, setEditingCenter] = useState<any>(null);
 
-    // Fetch logic wrapped in useCallback to refresh after updates
-    const fetchCenters = useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await survivalApi.getExamCenters();
-            setCenters(data || []);
-        } catch (error) {
-            console.error("Error loading centers:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchCenters();
-    }, [fetchCenters]);
+    // Use cached query hook - handles loading, caching, and deduplication
+    const { data: centers = [], loading, refetch } = useCachedQuery(
+        "exam-centers",
+        () => cachedSurvivalService.getExamCenters(),
+        [triggerRefresh], // Refetch when triggerRefresh changes
+        { ttl: 5 * 60 * 1000 } // 5 minute cache
+    );
 
     // Handle Add/Update
     const handleSaveCenter = async (formData: any) => {
         try {
             if (editingCenter) {
                 // UPDATE existing
-                await survivalApi.updateExamCenter(editingCenter.id, formData);
+                await cachedSurvivalService.updateExamCenter(editingCenter.id, formData);
             } else {
                 // CREATE new
-                await survivalApi.addExamCenter({
+                await cachedSurvivalService.addExamCenter({
                     ...formData,
                     created_by: user?.id // Attach uploader ID
                 });
             }
             setIsModalOpen(false);
             setEditingCenter(null);
-            fetchCenters(); // Refresh list
+            // Trigger refetch by invalidating cache
+            setTriggerRefresh(prev => prev + 1);
         } catch (error: any) {
             alert("Error saving center: " + error.message);
         }
@@ -61,8 +53,9 @@ const ExamCenters = () => {
     const handleDelete = async (id: string) => {
         if (window.confirm("Are you sure you want to remove this exam center?")) {
             try {
-                await survivalApi.deleteExamCenter(id);
-                fetchCenters();
+                await cachedSurvivalService.deleteExamCenter(id);
+                // Trigger refetch by invalidating cache
+                setTriggerRefresh(prev => prev + 1);
             } catch (error) {
                 alert("Could not delete. It might be linked to existing data.");
             }

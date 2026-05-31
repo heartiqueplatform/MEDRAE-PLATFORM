@@ -1,83 +1,74 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { survivalApi } from '../../lib/survivalApi';
+import { cachedSurvivalService } from '../../lib/services/survivalService';
+import { useCachedQuery } from '../../hooks/useCachedQuery';
 import { HospitalCard } from '../../components/survival-hub/HospitalCard';
 import { AddHospitalModal } from '../../components/survival-hub/AddHospitalModal';
 import { ChevronLeft, Search, Loader2, Activity, Plus } from 'lucide-react';
-import { useAuth } from '@/context/AuthProvider'; // 1. Ensure this is imported
+import { useAuth } from '@/context/AuthProvider';
 
 const HospitalsPage = () => {
     const navigate = useNavigate();
-    const { user } = useAuth(); // 2. Get current user
+    const { user } = useAuth();
     const [searchParams] = useSearchParams();
 
     const centerId = searchParams.get('centerId');
     const hospitalId = searchParams.get('hospitalId');
     const placementId = searchParams.get('placementId');
 
-    const [hospitals, setHospitals] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingHospital, setEditingHospital] = useState<any>(null); // State for editing
+    const [editingHospital, setEditingHospital] = useState<any>(null);
+    const [triggerRefresh, setTriggerRefresh] = useState(0);
 
-    // 3. Fetch Function
-    const fetchHospitals = useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await survivalApi.getHospitals({
-                centerId,
-                hospitalId,
-                placementId
-            });
-            setHospitals(data || []);
-        } catch (error) {
-            console.error("Error fetching hospitals:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [centerId, hospitalId, placementId]);
+    // Use cached query for hospitals
+    const { data: hospitals = [], loading } = useCachedQuery(
+        `hospitals-${centerId}-${hospitalId}-${placementId}`,
+        () => cachedSurvivalService.getHospitals({
+            centerId: centerId || undefined,
+            hospitalId: hospitalId || undefined,
+            placementId: placementId || undefined
+        }),
+        [centerId, hospitalId, placementId, triggerRefresh],
+        { ttl: 5 * 60 * 1000 } // 5 minute cache for static data
+    );
 
-    useEffect(() => {
-        fetchHospitals();
-    }, [fetchHospitals]);
-
-    // 4. Combined Save Function (Handles both Add and Update)
+    // Combined Save Function (Handles both Add and Update)
     const handleSaveHospital = async (formData: any) => {
         try {
             if (editingHospital) {
                 // Update existing
-                await survivalApi.updateHospital(editingHospital.id, formData);
+                await cachedSurvivalService.updateHospital(editingHospital.id, formData);
             } else {
                 // Add new (include the uploader's ID)
-                await survivalApi.addHospital({
+                await cachedSurvivalService.addHospital({
                     ...formData,
                     created_by: user?.id
                 });
             }
 
             setIsModalOpen(false);
-            setEditingHospital(null); // Clear editing state
-            fetchHospitals(); // Refresh list
+            setEditingHospital(null);
+            setTriggerRefresh(prev => prev + 1);
         } catch (error: any) {
             console.error("Error saving hospital:", error);
             alert("Error saving: " + error.message);
         }
     };
 
-    // 5. Handle Delete
+    // Handle Delete
     const handleDelete = async (id: string) => {
         if (window.confirm("Are you sure you want to delete this facility?")) {
             try {
-                await survivalApi.deleteHospital(id);
-                fetchHospitals();
+                await cachedSurvivalService.deleteHospital(id);
+                setTriggerRefresh(prev => prev + 1);
             } catch (error) {
                 alert("Could not delete facility.");
             }
         }
     };
 
-    // 6. Handle Edit Click
+    // Handle Edit Click
     const handleEdit = (hospital: any) => {
         setEditingHospital(hospital);
         setIsModalOpen(true);
@@ -175,7 +166,7 @@ const HospitalsPage = () => {
                 onClose={closeModal}
                 onSubmit={handleSaveHospital}
                 centerId={centerId}
-                initialData={editingHospital} // Pass the hospital being edited
+                initialData={editingHospital}
             />
         </div>
     );

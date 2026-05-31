@@ -1,35 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { survivalApi } from '../../lib/survivalApi';
-import { supabase } from '@/lib/supabaseClient';
+import { cachedSurvivalService } from '../../lib/services/survivalService';
+import { useCachedQuery } from '../../hooks/useCachedQuery';
+import { authManager } from '@/lib/authManager';
 import { ReviewCard } from '../../components/survival-hub/ReviewCard';
 import { ChevronLeft, Star, Send, Loader2, MessageSquare } from 'lucide-react';
 
 const ReviewsPage = () => {
-    const { targetId } = useParams(); // The ID of the House
+    const { targetId } = useParams();
     const [searchParams] = useSearchParams();
     const targetType = searchParams.get('type') || 'housing';
     const navigate = useNavigate();
 
-    const [reviews, setReviews] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-
-    // Form State
     const [rating, setRating] = useState(5);
     const [comment, setComment] = useState("");
+    const [triggerRefresh, setTriggerRefresh] = useState(0);
 
-    const loadReviews = async () => {
-        setLoading(true);
-        try {
-            const data = await survivalApi.getReviews(targetId!);
-            setReviews(data);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { loadReviews(); }, [targetId]);
+    // Use cached query for reviews
+    const { data: reviews = [], loading, refetch } = useCachedQuery(
+        `reviews-${targetId}`,
+        () => cachedSurvivalService.getReviews(targetId!),
+        [targetId, triggerRefresh],
+        { ttl: 2 * 60 * 1000 } // 2 minute cache for user data
+    );
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,10 +31,10 @@ const ReviewsPage = () => {
 
         setSubmitting(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const user = authManager.getUser();
             if (!user) throw new Error("Log in to review!");
 
-            await survivalApi.addReview({
+            await cachedSurvivalService.addReview({
                 user_id: user.id,
                 target_id: targetId!,
                 target_type: targetType,
@@ -48,8 +42,8 @@ const ReviewsPage = () => {
                 comment: comment
             });
 
-            setComment(""); // Clear form
-            loadReviews(); // Refresh list
+            setComment("");
+            setTriggerRefresh(prev => prev + 1);
             alert("Review posted!");
         } catch (err: any) {
             alert(err.message);
