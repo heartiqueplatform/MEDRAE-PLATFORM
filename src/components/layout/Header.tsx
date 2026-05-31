@@ -386,7 +386,7 @@ export function Header({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-64 p-2 mt-2 rounded-xl border-0 bg-white dark:bg-muted/30 shadow-xl dark:shadow-2xl"
+                className="w-64 p-2 mt-2 rounded-xl border-0 bg-white dark:bg-muted/100 shadow-xl dark:shadow-2xl"
               >
                 {/* Dynamic Streak Widget */}
                 {streak > 0 && isOnline && (
