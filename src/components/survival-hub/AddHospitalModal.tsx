@@ -49,7 +49,7 @@ export const AddHospitalModal = ({ isOpen, onClose, onSubmit, centerId }: AddHos
     return (
         <div className="fixed inset-0 z-[100] flex items-center  justify-center bg-slate-900/60 backdrop-blur-sm p-4">
             {/* Modal Container - Added max-height and overflow for long forms */}
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300 max-h-[90vh] flex flex-col">
+            <div className="w-full max-w-md bg-white dark:bg-muted/30 rounded-3xl p-6 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300 max-h-[90vh] flex flex-col">
 
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6 shrink-0">

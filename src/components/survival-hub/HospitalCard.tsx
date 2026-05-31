@@ -16,7 +16,7 @@ export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) 
     const isOwner = user?.id === hospital.created_by;
 
     return (
-        <div className="rounded-xl border-0 bg-white p-5 dark:bg-slate-900 shadow-sm">
+        <div className="rounded-xl border-0 bg-white p-5 dark:bg-muted/30 shadow-sm">
             <div className="flex gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-900/20">
                     <Hospital size={24} />

@@ -27,7 +27,7 @@ const ExamCenters = () => {
                     <input
                         type="text"
                         placeholder="Search center or county..."
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-muted/30 dark:text-white"
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>

@@ -373,7 +373,7 @@ export default function FloatingChat() {
               </div>
             </div>
 
-            <button className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-500 hover:text-teal-500 hover:border-teal-500/50 hover:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all active:scale-90">
+            <button className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-muted/30 flex items-center justify-center text-slate-500 hover:text-teal-500 hover:border-teal-500/50 hover:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all active:scale-90">
               <Users size={16} strokeWidth={2.5} />
             </button>
           </div>
@@ -511,7 +511,7 @@ export default function FloatingChat() {
         </div>
         {activeScreen !== "chat" || !activeUnit ? (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-400 space-y-4 z-10">
-            <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-full animate-pulse">
+            <div className="p-6 bg-slate-50 dark:bg-muted/30 rounded-full animate-pulse">
               <MessageCircle className="w-12 h-12 text-teal-500 opacity-40" />
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.2em]">Select Unit Roster</p>

@@ -133,7 +133,7 @@ const AddPlacementPage = () => {
             <form onSubmit={handleSubmit} className="mx-auto max-w-xl p-4 space-y-2">
 
                 {/* 1. HOSPITAL INFO */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
                     <div className="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase tracking-widest">
                         <Hospital size={16} /> Step 1: Hospital Info
                     </div>
@@ -146,7 +146,7 @@ const AddPlacementPage = () => {
                 </div>
 
                 {/* 2. PHOTO UPLOAD SECTION */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
                     <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-widest">
                         <Camera size={16} /> Step 2: Site Photos
                     </div>
@@ -183,7 +183,7 @@ const AddPlacementPage = () => {
                 </div>
 
                 {/* 3. WARD DETAILS */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
                     <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
                         <Stethoscope size={16} /> Step 3: Ward Details
                     </div>
@@ -192,7 +192,7 @@ const AddPlacementPage = () => {
                 </div>
 
                 {/* 4. CONTACT INFO */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border dark:border-slate-800 space-y-4">
                     <div className="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-widest">
                         <Phone size={16} /> Step 4: Contact Info
                     </div>
@@ -204,7 +204,7 @@ const AddPlacementPage = () => {
                     {/* 1. THE FLOATING OVERLAY (Only shows when free user clicks) */}
                     {showLockOverlay && (
                         <div className="absolute bottom-full left-0 right-0 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-300 z-30">
-                            <div className="bg-white dark:bg-slate-900 border-2 border-amber-500 rounded-2xl p-6 shadow-2xl">
+                            <div className="bg-white dark:bg-muted/30 border-2 border-amber-500 rounded-2xl p-6 shadow-2xl">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2 text-amber-600 font-bold uppercase text-[10px] tracking-widest">
                                         <Sparkles size={14} /> Contributor Verification
@@ -230,7 +230,7 @@ const AddPlacementPage = () => {
                                 </button>
                             </div>
                             {/* Small arrow pointing down */}
-                            <div className="w-4 h-4 bg-white dark:bg-slate-900 border-r-2 border-b-2 border-amber-500 rotate-45 mx-auto -mt-2"></div>
+                            <div className="w-4 h-4 bg-white dark:bg-muted/30 border-r-2 border-b-2 border-amber-500 rotate-45 mx-auto -mt-2"></div>
                         </div>
                     )}
 

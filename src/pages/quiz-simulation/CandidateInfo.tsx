@@ -92,7 +92,7 @@ export default function CandidateInfo() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-background flex items-center justify-center p-4 font-sans">
-      <Card className="w-full max-w-2xl border-none shadow-2xl bg-white dark:bg-slate-900 overflow-hidden">
+      <Card className="w-full max-w-2xl border-none shadow-2xl bg-white dark:bg-muted/30 overflow-hidden">
         {/* Decorative Progress/Security Bar */}
         <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-400" />
 
@@ -188,7 +188,7 @@ function InfoField({ icon, label, value, fullWidth = false, highlight = false }:
       <div className={`px-4 py-3 rounded-xl border font-semibold text-sm transition-all
         ${highlight
           ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm'
-          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
+          : 'bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
         {value || "Not Recorded"}
       </div>
     </div>

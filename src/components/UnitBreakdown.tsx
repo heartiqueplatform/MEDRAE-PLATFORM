@@ -58,7 +58,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
 
     return (
 
-        < Card className="w-full rounded-3xl overflow-hidden border-0 bg-slate-50/50 dark:bg-slate-900 backdrop-blur-md shadow-sm mt-1" >
+        < Card className="w-full rounded-3xl overflow-hidden border-0 g-slabte-50/50 dark:bg-muted/30  backdrop-blur-md shadow-sm mt-1" >
             <CardHeader className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/5">
                 <div className="space-y-1">
                     <CardTitle className="text-xl font-black tracking-tight flex items-center gap-2">
@@ -97,7 +97,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                                         <div
                                             key={unit.unit_code}
                                             onClick={() => navigate("/Medrae-quizzes")}
-                                            className="group relative p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-md hover:border-amber-500/30 transition-all cursor-pointer overflow-hidden"
+                                            className="group relative p-4 rounded-2xl bg-white dark:bg-muted/30 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-md hover:border-amber-500/30 transition-all cursor-pointer overflow-hidden"
                                         >
                                             <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
                                                 <Star className="w-12 h-12 text-amber-500" />
@@ -138,7 +138,7 @@ export function UnitBreakdown({ nclexUnitCodes = [] }: UnitBreakdownProps) {
                                             <div
                                                 key={unit.unit_code}
                                                 onClick={() => navigate("/Medrae-quizzes")}
-                                                className={`group p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer border-l-4 ${paper === "P1" ? "hover:border-l-blue-500" : "hover:border-l-indigo-500"}`}
+                                                className={`group p-4 rounded-2xl bg-white dark:bg-muted/30 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer border-l-4 ${paper === "P1" ? "hover:border-l-blue-500" : "hover:border-l-indigo-500"}`}
                                             >
                                                 <div className="flex justify-between items-center gap-3">
                                                     <div className="space-y-1">

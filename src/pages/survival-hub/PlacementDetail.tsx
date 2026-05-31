@@ -25,7 +25,7 @@ const PlacementDetailPage = () => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-background">
             {/* Header */}
-            <div className="bg-white rounded-xl dark:bg-slate-900 border-0 p-4 flex items-center gap-2">
+            <div className="bg-white rounded-xl dark:bg-muted/30 border-0 p-4 flex items-center gap-2">
                 <button onClick={() => navigate(-1)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
                     <ChevronLeft size={20} />
                 </button>
@@ -34,7 +34,7 @@ const PlacementDetailPage = () => {
 
             <div className="max-w-2xl mx-auto p-4 space-y-2">
                 {/* 1. Hospital Identity Card */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-0 shadow-sm text-center">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-6 border-0 shadow-sm text-center">
                     <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                         <ShieldCheck className="text-blue-600" size={32} />
                     </div>
@@ -43,7 +43,7 @@ const PlacementDetailPage = () => {
                 </div>
 
                 {/* 2. THE RULES (Intake Notes) */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border-0 overflow-hidden shadow-xl">
+                <div className="bg-white dark:bg-muted/30 rounded-xl border-0 overflow-hidden shadow-xl">
                     <div className="bg-white dark:bg-gray-800 p-4 flex items-center gap-2">
                         <FileText size={18} className="text-amber-400" />
                         <h3 className="text-xs font-black uppercase tracking-[0.2em]  text-black dark:text-white">Intake Requirements & Rules</h3>

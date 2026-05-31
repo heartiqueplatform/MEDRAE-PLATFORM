@@ -2,6 +2,7 @@
 
 import { X, CheckCircle2, AlertCircle, BookOpen, Lightbulb, PlayCircle, Image as ImageIcon } from "lucide-react";
 import { Flashcard } from "@/components/Flashcard";
+
 type ExplanationOverlayProps = {
     open: boolean;
     onClose: () => void;
@@ -9,7 +10,6 @@ type ExplanationOverlayProps = {
     correctAnswer: string;
     explanation?: string;
     additional?: string;
-    // Future-proofing: add these when you're ready
     imageUrl?: string;
     videoUrl?: string;
 };
@@ -25,6 +25,52 @@ export function ExplanationOverlay({
     videoUrl,
 }: ExplanationOverlayProps) {
     if (!open) return null;
+
+    // Helper function to convert text to bullet points WITHOUT losing content
+    const renderAsBulletPoints = (text: string) => {
+        const sentences = text
+            .split(/(?<=[.!?])\s+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+        // If only 1 sentence or less than 3 sentences, show as paragraph (not bullet points)
+        if (sentences.length <= 2) {
+            return <p className="text-[15px] leading-[1.6] text-gray-700 dark:text-gray-300 font-medium">{text}</p>;
+        }
+
+        // Show as bullet points, preserving ALL content
+        return (
+            <div className="space-y-2">
+                {sentences.map((sentence, idx) => (
+                    <div
+                        key={idx}
+                        className="text-[15px] leading-[1.6] text-gray-700 dark:text-gray-300 font-medium"
+                    >
+                        {sentence}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    const renderAdditionalAsBulletPoints = (text: string) => {
+        let sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+        sentences = sentences.map(s => s.trim()).filter(s => s.length > 0);
+
+        if (sentences.length <= 2) {
+            return <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400 italic">{text}</p>;
+        }
+
+        return (
+            <ul className="space-y-2 list-disc pl-5">
+                {sentences.map((sentence, idx) => (
+                    <li key={idx} className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400 italic">
+                        {sentence}
+                    </li>
+                ))}
+            </ul>
+        );
+    };
+
     return (
         <div className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center p-0 sm:p-4">
             {/* Backdrop */}
@@ -34,7 +80,7 @@ export function ExplanationOverlay({
             />
 
             {/* Modal Container */}
-            <div className="relative w-full sm:max-w-6xl bg-white dark:bg-gray-950 rounded-xl sm:rounded-xl shadow-2xl max-h-[98dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
+            <div className="relative w-full sm:max-w-6xl bg-white dark:bg-muted/80 rounded-xl sm:rounded-xl shadow-2xl h-[98dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
 
                 {/* Mobile Drag Handle (Visual Only) */}
                 <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full mx-auto mt-3 mb-1 sm:hidden" />
@@ -102,9 +148,7 @@ export function ExplanationOverlay({
                                         </h3>
                                     </div>
 
-                                    <div className="text-[15px] leading-[1.6] text-gray-700 dark:text-gray-300 font-medium">
-                                        {explanation}
-                                    </div>
+                                    {renderAsBulletPoints(explanation)}
                                 </section>
                             )}
 
@@ -117,9 +161,7 @@ export function ExplanationOverlay({
                                         </h3>
                                     </div>
 
-                                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400 italic">
-                                        {additional}
-                                    </div>
+                                    {renderAdditionalAsBulletPoints(additional)}
                                 </section>
                             )}
                         </div>
@@ -139,10 +181,10 @@ export function ExplanationOverlay({
                     <button
                         onClick={onClose}
                         className="
-            w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98]
-            bg-white text-black hover:bg-gray-100
-            dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800
-        "
+                            w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98]
+                            bg-white text-black hover:bg-gray-100
+                            dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800
+                        "
                     >
                         Got it, thanks!
                     </button>

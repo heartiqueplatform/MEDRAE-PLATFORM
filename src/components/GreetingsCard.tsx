@@ -201,7 +201,7 @@ export default function GreetingsCard() {
     return (
         <div className="relative group overflow-hidden rounded-xl  transition-all duration-500
     bg-white/70 border-0 shadow-sm hover:shadow-xl hover:shadow-blue-500/10
-    dark:bg-[#0a0f1d]  dark:hover:shadow-[0_0_40px_-10px_rgba(30,58,138,0.5)]
+    dark:bg-muted/70  dark:hover:shadow-[0_0_40px_-10px_rgba(30,58,138,0.5)]
     backdrop-blur-md p-6">
 
             {/* Animated Background Mesh - Color adjusted for light/dark */}

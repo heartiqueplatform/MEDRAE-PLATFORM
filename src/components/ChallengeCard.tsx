@@ -21,13 +21,13 @@ export default function ChallengeCard() {
             className="
                 relative overflow-hidden w-full max-w-xl mx-auto
                 flex items-center gap-4 p-3 pr-5
-                bg-white dark:bg-slate-950
+                bg-white dark:bg-muted/70
                 border-0
                 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300
             "
         >
             {/* Professional Image Container */}
-            <div className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 rounded-xl overflow-hidden shadow-inner bg-slate-100">
+            <div className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 rounded-xl  overflow-hidden shadow-inner bg-slate-100">
                 <img
                     src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=200&h=200"
                     alt="Clinical Challenge"
@@ -36,7 +36,7 @@ export default function ChallengeCard() {
                 <div className="absolute inset-0 bg-blue-600/10 dark:bg-blue-400/10" />
 
                 {/* Floating Icon Overlay */}
-                <div className="absolute bottom-1 right-1 bg-white dark:bg-slate-900 p-1 rounded-lg shadow-lg border border-slate-100 dark:border-slate-800">
+                <div className="absolute bottom-1 right-1 bg-white dark:bg-muted/30 p-1 rounded-lg shadow-lg border border-slate-100 dark:border-slate-800">
                     <Swords size={12} className="text-blue-600 dark:text-blue-400" />
                 </div>
             </div>

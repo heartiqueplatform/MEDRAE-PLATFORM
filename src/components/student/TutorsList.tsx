@@ -365,7 +365,7 @@ export default function TutorsList() {
 
             {/* ANNOUNCEMENTS */}
             {cohortMessages.length > 0 && (
-                <Card className="relative overflow-hidden border-0 bg-white/70 dark:bg-slate-950/50 backdrop-blur-xl shadow-xl rounded-xl">
+                <Card className="relative overflow-hidden border-0 bg-white/70 dark:bg-muted/30  backdrop-blur-xl shadow-xl rounded-xl">
                     <CardHeader className="border-b border-slate-100 dark:border-white/5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
@@ -424,7 +424,7 @@ export default function TutorsList() {
 
             {/* --- MY TUTORS & ANNOUNCEMENTS SECTION --- */}
             <div className="space-y-6">
-                <Card className="relative overflow-hidden border-0 bg-white/70 dark:bg-slate-950/50 backdrop-blur-xl shadow-xl dark:shadow-2xl rounded-xl transition-all duration-300">
+                <Card className="relative overflow-hidden border-0 bg-white/70 dark:bg-muted/30  backdrop-blur-xl shadow-xl dark:shadow-2xl rounded-xl transition-all duration-300">
                     <CardHeader className="border-b border-slate-100 dark:border-white/5 pb-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">

@@ -292,19 +292,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
     if (!card) return null;
 
     return (
-        <Card className="mt-4 relative overflow-hidden transition-all duration-300 border-0 hover:border-teal-500/50 bg-transparent rounded-xl shadow-xl shadow-teal-500/5 group">
-
-            {/* BACKGROUND IMAGE LAYER */}
-            <div className="absolute inset-0 z-0">
-                <img
-                    src="/indexbackground2.jpg"
-                    alt=""
-                    className="w-full h-full object-cover"
-                />
-                {/* OPAQUE OVERLAY (The Scrim) - Controls readability */}
-                <div className="absolute inset-0 bg-white/85 dark:bg-slate-950/90 backdrop-blur-[2px]" />
-            </div>
-
+        <Card className="mt-4 relative overflow-hidden transition-all duration-300 border-0 hover:border-teal-500/50 dark:bg-muted/30  rounded-xl shadow-xl shadow-teal-500/5 group">
             {/* Top Accent Bar */}
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 z-20" />
 

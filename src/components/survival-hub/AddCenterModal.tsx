@@ -33,7 +33,7 @@ export const AddCenterModal = ({ isOpen, onClose, onSubmit, initialData }: any) 
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="w-full max-w-md bg-white dark:bg-muted/30 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
                         <MapPin className="text-blue-500" /> {initialData ? 'Edit Center' : 'Add Exam Center'}

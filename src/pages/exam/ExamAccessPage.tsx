@@ -799,7 +799,7 @@ This receipt confirms exam participation only and does not represent the final e
                         </div>
 
                         {/* Security Badge */}
-                        <div className="hidden lg:flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full shadow-sm">
+                        <div className="hidden lg:flex items-center gap-2 bg-white dark:bg-muted/30 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full shadow-sm">
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Secure Session Active</span>
                         </div>

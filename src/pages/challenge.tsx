@@ -77,7 +77,7 @@ function ChallengeTabs({
                                         }
                                     }}
                                     placeholder="Search peers..."
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border-none text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-100 dark:bg-muted/30 border-none text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
                                 />
                             </div>
 
@@ -85,7 +85,7 @@ function ChallengeTabs({
                                 onClick={() => setOnlyOnline(!onlyOnline)}
                                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${onlyOnline
                                     ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
+                                    : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-800 text-slate-500"
                                     }`}
                             >
                                 <span className={`h-2 w-2 rounded-full ${onlyOnline ? "bg-white animate-pulse" : "bg-slate-300"}`} />
@@ -125,13 +125,16 @@ function ChallengeTabs({
                                         key={p.user_id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="p-3 rounded-2xl bg-white dark:bg-slate-900 border-0 flex justify-between items-center hover:border-blue-500/30 transition-all shadow-sm group"
+                                        className="p-3 rounded-2xl bg-white dark:bg-muted/30 border-0 flex justify-between items-center hover:border-blue-500/30 transition-all shadow-sm group"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="relative">
-                                                <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-inner">
+                                                <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-inner">
                                                     {p.avatar_url ? (
-                                                        <img src={p.avatar_url} className="w-full h-full object-cover" alt={p.name} />
+                                                        <img
+                                                            src={p.avatar_url}
+                                                            className="w-full h-full object-cover rounded-full"
+                                                        />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-slate-400 font-black">
                                                             {p.name?.[0]}
@@ -179,7 +182,7 @@ function ChallengeTabs({
                         key={c.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="p-4 mb-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 flex justify-between items-center group"
+                        className="p-4 mb-3 rounded-2xl bg-white dark:bg-muted/30 border-2 border-slate-100 dark:border-slate-800 flex justify-between items-center group"
                     >
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
@@ -507,53 +510,7 @@ export default function ChallengePage() {
 
         }
     };
-    useEffect(() => {
-        const cached = localStorage.getItem("challenges_cache");
 
-        if (challengesMemoryCache) {
-            setChallenges(challengesMemoryCache);
-            return;
-        }
-
-        if (cached) {
-            const parsed = JSON.parse(cached);
-
-            challengesMemoryCache = parsed.data;
-            challengesCacheTime = parsed.timestamp;
-
-            setChallenges(parsed.data || []);
-            return;
-        }
-
-        fetchChallenges();
-    }, []);
-    useEffect(() => {
-        const cached = localStorage.getItem("players_cache");
-
-        if (playersMemoryCache) {
-            setPlayers(playersMemoryCache);
-            return;
-        }
-
-        if (cached) {
-            const parsed = JSON.parse(cached);
-
-            playersMemoryCache = parsed.data;
-            playersCacheTime = parsed.timestamp;
-
-            setPlayers(parsed.data || []);
-            return;
-        }
-
-        fetchPlayers();
-    }, []);
-    useEffect(() => {
-        if (!user) return;
-        const handler = setTimeout(() => {
-            fetchPlayers(search); // no loading toggle
-        }, 500); // slightly longer delay
-        return () => clearTimeout(handler);
-    }, [search, user]);
     // ================= INITIAL FETCH + REALTIME =================
 
     const filteredPlayers = useMemo(() => {
@@ -606,7 +563,6 @@ export default function ChallengePage() {
             console.error(error);
             return;
         }
-
         setTempQuestions(questionsData);
         setPendingTargetUser(targetUserId); // store who will get challenged
         setAnswers(Array(questionsData.length).fill(""));
@@ -888,7 +844,7 @@ https://medrae.vercel.app`;
                     className="fixed inset-0 z-[9999] bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden"
                 >
                     {/* 1. TOP STATUS BAR (HUD) */}
-                    <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 p-4 shadow-sm">
+                    <div className="bg-white dark:bg-muted/30 border-b border-slate-200 dark:border-white/10 p-4 shadow-sm">
                         <div className="max-w-3xl mx-auto flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -960,7 +916,7 @@ https://medrae.vercel.app`;
                                         className={`group relative p-4 md:p-5 rounded-2xl text-left transition-all duration-200 border-2 flex items-center gap-4
                                 ${answers[currentQIndex] === opt
                                                 ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20 scale-[1.02]"
-                                                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-500/50 dark:text-slate-300"
+                                                : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-800 hover:border-blue-500/50 dark:text-slate-300"
                                             }`}
                                     >
                                         <span className={`h-8 w-8 shrink-0 rounded-lg flex items-center justify-center font-black text-sm transition-colors
@@ -983,7 +939,7 @@ https://medrae.vercel.app`;
                     </div>
 
                     {/* 3. NAVIGATION FOOTER (STAY FIXED) */}
-                    <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 p-4 pb-8 md:pb-6">
+                    <div className="bg-white dark:bg-muted/30 border-t border-slate-200 dark:border-white/10 p-4 pb-8 md:pb-6">
                         <div className="max-w-2xl mx-auto flex items-center gap-4">
                             <Button
                                 variant="ghost"
@@ -1019,18 +975,21 @@ https://medrae.vercel.app`;
             )}
 
             {/* --- HEADER --- */}
-            <div className="flex flex-col  items-center text-center space-y-1 mb-3">
-                <div className="h-12 w-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 mb-2">
-                    <Swords size={24} />
+            <div className="flex flex-col items-center text-center mb-3">
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                        <Swords size={24} />
+                    </div>
+
+                    <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                        Arena Challenges
+                    </h1>
                 </div>
-                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                    Arena Challenges
-                </h1>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+
+                <p className="mt-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
                     Compete • Track • Dominate
                 </p>
             </div>
-
             {/* --- STATS DASHBOARD --- */}
             <div className="grid grid-cols-3 gap-3 text-center max-w-2xl mx-auto mb-3">
                 {loading ? (
@@ -1160,7 +1119,7 @@ https://medrae.vercel.app`;
                                 animate={{ scale: 1, y: 0, opacity: 1 }}
                                 exit={{ scale: 0.8, y: 40, opacity: 0 }}
                                 transition={{ type: "spring", damping: 15 }}
-                                className="relative bg-white dark:bg-slate-900 border-0 rounded-[3rem] p-10 md:p-16 flex flex-col items-center justify-center shadow-[0_32px_128px_-12px_rgba(0,0,0,0.5)] w-full max-w-lg text-center overflow-hidden"
+                                className="relative bg-white dark:bg-muted/30 border-0 rounded-[3rem] p-10 md:p-16 flex flex-col items-center justify-center shadow-[0_32px_128px_-12px_rgba(0,0,0,0.5)] w-full max-w-lg text-center overflow-hidden"
                             >
                                 {/* Sparkle Decorative Element */}
                                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent" />

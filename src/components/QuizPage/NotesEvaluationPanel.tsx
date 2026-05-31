@@ -71,7 +71,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
         <>
             {helpModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+                    <div className="w-full max-w-sm bg-white dark:bg-muted/30 rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
 
                         {/* Header with Icon */}
                         <div className="bg-teal-600 p-6 text-center">
@@ -128,7 +128,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                     </div>
                 </div>
             )}
-            <div className="w-full mt-2 bg-white dark:bg-gray-900/50 border-0 rounded-xl overflow-hidden shadow-sm transition-all">
+            <div className="w-full mt-2 bg-white dark:bg-muted/30 border-0 rounded-xl overflow-hidden shadow-sm transition-all">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-0 bg-gray-50/50 dark:bg-gray-800/50">
                     <div className="flex items-center gap-2">

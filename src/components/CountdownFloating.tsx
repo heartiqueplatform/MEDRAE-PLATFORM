@@ -516,7 +516,7 @@ export default function CountdownCards() {
 
     return (
 
-        <div className="relative overflow-hidden w-full px-4 py-6 rounded-xl border-0 bg-white/70 dark:bg-slate-950/50 backdrop-blur-xl shadow-2xl mt-6 transition-all duration-500">
+        <div className="relative overflow-hidden w-full px-4 py-6 rounded-xl border-0 bg-white/70 dark:bg-muted/30  backdrop-blur-xl shadow-2xl mt-6 transition-all duration-500">
 
             {/* Background Decorative Element */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 dark:bg-blue-500/10 blur-3xl rounded-full -mr-16 -mt-16" />
@@ -615,7 +615,7 @@ export default function CountdownCards() {
                                     <input
                                         type="text"
                                         placeholder="e.g. Clinical Nursing"
-                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
+                                        className="w-full bg-white dark:bg-muted/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
                                         value={examName}
                                         onChange={(e) => setExamName(e.target.value)}
                                     />
@@ -625,7 +625,7 @@ export default function CountdownCards() {
                                     <input
                                         type="text"
                                         placeholder="e.g. End of Semester"
-                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
+                                        className="w-full bg-white dark:bg-muted/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
                                         value={examType}
                                         onChange={(e) => setExamType(e.target.value)}
                                     />
@@ -634,7 +634,7 @@ export default function CountdownCards() {
                                     <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400 ml-2">Assessment Date</label>
                                     <input
                                         type="date"
-                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        className="w-full bg-white dark:bg-muted/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                         value={examDate}
                                         onChange={(e) => setExamDate(e.target.value)}
                                     />
@@ -644,7 +644,7 @@ export default function CountdownCards() {
                                     <input
                                         type="text"
                                         placeholder="Paper 1, Paper 2..."
-                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
+                                        className="w-full bg-white dark:bg-muted/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:opacity-50"
                                         value={papers}
                                         onChange={(e) => setPapers(e.target.value)}
                                     />

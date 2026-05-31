@@ -625,7 +625,7 @@ export const DailyTriviaCard = () => {
 
 
             <Card className="rounded-md overflow-hidden border-0 relative
-                 bg-gray-100 dark:bg-gray-900 shadow-md mt-2">
+                 bg-gray-100 dark:bg-muted/70 shadow-md mt-2">
 
                 <CardHeader className="bg-blue-50 dark:bg-blue-900/40">
                     <div className="flex items-center justify-between">
@@ -786,7 +786,7 @@ export const DailyTriviaCard = () => {
                                     ${idx === 0 ? "border-amber-400" : "border-transparent"}`}
                                                 />
                                                 {idx === 0 && (
-                                                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 rounded-full p-1 shadow-sm">
+                                                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-950rounded-full p-1 shadow-sm">
                                                         <Award className="w-4 h-4 text-amber-500" />
                                                     </div>
                                                 )}
@@ -874,7 +874,7 @@ export const DailyTriviaCard = () => {
                         )
                     }
                     {completed && (
-                        <div className="mt-2 w-full max-w-2xl mx-auto animate-fade-in overflow-hidden rounded-xl border-0 bg-white dark:bg-slate-900 shadow-xl">
+                        <div className="mt-2 w-full max-w-2xl mx-auto animate-fade-in overflow-hidden rounded-xl border-0 bg-white dark:bg-muted/70 shadow-xl">
                             {/* Header Section with background05.jpg */}
                             <div className="relative overflow-hidden p-8 text-center text-white">
                                 <div
@@ -1024,7 +1024,7 @@ export const DailyTriviaCard = () => {
 
                                         <button
                                             onClick={() => navigate("/Medrae-quizzes")}
-                                            className="w-full py-4 bg-white text-slate-900 font-black rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-lg"
+                                            className="w-full py-4 bg-white dark:bg-muted/50 text-slate-900 dark:text-white font-black rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-lg"
                                         >
                                             EXPLORE MEDRAE QUIZZES
                                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

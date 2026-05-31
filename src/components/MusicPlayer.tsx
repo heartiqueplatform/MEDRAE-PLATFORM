@@ -276,7 +276,7 @@ export const MusicPlayer = () => {
                     {/* The Tab Body */}
                     <button
                         onClick={() => setIsOpen(true)}
-                        className="flex items-center bg-gray-400 dark:bg-slate-900 border-l border-0 p-2 rounded-l-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.3)] transition-colors hover:bg-gray-300 hover:dark:bg-gray-900"
+                        className="flex items-center bg-gray-400 dark:bg-muted/30 border-l border-0 p-2 rounded-l-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.3)] transition-colors hover:bg-gray-300 hover:dark:bg-gray-900"
                     >
                         {/* The Vinyl / Progress Circle */}
                         <div className="relative h-14 w-14 flex items-center justify-center">

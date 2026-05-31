@@ -365,17 +365,8 @@ export function Flashcard({ cardId }: { cardId?: string }) {
 
     if (!card) return null;
     return (
-        <Card className="mt-2 relative overflow-hidden transition-all duration-300 border-0 bg-transparent rounded-2xl shadow-2xl shadow-indigo-500/10 flex flex-col h-[700px] max-h-[70vh] -mt-4">
+        <Card className="mt-2 relative overflow-hidden transition-all duration-300 border-0 dark:bg-muted/30  rounded-2xl shadow-2xl shadow-indigo-500/10 flex flex-col h-[700px] max-h-[70vh] -mt-4">
 
-            {/* 1. BACKGROUND IMAGE LAYER */}
-            <div className="absolute inset-0 z-0">
-                <img
-                    src="/indexbackground5.jpg"
-                    alt=""
-                    className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-white/90 dark:bg-slate-950/95 backdrop-blur-[3px]" />
-            </div>
 
             {/* 2. TOP INDIGO ACCENT BAR */}
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 z-20" />
@@ -481,7 +472,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                                 onClick={() => handleInteraction("save")}
                                 className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 border-2 ${saved
                                     ? 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/30'
-                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-amber-500 hover:text-amber-500 shadow-sm'
+                                    : 'bg-white dark:bg-muted/30 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-amber-500 hover:text-amber-500 shadow-sm'
                                     }`}
                             >
                                 <Bookmark size={20} fill={saved ? "currentColor" : "none"} />
@@ -491,7 +482,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                                 onClick={() => handleInteraction("like")}
                                 className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 border-2 ${liked
                                     ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/30'
-                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-indigo-500 hover:text-indigo-500 shadow-sm'
+                                    : 'bg-white dark:bg-muted/30 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-indigo-500 hover:text-indigo-500 shadow-sm'
                                     }`}
                             >
                                 <ThumbsUp size={20} fill={liked ? "currentColor" : "none"} />
@@ -501,7 +492,7 @@ export function Flashcard({ cardId }: { cardId?: string }) {
                                 onClick={() => handleInteraction("report")}
                                 className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 border-2 ${reported
                                     ? 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-600/30'
-                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-rose-500 hover:text-rose-500 shadow-sm'
+                                    : 'bg-white dark:bg-muted/30 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-rose-500 hover:text-rose-500 shadow-sm'
                                     }`}
                             >
                                 <Flag size={20} fill={reported ? "currentColor" : "none"} />

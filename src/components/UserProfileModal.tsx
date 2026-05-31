@@ -234,7 +234,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                 onClick={onClose}
             >
                 <motion.div
-                    className="bg-white dark:bg-slate-900 w-full sm:max-w-lg sm:rounded-[2.5rem] rounded-t-[2.5rem] overflow-hidden relative shadow-2xl max-h-[92vh] flex flex-col"
+                    className="bg-white dark:bg-muted/30 w-full sm:max-w-lg sm:rounded-[2.5rem] rounded-t-[2.5rem] overflow-hidden relative shadow-2xl max-h-[92vh] flex flex-col"
                     initial={{ y: 400 }}
                     animate={{ y: 0 }}
                     exit={{ y: 400 }}
@@ -261,7 +261,7 @@ export const UserProfileModal = ({ userId, onClose }: Props) => {
                         {/* Avatar (now properly anchored in header) */}
                         <div className="relative flex justify-center translate-y-1/2 z-30">
                             <div className="relative group">
-                                <div className="absolute inset-0 bg-white dark:bg-slate-900 rounded-full scale-105 shadow-xl" />
+                                <div className="absolute inset-0 bg-white dark:bg-muted/30 rounded-full scale-105 shadow-xl" />
 
                                 <img
                                     src={profile?.avatar_url || "/UsersAvatar.jpg"}

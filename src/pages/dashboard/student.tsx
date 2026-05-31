@@ -1180,7 +1180,7 @@ export default function StudentDashboard() {
         </div>
         <TutorsList />
         {/* 🏆 Top Students Leaderboard */}
-        <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl shadow-2xl mt-6">
+        <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30  backdrop-blur-xl shadow-2xl mt-6">
 
           {/* Decorative Background Glows */}
           <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-yellow-500/10 blur-[80px]" />
@@ -1275,7 +1275,7 @@ export default function StudentDashboard() {
                       className={`flex-shrink-0 w-44 snap-center relative group cursor-pointer transition-all duration-500 hover:-translate-y-2`}
                     >
                       {/* Card Container */}
-                      <div className={`h-full p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 shadow-xl ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
+                      <div className={`h-full p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-muted/30 shadow-xl ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
 
                         {/* Visual Background Accent */}
                         <div className={`absolute top-0 inset-x-0 h-24 bg-gradient-to-b ${rankMeta.bg} opacity-50`} />
@@ -1542,7 +1542,7 @@ export default function StudentDashboard() {
 
 
         {/* --- MEDRAE DAILY STATUS SECTION --- */}
-        <Card className="lg:col-span-3 w-full border-0  bg-white dark:bg-slate-900 shadow-sm rounded-xl overflow-hidden mt-6">
+        <Card className="lg:col-span-3 w-full border-0  bg-white dark:bg-muted/30 shadow-sm rounded-xl overflow-hidden mt-6">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-xl">
@@ -1565,7 +1565,7 @@ export default function StudentDashboard() {
                 <div
                   onClick={() => setIsOpen(!isOpen)}
                   className={`flex items-center justify-between p-4 cursor-pointer rounded-2xl border transition-all ${isOpen
-                    ? "bg-slate-50 dark:bg-slate-900 border-0"
+                    ? "bg-slate-50 dark:bg-muted/30 border-0"
                     : "bg-white dark:bg-slate-800 border-0 hover:border-blue-500/30"
                     }`}
                 >
@@ -1585,7 +1585,7 @@ export default function StudentDashboard() {
                   animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 space-y-4">
+                  <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-white/10 space-y-4">
                     <textarea
                       className="w-full min-h-[100px] p-0 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none text-sm resize-none"
                       placeholder="Educate, inspire, or grow together..."
@@ -1665,7 +1665,7 @@ export default function StudentDashboard() {
               <div className="space-y-4">
                 {loading ? (
                   <div className="space-y-4 px-4 sm:px-0">
-                    {[1, 2].map((i) => <div key={i} className="h-32 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />)}
+                    {[1, 2].map((i) => <div key={i} className="h-32 rounded-2xl bg-slate-100 dark:bg-muted/30 animate-pulse" />)}
                   </div>
                 ) : dailyPosts.length > 0 ? (
                   dailyPosts.map((post) => (
@@ -1682,7 +1682,7 @@ export default function StudentDashboard() {
                       <div className="flex flex-col">
 
                         {/* 1. HEADER: Avatar, Name, and Delete Button */}
-                        <div className="flex items-center justify-between p-4 pb-2">
+                        <div className="flex items-center dark:bg-muted/80 justify-between p-4 pb-2">
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <button
@@ -1705,7 +1705,7 @@ export default function StudentDashboard() {
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 10 }}
-                                    className="absolute left-0 top-full mt-2 z-50 w-56 p-4 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-2xl"
+                                    className="absolute left-0 top-full mt-2 z-50 w-56 p-4 rounded-2xl bg-white/95 dark:bg-muted/70 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-2xl"
                                   >
                                     <div className="space-y-2">
                                       <p className="font-black text-sm dark:text-white truncate">{post.profiles?.name}</p>
@@ -1744,8 +1744,8 @@ export default function StudentDashboard() {
 
                         {/* 2. CONTENT: Text message */}
                         {post.content && (
-                          <div className="px-4 pb-3">
-                            <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                          <div className="px-4 dark:bg-muted/30  pb-3">
+                            <p className="text-sm leading-relaxed dark:bg-muted/30  text-slate-700 dark:text-slate-300">
                               {post.content}
                             </p>
                           </div>
@@ -1753,7 +1753,7 @@ export default function StudentDashboard() {
 
                         {/* 3. IMAGE: EDGE-TO-EDGE ON MOBILE */}
                         {post.image_url && (
-                          <div className="relative -mx-0 sm:rounded-xl overflow-hidden bg-slate-50 dark:bg-black/20 flex items-center justify-center border-y border-slate-100 dark:border-white/5">
+                          <div className="relative -mx-0  overflow-hidden bg-slate-50 dark:bg-muted/30  flex items-center justify-center border-0">
                             <img
                               src={post.image_url}
                               className="w-full h-auto max-h-[70vh] object-contain cursor-zoom-in"
@@ -1764,7 +1764,7 @@ export default function StudentDashboard() {
                         )}
 
                         {/* 4. FOOTER: Expiry */}
-                        <div className="p-4 flex items-center gap-2">
+                        <div className="p-4 flex items-center dark:bg-muted/30 gap-2">
                           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-white/5 rounded-full">
                             <Clock className="w-3 h-3 text-slate-400" />
                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
@@ -1792,7 +1792,7 @@ export default function StudentDashboard() {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[110] bg-black/80 flex items-center justify-center p-4"
               >
-                <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-4 shadow-2xl">
+                <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-muted/30 p-4 shadow-2xl">
                   <div className="relative h-80 w-full rounded-2xl overflow-hidden bg-black">
                     <Cropper
                       image={imageToCrop}
@@ -1929,7 +1929,7 @@ export default function StudentDashboard() {
               {cachedSimulationPapers.map((paper) => (
                 <Card
                   key={paper.id}
-                  className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 rounded-2xl"
+                  className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-slate-200 dark:border-white/10 bg-white dark:bg-muted/30 rounded-2xl"
                   onClick={async () => {
                     navigate(`/simulation/${paper.id}`);
                     const { data: userData } = await supabase.auth.getUser();

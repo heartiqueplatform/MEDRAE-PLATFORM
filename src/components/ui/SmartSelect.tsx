@@ -42,7 +42,7 @@ const SmartSelect = ({ label, options, value, onChange, placeholder, isLoading, 
             />
 
             {/* Content Card */}
-            <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl h-[85vh] sm:h-auto sm:max-h-[600px] overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 duration-300">
+            <div className="relative w-full max-w-lg bg-white dark:bg-muted/30 rounded-t-3xl sm:rounded-2xl shadow-2xl h-[85vh] sm:h-auto sm:max-h-[600px] overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 duration-300">
 
                 {/* Search Header */}
                 <div className="p-4 border-b dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
@@ -118,7 +118,7 @@ const SmartSelect = ({ label, options, value, onChange, placeholder, isLoading, 
             <button
                 type="button"
                 onClick={() => setIsOpen(true)}
-                className="group w-full flex items-center justify-between rounded-xl border border-slate-200 bg-white dark:bg-slate-900 p-2.5 text-sm font-medium transition-all hover:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-800 dark:text-white"
+                className="group w-full flex items-center justify-between rounded-xl border border-slate-200 bg-white dark:bg-muted/30 p-2.5 text-sm font-medium transition-all hover:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-800 dark:text-white"
             >
                 <div className="flex items-center gap-2 truncate">
                     {isLoading ? <Loader2 size={14} className="animate-spin text-blue-500" /> : <MapPin size={14} className="text-blue-500 shrink-0" />}

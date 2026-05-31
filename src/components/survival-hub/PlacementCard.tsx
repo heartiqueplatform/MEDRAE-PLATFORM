@@ -38,7 +38,7 @@ export const PlacementCard = ({ site, onDelete }: { site: any, onDelete: (id: st
     };
 
     return (
-        <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm dark:bg-slate-900 transition-all">
+        <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm dark:bg-muted/30 transition-all">
 
             {/* PHOTO SECTION */}
             {displayImage ? (

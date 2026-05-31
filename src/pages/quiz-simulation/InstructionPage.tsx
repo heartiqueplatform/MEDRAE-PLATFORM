@@ -148,7 +148,7 @@ export default function InstructionPage() {
 
 
       {/* Setup Card */}
-      <Card className="border-none shadow-2xl bg-white dark:bg-slate-900 overflow-hidden rounded-2xl">
+      <Card className="border-none shadow-2xl bg-white dark:bg-muted/30 overflow-hidden rounded-2xl">
         {/* Top Status Ribbon */}
         <div className={`h-2 w-full transition-colors duration-500 ${canStart ? "bg-green-500" : "bg-blue-600"}`} />
 
@@ -287,7 +287,7 @@ export default function InstructionPage() {
                 )}
 
                 {!scanning && !cameraReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 text-slate-400">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-muted/30 text-slate-400">
                     <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center mb-4">
                       <ShieldCheck className="w-8 h-8 opacity-20" />
                     </div>
@@ -373,7 +373,7 @@ export default function InstructionPage() {
                 )}
 
                 {!scanningMic && !micReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 text-slate-400">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-muted/30 text-slate-400">
                     <Zap className="w-8 h-8 opacity-10 mb-2" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Auscultation Idle</span>
                   </div>
@@ -454,7 +454,7 @@ export default function InstructionPage() {
 
       {/* Instructions Card */}
       {/* Instructions Card */}
-      <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden rounded-2xl">
+      <Card className="border-none shadow-xl bg-white dark:bg-muted/30 overflow-hidden rounded-2xl">
         <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 py-6">
           <div className="flex items-center justify-center gap-3">
             <div className="h-8 w-1 bg-blue-600 rounded-full" />

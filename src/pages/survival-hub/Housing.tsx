@@ -39,10 +39,10 @@ const HousingPage = () => {
     const loading = housingLoading || centersLoading;
 
     // Find the name of the currently selected center for the UI
-    const selectedCenter = centers.find(c => c.id === centerId);
+    const selectedCenter = (centers || []).find(c => c.id === centerId);
 
     // PRESERVED LOGIC: Filter housing based on search term
-    const displayHousing = housing.filter(item =>
+    const displayHousing = (housing || []).filter(item =>
         item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.contact_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -50,7 +50,7 @@ const HousingPage = () => {
 
     const centerOptions = [
         { id: '', name: 'All Kenya Centers', subtext: 'View all available housing' },
-        ...centers.map(c => ({
+        ...(centers || []).map(c => ({
             id: c.id,
             name: c.name,
             subtext: c.county // This makes it look like a pro app (e.g. "Nairobi Center (Nairobi County)")
@@ -177,7 +177,7 @@ const HousingPage = () => {
                                         ? `We couldn't find anything matching "${searchTerm}"`
                                         : "No student has added housing for this center yet. Be the hero and add the first one!"}
                                 </p>
-                                {housing.length === 0 && (
+                                {(housing || []).length === 0 && (
                                     <Link
                                         to="/survival-hub/add-housing"
                                         className="mt-6 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white dark:bg-white dark:text-black transition-transform active:scale-95"

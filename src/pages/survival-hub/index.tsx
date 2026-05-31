@@ -84,7 +84,7 @@ const SurvivalHubDashboard = () => {
 
             {/* 4. Pro-Tip Section */}
             {!loading && (
-                <section className="mt-4 rounded-xl bg-white border-0 p-6 shadow-sm dark:bg-slate-900 ">
+                <section className="mt-4 rounded-xl bg-white border-0 p-6 shadow-sm dark:bg-muted/30 ">
                     <div className="flex items-start gap-4">
                         <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
                             <Star className="text-amber-600 dark:text-amber-400" size={24} />

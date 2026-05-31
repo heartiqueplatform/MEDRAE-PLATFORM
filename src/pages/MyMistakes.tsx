@@ -338,7 +338,7 @@ export default function MyMistakes() {
                     {/* Background Decorative Glow */}
                     <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[2rem] blur opacity-20" />
 
-                    <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] shadow-2xl p-10 text-center overflow-hidden">
+                    <div className="relative bg-white dark:bg-muted/30 border border-slate-200 dark:border-slate-800 rounded-[2rem] shadow-2xl p-10 text-center overflow-hidden">
 
                         {/* Top Floating Badge */}
                         <div className="flex justify-center mb-6">

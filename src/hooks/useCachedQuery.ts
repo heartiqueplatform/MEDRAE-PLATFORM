@@ -61,7 +61,7 @@ export function useCachedQuery<T>(
       const result = await queryCache.getOrFetch(key, fetchFn, ttl);
 
       if (isMountedRef.current) {
-        setData(result);
+        setData((result ?? null) as T | null);
         onSuccess?.(result);
       }
     } catch (err) {
@@ -172,7 +172,7 @@ export function useCachedQueryAdvanced<T>(
       const result = await fetchWithRetry();
 
       if (isMountedRef.current) {
-        setData(result);
+        setData((result ?? null) as T | null);
         baseOptions.onSuccess?.(result);
       }
     } catch (err) {

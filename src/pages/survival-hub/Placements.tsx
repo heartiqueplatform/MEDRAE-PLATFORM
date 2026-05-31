@@ -64,7 +64,7 @@ const PlacementsPage = () => {
                     <input
                         type="text"
                         placeholder="Search hospital, county or specialty..."
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white transition-all"
+                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-800 dark:bg-muted/30 dark:text-white transition-all"
                         onChange={(e) => setQuery(e.target.value)}
                     />
                 </div>
@@ -119,7 +119,7 @@ const PlacementsPage = () => {
                     </div>
                 ) : (
                     // What to show if search finds NOTHING
-                    <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+                    <div className="text-center py-20 bg-white dark:bg-muted/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
                         <Briefcase size={40} className="mx-auto text-slate-200 mb-2" />
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">No sites found</h3>
                         <p className="text-sm text-slate-500">Try searching for a county like "Kiambu".</p>

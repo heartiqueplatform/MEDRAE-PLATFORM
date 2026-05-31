@@ -110,7 +110,7 @@ const TutorExamDetails = () => {
                         </div>
                     </div>
 
-                    <Badge variant="outline" className="w-fit h-fit px-4 py-1.5 rounded-full border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 font-bold uppercase tracking-widest text-[10px]">
+                    <Badge variant="outline" className="w-fit h-fit px-4 py-1.5 rounded-full border-slate-200 dark:border-slate-800 bg-white dark:bg-muted/30 text-slate-500 font-bold uppercase tracking-widest text-[10px]">
                         Step 2: Configuration
                     </Badge>
                 </div>

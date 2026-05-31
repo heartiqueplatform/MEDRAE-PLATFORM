@@ -432,7 +432,7 @@ export default function DailyImagesTrivia() {
             <div className="w-full max-w-5xl rounded-xl mx-auto mt-3 px-2">
                 {/* Card Header - Interactive Toggle */}
                 <div
-                    className="group relative overflow-hidden bg-white dark:bg-slate-900 rounded-xl p-6 shadow-xl border-0 cursor-pointer transition-all hover:shadow-2xl"
+                    className="group relative overflow-hidden bg-white dark:bg-muted/30 rounded-xl p-6 shadow-xl border-0 cursor-pointer transition-all hover:shadow-2xl"
                     onClick={() => { if (isLargeScreen) setIsCollapsed(!isCollapsed); }}
                 >
                     {/* Animated Background Accent */}
@@ -471,7 +471,7 @@ export default function DailyImagesTrivia() {
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden"
                         >
-                            <div className="mt-1 bg-slate-50/50 dark:bg-slate-900 backdrop-blur-xl border-0 rounded-xl p-4 sm:p-8">
+                            <div className="mt-1 bg-slate-50/50 dark:bg-muted/30 backdrop-blur-xl border-0 rounded-xl p-4 sm:p-8">
 
                                 {/* 1. STORY NAVIGATION (The Top Circles) */}
                                 <div className="flex gap-2 overflow-x-auto pb-6 px-2 no-scrollbar snap-x">
@@ -499,7 +499,7 @@ export default function DailyImagesTrivia() {
                                                     {/* Outer Ring: Glowing if Unseen, Muted if Seen */}
                                                     <div className={`absolute inset-0 rounded-full animate-pulse-slow ${!isSeen ? "bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[2px]" : "bg-slate-300 dark:bg-slate-700 p-[1px]"}`} />
 
-                                                    <div className="relative p-1 bg-white dark:bg-slate-900 rounded-full">
+                                                    <div className="relative p-1 bg-white dark:bg-muted/30 rounded-full">
                                                         <img
                                                             src={img.image_url}
                                                             alt=""

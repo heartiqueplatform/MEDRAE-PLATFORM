@@ -148,7 +148,7 @@ const ExamBuddiesPage = () => {
             <div className="p-4 max-w-2xl mx-auto space-y-2">
 
                 {/* Status Section */}
-                <div className="relative overflow-hidden bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+                <div className="relative overflow-hidden bg-white dark:bg-muted/30 rounded-xl p-8 border border-slate-200/60 dark:border-slate-800 shadow-sm">
                     <div className="relative z-10 flex flex-col items-center text-center">
                         <div className="h-16 w-16 bg-blue-50 dark:bg-blue-500/10 rounded-3xl flex items-center justify-center text-blue-600 mb-4">
                             <Users size={32} />
@@ -272,7 +272,7 @@ const ExamBuddiesPage = () => {
                     ) : buddies.length > 0 ? (
                         <div className="grid gap-4">
                             {buddies.map((buddy) => (
-                                <div key={buddy.id} className="group bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 flex items-center gap-4 transition-all hover:shadow-md">
+                                <div key={buddy.id} className="group bg-white dark:bg-muted/30 p-4 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 flex items-center gap-4 transition-all hover:shadow-md">
                                     <div className="relative">
                                         <img
                                             src={buddy.student?.avatar_url || `https://ui-avatars.com/api/?name=${buddy.student?.name}&background=random`}
@@ -329,7 +329,7 @@ const ExamBuddiesPage = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowJoinModal(false)} />
 
-                    <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
+                    <div className="relative w-full max-w-md bg-white dark:bg-muted/30 rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
                         <button onClick={() => setShowJoinModal(false)} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600">
                             <X size={24} />
                         </button>

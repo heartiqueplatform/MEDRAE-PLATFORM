@@ -80,10 +80,13 @@ const HospitalsPage = () => {
     };
 
     // Filter Logic
-    const filteredHospitals = hospitals.filter((h: any) =>
-        h.hospital_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (h.hospital_type && h.hospital_type.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredHospitals = Array.isArray(hospitals)
+        ? hospitals.filter((h: any) =>
+            h.hospital_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (h.hospital_type &&
+                h.hospital_type.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+        : [];
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20 dark:bg-background">
@@ -118,7 +121,7 @@ const HospitalsPage = () => {
                     <input
                         type="text"
                         placeholder="Search hospital name or type..."
-                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-rose-500 dark:border-slate-800 dark:bg-muted/30 dark:text-white"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />

@@ -134,7 +134,7 @@ export function Notifications() {
               variant="outline"
               size="sm"
               onClick={markAllAsRead}
-              className="rounded-full bg-white dark:bg-slate-900 text-[10px] font-bold uppercase tracking-wider"
+              className="rounded-full bg-white dark:bg-muted/30 text-[10px] font-bold uppercase tracking-wider"
             >
               <CheckCheck className="mr-2 h-3 w-3" />
               Clear Unread
@@ -157,7 +157,7 @@ export function Notifications() {
                 <div key={n.id} className="relative group">
                   <Card
                     onClick={() => markAsRead(n.id, n.link_url)}
-                    className={`overflow-hidden transition-all duration-300 cursor-pointer border-0 shadow-sm hover:shadow-md ${n.is_read ? 'bg-white/60 dark:bg-slate-900/40 opacity-70' : 'bg-white dark:bg-slate-900 ring-1 ring-blue-500/10'
+                    className={`overflow-hidden transition-all duration-300 cursor-pointer border-0 shadow-sm hover:shadow-md ${n.is_read ? 'bg-white/60 dark:bg-slate-900/40 opacity-70' : 'bg-white dark:bg-muted/30 ring-1 ring-blue-500/10'
                       }`}
                   >
                     <CardContent className="p-0">
@@ -222,7 +222,7 @@ export function Notifications() {
           <div className="py-24 px-6 text-center">
             <div className="relative inline-block mb-2">
               <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
-              <div className="relative h-20 w-20 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center shadow-xl">
+              <div className="relative h-20 w-20 rounded-full bg-white dark:bg-muted/30 border border-slate-100 dark:border-slate-800 flex items-center justify-center shadow-xl">
                 <Bell className="text-slate-300" size={32} />
               </div>
             </div>

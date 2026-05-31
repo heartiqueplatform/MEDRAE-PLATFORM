@@ -93,6 +93,7 @@ import AddPlacementPage from "./pages/survival-hub/AddPlacement";
 import PlacementDetailPage from "./pages/survival-hub/PlacementDetail";
 import ExamBuddiesPage from "./pages/survival-hub/ExamBuddiesPage";
 import AuthCallback from "./pages/AuthCallback";
+import FloatingStreakCandle from "./components/FloatingStreakCandle";
 
 
 const queryClient = new QueryClient({
@@ -461,7 +462,7 @@ const AppContent = () => {
                     {/* ------------------- Catch-all ------------------- */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-
+                  <FloatingStreakCandle />
                   <BottomBarWrapper />
                 </AIWrapper>
               </MusicPlayerProvider>

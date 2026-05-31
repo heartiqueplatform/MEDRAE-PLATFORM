@@ -182,7 +182,7 @@ const ExamResultsPage = () => {
                 {/* ---------- EMPTY STATE ---------- */}
                 {!loading && (!resultsByPaper || resultsByPaper.length === 0) && (
                     <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-                        <div className="bg-white dark:bg-slate-900 p-10 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 max-w-md">
+                        <div className="bg-white dark:bg-muted/30 p-10 rounded-xl shadow-xl border border-slate-100 dark:border-slate-800 max-w-md">
                             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center mx-auto mb-2">
                                 <FileSearch className="w-10 h-10 text-slate-300" />
                             </div>
@@ -204,7 +204,7 @@ const ExamResultsPage = () => {
                         <div key={paper.id} className="space-y-3">
 
                             {/* Paper Header Section */}
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border-0 ">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 bg-white dark:bg-muted/30 p-8 rounded-xl shadow-sm border-0 ">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                         <Badge className={paper.is_released ? "bg-blue-500" : "bg-amber-500"}>
@@ -248,7 +248,7 @@ const ExamResultsPage = () => {
                                         <div
                                             key={student.id}
                                             className={`group transition-all duration-300 rounded-xl border overflow-hidden ${isExpanded
-                                                ? "bg-white dark:bg-slate-900 border-0 ring-4 ring-indigo-50 dark:ring-indigo-900/10 shadow-xl"
+                                                ? "bg-white dark:bg-muted/30 border-0 ring-4 ring-indigo-50 dark:ring-indigo-900/10 shadow-xl"
                                                 : "bg-white/60 dark:bg-slate-900/60 border-0  hover:border-slate-200"
                                                 } ${!paper.is_released && !student.is_released ? "opacity-75 grayscale-[0.3]" : ""}`}
                                         >
@@ -345,7 +345,7 @@ const ExamResultsPage = () => {
                                                                                     ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 text-emerald-700"
                                                                                     : isSelected
                                                                                         ? "bg-rose-50 dark:bg-rose-500/10 border-rose-200 text-rose-700"
-                                                                                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500"
+                                                                                        : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 text-slate-500"
                                                                                     }`}
                                                                             >
                                                                                 <span className="font-black mr-2">{opt}:</span>
@@ -391,7 +391,7 @@ function StatCard({ label, value, icon, color }: any) {
     };
 
     return (
-        <Card className="border-none shadow-sm bg-white dark:bg-slate-900 rounded-3xl overflow-hidden group">
+        <Card className="border-none shadow-sm bg-white dark:bg-muted/30 rounded-3xl overflow-hidden group">
             <CardContent className="p-6">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${colors[color]}`}>
                     {React.cloneElement(icon, { size: 20 })}

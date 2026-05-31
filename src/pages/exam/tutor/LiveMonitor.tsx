@@ -235,7 +235,7 @@ const TutorLiveMonitor = () => {
                     <div className="space-y-2">
                         <Card
                             ref={formRef}  // <--- ATTACH REF HERE
-                            className="border-none shadow-2xl shadow-slate-200/50 dark:shadow-none rounded-3xl bg-white dark:bg-slate-900 overflow-hidden"
+                            className="border-none shadow-2xl shadow-slate-200/50 dark:shadow-none rounded-3xl bg-white dark:bg-muted/30 overflow-hidden"
                         >
                             <div className="bg-slate-900 p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-white">
@@ -326,7 +326,7 @@ const TutorLiveMonitor = () => {
                         </Card>
 
                         {/* CSV SECTION */}
-                        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+                        <div className="p-6 bg-white dark:bg-muted/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
                                     <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
@@ -357,13 +357,13 @@ const TutorLiveMonitor = () => {
 
                         <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
                             {questions.length === 0 && (
-                                <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+                                <div className="text-center py-20 bg-white dark:bg-muted/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
                                     <p className="text-slate-400 font-medium italic">No questions added to this session yet.</p>
                                 </div>
                             )}
 
                             {questions.map((q: any, index: number) => (
-                                <Card key={q.id} className="border-none shadow-sm hover:shadow-md transition-all rounded-2xl bg-white dark:bg-slate-900 overflow-hidden group">
+                                <Card key={q.id} className="border-none shadow-sm hover:shadow-md transition-all rounded-2xl bg-white dark:bg-muted/30 overflow-hidden group">
                                     <div className="flex">
                                         <div className="w-12 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center py-4 border-r dark:border-slate-800">
                                             <span className="text-xs font-black text-slate-300">#{index + 1}</span>

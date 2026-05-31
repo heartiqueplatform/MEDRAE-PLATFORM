@@ -69,12 +69,13 @@ const ExamCenters = () => {
     };
 
     // Filter logic: Search by Name, County, or Town
-    const filteredCenters = centers.filter((c: any) =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.county.toLowerCase().includes(search.toLowerCase()) ||
-        (c.town && c.town.toLowerCase().includes(search.toLowerCase()))
-    );
+    const safeCenters = Array.isArray(centers) ? centers : [];
 
+    const filteredCenters = safeCenters.filter((c: any) =>
+        c.name?.toLowerCase().includes(search.toLowerCase()) ||
+        c.county?.toLowerCase().includes(search.toLowerCase()) ||
+        c.town?.toLowerCase().includes(search.toLowerCase())
+    );
     return (
         <div className="min-h-screen bg-slate-50 p-4 pb-20 dark:bg-background md:p-8">
             <div className="mx-auto max-w-4xl">
@@ -84,7 +85,7 @@ const ExamCenters = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => navigate('/survival-hub')}
-                            className="p-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 active:scale-95 transition-all"
+                            className="p-2 rounded-full bg-white dark:bg-muted/30 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 active:scale-95 transition-all"
                         >
                             <ChevronLeft size={20} />
                         </button>
@@ -110,7 +111,7 @@ const ExamCenters = () => {
                         <input
                             type="text"
                             placeholder="Search by name, county or town..."
-                            className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-white transition-all"
+                            className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm dark:border-slate-800 dark:bg-muted/30 dark:text-white transition-all"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
@@ -142,7 +143,7 @@ const ExamCenters = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+                    <div className="text-center py-20 bg-white dark:bg-muted/30 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
                         <div className="inline-flex p-4 bg-slate-50 dark:bg-slate-800 rounded-full mb-4">
                             <MapPin size={32} className="text-slate-300" />
                         </div>

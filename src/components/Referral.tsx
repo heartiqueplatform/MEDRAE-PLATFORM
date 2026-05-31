@@ -142,7 +142,7 @@ const Referral: React.FC = () => {
                         initial={{ y: 50, opacity: 0, scale: 0.9 }}
                         animate={{ y: 0, opacity: 1, scale: 1 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="relative w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden bg-white dark:bg-slate-900 border border-white/20"
+                        className="relative w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden bg-white dark:bg-muted/30 border border-white/20"
                     >
                         {/* Header: Medical Excellence Theme */}
                         <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-blue-800 p-8 text-white relative overflow-hidden">

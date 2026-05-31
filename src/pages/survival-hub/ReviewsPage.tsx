@@ -65,7 +65,7 @@ const ReviewsPage = () => {
             <div className="mx-auto max-w-xl p-4 space-y-6">
 
                 {/* 2. WRITE A REVIEW FORM */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800">
                     <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4">Rate your experience</h3>
 
                     <div className="flex gap-2 mb-4">
@@ -111,13 +111,13 @@ const ReviewsPage = () => {
                     {loading ? (
                         <div className="flex justify-center py-10"><Loader2 className="animate-spin text-slate-300" /></div>
                     ) : reviews.length > 0 ? (
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl p-2 shadow-sm border border-slate-100 dark:border-slate-800 px-4">
+                        <div className="bg-white dark:bg-muted/30 rounded-2xl p-2 shadow-sm border border-slate-100 dark:border-slate-800 px-4">
                             {reviews.map((r: any) => (
                                 <ReviewCard key={r.id} review={r} />
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed dark:border-slate-800">
+                        <div className="text-center py-20 bg-white dark:bg-muted/30 rounded-2xl border-2 border-dashed dark:border-slate-800">
                             <MessageSquare className="mx-auto text-slate-200 mb-2" size={40} />
                             <p className="text-sm text-slate-500">No reviews yet. Be the first!</p>
                         </div>

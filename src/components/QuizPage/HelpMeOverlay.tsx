@@ -35,7 +35,7 @@ export function HelpMeOverlay({
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-card dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[85vh]"
+                    className="bg-card dark:bg-muted/30 w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[85vh]"
                 >
                     {/* Header: Professional Branding */}
                     <div className="p-5 border-b border-border bg-muted/30 flex justify-between items-center">

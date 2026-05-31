@@ -196,7 +196,7 @@ const AddHousingPage = () => {
                 </div>
 
                 {/* SECTION 1: THE ANCHOR */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
                     <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                         {['exam', 'hospital', 'placement'].map((type) => (
                             <button
@@ -226,7 +226,7 @@ const AddHousingPage = () => {
                 </div>
 
                 {/* NEW SECTION: PHOTO UPLOAD */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
                     <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-widest">
                         <Camera size={16} /> Step 2: Photos (Max 3)
                     </div>
@@ -262,7 +262,7 @@ const AddHousingPage = () => {
                 </div>
 
                 {/* SECTION 2: THE HOUSE DETAILS */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
                     <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
                         <Wallet size={16} /> Step 3: House Details
                     </div>
@@ -295,7 +295,7 @@ const AddHousingPage = () => {
                 </div>
 
                 {/* SECTION 3: CONTACT */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
                     <div className="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-widest">
                         <Phone size={16} /> Step 4: Contact Info
                     </div>
@@ -341,7 +341,7 @@ const AddHousingPage = () => {
                     </button>
                     {showLockOverlay && (
                         <div className="absolute bottom-full left-0 right-0 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-300 z-50">
-                            <div className="relative bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-500/50 rounded-2xl p-6 shadow-2xl backdrop-blur-sm">
+                            <div className="relative bg-white dark:bg-muted/30 border-2 border-amber-200 dark:border-amber-500/50 rounded-2xl p-6 shadow-2xl backdrop-blur-sm">
                                 {/* Glow Effect for Dark Mode */}
                                 <div className="absolute inset-0 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 pointer-events-none" />
 
@@ -376,7 +376,7 @@ const AddHousingPage = () => {
                             </div>
 
                             {/* Small arrow pointing down */}
-                            <div className="w-4 h-4 bg-white dark:bg-slate-900 border-r-2 border-b-2 border-amber-200 dark:border-amber-500/50 rotate-45 mx-auto -mt-2 shadow-lg"></div>
+                            <div className="w-4 h-4 bg-white dark:bg-muted/30 border-r-2 border-b-2 border-amber-200 dark:border-amber-500/50 rotate-45 mx-auto -mt-2 shadow-lg"></div>
                         </div>
                     )}
                 </div>

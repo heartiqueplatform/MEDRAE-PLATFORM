@@ -118,7 +118,7 @@ export default function LiveReactions() {
     return (
         <>
             {/* --- FLOATING STATUS BUTTON --- */}
-            <div className="hidden lg:block fixed bottom-40 right-6 z-50">
+            <div className="hidden lg:block fixed top-60 right-4 z-50">
                 <button
                     onClick={handleTogglePanel}
                     className="group relative h-12 w-12 flex items-center justify-center transition-all duration-300 active:scale-90"
@@ -126,7 +126,7 @@ export default function LiveReactions() {
                     {/* Pulsing Outer Ring */}
                     <span className="absolute inset-0 rounded-2xl bg-blue-500/20 dark:bg-blue-400/10 animate-pulse" />
 
-                    <div className="relative h-12 w-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+                    <div className="relative h-12 w-12 rounded-2xl bg-white dark:bg-muted/30 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
                         <img
                             src="/UsersAvatar.jpg"
                             alt="Live"
@@ -171,7 +171,7 @@ export default function LiveReactions() {
                         className="fixed bottom-24 right-24 w-80 max-h-[60vh] flex flex-col bg-white/95 dark:bg-gray-900 backdrop-blur-xl border-0 shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-xl overflow-hidden z-50"
                     >
                         {/* Sticky Header */}
-                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-950/50">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-muted/30 ">
                             <div className="flex items-center gap-2">
                                 <div className="p-1.5 bg-blue-500/10 rounded-lg">
                                     <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />

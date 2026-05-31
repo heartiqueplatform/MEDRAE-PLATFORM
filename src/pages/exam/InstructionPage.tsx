@@ -245,7 +245,7 @@ export default function ExamInstructions() {
                                 )}
 
                                 <Button
-                                    className="w-full h-12 bg-white dark:bg-slate-900 text-black dark:text-white hover:bg-slate-200 dark:hover:bg-gray-800 font-bold transition-all shadow-lg"
+                                    className="w-full h-12 bg-white dark:bg-muted/30 text-black dark:text-white hover:bg-slate-200 dark:hover:bg-gray-800 font-bold transition-all shadow-lg"
                                     onClick={verifyKey}
                                 >
                                     Unlock Examination

@@ -14,7 +14,7 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
     const isOwner = user?.id === center.created_by;
 
     return (
-        <div className="group relative flex flex-col justify-between overflow-hidden rounded-[2rem] border-0 bg-white p-5 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 dark:bg-slate-900 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30">
+        <div className="group relative flex flex-col justify-between overflow-hidden rounded-[2rem] border-0 bg-white p-5 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 dark:bg-muted/30 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30">
 
             {/* 1. Header: Badge & Status */}
             <div className="flex justify-between items-start mb-4">
