@@ -44,6 +44,33 @@ const Index = () => {
     setLoadedMedia(prev => prev + 1);
   };
 
+  // --- TEMPORARY COUNTDOWN LOGIC (REMOVE FOR PRODUCTION) ---
+  const TARGET_DATE = new Date("2026-06-21T00:00:00"); // Set your launch date here
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0, hours: 0, minutes: 0, seconds: 0, isLocked: true
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const difference = TARGET_DATE.getTime() - now;
+
+      if (difference <= 0) {
+        setTimeLeft(prev => ({ ...prev, isLocked: false }));
+        clearInterval(timer);
+      } else {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+          isLocked: true
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  // --- END OF COUNTDOWN LOGIC ---
   useEffect(() => {
     if (totalMedia > 0 && loadedMedia >= totalMedia) {
       setAllMediaReady(true);
@@ -371,174 +398,98 @@ const Index = () => {
         onExit={finalExitAction}
       />
 
-      {/* Welcome Overlay - responsive */}
+      {/* Welcome Overlay - Locked with Countdown */}
       {showWelcomeOverlay && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500" />
-          <div className="relative bg-white rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-10 w-full max-w-lg shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] text-center space-y-6 md:space-y-8 animate-in zoom-in-95 slide-in-from-bottom-10 duration-700">
+          <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-xl animate-in fade-in duration-500" />
+          <div className="relative bg-white rounded-[2.5rem] p-6 md:p-10 w-full max-w-lg shadow-2xl text-center space-y-6 animate-in zoom-in-95 duration-700 border-4 border-blue-500/20">
 
             {/* Logo & Title */}
-            <div className="space-y-3 md:space-y-4">
-              <div className="relative mx-auto w-16 h-16 md:w-20 md:h-20">
-                <img
-                  src="/pwa-192x192.jpeg"
-                  alt="Medrae Logo"
-                  className="mx-auto h-16 w-16 md:h-20 md:w-20 rounded-2xl shadow-xl border-4 border-white"
-                />
-                <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1.5 border-4 border-white shadow-sm">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <div className="space-y-4">
+              <div className="relative mx-auto w-20 h-20">
+                <img src="/pwa-192x192.jpeg" alt="Logo" className="mx-auto h-20 w-20 rounded-2xl shadow-xl" />
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full animate-bounce">
+                  MAINTENANCE
                 </div>
               </div>
-              <div className="space-y-1">
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-800 tracking-tight">
-                  Welcome to <span className="text-red-600">MEDRAE </span> <span className="text-black">NURSING</span>
-                </h2>
-                <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest">
-                  Kenya's No.1 Nursing Network
+              <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">
+                System Finalization <br />
+                <span className="text-blue-600">MEDRAE NURSING</span>
+              </h2>
+            </div>
+
+            {/* COUNTDOWN DISPLAY */}
+            {timeLeft.isLocked ? (
+              <div className="bg-slate-900 text-white rounded-3xl p-6 space-y-4 shadow-inner">
+                <p className="text-blue-400 text-xs font-black uppercase tracking-widest">Launching In:</p>
+                <div className="flex justify-center gap-4">
+                  {[
+                    { label: 'Days', val: timeLeft.days },
+                    { label: 'Hrs', val: timeLeft.hours },
+                    { label: 'Min', val: timeLeft.minutes },
+                    { label: 'Sec', val: timeLeft.seconds },
+                  ].map((unit) => (
+                    <div key={unit.label} className="flex flex-col">
+                      <span className="text-3xl font-black tabular-nums">{unit.val.toString().padStart(2, '0')}</span>
+                      <span className="text-[10px] uppercase text-slate-500 font-bold">{unit.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  We are currently integrating M-PESA and finalizing modules for production.
+                  Access will be granted automatically once the timer hits zero.
                 </p>
               </div>
-            </div>
-
-            {/* Terms Agreement */}
-            <div className="bg-slate-50 rounded-2xl md:rounded-3xl p-4 md:p-6 text-left border border-slate-100 space-y-4">
-              <p className="text-slate-600 leading-relaxed text-xs md:text-sm lg:text-base font-medium">
-                Ready to boost your skills, career, and confidence? Before you proceed, please make sure you have read and understood our
-                <span
-                  className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
-                  onClick={() => navigate("/terms")}
-                >
-                  Terms & Conditions
-                </span>
-                <span
-                  className="mx-1 underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
-                  onClick={() => navigate("/privacy")}
-                >
-                  Privacy Policy
-                </span>
-                . Connect with thousands of peers and professionals today!
-              </p>
-
-              {/* Checkbox Agreement */}
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <div className="relative flex items-center justify-center mt-0.5">
-                  <input
-                    type="checkbox"
-                    checked={agreedToTerms}
-                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-lg border-2 border-slate-300 peer-checked:border-blue-600 peer-checked:bg-blue-600 flex items-center justify-center transition-all duration-200 group-hover:border-blue-400">
-                    <svg
-                      className="w-3 h-3 md:w-3.5 md:h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
-                <span className="text-[11px] md:text-xs text-slate-600 font-medium leading-relaxed">
-                  I have read and agree to the{' '}
-                  <span
-                    className="text-blue-600 font-bold hover:underline cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate("/terms");
-                    }}
-                  >
-                    Terms & Conditions
-                  </span>{' '}
-                  and{' '}
-                  <span
-                    className="text-blue-600 font-bold hover:underline cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate("/privacy");
-                    }}
-                  >
-                    Privacy Policy
-                  </span>
-                </span>
-              </label>
-            </div>
+            ) : (
+              <div className="bg-green-50 text-green-700 rounded-2xl p-4 font-bold text-sm">
+                🎉 System is now LIVE! You may proceed.
+              </div>
+            )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col items-center gap-4 md:gap-6">
-              <div className="w-full space-y-3 md:space-y-4">
-                <button
-                  className={`w-full h-14 md:h-16 rounded-2xl font-black text-base md:text-lg transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-2 ${!allMediaReady || !agreedToTerms
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
-                    }`}
-                  disabled={!allMediaReady || !agreedToTerms}
-                  onClick={() => {
-                    setShowWelcomeOverlay(false);
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                    const notificationAudio = new Audio("/sounds/notification.mp3");
-                    notificationAudio.volume = 1;
-                    notificationAudio.loop = false;
-                    notificationAudio.play().catch(() => console.warn("Audio blocked"));
-                  }}
-                >
-                  {!allMediaReady ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
-                      Downloading Assets...
-                    </span>
-                  ) : !agreedToTerms ? (
-                    <>
-                      <CheckCircle className="w-5 h-5 md:w-6 md:h-6" />
-                      Agree to Terms to Continue
-                    </>
-                  ) : (
-                    <>
-                      Yes, I agree! <div className="w-2 h-2 bg-white rounded-full animate-ping" />
-                    </>
-                  )}
-                </button>
-                <p className="text-slate-500 text-xs md:text-sm lg:text-base font-medium">
-                  Already have an account?{" "}
-                  <span
-                    className="text-blue-600 font-black cursor-pointer hover:underline transition-all"
-                    onClick={() => window.location.href = "/login"}
-                  >
-                    Log in here
+            <div className="w-full space-y-4">
+              <button
+                className={`w-full h-16 rounded-2xl font-black text-lg transition-all shadow-xl flex items-center justify-center gap-2 ${timeLeft.isLocked || !allMediaReady || !agreedToTerms
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed grayscale"
+                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 active:scale-95"
+                  }`}
+                disabled={timeLeft.isLocked || !allMediaReady || !agreedToTerms}
+                onClick={() => {
+                  setShowWelcomeOverlay(false);
+                  new Audio("/sounds/notification.mp3").play().catch(() => { });
+                }}
+              >
+                {timeLeft.isLocked ? (
+                  <span className="flex items-center gap-2">
+                    <Target className="w-5 h-5 animate-spin" />
+                    System Locked
                   </span>
-                </p>
-              </div>
+                ) : (
+                  "Enter System Now"
+                )}
+              </button>
 
-              {/* Progress Bar */}
-              <div className="w-full max-w-sm space-y-2 md:space-y-3 pt-1 md:pt-2">
-                <div className="flex justify-between items-end px-1">
-                  <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Media Initialization
-                  </span>
-                  <span className="text-xs md:text-sm font-black text-slate-700 tabular-nums">
-                    {allMediaReady ? "100%" : `${Math.floor((loadedMedia / totalMedia) * 100)}%`}
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-2.5 md:h-3 overflow-hidden border border-slate-200/50 p-0.5">
-                  <div
-                    className="h-full rounded-full transition-all duration-500 ease-out"
-                    style={{
-                      width: allMediaReady ? "100%" : `${(loadedMedia / totalMedia) * 100}%`,
-                      backgroundColor: allMediaReady
-                        ? "#10b981"
-                        : loadedMedia / totalMedia <= 0.25
-                          ? "#f43f5e"
-                          : loadedMedia / totalMedia <= 0.75
-                            ? "#3b82f6"
-                            : "#f59e0b",
-                    }}
-                  />
-                </div>
-                <p className="text-[9px] md:text-[10px] font-bold text-slate-400 text-center uppercase tracking-tighter">
-                  Synchronizing {loadedMedia} of {totalMedia} data points
+              {/* Hide login link during lockdown to prevent bypass */}
+              {!timeLeft.isLocked && (
+                <p className="text-slate-500 text-sm font-medium">
+                  Already have an account?{" "}
+                  <span className="text-blue-600 font-black cursor-pointer" onClick={() => navigate("/login")}>Log in</span>
                 </p>
-              </div>
+              )}
             </div>
+
+            {/* Terms Checkbox - Also disabled during lock */}
+            <label className={`flex items-start gap-3 text-left p-2 rounded-lg transition-opacity ${timeLeft.isLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-1 w-5 h-5"
+              />
+              <span className="text-[11px] text-slate-600 leading-tight">
+                I agree to the <span className="text-blue-600 font-bold">Terms & Privacy Policy</span> to proceed after launch.
+              </span>
+            </label>
           </div>
         </div>
       )}
