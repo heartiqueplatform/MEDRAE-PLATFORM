@@ -4,7 +4,7 @@ import { TrendingUp, Target as TargetIcon, Clock, Trophy } from 'lucide-react';
 
 const StaticCard = ({ card, onClick }) => (
     <Card
-        className="relative overflow-hidden w-[300px] h-[520px] rounded-2xl border-white/10 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex-shrink-0 hover:scale-[1.02] active:scale-95 transition-all duration-500 cursor-pointer group"
+        className="relative overflow-hidden w-[360px] h-[640px] rounded-2xl border-white/10 bg-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex-shrink-0 hover:scale-[1.02] active:scale-95 transition-all duration-500 cursor-pointer group"
         onClick={onClick}
     >
         {/* Background Image */}
@@ -13,7 +13,18 @@ const StaticCard = ({ card, onClick }) => (
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
                 style={{ backgroundImage: `url('${card.bgImage}')` }}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90 z-10" />
+
+            {/* SMART OVERLAY: Dark gradient + blur for readability */}
+            <div className="absolute inset-0 z-10">
+                {/* Deep dark gradient */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/80 to-black/95" />
+
+                {/* Smart blur overlay - blurs only the background behind text */}
+                <div className="absolute inset-0 backdrop-blur-[2px] bg-black/20" />
+
+                {/* Extra dark vignette at edges for contrast */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40" />
+            </div>
         </div>
 
         <div className="relative z-20 h-full p-8 flex flex-col justify-between">
@@ -23,22 +34,22 @@ const StaticCard = ({ card, onClick }) => (
                     <card.icon className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                    <p className="text-[14px] uppercase tracking-[5px] font-black text-blue-400 leading-none">
+                    <p className="text-[14px] uppercase tracking-[5px] font-black text-blue-400 leading-none drop-shadow-lg">
                         {card.title}
                     </p>
                 </div>
             </div>
 
-            {/* Content: Bigger Numbers with Improved Readability */}
+            {/* Content: Smaller, readable numbers with text-shadow */}
             <div className="space-y-3">
-                <h3 className="text-white text-[18px] font-bold uppercase tracking-widest drop-shadow-lg">
+                <h3 className="text-white text-[18px] font-bold uppercase tracking-widest drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
                     {card.subtitle}
                 </h3>
                 <div className="flex flex-col">
-                    <span className="text-8xl font-black tracking-tighter text-white drop-shadow-2xl leading-none">
+                    <span className="text-7xl font-black tracking-tighter text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)] leading-none">
                         {card.value}
                     </span>
-                    <div className="mt-4 h-1.5 w-16 rounded-full bg-blue-500/50 group-hover:w-32 group-hover:bg-blue-500 transition-all duration-500" />
+                    <div className="mt-4 h-1.5 w-16 rounded-full bg-blue-500/50 group-hover:w-32 group-hover:bg-blue-500 transition-all duration-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
                 </div>
             </div>
         </div>
@@ -47,7 +58,6 @@ const StaticCard = ({ card, onClick }) => (
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
     </Card>
 );
-
 const CardMarquee = ({
     studyProgress = 0,
     quizCount = 0,
