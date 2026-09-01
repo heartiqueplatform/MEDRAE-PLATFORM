@@ -633,7 +633,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       <header className={`
         sticky top-3 sm:top-4 z-50 mx-3 sm:mx-6 h-14 sm:h-16
         ${themeClasses} backdrop-blur-xl
-        border rounded-2xl sm:rounded-3xl flex items-center justify-between xl:justify-evenly
+        border-0 rounded-2xl sm:rounded-3xl flex items-center justify-between xl:justify-evenly
         px-2 sm:px-6 text-sm sm:text-base transition-all duration-300 ease-in-out w-auto
       `}>
         {/* Mobile Logo */}

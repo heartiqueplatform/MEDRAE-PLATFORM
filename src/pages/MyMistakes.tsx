@@ -500,7 +500,7 @@ export default function MyMistakes() {
                                 Review questions you answered incorrectly. <span className="font-semibold text-green-700 dark:text-green-400">Green</span> highlights the correct answer, answers with <span className="font-semibold text-blue-600 dark:text-blue-400">"your choice"</span> shows what you chose. Mark as <span className="font-semibold">"understood"</span> when you've mastered it.
                             </p>
                             <p className="text-gray-500 dark:text-gray-400 mt-1.5 md:mt-2 text-center md:text-left text-sm md:text-base font-medium relative z-10">
-                                You have <span className="font-bold text-red-600 dark:text-red-400">{mistakeCount}</span> unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
+                                Hello there! You have <span className="font-bold text-red-600 dark:text-red-400">{mistakeCount}</span> unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
                             </p>
                         </div>
 
