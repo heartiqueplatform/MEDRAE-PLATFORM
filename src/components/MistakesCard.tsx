@@ -11,6 +11,51 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { GlobalLoader } from "@/components/GlobalLoader";
 
+// Skeleton Loader for the small cards - Add this after your imports
+const CardSkeleton = () => (
+    <div className="flex-shrink-0 w-[120px] sm:w-[140px] md:w-[160px] snap-start">
+        <div className="rounded-xl border-0  bg-white dark:bg-gray-900 shadow-md p-2 h-[180px] md:h-[200px] flex flex-col animate-pulse">
+            {/* Rank Badge Skeleton */}
+            <div className="flex items-center justify-between mb-0.5">
+                <div className="h-5 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded-full" />
+            </div>
+
+            {/* Question Number Skeleton */}
+            <div className="flex-1 flex flex-col items-center justify-center">
+                <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
+            </div>
+
+            {/* Stats Skeleton */}
+            <div className="space-y-1 mt-auto">
+                <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-800/50 rounded-md px-1.5 py-1">
+                    <div className="flex items-center gap-1">
+                        <div className="h-3 w-3 bg-gray-200 dark:bg-gray-700 rounded" />
+                        <div className="h-3 w-6 bg-gray-200 dark:bg-gray-700 rounded" />
+                    </div>
+                    <div className="h-2 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+                <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-800/50 rounded-md px-1.5 py-1">
+                    <div className="flex items-center gap-1">
+                        <div className="h-3 w-3 bg-gray-200 dark:bg-gray-700 rounded" />
+                        <div className="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
+                    </div>
+                    <div className="h-2 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+            </div>
+
+            {/* Footer Skeleton */}
+            <div className="flex items-center justify-between mt-1 pt-1 border-t border-gray-200 dark:border-gray-700">
+                <div className="h-2 w-6 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="flex items-center gap-0.5">
+                    <div className="h-2 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-3 w-3 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+            </div>
+        </div>
+    </div>
+);
 const PAGE_SIZE = 20;
 
 // Cache keys with versioning
@@ -1020,7 +1065,19 @@ export function MistakesCard() {
                         className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory"
                         style={{ scrollSnapType: 'x mandatory' }}
                     >
-                        {visibleData.map((item, i) => {
+                        {/* ✅ Show skeleton loaders while loading */}
+                        {loading && (
+                            <>
+                                <CardSkeleton />
+                                <CardSkeleton />
+                                <CardSkeleton />
+                                <CardSkeleton />
+                                <CardSkeleton />
+                            </>
+                        )}
+
+                        {/* Actual cards */}
+                        {!loading && visibleData.map((item, i) => {
                             const q = item.quiz_questions;
                             if (!q) return null;
 
@@ -1049,7 +1106,6 @@ export function MistakesCard() {
                                     rankColor: "text-amber-300",
                                     textShadow: "drop-shadow-lg"
                                 };
-                                // ✅ FIXED: Dark text for light cards
                                 return {
                                     bg: "bg-white dark:bg-gray-900",
                                     border: "border-0 dark:border-0",
@@ -1142,54 +1198,6 @@ export function MistakesCard() {
                                 </motion.div>
                             );
                         })}
-
-                        {/* Load More Card */}
-                        {
-                            hasMore && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="flex-shrink-0 w-[120px] sm:w-[140px] md:w-[160px] snap-start"
-                                >
-                                    <div
-                                        onClick={handleLoadMore}
-                                        className="h-[180px] md:h-[200px] rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-pointer group p-2"
-                                    >
-                                        {(loading || loadingMore) ? (
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Loader2 className="animate-spin text-blue-600" size={28} />
-                                                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Loading...</p>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full group-hover:scale-110 transition-transform">
-                                                    <PlusCircle size={28} className="text-blue-600 dark:text-blue-400" />
-                                                </div>
-                                                <p className="mt-2 text-xs font-bold text-gray-600 dark:text-gray-400">Load More</p>
-                                                <p className="text-[9px] text-gray-400">{visibleData.length} loaded</p>
-                                            </>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            )
-                        }
-
-                        {/* End Card */}
-                        {
-                            !hasMore && visibleData.length > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="flex-shrink-0 w-[120px] sm:w-[140px] md:w-[160px] snap-start"
-                                >
-                                    <div className="h-[180px] md:h-[200px] rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800/30 flex flex-col items-center justify-center p-2">
-                                        <CheckCircle size={40} className="text-green-500 mb-2" />
-                                        <p className="text-base font-bold text-green-600 dark:text-green-400">All Done!</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">{visibleData.length} questions</p>
-                                    </div>
-                                </motion.div>
-                            )
-                        }
                     </div>
 
                     {/* Scroll Indicator */}
