@@ -93,20 +93,11 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
   const showMusic = !disabledPages.includes(location.pathname);
   const { isSidebarOpen } = useSidebar();
 
-  // ✅ Track if loader was already hidden (prevents duplicate calls)
   const loaderHiddenRef = useRef(false);
 
-  // ✅ THE ONLY PLACE THAT HIDES THE LOADER - INSTANTLY when Dashboard is ready
   useEffect(() => {
-    // Only hide when:
-    // 1. Not hidden yet
-    // 2. User exists
-    // 3. User has a valid name (not "Unknown User")
     if (!loaderHiddenRef.current && user && user.name && user.name !== "Unknown User") {
-      // Mark as hidden immediately to prevent duplicate calls
       loaderHiddenRef.current = true;
-
-      // 🚀 Hide instantly - NO DELAY!
       if (typeof (window as any).hideMedraeLoader === 'function') {
         (window as any).hideMedraeLoader();
       }
@@ -120,7 +111,7 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
       <div className="relative z-10 flex w-full h-full">
         <AppSidebar userRole={role} className="flex-shrink-0 w-64 md:w-72" />
 
-        <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden max-w-[1200px] mx-auto">
           <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
 
           <main
@@ -128,7 +119,7 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
             className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar outline-none"
           >
             <div className="flex flex-col min-h-full">
-              <div className="flex-1 pt-4 px-0">
+              <div className="flex-1 pt-4 px-0 md:px-4 lg:px-6">
                 <Outlet />
                 {!isForum && !isFeed && <div className="h-4" />}
               </div>
@@ -157,7 +148,6 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
     </div>
   );
 });
-
 DashboardContent.displayName = "DashboardContent";
 
 // -------------------------------------------------------------
