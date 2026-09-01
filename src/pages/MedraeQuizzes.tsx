@@ -915,14 +915,16 @@ export function MedraeQuizzes() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                <div className="flex items-center gap-4">
-                  <TermsButton />
-                </div>
-              </div>
+
             </CardContent>
           </Card>
         </Card>
+
+      </div>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+        <div className="flex items-center gap-4">
+          <TermsButton />
+        </div>
       </div>
     </div>
   );
