@@ -77,7 +77,7 @@ const CardMarquee = ({
     const cards = [
         {
             title: "Performance",
-            subtitle: "Total Progress",
+            subtitle: " Progress",
             icon: TrendingUp,
             bgImage: "/indexbackground3.jpg",
             value: `${studyProgress ?? 0}%`
