@@ -51,7 +51,7 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
             <button
                 onClick={handleOpen}
                 className={cn(
-                    "fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-all duration-300",
+                    "fixed bottom-32 right-5 z-40 p-3 rounded-full shadow-lg transition-all duration-300",
                     "bg-teal-600 hover:bg-teal-700 text-white",
                     "hover:scale-105 active:scale-95",
                     "border-2 border-white/20 dark:border-slate-800/50",

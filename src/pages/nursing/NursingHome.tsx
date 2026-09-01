@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     BookOpen,
@@ -90,17 +90,108 @@ function ProgressCard() {
     const userId = session?.user?.id;
     const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const isMounted = useRef(true);
+    const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastFetchRef = useRef(0);
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+    const CACHE_KEY = `progress_summary_${userId}`;
 
+    // Load from cache on mount
     useEffect(() => {
-        if (userId) { loadProgressSummary(); } else { setLoading(false); }
+        if (userId) {
+            // Check cache first
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+                        setSummary(parsed.data);
+                        setLoading(false);
+                        return;
+                    }
+                } catch (e) {
+                    localStorage.removeItem(CACHE_KEY);
+                }
+            }
+            loadProgressSummary();
+        } else {
+            setLoading(false);
+        }
+
+        return () => {
+            if (fetchTimeoutRef.current) {
+                clearTimeout(fetchTimeoutRef.current);
+            }
+        };
     }, [userId]);
 
-    const loadProgressSummary = async () => {
+    // Background refresh when tab becomes visible
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && userId) {
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+                            return; // Cache is fresh, skip
+                        }
+                    } catch (e) { }
+                }
+                // Cache is stale or missing, refresh in background
+                if (fetchTimeoutRef.current) {
+                    clearTimeout(fetchTimeoutRef.current);
+                }
+                fetchTimeoutRef.current = setTimeout(() => {
+                    loadProgressSummary(true);
+                }, 500);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (fetchTimeoutRef.current) {
+                clearTimeout(fetchTimeoutRef.current);
+            }
+        };
+    }, [userId]);
+
+    const loadProgressSummary = async (silent = false) => {
+        if (!userId || !isMounted.current) return;
+
+        // Rate limiting
+        const now = Date.now();
+        if (now - lastFetchRef.current < 10000) return; // 10 seconds between fetches
+        lastFetchRef.current = now;
+
+        if (!silent) {
+            setLoading(true);
+        }
+
         try {
             const data = await academicProgress.getProgressSummary(userId);
-            setSummary(data);
-        } catch (error) { console.error("Error loading progress:", error); }
-        finally { setLoading(false); }
+            if (isMounted.current) {
+                setSummary(data);
+                setLoading(false);
+                // Cache the data
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    data: data,
+                    timestamp: Date.now()
+                }));
+            }
+        } catch (error) {
+            console.error("Error loading progress:", error);
+            if (isMounted.current) {
+                setLoading(false);
+            }
+        }
+    };
+
+    // Manual refresh with tap feedback
+    const handleRefresh = async () => {
+        tapFeedback("light");
+        await loadProgressSummary(false);
     };
 
     if (!loading && !summary) return null;
@@ -110,76 +201,90 @@ function ProgressCard() {
     const mastered = summary?.questions_mastered || 0;
 
     return (
-        <button
-            onClick={() => {
-                tapFeedback("success");
-                navigate("/nursing/progress");
-            }}
-            className="group relative w-full overflow-hidden md:rounded-2xl md:border-0 bg-white/70 p-4 md:p-5 text-left md:shadow-sm backdrop-blur transition duration-200 md:hover:-translate-y-1 md:hover:border-2 md:hover:border-emerald-300 md:hover:bg-white md:hover:shadow-xl border-b border-slate-100 dark:border-slate-800 md:border-b-0 dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
-        >
-            <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-emerald-50 transition group-hover:bg-emerald-100 dark:bg-emerald-400/10 dark:group-hover:bg-emerald-400/20" />
-
-            <div className="relative">
-                <div className="mb-2 md:mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 md:gap-3">
-                        <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-lg md:rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-                            <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
-                        </div>
-                        <div>
-                            <h3 className="text-xs md:text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Progress Dashboard</h3>
-                            <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">
-                                {loading ? "Loading..." : totalAttempted > 0 ? `${formatNumberWithImpact(totalAttempted)} questions answered` : "Start your journey"}
-                            </p>
-                        </div>
+        <div className="w-full bg-white dark:bg-muted/30 rounded-xl shadow-sm p-4 md:p-5">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                        <BarChart3 className="h-4 w-4" />
                     </div>
-                    <div className="rounded-full bg-slate-100 p-1.5 md:p-2 text-slate-500 transition group-hover:bg-emerald-600 group-hover:text-white dark:bg-slate-800 dark:text-slate-300">
-                        <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Progress Dashboard</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {loading ? "Loading..." : totalAttempted > 0 ? `${totalAttempted} questions answered` : "Start your journey"}
+                        </p>
                     </div>
                 </div>
-
-                <div className="mt-3 md:mt-4">
-                    {loading ? (
-                        <div className="space-y-2 md:space-y-3">
-                            <div className="h-5 md:h-6 w-44 md:w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                            <div className="h-3.5 md:h-4 w-56 md:w-64 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                            <div className="h-1.5 md:h-2 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                        </div>
-                    ) : totalAttempted > 0 ? (
-                        <>
-                            <div className="grid grid-cols-3 gap-2 md:gap-3">
-                                <div className="rounded-lg md:rounded-xl bg-slate-50 p-2 md:p-3 text-center dark:bg-slate-800/50">
-                                    <p className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">{formatNumberWithImpact(summary?.correct_answers || 0)}</p>
-                                    <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400">Correct</p>
-                                </div>
-                                <div className="rounded-lg md:rounded-xl bg-slate-50 p-2 md:p-3 text-center dark:bg-slate-800/50">
-                                    <p className="text-xl md:text-2xl font-black text-rose-600 dark:text-rose-400">{formatNumberWithImpact(summary?.incorrect_answers || 0)}</p>
-                                    <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400">Incorrect</p>
-                                </div>
-                                <div className="rounded-lg md:rounded-xl bg-slate-50 p-2 md:p-3 text-center dark:bg-slate-800/50">
-                                    <p className="text-xl md:text-2xl font-black text-amber-600 dark:text-amber-400">{formatNumberWithImpact(summary?.skipped_questions || 0)}</p>
-                                    <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400">Skipped</p>
-                                </div>
-                            </div>
-                            <div className="mt-2 md:mt-3 flex items-center justify-between text-xs md:text-sm">
-                                <div className="flex items-center gap-3 md:gap-4">
-                                    <span className="text-slate-600 dark:text-slate-300">Accuracy: <span className="font-bold text-slate-900 dark:text-white">{Math.round(accuracy)}%</span></span>
-                                    <span className="text-slate-600 dark:text-slate-300">Mastered: <span className="font-bold text-slate-900 dark:text-white">{formatNumberWithImpact(mastered)}</span></span>
-                                </div>
-                                <span className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500">{Math.min(100, Math.round((totalAttempted / 100) * 100))}%</span>
-                            </div>
-                            <div className="relative mt-1.5 md:mt-2 h-1.5 md:h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-1000" style={{ width: `${Math.min(100, Math.round((totalAttempted / 100) * 100))}%` }} />
-                            </div>
-                        </>
-                    ) : (
-                        <div className="py-4 md:py-6 text-center">
-                            <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">No questions attempted yet</p>
-                            <p className="mt-0.5 md:mt-1 text-xs md:text-sm font-medium text-emerald-600 dark:text-emerald-400">Start practicing to track your progress →</p>
-                        </div>
+                <div className="flex items-center gap-2">
+                    {/* Silent refresh button - only shows if not loading */}
+                    {!loading && totalAttempted > 0 && (
+                        <button
+                            onClick={handleRefresh}
+                            className="p-1.5 text-gray-400 hover:text-emerald-600 dark:text-gray-500 dark:hover:text-emerald-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            title="Refresh progress"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
                     )}
+                    <button
+                        onClick={() => {
+                            tapFeedback("success");
+                            navigate("/nursing/progress");
+                        }}
+                        className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                    >
+                        View All
+                    </button>
                 </div>
             </div>
-        </button>
+
+            {loading ? (
+                <div className="space-y-3">
+                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+            ) : totalAttempted > 0 ? (
+                <>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2 text-center">
+                            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{summary?.correct_answers || 0}</p>
+                            <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Correct</p>
+                        </div>
+                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2 text-center">
+                            <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{summary?.incorrect_answers || 0}</p>
+                            <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Incorrect</p>
+                        </div>
+                        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2 text-center">
+                            <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{summary?.skipped_questions || 0}</p>
+                            <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Skipped</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-4">
+                            <span className="text-gray-600 dark:text-gray-300">Accuracy: <span className="font-bold text-gray-900 dark:text-white">{Math.round(accuracy)}%</span></span>
+                            <span className="text-gray-600 dark:text-gray-300">Mastered: <span className="font-bold text-gray-900 dark:text-white">{mastered}</span></span>
+                        </div>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{Math.min(100, Math.round((totalAttempted / 100) * 100))}%</span>
+                    </div>
+
+                    <div className="relative mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, Math.round((totalAttempted / 100) * 100))}%` }} />
+                    </div>
+                </>
+            ) : (
+                <div className="py-4 text-center">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No questions attempted yet</p>
+                    <button
+                        onClick={() => navigate("/Medrae-quizzes")}
+                        className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                    >
+                        Start practicing →
+                    </button>
+                </div>
+            )}
+        </div>
     );
 }
 

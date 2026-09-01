@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, AlertTriangle, Loader2, ChevronRight, CheckCircle, ArchiveRestore, X, BookOpen, UserX, TrendingUp, Clock, Eye, PlusCircle, ChevronLeft, Flame, Zap } from "lucide-react";
+import { Users, AlertTriangle, Loader2, ChevronRight, CheckCircle, ArchiveRestore, X, BookOpen, UserX, TrendingUp, Clock, Eye, PlusCircle, ChevronLeft, Flame, Zap, BarChart3, Target } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { GlobalLoader } from "@/components/GlobalLoader";
@@ -14,10 +14,10 @@ import { GlobalLoader } from "@/components/GlobalLoader";
 const PAGE_SIZE = 20;
 
 // Cache keys with versioning
-const MISTAKES_CACHE_KEY = "mistakesData_v5";
-const MISTAKES_VERSION_KEY = "mistakesDataVersion_v5";
-const HIDDEN_IDS_KEY = "hiddenMistakeQuestions_v5";
-const STUDENT_COUNTS_KEY = "studentCounts_v5";
+const MISTAKES_CACHE_KEY = "mistakesData_v6";
+const MISTAKES_VERSION_KEY = "mistakesDataVersion_v6";
+const HIDDEN_IDS_KEY = "hiddenMistakeQuestions_v6";
+const STUDENT_COUNTS_KEY = "studentCounts_v6";
 
 // Helper to check if data has changed
 async function checkForChanges(): Promise<boolean> {
@@ -494,36 +494,32 @@ export function MistakesCard() {
         }
 
         try {
-            const from = page * PAGE_SIZE;
-            const to = (page + 1) * PAGE_SIZE - 1;
-
+            const from = 0;
+            const to = 9999;
             const { data: mistakes, error } = await supabase
                 .from("user_mistakes")
                 .select(`
-                    user_id,
-                    question_id,
-                    times_wrong,
-                    last_wrong_at,
-                    quiz_questions (
-                        id,
-                        question_text,
-                        option_a,
-                        option_b,
-                        option_c,
-                        option_d,
-                        correct_answer,
-                        explanation,
-                        additional
-                    )
-                `)
-                .order("times_wrong", { ascending: false })
-                .range(from, to);
+        user_id,
+        question_id,
+        times_wrong,
+        last_wrong_at,
+        quiz_questions (
+            id,
+            question_text,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_answer,
+            explanation,
+            additional
+        )
+    `);
 
             if (error || !mistakes) {
                 if (isMounted.current) setHasMore(false);
                 return;
             }
-
             if (mistakes.length === 0) {
                 if (isMounted.current) setHasMore(false);
                 return;
@@ -542,13 +538,15 @@ export function MistakesCard() {
                         quiz_questions: m.quiz_questions,
                     };
                 }
-                questionMap[m.question_id].totalFails += m.times_wrong;
-                questionMap[m.question_id].uniqueStudentIds.add(m.user_id);
+                // ✅ Ensure we're adding unique user IDs correctly
+                if (m.user_id) {
+                    questionMap[m.question_id].uniqueStudentIds.add(m.user_id);
+                }
+                questionMap[m.question_id].totalFails += m.times_wrong || 1;
                 if (new Date(m.last_wrong_at) > new Date(questionMap[m.question_id].lastWrong)) {
                     questionMap[m.question_id].lastWrong = m.last_wrong_at;
                 }
             }
-
             const merged = Object.entries(questionMap).map(([question_id, val]) => {
                 newStudentCounts[question_id] = val.uniqueStudentIds.size;
                 return {
@@ -559,10 +557,14 @@ export function MistakesCard() {
                     quiz_questions: val.quiz_questions,
                 };
             });
+            merged.sort((a, b) => {
+                if (b.uniqueStudents !== a.uniqueStudents) {
+                    return b.uniqueStudents - a.uniqueStudents;
+                }
 
-            // Sort by totalFails descending (most failed first)
-            merged.sort((a, b) => b.totalFails - a.totalFails);
-
+                // If same number of students, use total failures only as a tie-breaker
+                return b.totalFails - a.totalFails;
+            });
             if (isMounted.current) {
                 setStudentCounts(prev => {
                     const updated = { ...prev, ...newStudentCounts };
@@ -573,14 +575,12 @@ export function MistakesCard() {
                 setData(prev => {
                     const existingIds = new Set(prev.map(item => item.question_id));
                     const newItems = merged.filter(item => !existingIds.has(item.question_id));
-                    let updatedData = page === 0 || isLoadMore ? [...prev, ...newItems] : merged;
-
+                    let updatedData = merged;
                     if (updatedData.length > 200) updatedData = updatedData.slice(0, 200);
                     setCachedData(MISTAKES_CACHE_KEY, updatedData);
                     return updatedData;
                 });
-
-                setHasMore(mistakes.length === PAGE_SIZE);
+                setHasMore(false);
                 lastFetchTime.current = now;
             }
         } catch (err) {
@@ -655,7 +655,15 @@ export function MistakesCard() {
                 setCachedData(cachedKey, merged);
 
                 setStudentCounts((prev) => {
-                    const updated = { ...prev, [questionId]: merged.length };
+                    const uniqueStudentCount = new Set(
+                        merged.map((student) => student.user_id).filter(Boolean)
+                    ).size;
+
+                    const updated = {
+                        ...prev,
+                        [questionId]: uniqueStudentCount
+                    };
+
                     setCachedData(STUDENT_COUNTS_KEY, updated);
                     return updated;
                 });
@@ -875,13 +883,8 @@ export function MistakesCard() {
 
     // Load more handler
     const handleLoadMore = async () => {
-        if (!loading && hasMore && !loadingMore) {
-            const nextPage = page + 1;
-            setPage(nextPage);
-            await fetchMistakes(false, true);
-        }
+        return;
     };
-
     const handleLoadMoreFromOverlay = async () => {
         if (!loadingMore && hasMore) {
             await handleLoadMore();
@@ -894,14 +897,8 @@ export function MistakesCard() {
         await fetchMistakes(true);
     };
 
-    // Get gradient based on failure count
-    const getGradient = (fails: number) => {
-        if (fails >= 10) return "from-red-600 to-red-800 dark:from-red-800 dark:to-red-950";
-        if (fails >= 5) return "from-orange-500 to-red-600 dark:from-orange-700 dark:to-red-800";
-        if (fails >= 3) return "from-amber-500 to-orange-600 dark:from-amber-700 dark:to-orange-800";
-        return "from-yellow-500 to-amber-600 dark:from-yellow-700 dark:to-amber-800";
-    };
 
+    {/* Full Screen Overlay */ }
     return (
         <>
             {/* Full Screen Overlay */}
@@ -946,12 +943,12 @@ export function MistakesCard() {
                         <div className="flex-1">
                             <CardTitle className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
                                 <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl text-red-600">
-                                    <Flame size={22} />
+                                    <BarChart3 size={22} />
                                 </div>
-                                High-Frequency Mistake Analysis
+                                Question Failure Analysis
                             </CardTitle>
                             <CardDescription className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                                Scroll horizontally to review most failed questions • Tap any card for details
+                                Most failed questions • Tap any card for details
                             </CardDescription>
                         </div>
 
@@ -982,11 +979,19 @@ export function MistakesCard() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Total Questions</p>
-                            <p className="text-xl font-black text-gray-900 dark:text-white">{totalQuestions}</p>
+                            <p className="text-xl font-black text-gray-900 dark:text-white">
+                                {totalQuestions >= 1000
+                                    ? (totalQuestions / 1000).toFixed(1) + 'K'
+                                    : totalQuestions}
+                            </p>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Failed Attempts</p>
-                            <p className="text-xl font-black text-red-600 dark:text-red-400">{totalFailedAttempts}</p>
+                            <p className="text-xl font-black text-red-600 dark:text-red-400">
+                                {totalFailedAttempts >= 1000
+                                    ? (totalFailedAttempts / 1000).toFixed(1) + 'K'
+                                    : totalFailedAttempts}
+                            </p>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Avg Failure Rate</p>
@@ -997,24 +1002,65 @@ export function MistakesCard() {
                         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Students Affected</p>
                             <p className="text-xl font-black text-blue-600 dark:text-blue-400">
-                                {Object.values(studentCounts).reduce((a, b) => a + b, 0) || 0}
+                                {(() => {
+                                    const total = Object.values(studentCounts).reduce((a, b) => a + b, 0) || 0;
+                                    return total >= 1000
+                                        ? (total / 1000).toFixed(1) + 'K'
+                                        : total;
+                                })()}
                             </p>
                         </div>
                     </div>
                 </CardHeader>
 
                 <CardContent className="p-4 md:p-6">
-                    {/* Horizontal Scroll - Facebook Stories Style */}
+                    {/* Horizontal Scroll - Facebook Story Size Cards */}
                     <div
                         ref={scrollContainerRef}
-                        className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory"
+                        className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory"
                         style={{ scrollSnapType: 'x mandatory' }}
                     >
                         {visibleData.map((item, i) => {
                             const q = item.quiz_questions;
                             if (!q) return null;
-                            const gradient = getGradient(item.totalFails);
-                            const isTopFail = i < 3;
+
+                            const getCardStyle = (index: number) => {
+                                if (index === 0) return {
+                                    bg: "bg-gradient-to-br from-red-500 to-red-700",
+                                    border: "border-0",
+                                    text: "text-white",
+                                    rank: "🥇",
+                                    rankColor: "text-yellow-300",
+                                    textShadow: "drop-shadow-lg"
+                                };
+                                if (index === 1) return {
+                                    bg: "bg-gradient-to-br from-orange-500 to-orange-700",
+                                    border: "border-0",
+                                    text: "text-white",
+                                    rank: "🥈",
+                                    rankColor: "text-gray-300",
+                                    textShadow: "drop-shadow-lg"
+                                };
+                                if (index === 2) return {
+                                    bg: "bg-gradient-to-br from-amber-500 to-amber-700",
+                                    border: "border-0",
+                                    text: "text-white",
+                                    rank: "🥉",
+                                    rankColor: "text-amber-300",
+                                    textShadow: "drop-shadow-lg"
+                                };
+                                // ✅ FIXED: Dark text for light cards
+                                return {
+                                    bg: "bg-white dark:bg-gray-900",
+                                    border: "border-0 dark:border-0",
+                                    text: "text-gray-900 dark:text-white",
+                                    rank: `#${index + 1}`,
+                                    rankColor: "text-gray-700 dark:text-gray-300",
+                                    textShadow: ""
+                                };
+                            };
+
+                            const style = getCardStyle(i);
 
                             return (
                                 <motion.div
@@ -1023,143 +1069,127 @@ export function MistakesCard() {
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.05 }}
                                     onClick={() => handleCardClick(item, i)}
-                                    className="flex-shrink-0 w-[280px] sm:w-[320px] md:w-[360px] snap-start cursor-pointer group"
+                                    className="flex-shrink-0 w-[120px] sm:w-[140px] md:w-[160px] snap-start cursor-pointer group"
                                 >
-                                    <div className={`relative h-[420px] md:h-[460px] rounded-2xl overflow-hidden bg-gradient-to-br ${gradient} shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]`}>
-                                        {/* Gradient Overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-
-                                        {/* Top Badge */}
-                                        <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-10">
-                                            <div className="flex items-center gap-2">
-                                                {isTopFail && (
-                                                    <Badge className="bg-yellow-400/90 text-black border-0 font-bold text-[10px] px-2 py-0.5">
-                                                        🔥 Top {i + 1}
-                                                    </Badge>
-                                                )}
-                                                <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/20 text-[10px] px-2 py-0.5">
-                                                    {item.totalFails}× Failed
-                                                </Badge>
-                                            </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setHiddenIds((prev) => {
-                                                        const updated = [...prev, item.question_id];
-                                                        localStorage.setItem(HIDDEN_IDS_KEY, JSON.stringify(updated));
-                                                        return updated;
-                                                    });
-                                                    setData((prev) => prev.filter((q) => q.question_id !== item.question_id));
-                                                }}
-                                                className="p-1.5 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-full transition-colors text-white/70 hover:text-white"
-                                            >
-                                                <CheckCircle size={14} />
-                                            </button>
+                                    <div className={`relative rounded-xl border-2 ${style.border} ${style.bg} shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] p-2 h-[180px] md:h-[200px] flex flex-col`}>
+                                        {/* Rank Badge - Smaller */}
+                                        <div className="flex items-center justify-between mb-0.5">
+                                            <span className={`text-lg font-black ${style.rankColor} ${style.textShadow}`}>
+                                                {style.rank}
+                                            </span>
+                                            <Badge className={`${i < 3 ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'} border-0 font-bold text-[6px] px-1 py-0.5`}>
+                                                {item.totalFails}×
+                                            </Badge>
                                         </div>
 
-                                        {/* Content */}
-                                        <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                                            {/* Question Text */}
-                                            <p className="text-white font-bold text-sm md:text-base leading-snug line-clamp-3 mb-3 drop-shadow-lg">
-                                                {q.question_text}
+                                        {/* Question Number - Smaller */}
+                                        <div className="flex-1 flex flex-col items-center justify-center">
+                                            <div className={`text-3xl font-black ${i < 3 ? 'text-white/90 drop-shadow-lg' : 'text-gray-800 dark:text-white'}`}>
+                                                #{i + 1}
+                                            </div>
+                                            <p className={`text-[8px] font-medium ${i < 3 ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'} mt-0.5 text-center`}>
+                                                Most Failed
                                             </p>
+                                        </div>
 
-                                            {/* Answer Preview - Compact */}
-                                            <div className="space-y-1.5 mb-4">
-                                                {["A", "B", "C", "D"].map((key) => {
-                                                    const isCorrect = key === q.correct_answer;
-                                                    return (
-                                                        <div
-                                                            key={key}
-                                                            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] ${isCorrect
-                                                                ? "bg-green-500/30 backdrop-blur-sm border border-green-400/30"
-                                                                : "bg-white/10 backdrop-blur-sm border border-white/5"
-                                                                }`}
-                                                        >
-                                                            <span className={`text-[8px] font-black ${isCorrect ? "text-green-300" : "text-white/50"
-                                                                }`}>
-                                                                {key}.
-                                                            </span>
-                                                            <span className="truncate text-white/80 flex-1">
-                                                                {q[`option_${key.toLowerCase()}`]?.substring(0, 20) || "—"}
-                                                            </span>
-                                                            {isCorrect && <CheckCircle size={10} className="text-green-400 shrink-0" />}
-                                                        </div>
-                                                    );
-                                                })}
+                                        {/* Stats - Smaller */}
+                                        <div className="space-y-1 mt-auto">
+                                            <div className={`flex items-center justify-between ${i < 3 ? 'bg-white/10 text-white' : 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300'} rounded-md px-1.5 py-1`}>
+                                                <div className="flex items-center gap-1">
+                                                    <Users size={8} className={i < 3 ? 'text-white/70' : 'text-gray-400'} />
+                                                    <span className="text-[8px] font-bold">{item.uniqueStudents}</span>
+                                                </div>
+                                                <span className={`text-[6px] ${i < 3 ? 'text-white/60' : 'text-gray-400'}`}>Students</span>
                                             </div>
-
-                                            {/* Footer Stats */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-1.5 text-white/70 text-[10px]">
-                                                        <Users size={12} />
-                                                        <span className="font-bold">{item.uniqueStudents}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 text-white/70 text-[10px]">
-                                                        <Clock size={12} />
-                                                        <span className="font-bold">
-                                                            {item.lastWrong ? formatDistanceToNow(new Date(item.lastWrong)) : "N/A"}
-                                                        </span>
-                                                    </div>
+                                            <div className={`flex items-center justify-between ${i < 3 ? 'bg-white/10 text-white' : 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300'} rounded-md px-1.5 py-1`}>
+                                                <div className="flex items-center gap-1">
+                                                    <Clock size={8} className={i < 3 ? 'text-white/70' : 'text-gray-400'} />
+                                                    <span className="text-[6px] font-medium truncate max-w-[40px]">
+                                                        {item.lastWrong ? formatDistanceToNow(new Date(item.lastWrong)) : "N/A"}
+                                                    </span>
                                                 </div>
-                                                <div className="flex items-center gap-1 text-white/80 group-hover:gap-2 transition-all">
-                                                    <span className="text-[10px] font-bold">Tap to view</span>
-                                                    <Eye size={14} />
-                                                </div>
+                                                <span className={`text-[6px] ${i < 3 ? 'text-white/60' : 'text-gray-400'}`}>Last</span>
                                             </div>
                                         </div>
 
-                                        {/* Gradient Accent Line */}
-                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 opacity-50" />
+                                        {/* Footer - Smaller */}
+                                        <div className={`flex items-center justify-between mt-1 pt-1 border-t ${i < 3 ? 'border-white/10' : 'border-gray-200 dark:border-gray-700'}`}>
+                                            <span className={`text-[6px] ${i < 3 ? 'text-white/60' : 'text-gray-400'}`}>
+                                                {item.uniqueStudents}
+                                            </span>
+                                            <div className={`flex items-center gap-0.5 ${i < 3 ? 'text-white/80' : 'text-blue-600 dark:text-blue-400'} group-hover:gap-1 transition-all`}>
+                                                <span className="text-[6px] font-bold">Details</span>
+                                                <ChevronRight size={8} />
+                                            </div>
+                                        </div>
+
+                                        {/* Hide button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setHiddenIds((prev) => {
+                                                    const updated = [...prev, item.question_id];
+                                                    localStorage.setItem(HIDDEN_IDS_KEY, JSON.stringify(updated));
+                                                    return updated;
+                                                });
+                                                setData((prev) => prev.filter((q) => q.question_id !== item.question_id));
+                                            }}
+                                            className={`absolute top-2 right-2 p-1 rounded-full ${i < 3 ? 'bg-white/20 hover:bg-white/30 text-white/60 hover:text-white' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600'} transition-colors`}
+                                        >
+                                            <CheckCircle size={12} />
+                                        </button>
                                     </div>
                                 </motion.div>
                             );
                         })}
 
                         {/* Load More Card */}
-                        {hasMore && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="flex-shrink-0 w-[280px] sm:w-[320px] md:w-[360px] snap-start"
-                            >
-                                <div
-                                    onClick={handleLoadMore}
-                                    className="h-[420px] md:h-[460px] rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-pointer group"
+                        {
+                            hasMore && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="flex-shrink-0 w-[120px] sm:w-[140px] md:w-[160px] snap-start"
                                 >
-                                    {(loading || loadingMore) ? (
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="animate-spin text-blue-600" size={32} />
-                                            <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Loading...</p>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="p-4 bg-blue-100 dark:bg-blue-900/30 rounded-full group-hover:scale-110 transition-transform">
-                                                <PlusCircle size={32} className="text-blue-600 dark:text-blue-400" />
+                                    <div
+                                        onClick={handleLoadMore}
+                                        className="h-[180px] md:h-[200px] rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-gray-800/30 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-pointer group p-2"
+                                    >
+                                        {(loading || loadingMore) ? (
+                                            <div className="flex flex-col items-center gap-3">
+                                                <Loader2 className="animate-spin text-blue-600" size={28} />
+                                                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Loading...</p>
                                             </div>
-                                            <p className="mt-3 text-sm font-bold text-gray-600 dark:text-gray-400">Load More</p>
-                                            <p className="text-[10px] text-gray-400">{visibleData.length} loaded</p>
-                                        </>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
+                                        ) : (
+                                            <>
+                                                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full group-hover:scale-110 transition-transform">
+                                                    <PlusCircle size={28} className="text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <p className="mt-2 text-xs font-bold text-gray-600 dark:text-gray-400">Load More</p>
+                                                <p className="text-[9px] text-gray-400">{visibleData.length} loaded</p>
+                                            </>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )
+                        }
 
                         {/* End Card */}
-                        {!hasMore && visibleData.length > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="flex-shrink-0 w-[280px] sm:w-[320px] md:w-[360px] snap-start"
-                            >
-                                <div className="h-[420px] md:h-[460px] rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-2 border-green-400/30 flex flex-col items-center justify-center">
-                                    <CheckCircle size={48} className="text-green-500 mb-3" />
-                                    <p className="text-lg font-bold text-green-600 dark:text-green-400">All Caught Up!</p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{visibleData.length} questions analyzed</p>
-                                </div>
-                            </motion.div>
-                        )}
+                        {
+                            !hasMore && visibleData.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="flex-shrink-0 w-[120px] sm:w-[140px] md:w-[160px] snap-start"
+                                >
+                                    <div className="h-[180px] md:h-[200px] rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-green-200 dark:border-green-800/30 flex flex-col items-center justify-center p-2">
+                                        <CheckCircle size={40} className="text-green-500 mb-2" />
+                                        <p className="text-base font-bold text-green-600 dark:text-green-400">All Done!</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">{visibleData.length} questions</p>
+                                    </div>
+                                </motion.div>
+                            )
+                        }
                     </div>
 
                     {/* Scroll Indicator */}
@@ -1181,7 +1211,6 @@ export function MistakesCard() {
                     )}
                 </CardContent>
             </Card>
-
             {/* Student Details Dialog */}
             {openStudentsDialog && (
                 <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setOpenStudentsDialog(false)}>

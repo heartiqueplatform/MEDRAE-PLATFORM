@@ -955,7 +955,7 @@ export default function StudentDashboard() {
         <FeedSeenTop10 />
 
         {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}
-        <div className="fixed bottom-28 right-5 z-40">
+        <div className="fixed bottom-14 right-5 z-40">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
