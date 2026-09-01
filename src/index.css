@@ -1,0 +1,769 @@
+/* ========================================
+   FONT FACES
+   ======================================== */
+@font-face {
+  font-family: 'Kunst Grotesk';
+  src: url('/fonts/Kunst-Grotesk-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kunst Grotesk';
+  src: url('/fonts/Kunst-Grotesk-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ========================================
+   TAILWIND
+   ======================================== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   MEDRAE SCHOLAR DESIGN SYSTEM - MEDICAL THEME
+   ======================================== */
+@layer base {
+  :root {
+    /* Medical Blue & Healthcare Theme */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 27%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    /* Medical Trust Blue */
+    --primary: 200 95% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 200 95% 85%;
+    --primary-glow: 200 95% 75%;
+
+    /* Warm Medical Secondary */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 25% 27%;
+
+    /* Soft Medical Muted */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Healing Accent Green */
+    --accent: 150 60% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Medical Emergency Red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Soft Medical Borders */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 200 95% 40%;
+
+    /* Professional Gradients */
+    --gradient-medical: linear-gradient(135deg, hsl(200 95% 40%), hsl(200 95% 55%));
+    --gradient-healing: linear-gradient(135deg, hsl(150 60% 50%), hsl(180 55% 45%));
+    --gradient-warm: linear-gradient(135deg, hsl(25 85% 85%), hsl(35 90% 90%));
+    --gradient-hero: linear-gradient(135deg, hsl(200 95% 40%) 0%, hsl(200 95% 55%) 50%, hsl(150 60% 50%) 100%);
+
+    /* Professional Shadows */
+    --shadow-medical: 0 10px 30px -10px hsl(200 95% 40% / 0.3);
+    --shadow-soft: 0 4px 20px -4px hsl(215 25% 27% / 0.1);
+    --shadow-glow: 0 0 40px hsl(200 95% 75% / 0.4);
+
+    /* Smooth Medical Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark Medical Theme */
+    --background: 215 28% 8%;
+    --foreground: 210 40% 95%;
+
+    --card: 215 25% 12%;
+    --card-foreground: 210 40% 95%;
+
+    --popover: 215 25% 12%;
+    --popover-foreground: 210 40% 95%;
+
+    /* Bright Medical Blue for Dark */
+    --primary: 200 95% 60%;
+    --primary-foreground: 215 28% 8%;
+    --primary-light: 200 95% 25%;
+    --primary-glow: 200 95% 35%;
+
+    --secondary: 215 25% 16%;
+    --secondary-foreground: 210 40% 95%;
+
+    --muted: 215 25% 16%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 150 60% 55%;
+    --accent-foreground: 215 28% 8%;
+
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 215 28% 8%;
+
+    --border: 215 25% 20%;
+    --input: 215 25% 20%;
+    --ring: 200 95% 60%;
+
+    /* Dark Mode Gradients */
+    --gradient-medical: linear-gradient(135deg, hsl(200 95% 60%), hsl(200 95% 75%));
+    --gradient-healing: linear-gradient(135deg, hsl(150 60% 55%), hsl(180 55% 50%));
+    --gradient-warm: linear-gradient(135deg, hsl(25 70% 25%), hsl(35 75% 30%));
+    --gradient-hero: linear-gradient(135deg, hsl(200 95% 60%) 0%, hsl(200 95% 75%) 50%, hsl(150 60% 55%) 100%);
+
+    /* Dark Shadows */
+    --shadow-medical: 0 10px 30px -10px hsl(200 95% 60% / 0.4);
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 40px hsl(200 95% 60% / 0.3);
+
+    --sidebar-background: 215 28% 8%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    font-family: "Kunst Grotesk", "Poppins", sans-serif;
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ========================================
+   NATIVE APP LOCK - Prevents mobile jitter
+   ======================================== */
+html,
+body,
+#root {
+  height: 100dvh;
+  /* Dynamic height to handle address bar */
+  width: 100%;
+  margin: 0;
+  padding: 0;
+
+  /* Anchors the app to the screen */
+  background-color: hsl(var(--background));
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s;
+  /* Smooth theme switch */
+}
+
+/* Dark mode media query for instant load */
+@media (prefers-color-scheme: dark) {
+
+  html,
+  body,
+  #root {
+    background-color: hsl(215, 28%, 8%);
+  }
+}
+
+/* Allow ONLY the dashboard content to scroll */
+[data-scroll-container] {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Smooth iOS scrolling */
+}
+
+/* Fix for the medical doodle background */
+.MedicalDoodles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ========================================
+   PAGE ANIMATIONS
+   ======================================== */
+.page {
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   SCROLLBAR UTILITIES
+   ======================================== */
+
+/* HIDE SCROLLBAR - For when you want no scrollbar at all */
+.hide-scrollbar,
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE & Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
+}
+
+/* CUSTOM SCROLLBAR - For when you want a styled scrollbar */
+.custom-scrollbar {
+  -ms-overflow-style: auto;
+  /* IE & Edge */
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+/* Webkit (Chrome, Safari, Opera) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
+}
+
+/* Remove default scrollbar buttons */
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Dark mode support for custom scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Hide scrollbar on the whole page but keep scrolling */
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* ========================================
+   BOUNCE & TYPING ANIMATIONS
+   ======================================== */
+@keyframes bounce {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+
+  40% {
+    transform: scale(1);
+  }
+}
+
+.animate-bounceDelay {
+  animation: bounce 1.2s infinite;
+}
+
+.animate-bounceDelay200 {
+  animation: bounce 1.2s infinite 0.2s;
+}
+
+.animate-bounceDelay400 {
+  animation: bounce 1.2s infinite 0.4s;
+}
+
+@keyframes typing-bubble-float {
+
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-5px);
+  }
+}
+
+.typing-bubble-float1 {
+  animation: typing-bubble-float 1.2s infinite;
+}
+
+.typing-bubble-float2 {
+  animation: typing-bubble-float 1.2s infinite 0.2s;
+}
+
+.typing-bubble-float3 {
+  animation: typing-bubble-float 1.2s infinite 0.4s;
+}
+
+/* ========================================
+   FLOAT ANIMATIONS
+   ======================================== */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes float-button {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes float-delayed {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 2s ease-in-out infinite;
+}
+
+.float-button {
+  animation: float-button 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 7s ease-in-out infinite 2s;
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite 4s;
+}
+
+/* ========================================
+   ZOOM POPUP
+   ======================================== */
+.zoom-popup {
+  animation: zoomInOut 0.7s ease forwards;
+}
+
+@keyframes zoomInOut {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   FLOATING QUICK ACTIONS
+   ======================================== */
+@keyframes quickActionsDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes quickActionsFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+.quick-actions-dropdown {
+  animation: quickActionsDrop 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top right;
+  will-change: transform, opacity;
+}
+
+.quick-actions-item {
+  animation: quickActionsDrop 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .quick-actions-dropdown,
+  .quick-actions-item {
+    animation: none;
+  }
+}
+
+/* ========================================
+   MODAL ANIMATIONS
+   ======================================== */
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-overlay {
+  animation: overlayFadeIn 0.25s ease-out forwards;
+}
+
+@keyframes slideUpFade {
+  from {
+    transform: translateY(40px) scale(0.96);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUpFade 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* ========================================
+   PULSE & POP ANIMATIONS
+   ======================================== */
+@keyframes pulse-sentence {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-sentence {
+  display: inline-block;
+  animation: pulse-sentence 1.2s ease-in-out infinite;
+}
+
+@keyframes number-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.3);
+    color: #f87171;
+  }
+
+  100% {
+    transform: scale(1);
+    color: inherit;
+  }
+}
+
+.animate-number-pop {
+  animation: number-pop 0.6s ease-in-out;
+  display: inline-block;
+}
+
+.fade-transition {
+  transition: opacity 0.4s;
+}
+
+/* ========================================
+   SLOW BLINK
+   ======================================== */
+@keyframes slowBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.slow-blink {
+  animation: slowBlink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+
+  0%,
+  50%,
+  100% {
+    opacity: 1;
+  }
+
+  25%,
+  75% {
+    opacity: 0;
+  }
+}
+
+.animate-blink {
+  display: inline-block;
+  animation: blink 1s infinite;
+}
+
+/* ========================================
+   GLOW EFFECTS
+   ======================================== */
+.glow-text {
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.8), 0 0 16px rgba(59, 130, 246, 0.6);
+  color: #1e3a8a;
+}
+
+.dark .glow-text {
+  color: #ffffff;
+}
+
+.hover\:glow-effect:hover {
+  box-shadow: 0 0 8px 2px #4ade80, 0 0 16px 4px #22d3ee;
+  border-radius: 12px;
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.mistake-card-glow {
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.mistake-card-glow:hover {
+  box-shadow: 0 0 12px 3px #22d3ee, 0 0 24px 6px #4ade80;
+}
+
+/* ========================================
+   RAINBOW BORDER
+   ======================================== */
+.rainbow-border {
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+  background-size: 400% 400%;
+  display: inline-block;
+}
+
+.animate-rainbow-glow {
+  animation: rainbow-glow 3s linear infinite;
+}
+
+@keyframes rainbow-glow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ========================================
+   BUBBLE ANIMATION
+   ======================================== */
+.bubble {
+  position: absolute;
+  bottom: 0;
+  background-color: #ff3b30;
+  border-radius: 50%;
+  opacity: 0.7;
+  animation-name: rise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: 1;
+  pointer-events: none;
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: translateY(-20px) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-80px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   SHIMMER
+   ======================================== */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* ========================================
+   TEXT SELECTION DISABLE
+   ======================================== */
+.dashboard-no-select,
+.dashboard-no-select * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+html,
+body,
+#root,
+#root * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Allow selection for interactive elements */
+input,
+textarea,
+select,
+button,
+code,
+pre {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}

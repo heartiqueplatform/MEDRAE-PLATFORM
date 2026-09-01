@@ -1,0 +1,36 @@
+{
+  "appId": "com.medrae.app",
+  "productName": "Medrae Nursing",
+  "directories": {
+    "buildResources": "assets"
+  },
+  "files": [
+    "assets/**/*",
+    "build/**/*",
+    "capacitor.config.*",
+    "app/**/*"
+  ],
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "heartiqueplatform",
+      "repo": "MEDRAE-PLATFORM"
+    }
+  ],
+  "nsis": {
+    "oneClick": true,
+    "allowToChangeInstallationDirectory": false,
+    "deleteAppDataOnUninstall": true,
+    "publish": [
+      "github"
+    ]
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "assets/appIcon.ico"
+  },
+  "mac": {
+    "category": "public.app-category.education",
+    "target": "dmg"
+  }
+}

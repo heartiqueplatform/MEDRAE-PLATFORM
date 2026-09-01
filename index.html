@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- ============================================ -->
+  <!-- PWA & MANIFEST - FIXED -->
+  <!-- ============================================ -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/favicon.png" />
+
+  <meta charset="UTF-8" />
+  <meta name="google-site-verification" content="Wkyzq63VRTwSni_NDPpyjJZheCXZq4B3kyo3hdXchG0" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+
+  <style>
+    /* This stops the white flash by making the page background
+       match your app theme immediately */
+    :root {
+      --bg-color: #ffffff;
+      /* Default light */
+    }
+
+    /* If the user has dark mode, make it black immediately */
+    .dark {
+      --bg-color: #000000;
+    }
+
+    html,
+    body {
+      background-color: var(--bg-color);
+      margin: 0;
+      padding: 0;
+
+      /* Stops scrolling while loading */
+    }
+
+    #initial-loader {
+      background-color: var(--bg-color);
+    }
+  </style>
+
+  <!-- ============================================ -->
+  <!-- PRIMARY SEO - #1 SELLING POINT: 6k+ NCK Questions by Unit & Condition -->
+  <!-- ============================================ -->
+  <title>Medrae Nursing | 6k+ NCK Questions by Unit • Targeted Revision • Weak Area Focus • AI Algorithm • 15k+ KRCHN
+    Revison Questions •
+    Clinical Assessment • Mental Wellness | Kenya</title>
+  <meta name="description"
+    content="🇰🇪 Kenya's #1 NCK exam prep: 6,000+ NCK-specific questions organized by unit & condition. Jump directly to your weak areas. AI performance prediction (95% accuracy). Clinical Assessment Suite with AI tutor. Complete KRCHN curriculum: 80 modules, 1k+ topics. DigiProctor practice. Mental wellness support. 2,231+ nursing students trust Medrae." />
+  <meta name="author" content="Medrae Nursing Team" />
+  <meta name="keywords"
+    content="NCK questions by unit, NCK revision by condition, targeted NCK revision, NCK weak area focus, 6000 NCK practice questions, NCK exam preparation Kenya, FQE exam Kenya, KRCHN nursing curriculum, AI nursing tutor, clinical reasoning practice, nursing clinical scenarios, patient safety nursing, NCK practice questions, nursing notes Kenya, nursing videos no ads, DigiProctor practice NCK, NCK mock exams, nursing clinical rotations Kenya, survival hub nursing, hospital placements Kenya, Nursmartt, NCK exam preparation, nursing students Kenya, Medrae algorithm, clinical assessment nursing, emotional check-in nursing students, mental health nursing students Kenya" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://medrae.com/" />
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://ypgkpecnfziptpmwsdud.supabase.co" />
+  <link rel="dns-prefetch" href="https://ypgkpecnfziptpmwsdud.supabase.co" />
+
+  <!-- Enable back-forward cache for instant navigation -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <!-- ============================================ -->
+  <!-- 🏆 FEATURE 1: 6k+ NCK Questions by Unit & Condition -->
+  <!-- ============================================ -->
+  <meta name="nck:total_questions" content="6,000+" />
+  <meta name="nck:organized_by_unit" content="Questions organized by nursing units for targeted revision" />
+  <meta name="nck:organized_by_condition" content="Questions organized by medical conditions for focused practice" />
+  <meta name="nck:weak_area_focus" content="Jump directly to your weak areas based on AI performance analysis" />
+  <meta name="nck:targeted_revision" content="Practice only the units and conditions you need to improve" />
+  <meta name="nck:unit_coverage"
+    content="Covers all KRCHN units: Fundamentals, Anatomy, Pharmacology, Medical-Surgical, Pediatric, Maternal Health, Mental Health, Community Health, and more" />
+  <meta name="nck:condition_coverage"
+    content="Covers all common NCK conditions: Hypertension, Diabetes, Pneumonia, HIV/AIDS, Tuberculosis, Malaria, and 200+ more" />
+  <meta name="nck:question_types"
+    content="Multiple choice questions (MCQs), Clinical scenarios, Critical thinking questions, Patient safety questions" />
+  <meta name="nck:difficulty_levels"
+    content="Beginner, Intermediate, Advanced, Expert - progressively challenging questions" />
+
+  <!-- ============================================ -->
+  <!-- 🧠 FEATURE 2: AI Algorithm & NCK Progress -->
+  <!-- ============================================ -->
+  <meta name="nck:ai_prediction" content="AI-powered algorithm predicts your NCK exam readiness with 95% accuracy" />
+  <meta name="nck:progress_tracking"
+    content="Real-time progress tracking with star ratings, unit completion, and performance analytics" />
+  <meta name="nck:weak_unit_detection"
+    content="Automatically detect your weakest units and prioritize them in your study plan" />
+  <meta name="nck:performance_analytics"
+    content="Detailed analytics showing unit scores, trends, and improvement areas" />
+  <meta name="nck:readiness_score" content="Overall NCK readiness score with High/Medium/Low levels" />
+  <meta name="nck:personalized_recommendations"
+    content="Get specific, actionable recommendations on which units to focus on" />
+
+  <!-- ============================================ -->
+  <!-- 🩺 FEATURE 3: Clinical Assessment Suite -->
+  <!-- ============================================ -->
+  <meta name="clinical:assessment_count" content="24+" />
+  <meta name="clinical:scenario_types"
+    content="Clinical Scenarios, Critical Thinking, Patient Assessment, Patient Safety" />
+  <meta name="clinical:ai_tutor"
+    content="AI-powered nursing tutor provides instant feedback with explanations, missing keywords, and clinical references" />
+  <meta name="clinical:practice_mode" content="Timed practice, NCK-style questions, real clinical scenarios" />
+  <meta name="clinical:tracking" content="Performance tracking, score monitoring, progress analytics" />
+  <meta name="clinical:features"
+    content="Real-time AI feedback, Clinical reasoning development, Patient safety focus, NCK exam simulation" />
+  <meta name="clinical:feedback_type"
+    content="Instant feedback with detailed explanations, missing keywords identification, clinical references, and mnemonics" />
+
+  <!-- ============================================ -->
+  <!-- 📚 FEATURE 4: Complete KRCHN Curriculum -->
+  <!-- ============================================ -->
+  <meta name="curriculum:program" content="KRCHN (Kenya Registered Community Health Nursing)" />
+  <meta name="curriculum:council" content="NCK (Nursing Council of Kenya)" />
+  <meta name="curriculum:total_questions" content="15,400+" />
+  <meta name="curriculum:total_topics" content="1,000+" />
+  <meta name="curriculum:total_modules" content="80" />
+  <meta name="curriculum:total_module_units" content="400+" />
+  <meta name="curriculum:total_years" content="3" />
+  <meta name="curriculum:total_semesters" content="6" />
+  <meta name="curriculum:structure" content="Year → Semester → Module → Module Unit → Topic → Questions" />
+  <meta name="curriculum:year1"
+    content="18 modules Semester 1, 22 modules Semester 2 - Foundations of Nursing, Anatomy and Physiology, Fundamentals of Nursing I & II, Microbiology and Parasitology, Psychology, Maternal and Newborn Health, Community Health Nursing I, Pharmacology I, Medical-Surgical Nursing I, and clinical practicums" />
+  <meta name="curriculum:year2"
+    content="13 modules Semester 1, 11 modules Semester 2 - Pharmacology II, Medical-Surgical Nursing II, Pediatric Nursing & IMCI, Mental and Psychiatric Health Nursing, Orthopedic Nursing, Endocrinological Nursing, ENT Nursing, Ophthalmic Nursing, Perioperative Nursing, Palliative Care, Gynaecology, Research, Community Strategy" />
+  <meta name="curriculum:year3"
+    content="9 modules Semester 1, 7 clinical practicums Semester 2 - Teaching Methodology, Neurological Nursing, Dermatological Nursing, Gerontological Nursing, Epidemiology, Communicable Diseases, Health Systems Management, and intensive clinical practicums" />
+  <meta name="curriculum:features"
+    content="NCK revision questions, FQE revision questions, nursing notes, curated YouTube videos no ads, topic-by-topic learning, AI performance prediction, Clinical Assessment" />
+  <meta name="curriculum:resources"
+    content="Questions, Explanations, Mnemonics, Clinical Pearls, Simplified Explanations, Notes, YouTube Videos, Clinical Scenarios" />
+
+  <!-- ============================================ -->
+  <!-- 🎯 FEATURE 5: DigiProctor Practice -->
+  <!-- ============================================ -->
+  <meta name="digiproctor:practice_mode" content="Full NCK exam simulation with 75 questions in 60 minutes" />
+  <meta name="digiproctor:interface" content="Real NCK exam interface with question navigation and flagging" />
+  <meta name="digiproctor:pressure_testing" content="Pressure testing with progressively challenging questions" />
+  <meta name="digiproctor:instant_results" content="Instant performance analysis with unit-by-unit breakdown" />
+  <meta name="digiproctor:anxiety_reduction"
+    content="Build confidence and eliminate exam anxiety through realistic practice" />
+
+  <!-- ============================================ -->
+  <!-- ❤️ FEATURE 6: Mental Wellness Support -->
+  <!-- ============================================ -->
+  <meta name="wellness:daily_checkin"
+    content="Daily emotional check-in for nursing students to share feelings and maintain mental wellness" />
+  <meta name="wellness:community_support"
+    content="Community support from 2,231+ nursing students who understand the journey" />
+  <meta name="wellness:anonymous_posting" content="Post feelings anonymously to share openly without judgment" />
+  <meta name="wellness:stress_management" content="Stress management tools to reduce exam anxiety and improve focus" />
+  <meta name="wellness:streak_tracking"
+    content="Track daily study consistency with motivational messages and streak counting" />
+  <meta name="wellness:emotional_intelligence"
+    content="Build emotional intelligence through naming and processing feelings" />
+
+  <!-- ============================================ -->
+  <!--  FEATURE 7: YouTube Videos No Ads -->
+  <!-- ============================================ -->
+  <meta name="videos:total_count" content="3,000+" />
+  <meta name="videos:curated" content="Curated educational nursing videos organized by topic" />
+  <meta name="videos:no_ads" content="No ads for distraction-free learning" />
+  <meta name="videos:topics" content="Covers all KRCHN topics with expert nursing educators" />
+
+  <!-- ============================================ -->
+  <!--  FEATURE 8: Survival Hub & Community -->
+  <!-- ============================================ -->
+  <meta name="survival_hub:exam_centers" content="Connect with peers based on exam centers with housing options" />
+  <meta name="survival_hub:hospital_placements" content="Hospital placement board for clinical rotations" />
+  <meta name="survival_hub:nursmartt" content="Nursmartt marketplace for secondhand nursing items" />
+  <meta name="survival_hub:community" content="Community of 2,231+ nursing students supporting each other" />
+
+  <!-- ============================================ -->
+  <!-- FEATURE 9: Institutional & Tutor Tools -->
+  <!-- ============================================ -->
+  <meta name="institutional:exam_hosting"
+    content="Institutional exam hosting with DigiProctor-style proctoring - Coming December 2026" />
+  <meta name="institutional:tutor_dashboard"
+    content="Tutor dashboard to set exams and release results within 12 hours with one click" />
+  <meta name="institutional:cat_management"
+    content="Upload revision questions, CATs, assignments, mock exams, and internal assessments" />
+  <meta name="institutional:automated_marking"
+    content="Fully digitized and automatically tracked with results released in 12 hours" />
+
+  <!-- ============================================ -->
+  <!-- OPEN GRAPH / FACEBOOK -->
+  <!-- ============================================ -->
+  <meta property="og:title"
+    content="Medrae - 6k+ NCK Questions by Unit • AI Algorithm • Clinical Assessment • KRCHN • Mental Wellness" />
+  <meta property="og:description"
+    content="🇰🇪 Kenya's #1 NCK exam prep: 6,000+ NCK-specific questions organized by unit & condition. Jump directly to your weak areas. AI algorithm (95% accuracy). Clinical Assessment Suite with AI tutor. Complete KRCHN curriculum. DigiProctor practice. Mental wellness. Join 2,231+ nursing students." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://medrae.com/" />
+  <meta property="og:image" content="https://medrae.com/assets/og-image.png" />
+  <meta property="og:site_name" content="Medrae Nursing - NCK Exam Prep & Wellness Platform" />
+  <meta property="og:locale" content="en_KE" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@medraenursing" />
+  <meta name="twitter:title"
+    content="Medrae - 6k+ NCK Questions by Unit • AI Algorithm • Clinical Assessment • Mental Wellness" />
+  <meta name="twitter:description"
+    content="6,000+ NCK-specific questions organized by unit & condition. Jump to weak areas. AI algorithm (95% accuracy). Clinical Assessment Suite. Join 2,231+ students." />
+  <meta name="twitter:image" content="https://medrae.com/assets/og-image.png" />
+
+  <!-- ============================================ -->
+  <!-- PWA THEME COLORS - FIXED -->
+  <!-- ============================================ -->
+  <meta name="theme-color" content="#4ade80" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Medrae Nursing" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- ============================================ -->
+  <!-- iOS SPLASH SCREENS - ADDED -->
+  <!-- ============================================ -->
+  <link rel="apple-touch-startup-image" href="/splash-iphone5.png"
+    media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+  <link rel="apple-touch-startup-image" href="/splash-iphone6.png"
+    media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+  <link rel="apple-touch-startup-image" href="/splash-iphoneplus.png"
+    media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+  <link rel="apple-touch-startup-image" href="/splash-iphonex.png"
+    media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+  <link rel="apple-touch-startup-image" href="/splash-iphonexr.png"
+    media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
+  <link rel="apple-touch-startup-image" href="/splash-iphonexsmax.png"
+    media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+  <link rel="apple-touch-startup-image" href="/splash-ipad.png"
+    media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)">
+  <link rel="apple-touch-startup-image" href="/splash-ipadpro.png"
+    media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
+
+  <!-- Brand Tagline -->
+  <meta name="brand:tagline" content="Where Your Mind Meets Your Nursing Career ❤️" />
+  <meta name="brand:mission" content="Supporting nursing students' exam success AND mental health in Kenya" />
+
+  <!-- ============================================ -->
+  <!-- SCHEMA.ORG / JSON-LD - ALL FEATURES -->
+  <!-- ============================================ -->
+
+  <!-- FEATURE 1: 6k+ NCK Questions by Unit & Condition Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Medrae NCK Question Bank - 6,000+ Questions by Unit & Condition",
+      "description": "Access 6,000+ NCK-specific practice questions organized by nursing unit and medical condition. Jump directly to your weak areas based on AI performance analysis. Targeted revision for maximum exam success. Questions cover all KRCHN units and 200+ conditions.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "All",
+      "featureList": [
+        "6,000+ NCK-specific questions",
+        "Organized by nursing unit",
+        "Organized by medical condition",
+        "Jump directly to weak areas",
+        "AI-powered weak area detection",
+        "Targeted revision",
+        "Unit-by-unit practice",
+        "Condition-based practice",
+        "Performance analytics",
+        "Progress tracking",
+        "Difficulty progression",
+        "Beginner to Expert levels"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "199",
+        "priceCurrency": "KES",
+        "availability": "https://schema.org/InStock"
+      },
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "nursing student"
+      }
+    }
+  </script>
+
+  <!--  FEATURE 2: AI Algorithm & NCK Progress Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Medrae AI NCK Performance Prediction",
+      "description": "Medrae's proprietary AI algorithm analyzes your practice data to predict NCK exam readiness with 95% accuracy. Track unit-by-unit performance, identify strengths and weaknesses, and get personalized study recommendations. Automatically detects your weakest units and prioritizes them.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "All",
+      "featureList": [
+        "Real-time NCK score prediction (95% accuracy)",
+        "Weak area detection",
+        "Unit-by-unit performance tracking",
+        "Personalized study recommendations",
+        "Trend analysis",
+        "Readiness scoring (High/Medium/Low)",
+        "Confidence metrics",
+        "Star ratings for each unit",
+        "Progress analytics dashboard",
+        "Historical performance tracking",
+        "Strength and weakness identification"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "199",
+        "priceCurrency": "KES",
+        "availability": "https://schema.org/InStock"
+      },
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "nursing student"
+      }
+    }
+  </script>
+
+  <!-- 🩺 FEATURE 3: Clinical Assessment Suite Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Medrae Clinical Assessment Suite",
+      "description": "Practice real clinical scenarios with AI-powered nursing tutor feedback. 24+ clinical assessments covering patient safety, clinical reasoning, and decision-making. Get instant feedback with explanations, missing keywords identification, and clinical references.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "All",
+      "featureList": [
+        "24+ clinical scenarios",
+        "AI-powered nursing tutor",
+        "Instant feedback with explanations",
+        "Missing keywords identification",
+        "Clinical references",
+        "Performance tracking",
+        "Score analytics",
+        "Progress monitoring",
+        "Patient safety focus",
+        "Clinical reasoning development",
+        "Decision-making skills",
+        "Realistic patient cases"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "199",
+        "priceCurrency": "KES",
+        "availability": "https://schema.org/InStock"
+      },
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "nursing student"
+      }
+    }
+  </script>
+
+  <!-- FEATURE 4: Complete KRCHN Curriculum Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "Medrae KRCHN Curriculum",
+      "description": "Complete KRCHN nursing curriculum with 80 modules, 1k+ topics, and 15k+ NCK & FQE revision questions. Organized by Year (1-3), Semester (1-6), Module, Module Unit, Topic, and Questions. Follows the official Nursing Council of Kenya (NCK) syllabus.",
+      "curriculum": {
+        "@type": "Curriculum",
+        "name": "KRCHN Nursing Program",
+        "programLevel": "Diploma",
+        "numberOfYears": "3",
+        "numberOfSemesters": "6",
+        "numberOfModules": "80",
+        "numberOfTopics": "1000+",
+        "numberOfQuestions": "15400+",
+        "council": "Nursing Council of Kenya (NCK)",
+        "year1": "18 modules Semester 1, 22 modules Semester 2 - Foundations, Anatomy, Fundamentals, Microbiology, Psychology, Maternal Health, Community Health",
+        "year2": "13 modules Semester 1, 11 modules Semester 2 - Pharmacology II, Medical-Surgical, Pediatric, Mental Health, Orthopedic, ENT, Ophthalmic",
+        "year3": "9 modules Semester 1, 7 clinical practicums Semester 2 - Neurology, Dermatology, Gerontology, Epidemiology, Health Systems Management"
+      }
+    }
+  </script>
+
+  <!--  FEATURE 5: DigiProctor Practice Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Medrae NCK DigiProctor Practice",
+      "description": "Train like it's the real NCK exam with our DigiProctor-style timed practice. Experience 75 questions in 60 minutes with real exam interface, question navigation, flagging, and instant performance analysis. Build confidence and eliminate exam anxiety.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "All",
+      "featureList": [
+        "75 questions in 60 minutes",
+        "Real NCK exam interface",
+        "Question navigation and flagging",
+        "Pressure testing",
+        "Progressively challenging questions",
+        "Instant performance analysis",
+        "Unit-by-unit breakdown",
+        "Pass/fail prediction",
+        "Time management training",
+        "Exam anxiety reduction"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "199",
+        "priceCurrency": "KES",
+        "availability": "https://schema.org/InStock"
+      },
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "nursing student"
+      }
+    }
+  </script>
+
+  <!-- FEATURE 6: Mental Wellness Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MentalHealthOrganization",
+      "name": "Medrae Wellness",
+      "description": "Daily emotional check-in and mental wellness support for nursing students. Share how you're feeling, build community support, and maintain mental wellness during exam preparation. Because a healthy mind passes exams.",
+      "areaServed": "Kenya",
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "nursing student"
+      },
+      "serviceType": "Student Mental Wellness Support",
+      "availableService": [
+        "Daily Emotional Check-ins",
+        "Community Support",
+        "Stress Management",
+        "Exam Anxiety Relief",
+        "Peer Support",
+        "Motivational Streak Tracking",
+        "Anonymous Posting",
+        "Emotional Intelligence Building"
+      ]
+    }
+  </script>
+
+  <!-- Primary Organization Schema - Complete -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "Medrae",
+      "alternateName": "Medrae Nursing - NCK Exam Prep & Wellness Platform",
+      "url": "https://medrae.com/",
+      "logo": "https://medrae.com/icon-512.png",
+      "description": "🇰🇪 Kenya's #1 NCK exam preparation platform. Features:  6,000+ NCK questions organized by unit & condition - jump to weak areas, 🧠 AI Algorithm - predicts NCK readiness with 95% accuracy, 🩺 Clinical Assessment Suite - 24+ scenarios with AI tutor feedback, 📚 Complete KRCHN Curriculum - 80 modules, 1k+ topics, 15k+ questions, 🎯 DigiProctor Practice - 75 questions in 60 minutes, ❤️ Mental Wellness - daily emotional check-ins, 📺 3,000+ YouTube videos no ads, 🌐 Survival Hub - exam center connections, hospital placements, Nursmartt marketplace, 🏫 Institutional tools - coming December 2026. Join 2,231+ nursing students who trust Medrae.",
+      "foundingLocation": "Kenya",
+      "areaServed": "Kenya",
+      "sameAs": [
+        "https://www.facebook.com/medraenursing/",
+        "https://www.facebook.com/groups/915924954654752/",
+        "https://www.instagram.com/medraenursing",
+        "https://twitter.com/medraenursing",
+        "https://www.tiktok.com/@medraenursingke"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "199",
+        "priceCurrency": "KES",
+        "description": "2 months premium access: 6,000+ NCK questions by unit & condition, AI performance predictions, Clinical Assessment Suite, DigiProctor practice, 15k+ questions, full KRCHN curriculum, mental wellness resources.",
+        "eligibleDuration": "P2M"
+      },
+      "potentialAction": {
+        "@type": "Action",
+        "name": "Start Targeted NCK Revision",
+        "target": "https://medrae.com/Medrae-quizzes"
+      }
+    }
+  </script>
+
+  <!-- Product Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "Medrae NCK Exam Preparation Platform",
+      "description": "Kenya's most complete NCK exam preparation ecosystem. Features: 6,000+ questions organized by unit & condition, AI algorithm (95% accuracy), Clinical Assessment Suite with AI tutor, DigiProctor practice, complete KRCHN curriculum, mental wellness support.",
+      "brand": {
+        "@type": "Brand",
+        "name": "Medrae"
+      },
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "nursing student"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "199",
+        "priceCurrency": "KES",
+        "availability": "https://schema.org/OnlineOnly",
+        "validFrom": "2025-01-01"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "3450"
+      }
+    }
+  </script>
+
+  <!-- Social Proof and Platform Statistics -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      "name": "Medrae NCK Exam Prep Engagement Metrics",
+      "description": "Medrae serves 2,231+ nursing students across Kenya with NCK exam preparation. Platform includes: 6,000+ NCK questions organized by unit & condition, AI algorithm (95% accuracy), 24+ clinical assessments, 80 modules, 1k+ topics, DigiProctor practice, daily emotional check-ins. 78% average score improvement among premium users.",
+      "creator": {
+        "@type": "Organization",
+        "name": "Medrae Nursing"
+      },
+      "temporalCoverage": "2024-2026",
+      "spatialCoverage": "Kenya"
+    }
+  </script>
+
+  <!-- Complete FAQ Schema -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "How many NCK questions are available on Medrae and how are they organized?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Medrae offers 6,000+ NCK-specific practice questions organized by nursing unit AND medical condition. You can jump directly to your weak areas based on AI performance analysis. Questions cover all KRCHN units (80 modules, 1k+ topics) and 200+ conditions including Hypertension, Diabetes, Pneumonia, HIV/AIDS, Tuberculosis, Malaria, and more."
+        }
+      }, {
+        "@type": "Question",
+        "name": "What is the Clinical Assessment Suite on Medrae?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Clinical Assessment Suite is an AI-powered practice tool with 24+ clinical scenarios. You get instant AI tutor feedback with detailed explanations, missing keywords identification, clinical references, and performance tracking. It builds clinical reasoning, patient safety awareness, and decision-making skills for the NCK exam."
+        }
+      }, {
+        "@type": "Question",
+        "name": "How accurate is the Medrae AI prediction algorithm?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Based on historical data from 2,231+ nursing students, the Medrae algorithm predicts NCK exam readiness with 95% accuracy. It analyzes your performance across all units, identifies strengths and weaknesses, and provides personalized study recommendations to maximize your score."
+        }
+      }, {
+        "@type": "Question",
+        "name": "What is NCK DigiProctor Practice on Medrae?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "NCK DigiProctor Practice is Medrae's signature feature that simulates the real NCK exam experience. You get 75 questions in 60 minutes with a real exam interface, question navigation, flagging, and instant performance analysis. It's designed to eliminate exam anxiety and build confidence for the actual NCK exam."
+        }
+      }, {
+        "@type": "Question",
+        "name": "What does the KRCHN curriculum cover on Medrae?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Medrae offers the complete KRCHN curriculum with 80 modules, 1k+ topics, and 15k+ NCK & FQE revision questions. Organized by Year (1-3): Year 1 has 18+22 modules covering Foundations, Anatomy, Fundamentals, Microbiology, Psychology, Maternal Health; Year 2 has 13+11 modules covering Pharmacology II, Medical-Surgical, Pediatric, Mental Health; Year 3 has 9+7 modules covering Neurology, Dermatology, Gerontology, Epidemiology, Health Systems Management."
+        }
+      }, {
+        "@type": "Question",
+        "name": "How does Medrae support mental wellness?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Medrae provides daily emotional check-ins where nursing students can share how they're feeling, see what others are experiencing, and support each other through the journey. Features include anonymous posting, stress management tools, streak tracking, and community support from 2,231+ nursing students. Studies show that naming your emotions reduces stress, improves focus, and builds emotional intelligence."
+        }
+      }, {
+        "@type": "Question",
+        "name": "How many students use Medrae?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Medrae currently serves over 2,231 active nursing students across Kenya, with a 78% average mock exam score improvement among premium users. The platform continues to grow as more students discover the power of combining targeted NCK question practice with AI-driven learning."
+        }
+      }, {
+        "@type": "Question",
+        "name": "What is the cost of Medrae premium?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Medrae Premium costs just 199 KSh for 2 months, unlocking 6,000+ NCK questions by unit & condition, AI algorithm predictions, Clinical Assessment Suite with AI tutor, DigiProctor practice, 15k+ questions, full KRCHN curriculum, and all wellness features. That's less than 4 KSh per day for complete NCK exam preparation."
+        }
+      }, {
+        "@type": "Question",
+        "name": "How does Medrae help with exam anxiety?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Medrae helps reduce exam anxiety through multiple ways: DigiProctor practice to simulate real exam conditions, AI predictions to reduce uncertainty, Clinical Assessment practice to build confidence, daily emotional check-ins to name and process feelings, and community support from 2,231+ fellow nursing students who understand the journey. A healthy mind passes exams."
+        }
+      }, {
+        "@type": "Question",
+        "name": "What makes Medrae different from other nursing platforms?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Medrae is Kenya's only platform that combines 6,000+ NCK questions organized by unit & condition with AI-powered learning, Clinical Assessment practice, DigiProctor simulation, complete KRCHN curriculum, AND mental wellness support. You get targeted revision, real exam simulation, AI predictions with 95% accuracy, clinical scenario practice, AND daily emotional check-ins. We believe exam success and mental wellness go hand in hand."
+        }
+      }, {
+        "@type": "Question",
+        "name": "Does Medrae offer institutional exam hosting?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! Medrae is developing institutional CAT and internal exam proctoring (local affordable DigiProctor alternative) and a tutor page where educators can set exams and release results within 12 hours - targeting December 2026. Schools can upload revision questions, CATs, assignments, mock exams, and internal assessments all fully digitized and automatically tracked."
+        }
+      }]
+    }
+  </script>
+
+  <!-- Extended Description - Complete Feature List -->
+  <meta name="description_extended"
+    content="🇰🇪 Kenya's #1 NCK exam preparation platform.
+
+   FEATURE 1: 6,000+ NCK Questions by Unit & Condition - Jump directly to your weak areas. Organized by nursing unit AND medical condition. Targeted revision for maximum exam success. Covers all KRCHN units and 200+ conditions.
+
+   FEATURE 2: AI Algorithm & NCK Progress - Our AI predicts your NCK readiness with 95% accuracy. Track unit-by-unit performance, get star ratings, and personalized recommendations. Real-time progress dashboard.
+
+   FEATURE 3: Clinical Assessment Suite - Practice real clinical scenarios with AI tutor feedback. 24+ assessments covering patient safety, clinical reasoning, and decision-making. Instant explanations and references.
+
+   FEATURE 4: Complete KRCHN Curriculum - 80 modules, 1k+ topics, 15k+ NCK & FQE revision questions. Year 1-3 organized by semester. Follows official NCK syllabus.
+
+   FEATURE 5: DigiProctor Practice - Full NCK exam simulation with 75 questions in 60 minutes. Real exam interface, question navigation, flagging, and instant results. Eliminate exam anxiety.
+
+   FEATURE 6: Mental Wellness Support - Daily emotional check-ins. Share how you're feeling, build community support, and maintain mental wellness. Because a healthy mind passes exams.
+
+   FEATURE 7: 3,000+ YouTube Videos No Ads - Curated educational nursing videos organized by topic. No ads for distraction-free learning.
+
+   FEATURE 8: Survival Hub & Community - Exam center connections with housing, hospital placement board, Nursmartt marketplace for secondhand items. Community of 2,231+ nursing students.
+
+   FEATURE 9: Institutional Tools - Coming December 2026: Local affordable DigiProctor alternative for institutions. Tutor dashboard to set exams and release results within 12 hours.
+
+  Premium subscription: 199 KSh for 2 months. Join 2,231+ nursing students who trust Medrae. Learn. Practice. Pass. 🇰🇪" />
+
+  <!-- Feature-specific meta tags - All Features -->
+  <meta name="feature:questions_by_unit"
+    content="6,000+ NCK questions organized by nursing unit for targeted revision" />
+  <meta name="feature:questions_by_condition"
+    content="6,000+ NCK questions organized by medical condition for focused practice" />
+  <meta name="feature:weak_area_jump" content="Jump directly to your weak areas based on AI performance analysis" />
+  <meta name="feature:ai_algorithm" content="AI algorithm predicts NCK exam readiness with 95% accuracy" />
+  <meta name="feature:clinical_assessment"
+    content="24+ clinical scenarios with AI tutor feedback and instant explanations" />
+  <meta name="feature:digiproctor"
+    content="NCK DigiProctor practice with 75 questions in 60 minutes - real exam simulation" />
+  <meta name="feature:krchn_curriculum" content="Complete KRCHN curriculum: 80 modules, 1k+ topics, 15k+ questions" />
+  <meta name="feature:mental_wellness" content="Daily emotional check-ins and community support for nursing students" />
+  <meta name="feature:youtube_videos" content="3,000+ curated nursing YouTube videos with no ads" />
+  <meta name="feature:survival_hub" content="Exam center connections, hospital placements, Nursmartt marketplace" />
+  <meta name="feature:institutional_tools"
+    content="Institutional exam hosting and tutor dashboard - Coming December 2026" />
+  <meta name="feature:progress_tracking" content="Real-time progress tracking with star ratings and unit analytics" />
+
+  <!-- Social Proof Meta Tags -->
+  <meta name="social:community" content="Join 2,231+ nursing students using Medrae for NCK exam preparation" />
+  <meta name="social:impact" content="78% average mock exam score improvement among premium users" />
+  <meta name="social:algorithm_accuracy" content="AI predicts NCK exam readiness with 95% accuracy" />
+  <meta name="social:kenya_trusted" content="Kenya's #1 NCK exam preparation platform" />
+  <meta name="social:reach" content="29+ clinical schools reached across Kenya" />
+  <meta name="social:content" content="6,000+ NCK practice questions organized by unit & condition" />
+  <meta name="social:videos" content="3,000+ curated educational nursing videos" />
+
+  <!-- Keywords - Complete -->
+  <meta name="keywords_nck"
+    content="NCK questions by unit, NCK revision by condition, targeted NCK revision, NCK weak area focus, 6000 NCK practice questions, NCK exam preparation Kenya" />
+  <meta name="keywords_curriculum"
+    content="KRCHN nursing curriculum, 80 nursing modules, 1000 nursing topics, Year 1 nursing questions, Year 2 nursing questions, Year 3 nursing questions" />
+  <meta name="keywords_clinical"
+    content="clinical assessment nursing, AI tutor nursing, clinical reasoning practice, nursing clinical scenarios, patient safety nursing" />
+  <meta name="keywords_wellness"
+    content="emotional check-in nursing students, mental health nursing students Kenya, exam anxiety relief, nursing student wellness, healthy mind passes exams" />
+
+  <!-- Additional meta -->
+  <meta name="business:contact_data:country" content="Kenya" />
+  <meta name="business:vertical"
+    content="EdTech, Nursing Education, NCK Exam Preparation, Clinical Assessment, Mental Wellness" />
+  <meta name="target_audience"
+    content="Nursing students, NCK candidates, Nursing schools, Healthcare institutions, Clinical placement coordinators" />
+  <meta name="pricing_model" content="Freemium with Premium subscription: 199 KSh for 2 months" />
+  <meta name="investment:roi" content="Growing user base of 2,231+ active nursing students in Kenya" />
+  <meta name="investment:market" content="Kenya's nursing education market with 50,000+ nursing students" />
+  <meta name="roadmap_feature" content="Institutional CAT and local DigiProctor alternative by December 2026" />
+  <meta name="roadmap_feature" content="Tutor result release under 12 hours with one click by December 2026" />
+
+</head>
+
+<body style="margin:0; height:100%; background-color: #ffffff;">
+  <!-- 1. THE PERMANENT BRANDED LOADER - INSTANT HIDE -->
+  <div id="initial-loader"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 99999; font-family: system-ui, -apple-system, sans-serif; background-color: #ffffff; contain: strict;">
+
+    <style>
+      /* GPU Accelerated Gooey Logic - Makes it smooth on all phones */
+      .goo-container {
+        filter: url('#goo');
+        position: relative;
+        width: 120px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        will-change: filter;
+      }
+
+      .dot {
+        position: absolute;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        animation-iteration-count: infinite;
+        animation-duration: 3s;
+        animation-timing-function: ease-in-out;
+        will-change: transform;
+      }
+
+      .dot-1 {
+        background-color: #ef4444;
+        animation-name: dot-1-move;
+      }
+
+      .dot-2 {
+        background-color: #3b82f6;
+        animation-name: dot-2-move;
+      }
+
+      .dot-3 {
+        background-color: #8b5cf6;
+        animation-name: dot-3-move;
+      }
+
+      @keyframes dot-1-move {
+
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+
+        33% {
+          transform: translate(-40px, -20px) scale(1.2);
+        }
+
+        66% {
+          transform: translate(30px, 40px) scale(0.8);
+        }
+      }
+
+      @keyframes dot-2-move {
+
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+
+        33% {
+          transform: translate(40px, -20px) scale(0.9);
+        }
+
+        66% {
+          transform: translate(-30px, 40px) scale(1.1);
+        }
+      }
+
+      @keyframes dot-3-move {
+
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1.2);
+        }
+
+        33% {
+          transform: translate(0px, 50px) scale(0.8);
+        }
+
+        66% {
+          transform: translate(0px, -50px) scale(1);
+        }
+      }
+
+      .animate-pulse-slow {
+        animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse-slow {
+
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: .4;
+        }
+      }
+    </style>
+
+    <!-- Gooey Loader Graphic -->
+    <div style="position: relative;">
+      <div class="goo-container">
+        <div class="dot dot-1"></div>
+        <div class="dot dot-2"></div>
+        <div class="dot dot-3"></div>
+      </div>
+
+      <svg xmlns="http://www.w3.org/2000/svg" style="position: absolute; width: 0; height: 0;">
+        <defs>
+          <filter id="goo">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 21 -7" result="goo" />
+            <feBlend in="SourceGraphic" in2="goo" />
+          </filter>
+        </defs>
+      </svg>
+    </div>
+
+    <!-- Branded Text Label -->
+    <div style="text-align: center; margin-top: 40px;">
+      <div
+        style="font-weight: 900; font-size: 38px; letter-spacing: -2px; text-transform: uppercase; margin-bottom: 5px;">
+        <span style="color: #ef4444;">MEDRAE</span>
+        <span style="color: #000000;">NURSING</span>
+      </div>
+
+      <p class="animate-pulse-slow"
+        style="margin: 8px 0 0 0; font-size: 14px; color: #64748b; font-weight: 500; letter-spacing: 0.5px;">
+        Checking your vitals...You're doing amazing
+      </p>
+    </div>
+  </div>
+  <div id="root" style="height:100%;"></div>
+  <script type="module" src="/src/main.tsx"></script>
+
+  <!-- Theme + splash logic preserved -->
+  <script>
+    (function () {
+      let userTheme = localStorage.getItem('theme');
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (!userTheme) {
+        userTheme = systemPrefersDark ? 'dark' : 'light';
+      }
+      document.documentElement.classList.add(userTheme);
+      const bgColor = userTheme === 'dark' ? '#000000' : '#ffffff';
+      document.documentElement.style.backgroundColor = bgColor;
+      document.body.style.backgroundColor = bgColor;
+
+      // Performance marker for analytics
+      if (typeof window.performance !== 'undefined') {
+        window.medraeLoadStart = performance.now();
+      }
+    })();
+
+    // INSTANT LOADER REMOVAL - NO delay, NO fade!
+    window.hideMedraeLoader = function () {
+      const loader = document.getElementById('initial-loader');
+      if (loader) {
+        loader.style.display = 'none';
+        // Optional: Remove from DOM after a tiny delay to let display:none apply
+        // setTimeout(() => loader.remove(), 50);
+      }
+    };
+  </script>
+
+  <script>
+    // Emergency safety: If the app hasn't loaded in 5 seconds, kill the loader anyway
+    setTimeout(() => {
+      if (typeof window.hideMedraeLoader === 'function') {
+        window.hideMedraeLoader();
+      }
+    }, 5000);
+  </script>
+
+</body>
+
+</html>

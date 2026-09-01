@@ -1,0 +1,9 @@
+.rpv-core__inner-pages::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.rpv-core__inner-pages {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

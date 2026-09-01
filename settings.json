@@ -1,0 +1,9 @@
+{
+    "files.watcherExclude": {
+        "**/node_modules": true,
+        "**/build": true,
+        "**/dist": true,
+        "**/.next": true,
+        "**/out": true
+    }
+}

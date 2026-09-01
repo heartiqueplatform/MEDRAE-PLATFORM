@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MEDRAE NURSING</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 2rem;
+            margin: 0;
+            position: relative;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        /* App Icon */
+        .app-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 24px;
+            margin: 0 auto 1.5rem;
+            display: block;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Heart container - SMALL hearts */
+        .heart-charging {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 1.5rem 0;
+            min-height: 40px;
+            position: relative;
+        }
+
+        .heart-item {
+            font-size: 1.6rem;
+            position: relative;
+            display: inline-block;
+            line-height: 1;
+            transition: all 0.3s ease;
+        }
+
+        /* Outlined heart */
+        .heart-item .heart-outline {
+            color: #e2e8f0;
+            opacity: 1;
+            transition: all 0.4s ease;
+            display: block;
+        }
+
+        /* Filled heart */
+        .heart-item .heart-filled {
+            color: #ef4444;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: scale(0.3) rotate(-10deg);
+            display: block;
+        }
+
+        .heart-item.filled .heart-outline {
+            opacity: 0.15;
+            transform: scale(0.8);
+        }
+
+        .heart-item.filled .heart-filled {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            animation: heartPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes heartPop {
+            0% {
+                transform: scale(0.2) rotate(-15deg);
+                opacity: 0;
+            }
+
+            60% {
+                transform: scale(1.2) rotate(3deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Status text */
+        .status-text {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin: 1rem 0 1.5rem;
+            min-height: 24px;
+            transition: all 0.3s ease;
+        }
+
+        /* Retry Button - Professional, no color, no emoji */
+        .retry-btn {
+            padding: 0.7rem 2.2rem;
+            background: transparent;
+            color: #0f172a;
+            border: 1.5px solid #0f172a;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            letter-spacing: 0.3px;
+        }
+
+        .retry-btn:hover {
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+        .retry-btn:active {
+            transform: scale(0.96);
+        }
+
+        .retry-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .retry-btn .spinner {
+            display: none;
+        }
+
+        .retry-btn.loading .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(15, 23, 42, 0.2);
+            border-top-color: #0f172a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* App name at bottom */
+        .app-name-bottom {
+            position: fixed;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 0 1rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .app-name-bottom .medrae {
+            color: #ef4444;
+        }
+
+        .app-name-bottom .nursing {
+            color: #0f172a;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .app-icon {
+                width: 80px;
+                height: 80px;
+            }
+
+            .heart-item {
+                font-size: 1.3rem;
+            }
+
+            .heart-charging {
+                gap: 6px;
+            }
+
+            .app-name-bottom {
+                bottom: 30px;
+                font-size: 0.85rem;
+            }
+
+            .retry-btn {
+                padding: 0.6rem 1.8rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- App Icon -->
+        <img src="/pwa-192x192.png" alt="MEDRAE NURSING" class="app-icon" />
+
+        <!-- Hearts - SMALL -->
+        <div class="heart-charging" id="heartContainer">
+            <span class="heart-item" data-index="0">
+                <span class="heart-outline">♡</span>
+                <span class="heart-filled">♥</span>
+            </span>
+            <span class="heart-item" data-index="1">
+                <span class="heart-outline">♡</span>
+                <span class="heart-filled">♥</span>
+            </span>
+            <span class="heart-item" data-index="2">
+                <span class="heart-outline">♡</span>
+                <span class="heart-filled">♥</span>
+            </span>
+            <span class="heart-item" data-index="3">
+                <span class="heart-outline">♡</span>
+                <span class="heart-filled">♥</span>
+            </span>
+            <span class="heart-item" data-index="4">
+                <span class="heart-outline">♡</span>
+                <span class="heart-filled">♥</span>
+            </span>
+        </div>
+
+        <!-- Status Text -->
+        <p class="status-text" id="statusText">No internet connection</p>
+
+        <!-- Retry Button - Professional -->
+        <button class="retry-btn" id="retryBtn" onclick="handleRetry()">
+            Try Again
+        </button>
+    </div>
+
+    <!-- App name at bottom -->
+    <div class="app-name-bottom">
+        <span class="medrae">MEDRAE</span> <span class="nursing">NURSING</span>
+    </div>
+
+    <script>
+        // ✅ Only redirect if online AND we're not already redirecting
+        let isRedirecting = false;
+
+        // ✅ REMOVED the immediate redirect that was causing issues
+        // if (navigator.onLine) {
+        //     window.location.href = '/';
+        // }
+
+        let currentHeart = 0;
+        let isComplete = false;
+        let timeoutId = null;
+        let isChecking = false;
+
+        const hearts = document.querySelectorAll('.heart-item');
+        const statusText = document.getElementById('statusText');
+        const retryBtn = document.getElementById('retryBtn');
+
+        function fillNextHeart() {
+            if (currentHeart >= hearts.length || isComplete) {
+                isComplete = true;
+                return;
+            }
+
+            const heart = hearts[currentHeart];
+            heart.classList.add('filled');
+            currentHeart++;
+
+            if (currentHeart < hearts.length) {
+                const delay = 350 + (currentHeart * 50);
+                timeoutId = setTimeout(fillNextHeart, delay);
+            } else {
+                isComplete = true;
+            }
+        }
+
+        function startCharging() {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+
+            currentHeart = 0;
+            isComplete = false;
+            hearts.forEach(heart => heart.classList.remove('filled'));
+
+            statusText.textContent = 'No internet connection';
+            timeoutId = setTimeout(fillNextHeart, 400);
+        }
+
+        function handleRetry() {
+            if (isChecking || isRedirecting) return;
+
+            isChecking = true;
+            retryBtn.disabled = true;
+            retryBtn.innerHTML = '<span class="spinner"></span> Checking';
+            retryBtn.classList.add('loading');
+
+            if (navigator.onLine) {
+                isRedirecting = true;
+                window.location.href = '/';
+                return;
+            }
+
+            fetch('/favicon.ico', {
+                mode: 'no-cors',
+                cache: 'no-store'
+            })
+                .then(() => {
+                    if (navigator.onLine) {
+                        isRedirecting = true;
+                        window.location.href = '/';
+                    } else {
+                        resetRetry();
+                    }
+                })
+                .catch(() => {
+                    resetRetry();
+                });
+        }
+
+        function resetRetry() {
+            isChecking = false;
+            retryBtn.disabled = false;
+            retryBtn.innerHTML = 'Try Again';
+            retryBtn.classList.remove('loading');
+        }
+
+        // ✅ Handle connection changes - redirect to app when online
+        window.addEventListener('online', () => {
+            if (!isRedirecting) {
+                isRedirecting = true;
+                window.location.href = '/';
+            }
+        });
+
+        window.addEventListener('offline', () => {
+            isRedirecting = false;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            resetRetry();
+            startCharging();
+        });
+
+        // ✅ REMOVED the setInterval that was causing the blinking loop
+        // setInterval(() => {
+        //     if (navigator.onLine && !hasRedirected) {
+        //         hasRedirected = true;
+        //         window.location.href = '/';
+        //     }
+        // }, 2000);
+
+        // Start
+        startCharging();
+    </script>
+</body>
+
+</html>

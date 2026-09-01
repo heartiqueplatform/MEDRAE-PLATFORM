@@ -1,0 +1,54 @@
+{
+    "name": "Medrae Nursing",
+    "short_name": "Medrae Nursing",
+    "description": "Structured NCK-style exam practice with 6,500+ questions",
+    "theme_color": "#4ade80",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "start_url": "/",
+    "categories": [
+        "education",
+        "medical",
+        "health"
+    ],
+    "lang": "en",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "/pwa-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/pwaa-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/maskable-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshot-mobile.png",
+            "sizes": "360x640",
+            "type": "image/png",
+            "platform": "wide",
+            "label": "Medrae Nursing Home Screen"
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false
+}

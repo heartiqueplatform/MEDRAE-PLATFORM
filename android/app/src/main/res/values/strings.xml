@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Medrae Nursing App</string>
+    <string name="title_activity_main">Medrae Nursing App</string>
+    <string name="package_name">com.medrae.app</string>
+    <string name="custom_url_scheme">com.medrae.app</string>
+</resources>
