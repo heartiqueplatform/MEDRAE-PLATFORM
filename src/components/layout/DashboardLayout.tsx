@@ -111,7 +111,7 @@ const DashboardContent = memo(({ user, role, streak, isDarkMode, toggleDarkMode,
       <div className="relative z-10 flex w-full h-full">
         <AppSidebar userRole={role} className="flex-shrink-0 w-64 md:w-72" />
 
-        <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden max-w-[1200px] mx-auto">
+        <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden max-w-[1050px] mx-auto">
           <Header user={user} isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} streak={streak} />
 
           <main
