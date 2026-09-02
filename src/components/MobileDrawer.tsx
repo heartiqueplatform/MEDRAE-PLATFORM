@@ -602,7 +602,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
                             onClick={() => setIsOpen(false)}
-                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[115] md:hidden"
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] md:hidden"
                         />
 
                         <motion.div
@@ -611,7 +611,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             initial="hidden"
                             animate="visible"
                             exit="hidden"
-                            className={`fixed bottom-0 left-0 right-0 z-[120] ${drawerBgClass} shadow-2xl rounded-t-[2.5rem] md:hidden overflow-hidden`}
+                            className={`fixed bottom-0 left-0 right-0 z-[99999] ${drawerBgClass} shadow-2xl rounded-t-[2.5rem] md:hidden overflow-hidden`}
                             style={{
                                 maxHeight: "92vh",
                                 willChange: "transform",

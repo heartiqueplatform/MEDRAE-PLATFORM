@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo, memo, Suspense, lazy, useTransition } from "react";
-import { Home, Heart, AlertCircle, TrendingUp, Menu, Newspaper, Swords } from "lucide-react";
+import { Home, Heart, Newspaper, Menu } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthProvider";
@@ -10,26 +10,15 @@ import { useUserRole } from "@/context/UserRoleContext";
 
 const MobileDrawer = lazy(() => import("@/components/MobileDrawer").then(module => ({ default: module.MobileDrawer })));
 
-type IconTone = "neutral" | "ai" | "learning" | "progress" | "practice" | "alert"
-    | "communication" | "media" | "finance" | "system" | "people" | "content";
+type IconTone = "neutral" | "practice" | "content";
 
 const ICON_TONE_STYLES: Record<IconTone, { icon: { light: string; dark: string } }> = {
     neutral: { icon: { light: "text-slate-600", dark: "text-slate-300" } },
-    ai: { icon: { light: "text-purple-600", dark: "text-purple-400" } },
-    learning: { icon: { light: "text-blue-600", dark: "text-blue-400" } },
-    progress: { icon: { light: "text-emerald-600", dark: "text-emerald-400" } },
     practice: { icon: { light: "text-rose-600", dark: "text-rose-400" } },
-    alert: { icon: { light: "text-amber-600", dark: "text-amber-400" } },
-    communication: { icon: { light: "text-cyan-600", dark: "text-cyan-400" } },
-    media: { icon: { light: "text-violet-600", dark: "text-violet-400" } },
-    finance: { icon: { light: "text-emerald-600", dark: "text-emerald-400" } },
-    system: { icon: { light: "text-gray-600", dark: "text-gray-300" } },
-    people: { icon: { light: "text-indigo-600", dark: "text-indigo-400" } },
     content: { icon: { light: "text-indigo-600", dark: "text-indigo-400" } },
 };
 
 const MISTAKE_COUNT_CACHE_KEY = "footer_mistake_count";
-const THEME_CACHE_KEY = "footer_theme_cache";
 
 // ✅ PRE-LOAD THEME - Runs synchronously before component mount
 const preloadTheme = (): 'light' | 'dark' => {
@@ -60,57 +49,46 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
     }
 };
 
-// Memoized Footer Item Component - Tiny & Clean
+// Memoized Footer Item Component - Bigger, WhatsApp-style
 const FooterItem = memo(({
     item,
     isActive,
     tone,
-    badge,
     onPress
 }: {
     item: any;
     isActive: boolean;
     tone: IconTone;
-    badge?: number;
     onPress: (e: React.PointerEvent) => void;
 }) => (
     <button
         onPointerDown={onPress}
-        className="flex flex-col items-center justify-center flex-1 gap-0 relative group transition-all active:scale-90"
+        className="flex flex-col items-center justify-center flex-1 gap-1 relative group transition-all active:scale-90"
         style={{ touchAction: 'manipulation', transform: 'translateZ(0)', WebkitTapHighlightColor: 'transparent' }}
     >
         <div className="relative">
             <item.icon
-                className={`h-[18px] w-[18px] transition-all duration-200 will-change-transform
+                className={`h-[24px] w-[24px] transition-all duration-200 will-change-transform
                     ${isActive
                         ? ICON_TONE_STYLES[tone].icon.light + " dark:" + ICON_TONE_STYLES[tone].icon.dark
                         : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
                     }`}
                 strokeWidth={isActive ? 2.5 : 2}
             />
-            {badge !== undefined && badge > 0 && (
-                <span className={`absolute -top-0.5 -right-1 min-w-[16px] h-[16px] px-1
-                    text-[9px] font-bold flex items-center justify-center
-                    bg-red-500 text-white rounded-full
-                    shadow-sm
-                    ${tone === 'alert' ? 'animate-pulse' : ''}`}>
-                    {badge > 99 ? '99+' : badge}
-                </span>
-            )}
         </div>
-        <span className={`text-[9px] font-medium tracking-tight transition-colors duration-200 mt-0.5
+        <span className={`text-[10px] font-medium tracking-tight transition-colors duration-200
             ${isActive ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>
             {item.label || item.title}
         </span>
         {isActive && (
-            <div className="absolute -top-1 w-1 h-1 bg-blue-500 rounded-full" />
+            <div className="absolute -top-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
         )}
     </button>
 ));
 
 FooterItem.displayName = "FooterItem";
 
-// Memoized Menu Button Component
+// Memoized Menu Button Component - WhatsApp-style
 const MenuButton = memo(({
     isDrawerOpen,
     onPress
@@ -120,18 +98,18 @@ const MenuButton = memo(({
 }) => (
     <button
         onClick={onPress}
-        className="flex flex-col items-center justify-center flex-1 gap-0 group transition-all active:scale-95"
+        className="flex flex-col items-center justify-center flex-1 gap-1 group transition-all active:scale-95"
         style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
     >
         <Menu
-            className={`h-[18px] w-[18px] transition-all duration-200
+            className={`h-[24px] w-[24px] transition-all duration-200
                 ${isDrawerOpen
                     ? "text-blue-600 dark:text-blue-400"
                     : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300"
                 }`}
             strokeWidth={isDrawerOpen ? 2.5 : 2}
         />
-        <span className={`text-[9px] font-medium transition-colors duration-200 mt-0.5
+        <span className={`text-[10px] font-medium transition-colors duration-200
             ${isDrawerOpen ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>
             Menu
         </span>
@@ -145,11 +123,9 @@ export function Footer() {
     const { user } = useAuth();
     const { role } = useUserRole();
 
-    const [mistakeCount, setMistakeCount] = useState<number>(0);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
-    const [isHydrated, setIsHydrated] = useState(false);
 
     // ✅ PRE-LOADED THEME - No flicker
     const [theme, setTheme] = useState<'light' | 'dark'>(preloadTheme);
@@ -160,11 +136,6 @@ export function Footer() {
     const lastScrollY = useRef(0);
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
     const scrollContainerRef = useRef<Element | null>(null);
-
-    // ✅ Handle hydration
-    useEffect(() => {
-        setIsHydrated(true);
-    }, []);
 
     // ✅ Listen for theme changes
     useEffect(() => {
@@ -218,17 +189,6 @@ export function Footer() {
         }
     }, []);
 
-    // Cache logic for mistakes
-    useEffect(() => {
-        const cached = localStorage.getItem(MISTAKE_COUNT_CACHE_KEY);
-        if (cached) {
-            try {
-                const { count, timestamp } = JSON.parse(cached);
-                if (Date.now() - timestamp < 5 * 60 * 1000) setMistakeCount(count);
-            } catch (e) { }
-        }
-    }, []);
-
     // Safe area logic
     useEffect(() => {
         const updateSafeArea = () => {
@@ -242,25 +202,6 @@ export function Footer() {
         window.addEventListener('resize', updateSafeArea);
         return () => window.removeEventListener('resize', updateSafeArea);
     }, []);
-
-    // Fetch mistake counts
-    const fetchMistakeCount = useCallback(async (forceRefresh = false) => {
-        if (!user?.id) return;
-        try {
-            const { count, error } = await supabase
-                .from("user_mistakes")
-                .select("*", { count: "exact", head: true })
-                .eq("user_id", user.id)
-                .eq("resolved", false);
-
-            if (!error && isMounted.current) {
-                setMistakeCount(count || 0);
-                localStorage.setItem(MISTAKE_COUNT_CACHE_KEY, JSON.stringify({ count: count || 0, timestamp: Date.now() }));
-            }
-        } catch (err) { }
-    }, [user?.id]);
-
-    useEffect(() => { fetchMistakeCount(); }, [fetchMistakeCount]);
 
     // Smart scroll detection
     useEffect(() => {
@@ -428,63 +369,64 @@ export function Footer() {
         };
     }, [location.pathname]);
 
-    // ✅ Updated items with Nurse Duel added
+    // ✅ SIMPLIFIED ITEMS - Just 4 items like WhatsApp
     const items = useMemo(() => [
-        { icon: Heart, label: "Quizzes", url: "/Medrae-quizzes", iconTone: "practice" as IconTone },
-        { icon: Swords, label: "Duel", url: "/challenge", iconTone: "practice" as IconTone }, // ✅ Nurse Duel added
-        { icon: Newspaper, label: "Feed", url: "/feed", iconTone: "content" as IconTone },
         { icon: Home, label: "Home", url: `/dashboard/${role}`, iconTone: "neutral" as IconTone },
-        { icon: AlertCircle, label: "Mistakes", url: "/my-mistakes", badge: mistakeCount > 0 ? mistakeCount : undefined, iconTone: "alert" as IconTone },
-        { icon: TrendingUp, label: "Progress", url: "/progress", iconTone: "progress" as IconTone },
-    ], [mistakeCount, role]);
+        { icon: Heart, label: "Quizzes", url: "/Medrae-quizzes", iconTone: "practice" as IconTone },
+        { icon: Newspaper, label: "Feed", url: "/feed", iconTone: "content" as IconTone },
+
+    ], [role]);
 
     const isActive = useCallback((url: string) => location.pathname === url, [location.pathname]);
-    const footerHeight = 40 + safeAreaBottom;
+    const footerHeight = 64 + safeAreaBottom;
 
     // ✅ Determine footer background based on theme
-    const footerBgClass = theme === 'dark' ? 'bg-[#1f1f1f]' : 'bg-white';
+    const footerBgClass = theme === 'dark'
+        ? 'bg-[#1a1a1a] border-t border-slate-800/50'
+        : 'bg-white border-t border-slate-200/50';
 
     return (
         <>
-            {/* Telegram-style Floating Footer - Clean, Solid, Smooth */}
+            {/* ✅ EDGE-TO-EDGE FOOTER - WhatsApp style */}
+            {/* ✅ FOOTER ITEMS - Menu on the RIGHT side */}
             <div
-                className={`fixed left-3 right-3 z-[100] md:hidden
-                    transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-                    ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-[120%] opacity-0 scale-95'}
-                    ${isDrawerOpen ? 'scale-95 opacity-0 pointer-events-none' : ''}
-                    ${footerBgClass}
-                    shadow-[0_-2px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-2px_30px_rgba(0,0,0,0.6)]
-                    flex justify-around items-center px-2
-                    select-none`}
+                className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
+        transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+        ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-[100%] opacity-0'}
+        ${isDrawerOpen ? 'opacity-0 pointer-events-none' : ''}
+        ${footerBgClass}
+        shadow-[0_-4px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_40px_rgba(0,0,0,0.5)]
+        flex justify-around items-center px-4
+        select-none`}
                 style={{
-                    bottom: `${12 + safeAreaBottom}px`,
                     height: `${footerHeight}px`,
                     willChange: 'transform, opacity',
-                    paddingTop: '4px',
-                    paddingBottom: '4px',
-                    borderRadius: '14px',
+                    paddingTop: '6px',
+                    paddingBottom: `${6 + safeAreaBottom}px`,
                     WebkitBackfaceVisibility: 'hidden',
                     backfaceVisibility: 'hidden',
                 }}
             >
-                <MenuButton isDrawerOpen={isDrawerOpen} onPress={handleMenuPress} />
+                {/* ✅ ITEMS FIRST (left to right) */}
                 {items.map((item) => (
                     <FooterItem
                         key={item.url}
                         item={item}
                         isActive={isActive(item.url)}
                         tone={item.iconTone}
-                        badge={item.badge}
                         onPress={(e) => handleNavigate(e, item.url)}
                     />
                 ))}
-            </div>
 
+                {/* ✅ MENU BUTTON LAST (right side) */}
+                <MenuButton isDrawerOpen={isDrawerOpen} onPress={handleMenuPress} />
+            </div>
             <Suspense fallback={null}>
                 <MobileDrawer userRole={role} isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />
             </Suspense>
 
-            <div className="md:hidden pointer-events-none" style={{ height: `${footerHeight + 20}px` }} />
+            {/* ✅ Spacer for content */}
+            <div className="md:hidden pointer-events-none" style={{ height: `${footerHeight + 8}px` }} />
         </>
     );
 }
