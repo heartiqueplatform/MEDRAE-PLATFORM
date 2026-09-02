@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { Bell, Moon, Sun, User, Menu, RefreshCcw, Share2, Flame, CogIcon, Star, Volume2, VolumeX, VolumeOff, Volume } from "lucide-react";
+import { Bell, Moon, Sun, User, Menu, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -556,11 +556,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     }
   }, [toast]);
 
-  const handleChallengeClick = useCallback(() => {
-    if (navigator.vibrate) navigator.vibrate(30);
-    navigate("/challenge");
-  }, [navigate]);
-
   const handleProfileClick = useCallback(() => {
     navigate("/profile");
   }, [navigate]);
@@ -758,21 +753,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               </Popover>
             </div>
 
-            {/* 2. Challenge Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleChallengeClick}
-              className="group relative h-9 w-9 sm:h-12 sm:w-12 flex items-center justify-center rounded-full transition-all duration-300 hover:bg-rose-50 dark:hover:bg-rose-950/30 active:scale-95 shrink-0"
-              title="Clinical Challenges"
-              aria-label="Clinical Challenges"
-            >
-              <Star className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 transition-transform duration-500 group-hover:rotate-90 group-hover:text-primary" fill="currentColor" />
-              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-              </span>
-            </Button>
+            {/* 2. ✅ CHALLENGE BUTTON - COMPLETELY REMOVED */}
 
             {/* 3. Refresh Button */}
             <Button
@@ -786,7 +767,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               <RefreshCcw className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" />
             </Button>
 
-            {/* 4. Settings Dropdown */}
+            {/* 4. Settings Dropdown - NOW USING settings.png INSTEAD OF CogIcon */}
             <DropdownMenu onOpenChange={handleSettingsOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -795,7 +776,11 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                   className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700/50 active:scale-95 shrink-0"
                   aria-label="Settings"
                 >
-                  <CogIcon className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 transition-transform duration-500 group-hover:rotate-90 dark:group-hover:text-emerald-400 group-hover:text-emerald-600" />
+                  <img
+                    src="/setting.png"
+                    alt="Settings"
+                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain transition-transform duration-500 group-hover:rotate-90"
+                  />
                   {notificationCount > 0 && (
                     <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
