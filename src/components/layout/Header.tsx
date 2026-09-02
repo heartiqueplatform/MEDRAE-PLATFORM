@@ -645,7 +645,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       {/* ✅ NEW: Global blur overlay when settings is open */}
       {isSettingsOpen && (
         <div
-          className="fixed inset-0 z-[999999] backdrop-blur-lg bg-black/40 transition-all duration-300"
+          className="fixed inset-0 z-[999999] backdrop-blur-sm bg-black/20 transition-all duration-300"
           onClick={() => {
             // Close settings when clicking outside
             setIsSettingsOpen(false);

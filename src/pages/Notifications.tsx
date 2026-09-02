@@ -12,7 +12,7 @@ import {
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import FriendlyProgressCard from "@/components/FriendlyProgressCard";
+
 
 const CACHE_KEY_PREFIX = "notifs_cache_";
 
@@ -244,10 +244,6 @@ export function Notifications() {
               <p className="text-slate-500 font-bold text-sm md:text-base">All caught up!</p>
             </div>
           )}
-
-          <div className="mt-6 md:mt-8">
-            <FriendlyProgressCard userTheme={userTheme} name={name} />
-          </div>
         </div>
       </div>
 
@@ -308,19 +304,6 @@ export function Notifications() {
                   <span>{formatDate(selectedNotification.created_at)}</span>
                 </div>
 
-                {selectedNotification.link_url && (
-                  <button
-                    onClick={() => {
-                      navigate(selectedNotification.link_url);
-                      setSelectedNotification(null);
-                    }}
-                    className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                  >
-                    <ExternalLink size={16} />
-                    <span>Open related content</span>
-                    <ChevronRight size={16} className="ml-auto" />
-                  </button>
-                )}
               </div>
             </div>
 
