@@ -1,5 +1,4 @@
 "use client";
-import { lazy, Suspense } from "react"; // Add this
 import GlobalRealtimeListener from "@/components/GlobalRealtimeListener";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -128,78 +127,6 @@ import { UserRoleProvider } from "./context/UserRoleContext";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
 
 // ============================================
-// ✅ LAZY LOAD ONLY HEAVY/NON-CRITICAL COMPONENTS
-// ============================================
-// These are loaded only when needed, reducing initial bundle size
-const lazyWithRetry = (componentImport) =>
-  lazy(async () => {
-    try {
-      return await componentImport();
-    } catch (error) {
-      // If the module fails to load (404), refresh the page once to get the latest version
-      console.error("Module load failed, refreshing...", error);
-      window.location.reload();
-      return { default: () => <PageLoader /> };
-    }
-  });
-// Lazy load Survival Hub pages (heavy, not needed immediately)
-// Updated Survival Hub pages with Retry logic
-const LazySurvivalHubDashboard = lazyWithRetry(() => import('./pages/survival-hub/index'));
-const LazyHousingPage = lazyWithRetry(() => import('./pages/survival-hub/Housing'));
-const LazyHospitalsPage = lazyWithRetry(() => import('./pages/survival-hub/Hospitals'));
-const LazyPlacementsPage = lazyWithRetry(() => import('./pages/survival-hub/Placements'));
-const LazyAddHousingPage = lazyWithRetry(() => import('./pages/survival-hub/AddHousing'));
-const LazyReviewsPage = lazyWithRetry(() => import('./pages/survival-hub/ReviewsPage'));
-const LazyExamCenters = lazyWithRetry(() => import('./pages/survival-hub/ExamCenters'));
-const LazyAddPlacementPage = lazyWithRetry(() => import('./pages/survival-hub/AddPlacement'));
-const LazyPlacementDetailPage = lazyWithRetry(() => import('./pages/survival-hub/PlacementDetail'));
-const LazyExamBuddiesPage = lazyWithRetry(() => import('./pages/survival-hub/ExamBuddiesPage'));
-// Add with other lazy imports
-
-const LazyFeed = lazy(() => import("./pages/Feed"));
-
-// Lazy load heavy analytics page
-const LazyStudentAnalyticsPage = lazy(() => import("@/pages/analytics/StudentAnalyticsPage"));
-
-// Lazy load market pages (secondary feature)
-const LazyMarketFeed = lazy(() => import("./pages/market"));
-const LazyCreateListingPage = lazy(() => import("./pages/market/create"));
-const LazyMyListings = lazy(() => import("./pages/market/my-listings"));
-const LazyListingDetail = lazy(() => import("./pages/market/[id]"));
-
-// Lazy load exam flows (only needed during exams)
-const LazyExamCandidateInfo = lazy(() => import("./pages/exam/CandidateInfo"));
-const LazyExamInstructions = lazy(() => import("./pages/exam/InstructionPage"));
-const LazyExamAccessPage = lazy(() => import("./pages/exam/ExamAccessPage"));
-const LazyStudentResultsPage = lazy(() => import("@/pages/exam/StudentResultsPage"));
-const LazyResultsListPage = lazy(() => import("@/pages/exam/ResultsListPage"));
-const LazyTutorExamList = lazy(() => import("./pages/exam/tutor/ExamList"));
-const LazyTutorExamDetails = lazy(() => import("./pages/exam/tutor/ExamDetails"));
-const LazyTutorLiveMonitor = lazy(() => import("./pages/exam/tutor/LiveMonitor"));
-const LazyTutorResultsPage = lazy(() => import("./pages/exam/tutor/ResultsPage"));
-
-// Lazy load quiz simulation (heavy)
-const LazyCandidateInfo = lazy(() => import("@/pages/quiz-simulation/CandidateInfo"));
-const LazyInstructionPage = lazy(() => import("@/pages/quiz-simulation/InstructionPage"));
-const LazySimulationPage = lazy(() => import("@/pages/quiz-simulation/SimulationPage"));
-// Helper function to handle 404s on lazy loaded modules
-
-// Loading component for lazy-loaded routes
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-      <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
-    </div>
-  </div>
-);
-
-// Wrapper for lazy-loaded routes with Suspense
-const LazyRoute = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={<PageLoader />}>{children}</Suspense>
-);
-
-// ============================================
 // CACHE CONFIGURATION
 // ============================================
 const PROFILE_CACHE_KEY = "app_user_profile_cache";
@@ -277,6 +204,7 @@ const AIWrapper = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 };
+
 const BottomBarWrapper = () => {
   const location = useLocation();
   const publicPaths = ["/", "/login", "/register"];
@@ -290,6 +218,7 @@ const BottomBarWrapper = () => {
   if (!showBottomBar) return null;
   return <BottomBar unreadCount={0} unreadAnnouncements={0} />;
 };
+
 const AppContent = () => {
   const { user } = useAuth();
   const [forceLogout, setForceLogout] = useState(false);
@@ -302,8 +231,6 @@ const AppContent = () => {
     }
     return null;
   });
-  // REMOVED: splash screen loading state
-  // const [loading, setLoading] = useState(!localStorage.getItem("splashShown"));
   const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
 
   const fetchUserProfile = useCallback(async () => {
@@ -359,26 +286,19 @@ const AppContent = () => {
     if (!user) return;
 
     const performHeartbeat = async () => {
-      // If the user isn't looking at the tab, don't waste data!
       if (document.hidden) return;
 
       const deviceId = localStorage.getItem("device_id");
 
-      // We use the RPC we created to update everything at once
       await supabase.rpc('handle_user_heartbeat', {
         p_user_id: user.id,
         p_device_id: deviceId || ""
       });
     };
 
-    // Run once immediately
     performHeartbeat();
 
-    // Find line 245 and change 120000 to a larger number
-    // 10 minutes (600,000) is usually plenty.
-    // If you want it even lower, go for 30 mins (1800000).
     const interval = setInterval(performHeartbeat, 600000);
-    // Stop the interval if the tab is closed
     const handleVisibility = () => {
       if (!document.hidden) performHeartbeat();
     };
@@ -390,11 +310,11 @@ const AppContent = () => {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [user]);
+
   useEffect(() => {
     if (!user || !("setAppBadge" in navigator)) return;
 
     const updateBadge = async () => {
-      // Only check if the user is actually looking at the app
       if (document.hidden) return;
 
       const { count } = await supabase
@@ -410,30 +330,14 @@ const AppContent = () => {
       }
     };
 
-    // Only run this ONCE when the app opens
     updateBadge();
 
-    // Instead of Realtime (which is expensive), just check again
-    // ONLY when the user brings the app back to the foreground.
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) updateBadge();
     });
 
     return () => document.removeEventListener('visibilitychange', updateBadge);
   }, [user]);
-
-  // REMOVED: splash screen timer useEffect
-  // useEffect(() => {
-  //   if (!loading) return;
-  //   const timer = setTimeout(() => {
-  //     setLoading(false);
-  //     localStorage.setItem("splashShown", "true");
-  //   }, 2000);
-  //   return () => clearTimeout(timer);
-  // }, [loading]);
-
-  // REMOVED: splash screen check
-  // if (loading) return <SplashScreen theme={theme} />;
 
   return (
     <>
@@ -479,7 +383,7 @@ const AppContent = () => {
                     <Routes>
                       <Route path="/go/:code" element={<RedirectHandler />} />
 
-                      {/* Public Routes - NOT lazy loaded (critical) */}
+                      {/* Public Routes */}
                       <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
                       <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
                       <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
@@ -490,43 +394,43 @@ const AppContent = () => {
 
                       {/* Persistent Dashboard Layout */}
                       <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-                        {/* Core dashboards - NOT lazy loaded */}
+                        {/* Core dashboards */}
                         <Route path="/dashboard/student" element={<StudentDashboard />} />
                         <Route path="/dashboard/tutor" element={<TutorDashboard />} />
                         <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
-                        {/* Market pages - LAZY LOADED */}
-                        <Route path="/market" element={<LazyRoute><LazyMarketFeed user={user} profile={profile} /></LazyRoute>} />
+                        {/* Market pages */}
+                        <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
                         {user && profile && (
-                          <Route path="/market/create" element={<LazyRoute><LazyCreateListingPage user={user} profile={profile} /></LazyRoute>} />
+                          <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
                         )}
-                        <Route path="/market/my-listings" element={<LazyRoute><LazyMyListings /></LazyRoute>} />
-                        <Route path="/market/:id" element={<LazyRoute><LazyListingDetail /></LazyRoute>} />
+                        <Route path="/market/my-listings" element={<MyListings />} />
+                        <Route path="/market/:id" element={<ListingDetail />} />
                         <Route path="/share" element={<LinkGenerator />} />
 
-                        {/* Student Exam Flow - LAZY LOADED */}
+                        {/* Student Exam Flow */}
                         <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
-                        <Route path="/exam/candidate" element={<LazyRoute><LazyExamCandidateInfo /></LazyRoute>} />
-                        <Route path="/exam/instructions/:paper_id" element={<LazyRoute><LazyExamInstructions /></LazyRoute>} />
-                        <Route path="/exam/:paper_id/results" element={<LazyRoute><LazyStudentResultsPage /></LazyRoute>} />
-                        <Route path="/exam/results" element={<LazyRoute><LazyResultsListPage /></LazyRoute>} />
+                        <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
+                        <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
+                        <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
+                        <Route path="/exam/results" element={<ResultsListPage />} />
                         <Route path="/challenge" element={<ChallengePage />} />
                         <Route path="/live-classes/:id" element={<ClassDetails />} />
                         <Route path="/live-classes" element={<LiveClassesDashboard />} />
                         <Route path="/live-classes/create" element={<CreateClass />} />
                         <Route path="/my-classes" element={<MyClasses />} />
 
-                        {/* Tutor Exam Control - LAZY LOADED */}
-                        <Route path="/tutor/exams" element={<LazyRoute><LazyTutorExamList /></LazyRoute>} />
-                        <Route path="/tutor/exams/:paper_id" element={<LazyRoute><LazyTutorExamDetails /></LazyRoute>} />
-                        <Route path="/tutor/exams/:paper_id/live" element={<LazyRoute><LazyTutorLiveMonitor /></LazyRoute>} />
-                        <Route path="/tutor/exams/:paper_id/results" element={<LazyRoute><LazyTutorResultsPage /></LazyRoute>} />
-                        {/* Inside your Routes list */}
+                        {/* Tutor Exam Control */}
+                        <Route path="/tutor/exams" element={<TutorExamList />} />
+                        <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
+                        <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
+                        <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
                         <Route path="/help" element={<HelpCenter />} />
-                        {/* Analytics - LAZY LOADED */}
-                        <Route path="/analytics" element={<LazyRoute><LazyStudentAnalyticsPage /></LazyRoute>} />
 
-                        {/* Core features - NOT lazy loaded (frequently used) */}
+                        {/* Analytics */}
+                        <Route path="/analytics" element={<StudentAnalyticsPage />} />
+
+                        {/* Core features */}
                         <Route path="/my-mistakes" element={<MyMistakes />} />
                         <Route path="/ai-assistant" element={<AIAssistant />} />
                         <Route path="/calendar" element={<Calendar />} />
@@ -547,55 +451,48 @@ const AppContent = () => {
                         <Route path="/grouppay" element={<GroupPayHome />} />
                         <Route path="/grouppay/create" element={<CreateGroupPage />} />
                         <Route path="/grouppay/:id" element={<GroupDetailsPage />} />
-                        {/* ============================================ */}
+
                         {/* NURSING CURRICULUM ROUTES */}
-                        {/* ============================================ */}
                         <Route path="/nursing" element={<NursingHome />} />
                         <Route path="/nursing/:yearId" element={<NursingSemester />} />
                         <Route path="/nursing/:yearId/:semId" element={<NursingModule />} />
                         <Route path="/nursing/:yearId/:semId/:moduleId" element={<NursingUnit />} />
                         <Route path="/nursing/quiz/:topicId" element={<NursingQuiz />} />
                         <Route path="/nursing/search" element={<TopicSearch />} />
-                        {/* Inside the <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}> section */}
                         <Route path="/nursing/progress" element={<ProgressPage />} />
-                        {/* Quiz Simulation - LAZY LOADED */}
-                        <Route path="/simulation/candidate" element={<LazyRoute><LazyCandidateInfo /></LazyRoute>} />
-                        <Route path="/quiz-simulation/instructions" element={<LazyRoute><LazyInstructionPage /></LazyRoute>} />
-                        {/* ============================================ */}
-                        {/* ✅ ASSESSMENT ROUTES */}
-                        {/* ============================================ */}
-                        {/* ============================================ */}
-                        {/* ✅ ASSESSMENT ROUTES - Simplified Question Format */}
-                        {/* ============================================ */}
+
+                        {/* Quiz Simulation */}
+                        <Route path="/simulation/candidate" element={<CandidateInfo />} />
+                        <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
+
+                        {/* ASSESSMENT ROUTES */}
                         <Route path="/assessments">
                           <Route index element={<AssessmentHome />} />
                           <Route path="search" element={<AssessmentHome />} />
                           <Route path="history" element={<AssessmentHistory />} />
-                          <Route path=":slug" element={<AssessmentQuestion />} />  {/* ← Changed from AssessmentChat */}
+                          <Route path=":slug" element={<AssessmentQuestion />} />
                           <Route path=":slug/results/:attemptId" element={<AssessmentResults />} />
                         </Route>
-                        {/* Remove or comment out the separate /assessment-history route */}
 
-                        {/* Survival Hub Module - LAZY LOADED (heavy) */}
-                        <Route path="/survival-hub" element={<LazyRoute><LazySurvivalHubDashboard /></LazyRoute>} />
-                        <Route path="/survival-hub/exam-centers" element={<LazyRoute><LazyExamCenters /></LazyRoute>} />
-                        <Route path="/survival-hub/housing" element={<LazyRoute><LazyHousingPage /></LazyRoute>} />
-                        <Route path="/survival-hub/hospitals" element={<LazyRoute><LazyHospitalsPage /></LazyRoute>} />
-                        <Route path="/survival-hub/placements" element={<LazyRoute><LazyPlacementsPage /></LazyRoute>} />
-                        <Route path="/survival-hub/add-housing" element={<LazyRoute><LazyAddHousingPage /></LazyRoute>} />
-                        <Route path="/survival-hub/reviews/:targetId" element={<LazyRoute><LazyReviewsPage /></LazyRoute>} />
-                        <Route path="/survival-hub/add-placement" element={<LazyRoute><LazyAddPlacementPage /></LazyRoute>} />
-                        <Route path="/survival-hub/placements/:id" element={<LazyRoute><LazyPlacementDetailPage /></LazyRoute>} />
-                        <Route path="/survival-hub/buddies" element={<LazyRoute><LazyExamBuddiesPage /></LazyRoute>} />
+                        {/* Survival Hub Module */}
+                        <Route path="/survival-hub" element={<SurvivalHubDashboard />} />
+                        <Route path="/survival-hub/exam-centers" element={<ExamCenters />} />
+                        <Route path="/survival-hub/housing" element={<HousingPage />} />
+                        <Route path="/survival-hub/hospitals" element={<HospitalsPage />} />
+                        <Route path="/survival-hub/placements" element={<PlacementsPage />} />
+                        <Route path="/survival-hub/add-housing" element={<AddHousingPage />} />
+                        <Route path="/survival-hub/reviews/:targetId" element={<ReviewsPage />} />
+                        <Route path="/survival-hub/add-placement" element={<AddPlacementPage />} />
+                        <Route path="/survival-hub/placements/:id" element={<PlacementDetailPage />} />
+                        <Route path="/survival-hub/buddies" element={<ExamBuddiesPage />} />
                       </Route>
-
 
                       {/* Full-screen / Independent Pages */}
                       <Route path="/terms" element={<TermsPage />} />
                       <Route path="/cookies" element={<CookiePolicyPage />} />
-                      <Route path="/simulation/:paper_id" element={<LazyRoute><LazySimulationPage /></LazyRoute>} />
+                      <Route path="/simulation/:paper_id" element={<SimulationPage />} />
                       <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                      <Route path="/exam/access/:paper_id" element={<LazyRoute><LazyExamAccessPage /></LazyRoute>} />
+                      <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
                       <Route path="/auth/callback" element={<AuthCallback />} />
 
                       <Route path="*" element={<NotFound />} />

@@ -167,6 +167,9 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const [isMuted, setIsMuted] = useState(isSoundMuted);
 
+  // ✅ NEW: State for settings dropdown open
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   // ✅ PRE-LOADED THEME - No flicker
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Use prop if provided, otherwise use preloaded theme
@@ -430,11 +433,26 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     }
   }, [isOnline, refetch]);
 
+  // ✅ UPDATED: Handle settings open/close with blur effect
   const handleSettingsOpen = useCallback((open: boolean) => {
+    setIsSettingsOpen(open);
+
+    // Toggle body blur when settings opens/closes
     if (open) {
+      document.body.classList.add('settings-open');
+      // Lazy fetch data when opening
       lazyFetchData();
+    } else {
+      document.body.classList.remove('settings-open');
     }
   }, [lazyFetchData]);
+
+  // ✅ Cleanup blur on unmount
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('settings-open');
+    };
+  }, []);
 
   // ✅ Visibility change - refresh in background
   useEffect(() => {
@@ -630,6 +648,18 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
   return (
     <>
+      {/* ✅ NEW: Global blur overlay when settings is open */}
+      {isSettingsOpen && (
+        <div
+          className="fixed inset-0 z-[99] backdrop-blur-sm bg-black/20 transition-all duration-300"
+          onClick={() => {
+            // Close settings when clicking outside
+            setIsSettingsOpen(false);
+            document.body.classList.remove('settings-open');
+          }}
+        />
+      )}
+
       <header className={`
         sticky top-3 sm:top-4 z-50 mx-3 sm:mx-6 h-14 sm:h-16
         ${themeClasses} backdrop-blur-xl

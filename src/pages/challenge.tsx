@@ -297,8 +297,12 @@ function ChallengeTabs({
                                                                     loading="lazy"
                                                                 />
                                                             ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-2xl">
-                                                                    {p.name?.[0]?.toUpperCase() || "?"}
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <img
+                                                                        src="/pwa-512x512.png"
+                                                                        className="w-full h-full object-cover rounded-full"
+                                                                        alt="Medrae Logo"
+                                                                    />
                                                                 </div>
                                                             )}
                                                         </div>
@@ -405,8 +409,12 @@ function ChallengeTabs({
                                                         loading="lazy"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-2xl">
-                                                        {p.name?.[0]?.toUpperCase() || "?"}
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <img
+                                                            src="/pwa-512x512.png"
+                                                            className="w-full h-full object-cover rounded-full"
+                                                            alt="Medrae Logo"
+                                                        />
                                                     </div>
                                                 )}
                                             </div>
@@ -652,8 +660,12 @@ function ChallengeTabs({
                                                                 loading="lazy"
                                                             />
                                                         ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-2xl">
-                                                                {challenge.to_user?.name?.[0]?.toUpperCase() || "?"}
+                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                <img
+                                                                    src="/pwa-512x512.png"
+                                                                    className="w-full h-full object-cover rounded-full"
+                                                                    alt="Medrae Logo"
+                                                                />
                                                             </div>
                                                         )
                                                     ) : (
@@ -665,8 +677,12 @@ function ChallengeTabs({
                                                                 loading="lazy"
                                                             />
                                                         ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-2xl">
-                                                                {challenge.from_user?.name?.[0]?.toUpperCase() || "?"}
+                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                <img
+                                                                    src="/pwa-512x512.png"
+                                                                    className="w-full h-full object-cover rounded-full"
+                                                                    alt="Medrae Logo"
+                                                                />
                                                             </div>
                                                         )
                                                     )}
