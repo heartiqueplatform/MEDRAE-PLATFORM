@@ -638,9 +638,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
   // Determine theme classes based on isDarkMode state
   const themeClasses = isDarkMode
-    ? 'bg-slate-900/90 dark:bg-slate-900/90 border-slate-700/30 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
-    : 'bg-white/90 border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)]';
-
+    ? 'bg-slate-900/95 dark:bg-slate-900/95 border-slate-700/30 shadow-[0_2px_20px_rgba(0,0,0,0.3)]'
+    : 'bg-white/95 border-white/20 shadow-[0_2px_20px_rgba(0,0,0,0.08)]';
   return (
     <>
       {/* ✅ NEW: Global blur overlay when settings is open */}
@@ -656,17 +655,18 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       )}
 
       <header className={`
-        sticky top-3 sm:top-4 z-50 mx-3 sm:mx-6 h-14 sm:h-16
-        ${themeClasses} backdrop-blur-xl
-        border-0 rounded-2xl sm:rounded-3xl flex items-center justify-between xl:justify-evenly
-        px-2 sm:px-6 text-sm sm:text-base transition-all duration-300 ease-in-out w-auto
-      `}>
+  sticky top-0 z-50 w-full h-14 sm:h-16
+  ${themeClasses} backdrop-blur-xl
+  border-b border-slate-200/20 dark:border-slate-700/30
+  flex items-center justify-between xl:justify-evenly
+  px-3 sm:px-6 text-sm sm:text-base transition-all duration-300 ease-in-out
+`}>
         {/* Mobile Logo */}
         <div className="flex items-center gap-1.5 md:hidden shrink-0">
           <img src="/pwa-192x192.jpeg" alt="Medrae" className="h-7 w-7 rounded-md object-cover" loading="lazy" />
-          <div className="text-sm font-black tracking-tight leading-tight">
-            <span className="text-red-500">MEDRAE</span>{' '}
-            <span className="text-gray-900 dark:text-white text-[14px]">NURSING</span>
+          <div className="text-xl sm:text-2xl font-black tracking-tight leading-none">
+            <span className="text-red-500">Medrae</span>{' '}
+            <span className="text-gray-900 dark:text-white">Nursing</span>
           </div>
         </div>
 
@@ -694,7 +694,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
           <div className="flex items-center ml-auto gap-2 sm:gap-4">
 
             {/* 1. Online Users Section */}
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="hidden sm:flex items-center gap-1 sm:gap-2">
               <AllUsersPopover totalUsers={totalUsers} />
 
               <Popover open={showOnlineUsers} onOpenChange={handleOnlinePopoverOpen}>

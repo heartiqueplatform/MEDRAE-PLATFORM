@@ -200,7 +200,7 @@ export function Footer() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
-
+    const scrollContainerRef = useRef<Element | null>(null);
     // ✅ PRE-LOADED THEME
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         try {
@@ -348,9 +348,47 @@ export function Footer() {
     }, []);
 
     // Smart scroll detection
+    // Smart scroll detection - FIXED
     useEffect(() => {
+        const findScrollContainer = () => {
+            // Check for feed container
+            if (location.pathname === '/feed') {
+                const feedContainer = document.querySelector('.p-0.max-w-2xl.mx-auto.space-y-2.h-\\[80vh\\].overflow-y-auto');
+                if (feedContainer) return feedContainer;
+                const pullToRefresh = document.querySelector('.react-simple-pull-to-refresh');
+                if (pullToRefresh) {
+                    const container = pullToRefresh.querySelector('.overflow-y-auto');
+                    if (container) return container;
+                }
+            }
+
+            // Check for dashboard container
+            const dashboardContainer = document.querySelector('[data-scroll-container]');
+            if (dashboardContainer) return dashboardContainer;
+
+            // Find any scrollable container
+            const containers = document.querySelectorAll('.overflow-auto, .overflow-y-auto');
+            for (const el of containers) {
+                if (el.scrollHeight > el.clientHeight + 10) {
+                    return el;
+                }
+            }
+            return null;
+        };
+
+        const container = findScrollContainer();
+        scrollContainerRef.current = container;
+
         const handleScroll = () => {
-            const currentScrollY = window.scrollY;
+            let currentScrollY;
+
+            // Get scroll position from the correct container
+            if (container === document.documentElement || container === document.body || !container) {
+                currentScrollY = window.scrollY || document.documentElement.scrollTop;
+            } else {
+                currentScrollY = container.scrollTop;
+            }
+
             if (window.innerWidth >= 768) return;
 
             if (scrollTimeout.current) {
@@ -381,17 +419,64 @@ export function Footer() {
             }, 1500);
         };
 
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        window.addEventListener('scroll', handleScrollStop, { passive: true });
+        // Attach scroll listeners to the correct container
+        if (container === document.documentElement || container === document.body || !container) {
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            window.addEventListener('scroll', handleScrollStop, { passive: true });
+        } else {
+            container.addEventListener('scroll', handleScroll, { passive: true });
+            container.addEventListener('scroll', handleScrollStop, { passive: true });
+        }
+
+        // Watch for DOM changes that might create new scroll containers
+        const observer = new MutationObserver(() => {
+            const currentContainer = findScrollContainer();
+            if (currentContainer !== scrollContainerRef.current) {
+                // Remove old listeners
+                if (scrollContainerRef.current) {
+                    const old = scrollContainerRef.current;
+                    if (old === document.documentElement || old === document.body) {
+                        window.removeEventListener('scroll', handleScroll);
+                        window.removeEventListener('scroll', handleScrollStop);
+                    } else {
+                        old.removeEventListener('scroll', handleScroll);
+                        old.removeEventListener('scroll', handleScrollStop);
+                    }
+                }
+
+                // Add new listeners
+                if (currentContainer) {
+                    scrollContainerRef.current = currentContainer;
+                    if (currentContainer === document.documentElement || currentContainer === document.body) {
+                        window.addEventListener('scroll', handleScroll, { passive: true });
+                        window.addEventListener('scroll', handleScrollStop, { passive: true });
+                    } else {
+                        currentContainer.addEventListener('scroll', handleScroll, { passive: true });
+                        currentContainer.addEventListener('scroll', handleScrollStop, { passive: true });
+                    }
+                }
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
 
         return () => {
-            window.removeEventListener('scroll', handleScroll);
-            window.removeEventListener('scroll', handleScrollStop);
+            if (container === document.documentElement || container === document.body || !container) {
+                window.removeEventListener('scroll', handleScroll);
+                window.removeEventListener('scroll', handleScrollStop);
+            } else {
+                container.removeEventListener('scroll', handleScroll);
+                container.removeEventListener('scroll', handleScrollStop);
+            }
+            observer.disconnect();
             if (scrollTimeout.current) {
                 clearTimeout(scrollTimeout.current);
             }
         };
-    }, []);
+    }, [location.pathname]);
 
     // ✅ 5 ITEMS with custom SVGs from public folder
     const items = useMemo(() => [
