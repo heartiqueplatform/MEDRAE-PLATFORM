@@ -1472,14 +1472,7 @@ export default function ChallengePage() {
             )}
 
             {/* Header - Clean typography */}
-            <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8">
-                <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20"><Swords size={20} /></div>
-                    <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Nurse Duel(N.D) Challenges</h1>
-                </div>
-                <p className="mt-1 text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Compete • Track • Dominate</p>
-                <p className="mt-2 text-[11px] font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text uppercase tracking-wide flex items-center gap-1"><Send size={11} className="text-blue-500" />N.D. Your Friends<Swords size={11} className="text-indigo-500" /></p>
-            </div>
+
 
             {/* Stats Dashboard - Clean, no borders */}
             <div className="grid grid-cols-3 gap-2 text-center max-w-full mx-auto mb-3">

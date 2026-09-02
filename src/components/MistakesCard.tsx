@@ -992,9 +992,7 @@ export function MistakesCard() {
                                 </div>
                                 Question Failure Analysis
                             </CardTitle>
-                            <CardDescription className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                                Most failed questions • Tap any card for details
-                            </CardDescription>
+
                         </div>
 
                         <div className="flex items-center gap-2 w-full md:w-auto">

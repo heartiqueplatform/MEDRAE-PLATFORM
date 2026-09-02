@@ -400,7 +400,7 @@ export function StudyProgress() {
         )}
       </AnimatePresence>
 
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-0 md:space-y-2 px-0 md:px-6 pt-0 md:pt-8">
+      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-0 md:space-y-2 px-2 md:px-6 pt-0 md:pt-8">
         {/* Main Card - full width on mobile, no rounded corners */}
         <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-white dark:bg-muted/30 border-b border-gray-100 dark:border-gray-800 md:border-b-0">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
@@ -411,10 +411,10 @@ export function StudyProgress() {
               </div>
               <div>
                 <CardTitle className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                  Study <span className="text-blue-600">Progress</span>
+                  Your <span className="text-blue-600">Growth</span> Story
                 </CardTitle>
-                <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-0.5 md:mt-1">
-                  Real-time Learning Analytics
+                <p className="text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 tracking-[0.12em] mt-1">
+                  Every quiz brings you closer to success
                 </p>
               </div>
             </div>
@@ -557,7 +557,7 @@ export function StudyProgress() {
                     </div>
                   )}
 
-                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full px-0">
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full px-2">
                     {subjects.map((subject) => {
                       const unitTriage = getTriageCode(subject.progress, true);
                       return (

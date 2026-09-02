@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDrawer } from "@/contexts/DrawerContext";
 import {
     Brain,
     X,
@@ -246,6 +247,7 @@ const PlayFilledIcon = ({ className = "h-6 w-6" }: { className?: string }) => (
 );
 
 export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: MobileDrawerProps) {
+    const { setIsOpen: setDrawerContext } = useDrawer();
     const navigate = useNavigate();
     const drawerRef = useRef<HTMLDivElement>(null);
     const isOnline = useOnlineStatus();
@@ -266,7 +268,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
     // ✅ Track dark mode with proper state
     const [isDarkMode, setIsDarkMode] = useState(false);
-
+    // 👈 Sync the drawer state with context
+    useEffect(() => {
+        setDrawerContext(isOpen);
+    }, [isOpen, setDrawerContext]);
     // ✅ Initialize dark mode on mount
     useEffect(() => {
         const checkDarkMode = () => {

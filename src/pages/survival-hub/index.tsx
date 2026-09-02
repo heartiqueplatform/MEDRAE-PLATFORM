@@ -27,9 +27,7 @@ const SurvivalHubDashboard = () => {
             {/* 1. Header Section - Centered on Mobile & Desktop */}
             <header className="mb-6 md:mb-8 mt-4 md:mt-0 px-4 md:px-0">
                 <div className="flex flex-col items-center md:items-start gap-1.5 md:gap-2 mb-1">
-                    <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        NCK Survival Guide
-                    </span>
+
                     <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white text-center md:text-left">
                         Student Survival Hub 🇰🇪
                     </h1>

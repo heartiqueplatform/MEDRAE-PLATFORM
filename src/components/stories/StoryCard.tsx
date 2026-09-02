@@ -222,7 +222,6 @@ export const StoryCard: React.FC<StoryCardProps> = memo(({
     // =============================================
     // MEMOIZED REACTION BUTTONS
     // =============================================
-
     const reactionButtons = useMemo(() => {
         const emojis = ['🔥', '❤️', '👏', '😂', '💪'];
         return emojis.map((emoji) => {
@@ -231,7 +230,7 @@ export const StoryCard: React.FC<StoryCardProps> = memo(({
                 <button
                     key={emoji}
                     onClick={(e) => handleReactionWithAnimation(emoji, e)}
-                    className={`hover:scale-110 transition-transform text-lg ${isActive ? 'scale-110 ring-2 ring-indigo-500 rounded-full p-0.5' : ''
+                    className={`hover:scale-110 transition-transform text-sm sm:text-base lg:text-lg ${isActive ? 'scale-110 ring-2 ring-indigo-500 rounded-full p-0.5' : ''
                         }`}
                     aria-label={`React with ${emoji}`}
                 >
@@ -240,7 +239,6 @@ export const StoryCard: React.FC<StoryCardProps> = memo(({
             );
         });
     }, [story.user_reaction, handleReactionWithAnimation]);
-
     // =============================================
     // RENDER
     // =============================================
@@ -253,63 +251,79 @@ export const StoryCard: React.FC<StoryCardProps> = memo(({
                 onClick={handleView}
             >
                 {/* Story Card Content */}
-                <div className={`bg-gradient-to-br ${backgroundColor} p-6 min-h-[200px] flex flex-col justify-between`}>
-                    {/* Header */}
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl" aria-hidden="true">
-                                {storyIcon}
-                            </span>
-                            <span className="text-white text-xs font-medium bg-black/20 px-2 py-1 rounded-full capitalize">
-                                {story.story_type}
-                            </span>
-                        </div>
-
-                        {/* More Actions Button */}
-                        <button
-                            onClick={handleActionToggle}
-                            className="text-white/80 hover:text-white bg-black/20 hover:bg-black/30 rounded-full p-1 transition-colors"
-                            aria-label="More actions"
-                        >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <circle cx="10" cy="3" r="2" />
-                                <circle cx="10" cy="10" r="2" />
-                                <circle cx="10" cy="17" r="2" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="mt-4">
-                        {story.title && (
-                            <h3 className="text-white font-semibold text-lg mb-1 line-clamp-2">
-                                {story.title}
-                            </h3>
-                        )}
-                        <p className="text-white/90 text-sm line-clamp-3">
-                            {story.content}
-                        </p>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="mt-4 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-white/70 text-xs">
-                            <span>{timeAgo}</span>
-                            <span>•</span>
-                            <span>{story.reactions_count || 0} reactions</span>
-                        </div>
-
-                        {isChallenge && (
-                            <div className="flex items-center gap-1 bg-white/20 rounded-full px-3 py-1">
-                                <span className="text-white text-sm" aria-hidden="true">🎯</span>
-                                <span className="text-white text-xs font-medium">
-                                    {story.challenge_target} {story.challenge_unit}
+                <div
+                    ref={cardRef}
+                    className="relative rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer bg-white dark:bg-gray-800 will-change-transform"
+                    onClick={handleView}
+                >
+                    {/* Story Card Content */}
+                    <div className={`bg-gradient-to-br ${backgroundColor} p-3 sm:p-4 lg:p-5 min-h-[140px] sm:min-h-[160px] lg:min-h-[200px] flex flex-col justify-between`}>
+                        {/* Header */}
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2">
+                                <span className="text-lg sm:text-xl lg:text-2xl" aria-hidden="true">
+                                    {storyIcon}
+                                </span>
+                                <span className="text-[8px] sm:text-[10px] lg:text-xs text-white font-medium bg-black/20 px-1.5 py-0.5 rounded-full capitalize">
+                                    {story.story_type}
                                 </span>
                             </div>
-                        )}
+
+                            {/* More Actions Button */}
+                            <button
+                                onClick={handleActionToggle}
+                                className="text-white/80 hover:text-white bg-black/20 hover:bg-black/30 rounded-full p-0.5 transition-colors"
+                                aria-label="More actions"
+                            >
+                                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <circle cx="10" cy="3" r="2" />
+                                    <circle cx="10" cy="10" r="2" />
+                                    <circle cx="10" cy="17" r="2" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="mt-1.5 sm:mt-2 lg:mt-3">
+                            {story.title && (
+                                <h3 className="text-white font-semibold text-sm sm:text-base lg:text-lg mb-0.5 line-clamp-2">
+                                    {story.title}
+                                </h3>
+                            )}
+                            <p className="text-white/90 text-[10px] sm:text-xs lg:text-sm line-clamp-2">
+                                {story.content}
+                            </p>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="mt-1.5 sm:mt-2 lg:mt-3 flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-white/70 text-[8px] sm:text-[10px] lg:text-xs">
+                                <span>{timeAgo}</span>
+                                <span>•</span>
+                                <span>{story.reactions_count || 0} reactions</span>
+                            </div>
+
+                            {isChallenge && (
+                                <div className="flex items-center gap-0.5 bg-white/20 rounded-full px-1.5 py-0.5">
+                                    <span className="text-[10px] sm:text-xs lg:text-sm text-white" aria-hidden="true">🎯</span>
+                                    <span className="text-white text-[8px] sm:text-[10px] lg:text-xs font-medium">
+                                        {story.challenge_target} {story.challenge_unit}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Reactions Bar - No border */}
+                    <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white dark:bg-gray-800 flex items-center justify-between">
+                        <div className="flex items-center gap-0.5 sm:gap-1">
+                            {reactionButtons}
+                        </div>
+                        <div className="text-[8px] sm:text-[10px] lg:text-xs text-gray-400 dark:text-gray-500">
+                            {story.reactions_count || 0} reactions
+                        </div>
                     </div>
                 </div>
-
                 {/* Reactions Bar */}
                 <div className="px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
                     <div className="flex items-center gap-1">

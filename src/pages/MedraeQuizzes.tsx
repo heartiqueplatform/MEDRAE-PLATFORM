@@ -14,7 +14,7 @@ import {
   Heart, Play, BookOpen, Shuffle, Compass, ChevronRight,
   ClipboardCheck, CheckCircle2, Trophy, Zap, Lock, Sparkles,
   Search, RefreshCw, HelpCircle, GraduationCap, Stethoscope,
-  FileText, Globe, Info, BookMarked, Layers, Tag, Type
+  FileText, Globe, Info, BookMarked, Layers, Tag, Type, X
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useUnitQuestionCount } from "@/hooks/useUnitQuestionCount";
@@ -176,6 +176,25 @@ const getQuizTypeColor = (type: string) => {
   }
 };
 
+// Category avatar mapping - uses images from public folder
+const categoryAvatars: Record<string, string> = {
+  all: "/pwaa-512x512.png",
+  paper1: "/indexbackground5.jpg",
+  paper2: "/background05.jpg",
+  practice: "/high4.png",
+  nclex: "/pwaa-512x512.png",
+  medical: "/pwaa-512x512.png"
+};
+
+// Paper avatar mapping
+const paperAvatars: Record<number, string> = {
+  1: "/indexbackground5.jpg",
+  2: "/background05.jpg",
+  3: "/high4.png",
+  4: "/high1.png",
+  5: "/high3.png"
+};
+
 export function MedraeQuizzes() {
   const user = useUser();
   const [isPremium, setIsPremium] = useState(() => {
@@ -187,7 +206,7 @@ export function MedraeQuizzes() {
   const [showHelp, setShowHelp] = React.useState(false);
   const [freeUnits, setFreeUnits] = useState<string[]>(() => getCachedFreeUnits() || []);
   const [activeCategory, setActiveCategory] = useState<CategoryType>("all");
-
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null); // For modal
 
   const { papers, loading: unitsLoading, refreshUnits } = useUnits();
   const { data: unitCounts, loading: countsLoading, refreshCounts } = useUnitQuestionCount();
@@ -198,7 +217,6 @@ export function MedraeQuizzes() {
   const [popupError, setPopupError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
-
   const isMounted = useRef(true);
 
   // Cleanup on unmount
@@ -209,13 +227,10 @@ export function MedraeQuizzes() {
     };
   }, []);
 
-
-
   // ✅ OPTIMIZED: Fetch subscription with caching (24 hours)
   const fetchSubscription = useCallback(async () => {
     if (!user) return;
 
-    // Check 24-hour cache first
     const cached = getCachedSubscription();
     if (cached !== null) {
       if (isMounted.current) {
@@ -225,7 +240,6 @@ export function MedraeQuizzes() {
       return;
     }
 
-    // Rate limiting
     const now = Date.now();
     if (now - lastSubscriptionFetch < MIN_FETCH_INTERVAL) return;
     if (subscriptionFetchInProgress) return;
@@ -263,7 +277,6 @@ export function MedraeQuizzes() {
 
   // ✅ OPTIMIZED: Fetch free units with caching (24 hours)
   const fetchFreeUnits = useCallback(async () => {
-    // Check 24-hour cache first
     const cached = getCachedFreeUnits();
     if (cached !== null) {
       if (isMounted.current) {
@@ -272,7 +285,6 @@ export function MedraeQuizzes() {
       return;
     }
 
-    // Rate limiting
     const now = Date.now();
     if (now - lastFreeUnitsFetch < MIN_FETCH_INTERVAL) return;
     if (freeUnitsFetchInProgress) return;
@@ -318,7 +330,6 @@ export function MedraeQuizzes() {
     setRefreshing(true);
     setPopupError(false);
     try {
-      // Clear caches to force fresh data
       localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
       localStorage.removeItem(FREE_UNITS_CACHE_KEY);
 
@@ -402,14 +413,14 @@ export function MedraeQuizzes() {
 
   const isLoading = (unitsLoading && papers.length === 0) || (countsLoading && !unitCounts?.length);
 
-  // Category tabs configuration
+  // Category tabs configuration with avatars
   const categories = [
-    { id: "all", label: "All Units", icon: BookOpen, color: "gray", description: "View all available quizzes" },
-    { id: "paper1", label: "Paper 1", icon: GraduationCap, color: "amber", description: "Core Nursing Fundamentals & Foundation Units" },
-    { id: "paper2", label: "Paper 2", icon: FileText, color: "blue", description: "Leadership, Research & Community Health" },
-    { id: "practice", label: "Practice Papers", icon: ClipboardCheck, color: "emerald", description: "Full-length mock exams for readiness evaluation" },
-    { id: "nclex", label: "NCLEX Prep", icon: Globe, color: "purple", description: "International nursing standards (Coming Soon)" },
-    { id: "medical", label: "Medical Conditions", icon: Stethoscope, color: "rose", description: "Condition-specific quizzes - Hypertension, Diabetes & more" },
+    { id: "all", label: "All Units", icon: BookOpen, color: "gray", avatar: "/pwaa-512x512.png", description: "View all available quizzes" },
+    { id: "paper1", label: "Paper 1", icon: GraduationCap, color: "amber", avatar: "/pwaa-512x512.png", description: "Core Nursing Fundamentals & Foundation Units" },
+    { id: "paper2", label: "Paper 2", icon: FileText, color: "blue", avatar: "/pwaa-512x512.png", description: "Leadership, Research & Community Health" },
+    { id: "practice", label: "Practice Papers", icon: ClipboardCheck, color: "emerald", avatar: "/pwaa-512x512.png", description: "Full-length mock exams for readiness evaluation" },
+    { id: "nclex", label: "NCLEX Prep", icon: Globe, color: "purple", avatar: "/pwaa-512x512.png", description: "International nursing standards (Coming Soon)" },
+    { id: "medical", label: "Medical Conditions", icon: Stethoscope, color: "rose", avatar: "/pwaa-512x512.png", description: "Condition-specific quizzes - Hypertension, Diabetes & more" },
   ];
 
   const toggleDescription = (unitCode: string) => {
@@ -425,7 +436,7 @@ export function MedraeQuizzes() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center">
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-2 px-0 sm:px-6 pt-4 sm:pt-8">
+      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-2 px-2 sm:px-6 pt-4 sm:pt-8">
         {/* Popup Notification */}
         <AnimatePresence>
           {popup && (
@@ -436,9 +447,9 @@ export function MedraeQuizzes() {
             />
           )}
         </AnimatePresence>
-        {/* HERO HEADER CARD - full width on mobile */}
-        <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-white dark:bg-muted/30 border-b border-gray-100 dark:border-gray-800 md:border-b-0">
 
+        {/* HERO HEADER CARD */}
+        <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-white dark:bg-muted/30 border-b border-gray-100 dark:border-gray-800 md:border-b-0">
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <CardHeader className="relative pb-2 px-4 md:px-6 pt-4 md:pt-6">
@@ -448,24 +459,24 @@ export function MedraeQuizzes() {
               </div>
               <div>
                 <CardTitle className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
-                  Prep Quizzes <span className="text-blue-600">Bank</span>
+                  Your <span className="text-blue-600">Nursing</span> Journey Starts Here
                 </CardTitle>
                 <p className="text-[9px] md:text-[10px] font-bold text-blue-500/60 uppercase tracking-[0.2em] mt-0.5 md:mt-1.5">
-                  NCK, FQE & NCLEX Prep
+                  Master NCK • FQE • NCLEX with Confidence
                 </p>
               </div>
             </div>
           </CardHeader>
 
           <CardContent className="relative space-y-2 md:space-y-2 px-4 md:px-6 pb-4 md:pb-6">
-            {/* Collapsible Description Box */}
-            <div className="bg-gray-50/50 dark:bg-gray-900/50 rounded-xl md:rounded-2xl p-3 md:p-4 border border-gray-100 dark:border-gray-800">
+            {/* Description - Clean, no box */}
+            <div>
               <motion.div layout>
-                <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm leading-relaxed">
-                  Master nursing concepts with our comprehensive quizzes bank. Choose from core units, practice papers, or condition-specific quizzes to build confidence and save time...
+                <p className="text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed">
+                  <span className="font-bold text-blue-600 dark:text-blue-400">Master</span> nursing concepts with our comprehensive quizzes bank. Choose from core units, practice papers, or condition-specific quizzes to build confidence and save time.
                   <button
                     onClick={() => setShowDescription(!showDescription)}
-                    className="text-blue-600 dark:text-blue-400 font-bold ml-1 hover:underline underline-offset-4 inline-flex items-center gap-1 transition-all"
+                    className="text-blue-600 dark:text-blue-400 font-semibold ml-1 hover:underline underline-offset-4 inline-flex items-center gap-1 transition-all"
                   >
                     {showDescription ? "Show less" : "Learn more"}
                   </button>
@@ -481,11 +492,11 @@ export function MedraeQuizzes() {
                     >
                       <div className="pt-3 md:pt-4 space-y-2 md:space-y-3 border-t border-gray-200/50 dark:border-gray-700/50 mt-2 md:mt-3">
                         <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold text-amber-600">Paper 1:</span> Contains most frequently tested foundational nursing units<br />
-                          <span className="font-semibold text-blue-600">Paper 2:</span> Leadership, research & community health focus<br />
-                          <span className="font-semibold text-emerald-600">Practice Papers:</span> Mixed questions for comprehensive readiness evaluation<br />
-                          <span className="font-semibold text-purple-600">NCLEX Prep:</span> International standards preparation (in development)<br />
-                          <span className="font-semibold text-rose-600">Medical Conditions:</span> Condition-specific quizzes for targeted practice - jump directly to Hypertension, Diabetes, and more!
+                          <span className="font-semibold text-amber-600">Paper 1:</span> Most frequently tested foundational nursing units<br />
+                          <span className="font-semibold text-blue-600">Paper 2:</span> Leadership, research & community health<br />
+                          <span className="font-semibold text-emerald-600">Practice Papers:</span> Mixed questions for readiness evaluation<br />
+                          <span className="font-semibold text-purple-600">NCLEX Prep:</span> International standards (in development)<br />
+                          <span className="font-semibold text-rose-600">Medical Conditions:</span> Targeted practice - Hypertension, Diabetes & more!
                         </p>
                         <div className="flex flex-col gap-1.5 md:gap-2">
                           <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 md:px-3 py-1.5 md:py-2 rounded-lg">
@@ -502,7 +513,7 @@ export function MedraeQuizzes() {
               </motion.div>
             </div>
 
-            {/* Category Tabs - horizontal scroll on mobile */}
+            {/* Category Tabs with Avatar Images */}
             <div className="relative">
               <div className="flex overflow-x-auto scrollbar-hide gap-1.5 md:gap-2 pb-2 -mx-1 px-1 sm:overflow-visible sm:flex-wrap sm:justify-center">
                 {categories.map((cat) => {
@@ -513,12 +524,16 @@ export function MedraeQuizzes() {
                       key={cat.id}
                       onClick={() => setActiveCategory(cat.id as CategoryType)}
                       className={`flex-shrink-0 flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg md:rounded-xl transition-all duration-200 whitespace-nowrap text-[10px] md:text-xs
-                ${isActive
+                        ${isActive
                           ? `bg-${cat.color}-500 text-white shadow-lg shadow-${cat.color}-500/30`
                           : `bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700`
                         }`}
                     >
-                      <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isActive ? "text-white" : `text-${cat.color}-500`}`} />
+                      <img
+                        src={cat.avatar}
+                        alt={cat.label}
+                        className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border-2 border-white/20 flex-shrink-0"
+                      />
                       <span className="font-bold">{cat.label}</span>
                     </button>
                   );
@@ -538,22 +553,20 @@ export function MedraeQuizzes() {
               )}
             </div>
 
-            {/* SEARCH BAR SECTION - phone optimized */}
+            {/* SEARCH BAR */}
             <div className="relative w-full group">
               <div className="relative w-full group">
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search units, topics, or keywords..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full h-11 md:h-14 pl-9 md:pl-12 pr-20 md:pr-28 rounded-lg md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent text-xs md:text-base text-gray-900 dark:text-white placeholder-gray-400 font-medium focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none shadow-inner"
                   autoComplete="off"
                 />
-
                 <div className="absolute left-2.5 md:left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-transform group-focus-within:scale-110">
                   <Search className="w-3.5 h-3.5 md:w-5 md:h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
-
                 <div className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 md:gap-1">
                   <button
                     onClick={() => setShowHelp(!showHelp)}
@@ -561,9 +574,7 @@ export function MedraeQuizzes() {
                   >
                     <HelpCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </button>
-
                   <div className="w-px h-4 md:h-5 bg-gray-300 dark:bg-gray-700" />
-
                   <button
                     onClick={() => {
                       const randomUnit = getRandomUnit();
@@ -573,7 +584,6 @@ export function MedraeQuizzes() {
                   >
                     <Shuffle className="w-3 h-3 md:w-4 md:h-4" />
                   </button>
-
                   <button
                     onClick={() => {
                       const recommendedUnit = getRecommendedUnit();
@@ -583,7 +593,6 @@ export function MedraeQuizzes() {
                   >
                     <Compass className="w-3.5 h-3.5 md:w-5 md:h-5" />
                   </button>
-
                   <button
                     onClick={handleRefresh}
                     disabled={refreshing}
@@ -626,7 +635,7 @@ export function MedraeQuizzes() {
             </div>
           </CardContent>
 
-          {/* Dynamic Papers Rendering with Category Filtering */}
+          {/* Dynamic Papers Rendering */}
           {isLoading ? (
             <div className="space-y-8">
               {[1, 2, 3, 4].map(i => (
@@ -651,6 +660,7 @@ export function MedraeQuizzes() {
 
                 const IconComponent = getIconComponent(paper.icon);
                 const color = paper.color;
+                const paperAvatar = paperAvatars[paper.paperNumber] || "/pwaa-512x512.png";
 
                 let headerDescription = paper.description;
                 if (paper.paperNumber === 1) {
@@ -668,21 +678,29 @@ export function MedraeQuizzes() {
                 return (
                   <div key={paper.paperNumber} className="space-y-2">
                     <div className="flex items-end justify-between px-2 sm:px-0 mt-3">
-                      <div>
-                        <h2 className={`text-xl sm:text-2xl font-bold text-${color}-600 dark:text-${color}-500 flex items-center gap-2`}>
-                          <div className={`w-2 h-8 bg-${color}-600 rounded-full`} />
-                          {paper.paper}
-                        </h2>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 max-w-md">
-                          {headerDescription}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={paperAvatar}
+                          alt={paper.paper}
+                          className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 flex-shrink-0"
+                        />
+                        <div>
+                          <h2 className={`text-xl sm:text-2xl font-bold text-${color}-600 dark:text-${color}-500 flex items-center gap-2`}>
+                            <div className={`w-2 h-8 bg-${color}-600 rounded-full`} />
+                            {paper.paper}
+                          </h2>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 max-w-md">
+                            {headerDescription}
+                          </p>
+                        </div>
                       </div>
                       <div className={`bg-${color}-100 dark:bg-${color}-900/30 px-3 py-1 rounded-full border border-${color}-200`}>
                         <span className={`text-xs font-bold text-${color}-700 dark:text-${color}-400`}>
-                          {paper.total_questions} Questions Total
+                          {paper.total_questions} Questions
                         </span>
                       </div>
                     </div>
+
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
                       {filteredUnits.map((unit, index) => {
                         const questionCount = getQuestionCount(unit.code);
@@ -693,7 +711,8 @@ export function MedraeQuizzes() {
                         return (
                           <React.Fragment key={unit.code}>
                             <Card
-                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl border-2 border-gray-100 dark:border-gray-800 hover:border-${color}-400 dark:hover:border-${color}-500/50 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl`}
+                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl border-2 border-gray-100 dark:border-gray-800 hover:border-${color}-400 dark:hover:border-${color}-500/50 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl cursor-pointer`}
+                              onClick={() => setSelectedUnit(unit)}
                             >
                               {paper.paperNumber === 4 && (
                                 <div className="absolute -right-8 top-4 rotate-45 bg-emerald-500 text-white text-[10px] font-bold px-10 py-1 shadow-sm">
@@ -703,9 +722,11 @@ export function MedraeQuizzes() {
 
                               <CardHeader className="pb-2">
                                 <div className="flex justify-between items-start">
-                                  <div className={`p-2 bg-${color}-50 dark:bg-${color}-900/20 rounded-xl group-hover:scale-110 transition-transform`}>
-                                    <IconComponent className={`h-5 w-5 text-${color}-600`} />
-                                  </div>
+                                  <img
+                                    src="/pwaa-512x512.png"
+                                    alt="Unit"
+                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 flex-shrink-0"
+                                  />
 
                                   {isPremium ? (
                                     <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
@@ -742,50 +763,18 @@ export function MedraeQuizzes() {
                                     </div>
                                   )}
 
-                                  {/* DESCRIPTION - Edge to edge with proper Read more toggle */}
+                                  {/* DESCRIPTION - Clean, clickable */}
                                   {unit.description && (
-                                    <div className="px-3 py-2 -mx-3 bg-gray-50/80 dark:bg-gray-900/30 border-y border-gray-100/60 dark:border-gray-800/60">
-                                      <p className={`text-xs text-gray-600 dark:text-gray-400 leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
+                                    <div className="group/desc">
+                                      <p className={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
                                         {unit.description}
                                       </p>
-                                      {unit.description.length > 80 && (
-                                        <button
-                                          onClick={() => toggleDescription(unit.code)}
-                                          className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-flex items-center gap-1 transition-all hover:gap-1.5"
-                                        >
-                                          {isExpanded ? 'Show less' : 'Read more'}
-                                          <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-                                        </button>
-                                      )}
+                                      <div className="flex items-center gap-1 mt-1 text-xs font-medium text-blue-600 dark:text-blue-400 group-hover/desc:underline">
+                                        <span>Tap for details</span>
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                      </div>
                                     </div>
                                   )}
-                                  {/* TOPIC, COURSE, BLOCK, UNIT INFO */}
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    {unit.topic && (
-                                      <Badge variant="outline" className="text-[9px] font-medium bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-                                        <Tag className="w-2.5 h-2.5 mr-1" />
-                                        {unit.topic}
-                                      </Badge>
-                                    )}
-                                    {unit.course && (
-                                      <Badge variant="outline" className="text-[9px] font-medium bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-                                        <BookMarked className="w-2.5 h-2.5 mr-1" />
-                                        {unit.course}
-                                      </Badge>
-                                    )}
-                                    {unit.block && (
-                                      <Badge variant="outline" className="text-[9px] font-medium bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
-                                        <Layers className="w-2.5 h-2.5 mr-1" />
-                                        Block {unit.block}
-                                      </Badge>
-                                    )}
-                                    {unit.unit && (
-                                      <Badge variant="outline" className="text-[9px] font-medium bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-                                        <BookOpen className="w-2.5 h-2.5 mr-1" />
-                                        Unit {unit.unit}
-                                      </Badge>
-                                    )}
-                                  </div>
 
                                   {/* Questions count and level */}
                                   <div className="flex items-center gap-2 flex-wrap">
@@ -800,7 +789,8 @@ export function MedraeQuizzes() {
                                   {(isPremium || isUnitFree) ? (
                                     <Link
                                       to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         markUnitStarted(unit.code);
                                         playSound("start");
                                         if (navigator.vibrate) navigator.vibrate(50);
@@ -849,7 +839,6 @@ export function MedraeQuizzes() {
                               </CardContent>
                             </Card>
 
-                            {/* 👇 Show image after every 4th unit */}
                             <UnitPics position={index + 1} />
                           </React.Fragment>
                         );
@@ -877,14 +866,13 @@ export function MedraeQuizzes() {
           )}
 
           {/* Progress & Sync Footer */}
-          <Card className="mt-12 mb-8 overflow-hidden rounded-xl border-0 dark:bg-muted/30 ">
+          <Card className="mt-12 mb-8 overflow-hidden rounded-xl border-0 dark:bg-muted/30">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                   <Trophy className="w-5 h-5 text-amber-500" />
                   Your Journey
                 </CardTitle>
-
                 <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-100 dark:border-emerald-800">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -896,14 +884,12 @@ export function MedraeQuizzes() {
                 </div>
               </div>
             </CardHeader>
-
             <CardContent className="space-y-6">
               <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner">
                 <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                   You are securely connected to <span className="font-bold text-gray-900 dark:text-white">Supabase Cloud</span>.
                   Your quiz progress, scores, and custom notes are being tracked in real-time.
                 </p>
-
                 <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
                   <span className="text-xs font-medium text-gray-500">Ready to see your results?</span>
                   <Link
@@ -914,13 +900,164 @@ export function MedraeQuizzes() {
                   </Link>
                 </div>
               </div>
-
-
             </CardContent>
           </Card>
         </Card>
-
       </div>
+
+      {/* DETAILS MODAL - Smart Bottom Sheet for Mobile, Centered for Desktop */}
+      <AnimatePresence>
+        {selectedUnit && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[999999999] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setSelectedUnit(null)}
+          >
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with avatar */}
+              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <img
+                    src="/pwaa-512x512.png"
+                    alt="Unit"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
+                      {selectedUnit.title}
+                    </h3>
+                    <p className="text-xs font-medium text-gray-400">
+                      {selectedUnit.code}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedUnit(null)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0 -mr-1"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+                {/* Full Description */}
+                {selectedUnit.description && (
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                      {selectedUnit.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* All Details in a Clean Grid */}
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
+                    Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedUnit.topic && (
+                      <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-800/30 flex items-center justify-center flex-shrink-0">
+                          <Tag className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-medium text-gray-400 uppercase">Topic</p>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{selectedUnit.topic}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedUnit.course && (
+                      <div className="flex items-center gap-3 bg-green-50 dark:bg-green-900/20 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-800/30 flex items-center justify-center flex-shrink-0">
+                          <BookMarked className="w-4 h-4 text-green-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-medium text-gray-400 uppercase">Course</p>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{selectedUnit.course}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedUnit.block && (
+                      <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-800/30 flex items-center justify-center flex-shrink-0">
+                          <Layers className="w-4 h-4 text-purple-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-medium text-gray-400 uppercase">Block</p>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Block {selectedUnit.block}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedUnit.unit && (
+                      <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl px-3 py-2.5">
+                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-800/30 flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="w-4 h-4 text-amber-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-medium text-gray-400 uppercase">Unit</p>
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Unit {selectedUnit.unit}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Level & Questions Tags */}
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <Badge variant={getLevelVariant(selectedUnit.level)} className="font-bold px-3 py-1.5 text-xs">
+                      {selectedUnit.level}
+                    </Badge>
+                    <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold px-3 py-1.5 text-xs">
+                      {getQuestionCount(selectedUnit.code)} Questions
+                    </Badge>
+                    {selectedUnit.quiz_type && (
+                      <Badge className={`${getQuizTypeColor(selectedUnit.quiz_type)} font-bold px-3 py-1.5 text-xs`}>
+                        {selectedUnit.quiz_type.toUpperCase()}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                {(isPremium || freeUnits.includes(selectedUnit.code?.trim() || "") || selectedUnit.is_free) ? (
+                  <button
+                    onClick={() => {
+                      setSelectedUnit(null);
+                      navigate(`/quiz?unit=${encodeURIComponent(selectedUnit.title)}`);
+                    }}
+                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    Start Quiz
+                  </button>
+                ) : (
+                  <button
+                    className="w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled
+                  >
+                    <Lock className="w-4 h-4" />
+                    Premium Content
+                  </button>
+                )}
+              </div>
+
+              {/* Bottom Safe Area for iOS */}
+              <div className="h-1 sm:h-0" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
         <div className="flex items-center gap-4">
           <TermsButton />

@@ -632,7 +632,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   }, []);
 
   // ============================================================
-  // ✅ RENDER - ALWAYS shows cached data immediately
+  //  RENDER - ALWAYS shows cached data immediately
   // No loading state needed - cache is always available
   // ============================================================
 
@@ -645,7 +645,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       {/* ✅ NEW: Global blur overlay when settings is open */}
       {isSettingsOpen && (
         <div
-          className="fixed inset-0 z-[99] backdrop-blur-sm bg-black/20 transition-all duration-300"
+          className="fixed inset-0 z-[999999] backdrop-blur-lg bg-black/40 transition-all duration-300"
           onClick={() => {
             // Close settings when clicking outside
             setIsSettingsOpen(false);
@@ -655,21 +655,27 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       )}
 
       <header className={`
-  sticky top-0 z-50 w-full h-14 sm:h-16
+  sticky top-0 z-50 w-full h-16 sm:h-20
   ${themeClasses} backdrop-blur-xl
   border-b border-slate-200/20 dark:border-slate-700/30
   flex items-center justify-between xl:justify-evenly
-  px-3 sm:px-6 text-sm sm:text-base transition-all duration-300 ease-in-out
+  px-4 sm:px-8
+  text-base sm:text-lg
+  transition-all duration-300 ease-in-out
 `}>
         {/* Mobile Logo */}
-        <div className="flex items-center gap-1.5 md:hidden shrink-0">
-          <img src="/pwa-192x192.jpeg" alt="Medrae" className="h-7 w-7 rounded-md object-cover" loading="lazy" />
-          <div className="text-xl sm:text-2xl font-black tracking-tight leading-none">
+        <div className="flex items-center gap-2 md:hidden shrink-0">  {/* 👈 Increased gap from 1.5 to 2 */}
+          <img
+            src="/pwa-192x192.jpeg"
+            alt="Medrae"
+            className="h-9 w-9 rounded-md object-cover"  // 👈 Changed from h-7 w-7 to h-9 w-9
+            loading="lazy"
+          />
+          <div className="text-2xl sm:text-3xl font-black tracking-tight leading-none">  {/* 👈 Increased text size */}
             <span className="text-red-500">Medrae</span>{' '}
             <span className="text-gray-900 dark:text-white">Nursing</span>
           </div>
         </div>
-
         <OnlineStatusToast />
 
         <div className="flex items-center flex-1">

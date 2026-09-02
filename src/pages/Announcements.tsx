@@ -129,11 +129,9 @@ export function Announcements() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 px-4 md:px-0 pt-4 md:pt-0 pb-3 md:pb-0 border-b md:border-b-0 border-gray-200/50 dark:border-gray-800/50">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent flex items-center gap-2">
-              Announcements
+              Stay updated with important Announcements
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 md:mt-2">
-              Stay updated with important notifications and updates
-            </p>
+
           </div>
           {unreadCount > 0 && (
             <Badge variant="destructive" className="px-3 py-1 shrink-0">

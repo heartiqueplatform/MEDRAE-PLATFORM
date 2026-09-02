@@ -125,6 +125,7 @@ import TopicSearch from "./pages/nursing/TopicSearch";
 import ProgressPage from "./pages/nursing/ProgressPage";
 import { UserRoleProvider } from "./context/UserRoleContext";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
+import { DrawerProvider } from "./contexts/DrawerContext";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -340,176 +341,179 @@ const AppContent = () => {
   }, [user]);
 
   return (
+
     <>
-      {forceLogout && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
-          <div className="max-w-md w-full bg-white dark:bg-gray-900 shadow-lg rounded-2xl p-6 text-center mx-4">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Session Ended</h2>
-            <p className="mt-3 text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-              For your security, we've recently upgraded our system. Your previous session has been ended.
-              Please log in again to continue using your account safely.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-5 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200"
-            >
-              Log In Again
-            </button>
-            <p className="mt-3 text-gray-500 dark:text-gray-400 text-xs">
-              If you did not log out, we recommend changing your password immediately to keep your account secure.
-            </p>
-            <p className="mt-2 text-gray-500 dark:text-gray-400 text-xs">
-              ⚠️ Make sure to always use only one account. Multiple accounts may lead to being banned.
-            </p>
+      <DrawerProvider>
+        {forceLogout && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+            <div className="max-w-md w-full bg-white dark:bg-gray-900 shadow-lg rounded-2xl p-6 text-center mx-4">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Session Ended</h2>
+              <p className="mt-3 text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                For your security, we've recently upgraded our system. Your previous session has been ended.
+                Please log in again to continue using your account safely.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-5 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200"
+              >
+                Log In Again
+              </button>
+              <p className="mt-3 text-gray-500 dark:text-gray-400 text-xs">
+                If you did not log out, we recommend changing your password immediately to keep your account secure.
+              </p>
+              <p className="mt-2 text-gray-500 dark:text-gray-400 text-xs">
+                ⚠️ Make sure to always use only one account. Multiple accounts may lead to being banned.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <SessionContextProvider supabaseClient={supabase}>
-        <QueryClientProvider client={queryClient}>
-          <GlobalRealtimeListener />
+        <SessionContextProvider supabaseClient={supabase}>
+          <QueryClientProvider client={queryClient}>
+            <GlobalRealtimeListener />
 
-          <GlobalDuelManager />
+            <GlobalDuelManager />
 
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <SidebarProvider>
-              <MusicPlayerProvider>
-                <UserRoleProvider>
-                  <AIWrapper>
-                    <FirstTimeGuide />
-                    <RouteScrollManager />
-                    <Routes>
-                      <Route path="/go/:code" element={<RedirectHandler />} />
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <SidebarProvider>
+                <MusicPlayerProvider>
+                  <UserRoleProvider>
+                    <AIWrapper>
+                      <FirstTimeGuide />
+                      <RouteScrollManager />
+                      <Routes>
+                        <Route path="/go/:code" element={<RedirectHandler />} />
 
-                      {/* Public Routes */}
-                      <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
-                      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-                      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
-                      <Route path="/redirect" element={<RedirectToRoleDashboard />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
+                        {/* Public Routes */}
+                        <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
+                        <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                        <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+                        <Route path="/redirect" element={<RedirectToRoleDashboard />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
 
-                      <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
+                        <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
 
-                      {/* Persistent Dashboard Layout */}
-                      <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-                        {/* Core dashboards */}
-                        <Route path="/dashboard/student" element={<StudentDashboard />} />
-                        <Route path="/dashboard/tutor" element={<TutorDashboard />} />
-                        <Route path="/dashboard/staff" element={<StaffDashboard />} />
+                        {/* Persistent Dashboard Layout */}
+                        <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+                          {/* Core dashboards */}
+                          <Route path="/dashboard/student" element={<StudentDashboard />} />
+                          <Route path="/dashboard/tutor" element={<TutorDashboard />} />
+                          <Route path="/dashboard/staff" element={<StaffDashboard />} />
 
-                        {/* Market pages */}
-                        <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
-                        {user && profile && (
-                          <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
-                        )}
-                        <Route path="/market/my-listings" element={<MyListings />} />
-                        <Route path="/market/:id" element={<ListingDetail />} />
-                        <Route path="/share" element={<LinkGenerator />} />
+                          {/* Market pages */}
+                          <Route path="/market" element={<MarketFeed user={user} profile={profile} />} />
+                          {user && profile && (
+                            <Route path="/market/create" element={<CreateListingPage user={user} profile={profile} />} />
+                          )}
+                          <Route path="/market/my-listings" element={<MyListings />} />
+                          <Route path="/market/:id" element={<ListingDetail />} />
+                          <Route path="/share" element={<LinkGenerator />} />
 
-                        {/* Student Exam Flow */}
-                        <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
-                        <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
-                        <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
-                        <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
-                        <Route path="/exam/results" element={<ResultsListPage />} />
-                        <Route path="/challenge" element={<ChallengePage />} />
-                        <Route path="/live-classes/:id" element={<ClassDetails />} />
-                        <Route path="/live-classes" element={<LiveClassesDashboard />} />
-                        <Route path="/live-classes/create" element={<CreateClass />} />
-                        <Route path="/my-classes" element={<MyClasses />} />
+                          {/* Student Exam Flow */}
+                          <Route path="/exam" element={<Navigate to="/exam/candidate" />} />
+                          <Route path="/exam/candidate" element={<ExamCandidateInfo />} />
+                          <Route path="/exam/instructions/:paper_id" element={<ExamInstructions />} />
+                          <Route path="/exam/:paper_id/results" element={<StudentResultsPage />} />
+                          <Route path="/exam/results" element={<ResultsListPage />} />
+                          <Route path="/challenge" element={<ChallengePage />} />
+                          <Route path="/live-classes/:id" element={<ClassDetails />} />
+                          <Route path="/live-classes" element={<LiveClassesDashboard />} />
+                          <Route path="/live-classes/create" element={<CreateClass />} />
+                          <Route path="/my-classes" element={<MyClasses />} />
 
-                        {/* Tutor Exam Control */}
-                        <Route path="/tutor/exams" element={<TutorExamList />} />
-                        <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
-                        <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
-                        <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
-                        <Route path="/help" element={<HelpCenter />} />
+                          {/* Tutor Exam Control */}
+                          <Route path="/tutor/exams" element={<TutorExamList />} />
+                          <Route path="/tutor/exams/:paper_id" element={<TutorExamDetails />} />
+                          <Route path="/tutor/exams/:paper_id/live" element={<TutorLiveMonitor />} />
+                          <Route path="/tutor/exams/:paper_id/results" element={<TutorResultsPage />} />
+                          <Route path="/help" element={<HelpCenter />} />
 
-                        {/* Analytics */}
-                        <Route path="/analytics" element={<StudentAnalyticsPage />} />
+                          {/* Analytics */}
+                          <Route path="/analytics" element={<StudentAnalyticsPage />} />
 
-                        {/* Core features */}
-                        <Route path="/my-mistakes" element={<MyMistakes />} />
-                        <Route path="/ai-assistant" element={<AIAssistant />} />
-                        <Route path="/calendar" element={<Calendar />} />
-                        <Route path="/progress" element={<StudyProgress />} />
-                        <Route path="/resources" element={<Resources />} />
-                        <Route path="/medtube" element={<MedTube />} />
-                        <Route path="/announcements" element={<Announcements />} />
-                        <Route path="/feedback" element={<Feedback />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/subscription" element={<Subscription />} />
-                        <Route path="/notifications" element={<Notifications />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/quiz" element={<QuizPage />} />
-                        <Route path="/assessment-notes" element={<AssessmentNotes />} />
-                        <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
-                        <Route path="/feed" element={<Feed />} />
+                          {/* Core features */}
+                          <Route path="/my-mistakes" element={<MyMistakes />} />
+                          <Route path="/ai-assistant" element={<AIAssistant />} />
+                          <Route path="/calendar" element={<Calendar />} />
+                          <Route path="/progress" element={<StudyProgress />} />
+                          <Route path="/resources" element={<Resources />} />
+                          <Route path="/medtube" element={<MedTube />} />
+                          <Route path="/announcements" element={<Announcements />} />
+                          <Route path="/feedback" element={<Feedback />} />
+                          <Route path="/settings" element={<Settings />} />
+                          <Route path="/subscription" element={<Subscription />} />
+                          <Route path="/notifications" element={<Notifications />} />
+                          <Route path="/profile" element={<Profile />} />
+                          <Route path="/quiz" element={<QuizPage />} />
+                          <Route path="/assessment-notes" element={<AssessmentNotes />} />
+                          <Route path="/Medrae-quizzes" element={<MedraeQuizzes />} />
+                          <Route path="/feed" element={<Feed />} />
 
-                        <Route path="/grouppay" element={<GroupPayHome />} />
-                        <Route path="/grouppay/create" element={<CreateGroupPage />} />
-                        <Route path="/grouppay/:id" element={<GroupDetailsPage />} />
+                          <Route path="/grouppay" element={<GroupPayHome />} />
+                          <Route path="/grouppay/create" element={<CreateGroupPage />} />
+                          <Route path="/grouppay/:id" element={<GroupDetailsPage />} />
 
-                        {/* NURSING CURRICULUM ROUTES */}
-                        <Route path="/nursing" element={<NursingHome />} />
-                        <Route path="/nursing/:yearId" element={<NursingSemester />} />
-                        <Route path="/nursing/:yearId/:semId" element={<NursingModule />} />
-                        <Route path="/nursing/:yearId/:semId/:moduleId" element={<NursingUnit />} />
-                        <Route path="/nursing/quiz/:topicId" element={<NursingQuiz />} />
-                        <Route path="/nursing/search" element={<TopicSearch />} />
-                        <Route path="/nursing/progress" element={<ProgressPage />} />
+                          {/* NURSING CURRICULUM ROUTES */}
+                          <Route path="/nursing" element={<NursingHome />} />
+                          <Route path="/nursing/:yearId" element={<NursingSemester />} />
+                          <Route path="/nursing/:yearId/:semId" element={<NursingModule />} />
+                          <Route path="/nursing/:yearId/:semId/:moduleId" element={<NursingUnit />} />
+                          <Route path="/nursing/quiz/:topicId" element={<NursingQuiz />} />
+                          <Route path="/nursing/search" element={<TopicSearch />} />
+                          <Route path="/nursing/progress" element={<ProgressPage />} />
 
-                        {/* Quiz Simulation */}
-                        <Route path="/simulation/candidate" element={<CandidateInfo />} />
-                        <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
+                          {/* Quiz Simulation */}
+                          <Route path="/simulation/candidate" element={<CandidateInfo />} />
+                          <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />
 
-                        {/* ASSESSMENT ROUTES */}
-                        <Route path="/assessments">
-                          <Route index element={<AssessmentHome />} />
-                          <Route path="search" element={<AssessmentHome />} />
-                          <Route path="history" element={<AssessmentHistory />} />
-                          <Route path=":slug" element={<AssessmentQuestion />} />
-                          <Route path=":slug/results/:attemptId" element={<AssessmentResults />} />
+                          {/* ASSESSMENT ROUTES */}
+                          <Route path="/assessments">
+                            <Route index element={<AssessmentHome />} />
+                            <Route path="search" element={<AssessmentHome />} />
+                            <Route path="history" element={<AssessmentHistory />} />
+                            <Route path=":slug" element={<AssessmentQuestion />} />
+                            <Route path=":slug/results/:attemptId" element={<AssessmentResults />} />
+                          </Route>
+
+                          {/* Survival Hub Module */}
+                          <Route path="/survival-hub" element={<SurvivalHubDashboard />} />
+                          <Route path="/survival-hub/exam-centers" element={<ExamCenters />} />
+                          <Route path="/survival-hub/housing" element={<HousingPage />} />
+                          <Route path="/survival-hub/hospitals" element={<HospitalsPage />} />
+                          <Route path="/survival-hub/placements" element={<PlacementsPage />} />
+                          <Route path="/survival-hub/add-housing" element={<AddHousingPage />} />
+                          <Route path="/survival-hub/reviews/:targetId" element={<ReviewsPage />} />
+                          <Route path="/survival-hub/add-placement" element={<AddPlacementPage />} />
+                          <Route path="/survival-hub/placements/:id" element={<PlacementDetailPage />} />
+                          <Route path="/survival-hub/buddies" element={<ExamBuddiesPage />} />
                         </Route>
 
-                        {/* Survival Hub Module */}
-                        <Route path="/survival-hub" element={<SurvivalHubDashboard />} />
-                        <Route path="/survival-hub/exam-centers" element={<ExamCenters />} />
-                        <Route path="/survival-hub/housing" element={<HousingPage />} />
-                        <Route path="/survival-hub/hospitals" element={<HospitalsPage />} />
-                        <Route path="/survival-hub/placements" element={<PlacementsPage />} />
-                        <Route path="/survival-hub/add-housing" element={<AddHousingPage />} />
-                        <Route path="/survival-hub/reviews/:targetId" element={<ReviewsPage />} />
-                        <Route path="/survival-hub/add-placement" element={<AddPlacementPage />} />
-                        <Route path="/survival-hub/placements/:id" element={<PlacementDetailPage />} />
-                        <Route path="/survival-hub/buddies" element={<ExamBuddiesPage />} />
-                      </Route>
+                        {/* Full-screen / Independent Pages */}
+                        <Route path="/terms" element={<TermsPage />} />
+                        <Route path="/cookies" element={<CookiePolicyPage />} />
+                        <Route path="/simulation/:paper_id" element={<SimulationPage />} />
+                        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                        <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
 
-                      {/* Full-screen / Independent Pages */}
-                      <Route path="/terms" element={<TermsPage />} />
-                      <Route path="/cookies" element={<CookiePolicyPage />} />
-                      <Route path="/simulation/:paper_id" element={<SimulationPage />} />
-                      <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                      <Route path="/exam/access/:paper_id" element={<ExamAccessPage />} />
-                      <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                      <FloatingStreakCandle />
+                      <ProfileIncompleteChecker />
 
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                    <FloatingStreakCandle />
-                    <ProfileIncompleteChecker />
+                      <BottomBarWrapper />
 
-                    <BottomBarWrapper />
+                    </AIWrapper>
+                  </UserRoleProvider>
+                </MusicPlayerProvider>
+              </SidebarProvider>
+            </TooltipProvider>
 
-                  </AIWrapper>
-                </UserRoleProvider>
-              </MusicPlayerProvider>
-            </SidebarProvider>
-          </TooltipProvider>
-
-        </QueryClientProvider>
-      </SessionContextProvider>
+          </QueryClientProvider>
+        </SessionContextProvider>
+      </DrawerProvider>
     </>
   );
 };

@@ -638,10 +638,10 @@ export default function AssessmentNotes() {
   return (
     <>
       {/* EDGE-TO-EDGE ON MOBILE - NO PADDING */}
-      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-0 md:px-4 lg:px-6">
-        <div className="w-full max-w-full mx-auto space-y-0 md:space-y-6 py-0 md:py-6">
+      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-3 md:px-4 lg:px-6">
+        <div className="w-full max-w-full mx-auto space-y-0 md:space-y-6 py-0 md:py-6 px-0 md:px-0">
           {/* Header Card - NO BORDER ON MOBILE */}
-          <div className="shadow-md hover:shadow-lg transition-all rounded-none md:rounded-2xl border-0 overflow-hidden bg-white dark:bg-muted/30">
+          <div className="shadow-md hover:shadow-lg transition-all rounded-none md:rounded-2xl border-0 overflow-hidden bg-white dark:bg-muted/30 mx-0">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
             <div className="p-3 md:p-6 pb-2 md:pb-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -696,29 +696,28 @@ export default function AssessmentNotes() {
                 </AnimatePresence>
               </div>
 
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by title, description, course, unit, or institution..."
-                  className="pl-9 md:pl-10 h-9 md:h-11 rounded-none md:rounded-xl text-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+              <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by title, description, course, unit, or institution..."
+                    className="pl-9 md:pl-10 h-9 md:h-11 rounded-xl md:rounded-xl text-sm w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Button
+                  variant={showUploadForm ? "destructive" : "default"}
+                  onClick={() => setShowUploadForm(!showUploadForm)}
+                  className="rounded-xl md:rounded-xl font-semibold text-sm h-9 md:h-10 px-3 md:px-4 w-full sm:w-auto flex items-center justify-center gap-1 md:gap-2"
+                >
+                  <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  {showUploadForm ? "Cancel" : "New Upload"}
+                </Button>
               </div>
             </div>
           </div>
 
-          {/* Upload Form Toggle */}
-          <div className="flex justify-end px-3 md:px-0">
-            <Button
-              variant={showUploadForm ? "destructive" : "default"}
-              onClick={() => setShowUploadForm(!showUploadForm)}
-              className="rounded-none md:rounded-xl font-semibold text-sm h-9 md:h-10 px-3 md:px-4"
-            >
-              <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-2" />
-              {showUploadForm ? "Cancel Upload" : "New Upload"}
-            </Button>
-          </div>
 
           {/* Upload Form - NO BORDER ON MOBILE */}
           <AnimatePresence>
@@ -822,7 +821,7 @@ export default function AssessmentNotes() {
                   </div>
                   <div className="pb-3 md:pb-4">
                     <Tabs defaultValue={section.subcategories[0]} className="w-full">
-                      <TabsList className="flex flex-wrap gap-1.5 md:gap-2 w-full h-auto bg-transparent px-3 md:px-0">
+                      <TabsList className="flex flex-wrap gap-1.5 md:gap-2 w-full h-auto bg-transparent px-3 md:px-0 py-1 md:py-0">
                         {section.subcategories.map((sub) => {
                           const subNotesCount = filteredNotes.filter(
                             (n) => n.sub_category === sub && n.block === section.title
@@ -831,7 +830,7 @@ export default function AssessmentNotes() {
                             <TabsTrigger
                               key={sub}
                               value={sub}
-                              className="text-[10px] md:text-xs whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-none md:rounded-lg px-2 md:px-3 py-1 h-7 md:h-8"
+                              className="text-[10px] md:text-xs whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg md:rounded-lg px-2 md:px-3 py-1 h-7 md:h-8"
                             >
                               {sub}
                               {subNotesCount > 0 && (
@@ -859,12 +858,12 @@ export default function AssessmentNotes() {
                                 No notes yet in {sub}. Check back soon!
                               </p>
                             ) : (
-                              <div className="grid gap-2 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {subNotes.map((note, index) => (
                                   <React.Fragment key={note.id}>
                                     {/* CARD - NO BORDER ON MOBILE */}
                                     <div
-                                      className="flex flex-col overflow-hidden hover:shadow-md transition-all cursor-pointer border-0 border-b border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl bg-white dark:bg-gray-800 p-3 md:p-4"
+                                      className="flex flex-col overflow-hidden hover:shadow-md transition-all cursor-pointer border border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4"
                                       onClick={() => setDetailsOverlayNote(note)}
                                     >
                                       <div className="pb-1 md:pb-2">
@@ -887,38 +886,6 @@ export default function AssessmentNotes() {
                                             {note.description}
                                           </div>
                                         )}
-
-                                        <div className="flex flex-wrap gap-0.5 md:gap-1 mt-1 md:mt-2">
-                                          {note.course && (
-                                            <Badge variant="outline" className="text-[7px] md:text-[9px] font-medium bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 px-1 md:px-1.5">
-                                              <BookOpen className="w-2 h-2 md:w-2.5 md:h-2.5 mr-0.5" />
-                                              {note.course}
-                                            </Badge>
-                                          )}
-                                          {note.unit && (
-                                            <Badge variant="outline" className="text-[7px] md:text-[9px] font-medium bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 px-1 md:px-1.5">
-                                              <Tag className="w-2 h-2 md:w-2.5 md:h-2.5 mr-0.5" />
-                                              {note.unit}
-                                            </Badge>
-                                          )}
-                                          {note.institution && (
-                                            <Badge variant="outline" className="text-[7px] md:text-[9px] font-medium bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 px-1 md:px-1.5">
-                                              <Building className="w-2 h-2 md:w-2.5 md:h-2.5 mr-0.5" />
-                                              {note.institution}
-                                            </Badge>
-                                          )}
-                                          {note.category && (
-                                            <Badge variant="outline" className="text-[7px] md:text-[9px] font-medium bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 px-1 md:px-1.5">
-                                              {note.category}
-                                            </Badge>
-                                          )}
-                                          {note.is_featured && (
-                                            <Badge className="text-[7px] md:text-[9px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800 px-1 md:px-1.5">
-                                              <Sparkles className="w-2 h-2 md:w-2.5 md:h-2.5 mr-0.5" />
-                                              Featured
-                                            </Badge>
-                                          )}
-                                        </div>
 
                                         <div className="flex items-center justify-between mt-1 md:mt-2">
                                           <span className="text-[8px] md:text-xs text-muted-foreground flex items-center gap-0.5 md:gap-1">
@@ -957,24 +924,13 @@ export default function AssessmentNotes() {
                                       </div>
 
                                       <div className="pt-1 md:pt-0 space-y-2 md:space-y-3">
-                                        {note.tags && note.tags.length > 0 && (
-                                          <div className="flex flex-wrap gap-0.5 md:gap-1">
-                                            {note.tags.slice(0, 3).map((tag: string, i: number) => (
-                                              <span key={i} className="text-[6px] md:text-[8px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1 md:px-1.5 py-0.5 rounded">
-                                                #{tag}
-                                              </span>
-                                            ))}
-                                            {note.tags.length > 3 && (
-                                              <span className="text-[6px] md:text-[8px] font-medium text-gray-400">+{note.tags.length - 3}</span>
-                                            )}
-                                          </div>
-                                        )}
+
 
                                         <div className="flex gap-1 md:gap-2 flex-wrap">
                                           <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="h-6 md:h-8 px-1.5 md:px-2 rounded text-[9px] md:text-xs"
+                                            className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleDownloadNote(note.id, note.file_url);
@@ -986,7 +942,7 @@ export default function AssessmentNotes() {
                                           <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="h-6 md:h-8 px-1.5 md:px-2 rounded text-[9px] md:text-xs"
+                                            className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleViewNote(note);
@@ -1037,11 +993,12 @@ export default function AssessmentNotes() {
                                     </div>
 
                                     {/* UnitPics image after every 4 cards */}
-                                    <UnitPics position={index + 1} />
+                                    < UnitPics position={index + 1} />
                                   </React.Fragment>
                                 ))}
                               </div>
-                            )}
+                            )
+                            }
                           </TabsContent>
                         );
                       })}
@@ -1052,308 +1009,314 @@ export default function AssessmentNotes() {
             })}
           </div>
         </div>
-      </div>
+      </div >
 
       {/* Fullscreen Viewer - same as before */}
       <AnimatePresence>
-        {fullscreenNote && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex flex-col bg-background"
-          >
-            <div className="flex justify-end p-2">
-              <Button onClick={() => setFullscreenNote(null)} variant="ghost" size="icon">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            {fullscreenNote.file_type === "pdf" ? (
-              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <Viewer
-                  fileUrl={fullscreenNote.file_url}
-                  plugins={[defaultLayoutPluginInstance]}
-                  theme={isDarkMode ? "dark" : "light"}
-                  renderLoader={() => (
-                    <div className="flex items-center justify-center w-full h-full">
-                      <GlobalLoader message="Loading PDF..." />
-                    </div>
-                  )}
+        {
+          fullscreenNote && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex flex-col bg-background"
+            >
+              <div className="flex justify-end p-2">
+                <Button onClick={() => setFullscreenNote(null)} variant="ghost" size="icon">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              {fullscreenNote.file_type === "pdf" ? (
+                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                  <Viewer
+                    fileUrl={fullscreenNote.file_url}
+                    plugins={[defaultLayoutPluginInstance]}
+                    theme={isDarkMode ? "dark" : "light"}
+                    renderLoader={() => (
+                      <div className="flex items-center justify-center w-full h-full">
+                        <GlobalLoader message="Loading PDF..." />
+                      </div>
+                    )}
+                  />
+                </Worker>
+              ) : (
+                <iframe
+                  src={fullscreenNote.file_url}
+                  className="flex-1 w-full"
+                  style={{ border: "none" }}
+                  title={fullscreenNote.title}
                 />
-              </Worker>
-            ) : (
-              <iframe
-                src={fullscreenNote.file_url}
-                className="flex-1 w-full"
-                style={{ border: "none" }}
-                title={fullscreenNote.title}
-              />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              )}
+            </motion.div>
+          )
+        }
+      </AnimatePresence >
 
       {/* Premium Upgrade Overlay - same as before */}
       <AnimatePresence>
-        {showPremiumOverlay && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPremiumOverlay(false)}
-              className="absolute inset-0 bg-black/70 backdrop-blur-md"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden"
-            >
-              <div className={`relative p-8 text-center ${isTutor ? 'bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500' : 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-500'}`}>
-                <button onClick={() => setShowPremiumOverlay(false)} className="absolute top-4 right-4 text-white/80 hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  {isTutor ? <GraduationCap className="w-10 h-10 text-white" /> : <Lock className="w-10 h-10 text-white" />}
+        {
+          showPremiumOverlay && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowPremiumOverlay(false)}
+                className="absolute inset-0 bg-black/70 backdrop-blur-md"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="relative max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden"
+              >
+                <div className={`relative p-8 text-center ${isTutor ? 'bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500' : 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-500'}`}>
+                  <button onClick={() => setShowPremiumOverlay(false)} className="absolute top-4 right-4 text-white/80 hover:text-white">
+                    <X className="w-5 h-5" />
+                  </button>
+                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    {isTutor ? <GraduationCap className="w-10 h-10 text-white" /> : <Lock className="w-10 h-10 text-white" />}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-1">{isTutor ? "Tutor Pro Access Required" : "Premium Resource"}</h3>
+                  <p className="text-white/80 text-sm">{selectedNoteForOverlay?.title}</p>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-1">{isTutor ? "Tutor Pro Access Required" : "Premium Resource"}</h3>
-                <p className="text-white/80 text-sm">{selectedNoteForOverlay?.title}</p>
-              </div>
-              <div className="p-6">
-                <div className="space-y-3 mb-6">
-                  {subscriptionInfoForDisplay.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-3 text-sm">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </div>
-                  ))}
-                </div>
+                <div className="p-6">
+                  <div className="space-y-3 mb-6">
+                    {subscriptionInfoForDisplay.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center gap-3 text-sm">
+                        <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="text-center mb-4">
-                  <span className="text-3xl font-bold">{subscriptionInfoForDisplay.currency} {subscriptionInfoForDisplay.price}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400"> / {subscriptionInfoForDisplay.duration}</span>
-                </div>
+                  <div className="text-center mb-4">
+                    <span className="text-3xl font-bold">{subscriptionInfoForDisplay.currency} {subscriptionInfoForDisplay.price}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400"> / {subscriptionInfoForDisplay.duration}</span>
+                  </div>
 
-                <button
-                  onClick={() => {
-                    setShowPremiumOverlay(false);
-                    navigate("/subscription", { state: { role: isTutor ? "tutor" : "student" } });
-                  }}
-                  className={`w-full font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 mb-3 ${isTutor
-                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white'
-                    : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
-                    }`}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{isTutor ? `Upgrade to Tutor Pro — ${subscriptionInfoForDisplay.currency} ${subscriptionInfoForDisplay.price}` : `Unlock All — ${subscriptionInfoForDisplay.currency} ${subscriptionInfoForDisplay.price} for ${subscriptionInfoForDisplay.duration}`}</span>
-                </button>
-                <button
-                  onClick={() => setShowPremiumOverlay(false)}
-                  className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 text-sm font-medium"
-                >
-                  Maybe later
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                  <button
+                    onClick={() => {
+                      setShowPremiumOverlay(false);
+                      navigate("/subscription", { state: { role: isTutor ? "tutor" : "student" } });
+                    }}
+                    className={`w-full font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 mb-3 ${isTutor
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
+                      }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{isTutor ? `Upgrade to Tutor Pro — ${subscriptionInfoForDisplay.currency} ${subscriptionInfoForDisplay.price}` : `Unlock All — ${subscriptionInfoForDisplay.currency} ${subscriptionInfoForDisplay.price} for ${subscriptionInfoForDisplay.duration}`}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowPremiumOverlay(false)}
+                    className="w-full text-gray-500 hover:text-gray-700 dark:text-gray-400 text-sm font-medium"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )
+        }
+      </AnimatePresence >
 
       {/* DETAILS OVERLAY - FULL EDGE-TO-EDGE ON MOBILE */}
       <AnimatePresence>
-        {detailsOverlayNote && (
-          <div className="fixed inset-0 z-[250] flex items-center justify-center p-0 md:p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDetailsOverlayNote(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0 md:border border-gray-200 dark:border-gray-800"
-            >
-              {/* Header with gradient bar - sticky on mobile */}
-              <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
-                <div className="flex justify-between items-center p-3 md:p-4">
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    {getTypeIcon(detailsOverlayNote.file_type)}
-                    <h3 className="font-bold text-sm md:text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
-                      {detailsOverlayNote.title}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setDetailsOverlayNote(null)}
-                    className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <X className="h-5 w-5 md:h-6 md:w-6 text-gray-500 dark:text-gray-400" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Content - more padding on mobile for readability */}
-              <div className="p-4 md:p-5 space-y-4 md:space-y-5">
-                {/* Description section */}
-                {detailsOverlayNote.description && (
-                  <div className="space-y-1">
-                    <h4 className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                      <Info className="h-2.5 w-2.5 md:h-3 md:w-3" /> Description
-                    </h4>
-                    <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {detailsOverlayNote.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Details grid - ALL COLUMNS */}
-                <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
-                  {detailsOverlayNote.course && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Course</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.course}</p>
+        {
+          detailsOverlayNote && (
+            <div className="fixed inset-0 z-[250] flex items-center justify-center p-0 md:p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setDetailsOverlayNote(null)}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0 md:border border-gray-200 dark:border-gray-800 rounded-none md:rounded-xl"
+              >
+                {/* Header with gradient bar - sticky on mobile */}
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                  <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
+                  <div className="flex justify-between items-center p-3 md:p-4">
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      {getTypeIcon(detailsOverlayNote.file_type)}
+                      <h3 className="font-bold text-sm md:text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
+                        {detailsOverlayNote.title}
+                      </h3>
                     </div>
-                  )}
-                  {detailsOverlayNote.institution && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Institution</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.institution}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.unit && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Unit</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.unit}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.category && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Category</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.category}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.block && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Block</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.block}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.sub_category && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Subcategory</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.sub_category}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.usage_type && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Usage Type</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">{detailsOverlayNote.usage_type}</p>
-                    </div>
-                  )}
-                  <div className="space-y-0.5">
-                    <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">File Type</p>
-                    <Badge className={getTypeColor(detailsOverlayNote.file_type)}>
-                      {detailsOverlayNote.file_type?.toUpperCase() || "PDF"}
-                    </Badge>
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Uploaded</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">
-                      {new Date(detailsOverlayNote.created_at).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                  {detailsOverlayNote.download_count > 0 && (
-                    <div className="space-y-0.5">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Downloads</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">{detailsOverlayNote.download_count}</p>
-                    </div>
-                  )}
-                  {detailsOverlayNote.tags && detailsOverlayNote.tags.length > 0 && (
-                    <div className="space-y-0.5 col-span-full">
-                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Tags</p>
-                      <div className="flex flex-wrap gap-1">
-                        {detailsOverlayNote.tags.map((tag: string, i: number) => (
-                          <span key={i} className="text-[9px] md:text-xs bg-gray-100 dark:bg-gray-800 px-1.5 md:px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Stats row */}
-                <div className="flex items-center justify-between pt-2 md:pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                    <span className="flex items-center gap-0.5 md:gap-1">
-                      <Eye className="h-3 w-3 md:h-4 md:w-4" /> {viewCounts[detailsOverlayNote.id] || 0} views
-                    </span>
                     <button
-                      className={`flex items-center gap-0.5 md:gap-1 transition-colors ${bookmarkedItems.includes(detailsOverlayNote.id) ? "text-red-500" : "text-gray-600 dark:text-gray-400"
-                        }`}
-                      onClick={() => toggleLike(detailsOverlayNote.id)}
+                      onClick={() => setDetailsOverlayNote(null)}
+                      className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     >
-                      <Heart className={`h-3 w-3 md:h-4 md:w-4 ${bookmarkedItems.includes(detailsOverlayNote.id) ? "fill-current" : ""}`} />
-                      {likeCounts[detailsOverlayNote.id] || 0} likes
+                      <X className="h-5 w-5 md:h-6 md:w-6 text-gray-500 dark:text-gray-400" />
                     </button>
+                  </div>
+                </div>
+
+                {/* Content - more padding on mobile for readability */}
+                <div className="p-4 md:p-5 space-y-4 md:space-y-5">
+                  {/* Description section */}
+                  {detailsOverlayNote.description && (
+                    <div className="space-y-1">
+                      <h4 className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Info className="h-2.5 w-2.5 md:h-3 md:w-3" /> Description
+                      </h4>
+                      <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {detailsOverlayNote.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Details grid - ALL COLUMNS */}
+                  <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
+                    {detailsOverlayNote.course && (
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Course</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.course}</p>
+                      </div>
+                    )}
+                    {detailsOverlayNote.institution && (
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Institution</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.institution}</p>
+                      </div>
+                    )}
+                    {detailsOverlayNote.unit && (
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Unit</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.unit}</p>
+                      </div>
+                    )}
+                    {detailsOverlayNote.category && (
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Category</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.category}</p>
+                      </div>
+                    )}
+                    {detailsOverlayNote.block && (
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Block</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.block}</p>
+                      </div>
+                    )}
+                    {detailsOverlayNote.sub_category && (
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Subcategory</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 break-words text-xs md:text-sm">{detailsOverlayNote.sub_category}</p>
+                      </div>
+                    )}
+                    {detailsOverlayNote.usage_type && (
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Usage Type</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">{detailsOverlayNote.usage_type}</p>
+                      </div>
+                    )}
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">File Type</p>
+                      <Badge className={getTypeColor(detailsOverlayNote.file_type)}>
+                        {detailsOverlayNote.file_type?.toUpperCase() || "PDF"}
+                      </Badge>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Uploaded</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">
+                        {new Date(detailsOverlayNote.created_at).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
                     {detailsOverlayNote.download_count > 0 && (
-                      <span className="flex items-center gap-0.5 md:gap-1">
-                        <Download className="h-3 w-3 md:h-4 md:w-4" /> {detailsOverlayNote.download_count} downloads
-                      </span>
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Downloads</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 text-xs md:text-sm">{detailsOverlayNote.download_count}</p>
+                      </div>
+                    )}
+                    {detailsOverlayNote.tags && detailsOverlayNote.tags.length > 0 && (
+                      <div className="space-y-0.5 col-span-full">
+                        <p className="text-[9px] md:text-xs text-gray-500 dark:text-gray-400">Tags</p>
+                        <div className="flex flex-wrap gap-1">
+                          {detailsOverlayNote.tags.map((tag: string, i: number) => (
+                            <span key={i} className="text-[9px] md:text-xs bg-gray-100 dark:bg-gray-800 px-1.5 md:px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  {offlineFiles.includes(detailsOverlayNote.id) && (
-                    <Badge variant="outline" className="text-[8px] md:text-[10px]">Saved Offline</Badge>
+
+                  {/* Stats row */}
+                  <div className="flex items-center justify-between pt-2 md:pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                      <span className="flex items-center gap-0.5 md:gap-1">
+                        <Eye className="h-3 w-3 md:h-4 md:w-4" /> {viewCounts[detailsOverlayNote.id] || 0} views
+                      </span>
+                      <button
+                        className={`flex items-center gap-0.5 md:gap-1 transition-colors ${bookmarkedItems.includes(detailsOverlayNote.id) ? "text-red-500" : "text-gray-600 dark:text-gray-400"
+                          }`}
+                        onClick={() => toggleLike(detailsOverlayNote.id)}
+                      >
+                        <Heart className={`h-3 w-3 md:h-4 md:w-4 ${bookmarkedItems.includes(detailsOverlayNote.id) ? "fill-current" : ""}`} />
+                        {likeCounts[detailsOverlayNote.id] || 0} likes
+                      </button>
+                      {detailsOverlayNote.download_count > 0 && (
+                        <span className="flex items-center gap-0.5 md:gap-1">
+                          <Download className="h-3 w-3 md:h-4 md:w-4" /> {detailsOverlayNote.download_count} downloads
+                        </span>
+                      )}
+                    </div>
+                    {offlineFiles.includes(detailsOverlayNote.id) && (
+                      <Badge variant="outline" className="text-[8px] md:text-[10px]">Saved Offline</Badge>
+                    )}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-1 md:pt-2">
+                    <Button
+                      className="w-full sm:flex-1 rounded-none md:rounded-xl text-xs md:text-sm h-9 md:h-10"
+                      onClick={() => {
+                        setDetailsOverlayNote(null);
+                        handleViewNote(detailsOverlayNote);
+                      }}
+                    >
+                      <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      View Full Document
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:flex-1 rounded-none md:rounded-xl text-xs md:text-sm h-9 md:h-10"
+                      onClick={() => {
+                        setDetailsOverlayNote(null);
+                        handleDownloadNote(detailsOverlayNote.id, detailsOverlayNote.file_url);
+                      }}
+                    >
+                      <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                      Save Offline
+                    </Button>
+                  </div>
+
+                  {!isPremium && (
+                    <div className="mt-1 md:mt-2 p-2 md:p-3 bg-amber-50 dark:bg-amber-950/30 rounded-none md:rounded-xl border-0 md:border border-amber-200 dark:border-amber-800">
+                      <p className="text-[10px] md:text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                        <Lock className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                        This is a premium resource. Upgrade to view the full document.
+                      </p>
+                    </div>
                   )}
                 </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-1 md:pt-2">
-                  <Button
-                    className="w-full sm:flex-1 rounded-none md:rounded-xl text-xs md:text-sm h-9 md:h-10"
-                    onClick={() => {
-                      setDetailsOverlayNote(null);
-                      handleViewNote(detailsOverlayNote);
-                    }}
-                  >
-                    <Eye className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                    View Full Document
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full sm:flex-1 rounded-none md:rounded-xl text-xs md:text-sm h-9 md:h-10"
-                    onClick={() => {
-                      setDetailsOverlayNote(null);
-                      handleDownloadNote(detailsOverlayNote.id, detailsOverlayNote.file_url);
-                    }}
-                  >
-                    <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                    Save Offline
-                  </Button>
-                </div>
-
-                {!isPremium && (
-                  <div className="mt-1 md:mt-2 p-2 md:p-3 bg-amber-50 dark:bg-amber-950/30 rounded-none md:rounded-xl border-0 md:border border-amber-200 dark:border-amber-800">
-                    <p className="text-[10px] md:text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                      <Lock className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                      This is a premium resource. Upgrade to view the full document.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </div>
+          )
+        }
+      </AnimatePresence >
     </>
   );
 }

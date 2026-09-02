@@ -42,7 +42,7 @@ export function GroupPaySubscriptionCard({ className = "", compact = false }: Gr
     if (compact) {
         return (
             <Card
-                className={`group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 border-green-200 dark:border-green-800/50 overflow-hidden ${className}`}
+                className={`group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 overflow-hidden ${className}`}
                 onClick={handleClick}
             >
                 <CardContent className="p-4">
@@ -88,7 +88,7 @@ export function GroupPaySubscriptionCard({ className = "", compact = false }: Gr
 
     return (
         <Card
-            className={`group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2 border-green-200 dark:border-green-800/50 overflow-hidden relative ${className}`}
+            className={`group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 overflow-hidden relative ${className}`}
             onClick={handleClick}
         >
             {/* Decorative gradient */}
@@ -123,7 +123,7 @@ export function GroupPaySubscriptionCard({ className = "", compact = false }: Gr
 
             <CardContent className="relative space-y-4">
                 {/* What is GroupPay */}
-                <div className="bg-slate-50 dark:bg-gray-800/50 rounded-lg p-3 border border-slate-200 dark:border-gray-700">
+                <div className="bg-slate-50 dark:bg-gray-800/50 rounded-lg p-3 border-0">
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                         <span className="font-semibold text-slate-900 dark:text-white">What is GroupPay?</span>
                         {" "}Form a study group of 10+ nursing students and get premium access for everyone at just

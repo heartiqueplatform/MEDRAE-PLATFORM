@@ -114,7 +114,7 @@ const StoryCardItem = memo(({
                     }
                 }}
             >
-                <div className={`rounded-2xl overflow-hidden bg-gradient-to-br ${defaultCard.color} h-[200px] relative transition-transform duration-300 group-hover:scale-[1.02] shadow-md`}>
+                <div className={`rounded-2xl overflow-hidden bg-gradient-to-br ${defaultCard.color} h-[180px] relative transition-transform duration-300 group-hover:scale-[1.02] shadow-md`}>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     <div className="absolute top-3 left-3 text-3xl">{defaultCard.emoji}</div>
                     <div className="absolute bottom-3 left-3 right-3">
@@ -186,7 +186,7 @@ const StoryCardItem = memo(({
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-yellow-400/20 via-pink-500/20 to-purple-600/20 blur-sm" />
                     )}
                 </div>
-                <div className={`relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 h-[200px] transition-transform duration-300 group-hover:scale-[1.02] shadow-md ${!hasViewed ? 'ring-2 ring-white/50 dark:ring-gray-900/50' : ''
+                <div className={`relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 h-[180px] transition-transform duration-300 group-hover:scale-[1.02] shadow-md ${!hasViewed ? '' : ''
                     }`}>
                     {previewMedia && !imageError ? (
                         <img
@@ -286,7 +286,7 @@ const CreateStoryButton = memo(({ userProfile, onCreate }: { userProfile: any; o
                 }
             }}
         >
-            <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 h-[200px] relative transition-transform duration-300 group-hover:scale-[1.02] shadow-md border-2 border-dashed border-blue-300 dark:border-blue-700">
+            <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 h-[180px] relative transition-transform duration-300 group-hover:scale-[1.02] shadow-md border-2 border-dashed border-blue-300 dark:border-blue-700">
                 <div className="absolute top-2 left-2 w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 overflow-hidden bg-white dark:bg-gray-700">
                     <img
                         src={userProfile?.avatar_url || '/pwa-192x192.png'}
@@ -324,7 +324,7 @@ CreateStoryButton.displayName = 'CreateStoryButton';
 
 export const Stories: React.FC<StoriesProps> = memo(({
     title = "Study Stories",
-    subtitle = "Share your daily learning journey",
+
     className = ""
 }) => {
     const user = useUser();
@@ -888,10 +888,10 @@ export const Stories: React.FC<StoriesProps> = memo(({
             <div className={`w-full pt-0 ${className}`}>
                 <div className="px-4 mb-4">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
+
                 </div>
 
-                <div className="flex gap-4 overflow-x-auto px-4 pb-2 hide-scrollbar" style={{ touchAction: 'pan-x pan-y' }}>
+                <div className="flex gap-4 overflow-x-auto px-4 py-3 hide-scrollbar" style={{ touchAction: 'pan-x pan-y' }}>
                     <CreateStoryButton userProfile={userProfile} onCreate={openCreateModal} />
                     {storyItems}
                 </div>

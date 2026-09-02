@@ -1116,10 +1116,9 @@ export default function TutorsList() {
     }, [existingCohorts]);
 
     return (
-        <div className="space-y-6 mt-0 animate-fade-in max-w-full mx-0 px-0 bg-slate-50 dark:bg-slate-950 min-h-screen">
-
+        <div className="animate-fade-in max-w-full mx-0 px-0 bg-slate-50 dark:bg-slate-950 min-h-screen">
             {error && (
-                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-4 text-red-600 dark:text-red-400 text-sm mx-0">
+                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-3 text-red-600 dark:text-red-400 text-sm mx-0">
                     {error}
                     <button
                         onClick={() => window.location.reload()}
@@ -1131,8 +1130,8 @@ export default function TutorsList() {
             )}
 
             {cohortMessages.length > 0 && (
-                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-none rounded-none">
-                    <CardHeader className="border-b border-slate-200/30 dark:border-white/5 px-4 py-4">
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-none rounded-none mb-0">
+                    <CardHeader className="border-b border-slate-200/30 dark:border-white/5 px-4 py-2">
                         <div className="flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center space-x-3">
                                 <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg">
@@ -1154,7 +1153,7 @@ export default function TutorsList() {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="pt-4 space-y-3 px-4" ref={announcementsRef}>
+                    <CardContent className="pt-2 space-y-2 px-4 pb-2" ref={announcementsRef}>
                         {cohortMessages.map((msg) => {
                             const isUnread = !readMessages.includes(msg.id);
                             return (
@@ -1208,9 +1207,9 @@ export default function TutorsList() {
                 </Card>
             )}
 
-            <div className="space-y-6">
-                <Card className="relative overflow-hidden border-0 bg-white dark:bg-slate-900/95 backdrop-blur-none rounded-none">
-                    <CardHeader className="border-b border-slate-200/50 dark:border-white/5 pb-4 px-4">
+            <div>
+                <Card className="relative overflow-hidden border-0 bg-white dark:bg-slate-900/95 backdrop-blur-none rounded-none mb-0">
+                    <CardHeader className="border-b border-slate-200/50 dark:border-white/5 pb-2 px-4">
                         <div className="flex items-center justify-between flex-wrap gap-4">
                             <div className="flex items-center space-x-3">
                                 <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
@@ -1241,7 +1240,7 @@ export default function TutorsList() {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="pt-6 px-4">
+                    <CardContent className="pt-4 px-4">
                         {existingCohorts.length > 0 && (
                             <div className="mb-8">
                                 <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 px-1 flex items-center gap-2">
@@ -1368,7 +1367,7 @@ export default function TutorsList() {
                                 id="join-form"
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                                className="mt-6 p-6 border-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-500/10 dark:to-teal-500/10 rounded-lg"
+                                className="mt-1 p-6 border-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-500/10 dark:to-teal-500/10 rounded-lg"
                             >
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
@@ -1463,7 +1462,7 @@ export default function TutorsList() {
                                     Leaving this class?
                                 </DialogTitle>
                             </DialogHeader>
-                            <div className="mt-4">
+                            <div className="mt-1">
                                 <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                                     You are about to disconnect from <span className="font-bold text-slate-900 dark:text-slate-200">
                                         {leaveTarget?.profiles?.name || "this tutor"}'s</span> class.
@@ -1471,7 +1470,7 @@ export default function TutorsList() {
                                 </p>
                             </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                        <div className="flex flex-col sm:flex-row gap-3 mt-1">
                             <Button
                                 variant="ghost"
                                 onClick={() => setLeaveTarget(null)}

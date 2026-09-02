@@ -488,20 +488,13 @@ export default function MyMistakes() {
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-1.5 md:h-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full blur-xl opacity-50" />
                     <div className="flex justify-between items-start">
                         <div>
-                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold mb-2 md:mb-3 text-gray-900 dark:text-white relative z-10 flex items-center gap-2 md:gap-3">
-                                <img
-                                    src="/pwa-192x192.jpeg"
-                                    alt="Accent Icon"
-                                    className="w-8 h-8 md:w-10 md:h-10 object-contain opacity-80"
-                                />
-                                My Mistakes
-                            </h1>
-                            <p className="text-gray-700 dark:text-gray-300 mb-1.5 md:mb-2 text-xs md:text-sm lg:text-lg leading-relaxed relative z-10">
-                                Review questions you answered incorrectly. <span className="font-semibold text-green-700 dark:text-green-400">Green</span> highlights the correct answer, answers with <span className="font-semibold text-blue-600 dark:text-blue-400">"your choice"</span> shows what you chose. Mark as <span className="font-semibold">"understood"</span> when you've mastered it.
-                            </p>
-                            <p className="text-gray-500 dark:text-gray-400 mt-1.5 md:mt-2 text-center md:text-left text-sm md:text-base font-medium relative z-10">
+                            <h1 className="text-xl md:text-xl lg:text-4xl font-bold mb-2 md:mb-3 text-gray-900 dark:text-white relative z-10 flex items-center gap-2 md:gap-3">
+
                                 Hello there! You have <span className="font-bold text-red-600 dark:text-red-400">{mistakeCount}</span> unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
-                            </p>
+
+                            </h1>
+
+
                         </div>
 
 

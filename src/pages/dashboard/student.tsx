@@ -794,11 +794,10 @@ export default function StudentDashboard() {
         <Stories
           limit={4}
           title="Medrae Nursing Community Pulse"
-          subtitle="See what other nursing students are sharing"
           showViewAll={true}
           showCreateButton={true}
           onViewAll={() => navigate('/stories')}
-          className="mt-8"
+          className="mt-1"
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           <CountdownFloating />
@@ -812,7 +811,7 @@ export default function StudentDashboard() {
 
 
         {/* Top Students Leaderboard */}
-        <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-2xl mt-6">
+        <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-2xl mt-1">
           <CardMarquee
             studyProgress={studyProgress ?? 0}
             quizCount={quizCount ?? 0}
@@ -957,7 +956,7 @@ export default function StudentDashboard() {
         <FeedSeenTop10 />
 
         {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}
-        <div className="fixed bottom-14 right-5 z-40">
+        <div className="fixed bottom-14 right-4 z-40">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

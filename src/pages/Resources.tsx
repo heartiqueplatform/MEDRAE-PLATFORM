@@ -743,15 +743,15 @@ export function Resources() {
   return (
     <>
       {/* EDGE-TO-EDGE ON MOBILE - COMPLETELY REMOVED ALL PADDING/MARGINS */}
-      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-0 md:px-4 lg:px-6">
-        <div className="w-full max-w-full space-y-0 md:space-y-6 py-0 md:py-6">
+      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-3 md:px-4 lg:px-6">
+        <div className="w-full max-w-full space-y-0 md:space-y-6 py-0 md:py-6 px-0 sm:px-0">
           <div className="w-full max-w-full mx-auto space-y-0 px-0 sm:px-6 pt-0 sm:pt-4">
             {/* REMOVED ALL CARD STYLING ON MOBILE - NO BORDERS, NO ROUNDED, NO PADDING */}
-            <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0 bg-white dark:bg-muted/30">
+            <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0 bg-white dark:bg-muted/30 mx-0">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600" />
 
               {/* REMOVED PADDING FROM HEADER ON MOBILE */}
-              <CardHeader className="pb-2 relative px-3 md:px-6 pt-3 md:pt-6">
+              <CardHeader className="pb-2 relative px-3 md:px-6 pt-3 md:pt-6 mx-0">
                 <div className="flex items-center gap-3 md:gap-4">
                   <div className="p-2 md:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
                     <Library className="h-6 w-6 md:h-7 md:w-7 text-blue-600 animate-pulse" />
@@ -768,9 +768,10 @@ export function Resources() {
               </CardHeader>
 
               {/* REMOVED PADDING FROM CONTENT ON MOBILE */}
-              <CardContent className="space-y-4 md:space-y-6 px-0 md:px-6 pb-0 md:pb-6">
+              <CardContent className="space-y-4 md:space-y-6 px-3 md:px-6 pb-0 md:pb-6">
                 {/* Description Area - REMOVED PADDING ON MOBILE */}
                 <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-none md:rounded-xl p-3 md:p-5 border-0 mx-0">
+
                   <motion.div layout>
                     <div className="text-gray-600 dark:text-gray-400 text-xs md:text-sm leading-relaxed font-medium">
                       <p>
@@ -1065,7 +1066,7 @@ export function Resources() {
                   </h2>
                   {blockCategories.filter((cat) => cat.id === selectedBlock).map((cat) => (
                     <div key={cat.id}>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-0 sm:gap-3 lg:gap-4 w-full">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3 lg:gap-4 w-full">
                         {loadingNotes ? (
                           // SKELETON LOADERS - 6 cards while loading
                           Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
@@ -1089,7 +1090,7 @@ export function Resources() {
                             <React.Fragment key={note.id}>
                               {/* CARD - COMPLETELY EDGE-TO-EDGE ON MOBILE */}
                               <div
-                                className="group flex flex-col justify-between transition-all duration-300 border-0 border-b border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-none shadow-sm hover:shadow-xl overflow-hidden cursor-pointer"
+                                className="group flex flex-col justify-between transition-all duration-300 border-0 border-b border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer"
                                 onClick={() => setDetailsOverlayNote(note)}
                               >
                                 <div className="p-3 md:p-5 pb-1 md:pb-2">
@@ -1119,27 +1120,6 @@ export function Resources() {
                                       </CardDescription>
                                     </div>
 
-                                    {/* ALL COLUMNS DISPLAYED - SMALLER ON MOBILE */}
-                                    <div className="flex flex-wrap gap-1 pt-0.5 md:pt-1">
-                                      {note.course && (
-                                        <Badge variant="outline" className="text-[7px] md:text-[10px] font-medium bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 px-1 md:px-2">
-                                          <BookOpen className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 mr-0.5 md:mr-1" />
-                                          {note.course}
-                                        </Badge>
-                                      )}
-                                      {note.unit && (
-                                        <Badge variant="outline" className="text-[7px] md:text-[10px] font-medium bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 px-1 md:px-2">
-                                          <Tag className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 mr-0.5 md:mr-1" />
-                                          {note.unit}
-                                        </Badge>
-                                      )}
-                                      {note.institution && (
-                                        <Badge variant="outline" className="text-[7px] md:text-[10px] font-medium bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 px-1 md:px-2">
-                                          <Building className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 mr-0.5 md:mr-1" />
-                                          {note.institution}
-                                        </Badge>
-                                      )}
-                                    </div>
 
                                     <div className="flex flex-wrap gap-1.5 md:gap-2 pt-0.5 md:pt-1">
                                       <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter flex items-center gap-0.5 md:gap-1">
@@ -1161,19 +1141,7 @@ export function Resources() {
                                 </div>
 
                                 <div className="p-3 md:p-5 pt-1 md:pt-2 space-y-3 md:space-y-5">
-                                  {/* Tags section */}
-                                  {note.tags && note.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                      {note.tags.slice(0, 3).map((tag: string, i: number) => (
-                                        <span key={i} className="text-[7px] md:text-[9px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 md:px-2 py-0.5 rounded-md">
-                                          #{tag}
-                                        </span>
-                                      ))}
-                                      {note.tags.length > 3 && (
-                                        <span className="text-[7px] md:text-[9px] font-medium text-gray-400">+{note.tags.length - 3} more</span>
-                                      )}
-                                    </div>
-                                  )}
+
 
                                   <div className="flex flex-wrap items-center gap-1.5 md:gap-2 border-t border-gray-50 dark:border-gray-900 pt-2 md:pt-4">
                                     {note.file_type === "pdf" && (
