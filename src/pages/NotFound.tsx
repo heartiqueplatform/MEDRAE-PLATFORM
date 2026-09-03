@@ -12,23 +12,18 @@ const NotFound = () => {
       location.pathname
     );
   }, [location.pathname]);
-
   // Heart particles effect
   useEffect(() => {
     const container = document.getElementById("heart-zone");
-
     const createHeart = (x, y) => {
       const heart = document.createElement("div");
       heart.className = "heart-particle";
       heart.style.left = `${x}px`;
       heart.style.top = `${y}px`;
-
       const size = Math.random() * (16 - 8) + 8;
       heart.style.width = `${size}px`;
       heart.style.height = `${size}px`;
-
       container.appendChild(heart);
-
       setTimeout(() => {
         heart.remove();
       }, 2000);
@@ -37,17 +32,13 @@ const NotFound = () => {
     let lastX = 0;
     let lastY = 0;
     const MIN_DISTANCE = 35;
-
     const handleMove = (e) => {
       const isButton = e.target.closest("#safe-button");
       if (isButton) return;
-
       const x = e.touches ? e.touches[0].clientX : e.clientX;
       const y = e.touches ? e.touches[0].clientY : e.clientY;
-
       const distance = Math.hypot(x - lastX, y - lastY);
       if (distance < MIN_DISTANCE) return;
-
       lastX = x;
       lastY = y;
       createHeart(x, y);
@@ -55,7 +46,6 @@ const NotFound = () => {
 
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("touchmove", handleMove);
-
     return () => {
       window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("touchmove", handleMove);

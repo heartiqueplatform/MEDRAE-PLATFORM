@@ -766,20 +766,35 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               variant="ghost"
               size="icon"
               onClick={handleReload}
-              className={`hidden md:flex h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 active:scale-95 shrink-0 ${rotating ? 'animate-spin' : ''}`}
+              className={`hidden md:flex h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none border-0 ${rotating ? 'animate-spin' : ''}`}
               title="Refresh App"
               aria-label="Refresh"
             >
               <RefreshCcw className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" />
             </Button>
-
+            {/* 3. NOTIFICATIONS BUTTON - NEW! Beside Settings */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNotificationsClick}
+              className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none data-[state=open]:ring-0 data-[state=open]:outline-none border-0"
+              aria-label="Notifications"
+            >
+              <Bell className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" />
+              {notificationCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white dark:border-slate-950"></span>
+                </span>
+              )}
+            </Button>
             {/* 4. Settings Dropdown - NOW USING settings.png INSTEAD OF CogIcon */}
             <DropdownMenu onOpenChange={handleSettingsOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700/50 active:scale-95 shrink-0"
+                  className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none data-[state=open]:ring-0 data-[state=open]:outline-none border-0 group"
                   aria-label="Settings"
                 >
                   <img
@@ -863,24 +878,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     </Button>
                   </div>
                 </div>
-
-                <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
-
-                <DropdownMenuItem onClick={handleNotificationsClick} className="flex items-center justify-between py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                      <Bell className="w-4 h-4 fill-current" />
-                    </div>
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Notifications</span>
-                  </div>
-                  {notificationCount > 0 && (
-                    <Badge className="h-5 min-w-[20px] rounded-full bg-red-500 text-[10px] font-bold text-white border-none">
-                      {notificationCount}
-                    </Badge>
-                  )}
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
 
                 <DropdownMenuItem onClick={handleShare} className="flex items-center gap-3 py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50">
                   <div className="p-1.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
