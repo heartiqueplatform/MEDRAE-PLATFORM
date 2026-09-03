@@ -376,10 +376,7 @@ export default function MarketFeed({ user }: any) {
         <div className="max-w-5xl mx-auto py-4 md:py-6 px-0 md:px-4">
             {/* HEADER SECTION - Mobile Native */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-2 px-3 md:px-0 pb-3 md:pb-0 border-b md:border-b-0 border-slate-100/50 dark:border-slate-800/50">
-                <div className="flex items-center gap-3">
-                    <img src="/Nurvia_logo.png" alt="Logo" className="h-8 w-8 md:h-10 md:w-10 object-contain" />
-                    <h1 className="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white">NursMartt</h1>
-                </div>
+
                 <div className="flex flex-wrap items-center gap-2 md:gap-3">
                     {/* Filter Dropdowns - Mobile Optimized */}
                     <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-700 flex-1 md:flex-none">
