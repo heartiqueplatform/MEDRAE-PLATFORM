@@ -217,7 +217,7 @@ export default function NursingModule() {
                                     tapFeedback("warning");
                                     navigate("/subscription");
                                 }}
-                                className="mt-4 md:mt-5 flex items-center justify-between gap-2 md:gap-3 rounded-lg md:rounded-xl bg-gradient-to-r from-amber-50 to-amber-100 p-3 md:p-4 border border-amber-200 cursor-pointer hover:shadow-md transition-all dark:from-amber-400/10 dark:to-amber-400/5 dark:border-amber-400/20"
+                                className="mt-4 md:mt-5 flex items-center justify-between gap-2 md:gap-3 rounded-lg md:rounded-xl bg-gradient-to-r from-amber-50 to-amber-100 p-3 md:p-4 border-0 cursor-pointer hover:shadow-md transition-all dark:from-amber-400/10 dark:to-amber-400/5"
                             >
                                 <div className="flex items-center gap-2 md:gap-3">
                                     <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg md:rounded-xl bg-amber-500 text-white shadow-lg">
@@ -319,7 +319,7 @@ export default function NursingModule() {
                                                 <div className="mb-1.5 md:mb-2 flex flex-wrap items-center gap-1.5 md:gap-2">
                                                     <span className="rounded-full bg-slate-100 px-2 md:px-2.5 py-0.5 md:py-1 text-[10px] md:text-xs font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">{mod.module_code || `Module ${index + 1}`}</span>
                                                     {isLocked ? (
-                                                        <span className="rounded-full bg-amber-100 px-2 md:px-2.5 py-0.5 md:py-1 text-[10px] md:text-xs font-bold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-400/10 dark:text-amber-300 dark:ring-amber-400/20">🔒 Premium</span>
+                                                        <span className="rounded-full bg-amber-100 px-2 md:px-2.5 py-0.5 md:py-1 text-[10px] md:text-xs font-bold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-400/10 dark:text-amber-300 dark:ring-amber-400/20"> Premium</span>
                                                     ) : isUnlockedNow ? (
                                                         <span className="rounded-full bg-emerald-100 px-2 md:px-2.5 py-0.5 md:py-1 text-[10px] md:text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20">UNLOCKED</span>
                                                     ) : (
@@ -328,7 +328,7 @@ export default function NursingModule() {
                                                 </div>
                                                 <h2 className="line-clamp-2 text-base md:text-lg font-black text-slate-950 dark:text-white">{mod.title}</h2>
                                                 {isLocked ? (
-                                                    <p className="mt-0.5 md:mt-1 text-[10px] md:text-xs font-bold text-amber-600 dark:text-amber-400">🔒 {formatNumberWithImpact(mod.total_questions || 0)} questions waiting</p>
+                                                    <p className="mt-0.5 md:mt-1 text-[10px] md:text-xs font-bold text-amber-600 dark:text-amber-400"> {formatNumberWithImpact(mod.total_questions || 0)} questions waiting</p>
                                                 ) : isUnlockedNow ? (
                                                     <p className="mt-0.5 md:mt-1 text-[10px] md:text-xs font-bold text-emerald-600 dark:text-emerald-400">{formatNumberWithImpact(mod.total_questions || 0)} questions now available!</p>
                                                 ) : (

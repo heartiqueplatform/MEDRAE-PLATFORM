@@ -62,7 +62,7 @@ const categoryConfig = {
 
 const statusConfig = {
     pending: { label: 'Pending', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-    approved: { label: 'Approved ✅', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+    approved: { label: 'Approved ', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
     rejected: { label: 'Rejected', icon: X, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
     in_review: { label: 'In Review', icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
 };
@@ -219,7 +219,7 @@ function FullScreenSuggestionCard({
                                 }`}
                         >
                             <Heart className={`h-4 w-4 md:h-5 md:w-5 ${suggestion.user_endorsed ? 'fill-white' : ''}`} />
-                            {suggestion.user_endorsed ? 'Endorsed ✅' : 'Endorse This Suggestion'}
+                            {suggestion.user_endorsed ? 'Endorsed ' : 'Endorse This Suggestion'}
                         </button>
 
                         {user && suggestion.user_id === user.id && (

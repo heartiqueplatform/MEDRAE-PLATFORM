@@ -10,82 +10,192 @@ import { AuthProvider } from "@/context/AuthProvider";
 import "@fontsource/poppins";
 
 /**
- * PWA Auto-Update with User Experience Considerations
+ * App Version Control - Smart Cache Management
  */
-const updateSW = registerSW({
-    onNeedRefresh() {
-        const isUserTyping =
-            document.activeElement?.tagName === 'INPUT' ||
-            document.activeElement?.tagName === 'TEXTAREA' ||
-            (document.activeElement as HTMLElement)?.isContentEditable;
-
-        const isInExam = window.location.pathname.includes('/exam') ||
-            window.location.pathname.includes('/simulation');
-
-        if (!isUserTyping && !isInExam) {
-            const shouldUpdate = confirm(
-                'A new version of Medrae is available. Would you like to update now?'
-            );
-            if (shouldUpdate) {
-                updateSW(true);
-            }
-        } else if (isInExam) {
-            console.log('New version available, but user is in an exam. Waiting...');
-            localStorage.setItem('pwaUpdatePending', 'true');
-        } else {
-            console.log("New version found, but user is busy. Waiting...");
-            localStorage.setItem('pwaUpdatePending', 'true');
-        }
-    },
-    onOfflineReady() {
-        console.log('Medrae is ready to work offline');
-        const offlineReady = new CustomEvent('pwa-offline-ready', {
-            detail: { message: 'Medrae is ready to work offline' }
-        });
-        window.dispatchEvent(offlineReady);
-    },
-    onRegisteredSW(swUrl, registration) {
-        console.log('Service Worker registered:', swUrl);
-
-        const pendingUpdate = localStorage.getItem('pwaUpdatePending');
-        if (pendingUpdate === 'true') {
-            console.log('Pending update detected. Will notify user.');
-            const updateEvent = new CustomEvent('pwa-update-available', {
-                detail: { message: 'A new version is available. Update now?' }
-            });
-            window.dispatchEvent(updateEvent);
-        }
-    },
-});
+const APP_VERSION = "1.1.022";
+const CACHE_NAMES = {
+    static: `medrae-static-${APP_VERSION}`,
+    api: `medrae-api-cache-${APP_VERSION}`,
+    assets: `medrae-assets-${APP_VERSION}`
+};
 
 /**
- * App Version Control - Cache Busting
+ * PWA Auto-Update with Enhanced UX
  */
-const APP_VERSION = "1.1.0";
-const storedVersion = localStorage.getItem("appVersion");
+let updateSW: (reloadPage?: boolean) => Promise<void>;
+let deferredPrompt: any = null;
 
-if (storedVersion !== APP_VERSION) {
-    if ('caches' in window) {
-        caches.keys().then(names => {
-            for (let name of names) {
-                console.log(`Deleting cache: ${name}`);
-                caches.delete(name);
+const setupPWA = async () => {
+    if (!('serviceWorker' in navigator)) return;
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+
+        await registration.update();
+
+        if (registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('Service Worker updated');
+            if (!document.hidden) {
+                setTimeout(() => window.location.reload(), 1500);
             }
         });
-    }
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let registration of registrations) {
-                console.log('Unregistering old service worker:', registration.scope);
-                registration.unregister();
+        registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('New version available');
+                    }
+                });
             }
         });
+
+    } catch (error) {
+        console.error('SW registration failed:', error);
+    }
+};
+
+/**
+ * Smart Cache Cleanup - Only removes old caches
+ */
+const cleanupOldCaches = async () => {
+    if (!('caches' in window)) return;
+
+    try {
+        const cacheNames = await caches.keys();
+        const currentCaches = Object.values(CACHE_NAMES);
+
+        for (const name of cacheNames) {
+            if (name.startsWith('medrae-') && !currentCaches.includes(name)) {
+                console.log(`Deleting old cache: ${name}`);
+                await caches.delete(name);
+            }
+        }
+    } catch (error) {
+        console.warn('Cache cleanup failed:', error);
+    }
+};
+
+/**
+ * Pre-cache Critical Assets
+ */
+const precacheAssets = async () => {
+    const criticalAssets = [
+        '/',
+        '/index.css',
+        '/manifest.json',
+        '/icon-192.png',
+        '/icon-512.png'
+    ];
+
+    try {
+        const cache = await caches.open(CACHE_NAMES.static);
+        await cache.addAll(criticalAssets);
+        console.log('Critical assets pre-cached');
+    } catch (error) {
+        console.warn('Failed to pre-cache assets:', error);
+    }
+};
+
+/**
+ * Smart Fetch Interceptor with Cache-First Strategy
+ */
+const originalFetch = window.fetch;
+window.fetch = async function (...args) {
+    const request = args[0] instanceof Request ? args[0] : new Request(args[0] as string);
+    const url = request.url;
+    const isStaticAsset = url.includes('/static/') ||
+        url.match(/\.(css|js|jpg|png|svg|webp|woff|woff2|ttf)$/i);
+    const isSupabase = url.includes('supabase.co');
+
+    if (isStaticAsset && !isSupabase) {
+        try {
+            const cache = await caches.open(CACHE_NAMES.assets);
+            const cachedResponse = await cache.match(request);
+
+            if (cachedResponse) {
+                fetchAndCache(request, cache);
+                return cachedResponse;
+            }
+
+            const response = await originalFetch.apply(this, args);
+            if (response.ok) {
+                const clone = response.clone();
+                cache.put(request, clone);
+            }
+            return response;
+        } catch (error) {
+            // Fall through to normal fetch
+        }
     }
 
-    localStorage.setItem("appVersion", APP_VERSION);
-    window.location.reload();
-}
+    if (isSupabase) {
+        try {
+            const response = await originalFetch.apply(this, args);
+
+            if (response && response.ok) {
+                try {
+                    const clone = response.clone();
+                    clone.blob().then(blob => {
+                        PerformanceMonitor.trackCall(url, blob.size);
+                    }).catch(() => { });
+
+                    const cache = await caches.open(CACHE_NAMES.api);
+                    const responseClone = response.clone();
+                    cache.put(request, responseClone);
+                } catch (e) {
+                    // Silent fail for blob reading
+                }
+            }
+            return response;
+        } catch (error) {
+            console.warn("Offline Mode: Returning cached data.");
+
+            try {
+                const cache = await caches.open(CACHE_NAMES.api);
+                const cachedResponse = await cache.match(request);
+                if (cachedResponse) {
+                    console.log('Returning cached response for:', url);
+                    return cachedResponse;
+                }
+            } catch (e) {
+                // Cache read failed
+            }
+
+            const isListRequest = url.includes('?') || url.includes('select=');
+            return new Response(isListRequest ? '[]' : '{}', {
+                status: 200,
+                statusText: 'OK (Offline Mode)',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Offline': 'true'
+                }
+            });
+        }
+    }
+
+    return originalFetch.apply(this, args);
+};
+
+/**
+ * Helper: Fetch and cache in background
+ */
+const fetchAndCache = async (request: Request, cache: Cache) => {
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const clone = response.clone();
+            cache.put(request, clone);
+        }
+    } catch (error) {
+        // Silent fail
+    }
+};
 
 /**
  * Performance Monitor
@@ -101,76 +211,85 @@ export const PerformanceMonitor = {
 };
 
 /**
- * Smart Fetch Interceptor - Handles Offline Gracefully
+ * Initialize PWA
  */
-const originalFetch = window.fetch;
-window.fetch = async function (...args) {
-    const url = args[0]?.toString() || '';
-    const isSupabase = url.includes('supabase.co/rest/v1');
-    const isAuth = url.includes('supabase.co/auth/v1');
+const initPWA = () => {
+    const storedVersion = localStorage.getItem("appVersion");
 
-    try {
-        const response = await originalFetch.apply(this, args as any);
+    if (storedVersion !== APP_VERSION) {
+        cleanupOldCaches();
+        localStorage.setItem("appVersion", APP_VERSION);
+        console.log('App version updated to:', APP_VERSION);
 
-        if (response && isSupabase && response.ok) {
-            try {
-                const clone = response.clone();
-                clone.blob().then(blob => {
-                    PerformanceMonitor.trackCall(url, blob.size);
-                }).catch(() => { });
-            } catch (e) {
-                // Silent fail for blob reading
-            }
-        }
-        return response;
-    } catch (error) {
-        if (isSupabase) {
-            console.warn("Medrae Offline Mode: Returning cached or empty data.");
-
-            if ('caches' in window) {
-                try {
-                    const cache = await caches.open('medrae-api-cache');
-                    const cachedResponse = await cache.match(url);
-                    if (cachedResponse) {
-                        console.log('Returning cached response for:', url);
-                        return cachedResponse;
-                    }
-                } catch (e) {
-                    // Cache read failed
-                }
-            }
-
-            const isListRequest = url.includes('?') || url.includes('select=');
-            const emptyBody = isListRequest ? '[]' : '{}';
-
-            return new Response(emptyBody, {
-                status: 200,
-                statusText: 'OK (Offline Mode)',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Offline': 'true'
-                }
-            });
-        }
-
-        throw error;
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
     }
 };
 
 /**
- * Cache Strategy for PWA - Precache Critical Assets
+ * Register Service Worker
  */
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        console.log('App loaded, checking for updates...');
-    });
-}
+updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh() {
+        console.log('New version available');
+
+        const isInExam = window.location.pathname.includes('/exam') ||
+            window.location.pathname.includes('/simulation');
+
+        if (isInExam) {
+            console.log('New version available, but user is in an exam. Waiting...');
+            localStorage.setItem('pwaUpdatePending', 'true');
+            return;
+        }
+
+        console.log('New version found, updating...');
+
+        const autoUpdateTimeout = setTimeout(() => {
+            const pendingUpdate = localStorage.getItem('pwaUpdatePending');
+            if (pendingUpdate !== 'false' && updateSW) {
+                console.log('Auto-updating after timeout');
+                updateSW(true);
+            }
+        }, 30000);
+
+        localStorage.setItem('pwaAutoUpdateTimeout', String(autoUpdateTimeout));
+    },
+    onOfflineReady() {
+        console.log('Medrae is ready to work offline');
+
+        const offlineReady = new CustomEvent('pwa-offline-ready', {
+            detail: { message: 'Medrae is ready to work offline' }
+        });
+        window.dispatchEvent(offlineReady);
+    },
+    onRegisteredSW(swUrl, registration) {
+        console.log('Service Worker registered:', swUrl);
+
+        const pendingUpdate = localStorage.getItem('pwaUpdatePending');
+        if (pendingUpdate === 'true') {
+            console.log('Pending update detected. Will notify user.');
+            const updateEvent = new CustomEvent('pwa-update-available', {
+                detail: {
+                    message: 'A new version is available. Update now?',
+                    update: () => updateSW(true)
+                }
+            });
+            window.dispatchEvent(updateEvent);
+
+            const isInExam = window.location.pathname.includes('/exam') ||
+                window.location.pathname.includes('/simulation');
+            if (!isInExam) {
+                console.log('Notifying user of pending update');
+            }
+        }
+    },
+});
 
 /**
  * Handle PWA Install Prompt
  */
-let deferredPrompt: any = null;
-
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -190,32 +309,80 @@ window.addEventListener('appinstalled', () => {
 });
 
 /**
- * Initialize App
+ * Online/Offline Status Handling
  */
-const root = createRoot(document.getElementById("root")!);
+window.addEventListener('online', () => {
+    console.log('App is online. Syncing data...');
+    window.dispatchEvent(new CustomEvent('pwa-online'));
+});
 
-root.render(
-    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-        <AuthProvider>
-            <AuthGate>
-                <App />
-            </AuthGate>
-        </AuthProvider>
-    </BrowserRouter>
-);
+window.addEventListener('offline', () => {
+    console.log('App is offline. Using cached data.');
+    window.dispatchEvent(new CustomEvent('pwa-offline'));
+});
+
+/**
+ * Error Handling for PWA
+ */
+window.addEventListener('error', (e) => {
+    if (e.message && e.message.includes('ServiceWorker')) {
+        console.error('Service Worker Error:', e.message);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(r => r.update());
+            });
+        }
+    }
+});
+
+/**
+ * Initialize App with PWA
+ */
+const initApp = async () => {
+    initPWA();
+
+    if ('serviceWorker' in navigator) {
+        await setupPWA();
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                precacheAssets();
+            }, 3000);
+        });
+    }
+
+    const root = createRoot(document.getElementById("root")!);
+
+    root.render(
+        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+            <AuthProvider>
+                <AuthGate>
+                    <App />
+                </AuthGate>
+            </AuthProvider>
+        </BrowserRouter>
+    );
+};
+
+initApp().catch(console.error);
 
 /**
  * Expose PWA Controls for App Components
  */
 (window as any).__pwa = {
     updateApp: () => {
-        updateSW(true);
+        if (updateSW) {
+            updateSW(true);
+            console.log('Manual update triggered');
+        }
     },
     getUpdateStatus: () => {
         return localStorage.getItem('pwaUpdatePending') === 'true';
     },
     clearUpdateStatus: () => {
         localStorage.removeItem('pwaUpdatePending');
+        localStorage.removeItem('pwaAutoUpdateTimeout');
     },
     installApp: () => {
         if (deferredPrompt) {
@@ -231,32 +398,18 @@ root.render(
         } else {
             console.log('Install prompt not available');
         }
-    }
-};
-
-/**
- * Error Handling for PWA
- */
-window.addEventListener('error', (e) => {
-    if (e.message && e.message.includes('ServiceWorker')) {
-        console.error('Service Worker Error:', e.message);
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(r => r.update());
-            });
+    },
+    getVersion: () => APP_VERSION,
+    getCacheNames: () => CACHE_NAMES,
+    clearAllCaches: async () => {
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            for (const key of keys) {
+                if (key.startsWith('medrae-')) {
+                    await caches.delete(key);
+                }
+            }
+            console.log('All caches cleared');
         }
     }
-});
-
-/**
- * Online/Offline Status
- */
-window.addEventListener('online', () => {
-    console.log('App is online. Syncing data...');
-    window.dispatchEvent(new CustomEvent('pwa-online'));
-});
-
-window.addEventListener('offline', () => {
-    console.log('App is offline. Using cached data.');
-    window.dispatchEvent(new CustomEvent('pwa-offline'));
-});
+};
