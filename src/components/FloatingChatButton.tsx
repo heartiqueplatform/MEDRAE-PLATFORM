@@ -59,7 +59,7 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
                     "hover:scale-105 active:scale-95",
                     "border-2 border-white/20 dark:border-slate-800/50",
                     isOpen && "scale-0 opacity-0 pointer-events-none",
-                    "z-[90]"
+                    "z-[30]"
                 )}
                 aria-label="Open chat"
             >
