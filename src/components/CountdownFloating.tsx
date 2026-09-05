@@ -28,8 +28,8 @@ const UNIVERSAL_EXAMS: CountdownPlan[] = [
         id: "universal_1",
         exam_name: "Final Nursing Exam",
         exam_type: "Final Exam",
-        exam_date: "2026-12-15",
-        papers: ["Anatomy", "Physiology", "Pharmacology"],
+        exam_date: "2026-11-12",
+        papers: ["Paper one,Time 9am-to-11 am", "Paper Two, Time: 2pm-to-4pm"],
         created_at: new Date().toISOString(),
         is_active: true,
     },
@@ -37,8 +37,8 @@ const UNIVERSAL_EXAMS: CountdownPlan[] = [
         id: "universal_2",
         exam_name: "Clinical Skills Assessment",
         exam_type: "Practical",
-        exam_date: "2026-12-20",
-        papers: ["Clinical Procedures", "Patient Care"],
+        exam_date: "2027-5-20",
+        papers: ["Paper one,Time 9am-to-11 am", "Paper Two, Time: 2pm-to-4pm"],
         created_at: new Date().toISOString(),
         is_active: true,
     },
@@ -47,8 +47,8 @@ const UNIVERSAL_EXAMS: CountdownPlan[] = [
 // =============================================
 // CACHE HELPERS - FOREVER CACHE (No expiration)
 // =============================================
-const CUSTOM_EXAMS_CACHE_KEY = "custom_exams_cache_v2";
-const HIDDEN_EXAMS_KEY = "hidden_exams_v2";
+const CUSTOM_EXAMS_CACHE_KEY = "custom_exams_cache_v3";
+const HIDDEN_EXAMS_KEY = "hidden_exams_v3";
 
 interface CustomExamsCache {
     plans: CountdownPlan[];

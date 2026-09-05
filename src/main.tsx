@@ -12,7 +12,7 @@ import "@fontsource/poppins";
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "1.1.022322";
+const APP_VERSION = "1.1.022322335";
 const CACHE_NAMES = {
     static: `medrae-static-${APP_VERSION}`,
     api: `medrae-api-cache-${APP_VERSION}`,

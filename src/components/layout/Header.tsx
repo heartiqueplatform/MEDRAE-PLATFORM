@@ -665,13 +665,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 `}>
         {/* Mobile Logo */}
         <div className="flex items-center gap-2 md:hidden shrink-0">  {/* 👈 Increased gap from 1.5 to 2 */}
-          <img
-            src="/pwa-192x192.jpeg"
-            alt="Medrae"
-            className="h-9 w-9 rounded-md object-cover"  // 👈 Changed from h-7 w-7 to h-9 w-9
-            loading="lazy"
-          />
-          <div className="text-2xl sm:text-3xl font-black tracking-tight leading-none">  {/* 👈 Increased text size */}
+          <div className="text-xl sm:text-xl font-black tracking-tight leading-none">  {/* 👈 Increased text size */}
             <span className="text-red-500">Medrae</span>{' '}
             <span className="text-gray-900 dark:text-white">Nursing</span>
           </div>

@@ -159,7 +159,6 @@ export function Notifications() {
     };
     return config[type] || config.system;
   };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -303,7 +302,6 @@ export function Notifications() {
                   <Clock size={14} />
                   <span>{formatDate(selectedNotification.created_at)}</span>
                 </div>
-
               </div>
             </div>
 
