@@ -522,7 +522,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                     { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
                     { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" },
                     { title: "Nurse Duel (N.D)", url: "/challenge", icon: Swords, iconTone: "practice" },
-                    { title: "AI Assistant", url: "/ai-assistant", icon: Brain, iconTone: "ai" },
+
                     { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" },
                     { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" },
                 ],
@@ -557,7 +557,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 items: [
                     { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone },
                     { title: "Assessment History", url: "/assessments/history", icon: BarChart3, iconTone: "progress" as IconTone },
-                    { title: "Tracker", url: "/calendar", icon: Calendar, iconTone: "progress" },
                     { title: "Live Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
                     { title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone },
                     { title: "Create Class", url: "/live-classes/create", icon: Video, iconTone: "learning" as IconTone },

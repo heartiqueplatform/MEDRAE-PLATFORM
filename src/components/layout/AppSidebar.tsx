@@ -468,7 +468,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
     { title: "Nurse Duel (N.D)", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
     { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
-    { title: "AI Study", url: "/ai-assistant", icon: Brain, iconTone: "ai" as IconTone },
+
     { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
   ], [userRole, mistakeCount]);
 
@@ -507,7 +507,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "Create Class", url: "/live-classes/create", icon: Video, iconTone: "learning" as IconTone },
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" as IconTone },
     { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content" as IconTone, badge: formatNumber(totalNotes) },
-    { title: "Assessment Date", url: "/calendar", icon: Calendar, iconTone: "learning" as IconTone, badge: `${totalEvents}E` },
+
   ], [totalNotes, totalEvents, formatNumber]);
 
   // 🔥 UPDATED: Institutional exam items with dynamic role

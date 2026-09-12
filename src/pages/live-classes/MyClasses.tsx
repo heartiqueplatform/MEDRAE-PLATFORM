@@ -8,6 +8,7 @@ import {
     Calendar, Clock, Users, Video, Award, CheckCircle,
     XCircle, Clock as ClockIcon, AlertCircle, ArrowRight
 } from 'lucide-react';
+import TutorsList from '@/components/student/TutorsList';
 
 // Skeleton Loader Component
 const MyClassesSkeleton = () => {
@@ -378,6 +379,7 @@ export const MyClasses = () => {
                     </button>
                 </div>
             )}
+            <TutorsList />
         </div>
     );
 };

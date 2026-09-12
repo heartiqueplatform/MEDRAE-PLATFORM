@@ -20,7 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import CardMarquee from '@/components/CardMarquee';
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
@@ -43,17 +42,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from 'react-router-dom';
 import { Send, Trash2 } from "lucide-react";
-import DailyImagesTrivia from "@/components/DailyImagesTrivia";
+
 import FeedSeenTop10 from "@/components/FeedSeenTop10";
 import Referral from "@/components/Referral";
 import { UserProfileModal } from "@/components/UserProfileModal";
-import TutorsList from "@/components/student/TutorsList";
+
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import DailyStatus from "@/components/DailyStatus";
 import { TermsButton } from "@/components/ui/TermsButton";
 import Algorithm from "@/components/Algorithm/Algorithm";
-import { TotalAttemptsCard } from "@/components/curriculum/TotalAttemptsCard";
-import Stories from "@/components/stories/Stories";
+
+
 
 const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
   const rankConfig = {
@@ -791,18 +790,9 @@ export default function StudentDashboard() {
       </AnimatePresence>
       <div className="w-full space-y-2 md:px-4 lg:px-6">
         <GreetingsCard />
-        <Stories
-          limit={4}
-          title="Medrae Nursing Community Pulse"
-          showViewAll={true}
-          showCreateButton={true}
-          onViewAll={() => navigate('/stories')}
-          className="mt-1"
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-          <CountdownFloating />
-          <TotalAttemptsCard />
-        </div>
+
+        <CountdownFloating />
+
         <DailyTriviaCard />
         <Algorithm />
         <Referral />
@@ -812,15 +802,6 @@ export default function StudentDashboard() {
 
         {/* Top Students Leaderboard */}
         <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-2xl mt-1">
-          <CardMarquee
-            studyProgress={studyProgress ?? 0}
-            quizCount={quizCount ?? 0}
-            targetScore={targetScore ?? 50} // Ensure fallback here
-            studyStreak={studyStreak ?? 0}
-            bestStreak={bestStreak ?? 0}
-            onNavigate={handleSmoothNavigate}
-          />
-          <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-yellow-500/10 blur-[80px]" />
           <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px]" />
 
           <CardHeader className="relative z-10 pb-0">
@@ -951,8 +932,8 @@ export default function StudentDashboard() {
           <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
         </Card>
 
-        <TutorsList />
-        <DailyImagesTrivia />
+
+
         <FeedSeenTop10 />
 
         {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}

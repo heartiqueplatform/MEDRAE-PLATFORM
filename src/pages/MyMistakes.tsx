@@ -14,7 +14,7 @@ import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
-import { MistakesCard } from "@/components/MistakesCard";
+
 import React from 'react';
 import { Trophy, Sparkles, ArrowRight, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -500,7 +500,7 @@ export default function MyMistakes() {
 
                     </div>
                 </div>
-                <MistakesCard />
+
             </div>
 
             <AnimatePresence>

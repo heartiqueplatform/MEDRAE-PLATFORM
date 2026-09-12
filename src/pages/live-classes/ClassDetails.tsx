@@ -10,6 +10,7 @@ import {
     Copy, ExternalLink, FileText, Star, Timer, Lock,
     UserCheck, UserX, CalendarDays
 } from 'lucide-react';
+import TutorsList from '@/components/student/TutorsList';
 
 export const ClassDetails = () => {
     const { id } = useParams<{ id: string }>();
@@ -587,6 +588,7 @@ export const ClassDetails = () => {
                     )}
                 </div>
             </div>
+            <TutorsList />
         </div>
     );
 };
