@@ -63,8 +63,8 @@ const HelpCenter = () => {
                         <div className="space-y-2">
                             <p>We offer affordable plans designed for every nursing student:</p>
                             <ul className="list-disc list-inside space-y-2 ml-2 text-gray-600 dark:text-gray-400 text-xs md:text-sm">
-                                <li><strong>Student Plan</strong> - <span className="text-emerald-600 dark:text-emerald-400 font-bold">KES 199</span><span className="block text-[10px] md:text-xs text-gray-500 dark:text-gray-500 ml-5">Perfect for students • Valid for 2 months</span></li>
-                                <li><strong>Tutor Plan</strong> - <span className="text-emerald-600 dark:text-emerald-400 font-bold">KES 299</span><span className="block text-[10px] md:text-xs text-gray-500 dark:text-gray-500 ml-5">Advanced features for educators • Valid for 2 months</span></li>
+                                <li><strong>Student Plan</strong> - <span className="text-emerald-600 dark:text-emerald-400 font-bold">KES 399</span><span className="block text-[10px] md:text-xs text-gray-500 dark:text-gray-500 ml-5">Perfect for students • Valid for 2 months</span></li>
+                                <li><strong>Tutor Plan</strong> - <span className="text-emerald-600 dark:text-emerald-400 font-bold">KES 1999</span><span className="block text-[10px] md:text-xs text-gray-500 dark:text-gray-500 ml-5">Advanced features for educators • Valid for 2 months</span></li>
                             </ul>
                             <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
                                 <p className="text-[10px] md:text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2"><Sparkles size={14} className="text-emerald-500" /><span>Both plans include instant access, unlimited quizzes, and progress tracking!</span></p>

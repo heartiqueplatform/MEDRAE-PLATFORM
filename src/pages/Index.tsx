@@ -1103,7 +1103,7 @@ const Index = () => {
                       {/* CTA */}
 
                       <p className="text-[10px] text-slate-400 text-center font-medium uppercase tracking-widest">
-                        Available for Premium Members • Starting at 199 KSh
+                        Available for Premium Members • Starting at 399 KSh
                       </p>
                     </div>
                   </div>

@@ -145,7 +145,7 @@ export default function SimulationPage() {
   const [mediaAllowed, setMediaAllowed] = useState(false);
   // Role-based subscription pricing - FOR DISPLAY ONLY
   const TUTOR_SIMULATION_SUBSCRIPTION = {
-    price: 299,
+    price: 1999,
     duration: "2 months",
     currency: "KES",
     features: [
@@ -160,7 +160,7 @@ export default function SimulationPage() {
   };
 
   const STUDENT_SIMULATION_SUBSCRIPTION = {
-    price: 199,
+    price: 399,
     duration: "2 months",
     currency: "KES",
     features: [

@@ -225,7 +225,7 @@ export default function NursingModule() {
                                     </div>
                                     <div>
                                         <p className="text-xs md:text-sm font-bold text-amber-800 dark:text-amber-200">Unlock All 80 Modules</p>
-                                        <p className="text-[10px] md:text-xs text-amber-600 dark:text-amber-400">199 KSh for 2 months — less than 4 KSh per day</p>
+                                        <p className="text-[10px] md:text-xs text-amber-600 dark:text-amber-400">399 KSh for 2 months — less than 6 KSh per day</p>
                                     </div>
                                 </div>
                                 <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-amber-500 shrink-0" />
@@ -344,7 +344,7 @@ export default function NursingModule() {
                                         </div>
                                     </div>
                                     <div className={`relative mt-4 md:mt-5 flex items-center gap-1.5 md:gap-2 text-xs md:text-sm font-semibold ${isLocked ? "text-amber-700 dark:text-amber-300" : isUnlockedNow ? "text-emerald-700 dark:text-emerald-300" : "text-emerald-700 dark:text-emerald-300"}`}>
-                                        {isLocked ? <><Crown className="h-3.5 w-3.5 md:h-4 md:w-4" /> Unlock Premium — 199 KSh</> : isUnlockedNow ? <><Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" /> Start learning — just unlocked!</> : <><Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" /> Start module</>}
+                                        {isLocked ? <><Crown className="h-3.5 w-3.5 md:h-4 md:w-4" /> Unlock Premium — 399 KSh</> : isUnlockedNow ? <><Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" /> Start learning — just unlocked!</> : <><Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" /> Start module</>}
                                     </div>
                                 </button>
                             );

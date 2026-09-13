@@ -392,7 +392,7 @@ const GroupPayLandingSection = () => {
                                     <span className="text-emerald-600">Learn More.</span>
                                 </h3>
                                 <p className="text-slate-600 text-sm md:text-base max-w-md leading-relaxed">
-                                    Join a group of 10+ nursing students and pay just <span className="font-bold text-emerald-600">KSh 299</span> per member instead of <span className="line-through text-slate-400">KSh 199</span>.
+                                    Join a group of 10+ nursing students and pay just <span className="font-bold text-emerald-600">KSh 299</span> per member instead of <span className="line-through text-slate-400">KSh 399</span>.
                                     That's <span className="font-bold text-emerald-600">KSh 100 saved</span> every month!
                                 </p>
                                 <div className="flex flex-wrap gap-3 pt-2">

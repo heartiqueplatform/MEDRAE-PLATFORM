@@ -101,7 +101,7 @@ export const GROUPPAY_CONFIG = {
     MIN_MEMBERS_REQUIRED: 10,
 
     // Fixed price per member (users CANNOT edit this)
-    PRICE_PER_MEMBER: 99,
+    PRICE_PER_MEMBER: 299,
 
     // Maximum members allowed per group
     MAX_MEMBERS_LIMIT: 100,
@@ -116,7 +116,7 @@ export const GROUPPAY_CONFIG = {
     PREMIUM_DURATION: '2-months',
 
     // Regular individual price (for comparison)
-    INDIVIDUAL_PRICE: 199,
+    INDIVIDUAL_PRICE: 399,
 } as const;
 
 // ============================================================

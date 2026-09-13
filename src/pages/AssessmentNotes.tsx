@@ -106,7 +106,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Role-based subscription pricing - FOR DISPLAY ONLY in the upgrade overlay
 const TUTOR_SUBSCRIPTION = {
-  price: 299,
+  price: 1999,
   duration: "2 months",
   currency: "KES",
   features: [
@@ -121,7 +121,7 @@ const TUTOR_SUBSCRIPTION = {
 };
 
 const STUDENT_SUBSCRIPTION = {
-  price: 199,
+  price: 399,
   duration: "2 months",
   currency: "KES",
   features: [

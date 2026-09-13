@@ -67,9 +67,9 @@ export function GroupPaySubscriptionCard({ className = "", compact = false }: Gr
                             <div className="flex items-center gap-3 mt-2 text-xs">
                                 <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
                                     <DollarSign className="w-3 h-3" />
-                                    KSh 99/member
+                                    KSh 299/member
                                 </span>
-                                <span className="text-slate-400 line-through">KSh 199</span>
+                                <span className="text-slate-400 line-through">KSh 399</span>
                             </div>
                             <Button
                                 variant="ghost"
