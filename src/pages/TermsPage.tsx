@@ -56,10 +56,10 @@ export default function TermsPage() {
                     <Button
                         size="sm"
                         onClick={() => navigate(-1)}
-                        className="gap-1.5 md:gap-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 shadow-sm text-xs md:text-sm h-8 md:h-9 px-2.5 md:px-3 rounded-lg md:rounded-xl"
+                        className="gap-1.5 md:gap-2 bg-white text-gray-700 hover:bg-gray-100 border-0 shadow-sm text-xs md:text-sm h-8 md:h-9 px-2.5 md:px-3 rounded-lg md:rounded-xl"
                     >
                         <ChevronLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                        Back
+
                     </Button>
                     <div className="flex items-center gap-1.5 md:gap-2">
                         <div className="hover:bg-blue-50 p-1 md:p-1.5 rounded-lg">
