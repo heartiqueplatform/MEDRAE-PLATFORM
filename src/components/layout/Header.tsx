@@ -820,8 +820,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                 {/* Sound Control */}
                 <div className="mb-4 px-1">
                   <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 p-4 rounded-xl transition-all duration-300 ${isMuted
-                    ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border border-red-200 dark:border-red-800/50'
-                    : 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border border-emerald-200 dark:border-emerald-800/50'
+                    ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border-0'
+                    : 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-0'
                     }`}>
                     <div className="flex items-center gap-3">
                       <div className={`p-2.5 rounded-xl transition-all ${isMuted
