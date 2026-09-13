@@ -5,22 +5,6 @@ import { Button } from "@/components/ui/button";
 import { TermsButton } from "@/components/ui/TermsButton";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 
-// Lazy load image component for better performance
-const LazyImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
-    const [loaded, setLoaded] = useState(false);
-    return (
-        <div className={`relative overflow-hidden bg-gray-100 dark:bg-gray-800 ${className}`}>
-            {!loaded && <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />}
-            <img
-                src={src}
-                alt={alt}
-                loading="lazy"
-                onLoad={() => setLoaded(true)}
-                className={`w-full h-full object-contain hover:scale-105 transition-transform duration-700 ease-out ${loaded ? 'opacity-100' : 'opacity-0'}`}
-            />
-        </div>
-    );
-};
 const HelpCenter = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
@@ -303,12 +287,7 @@ const HelpCenter = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    const imageSections = [
-        { image: "high3.png", position: 1 },
-        { image: "high6.png", position: 3 },
-        { image: "background05.jpg", position: 5 },
-        { image: "background06.jpg", position: 7 }
-    ];
+
 
     const scrollToQuestion = useCallback((catIdx: number, qIdx: number) => {
         const element = document.querySelector(`[data-category="${catIdx}"][data-question="${qIdx}"]`);
@@ -524,7 +503,7 @@ const HelpCenter = () => {
                 </div>
                 {/* FAQ Sections */}
                 {faqCategories.map((category, idx) => {
-                    const imageSection = imageSections.find(img => img.position === idx + 1);
+
                     return (
                         <div key={idx} className="space-y-2 md:space-y-3 px-3 md:px-0 w-full" data-category={idx}>
                             <div className="flex items-center gap-1.5 md:gap-2">
@@ -553,14 +532,7 @@ const HelpCenter = () => {
                                     </AccordionItem>
                                 ))}
                             </Accordion>
-                            {imageSection && (
-                                <div className="my-6 md:my-8 md:rounded-2xl overflow-hidden md:shadow-xl md:border-0 bg-white dark:bg-gray-900">
-                                    <div className="relative aspect-[4/3] md:aspect-[16/9] overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                        <LazyImage src={`/${imageSection.image}`} alt="Medrae Nursing Platform" className="absolute inset-0 w-full h-full" />
-                                        <div className="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-gradient-to-t from-black/40 to-transparent"></div>
-                                    </div>
-                                </div>
-                            )}
+
                         </div>
                     );
                 })}
