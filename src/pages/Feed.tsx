@@ -100,7 +100,7 @@ export default function Feed() {
   const tapAudio = typeof Audio !== "undefined" ? new Audio("/sounds/tap1.mp3") : null;
   const { width, height } = useWindowSize();
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [knowledgeData, setKnowledgeData] = useState<any[]>([]);
+
   const [activeQuestion, setActiveQuestion] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
@@ -243,26 +243,6 @@ export default function Feed() {
     }
   };
 
-  // ✅ OPTIMIZED: Fetch knowledge with caching
-  const fetchKnowledge = async () => {
-    const cacheKey = 'knowledge_data';
-    return fetchWithDedupe(cacheKey, async () => {
-      const { data, error } = await supabase
-        .from('qfeed_knowledge')
-        .select('*, profiles(name, avatar_url)')
-        .order('created_at', { ascending: false })
-        .limit(30); // ✅ Reduced from 50 to 30
-      if (!error && data) {
-        setKnowledgeData(data);
-        return data;
-      }
-      return [];
-    }, 300000);
-  };
-
-  useEffect(() => {
-    fetchKnowledge();
-  }, []);
 
   const handleDeleteImage = async (img) => {
     if (!confirm("Are you sure you want to delete this image?")) return;
@@ -1211,7 +1191,7 @@ export default function Feed() {
                 <FeedMediaPanel
                   key={`feed-media-${index}`}
                   index={index}
-                  knowledgePosts={knowledgeData}
+
                   feedImages={feedImages}
                   loadedImages={loadedImages}
                   setLoadedImages={setLoadedImages}

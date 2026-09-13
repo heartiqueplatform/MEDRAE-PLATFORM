@@ -203,12 +203,6 @@ const ClinicalAssessmentSection = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-10 md:mb-16 px-4 md:px-0">
-                    <div className="inline-flex items-center gap-2 bg-blue-100 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-blue-200 mb-4 md:mb-6 hover:scale-105 transition-transform">
-                        <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600 animate-pulse" />
-                        <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-700">
-                            New: Clinical Assessment Module
-                        </span>
-                    </div>
 
                     <h2 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 mb-3 md:mb-4">
                         Clinical{" "}
@@ -266,14 +260,7 @@ const ClinicalAssessmentSection = () => {
                                     Start Practicing
                                     <ArrowRight className="w-4 h-4 ml-2" />
                                 </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => navigate('/register')}
-                                    className="border-white/30 text-white hover:bg-white/20 font-bold py-2.5 md:py-3 px-6 md:px-8 rounded-xl transition-all hover:scale-105 text-sm md:text-base"
-                                >
-                                    <BarChart3 className="w-4 h-4 mr-2" />
-                                    View Your Progress
-                                </Button>
+
                             </div>
                         </div>
                         <div className="flex-shrink-0 hidden md:block">
@@ -366,22 +353,6 @@ const ClinicalAssessmentSection = () => {
                             ))}
                         </div>
                     </div>
-                </div>
-
-                {/* CTA */}
-                <div className="text-center mt-10 md:mt-12 px-4 md:px-0">
-                    <Button
-                        size="lg"
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black text-base md:text-lg px-8 md:px-10 py-5 md:py-6 rounded-2xl shadow-xl shadow-blue-200 hover:shadow-2xl hover:scale-105 transition-all duration-300 group w-full md:w-auto"
-                        onClick={() => navigate("/register")}
-                    >
-                        <Zap className="w-4 h-4 md:w-5 md:h-5 mr-2 group-hover:animate-pulse" />
-                        Start Your Clinical Assessment Journey
-                        <ChevronRight className="w-4 h-4 md:w-5 md:h-5 ml-2 transition-transform group-hover:translate-x-2" />
-                    </Button>
-                    <p className="text-[10px] md:text-xs text-slate-400 mt-3 font-medium">
-                        Free for Medrae students • 24 clinical assessments available
-                    </p>
                 </div>
             </div>
         </section>

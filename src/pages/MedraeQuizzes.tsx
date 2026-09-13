@@ -449,7 +449,7 @@ export function MedraeQuizzes() {
         </AnimatePresence>
 
         {/* HERO HEADER CARD */}
-        <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-white dark:bg-muted/30 border-b border-gray-100 dark:border-gray-800 md:border-b-0">
+        <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <CardHeader className="relative pb-2 px-4 md:px-6 pt-4 md:pt-6">

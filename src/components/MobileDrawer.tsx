@@ -267,41 +267,53 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     const user = session?.user || null;
 
     // ✅ Track dark mode with proper state
-    const [isDarkMode, setIsDarkMode] = useState(false);
+
     // 👈 Sync the drawer state with context
     useEffect(() => {
         setDrawerContext(isOpen);
     }, [isOpen, setDrawerContext]);
     // ✅ Initialize dark mode on mount
+    // ✅ Initialize dark mode on mount (synchronous, no flicker)
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+        try {
+            const stored = localStorage.getItem('medrae_dark_mode');
+            if (stored !== null) return stored === 'true';
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        } catch {
+            return false;
+        }
+    });
+
+    // ✅ Listen for theme changes from Header (same tab) + storage (other tabs)
     useEffect(() => {
-        const checkDarkMode = () => {
+        // Fired by Header when the user taps the toggle in this tab
+        const handleThemeChanged = (e: Event) => {
+            const detail = (e as CustomEvent<{ isDarkMode: boolean }>).detail;
+            if (detail && typeof detail.isDarkMode === 'boolean') {
+                setIsDarkMode(detail.isDarkMode);
+                return;
+            }
+            // Fallback: read from localStorage if detail is missing
             try {
-                const darkMode = localStorage.getItem('medrae_dark_mode');
-                if (darkMode !== null) {
-                    setIsDarkMode(darkMode === 'true');
-                } else {
-                    setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
-                }
-            } catch (e) {
-                setIsDarkMode(false);
+                const stored = localStorage.getItem('medrae_dark_mode');
+                if (stored !== null) setIsDarkMode(stored === 'true');
+            } catch { }
+        };
+
+        // Fired by other tabs/windows (storage event does not fire in the same tab)
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'medrae_dark_mode') {
+                setIsDarkMode(e.newValue === 'true');
             }
         };
-        checkDarkMode();
-    }, []);
 
-    // ✅ Listen for dark mode changes
-    useEffect(() => {
-        const handleDarkModeChange = () => {
-            try {
-                const darkMode = localStorage.getItem('medrae_dark_mode');
-                if (darkMode !== null) {
-                    setIsDarkMode(darkMode === 'true');
-                }
-            } catch (e) { }
+        window.addEventListener('theme-changed', handleThemeChanged as EventListener);
+        window.addEventListener('storage', handleStorage);
+
+        return () => {
+            window.removeEventListener('theme-changed', handleThemeChanged as EventListener);
+            window.removeEventListener('storage', handleStorage);
         };
-
-        window.addEventListener('storage', handleDarkModeChange);
-        return () => window.removeEventListener('storage', handleDarkModeChange);
     }, []);
 
     useEffect(() => {

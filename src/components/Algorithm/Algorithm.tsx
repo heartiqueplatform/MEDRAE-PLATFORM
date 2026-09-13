@@ -151,7 +151,7 @@ export default function Algorithm() {
                     {/* Top label */}
                     <div className="flex items-center justify-center gap-2 mb-3">
                         <Brain className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] text-gray-500 dark:text-gray-400">
+                        <span className="text-[10px] md:text-xs font-bold tracking-[0.15em] text-gray-500 dark:text-gray-400">
                             NCK Prediction
                         </span>
                     </div>

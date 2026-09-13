@@ -743,11 +743,11 @@ export function Resources() {
   return (
     <>
       {/* EDGE-TO-EDGE ON MOBILE - COMPLETELY REMOVED ALL PADDING/MARGINS */}
-      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-3 md:px-4 lg:px-6">
+      <div className="min-h-screen w-full flex justify-center bg-transparent px-3 md:px-4 lg:px-6">
         <div className="w-full max-w-full space-y-0 md:space-y-6 py-0 md:py-6 px-0 sm:px-0">
           <div className="w-full max-w-full mx-auto space-y-0 px-0 sm:px-6 pt-0 sm:pt-4">
             {/* REMOVED ALL CARD STYLING ON MOBILE - NO BORDERS, NO ROUNDED, NO PADDING */}
-            <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0 bg-white dark:bg-muted/30 mx-0">
+            <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0 bg-transparent dark:bg-transparent mx-0">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600" />
 
               {/* REMOVED PADDING FROM HEADER ON MOBILE */}

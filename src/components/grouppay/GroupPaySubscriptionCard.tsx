@@ -127,8 +127,8 @@ export function GroupPaySubscriptionCard({ className = "", compact = false }: Gr
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                         <span className="font-semibold text-slate-900 dark:text-white">What is GroupPay?</span>
                         {" "}Form a study group of 10+ nursing students and get premium access for everyone at just
-                        <span className="font-bold text-green-600 dark:text-green-400"> KSh 99</span> per member
-                        instead of <span className="line-through text-slate-400">KSh 199</span> individually.
+                        <span className="font-bold text-green-600 dark:text-green-400"> KSh 299</span> per member
+                        instead of <span className="line-through text-slate-400">KSh 399</span> individually.
                     </p>
                 </div>
 
@@ -163,7 +163,7 @@ export function GroupPaySubscriptionCard({ className = "", compact = false }: Gr
                 {/* Quick Stats */}
                 <div className="grid grid-cols-3 gap-2 p-2 bg-white dark:bg-gray-900/50 rounded-lg border border-slate-200 dark:border-gray-700">
                     <div className="text-center">
-                        <p className="text-xs font-bold text-green-600 dark:text-green-400">KSh 99</p>
+                        <p className="text-xs font-bold text-green-600 dark:text-green-400">KSh 299</p>
                         <p className="text-[8px] text-slate-500 dark:text-slate-400">Per Member</p>
                     </div>
                     <div className="text-center border-l border-slate-200 dark:border-gray-700">

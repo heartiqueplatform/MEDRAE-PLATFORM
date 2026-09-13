@@ -8,16 +8,13 @@ import {
     Upload,
     Heart,
     MessageCircle,
-    Share2,
     MoreHorizontal,
     ImageIcon,
     X,
     Send,
-    Lightbulb,
     CheckCircle
 } from "lucide-react";
 import { GlobalLoader } from "@/components/GlobalLoader";
-import KnowledgeCard from "./KnowledgeCard";
 
 type FeedImage = {
     id: string;
@@ -34,7 +31,6 @@ type FeedImage = {
 interface Props {
     index: number;
     feedImages: FeedImage[];
-    knowledgePosts: any[];
     loadedImages: Record<string, boolean>;
     setLoadedImages: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
     session: any;
@@ -114,7 +110,7 @@ async function fetchCommentsWithCache(supabase: any, imageId: string) {
 }
 
 export default function FeedMediaPanel({
-    index, feedImages, loadedImages, setLoadedImages, knowledgePosts = [], session, supabase, user,
+    index, feedImages, loadedImages, setLoadedImages, session, supabase, user,
     openViewer, handleDeleteImage, showUpload, setShowUpload, uploadFiles, setUploadFiles,
     uploading, handleImageUpload, imageTitle, setImageTitle, imageDescription, setImageDescription,
 }: Props) {
@@ -123,8 +119,7 @@ export default function FeedMediaPanel({
     const [likesCount, setLikesCount] = useState(0);
     const [hasLiked, setHasLiked] = useState(false);
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
-    const [uploadMode, setUploadMode] = useState<'image' | 'knowledge'>('image');
-    const [knowledgeText, setKnowledgeText] = useState("");
+
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
@@ -140,7 +135,6 @@ export default function FeedMediaPanel({
 
     const availableImages = feedImages.filter((i) => !seenIds.has(i.id));
     let img: FeedImage | null = null;
-    let tip = null;
 
     if (shouldInject) {
         const showImage = index % 2 === 0;
@@ -148,10 +142,6 @@ export default function FeedMediaPanel({
             const imageCounter = Math.floor(index / 2);
             const imageIndex = imageCounter % availableImages.length;
             img = availableImages[imageIndex];
-        } else if (!showImage && knowledgePosts?.length > 0) {
-            const knowledgeCounter = Math.floor(index / 2);
-            const tipIndex = knowledgeCounter % knowledgePosts.length;
-            tip = knowledgePosts[tipIndex];
         }
     }
 
@@ -193,7 +183,7 @@ export default function FeedMediaPanel({
         else setUploadProgress(0);
     }, [uploading]);
 
-    useEffect(() => { if (!showUpload) { setImageTitle(""); setImageDescription(""); setKnowledgeText(""); setUploadFiles([]); } }, [showUpload, setImageTitle, setImageDescription, setKnowledgeText, setUploadFiles]);
+    useEffect(() => { if (!showUpload) { setImageTitle(""); setImageDescription(""); setUploadFiles([]); } }, [showUpload, setImageTitle, setImageDescription, setUploadFiles]);
 
     const handleLikeToggle = async () => {
         if (!user || !img) return;
@@ -233,12 +223,6 @@ export default function FeedMediaPanel({
     const handleImageUploadWithMetadata = async () => {
         if (uploadFiles.length === 0) { alert("Please select at least one image"); return; }
         if (handleImageUpload && typeof handleImageUpload === 'function') handleImageUpload();
-    };
-
-    const handlePostKnowledge = async () => {
-        if (!knowledgeText.trim() || !user) return;
-        const { error } = await supabase.from("qfeed_knowledge").insert({ content: knowledgeText.trim(), added_by: user.id, category: "Clinical Tip" });
-        if (!error) { setKnowledgeText(""); setShowUpload(false); setToastMessage("💡 Knowledge shared successfully!"); setShowToast(true); setTimeout(() => setShowToast(false), 3000); }
     };
 
     const handlePostComment = async () => {
@@ -289,51 +273,42 @@ export default function FeedMediaPanel({
                     </button>
                 </div>
                 <div className="flex items-center gap-4 mt-3 pt-3 border-0">
-                    <button onClick={() => { setShowUpload(true); setUploadMode('image'); }} className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    <button onClick={() => setShowUpload(true)} className="flex-1 flex items-center justify-center gap-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
                         <ImageIcon className="text-green-500" size={20} /><span className="text-sm font-semibold text-gray-600 dark:text-gray-300">Photo/Video</span>
-                    </button>
-                    <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-800" />
-                    <button onClick={() => { setShowUpload(true); setUploadMode('knowledge'); }} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-colors ${uploadMode === 'knowledge' && showUpload ? 'bg-yellow-50 dark:bg-gray-800' : ''}`}>
-                        <div className="p-2 rounded-full bg-gray-50 dark:bg-gray-800 group-hover:scale-110 transition-transform"><Lightbulb className="text-amber-500" size={18} /></div>
-                        <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">Knowledge</span>
                     </button>
                 </div>
                 <AnimatePresence>
                     {showUpload && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                             <div className="mt-4 p-4 border-0 rounded-xl bg-gray-50 dark:bg-muted/50 relative">
-                                {uploadMode === 'image' ? (
-                                    <div className="space-y-4">
-                                        <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title (optional)</label><input type="text" value={imageTitle} onChange={(e) => setImageTitle(e.target.value)} placeholder="Give your image a title..." className="w-full px-3 py-2 bg-white dark:bg-muted/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm" /></div>
-                                        <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (optional)</label><textarea value={imageDescription} onChange={(e) => setImageDescription(e.target.value)} placeholder="Write a description..." rows={3} className="w-full px-3 py-2 bg-white dark:bg-muted/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm resize-none" /></div>
-                                        <label className="cursor-pointer flex flex-col items-center justify-center min-h-[120px] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:border-blue-500 transition-colors">
-                                            {uploadFiles.length > 0 ? (
-                                                <div className="grid grid-cols-3 gap-2 w-full p-2">
-                                                    {uploadFiles.map((file, i) => (
-                                                        <div key={i} className="relative">
-                                                            <img src={URL.createObjectURL(file)} className="w-full h-24 object-cover rounded-lg border" alt={`Preview ${i}`} loading="lazy" />
-                                                            <button onClick={(e) => { e.preventDefault(); setUploadFiles(uploadFiles.filter((_, idx) => idx !== i)); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"><X size={12} /></button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col items-center p-6"><Upload size={24} className="text-blue-600 mb-2" /><span className="text-sm font-medium text-gray-600 dark:text-gray-400">Tap to select images</span><span className="text-xs text-gray-500 dark:text-gray-500 mt-1">You can select multiple images</span></div>
-                                            )}
-                                            <input type="file" multiple className="hidden" accept="image/*" onChange={(e) => setUploadFiles(Array.from(e.target.files || []))} />
-                                        </label>
-                                        {uploading && uploadProgress > 0 && (
-                                            <div className="mt-3">
-                                                <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1"><span>Uploading...</span><span>{uploadProgress}%</span></div>
-                                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden"><motion.div className="bg-blue-600 h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${uploadProgress}%` }} transition={{ duration: 0.3 }} /></div>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">Please don't close the page</p>
+                                <div className="space-y-4">
+                                    <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title (optional)</label><input type="text" value={imageTitle} onChange={(e) => setImageTitle(e.target.value)} placeholder="Give your image a title..." className="w-full px-3 py-2 bg-white dark:bg-muted/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm" /></div>
+                                    <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (optional)</label><textarea value={imageDescription} onChange={(e) => setImageDescription(e.target.value)} placeholder="Write a description..." rows={3} className="w-full px-3 py-2 bg-white dark:bg-muted/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm resize-none" /></div>
+                                    <label className="cursor-pointer flex flex-col items-center justify-center min-h-[120px] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:border-blue-500 transition-colors">
+                                        {uploadFiles.length > 0 ? (
+                                            <div className="grid grid-cols-3 gap-2 w-full p-2">
+                                                {uploadFiles.map((file, i) => (
+                                                    <div key={i} className="relative">
+                                                        <img src={URL.createObjectURL(file)} className="w-full h-24 object-cover rounded-lg border" alt={`Preview ${i}`} loading="lazy" />
+                                                        <button onClick={(e) => { e.preventDefault(); setUploadFiles(uploadFiles.filter((_, idx) => idx !== i)); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"><X size={12} /></button>
+                                                    </div>
+                                                ))}
                                             </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center p-6"><Upload size={24} className="text-blue-600 mb-2" /><span className="text-sm font-medium text-gray-600 dark:text-gray-400">Tap to select images</span><span className="text-xs text-gray-500 dark:text-gray-500 mt-1">You can select multiple images</span></div>
                                         )}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-2 min-h-[120px]"><textarea value={knowledgeText} onChange={(e) => setKnowledgeText(e.target.value)} placeholder="Share a nursing tip..." className="w-full flex-1 bg-transparent border-none focus:ring-0 text-[15px] resize-none text-gray-800 dark:text-gray-100" autoFocus /></div>
-                                )}
-                                {(uploadFiles.length > 0 || knowledgeText.trim().length > 0) && (
-                                    <Button onClick={uploadMode === 'image' ? handleImageUploadWithMetadata : handlePostKnowledge} disabled={uploading} className="w-full mt-4 bg-blue-600">
+                                        <input type="file" multiple className="hidden" accept="image/*" onChange={(e) => setUploadFiles(Array.from(e.target.files || []))} />
+                                    </label>
+                                    {uploading && uploadProgress > 0 && (
+                                        <div className="mt-3">
+                                            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1"><span>Uploading...</span><span>{uploadProgress}%</span></div>
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden"><motion.div className="bg-blue-600 h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${uploadProgress}%` }} transition={{ duration: 0.3 }} /></div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">Please don't close the page</p>
+                                        </div>
+                                    )}
+                                </div>
+                                {uploadFiles.length > 0 && (
+                                    <Button onClick={handleImageUploadWithMetadata} disabled={uploading} className="w-full mt-4 bg-blue-600">
                                         {uploading ? `Uploading... ${uploadProgress}%` : "Post Now"}
                                     </Button>
                                 )}
@@ -343,7 +318,7 @@ export default function FeedMediaPanel({
                 </AnimatePresence>
             </motion.div>
 
-            {/* Main Content */}
+            {/* Main Content - Images Only */}
             {img ? (
                 <motion.div key={`image-${img.id}`} className="w-full">
                     <Card className="overflow-hidden bg-white dark:bg-muted/95 border-0 shadow-sm rounded-xl">
@@ -377,8 +352,6 @@ export default function FeedMediaPanel({
                         </div>
                     </Card>
                 </motion.div>
-            ) : tip ? (
-                <div className="space-y-2"><KnowledgeCard item={tip} user={user} supabase={supabase} /></div>
             ) : null}
 
             <div className="flex items-center gap-1 py-2 opacity-40">

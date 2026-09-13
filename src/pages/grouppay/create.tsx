@@ -79,7 +79,7 @@ export default function CreateGroupPage() {
     }, [formData.name, formData.school, isMaxMembersValid, isPhoneValid, isWhatsappValid]);
 
     const totalGroupCost = useMemo(() => maxMembers * GROUPPAY_CONFIG.PRICE_PER_MEMBER, [maxMembers]);
-    const individualCost = 199;
+    const individualCost = 399;
     const savingsPerMember = individualCost - GROUPPAY_CONFIG.PRICE_PER_MEMBER;
     const totalSavings = useMemo(() => maxMembers * savingsPerMember, [maxMembers]);
 
@@ -311,7 +311,7 @@ export default function CreateGroupPage() {
                                     </span>
                                 </div>
                                 <span className="text-xs text-muted-foreground line-through">
-                                    {GROUPPAY_CONFIG.CURRENCY} 199
+                                    {GROUPPAY_CONFIG.CURRENCY} 399
                                 </span>
                                 <Badge variant="outline" className="text-[9px] border-green-500 text-green-600 dark:text-green-400">
                                     Save 50%

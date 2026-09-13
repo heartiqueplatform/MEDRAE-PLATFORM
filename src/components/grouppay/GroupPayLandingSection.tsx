@@ -161,7 +161,7 @@ const GroupPayLandingSection = () => {
         {
             icon: Wallet,
             title: "Save on Premium Access",
-            description: "Instead of paying KSh 199 individually, contribute just KSh 99 per member when you join a group of 10+ students.",
+            description: "Instead of paying KSh 399 individually, contribute just KSh 299 per member when you join a group of 10+ students.",
             color: "text-emerald-600",
             bg: "bg-emerald-50",
             highlight: true,
@@ -217,7 +217,7 @@ const GroupPayLandingSection = () => {
     const pricingComparison = [
         {
             plan: "Individual Premium",
-            price: "KSh 199",
+            price: "KSh 399",
             features: [
                 "Full premium access",
                 "Clinical assessments",
@@ -231,7 +231,7 @@ const GroupPayLandingSection = () => {
         },
         {
             plan: "GroupPay (10+ Members)",
-            price: "KSh 99",
+            price: "KSh 299",
             features: [
                 "Full premium access",
                 "Clinical assessments",
@@ -311,7 +311,7 @@ const GroupPayLandingSection = () => {
         {
             icon: DollarSign,
             title: "Affordable Access",
-            description: "Pay as low as KSh 99 per member"
+            description: "Pay as low as KSh 299 per member"
         },
         {
             icon: BookOpen,
@@ -343,15 +343,7 @@ const GroupPayLandingSection = () => {
                 {/* Header */}
                 <AnimatedSection direction="up">
                     <div className="text-center mb-12 md:mb-16 px-4 md:px-0">
-                        <div className="inline-flex items-center gap-2 bg-emerald-50 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-emerald-100 mb-4 md:mb-6">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-emerald-600">
-                                Study Together, Save Together
-                            </span>
-                        </div>
+
 
                         <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter text-slate-800">
                             Study <span className="text-emerald-600">Together</span>.<br className="block sm:hidden" />
@@ -400,7 +392,7 @@ const GroupPayLandingSection = () => {
                                     <span className="text-emerald-600">Learn More.</span>
                                 </h3>
                                 <p className="text-slate-600 text-sm md:text-base max-w-md leading-relaxed">
-                                    Join a group of 10+ nursing students and pay just <span className="font-bold text-emerald-600">KSh 99</span> per member instead of <span className="line-through text-slate-400">KSh 199</span>.
+                                    Join a group of 10+ nursing students and pay just <span className="font-bold text-emerald-600">KSh 299</span> per member instead of <span className="line-through text-slate-400">KSh 199</span>.
                                     That's <span className="font-bold text-emerald-600">KSh 100 saved</span> every month!
                                 </p>
                                 <div className="flex flex-wrap gap-3 pt-2">
@@ -422,8 +414,8 @@ const GroupPayLandingSection = () => {
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-slate-500">Per Member</p>
-                                            <p className="text-3xl font-black text-emerald-600">KSh 99</p>
-                                            <p className="text-xs text-slate-400 line-through">Was KSh 199</p>
+                                            <p className="text-3xl font-black text-emerald-600">KSh 299</p>
+                                            <p className="text-xs text-slate-400 line-through">Was KSh 399</p>
                                         </div>
                                     </div>
                                     <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
@@ -446,7 +438,7 @@ const GroupPayLandingSection = () => {
                         {features.map((feature, index) => (
                             <div
                                 key={index}
-                                className={`bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-6 border ${feature.highlight ? 'border-emerald-300 ring-2 ring-emerald-400/30' : 'border-slate-100'} shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-default group`}
+                                className={`bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-6 border ${feature.highlight ? 'border-0 ring-0 ' : 'border-0'} shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-default group`}
                             >
                                 <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${feature.bg} group-hover:scale-110 transition-transform duration-300`}>
                                     <feature.icon className={`w-5 h-5 md:w-6 md:h-6 ${feature.color}`} />
@@ -474,7 +466,7 @@ const GroupPayLandingSection = () => {
                             {pricingComparison.map((plan, i) => (
                                 <div
                                     key={i}
-                                    className={`bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-6 border ${plan.recommended ? 'border-emerald-400 ring-2 ring-emerald-400/30' : 'border-slate-100'} shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1`}
+                                    className={`bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-6 border ${plan.recommended ? 'border-0 ring-0' : 'border-slate-100'} shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1`}
                                 >
                                     <div className="flex items-center gap-2 mb-3">
                                         <plan.icon className={`w-5 h-5 ${plan.recommended ? 'text-emerald-600' : 'text-slate-500'}`} />
@@ -502,15 +494,7 @@ const GroupPayLandingSection = () => {
                                             </li>
                                         ))}
                                     </ul>
-                                    {plan.recommended && (
-                                        <Button
-                                            onClick={handleJoinClick}
-                                            className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 hover:shadow-xl transition-all hover:scale-105 text-sm"
-                                        >
-                                            <Users className="w-4 h-4 mr-2" />
-                                            Join Medrae Nursing
-                                        </Button>
-                                    )}
+
                                 </div>
                             ))}
                         </div>
@@ -596,7 +580,7 @@ const GroupPayLandingSection = () => {
                                 </Button>
                             </div>
                             <p className="text-[10px] md:text-xs text-slate-500 mt-4 font-medium">
-                                🎉 10+ members = KSh 99 per member • Instant premium activation • No hidden fees
+                                10+ members = KSh 99 per member • Instant premium activation • No hidden fees
                             </p>
                         </div>
                     </div>

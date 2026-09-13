@@ -11,7 +11,6 @@ const MobileDrawer = lazy(() => import("@/components/MobileDrawer").then(module 
 
 type IconTone = "neutral" | "practice" | "content" | "alert";
 
-// ✅ PURE JS - NO dark: classes
 const ICON_COLORS = {
     neutral: { light: "text-slate-600", dark: "text-slate-300" },
     practice: { light: "text-rose-600", dark: "text-rose-400" },
@@ -34,7 +33,16 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
     }
 };
 
-// ✅ Home Button with Bump - Centered, using hospital.svg
+// Returns the correct CSS filter for a black SVG icon.
+// Dark mode: invert black to white, dim if inactive.
+// Light mode: leave black as-is when active, dim when inactive.
+const getIconFilter = (isDark: boolean, isActive: boolean): string => {
+    if (isDark) {
+        return isActive ? "invert(1)" : "invert(1) brightness(0.55)";
+    }
+    return isActive ? "none" : "brightness(0.45)";
+};
+
 const HomeButton = memo(({
     isActive,
     onPress,
@@ -44,9 +52,7 @@ const HomeButton = memo(({
     onPress: (e: React.PointerEvent) => void;
     isDark: boolean;
 }) => {
-    const iconColorClass = isActive
-        ? isDark ? "text-blue-400" : "text-blue-600"
-        : isDark ? "text-gray-500" : "text-gray-400";
+    const filter = getIconFilter(isDark, isActive);
 
     return (
         <button
@@ -55,7 +61,6 @@ const HomeButton = memo(({
             style={{ touchAction: 'manipulation', transform: 'translateZ(0)', WebkitTapHighlightColor: 'transparent' }}
         >
             <div className="relative -mt-6">
-                {/* ✅ Bump effect - rounded background */}
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200
                     ${isActive
                         ? isDark ? 'bg-blue-500/20 shadow-lg shadow-blue-500/30' : 'bg-blue-500/15 shadow-lg shadow-blue-500/20'
@@ -65,10 +70,10 @@ const HomeButton = memo(({
                     <img
                         src="/hospital.svg"
                         alt="Home"
-                        className={`h-[28px] w-[28px] transition-all duration-200 ${iconColorClass}`}
+                        className="h-[28px] w-[28px] transition-all duration-200"
                         style={{
-                            filter: isActive ? 'none' : (isDark ? 'brightness(0.5)' : 'brightness(0.4)'),
-                            WebkitFilter: isActive ? 'none' : (isDark ? 'brightness(0.5)' : 'brightness(0.4)'),
+                            filter,
+                            WebkitFilter: filter,
                         }}
                     />
                 </div>
@@ -86,7 +91,6 @@ const HomeButton = memo(({
 
 HomeButton.displayName = "HomeButton";
 
-// Memoized Footer Item Component with SVG support
 const FooterItem = memo(({
     item,
     isActive,
@@ -102,14 +106,12 @@ const FooterItem = memo(({
     isDark: boolean;
     badge?: number;
 }) => {
-    // ✅ Determine colors based on isDark prop
-    let iconColor = isDark ? "text-gray-500" : "text-gray-400";
     let labelColor = isDark ? "text-gray-500" : "text-gray-400";
-
     if (isActive) {
-        iconColor = isDark ? ICON_COLORS[tone].dark : ICON_COLORS[tone].light;
         labelColor = isDark ? "text-white" : "text-gray-900";
     }
+
+    const filter = getIconFilter(isDark, isActive);
 
     return (
         <button
@@ -121,10 +123,10 @@ const FooterItem = memo(({
                 <img
                     src={item.icon}
                     alt={item.label}
-                    className={`h-[24px] w-[24px] transition-all duration-200 will-change-transform ${iconColor}`}
+                    className="h-[24px] w-[24px] transition-all duration-200 will-change-transform"
                     style={{
-                        filter: isActive ? 'none' : (isDark ? 'brightness(0.5)' : 'brightness(0.4)'),
-                        WebkitFilter: isActive ? 'none' : (isDark ? 'brightness(0.5)' : 'brightness(0.4)'),
+                        filter,
+                        WebkitFilter: filter,
                     }}
                 />
                 {badge !== undefined && badge > 0 && (
@@ -148,7 +150,6 @@ const FooterItem = memo(({
 
 FooterItem.displayName = "FooterItem";
 
-// ✅ Memoized Menu Button Component - Using custom menu icon
 const MenuButton = memo(({
     isDrawerOpen,
     onPress,
@@ -158,14 +159,12 @@ const MenuButton = memo(({
     onPress: (e: React.MouseEvent) => void;
     isDark: boolean;
 }) => {
-    // ✅ Determine colors based on isDark prop
-    let iconColor = isDark ? "text-gray-500" : "text-gray-400";
     let labelColor = isDark ? "text-gray-500" : "text-gray-400";
-
     if (isDrawerOpen) {
-        iconColor = "text-blue-600 dark:text-blue-400";
         labelColor = "text-blue-600 dark:text-blue-400";
     }
+
+    const filter = getIconFilter(isDark, isDrawerOpen);
 
     return (
         <button
@@ -176,10 +175,10 @@ const MenuButton = memo(({
             <img
                 src="/menu (2).png"
                 alt="Menu"
-                className={`h-[24px] w-[24px] transition-all duration-200 ${iconColor}`}
+                className="h-[24px] w-[24px] transition-all duration-200"
                 style={{
-                    filter: isDrawerOpen ? 'none' : (isDark ? 'brightness(0.5)' : 'brightness(0.4)'),
-                    WebkitFilter: isDrawerOpen ? 'none' : (isDark ? 'brightness(0.5)' : 'brightness(0.4)'),
+                    filter,
+                    WebkitFilter: filter,
                 }}
             />
             <span className={`text-[10px] font-medium transition-colors duration-200 ${labelColor}`}>
@@ -201,7 +200,7 @@ export function Footer() {
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     const scrollContainerRef = useRef<Element | null>(null);
-    // ✅ PRE-LOADED THEME
+
     const [theme, setTheme] = useState<'light' | 'dark'>(() => {
         try {
             const darkMode = localStorage.getItem('medrae_dark_mode');
@@ -223,7 +222,6 @@ export function Footer() {
     const lastScrollY = useRef(0);
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
-    // ✅ Fetch mistake count
     useEffect(() => {
         const cached = localStorage.getItem(MISTAKE_COUNT_CACHE_KEY);
         if (cached) {
@@ -252,7 +250,6 @@ export function Footer() {
 
     useEffect(() => { fetchMistakeCount(); }, [fetchMistakeCount]);
 
-    // ✅ Sync theme
     useEffect(() => {
         const syncTheme = () => {
             try {
@@ -269,7 +266,6 @@ export function Footer() {
                     setTheme(newTheme);
                 }
             } catch (e) {
-                // Silent fallback
             }
         };
 
@@ -319,7 +315,6 @@ export function Footer() {
         setIsDrawerOpen(true);
     }, []);
 
-    // Prefetch Drawer
     useEffect(() => {
         if (prefetchDone.current) return;
         const prefetchDrawer = () => {
@@ -333,7 +328,6 @@ export function Footer() {
         }
     }, []);
 
-    // Safe area logic
     useEffect(() => {
         const updateSafeArea = () => {
             requestAnimationFrame(() => {
@@ -347,11 +341,8 @@ export function Footer() {
         return () => window.removeEventListener('resize', updateSafeArea);
     }, []);
 
-    // Smart scroll detection
-    // Smart scroll detection - FIXED
     useEffect(() => {
         const findScrollContainer = () => {
-            // Check for feed container
             if (location.pathname === '/feed') {
                 const feedContainer = document.querySelector('.p-0.max-w-2xl.mx-auto.space-y-2.h-\\[80vh\\].overflow-y-auto');
                 if (feedContainer) return feedContainer;
@@ -362,11 +353,9 @@ export function Footer() {
                 }
             }
 
-            // Check for dashboard container
             const dashboardContainer = document.querySelector('[data-scroll-container]');
             if (dashboardContainer) return dashboardContainer;
 
-            // Find any scrollable container
             const containers = document.querySelectorAll('.overflow-auto, .overflow-y-auto');
             for (const el of containers) {
                 if (el.scrollHeight > el.clientHeight + 10) {
@@ -382,7 +371,6 @@ export function Footer() {
         const handleScroll = () => {
             let currentScrollY;
 
-            // Get scroll position from the correct container
             if (container === document.documentElement || container === document.body || !container) {
                 currentScrollY = window.scrollY || document.documentElement.scrollTop;
             } else {
@@ -419,7 +407,6 @@ export function Footer() {
             }, 1500);
         };
 
-        // Attach scroll listeners to the correct container
         if (container === document.documentElement || container === document.body || !container) {
             window.addEventListener('scroll', handleScroll, { passive: true });
             window.addEventListener('scroll', handleScrollStop, { passive: true });
@@ -428,11 +415,9 @@ export function Footer() {
             container.addEventListener('scroll', handleScrollStop, { passive: true });
         }
 
-        // Watch for DOM changes that might create new scroll containers
         const observer = new MutationObserver(() => {
             const currentContainer = findScrollContainer();
             if (currentContainer !== scrollContainerRef.current) {
-                // Remove old listeners
                 if (scrollContainerRef.current) {
                     const old = scrollContainerRef.current;
                     if (old === document.documentElement || old === document.body) {
@@ -444,7 +429,6 @@ export function Footer() {
                     }
                 }
 
-                // Add new listeners
                 if (currentContainer) {
                     scrollContainerRef.current = currentContainer;
                     if (currentContainer === document.documentElement || currentContainer === document.body) {
@@ -478,7 +462,6 @@ export function Footer() {
         };
     }, [location.pathname]);
 
-    // ✅ 5 ITEMS with custom SVGs from public folder
     const items = useMemo(() => [
         {
             icon: "/graduation-cap.svg",
@@ -492,7 +475,6 @@ export function Footer() {
             url: "/feed",
             tone: "content" as IconTone
         },
-        // Home is rendered separately (bump) with hospital.svg
         {
             icon: "/crying.svg",
             label: "Mistakes",
@@ -505,18 +487,14 @@ export function Footer() {
     const isActive = useCallback((url: string) => location.pathname === url, [location.pathname]);
     const footerHeight = 72 + safeAreaBottom;
 
-    // ✅ PURE CSS - NO dark: classes
-    const footerBgClass = theme === 'dark'
-        ? 'bg-[#1a1a1a] border-t border-slate-800/50'
-        : 'bg-white border-t border-slate-200/50';
+    const footerBgClass = 'bg-background/95 backdrop-blur-xl border-t border-border/40';
 
     const footerShadow = theme === 'dark'
-        ? 'shadow-[0_-4px_40px_rgba(0,0,0,0.7)]'
-        : 'shadow-[0_-4px_30px_rgba(0,0,0,0.08)]';
+        ? 'shadow-[0_-4px_30px_rgba(0,0,0,0.5)]'
+        : 'shadow-[0_-4px_20px_rgba(0,0,0,0.06)]';
 
     return (
         <>
-            {/* ✅ EDGE-TO-EDGE FOOTER with 5 items */}
             <div
                 className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
                     transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)]
@@ -533,7 +511,6 @@ export function Footer() {
                     backfaceVisibility: 'hidden',
                 }}
             >
-                {/* ✅ ITEMS: Quizzes, Feed */}
                 {items.slice(0, 2).map((item) => (
                     <FooterItem
                         key={item.url}
@@ -546,14 +523,12 @@ export function Footer() {
                     />
                 ))}
 
-                {/* ✅ HOME - Bumped center with hospital.svg */}
                 <HomeButton
                     isActive={isActive(`/dashboard/${role}`)}
                     onPress={(e) => handleNavigate(e, `/dashboard/${role}`)}
                     isDark={theme === 'dark'}
                 />
 
-                {/* ✅ ITEMS: Mistakes */}
                 {items.slice(2).map((item) => (
                     <FooterItem
                         key={item.url}
@@ -566,7 +541,6 @@ export function Footer() {
                     />
                 ))}
 
-                {/* ✅ MENU BUTTON LAST - Using custom menu icon */}
                 <MenuButton
                     isDrawerOpen={isDrawerOpen}
                     onPress={handleMenuPress}
@@ -578,7 +552,6 @@ export function Footer() {
                 <MobileDrawer userRole={role} isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />
             </Suspense>
 
-            {/* ✅ Spacer for content */}
             <div className="md:hidden pointer-events-none" style={{ height: `${footerHeight + 8}px` }} />
         </>
     );

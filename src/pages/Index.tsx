@@ -874,13 +874,7 @@ const Index = () => {
           {/* Section Header */}
           <AnimatedSection direction="up">
             <div className="text-center mb-10 md:mb-16 space-y-3 md:space-y-4 px-4 md:px-0">
-              <div className="inline-flex items-center gap-2 bg-blue-50 px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-blue-100">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                </span>
-                <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-600">The Medrae Advantage</span>
-              </div>
+
               <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter text-slate-800">
                 Everything You Need to <br />
                 <span className="text-blue-600 italic">Pass the NCK,,FQEs Exams</span>
@@ -908,12 +902,7 @@ const Index = () => {
                     <source src="/videos/Medrae1.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
-                  <div className="absolute top-4 left-4 bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-md px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold text-white uppercase tracking-widest shadow-lg">
-                    <span className="flex items-center gap-2">
-                      <Play className="w-3 h-3 md:w-4 md:h-4" />
-                      Platform Demo
-                    </span>
-                  </div>
+
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 md:p-6">
                     <p className="text-white text-xs md:text-sm font-medium opacity-90">
                       Medrae Nursing Kenya: Made for Nurses
@@ -1027,13 +1016,6 @@ const Index = () => {
         <AnimatedSection direction="up">
           <section className="py-16 md:py-24 px-4 md:px-6 bg-gradient-to-br from-slate-50 to-blue-50/50 overflow-hidden">
             <div className="max-w-7xl mx-auto">
-              {/* Section Badge */}
-              <div className="flex justify-center mb-6">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 md:px-6 py-2 rounded-full shadow-lg shadow-blue-200 hover:scale-105 transition-transform cursor-default">
-                  <Sparkles className="w-4 h-4 md:w-5 md:h-5 animate-pulse" />
-                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">New Feature</span>
-                </div>
-              </div>
 
               {/* Header */}
               <div className="text-center mb-12 md:mb-16">
@@ -1119,16 +1101,7 @@ const Index = () => {
                       </div>
 
                       {/* CTA */}
-                      <Button
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-6 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] group hover:scale-[1.02] p-0 overflow-hidden"
-                        onClick={() => navigate('/register')}
-                      >
-                        <div className="w-full h-full flex items-center justify-center px-4 py-6">
-                          <Brain className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-                          Check Your Algorithm Dashboard
-                          <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-2" />
-                        </div>
-                      </Button>
+
                       <p className="text-[10px] text-slate-400 text-center font-medium uppercase tracking-widest">
                         Available for Premium Members • Starting at 199 KSh
                       </p>
@@ -1265,9 +1238,7 @@ const Index = () => {
               <div className="flex flex-col lg:flex-row items-center gap-12 md:gap-16">
                 {/* Text Content */}
                 <div className="lg:w-1/2 text-center lg:text-left space-y-6 md:space-y-8">
-                  <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/20 animate-pulse">
-                    <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-blue-100">Final Step</span>
-                  </div>
+
                   <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-[1.1] tracking-tighter">
                     Ready to Pass Your <br />
                     <span className="text-blue-200 italic">NURSING,FQEs and NCK Exams?</span>
@@ -1315,15 +1286,7 @@ const Index = () => {
                         <source src="/videos/Medrae2.mp4" type="video/mp4" />
                         Your browser does not support the video tag.
                       </video>
-                      <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6 p-3 md:p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 group-hover:bg-white/20 transition-all">
-                        <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                          <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
-                        </div>
-                        <div>
-                          <p className="text-white text-[10px] md:text-xs font-black uppercase tracking-widest">Tutorial Preview</p>
-                          <p className="text-blue-200 text-[9px] md:text-[10px] font-bold italic">See how the Medrae Engine works</p>
-                        </div>
-                      </div>
+
                     </div>
                   </div>
                 </div>

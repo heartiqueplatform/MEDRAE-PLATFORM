@@ -16,13 +16,13 @@ import { GroupPaySubscriptionCard } from "@/components/grouppay/GroupPaySubscrip
 
 const PRICES = {
   STUDENT: {
-    TWO_MONTHS: 199,
+    TWO_MONTHS: 399,
   },
   TUTOR: {
-    TWO_MONTHS: 299,
+    TWO_MONTHS: 1999,
   },
   STAFF: {
-    TWO_MONTHS: 299,
+    TWO_MONTHS: 999,
   },
   DURATION: {
     TWO_MONTHS: 2,
