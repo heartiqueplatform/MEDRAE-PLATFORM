@@ -766,16 +766,10 @@ export default function StudentDashboard() {
       </AnimatePresence>
       <div className="w-full space-y-2 md:px-4 lg:px-6">
         <GreetingsCard />
-
-        <CountdownFloating />
-
         <DailyTriviaCard />
+        <CountdownFloating />
         <Algorithm />
         <Referral />
-
-
-
-
         {/* Top Students Leaderboard */}
         <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-none mt-1">
           <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px]" />
@@ -793,7 +787,7 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            <details className="group mt-4 bg-slate-100/50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden transition-all duration-300">
+            <details className="group mt-4 bg-slate-100/50 dark:bg-white/[0.03] rounded-2xl border-0 dark:border-white/5 overflow-hidden transition-all duration-300">
               <summary className="cursor-pointer list-none p-4 flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
                 <span>How winners are chosen?</span>
                 <span className="transition-transform group-open:rotate-180">▼</span>
@@ -1068,7 +1062,7 @@ export default function StudentDashboard() {
                 <span className="font-bold">Desktop Recommended:</span> For the smoothest DigiProctor experience, we suggest using a laptop or tablet.
               </p>
             </div>
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/5 border border-blue-200/50 dark:border-blue-500/10">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/5 border-0">
               <Lightbulb className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
               <p className="text-xs font-medium text-blue-800 dark:text-blue-200/80 leading-relaxed">
                 <span className="font-bold">Pro Tip:</span> Treat this as the real exam—find a quiet space, set a timer, and avoid breaks to build true stamina.
@@ -1212,7 +1206,7 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <a href="https://whatsapp.com/channel/0029VbBFzgAEawdkJKtRtF2H" target="_blank" rel="noopener noreferrer">
-                <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl h-11 font-bold transition-all">
+                <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 rounded-xl h-11 font-bold transition-all">
                   Join Channel
                 </Button>
               </a>
@@ -1233,7 +1227,7 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
-                <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-xl h-11 font-bold transition-all">
+                <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 rounded-xl h-11 font-bold transition-all">
                   Join WhatsApp Group
                 </Button>
               </a>
@@ -1254,12 +1248,12 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent className="flex gap-2">
               <a href="https://t.me/heartiquenursingnexusscholar" target="_blank" rel="noopener noreferrer" className="flex-1">
-                <Button className="w-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20 rounded-xl h-11 font-bold transition-all">
+                <Button className="w-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-0 rounded-xl h-11 font-bold transition-all">
                   Telegram
                 </Button>
               </a>
               <a href="https://web.facebook.com/share/g/1AY4nC9Hcp/" target="_blank" rel="noopener noreferrer" className="flex-1">
-                <Button className="w-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-xl h-11 font-bold transition-all">
+                <Button className="w-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-0 rounded-xl h-11 font-bold transition-all">
                   Facebook
                 </Button>
               </a>

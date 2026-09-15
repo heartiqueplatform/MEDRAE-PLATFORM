@@ -904,7 +904,7 @@ export const DailyTriviaCard = () => {
 
     return (
         <div className="relative select-none overflow-x-hidden">
-            <Card className="rounded-md overflow-hidden border-0 relative bg-gray-100 dark:bg-muted/70 shadow-md mt-2">
+            <Card className="rounded-md overflow-hidden border-0 relative bg-gray-100 dark:bg-muted/70 shadow-md mt-0">
                 <CardHeader className="bg-blue-50 dark:bg-muted/30">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2">
@@ -958,11 +958,11 @@ export const DailyTriviaCard = () => {
                                 transition={{ duration: 0.2 }}
                             >
                                 <div className="w-full bg-gray-50 dark:bg-muted/80 rounded-3xl">
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 p-4">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-0 p-4">
                                         Question {currentIndex + 1} of {questions.length}
                                     </p>
-                                    <p className="font-semibold text-lg mb-6 mt-6 p-2 leading-relaxed">{currentQuestion?.question_text}</p>
-                                    <div className="flex flex-col gap-6 p-4">
+                                    <p className="font-semibold text-lg mb-6 mt-0 p-2 leading-relaxed">{currentQuestion?.question_text}</p>
+                                    <div className="flex flex-col gap-3 p-4">
                                         {(["A", "B", "C", "D"] as const).map((letter) => {
                                             if (!currentQuestion) return null;
                                             const text = currentQuestion[`option_${letter.toLowerCase()}` as keyof TriviaQuestion] as string;

@@ -49,19 +49,19 @@ const TopStudentCard = memo(({
             }}
             whileHover={{ y: -5 }}
             whileTap={{ scale: 0.97 }}
-            className={`relative flex-shrink-0 w-40 p-4 rounded-xl border transition-all cursor-pointer group active:scale-98
-                ${idx === 0 ? "bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/20 dark:to-card border-amber-200 dark:border-amber-800/50 shadow-md shadow-amber-500/5" :
-                    idx === 1 ? "bg-card border-slate-200 dark:border-slate-800" :
-                        idx === 2 ? "bg-card border-orange-100 dark:border-orange-900/30" :
-                            "bg-card border-border hover:border-primary/30"}`}
+            className={`relative flex-shrink-0 w-40 p-4 rounded-xl border-0 transition-all cursor-pointer group active:scale-98
+                ${idx === 0 ? "bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/20 dark:to-card border-0 shadow-none" :
+                    idx === 1 ? "bg-card border-0" :
+                        idx === 2 ? "bg-card border-0" :
+                            "bg-card border-0"}`}
             style={{ touchAction: 'manipulation', willChange: 'transform' }}
         >
             {/* Rank Indicator Badge */}
-            <div className={`absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold border-2 shadow-sm
-                ${idx === 0 ? "bg-amber-500 text-white border-white dark:border-slate-900" :
-                    idx === 1 ? "bg-slate-400 text-white border-white dark:border-slate-900" :
-                        idx === 2 ? "bg-orange-500 text-white border-white dark:border-slate-900" :
-                            "bg-muted text-muted-foreground border-white dark:border-slate-900"}`}>
+            <div className={`absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold border-0 shadow-sm
+                ${idx === 0 ? "bg-amber-500 text-white border-0" :
+                    idx === 1 ? "bg-slate-400 text-white border-0" :
+                        idx === 2 ? "bg-orange-500 text-white border-0" :
+                            "bg-muted text-muted-foreground border-0"}`}>
                 {idx + 1}
             </div>
 
@@ -76,7 +76,7 @@ const TopStudentCard = memo(({
                     <img
                         src={student.avatar_url || "/UsersAvatar.jpg"}
                         alt={student.name || student.username || "Student"}
-                        className={`w-14 h-14 rounded-full object-cover border-2 p-0.5 transition-transform group-hover:scale-105
+                        className={`w-14 h-14 rounded-full object-cover border-0 p-0.5 transition-transform group-hover:scale-105
                             ${idx === 0 ? "border-amber-400" : "border-border"}`}
                         loading="lazy"
                     />
@@ -92,8 +92,8 @@ const TopStudentCard = memo(({
                 </div>
 
                 {/* Metric Pill */}
-                <div className={`w-full py-2 px-1 rounded-xl border flex flex-col items-center gap-0.5
-                    ${idx === 0 ? "bg-amber-100/50 dark:bg-amber-900/20 border-amber-200/50" : "bg-muted/50 border-transparent"}`}>
+                <div className={`w-full py-2 px-1 rounded-xl border-0 flex flex-col items-center gap-0.5
+                    ${idx === 0 ? "bg-amber-100/50 dark:bg-amber-900/20 border-0" : "bg-muted/50 border-transparent"}`}>
                     <div className="flex items-center gap-1.5 font-bold text-xs text-primary">
                         <BookOpen className="w-3 h-3 flex-shrink-0" />
                         {student.seen_count ?? 0}

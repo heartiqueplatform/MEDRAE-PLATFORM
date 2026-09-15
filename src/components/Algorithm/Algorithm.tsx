@@ -340,7 +340,7 @@ export default function Algorithm() {
             {/* STRENGTHS / FOCUS */}
             {/* ============================================ */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/10 border border-green-200/50 dark:border-green-800/20">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/10 border-0">
                     <div className="flex items-center gap-1.5 mb-2">
                         <Trophy className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />
                         <h4 className="text-[10px] font-black text-green-800 dark:text-green-300 uppercase tracking-wider">Strengths</h4>
@@ -357,7 +357,7 @@ export default function Algorithm() {
                     )}
                 </div>
 
-                <div className="p-3 rounded-xl bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/10 border border-red-200/50 dark:border-red-800/20">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/10 border-0">
                     <div className="flex items-center gap-1.5 mb-2">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-700 dark:text-red-400" />
                         <h4 className="text-[10px] font-black text-red-800 dark:text-red-300 uppercase tracking-wider">Focus Areas</h4>

@@ -164,10 +164,10 @@ export default function GreetingsCard() {
     return (
         <section className="px-2 sm:px-0 pt-1 pb-1">
             <div
-                className="relative overflow-hidden rounded-none md:rounded-2xl
+                className="relative overflow-hidden rounded-none md:rounded-xl
         border-0
         bg-white dark:bg-muted/30
-        shadow-none md:shadow-sm"
+        shadow-none"
             >
                 {/* Accent bar — reflects time of day */}
                 <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.accent}`} />
@@ -193,7 +193,7 @@ export default function GreetingsCard() {
                     </div>
 
                     {/* Row 2 — greeting */}
-                    <h1 className="mt-3 md:mt-4 text-[22px] leading-tight md:text-3xl lg:text-[34px]
+                    <h1 className="mt-3 md:mt-4 text-[22px] leading-tight md:text-3xl lg:text-[26px]
                         font-semibold tracking-tight text-slate-900 dark:text-white">
                         {theme.greeting},{" "}
                         <span className="relative inline-block">
