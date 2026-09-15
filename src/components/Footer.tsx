@@ -30,11 +30,10 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
    PROFESSIONAL SVG ICONS (Facebook / Instagram / WhatsApp style)
    Clean, uniform stroke width, 24x24 viewBox, no decorative bumps
    ============================================================ */
-
 const IconHome = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
-            d="M3 10.5L12 3L21 10.5V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H15C14.4696 22 13.9609 21.7893 13.5858 21.4142C13.2107 21.0391 13 20.5304 13 20V16C13 15.4696 12.7893 14.9609 12.4142 14.5858C12.0391 14.2107 11.5304 14 11 14H9C8.46957 14 7.96086 14.2107 7.58579 14.5858C7.21071 14.9609 7 15.4696 7 16V20C7 20.5304 6.78929 21.0391 6.41421 21.4142C6.03914 21.7893 5.53043 22 5 22H3C2.46957 22 1.96086 21.7893 1.58579 21.4142C1.21071 21.0391 1 20.5304 1 20V10.5Z"
+            d="M4 10.8L11.3 3.9C11.69 3.53 12.31 3.53 12.7 3.9L20 10.8V19.5C20 20.33 19.33 21 18.5 21H15.5C14.67 21 14 20.33 14 19.5V16C14 14.9 13.1 14 12 14C10.9 14 10 14.9 10 16V19.5C10 20.33 9.33 21 8.5 21H5.5C4.67 21 4 20.33 4 19.5V10.8Z"
             stroke="currentColor"
             strokeWidth={active ? 2.2 : 1.8}
             strokeLinecap="round"
@@ -75,15 +74,36 @@ const IconFeed = ({ active }: { active: boolean }) => (
 
 const IconMistakes = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle
-            cx="12" cy="12" r="9"
+        {/* Left half — stays upright */}
+        <path
+            d="M11.5 6.8
+               L10 9.2 L11.5 11 L10 13 L11.5 15 L11.5 20.6
+               C11.5 20.6 3.4 15.6 3.4 9.5
+               C3.4 6.46 5.86 4 8.9 4
+               C10 4 11 4.5 11.5 5.2"
             stroke="currentColor"
             strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.15 : 0}
+            fillOpacity={active ? 0.18 : 0}
         />
-        <line x1="12" y1="8" x2="12" y2="13" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <circle cx="12" cy="16.5" r="1" fill="currentColor" />
+        {/* Right half — rotated ~18° clockwise and shifted, like it's falling off */}
+        <g transform="rotate(18 16 12) translate(1.2 0.6)">
+            <path
+                d="M12.5 5.2
+                   C13 4.5 14 4 15.1 4
+                   C18.14 4 20.6 6.46 20.6 9.5
+                   C20.6 15.6 12.5 20.6 12.5 20.6
+                   L12.5 15 L14 13 L12.5 11 L14 9.2 L12.5 6.8"
+                stroke="currentColor"
+                strokeWidth={active ? 2.2 : 1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill={active ? "currentColor" : "none"}
+                fillOpacity={active ? 0.18 : 0}
+            />
+        </g>
     </svg>
 );
 

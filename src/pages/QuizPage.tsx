@@ -1032,7 +1032,7 @@ Please provide a detailed discussion and guidance.`;
 
           {/* Upgrade Banner for Free Users - Only show if premium is false AND there are more questions */}
           {!isPremium && totalQuestions > QUESTIONS_PER_BATCH && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800">
+            <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 rounded-xl border-0">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-full">
@@ -1071,7 +1071,7 @@ Please provide a detailed discussion and guidance.`;
 
               if (isLocked) {
                 return (
-                  <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16 bg-white dark:bg-muted/30 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-xl text-center">
+                  <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16 bg-white dark:bg-muted/30 rounded-2xl border-0 shadow-xl text-center">
                     <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-6">
                       <Sparkles className="w-10 h-10 text-amber-600 dark:text-amber-400 animate-pulse" />
                     </div>
@@ -1100,10 +1100,10 @@ Please provide a detailed discussion and guidance.`;
                       "md:shadow-sm md:rounded-xl",
                       "border-0",
                       understood[q.id]
-                        ? "md:border-emerald-500 bg-emerald-50/30 dark:md:border-emerald-500/50 dark:bg-emerald-500/5"
+                        ? "border-0 bg-emerald-50/30  dark:bg-emerald-500/5"
                         : notUnderstood[q.id]
-                          ? "md:border-rose-500 bg-rose-50/30 dark:md:border-rose-500/50 dark:bg-rose-500/5"
-                          : "md:border-slate-100 bg-white dark:md:border-slate-800 dark:bg-muted/30",
+                          ? "border-0 bg-rose-50/30 dark:bg-rose-500/5"
+                          : "border-0 bg-white  dark:bg-muted/30",
                       "text-slate-900 dark:text-slate-100"
                     )}>
                     <div className="min-h-[60px] md:min-h-[70px] flex items-start">
@@ -1329,24 +1329,24 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                             Rationale
                           </span>
                         </button>
-
-                        <button
-                          onClick={() => {
-                            const optionsText = ["A", "B", "C", "D"]
-                              .map(letter => `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`)
-                              .join("\n");
-                            const fullText = `Let's discuss this question:\nQuestion: ${q.question_text}\nOptions:\n${optionsText}\nUser Answer: ${answers[q.id] || "No answer selected"}`;
-                            setAIPrefillQuestion(fullText);
-                            setAIOverlayOpen(true);
-                          }}
-                          className="relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-muted/30 transition-all duration-300 group hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:border-purple-800 shadow-sm active:scale-95"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-500 dark:text-purple-400 group-hover:animate-spin-slow transition-transform" />
-                          <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300 group-hover:text-purple-700 dark:group-hover:text-purple-300">
-                            AI Consult
-                          </span>
-                        </button>
-
+                        {/*
+<button
+    onClick={() => {
+        const optionsText = ["A", "B", "C", "D"]
+            .map(letter => `${letter}: ${q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`]}`)
+            .join("\n");
+        const fullText = `Let's discuss this question:\nQuestion: ${q.question_text}\nOptions:\n${optionsText}\nUser Answer: ${answers[q.id] || "No answer selected"}`;
+        setAIPrefillQuestion(fullText);
+        setAIOverlayOpen(true);
+    }}
+    className="relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-muted/30 transition-all duration-300 group hover:bg-purple-50 dark:hover:bg-purple-950/30 hover:border-purple-200 dark:hover:border-purple-800 shadow-sm active:scale-95"
+>
+    <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-500 dark:text-purple-400 group-hover:animate-spin-slow transition-transform" />
+    <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700 dark:text-slate-300 group-hover:text-purple-700 dark:group-hover:text-purple-300">
+        AI Consult
+    </span>
+</button>
+*/}
                         <button
                           onClick={toggleMute}
                           className={`ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
@@ -1480,7 +1480,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
               );
             })
           ) : (
-            <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+            <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-0">
               <AlertTriangle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
               <p className="text-slate-600 dark:text-slate-400">No questions found for <b>{selectedCourse}</b> in this unit.</p>
               <button onClick={() => setSelectedCourse("All")} className="mt-4 text-indigo-600 font-bold">View All Questions</button>
