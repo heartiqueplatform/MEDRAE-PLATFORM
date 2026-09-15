@@ -1,8 +1,8 @@
-// src/components/index/Header.tsx - Fixed Sticky Header with GroupPay
+// src/components/index/Header.tsx
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Menu, X, ArrowRight, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 interface HeaderProps {
     onNavigate?: (sectionId: string) => void;
@@ -16,6 +16,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     const [isHovering, setIsHovering] = useState(false);
     const [isInteracting, setIsInteracting] = useState(false);
     const [colorIndex, setColorIndex] = useState(0);
+    const [isSeoOpen, setIsSeoOpen] = useState(false);
+    const [isMoreOpen, setIsMoreOpen] = useState(false);
 
     // Rainbow color cycling
     useEffect(() => {
@@ -50,6 +52,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
     const scrollToSection = (sectionId: string) => {
         setIsMobileMenuOpen(false);
+        setIsSeoOpen(false);
+        setIsMoreOpen(false);
         setActiveSection(sectionId);
         setIsInteracting(true);
         setTimeout(() => setIsInteracting(false), 2000);
@@ -97,17 +101,35 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         }
     };
 
-    // 🔥 UPDATED: Navigation items with GroupPay added
-    const navItems = [
+    // Primary tabs — always visible on desktop
+    const primaryNavItems = [
         { id: 'home', label: 'Home' },
         { id: 'features', label: 'Features' },
-        { id: 'clinical-assessment', label: 'Clinical Assessment' },
-        { id: 'grouppay', label: 'GroupPay' }, // 🆕 Added GroupPay
+        { id: 'grouppay', label: 'GroupPay' },
         { id: 'merit-cup', label: 'Merit Cup' },
+    ];
+
+    // Secondary tabs — tucked inside "More" dropdown
+    const moreNavItems = [
+        { id: 'clinical-assessment', label: 'Clinical Assessment' },
         { id: 'curriculum', label: 'Curriculum' },
         { id: 'algorithm', label: 'AI Algorithm' },
         { id: 'about', label: 'About' },
         { id: 'contact', label: 'Contact' },
+    ];
+
+    // Full list for mobile menu
+    const allNavItems = [...primaryNavItems, ...moreNavItems];
+
+    // SEO pages — each opens a separate route
+    const seoPages = [
+        { to: '/nursing-revision-kenya', label: 'Nursing Revision in Kenya' },
+        { to: '/nck-exam-revision', label: 'NCK Exam Revision' },
+        { to: '/nck-exam-questions', label: 'NCK Exam Questions' },
+        { to: '/nck-past-papers', label: 'NCK Past Papers' },
+        { to: '/nck-exam-preparation', label: 'NCK Exam Preparation' },
+        { to: '/krchn-revision', label: 'KRCHN Revision' },
+        { to: '/medrae-nursing-merit-cup', label: 'Medrae Merit Cup' },
     ];
 
     // Full rainbow color palette
@@ -193,7 +215,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
                         {/* Navigation */}
                         <nav className="flex items-center gap-0.5 lg:gap-1">
-                            {navItems.map((item) => (
+                            {/* Primary tabs */}
+                            {primaryNavItems.map((item) => (
                                 <button
                                     key={item.id}
                                     onClick={() => scrollToSection(item.id)}
@@ -208,6 +231,79 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                                     )}
                                 </button>
                             ))}
+
+                            {/* More dropdown */}
+                            <div
+                                className="relative"
+                                onMouseEnter={() => setIsMoreOpen(true)}
+                                onMouseLeave={() => setIsMoreOpen(false)}
+                            >
+                                <button
+                                    className={`px-2 lg:px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1 ${isMoreOpen
+                                        ? 'text-blue-600 bg-blue-50'
+                                        : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/50'
+                                        }`}
+                                >
+                                    More
+                                    <ChevronDown
+                                        className={`w-3.5 h-3.5 transition-transform ${isMoreOpen ? 'rotate-180' : ''
+                                            }`}
+                                    />
+                                </button>
+
+                                {isMoreOpen && (
+                                    <div className="absolute top-full right-0 pt-1 w-56">
+                                        <div className="rounded-xl bg-white shadow-xl border border-slate-200/60 overflow-hidden">
+                                            {moreNavItems.map((item) => (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => scrollToSection(item.id)}
+                                                    className="block w-full text-left px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-slate-100 last:border-b-0"
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* SEO Guides dropdown */}
+                            <div
+                                className="relative"
+                                onMouseEnter={() => setIsSeoOpen(true)}
+                                onMouseLeave={() => setIsSeoOpen(false)}
+                            >
+                                <button
+                                    className={`px-2 lg:px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1 ${isSeoOpen
+                                        ? 'text-blue-600 bg-blue-50'
+                                        : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/50'
+                                        }`}
+                                >
+                                    Guides
+                                    <ChevronDown
+                                        className={`w-3.5 h-3.5 transition-transform ${isSeoOpen ? 'rotate-180' : ''
+                                            }`}
+                                    />
+                                </button>
+
+                                {isSeoOpen && (
+                                    <div className="absolute top-full right-0 pt-1 w-64">
+                                        <div className="rounded-xl bg-white shadow-xl border border-slate-200/60 overflow-hidden">
+                                            {seoPages.map((page) => (
+                                                <Link
+                                                    key={page.to}
+                                                    to={page.to}
+                                                    onClick={() => setIsSeoOpen(false)}
+                                                    className="block px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-slate-100 last:border-b-0"
+                                                >
+                                                    {page.label}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </nav>
 
                         {/* Auth Buttons */}
@@ -313,8 +409,9 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                         : 'max-h-0 opacity-0'
                         }`}
                 >
-                    <div className="p-3 space-y-0.5">
-                        {navItems.map((item) => (
+                    <div className="p-3 space-y-0.5 max-h-[calc(100vh-60px)] overflow-y-auto">
+                        {/* All section links */}
+                        {allNavItems.map((item) => (
                             <button
                                 key={item.id}
                                 onClick={() => scrollToSection(item.id)}
@@ -327,6 +424,24 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                             </button>
                         ))}
 
+                        {/* SEO pages section */}
+                        <div className="pt-3 mt-2 border-t border-slate-100">
+                            <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                Revision Guides
+                            </p>
+                            {seoPages.map((page) => (
+                                <Link
+                                    key={page.to}
+                                    to={page.to}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="block w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 transition-all"
+                                >
+                                    {page.label}
+                                </Link>
+                            ))}
+                        </div>
+
+                        {/* Auth buttons */}
                         <div className="pt-3 border-t border-slate-100 space-y-1.5">
                             <button
                                 className="w-full text-center px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 transition-all border border-slate-200"
@@ -370,7 +485,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
-            {/* Spacer - IMPORTANT: This pushes content below the fixed header */}
+            {/* Spacer - pushes content below the fixed header */}
             <div className="h-10 md:h-14 lg:h-16" />
         </>
     );
