@@ -741,9 +741,9 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
 
     const getStatusLabel = (status: string) => {
         switch (status) {
-            case 'completed': return '✅ Completed';
-            case 'in_progress': return '⏳ In Progress';
-            case 'abandoned': return '🚫 Abandoned';
+            case 'completed': return ' Completed';
+            case 'in_progress': return ' In Progress';
+            case 'abandoned': return ' Abandoned';
             default: return status;
         }
     };
