@@ -746,22 +746,12 @@ export function MedraeQuizzes() {
                                 <CardTitle className="text-lg font-bold leading-tight mt-3 text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
                                   {unit.title}
                                 </CardTitle>
-                                <CardDescription className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
-                                  {unit.code}
-                                </CardDescription>
+
                               </CardHeader>
 
                               <CardContent>
                                 <div className="flex flex-col gap-3">
-                                  {/* QUIZ TYPE BADGE */}
-                                  {unit.quiz_type && (
-                                    <div className="flex items-center gap-1.5">
-                                      <Type className="w-3 h-3 text-gray-400" />
-                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getQuizTypeColor(unit.quiz_type)}`}>
-                                        {unit.quiz_type.toUpperCase()}
-                                      </span>
-                                    </div>
-                                  )}
+
 
                                   {/* DESCRIPTION - Clean, clickable */}
                                   {unit.description && (
@@ -777,9 +767,18 @@ export function MedraeQuizzes() {
                                   )}
 
                                   {/* Questions count and level */}
+                                  {/* Questions count and level */}
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
                                       {questionCount} Questions
+                                    </Badge>
+                                    {unit.quiz_type && (
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getQuizTypeColor(unit.quiz_type)}`}>
+                                        {unit.quiz_type.toUpperCase()}
+                                      </span>
+                                    )}
+                                    <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold text-[8px] px-1.5 py-0 leading-none h-4">
+                                      {unit.code}
                                     </Badge>
                                     <Badge variant={getLevelVariant(unit.level)} className="font-bold border-none">
                                       {unit.level}

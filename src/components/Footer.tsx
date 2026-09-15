@@ -452,7 +452,7 @@ export function Footer() {
     const FOOTER_CONTENT_HEIGHT = 56;
     const footerHeight = FOOTER_CONTENT_HEIGHT + safeAreaBottom;
 
-    const footerBgClass = 'bg-background/95 backdrop-blur-xl border-t border-border/40';
+    const footerBgClass = 'bg-background/95 backdrop-blur-xl border-0';
 
     const footerShadow = theme === 'dark'
         ? 'shadow-[0_-4px_30px_rgba(0,0,0,0.5)]'
