@@ -20,7 +20,7 @@ import {
     Sparkles,
     ArrowRight,
 } from "lucide-react";
-import SeoFooter from "@/components/seo/SeoFooter";
+import SeoFooter from "./SeoFooter";
 
 /**
  * Public landing page: Medrae National Nursing Merit Cup
