@@ -14,6 +14,7 @@ import KRCHNCurriculum from '@/components/index/KRCHNCurriculum';
 import Header from '@/components/index/Header';
 import ClinicalAssessmentSection from '@/components/index/ClinicalAssessmentSection';
 import GroupPayLandingSection from '@/components/grouppay/GroupPayLandingSection';
+import NursingMeritCupSection from '@/components/index/NursingMeritCupSection';
 
 
 // ============================================================
@@ -1008,6 +1009,10 @@ const Index = () => {
       {/* KRCHN Curriculum Section */}
       <section id="curriculum">
         <KRCHNCurriculum />
+      </section>
+      {/* Medrae National Nursing Merit Cup Section */}
+      <section id="merit-cup">
+        <NursingMeritCupSection />
       </section>
       {/* ============================================================ */}
       {/* MEDRAE ALGORITHM SECTION - with scroll animations */}

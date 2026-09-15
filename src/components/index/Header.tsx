@@ -103,6 +103,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         { id: 'features', label: 'Features' },
         { id: 'clinical-assessment', label: 'Clinical Assessment' },
         { id: 'grouppay', label: 'GroupPay' }, // 🆕 Added GroupPay
+        { id: 'merit-cup', label: 'Merit Cup' },
         { id: 'curriculum', label: 'Curriculum' },
         { id: 'algorithm', label: 'AI Algorithm' },
         { id: 'about', label: 'About' },

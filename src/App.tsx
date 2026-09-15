@@ -126,6 +126,13 @@ import ProgressPage from "./pages/nursing/ProgressPage";
 import { UserRoleProvider } from "./context/UserRoleContext";
 import CookiePolicyPage from "./pages/CookiePolicyPage";
 import { DrawerProvider } from "./contexts/DrawerContext";
+import NCKExamRevisionPage from "./pages/seo/NCKExamRevisionPage";
+import NCKExamQuestionsPage from "./pages/seo/NCKExamQuestionsPage";
+import NCKPastPapersPage from "./pages/seo/NCKPastPapersPage";
+import KRCHNRevisionPage from "./pages/seo/KRCHNRevisionPage";
+import NCKExamPreparationPage from "./pages/seo/NCKExamPreparationPage";
+import NursingRevisionKenyaPage from "./pages/seo/NursingRevisionKenyaPage";
+import MedraeNursingMeritCupPage from "./pages/seo/MedraeNursingMeritCupPage";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -392,7 +399,13 @@ const AppContent = () => {
                         <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
                         <Route path="/redirect" element={<RedirectToRoleDashboard />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
-
+                        <Route path="/nck-exam-revision" element={<NCKExamRevisionPage />} />
+                        <Route path="/nck-exam-questions" element={<NCKExamQuestionsPage />} />
+                        <Route path="/nck-past-papers" element={<NCKPastPapersPage />} />
+                        <Route path="/krchn-revision" element={<KRCHNRevisionPage />} />
+                        <Route path="/nck-exam-preparation" element={<NCKExamPreparationPage />} />
+                        <Route path="/nursing-revision-kenya" element={<NursingRevisionKenyaPage />} />
+                        <Route path="/medrae-nursing-merit-cup" element={<MedraeNursingMeritCupPage />} />
                         <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
 
                         {/* Persistent Dashboard Layout */}
