@@ -456,7 +456,7 @@ export function UnitPics({ position }: UnitPicsProps) {
     if (loading) {
         return (
             <div className="col-span-1 sm:col-span-2 lg:col-span-1 my-2 px-0 h-full">
-                <div className="rounded-xl overflow-hidden bg-white dark:bg-muted/30 border border-gray-200 dark:border-gray-800 shadow-sm animate-pulse h-full">
+                <div className="rounded-xl overflow-hidden bg-white dark:bg-muted/30 border-0 shadow-sm animate-pulse h-full">
                     <div className="w-full h-full" style={{ aspectRatio: '4/3', background: '#e5e7eb' }} />
                 </div>
             </div>
@@ -469,7 +469,7 @@ export function UnitPics({ position }: UnitPicsProps) {
             {user && (
                 <div className="mb-3 max-w-full flex-shrink-0">
                     <div
-                        className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                         onClick={toggleUpload}
                     >
                         <img
@@ -510,7 +510,7 @@ export function UnitPics({ position }: UnitPicsProps) {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="mb-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex-shrink-0"
+                        className="mb-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-0 overflow-hidden flex-shrink-0"
                     >
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-3">
@@ -639,7 +639,7 @@ export function UnitPics({ position }: UnitPicsProps) {
 
             {/* Professional Card Style Image Display - WITH FLEX-1 TO FILL REMAINING SPACE */}
             {image ? (
-                <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-muted/30 shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer flex-1 flex flex-col">
+                <Card className="overflow-hidden border-0 bg-white dark:bg-muted/30 shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer flex-1 flex flex-col">
                     {/* Image Container - Fixed aspect ratio */}
                     <div className="relative overflow-hidden flex-shrink-0 w-full" style={{ aspectRatio: '4/3' }}>
                         <button

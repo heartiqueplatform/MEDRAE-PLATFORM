@@ -312,9 +312,6 @@ export default function StudentDashboard() {
     initialCache.bestStreak ?? null
   );
 
-  const [calendarEvents, setCalendarEvents] = useState<any[]>(
-    initialCache.calendarEvents ?? []
-  );
 
   const [dailyContent, setDailyContent] = useState("");
   const [feedsAttemptCount, setFeedsAttemptCount] = useState(0);
@@ -435,15 +432,6 @@ export default function StudentDashboard() {
     localStorage.setItem("dashboard_study_progress", JSON.stringify(overallProgress));
   }, [user?.id]);
 
-  const fetchCalendarEvents = useCallback(async () => {
-    if (!user?.id) return;
-    const { data, error } = await supabase
-      .from("calendar_events")
-      .select("id, title, description, start_time, type, priority")
-      .eq("user_id", user.id)
-      .order("start_time", { ascending: true });
-    if (!error && data) setCalendarEvents(data);
-  }, [user?.id]);
 
   const updateBestStreakIfNeeded = useCallback(async (current: number) => {
     const { data, error } = await supabase
@@ -669,7 +657,7 @@ export default function StudentDashboard() {
       await Promise.allSettled([
         fetchProfile(),
         handleLoginAndStreak(),
-        fetchCalendarEvents(),
+
         fetchTopStudents(),
         fetchProgress(),
         fetchSimulationPapers(),
@@ -684,7 +672,7 @@ export default function StudentDashboard() {
         quizCount,
         studyStreak,
         bestStreak,
-        calendarEvents,
+
         topStudents,
         simulationPapers: cachedSimulationPapers,
         profileState
@@ -699,10 +687,10 @@ export default function StudentDashboard() {
       isLoadingDashboard.current = false;
     }
   }, [
-    user?.id, fetchProfile, handleLoginAndStreak, fetchCalendarEvents,
+    user?.id, fetchProfile, handleLoginAndStreak,
     fetchTopStudents, fetchProgress, fetchSimulationPapers,
     fetchQuizCount, fetchFeedsAttemptCount, name, studyProgress,
-    quizCount, studyStreak, bestStreak, calendarEvents,
+    quizCount, studyStreak, bestStreak,
     topStudents, cachedSimulationPapers, profileState
   ]);
   // ===== EFFECTS =====
@@ -755,18 +743,6 @@ export default function StudentDashboard() {
     }, 50);
   }, [navigate]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-500 text-white";
-      case "medium":
-        return "bg-yellow-500 text-black";
-      case "low":
-        return "bg-green-500 text-white";
-      default:
-        return "bg-gray-400 text-white";
-    }
-  };
 
   // ✅ RENDER
   return (
@@ -884,7 +860,7 @@ export default function StudentDashboard() {
                       onClick={() => setSelectedUserId(s.userid)}
                       className={`flex-shrink-0 w-44 snap-center relative group cursor-pointer transition-all duration-500 hover:-translate-y-2`}
                     >
-                      <div className={`h-full p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-muted/30 shadow-xl ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
+                      <div className={`h-full p-5 rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-xl ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
                         <div className={`absolute top-0 inset-x-0 h-24 bg-gradient-to-b ${rankMeta.bg} opacity-50`} />
                         <div className="relative z-10 flex flex-col items-center text-center">
                           <div className={`relative mb-3`}>
@@ -945,7 +921,7 @@ export default function StudentDashboard() {
               if (navigator.vibrate) navigator.vibrate(40);
               handleOpenDialog(); // ✅ Opens instantly!
             }}
-            className="relative h-12 w-12 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-2xl flex items-center justify-center transition-all p-0 overflow-visible"
+            className="relative h-12 w-12 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-0 shadow-2xl flex items-center justify-center transition-all p-0 overflow-visible"
           >
             {topStudents.length > 0 ? (
               <>
@@ -1066,61 +1042,6 @@ export default function StudentDashboard() {
           </DialogContent>
         </Dialog>
 
-        {calendarEvents.length > 0 && (
-          <Card
-            className="mt-6 cursor-pointer rounded-xl border-0 bg-white shadow-sm hover:shadow-md dark:bg-slate-900/50 transition-all group overflow-hidden"
-            onClick={() => handleSmoothNavigate("/calendar")}
-          >
-            <div className="h-1.5 w-full bg-teal-500/80" />
-            <div className="p-5 space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="p-2.5 bg-teal-50 dark:bg-teal-900/30 rounded-xl text-teal-600 dark:text-teal-400 shrink-0 group-hover:scale-105 transition-transform">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div className="space-y-0.5">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                    Clinical Revision Schedule
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">
-                    Maintain your rhythm. Track and adjust your upcoming study timeline.
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2.5">
-                {calendarEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 w-full hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
-                  >
-                    <div className="flex items-center gap-3 truncate">
-                      <div className="h-2 w-2 rounded-full bg-teal-500 shrink-0" />
-                      <div className="truncate">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
-                          {event.title}
-                        </p>
-                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
-                          <span className="capitalize">{event.type || "Study Session"}</span>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="ml-4 shrink-0">
-                      <span className={cn(
-                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide",
-                        getPriorityColor(event.priority)
-                      )}>
-                        {new Date(event.start_time).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-        )}
-
         <DailyStatus />
 
         {/* --- SIMULATION PAPERS SECTION --- */}
@@ -1141,7 +1062,7 @@ export default function StudentDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 px-2 sm:px-0">
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-200/50 dark:border-amber-500/10">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border-0">
               <Laptop className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <p className="text-xs font-medium text-amber-800 dark:text-amber-200/80 leading-relaxed">
                 <span className="font-bold">Desktop Recommended:</span> For the smoothest DigiProctor experience, we suggest using a laptop or tablet.
@@ -1159,7 +1080,7 @@ export default function StudentDashboard() {
               cachedSimulationPapers.map((paper) => (
                 <Card
                   key={paper.id}
-                  className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-slate-200 dark:border-white/10 bg-white dark:bg-muted/30 rounded-2xl"
+                  className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 bg-white dark:bg-muted/30 rounded-2xl"
                   onClick={() => handleSmoothNavigate(`/simulation/${paper.id}`)}
                 >
                   <CardHeader className="p-5 pb-2">
@@ -1242,13 +1163,10 @@ export default function StudentDashboard() {
           </div>
         </section>
 
-        <UnitBreakdown nclexUnitCodes={[
-          "HNX3-001", "HNX3-002", "HNX3-003", "HNX3-004",
-          "HNX3-005", "HNX3-006", "HNX3-007", "HNX3-008"
-        ]} />
+        <UnitBreakdown />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full mt-2 px-2 sm:px-0">
-          <Card className="overflow-hidden border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-lg">
@@ -1280,7 +1198,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600">
@@ -1301,7 +1219,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600">
@@ -1322,7 +1240,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-sky-100 dark:bg-sky-500/20 rounded-lg text-sky-600">

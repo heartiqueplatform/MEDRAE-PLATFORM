@@ -11,13 +11,6 @@ const MobileDrawer = lazy(() => import("@/components/MobileDrawer").then(module 
 
 type IconTone = "neutral" | "practice" | "content" | "alert";
 
-const ICON_COLORS = {
-    neutral: { light: "text-slate-600", dark: "text-slate-300" },
-    practice: { light: "text-rose-600", dark: "text-rose-400" },
-    content: { light: "text-indigo-600", dark: "text-indigo-400" },
-    alert: { light: "text-amber-600", dark: "text-amber-400" },
-};
-
 const MISTAKE_COUNT_CACHE_KEY = "footer_mistake_count";
 
 const superFastTap = (type: "light" | "success" | "warning" = "light") => {
@@ -33,161 +26,131 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
     }
 };
 
-// Returns the correct CSS filter for a black SVG icon.
-// Dark mode: invert black to white, dim if inactive.
-// Light mode: leave black as-is when active, dim when inactive.
-const getIconFilter = (isDark: boolean, isActive: boolean): string => {
-    if (isDark) {
-        return isActive ? "invert(1)" : "invert(1) brightness(0.55)";
-    }
-    return isActive ? "none" : "brightness(0.45)";
-};
+/* ============================================================
+   PROFESSIONAL SVG ICONS (Facebook / Instagram / WhatsApp style)
+   Clean, uniform stroke width, 24x24 viewBox, no decorative bumps
+   ============================================================ */
 
-const HomeButton = memo(({
+const IconHome = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M3 10.5L12 3L21 10.5V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H15C14.4696 22 13.9609 21.7893 13.5858 21.4142C13.2107 21.0391 13 20.5304 13 20V16C13 15.4696 12.7893 14.9609 12.4142 14.5858C12.0391 14.2107 11.5304 14 11 14H9C8.46957 14 7.96086 14.2107 7.58579 14.5858C7.21071 14.9609 7 15.4696 7 16V20C7 20.5304 6.78929 21.0391 6.41421 21.4142C6.03914 21.7893 5.53043 22 5 22H3C2.46957 22 1.96086 21.7893 1.58579 21.4142C1.21071 21.0391 1 20.5304 1 20V10.5Z"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.15 : 0}
+        />
+    </svg>
+);
+const IconQuizzes = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M12 20.5C12 20.5 3.5 15.5 3.5 9.5C3.5 6.46 5.96 4 9 4C10.6 4 12 4.8 12 4.8C12 4.8 13.4 4 15 4C18.04 4 20.5 6.46 20.5 9.5C20.5 15.5 12 20.5 12 20.5Z"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
+        />
+    </svg>
+);
+
+const IconFeed = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect
+            x="3" y="3" width="18" height="18" rx="3"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.15 : 0}
+        />
+        <line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7" y1="13" x2="14" y2="13" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7" y1="17" x2="11" y2="17" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+    </svg>
+);
+
+const IconMistakes = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle
+            cx="12" cy="12" r="9"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.15 : 0}
+        />
+        <line x1="12" y1="8" x2="12" y2="13" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <circle cx="12" cy="16.5" r="1" fill="currentColor" />
+    </svg>
+);
+
+const IconMenu = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+    </svg>
+);
+
+/* ============================================================
+   NAV ITEM — uniform, no bumps, Instagram-style
+   ============================================================ */
+
+const NavItem = memo(({
+    icon: Icon,
+    label,
     isActive,
-    onPress,
-    isDark
-}: {
-    isActive: boolean;
-    onPress: (e: React.PointerEvent) => void;
-    isDark: boolean;
-}) => {
-    const filter = getIconFilter(isDark, isActive);
-
-    return (
-        <button
-            onPointerDown={onPress}
-            className="flex flex-col items-center justify-center flex-1 gap-1 relative group transition-all active:scale-90"
-            style={{ touchAction: 'manipulation', transform: 'translateZ(0)', WebkitTapHighlightColor: 'transparent' }}
-        >
-            <div className="relative -mt-6">
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200
-                    ${isActive
-                        ? isDark ? 'bg-blue-500/20 shadow-lg shadow-blue-500/30' : 'bg-blue-500/15 shadow-lg shadow-blue-500/20'
-                        : isDark ? 'bg-slate-800/50' : 'bg-slate-100'
-                    }`}
-                >
-                    <img
-                        src="/hospital.svg"
-                        alt="Home"
-                        className="h-[28px] w-[28px] transition-all duration-200"
-                        style={{
-                            filter,
-                            WebkitFilter: filter,
-                        }}
-                    />
-                </div>
-            </div>
-            <span className={`text-[10px] font-medium tracking-tight transition-colors duration-200 mt-0.5
-                ${isActive ? "text-gray-900 dark:text-white" : isDark ? "text-gray-500" : "text-gray-400"}`}>
-                Home
-            </span>
-            {isActive && (
-                <div className="absolute -top-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
-            )}
-        </button>
-    );
-});
-
-HomeButton.displayName = "HomeButton";
-
-const FooterItem = memo(({
-    item,
-    isActive,
-    tone,
     onPress,
     isDark,
-    badge
+    badge,
 }: {
-    item: any;
+    icon: (props: { active: boolean }) => JSX.Element;
+    label: string;
     isActive: boolean;
-    tone: IconTone;
     onPress: (e: React.PointerEvent) => void;
     isDark: boolean;
     badge?: number;
 }) => {
-    let labelColor = isDark ? "text-gray-500" : "text-gray-400";
-    if (isActive) {
-        labelColor = isDark ? "text-white" : "text-gray-900";
-    }
+    const labelColor = isActive
+        ? isDark ? "text-white" : "text-gray-900"
+        : isDark ? "text-gray-500" : "text-gray-400";
 
-    const filter = getIconFilter(isDark, isActive);
+    const iconColor = isActive
+        ? isDark ? "text-white" : "text-gray-900"
+        : isDark ? "text-gray-500" : "text-gray-400";
 
     return (
         <button
             onPointerDown={onPress}
-            className="flex flex-col items-center justify-center flex-1 gap-1 relative group transition-all active:scale-90"
-            style={{ touchAction: 'manipulation', transform: 'translateZ(0)', WebkitTapHighlightColor: 'transparent' }}
+            className="flex flex-col items-center justify-center flex-1 h-full relative select-none"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
-            <div className="relative">
-                <img
-                    src={item.icon}
-                    alt={item.label}
-                    className="h-[24px] w-[24px] transition-all duration-200 will-change-transform"
-                    style={{
-                        filter,
-                        WebkitFilter: filter,
-                    }}
-                />
+            <div className="relative flex items-center justify-center w-6 h-6">
+                <span className={`transition-colors duration-200 ${iconColor}`}>
+                    <Icon active={isActive} />
+                </span>
                 {badge !== undefined && badge > 0 && (
-                    <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
-                        text-[9px] font-bold flex items-center justify-center
-                        bg-red-500 text-white rounded-full
-                        shadow-sm animate-pulse`}>
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-[4px]
+                        text-[9px] font-semibold flex items-center justify-center
+                        bg-red-500 text-white rounded-full leading-none">
                         {badge > 99 ? '99+' : badge}
                     </span>
                 )}
             </div>
-            <span className={`text-[10px] font-medium tracking-tight transition-colors duration-200 ${labelColor}`}>
-                {item.label || item.title}
-            </span>
-            {isActive && (
-                <div className="absolute -top-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
-            )}
-        </button>
-    );
-});
-
-FooterItem.displayName = "FooterItem";
-
-const MenuButton = memo(({
-    isDrawerOpen,
-    onPress,
-    isDark
-}: {
-    isDrawerOpen: boolean;
-    onPress: (e: React.MouseEvent) => void;
-    isDark: boolean;
-}) => {
-    let labelColor = isDark ? "text-gray-500" : "text-gray-400";
-    if (isDrawerOpen) {
-        labelColor = "text-blue-600 dark:text-blue-400";
-    }
-
-    const filter = getIconFilter(isDark, isDrawerOpen);
-
-    return (
-        <button
-            onClick={onPress}
-            className="flex flex-col items-center justify-center flex-1 gap-1 group transition-all active:scale-95"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-        >
-            <img
-                src="/menu (2).png"
-                alt="Menu"
-                className="h-[24px] w-[24px] transition-all duration-200"
-                style={{
-                    filter,
-                    WebkitFilter: filter,
-                }}
-            />
-            <span className={`text-[10px] font-medium transition-colors duration-200 ${labelColor}`}>
-                Menu
+            <span className={`text-[10px] font-medium leading-none mt-1 transition-colors duration-200 ${labelColor}`}>
+                {label}
             </span>
         </button>
     );
 });
-MenuButton.displayName = "MenuButton";
+NavItem.displayName = "NavItem";
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
 
 export function Footer() {
     const navigate = useNavigate();
@@ -308,7 +271,7 @@ export function Footer() {
         });
     }, [navigate]);
 
-    const handleMenuPress = useCallback((e: React.MouseEvent) => {
+    const handleMenuPress = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
         e.stopPropagation();
         superFastTap("success");
@@ -462,30 +425,12 @@ export function Footer() {
         };
     }, [location.pathname]);
 
-    const items = useMemo(() => [
-        {
-            icon: "/graduation-cap.svg",
-            label: "Quizzes",
-            url: "/Medrae-quizzes",
-            tone: "practice" as IconTone
-        },
-        {
-            icon: "/scroll-paper.svg",
-            label: "Feed",
-            url: "/feed",
-            tone: "content" as IconTone
-        },
-        {
-            icon: "/crying.svg",
-            label: "Mistakes",
-            url: "/my-mistakes",
-            tone: "alert" as IconTone,
-            badge: mistakeCount > 0 ? mistakeCount : undefined
-        },
-    ], [mistakeCount]);
-
     const isActive = useCallback((url: string) => location.pathname === url, [location.pathname]);
-    const footerHeight = 72 + safeAreaBottom;
+
+    // Instagram/WhatsApp standard footer height: 49px content + safe area
+    // We use 56px for comfortable touch targets (still standard)
+    const FOOTER_CONTENT_HEIGHT = 56;
+    const footerHeight = FOOTER_CONTENT_HEIGHT + safeAreaBottom;
 
     const footerBgClass = 'bg-background/95 backdrop-blur-xl border-t border-border/40';
 
@@ -497,52 +442,57 @@ export function Footer() {
         <>
             <div
                 className={`fixed bottom-0 left-0 right-0 z-[100] md:hidden
-                    transition-all duration-350 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-                    ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-[100%] opacity-0'}
+                    transition-all duration-300 ease-out
+                    ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
                     ${isDrawerOpen ? 'opacity-0 pointer-events-none' : ''}
                     ${footerBgClass} ${footerShadow}
-                    flex justify-around items-start px-2 pt-2
+                    flex justify-around items-center px-1
                     select-none`}
                 style={{
                     height: `${footerHeight}px`,
                     willChange: 'transform, opacity',
-                    paddingBottom: `${6 + safeAreaBottom}px`,
+                    paddingBottom: `${safeAreaBottom}px`,
                     WebkitBackfaceVisibility: 'hidden',
                     backfaceVisibility: 'hidden',
                 }}
             >
-                {items.slice(0, 2).map((item) => (
-                    <FooterItem
-                        key={item.url}
-                        item={item}
-                        isActive={isActive(item.url)}
-                        tone={item.tone}
-                        onPress={(e) => handleNavigate(e, item.url)}
-                        isDark={theme === 'dark'}
-                        badge={item.badge}
-                    />
-                ))}
+                <NavItem
+                    icon={IconQuizzes}
+                    label="Quizzes"
+                    isActive={isActive("/Medrae-quizzes")}
+                    onPress={(e) => handleNavigate(e, "/Medrae-quizzes")}
+                    isDark={theme === 'dark'}
+                />
 
-                <HomeButton
+                <NavItem
+                    icon={IconFeed}
+                    label="Feed"
+                    isActive={isActive("/feed")}
+                    onPress={(e) => handleNavigate(e, "/feed")}
+                    isDark={theme === 'dark'}
+                />
+
+                <NavItem
+                    icon={IconHome}
+                    label="Home"
                     isActive={isActive(`/dashboard/${role}`)}
                     onPress={(e) => handleNavigate(e, `/dashboard/${role}`)}
                     isDark={theme === 'dark'}
                 />
 
-                {items.slice(2).map((item) => (
-                    <FooterItem
-                        key={item.url}
-                        item={item}
-                        isActive={isActive(item.url)}
-                        tone={item.tone}
-                        onPress={(e) => handleNavigate(e, item.url)}
-                        isDark={theme === 'dark'}
-                        badge={item.badge}
-                    />
-                ))}
+                <NavItem
+                    icon={IconMistakes}
+                    label="Mistakes"
+                    isActive={isActive("/my-mistakes")}
+                    onPress={(e) => handleNavigate(e, "/my-mistakes")}
+                    isDark={theme === 'dark'}
+                    badge={mistakeCount > 0 ? mistakeCount : undefined}
+                />
 
-                <MenuButton
-                    isDrawerOpen={isDrawerOpen}
+                <NavItem
+                    icon={IconMenu}
+                    label="Menu"
+                    isActive={isDrawerOpen}
                     onPress={handleMenuPress}
                     isDark={theme === 'dark'}
                 />

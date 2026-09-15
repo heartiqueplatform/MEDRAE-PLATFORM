@@ -656,8 +656,10 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
       <header className={`
   sticky top-0 z-50 w-full h-16 sm:h-20
-  ${themeClasses} backdrop-blur-xl
-  border-b border-slate-200/20 dark:border-slate-700/30
+  bg-white/95 dark:bg-muted/30 backdrop-blur-xl
+  border-0
+  rounded-b-2xl sm:rounded-b-3xl
+  shadow-[0_2px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.3)]
   flex items-center justify-between xl:justify-evenly
   px-4 sm:px-8
   text-base sm:text-lg

@@ -168,8 +168,8 @@ function ChallengeTabs({
                             <button
                                 onClick={() => setOnlyOnline(!onlyOnline)}
                                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border active:scale-95 ${onlyOnline
-                                    ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                                    : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-800 text-slate-500"
+                                    ? "bg-emerald-500 border-0 text-white shadow-lg shadow-emerald-500/20"
+                                    : "bg-white dark:bg-muted/30 border-0 text-slate-500"
                                     }`}
                                 style={{ touchAction: 'manipulation' }}
                             >
@@ -181,8 +181,8 @@ function ChallengeTabs({
                                 onClick={onUpdateList}
                                 disabled={isUpdating}
                                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border active:scale-95 ${isUpdating
-                                    ? "bg-slate-400 border-slate-400 text-white cursor-not-allowed"
-                                    : "bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600"
+                                    ? "bg-slate-400 border-0 text-white cursor-not-allowed"
+                                    : "bg-blue-500 border-0 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600"
                                     }`}
                                 style={{ touchAction: 'manipulation' }}
                             >
@@ -217,46 +217,42 @@ function ChallengeTabs({
                                             animate={{ opacity: 1, y: 0 }}
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => handleInvite(card.type)}
-                                            className="group relative bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl border-2 border-indigo-500/30 hover:border-indigo-400/60 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
+                                            className="group relative bg-white dark:bg-muted/30 rounded-2xl  border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                                             style={{ touchAction: 'manipulation' }}
                                         >
-                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent pointer-events-none" />
-
+                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-transparent to-transparent dark:from-blue-900/10 pointer-events-none" />
                                             <div className="p-4 relative">
                                                 {/* Icon - Centered like other cards */}
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="relative">
-                                                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border-2 border-white/30 shadow-inner">
+                                                        <div className="w-16 h-16 rounded-full overflow-hidden bg-blue-900 dark:bg-blue-950 flex items-center justify-center border-0 shadow-inner">
                                                             <Send size={28} className="text-white rotate-[-20deg]" />
                                                         </div>
-                                                        <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-400 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center animate-pulse">
-                                                            <span className="text-[8px]">✨</span>
-                                                        </span>
+                                                        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-0 shadow-sm animate-pulse" />
                                                     </div>
 
-                                                    <span className="text-[10px] font-bold text-white/60 bg-white/10 px-2 py-1 rounded-full">
+                                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 px-2 py-1 rounded-full">
                                                         Invite
                                                     </span>
                                                 </div>
 
                                                 {/* Name and Description */}
                                                 <div className="mb-3">
-                                                    <h3 className="font-bold text-base text-white truncate">
+                                                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
                                                         {card.name}
                                                     </h3>
-                                                    <p className="text-xs font-medium text-white/70 truncate">
+                                                    <p className="text-xs font-medium text-slate-400 truncate">
                                                         Strengthen the network
                                                     </p>
                                                 </div>
-
                                                 {/* Status Badge - Mimicking other cards */}
                                                 <div className="flex items-center gap-2 mb-3">
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/20 text-white border border-white/20">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
                                                         <Users size={10} />
                                                         Invite Peers
                                                     </span>
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/30 text-white border border-amber-400/30">
-                                                        <Star size={10} className="fill-amber-400" />
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                                                        <Star size={10} className="fill-amber-500" />
                                                         Free
                                                     </span>
                                                 </div>
@@ -267,7 +263,7 @@ function ChallengeTabs({
                                                         e.stopPropagation();
                                                         handleInvite(card.type);
                                                     }}
-                                                    className="w-full h-10 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 border border-white/20 backdrop-blur-sm flex items-center justify-center gap-2"
+                                                    className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-950 hover:to-blue-900 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
                                                     style={{ touchAction: 'manipulation' }}
                                                 >
                                                     <Send size={14} className="rotate-[-20deg]" />
@@ -281,14 +277,14 @@ function ChallengeTabs({
                                             key={p.user_id}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="group relative bg-white dark:bg-muted/30 rounded-2xl border border-slate-100 dark:border-slate-700/50 hover:border-blue-500/30 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                            className="group relative bg-white dark:bg-muted/30 rounded-2xl  border-0 hover:shadow-xl transition-all duration-300 overflow-hidden"
                                         >
                                             {/* Card Content */}
                                             <div className="p-4">
                                                 {/* Avatar and Online Status */}
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="relative">
-                                                        <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 shadow-inner">
+                                                        <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">
                                                             {p.avatar_url ? (
                                                                 <img
                                                                     src={p.avatar_url}
@@ -307,7 +303,7 @@ function ChallengeTabs({
                                                             )}
                                                         </div>
                                                         {p.is_online && (
-                                                            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse" />
+                                                            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-0 shadow-sm animate-pulse" />
                                                         )}
                                                     </div>
 
@@ -419,7 +415,7 @@ function ChallengeTabs({
                                                 )}
                                             </div>
                                             {p.is_online && (
-                                                <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse" />
+                                                <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-0 shadow-sm animate-pulse" />
                                             )}
                                         </div>
                                         <button
@@ -508,7 +504,7 @@ function ChallengeTabs({
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-blue-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                                            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-blue-500 rounded-full border-0 flex items-center justify-center">
                                                 <Swords size={10} className="text-white" />
                                             </span>
                                         </div>
@@ -565,12 +561,12 @@ function ChallengeTabs({
                                 key={challenge.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="group relative bg-white dark:bg-muted/30 rounded-2xl border-2 border-amber-500/20 hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                className="group relative bg-white dark:bg-muted/30 rounded-2xl border-0 hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
                             >
                                 <div className="p-4">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="relative">
-                                            <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-amber-500 shadow-inner">
+                                            <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">
                                                 {challenge.to_user?.avatar_url ? (
                                                     <img
                                                         src={challenge.to_user.avatar_url}
@@ -584,7 +580,7 @@ function ChallengeTabs({
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-amber-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                                            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-amber-500 rounded-full border-0 flex items-center justify-center">
                                                 <Clock size={10} className="text-white" />
                                             </span>
                                         </div>
@@ -613,7 +609,7 @@ function ChallengeTabs({
                                         onClick={() => cancelChallenge(challenge.id)}
                                         size="sm"
                                         variant="outline"
-                                        className="w-full h-10 rounded-xl border-rose-500 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-xs transition-all active:scale-95"
+                                        className="w-full h-10 rounded-xl border-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-xs transition-all active:scale-95"
                                         style={{ touchAction: 'manipulation' }}
                                     >
                                         <X size={14} className="mr-1.5" />
@@ -644,13 +640,13 @@ function ChallengeTabs({
                                     key={challenge.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className={`group relative bg-white dark:bg-muted/30 rounded-2xl border-2 transition-all duration-300 overflow-hidden ${isWin ? "border-emerald-500/30 hover:border-emerald-500/50" : "border-rose-500/30 hover:border-rose-500/50"
+                                    className={`group relative bg-white dark:bg-muted/30 rounded-2xl border-0 transition-all duration-300 overflow-hidden ${isWin ? "border-0 " : "border-0 "
                                         } hover:shadow-xl`}
                                 >
                                     <div className="p-4">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="relative">
-                                                <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 shadow-inner">
+                                                <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">
                                                     {challenge.from_user_id === user.id ? (
                                                         challenge.to_user?.avatar_url ? (
                                                             <img
@@ -688,11 +684,11 @@ function ChallengeTabs({
                                                     )}
                                                 </div>
                                                 {isWin ? (
-                                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-emerald-500 rounded-full border-0 flex items-center justify-center">
                                                         <Trophy size={10} className="text-white" />
                                                     </span>
                                                 ) : (
-                                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-rose-500 rounded-full border-0 flex items-center justify-center">
                                                         <Flame size={10} className="text-white" />
                                                     </span>
                                                 )}

@@ -7,14 +7,43 @@ import React from 'react';
 import {
   Bell, CheckCheck, Clock, CreditCard, BookOpen,
   ShoppingBag, PlayCircle, Trash2, Activity,
-  FileText, ChevronRight, Home, Trophy, X, ExternalLink
+  FileText, ChevronRight, Home, Trophy, X, ExternalLink,
+  RefreshCw, Inbox
 } from 'lucide-react';
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-
 const CACHE_KEY_PREFIX = "notifs_cache_";
+
+/* ============================================================
+   SKELETON — shown while first fetch is in flight
+   ============================================================ */
+function NotificationSkeleton() {
+  return (
+    <div className="space-y-2 px-4 md:px-0">
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="flex gap-3 items-center p-3 md:p-4
+              bg-white dark:bg-muted/30
+              rounded-xl
+              border-0"
+        >
+          <div className="h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-xl md:rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex justify-between items-center">
+              <div className="h-2.5 w-16 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+              <div className="h-2.5 w-10 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            </div>
+            <div className="h-3 w-3/4 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            <div className="h-2.5 w-1/2 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function Notifications() {
   const navigate = useNavigate();
@@ -24,8 +53,8 @@ export function Notifications() {
   const [userTheme, setUserTheme] = useState<string>('light');
   const [name, setName] = useState<string>('');
   const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [fetchState, setFetchState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  // Helper to update state and cache simultaneously
   const updateBag = useCallback((data: any[], uid: string) => {
     const limitedData = data.slice(0, 10);
     setNotifications(limitedData);
@@ -34,67 +63,83 @@ export function Notifications() {
 
   useEffect(() => {
     const initialize = async () => {
+      setFetchState("loading");
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
         setName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'Student');
         setUserTheme(user.user_metadata?.theme || 'light');
 
-        // 1. Load from Cache immediately
         const cached = localStorage.getItem(`${CACHE_KEY_PREFIX}${user.id}`);
         if (cached) {
-          setNotifications(JSON.parse(cached));
+          try {
+            const parsed = JSON.parse(cached);
+            setNotifications(parsed);
+            if (parsed.length > 0) setFetchState("ready");
+          } catch { /* ignore bad cache */ }
           setLoading(false);
         }
 
-        // 2. Fetch fresh data
         await fetchNotifications(user.id);
+      } else {
+        setLoading(false);
+        setFetchState("ready");
       }
     };
     initialize();
   }, []);
 
-
-
-  // Lock body scroll when overlay is open
   useEffect(() => {
     if (selectedNotification) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
   }, [selectedNotification]);
 
   const fetchNotifications = async (uid: string) => {
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .or(`user_id.eq.${uid},user_id.is.null`)
-      .order("created_at", { ascending: false })
-      .limit(10);
+    try {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .or(`user_id.eq.${uid},user_id.is.null`)
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-    if (!error && data) {
-      updateBag(data, uid);
+      if (error) throw error;
+
+      if (data) {
+        updateBag(data, uid);
+        setFetchState("ready");
+      }
+    } catch (err) {
+      console.error("Fetch notifications failed:", err);
+      setFetchState("error");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleRetry = async () => {
+    if (!userId) return;
+    setFetchState("loading");
+    await fetchNotifications(userId);
   };
 
   const markAsRead = async (id: string, url?: string) => {
     const updated = notifications.map(n => n.id === id ? { ...n, is_read: true } : n);
     if (userId) updateBag(updated, userId);
-
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
-
-    // Don't navigate, just mark as read
-    // if (url) navigate(url); // Removed to prevent 404
   };
 
   const handleNotificationClick = (notification: any) => {
     setSelectedNotification(notification);
-    // Mark as read when viewing
     if (!notification.is_read) {
       markAsRead(notification.id);
     }
@@ -103,16 +148,13 @@ export function Notifications() {
   const deleteNotification = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
 
-    // Close overlay if deleting the currently viewed notification
     if (selectedNotification?.id === id) {
       setSelectedNotification(null);
     }
 
-    // First update UI optimistically
     const updated = notifications.filter(n => n.id !== id);
     if (userId) updateBag(updated, userId);
 
-    // Then delete from Supabase with error handling
     try {
       const { error } = await supabase
         .from("notifications")
@@ -147,18 +189,19 @@ export function Notifications() {
 
   const getNotificationStyles = (type: string) => {
     const config: any = {
-      payment: { icon: <CreditCard className="w-5 h-5 md:w-6 md:h-6" />, color: "text-amber-600", bg: "bg-amber-100", label: "Billing" },
-      quiz: { icon: <Trophy className="w-5 h-5 md:w-6 md:h-6" />, color: "text-emerald-600", bg: "bg-emerald-100", label: "Question Bank" },
-      housing: { icon: <Home className="w-5 h-5 md:w-6 md:h-6" />, color: "text-purple-600", bg: "bg-purple-100", label: "Survival Hub" },
-      market: { icon: <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />, color: "text-rose-600", bg: "bg-rose-100", label: "Market" },
-      video: { icon: <PlayCircle className="w-5 h-5 md:w-6 md:h-6" />, color: "text-indigo-600", bg: "bg-indigo-100", label: "MedTube" },
-      flashcard: { icon: <BookOpen className="w-5 h-5 md:w-6 md:h-6" />, color: "text-orange-600", bg: "bg-orange-100", label: "Flashcards" },
-      case: { icon: <Activity className="w-5 h-5 md:w-6 md:h-6" />, color: "text-cyan-600", bg: "bg-cyan-100", label: "Clinical Case" },
-      paper: { icon: <FileText className="w-5 h-5 md:w-6 md:h-6" />, color: "text-blue-600", bg: "bg-blue-100", label: "Exam Paper" },
-      system: { icon: <Bell className="w-5 h-5 md:w-6 md:h-6" />, color: "text-slate-600", bg: "bg-slate-100", label: "System" },
+      payment: { icon: <CreditCard className="w-5 h-5 md:w-6 md:h-6" />, color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-900/20", label: "Billing" },
+      quiz: { icon: <Trophy className="w-5 h-5 md:w-6 md:h-6" />, color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/20", label: "Question Bank" },
+      housing: { icon: <Home className="w-5 h-5 md:w-6 md:h-6" />, color: "text-purple-600", bg: "bg-purple-100 dark:bg-purple-900/20", label: "Survival Hub" },
+      market: { icon: <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />, color: "text-rose-600", bg: "bg-rose-100 dark:bg-rose-900/20", label: "Market" },
+      video: { icon: <PlayCircle className="w-5 h-5 md:w-6 md:h-6" />, color: "text-indigo-600", bg: "bg-indigo-100 dark:bg-indigo-900/20", label: "MedTube" },
+      flashcard: { icon: <BookOpen className="w-5 h-5 md:w-6 md:h-6" />, color: "text-orange-600", bg: "bg-orange-100 dark:bg-orange-900/20", label: "Flashcards" },
+      case: { icon: <Activity className="w-5 h-5 md:w-6 md:h-6" />, color: "text-cyan-600", bg: "bg-cyan-100 dark:bg-cyan-900/20", label: "Clinical Case" },
+      paper: { icon: <FileText className="w-5 h-5 md:w-6 md:h-6" />, color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/20", label: "Exam Paper" },
+      system: { icon: <Bell className="w-5 h-5 md:w-6 md:h-6" />, color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-800", label: "System" },
     };
     return config[type] || config.system;
   };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -176,36 +219,73 @@ export function Notifications() {
       <div className="min-h-screen bg-slate-50/50 dark:bg-background pb-16 md:pb-20">
         <div className="max-w-2xl mx-auto pt-4 md:pt-8 px-0 md:px-4">
 
-          {/* Header - full width on mobile */}
+          {/* Header */}
           <div className="flex items-center justify-between mb-3 md:mb-4 px-4 md:px-0">
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Activity</h1>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Notifications</h1>
               <div className="flex items-center gap-1.5 md:gap-2 mt-0.5 md:mt-1">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest">Latest 10 Updates</p>
+                <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest">Your Latest Notifications</p>
               </div>
             </div>
             {notifications.some(n => !n.is_read) && (
-              <Button variant="outline" size="sm" onClick={markAllAsRead} className="rounded-full text-[9px] md:text-[10px] font-bold uppercase h-8 md:h-9 px-3">
+              <Button variant="outline" size="sm" onClick={markAllAsRead} className="rounded-full border-0 bg-slate-100 dark:bg-slate-800 text-[9px] md:text-[10px] font-bold uppercase h-8 md:h-9 px-3">
                 <CheckCheck className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" /> Clear Unread
               </Button>
             )}
           </div>
 
-          {loading && notifications.length === 0 ? (
-            <div className="py-16 md:py-20 text-center">
-              <BookOpen className="text-blue-600 mx-auto animate-bounce" size={32} />
-              <p className="text-slate-400 font-bold uppercase text-[9px] md:text-[10px] mt-3 md:mt-4">Syncing Feed...</p>
+          {/* ------- STATE MACHINE ------- */}
+
+          {/* 1. FIRST LOAD — skeleton shimmer */}
+          {fetchState === "loading" && notifications.length === 0 && (
+            <div className="px-4 md:px-0">
+              <div className="flex items-center gap-2 mb-3 md:mb-4 text-xs text-slate-400">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span className="font-normal">Fetching notifications…</span>
+              </div>
+              <NotificationSkeleton />
             </div>
-          ) : notifications.length > 0 ? (
-            <div className="space-y-0 md:space-y-2">
+          )}
+
+          {/* 2. ERROR — retry */}
+          {fetchState === "error" && (
+            <div className="px-4 md:px-0">
+              <div className="rounded-2xl border-0 bg-white dark:bg-muted/30 p-8 text-center">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5 text-slate-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Couldn't load notifications
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
+                  Check your connection and try again. Your cached notifications are still visible below.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetry}
+                  className="mt-4 rounded-full border-0 bg-slate-100 dark:bg-slate-800 text-xs"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* 3. LIST — has notifications */}
+          {notifications.length > 0 && (
+            <div className="space-y-2 px-4 md:px-0">
               {notifications.map((n) => {
                 const style = getNotificationStyles(n.type);
                 return (
                   <Card
                     key={n.id}
                     onClick={() => handleNotificationClick(n)}
-                    className={`transition-all md:border-0 md:shadow-sm cursor-pointer rounded-none md:rounded-xl border-b border-slate-100 dark:border-slate-800 md:border-b-0 ${n.is_read ? 'opacity-60 bg-white/60 dark:bg-slate-900/40' : 'bg-white dark:bg-muted/30 hover:shadow-md'
+                    className={`transition-all cursor-pointer rounded-xl border-0 shadow-sm ${n.is_read
+                      ? 'opacity-60 bg-white dark:bg-slate-900/40'
+                      : 'bg-white dark:bg-muted/30 hover:shadow-md'
                       }`}
                   >
                     <CardContent className="p-3 md:p-4 flex gap-2 md:gap-3 items-center">
@@ -225,7 +305,7 @@ export function Notifications() {
                       <div className="flex flex-col justify-between items-end gap-2">
                         <button
                           onClick={(e) => deleteNotification(e, n.id)}
-                          className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          className="text-slate-300 hover:text-rose-500 transition-colors p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/20 border-0"
                           title="Delete notification"
                         >
                           <Trash2 size={16} />
@@ -237,38 +317,66 @@ export function Notifications() {
                 );
               })}
             </div>
-          ) : (
-            <div className="py-16 md:py-20 text-center">
-              <Bell className="text-slate-200 mx-auto mb-3 md:mb-4" size={48} />
-              <p className="text-slate-500 font-bold text-sm md:text-base">All caught up!</p>
+          )}
+
+          {/* 4. EMPTY */}
+          {fetchState === "ready" && notifications.length === 0 && (
+            <div className="px-4 md:px-0">
+              <div className="rounded-2xl border-0 bg-white dark:bg-muted/30 p-10 text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Inbox className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                </div>
+                <h3 className="text-sm md:text-base font-semibold text-slate-900 dark:text-white">
+                  You're all caught up
+                </h3>
+                <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                  Notifications about your quizzes, simulations, billing, and account activity will appear here as they happen.
+                </p>
+              </div>
             </div>
           )}
+
         </div>
       </div>
 
-      {/* Full-screen Overlay for Notification Details */}
+      {/* ============================================
+          FULL-SCREEN OVERLAY — borderless, gradient
+          ============================================ */}
       {selectedNotification && (
         <div
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+          className="fixed inset-0 z-[2147483647] flex items-end md:items-center justify-center p-0 md:p-4"
           onClick={() => setSelectedNotification(null)}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" />
 
-          {/* Overlay Card - Full width on mobile, centered modal on desktop */}
+          {/* Sheet / Modal */}
           <div
-            className="relative w-full md:max-w-lg md:w-full bg-white dark:bg-slate-900 md:rounded-2xl shadow-2xl animate-in slide-in-from-bottom duration-300 md:slide-in-from-bottom-4"
+            className="relative w-full md:max-w-lg md:w-full
+              bg-white dark:bg-muted/30
+              md:rounded-3xl
+              shadow-2xl
+              animate-in slide-in-from-bottom duration-300 md:slide-in-from-bottom-4
+              max-h-[92vh] md:max-h-[90vh]
+              flex flex-col
+              pb-[env(safe-area-inset-bottom)]
+              border-0 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Handle bar for mobile */}
-            <div className="md:hidden flex justify-center pt-3 pb-1">
+            {/* Soft gradient wash — same surface language as hero cards */}
+            <div className="pointer-events-none absolute inset-0 z-0
+              bg-gradient-to-br from-blue-50/40 via-transparent to-purple-50/30
+              dark:from-blue-950/10 dark:via-transparent dark:to-purple-950/10" />
+
+            {/* Drag handle */}
+            <div className="relative z-10 md:hidden flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
             </div>
 
             {/* Header */}
-            <div className="flex items-start justify-between p-4 md:p-6 border-b border-slate-100 dark:border-slate-800">
+            <div className="relative z-10 flex items-start justify-between p-4 md:p-6 shrink-0">
               <div className="flex items-center gap-3">
-                <div className={`h-12 w-12 rounded-2xl ${getNotificationStyles(selectedNotification.type).bg} ${getNotificationStyles(selectedNotification.type).color} flex items-center justify-center`}>
+                <div className={`h-12 w-12 rounded-2xl ${getNotificationStyles(selectedNotification.type).bg} ${getNotificationStyles(selectedNotification.type).color} flex items-center justify-center border-0`}>
                   {getNotificationStyles(selectedNotification.type).icon}
                 </div>
                 <div>
@@ -282,42 +390,48 @@ export function Notifications() {
               </div>
               <button
                 onClick={() => setSelectedNotification(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border-0"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-4 md:p-6 max-h-[60vh] md:max-h-[70vh] overflow-y-auto">
+            {/* Hairline separator without border */}
+            <div className="relative z-10 h-px bg-slate-100 dark:bg-slate-800 shrink-0" />
+
+            {/* Body */}
+            <div className="relative z-10 p-4 md:p-6 overflow-y-auto flex-1 min-h-0">
               <div className="mb-4">
                 <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                   {selectedNotification.message}
                 </p>
               </div>
 
-              {/* Metadata */}
-              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+              <div className="space-y-3 pt-4">
+                <div className="h-px bg-slate-100 dark:bg-slate-800" />
+                <div className="flex items-center gap-2 text-xs text-slate-500 pt-3">
                   <Clock size={14} />
                   <span>{formatDate(selectedNotification.created_at)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Actions Footer */}
-            <div className="flex gap-3 p-4 md:p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 md:rounded-b-2xl">
+            {/* Footer */}
+            <div className="relative z-10 flex gap-3 p-4 md:p-6 shrink-0
+              bg-slate-50 dark:bg-slate-900/40
+              md:rounded-b-3xl
+              border-0">
               <Button
                 variant="outline"
                 onClick={() => setSelectedNotification(null)}
-                className="flex-1"
+                className="flex-1 border-0 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 Close
               </Button>
               <Button
                 variant="destructive"
                 onClick={(e) => deleteNotification(e, selectedNotification.id)}
-                className="flex-1"
+                className="flex-1 border-0"
               >
                 <Trash2 size={16} className="mr-2" />
                 Delete

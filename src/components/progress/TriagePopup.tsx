@@ -5,12 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-    playAlert,
-    playWarning,
-    playSuccess,
-    playAttention,
-} from "simple-notification-sounds";
+import { playSound } from "@/lib/soundManager";
 
 export type TriageCode = "RED" | "YELLOW" | "GREEN" | "BLACK";
 
@@ -38,56 +33,28 @@ interface TriagePopupProps {
 export function TriagePopup({ triage, onClose }: TriagePopupProps) {
     const navigate = useNavigate();
 
-    // Play sound based on triage code
-    const playTriageSound = (code: TriageCode) => {
-        switch (code) {
-            case "RED":
-                playAlert(); // Emergency alert sound (urgent)
-                break;
-            case "YELLOW":
-                playWarning(); // Warning sound (moderate)
-                break;
-            case "GREEN":
-                playSuccess(); //  Success/celebration sound (positive)
-                break;
-            case "BLACK":
-                playAttention(); // Subtle notification sound
-                break;
-            default:
-                break;
-        }
+    // Single soft toast sound for every triage state — no alarms, no chimes
+    const playTriageSound = (_code: TriageCode) => {
+        playSound("toast-sound", false);
     };
 
     // Play sound when popup appears
     useEffect(() => {
-        document.body.style.overflow = 'hidden';
-        // Small delay to ensure the popup is visible before sound plays
+        document.body.style.overflow = "hidden";
         const timer = setTimeout(() => {
             playTriageSound(triage.code);
         }, 300);
         return () => {
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = "auto";
             clearTimeout(timer);
         };
     }, [triage.code]);
 
-    // Vibrate pattern based on triage code (for mobile)
-    const getVibrationPattern = (code: TriageCode): number[] => {
-        switch (code) {
-            case "RED":
-                return [200, 100, 200, 100, 400]; // Urgent: long-short-long-short-long
-            case "YELLOW":
-                return [100, 100, 100, 100, 200]; // Warning: short-short-short-short-long
-            case "GREEN":
-                return [50, 50, 50]; // Success: short-short-short
-            case "BLACK":
-                return [100, 200, 100]; // Somber: medium-long-medium
-            default:
-                return [100];
-        }
+    // Vibration — subtle, uniform, no alarm patterns
+    const getVibrationPattern = (_code: TriageCode): number[] => {
+        return [25];
     };
 
-    // Trigger vibration on mount
     useEffect(() => {
         if (typeof navigator !== "undefined" && "vibrate" in navigator) {
             const pattern = getVibrationPattern(triage.code);
@@ -126,19 +93,24 @@ export function TriagePopup({ triage, onClose }: TriagePopupProps) {
                 </button>
 
                 <div className="flex flex-col items-center text-center">
-                    {/* Emoji Circle with pulse animation for urgency */}
-                    <div className={`rounded-full flex items-center justify-center md:border-4 ${triage.borderColor}
-                        bg-white/80 dark:bg-gray-800/80 md:shadow-lg border-0
-                        w-14 h-14 md:w-24 md:h-24 text-3xl md:text-5xl mb-2 md:mb-4
-                        ${triage.code === "RED" ? "animate-pulse" : ""}`}>
-                        {triage.emoji}
+                    {/* Colored CODE chip — replaces the round emoji circle */}
+                    <div
+                        className={`flex items-center justify-center rounded-full font-black tracking-wider
+                            ${triage.bgColor} ${triage.textColor}
+                            w-20 h-20 md:w-28 md:h-28
+                            text-[10px] md:text-xs
+                            mb-3 md:mb-4`}
+                    >
+                        <span className="leading-tight">
+                            CODE<br />{triage.code}
+                        </span>
                     </div>
 
                     {/* Badge & Title */}
                     <div className="flex items-center gap-1.5 md:gap-3 mb-1 md:mb-2">
-                        <Badge className={`${triage.bgColor} ${triage.textColor} border-0 font-bold
-                            text-[10px] md:text-sm px-2 md:px-4 py-0.5 md:py-1.5`}>
-                            CODE {triage.code}
+                        <Badge className={`${triage.bgColor} ${triage.textColor} border-0 font-normal
+                            text-sm px-2 md:px-4 py-0.5 md:py-1.5`}>
+                            Code {triage.code}
                         </Badge>
                         <h2 className="text-base md:text-2xl font-bold text-gray-900 dark:text-white">
                             {triage.label}
@@ -159,7 +131,7 @@ export function TriagePopup({ triage, onClose }: TriagePopupProps) {
                     {/* Action Button */}
                     <button
                         onClick={() => {
-                            playAttention(); // Subtle click feedback
+                            playSound("toast-sound", false);
                             onClose();
                             navigate(triage.actionLink);
                         }}
@@ -177,7 +149,7 @@ export function TriagePopup({ triage, onClose }: TriagePopupProps) {
                     {/* Close Link */}
                     <button
                         onClick={() => {
-                            playAttention(); // Subtle soft tap sound
+                            playSound("toast-sound", false);
                             onClose();
                         }}
                         className="mt-2 md:mt-3 text-[10px] md:text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"

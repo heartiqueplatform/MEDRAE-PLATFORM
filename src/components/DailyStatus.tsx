@@ -592,7 +592,7 @@ export default function DailyStatus() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[110] bg-black/80 flex items-center justify-center p-4"
+                        className="fixed inset-0 z-[110] bg-black/80 flex items-center justify-center p-0"
                     >
                         <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-muted/30 p-4 shadow-2xl">
                             <div className="relative h-80 w-full rounded-2xl overflow-hidden bg-black">
@@ -648,12 +648,12 @@ export default function DailyStatus() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-slate-950/95 z-[100] flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-slate-950/95 z-[999999] flex items-center justify-center p-0"
                         onClick={() => setFullscreenImage(null)}
                     >
                         <img
                             src={fullscreenImage}
-                            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                            className="max-w-full max-h-full object-contain rounded-none shadow-2xl"
                             alt="fullscreen"
                         />
                         <button className="absolute top-6 right-6 text-white p-2 hover:bg-white/10 rounded-full transition-colors">

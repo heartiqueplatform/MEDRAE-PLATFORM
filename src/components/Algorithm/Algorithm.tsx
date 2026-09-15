@@ -143,38 +143,45 @@ export default function Algorithm() {
             {/* ============================================ */}
             {/* HERO CARD — CENTERED PREDICTION */}
             {/* ============================================ */}
-            <div className="relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-slate-800/50 shadow-sm hover:shadow-md transition-all">
-                {/* Gradient backdrop */}
-                <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-50/60 via-purple-50/40 to-transparent dark:from-blue-950/20 dark:via-purple-950/10 dark:to-transparent" />
+            <div className="relative overflow-hidden rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-sm">
+                <div className="p-5 md:p-8">
 
-                <div className="relative z-10 p-5 md:p-8">
                     {/* Top label */}
-                    <div className="flex items-center justify-center gap-2 mb-3">
-                        <Brain className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <span className="text-[10px] md:text-xs font-bold tracking-[0.15em] text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                        <Brain className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                        <span className="text-[10px] md:text-xs font-normal tracking-[0.18em] text-gray-400 dark:text-gray-500 uppercase">
                             NCK Prediction
                         </span>
                     </div>
 
                     {/* Big centered score */}
                     <div className="flex flex-col items-center text-center">
-                        <div className="flex items-baseline gap-1">
-                            <span className={`text-6xl md:text-7xl font-black tracking-tight leading-none ${isHighScore ? 'text-green-600 dark:text-green-400' : isMediumScore ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                        <div className="flex items-baseline gap-0.5">
+                            <span className={`text-6xl md:text-7xl font-semibold tracking-tight leading-none tabular-nums ${isHighScore
+                                ? 'text-green-600 dark:text-green-400'
+                                : isMediumScore
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : 'text-blue-600 dark:text-blue-400'
+                                }`}>
                                 {score.toFixed(1)}
                             </span>
-                            <span className={`text-2xl md:text-3xl font-bold ${isHighScore ? 'text-green-600 dark:text-green-400' : isMediumScore ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                            <span className={`text-2xl md:text-3xl font-normal ${isHighScore
+                                ? 'text-green-600 dark:text-green-400'
+                                : isMediumScore
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : 'text-blue-600 dark:text-blue-400'
+                                }`}>
                                 %
                             </span>
                         </div>
 
-                        {/* Readiness badge */}
-                        <div className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${readinessAccent}`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                            {readiness} Readiness
-                        </div>
+                        {/* Readiness — plain text, no badge */}
+                        <p className="mt-3 text-xs md:text-sm font-normal text-gray-500 dark:text-gray-400">
+                            {readiness} readiness
+                        </p>
 
                         {/* Encouraging subtext */}
-                        <p className="mt-3 text-xs md:text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+                        <p className="mt-1 text-xs md:text-sm font-normal text-gray-400 dark:text-gray-500 max-w-xs">
                             {isHighScore
                                 ? "Strong performance — keep it up"
                                 : isMediumScore
@@ -183,54 +190,67 @@ export default function Algorithm() {
                         </p>
                     </div>
 
-                    {/* Action buttons — full width row */}
-                    <div className="grid grid-cols-2 gap-2 mt-6">
+                    {/* Divider */}
+                    <div className="h-px bg-gray-100 dark:bg-gray-800 my-6" />
+
+                    {/* Action buttons — uniform, neutral */}
+                    <div className="grid grid-cols-2 gap-2">
                         <button
                             onClick={() => navigate("/Medrae-quizzes")}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-sm font-bold rounded-xl transition-all active:scale-[0.98]"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5
+                    bg-gray-900 dark:bg-white
+                    hover:bg-gray-800 dark:hover:bg-gray-100
+                    text-white dark:text-gray-900
+                    text-xs md:text-sm font-normal rounded-xl
+                    transition-colors active:scale-[0.98]"
                         >
                             <PlayCircle className="w-4 h-4" />
                             Practice
                         </button>
                         <button
                             onClick={() => navigate("/simulation/latest")}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs md:text-sm font-bold rounded-xl transition-all active:scale-[0.98]"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5
+                    bg-gray-50 dark:bg-gray-800
+                    hover:bg-gray-100 dark:hover:bg-gray-700
+                    text-gray-900 dark:text-white
+                    border border-gray-200 dark:border-gray-700
+                    text-xs md:text-sm font-normal rounded-xl
+                    transition-colors active:scale-[0.98]"
                         >
                             <Target className="w-4 h-4" />
                             Simulate
                         </button>
                     </div>
 
-                    {/* Stats row — clean dividers */}
-                    <div className="grid grid-cols-3 mt-6 pt-5 border-t border-gray-200/60 dark:border-gray-700/50">
+                    {/* Stats row — neutral, uniform */}
+                    <div className="grid grid-cols-3 mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
                         <div className="text-center">
-                            <p className="text-base md:text-lg font-black text-gray-900 dark:text-white">
+                            <p className="text-base md:text-lg font-semibold tabular-nums text-gray-900 dark:text-white">
                                 {data.simulation_analysis?.attempts || 0}
                             </p>
-                            <p className="text-[9px] md:text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-0.5">
+                            <p className="text-[10px] md:text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">
                                 Simulations
                             </p>
                         </div>
-                        <div className="text-center border-x border-gray-200/60 dark:border-gray-700/50">
-                            <p className="text-base md:text-lg font-black text-green-600 dark:text-green-400">
+                        <div className="text-center border-x border-gray-100 dark:border-gray-800">
+                            <p className="text-base md:text-lg font-semibold tabular-nums text-gray-900 dark:text-white">
                                 {data.simulation_analysis?.average_score?.toFixed(1) || 0}%
                             </p>
-                            <p className="text-[9px] md:text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-0.5">
+                            <p className="text-[10px] md:text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">
                                 Avg Score
                             </p>
                         </div>
                         <div className="text-center">
-                            <p className="text-base md:text-lg font-black text-purple-600 dark:text-purple-400">
+                            <p className="text-base md:text-lg font-semibold tabular-nums text-gray-900 dark:text-white">
                                 {data.unit_predictions?.length || 0}
                             </p>
-                            <p className="text-[9px] md:text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-0.5">
+                            <p className="text-[10px] md:text-[11px] font-normal text-gray-400 dark:text-gray-500 mt-0.5">
                                 Units Tracked
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
-
             {/* ============================================ */}
             {/* UNIT BREAKDOWN */}
             {/* ============================================ */}

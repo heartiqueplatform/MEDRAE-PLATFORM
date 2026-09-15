@@ -105,19 +105,14 @@ function TriageBanner({
       className={`relative overflow-hidden md:rounded-2xl p-4 md:p-5 border-0 ${triage.bgColor} border-b border-gray-100 dark:border-gray-800 md:border-b-0`}
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
-        {/* Triage Badge */}
-        <div className="flex-shrink-0">
-          <div className={`w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center text-2xl md:text-4xl font-black border-0 bg-white/80 dark:bg-gray-800/80 md:shadow-lg`}>
-            {triage.emoji}
-          </div>
-        </div>
+
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-1">
-            <Badge className={`${triage.bgColor} ${triage.textColor} border-0 text-xs md:text-sm font-bold px-2.5 md:px-4 py-1 md:py-1.5`}>
-              CODE {triage.code}
+            <Badge className={`${triage.bgColor} ${triage.textColor} border-0 text-xs md:text-sm font-normal px-2.5 md:px-4 py-1 md:py-1.5`}>
+              Code {triage.code}
             </Badge>
-            <span className={`text-[10px] md:text-xs font-bold uppercase tracking-wider ${triage.color}`}>
+            <span className={`text-xs md:text-sm font-normal ${triage.color}`}>
               {triage.label}
             </span>
           </div>
@@ -157,16 +152,6 @@ function TriageBanner({
         </button>
       </div>
 
-      {/* Animated Pulse Effect */}
-      {(triage.code === "RED" || triage.code === "YELLOW") && (
-        <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 -mr-6 md:-mr-8 -mt-6 md:-mt-8 opacity-10">
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-full h-full rounded-full bg-current"
-          />
-        </div>
-      )}
     </motion.div>
   );
 }
@@ -178,11 +163,13 @@ function UnitTriageBadge({ subject }: { subject: any }) {
   return (
     <div className={`flex items-center justify-between px-2.5 md:px-3 py-1.5 md:py-2 md:rounded-xl border-0 ${triage.bgColor} border-b border-gray-100 dark:border-gray-800 md:border-b-0`}>
       <div className="flex items-center gap-1.5 md:gap-2">
-        <span className="text-base md:text-lg">{triage.emoji}</span>
-        <span className="text-[10px] md:text-xs font-bold text-gray-600 dark:text-gray-300">
-          Status: <span className={triage.textColor}>{triage.code}</span>
-        </span>
+        <h4 className={`text-sm font-normal ${triage.textColor}`}>
+          Code {triage.code}
+        </h4>
       </div>
+      <Badge variant="outline" className={`text-[10px] font-normal ${triage.textColor} border-current`}>
+        {triage.label}
+      </Badge>
       <Badge variant="outline" className={`text-[7px] md:text-[8px] font-black ${triage.textColor} border-current`}>
         {triage.label}
       </Badge>
@@ -486,11 +473,13 @@ export function StudyProgress() {
                     <Activity className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="flex items-center gap-1.5 md:gap-2">
-                    <span className="text-xl md:text-2xl">{triage.emoji}</span>
-                    <h4 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white leading-none">
-                      CODE {triage.code}
-                    </h4>
+                    <span className={`text-sm font-normal ${triage.textColor}`}>
+                      Code {triage.code}
+                    </span>
                   </div>
+                  <p className="text-xs font-normal text-gray-400 mt-1 md:mt-2">
+                    {triage.label} Status
+                  </p>
                   <p className="text-[9px] md:text-[10px] lg:text-xs font-bold text-gray-400 uppercase tracking-tight mt-1 md:mt-2">
                     {triage.label} Status
                   </p>

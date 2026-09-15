@@ -31,7 +31,7 @@ export function UnitBreakdown() {
 
     return (
         <div className="w-full px-0 sm:px-0">
-            <Card className="w-full rounded-none sm:rounded-2xl border-0 sm:border bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-gray-800/30 dark:to-gray-800/20 shadow-none sm:shadow-sm">
+            <Card className="w-full rounded-none sm:rounded-2xl border-0  bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-gray-800/30 dark:to-gray-800/20 shadow-none sm:shadow-sm">
                 <CardHeader className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="space-y-1">
@@ -61,7 +61,7 @@ export function UnitBreakdown() {
                                 <div
                                     key={index}
                                     onClick={handleNavigate}
-                                    className="group p-3 sm:p-4 bg-white dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 hover:shadow-md transition-all hover:border-blue-200 dark:hover:border-blue-800 text-center cursor-pointer active:scale-[0.97]"
+                                    className="group p-3 sm:p-4 bg-white dark:bg-gray-800/50 rounded-xl border-0 hover:shadow-md transition-all hover:border-blue-200 dark:hover:border-blue-800 text-center cursor-pointer active:scale-[0.97]"
                                     role="button"
                                     tabIndex={0}
                                     onKeyDown={(e) => {
