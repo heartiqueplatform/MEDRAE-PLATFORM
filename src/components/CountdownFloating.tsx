@@ -129,7 +129,7 @@ const CountdownDisplay = memo(({
                     { label: "Seconds", value: seconds }
                 ].map((item) => (
                     <div key={item.label} className="text-center group-hover:scale-105 transition-transform min-w-0">
-                        <div className="bg-white dark:bg-gray-800 rounded-lg px-1 sm:px-3 py-2 shadow-lg border border-gray-200 dark:border-gray-700">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg px-1 sm:px-3 py-2 shadow-none border-0">
                             <span className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white block">
                                 {String(item.value).padStart(2, "0")}
                             </span>
@@ -669,7 +669,7 @@ export default function CountdownCards() {
                 </div>
                 <button
                     onClick={addPlan}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 rounded-lg font-medium text-sm uppercase tracking-wide shadow-md shadow-blue-500/25 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 mt-1"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 rounded-lg font-medium text-sm uppercase tracking-wide shadow-none hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 mt-1"
                     disabled={addingExam}
                 >
                     {addingExam ? "Creating..." : "Create Exam"}
@@ -708,7 +708,7 @@ export default function CountdownCards() {
                 onClick={onClose}
             >
                 <div
-                    className="relative w-full max-w-[95vw] sm:max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto"
+                    className="relative w-full max-w-[95vw] sm:max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-none overflow-hidden mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className={`px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 ${highlightNext ? "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10" : ""}`}>
@@ -756,7 +756,7 @@ export default function CountdownCards() {
                                             { label: "Seconds", value: countdown?.seconds ?? 0 }
                                         ].map((item) => (
                                             <div key={item.label} className="text-center">
-                                                <div className="bg-gray-100 dark:bg-gray-800 rounded-xl px-1 sm:px-4 py-2 sm:py-3 shadow-sm">
+                                                <div className="bg-gray-100 dark:bg-gray-800 rounded-xl px-1 sm:px-4 py-2 sm:py-3 shadow-none">
                                                     <span className="font-mono text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
                                                         {String(item.value).padStart(2, "0")}
                                                     </span>
@@ -846,7 +846,7 @@ export default function CountdownCards() {
     // Empty state - but still instant
     if (customPlans.length === 0 && universalExams.length === 0 && visibleExams.length === 0) {
         return (
-            <div className="relative w-full overflow-hidden px-2 py-4 sm:px-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-muted/30 backdrop-blur-xl shadow-xl sm:shadow-2xl border-0">
+            <div className="relative w-full overflow-hidden px-2 py-4 sm:px-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-muted/30 backdrop-blur-xl shadow-none border-0">
                 <div className="text-center py-8">
                     <div className="text-4xl mb-4">📅</div>
                     <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
@@ -888,7 +888,7 @@ export default function CountdownCards() {
     // Main content - INSTANT DISPLAY from cache
     return (
         <>
-            <div className="relative w-full overflow-hidden px-2 py-4 sm:px-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-muted/30 backdrop-blur-xl shadow-xl sm:shadow-2xl border-0">
+            <div className="relative w-full overflow-hidden px-2 py-4 sm:px-4 sm:py-6 rounded-xl sm:rounded-2xl bg-white/90 dark:bg-muted/30 backdrop-blur-xl shadow-none border-0">
                 {/* Background effects */}
                 <div className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 bg-blue-500/5 dark:bg-blue-500/10 blur-3xl rounded-full -mr-16 -mt-16 sm:-mr-32 sm:-mt-32 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 bg-purple-500/5 dark:bg-purple-500/10 blur-3xl rounded-full -ml-16 -mb-16 sm:-ml-32 sm:-mb-32 pointer-events-none" />
@@ -897,7 +897,7 @@ export default function CountdownCards() {
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6 px-1">
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg flex-shrink-0">
+                            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-none flex-shrink-0">
                                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>

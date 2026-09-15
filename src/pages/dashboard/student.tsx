@@ -138,7 +138,7 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
       >
         <div className={`absolute -inset-2 sm:-inset-4 rounded-2xl sm:rounded-3xl ${config.bgGlow} blur-xl sm:blur-2xl animate-pulse`} />
 
-        <div className={`relative bg-gradient-to-br ${config.gradient} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl border border-white/20`}>
+        <div className={`relative bg-gradient-to-br ${config.gradient} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-none border border-white/20`}>
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -777,13 +777,13 @@ export default function StudentDashboard() {
 
 
         {/* Top Students Leaderboard */}
-        <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-2xl mt-1">
+        <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-none mt-1">
           <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px]" />
 
           <CardHeader className="relative z-10 pb-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-yellow-500/10 dark:bg-yellow-500/20 rounded-2xl shadow-inner">
+                <div className="p-2.5 bg-yellow-500/10 dark:bg-yellow-500/20 rounded-2xl">
                   <Trophy className="h-6 w-6 text-yellow-600 dark:text-yellow-500 animate-bounce" />
                 </div>
                 <div>
@@ -834,7 +834,7 @@ export default function StudentDashboard() {
                         <span className="text-emerald-500 font-bold">03.</span> Units Attempted (Tie-breaker)
                       </li>
                     </ul>
-                    <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] uppercase tracking-widest h-9 rounded-xl shadow-lg shadow-blue-500/20">
+                    <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] uppercase tracking-widest h-9 rounded-xl shadow-none">
                       <Link to="/Medrae-quizzes">Improve My Rank</Link>
                     </Button>
                   </div>
@@ -860,18 +860,18 @@ export default function StudentDashboard() {
                       onClick={() => setSelectedUserId(s.userid)}
                       className={`flex-shrink-0 w-44 snap-center relative group cursor-pointer transition-all duration-500 hover:-translate-y-2`}
                     >
-                      <div className={`h-full p-5 rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-xl ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
+                      <div className={`h-full p-5 rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-none ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
                         <div className={`absolute top-0 inset-x-0 h-24 bg-gradient-to-b ${rankMeta.bg} opacity-50`} />
                         <div className="relative z-10 flex flex-col items-center text-center">
                           <div className={`relative mb-3`}>
                             <img
                               src={s.avatar_url || "/UsersAvatar.jpg"}
                               alt={s.name}
-                              className={`w-16 h-16 rounded-full object-cover ring-4 ${rankMeta.ring} shadow-lg transition-transform duration-500 group-hover:scale-110`}
+                              className={`w-16 h-16 rounded-full object-cover ring-4 ${rankMeta.ring} shadow-none transition-transform duration-500 group-hover:scale-110`}
                               loading="lazy"
                             />
                             {idx < 3 && (
-                              <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 shadow-md border border-slate-100 dark:border-white/10">
+                              <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 shadow-none border-0">
                                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                               </div>
                             )}
@@ -921,7 +921,7 @@ export default function StudentDashboard() {
               if (navigator.vibrate) navigator.vibrate(40);
               handleOpenDialog(); // ✅ Opens instantly!
             }}
-            className="relative h-12 w-12 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-0 shadow-2xl flex items-center justify-center transition-all p-0 overflow-visible"
+            className="relative h-12 w-12 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-0 shadow-none flex items-center justify-center transition-all p-0 overflow-visible"
           >
             {topStudents.length > 0 ? (
               <>
@@ -937,7 +937,7 @@ export default function StudentDashboard() {
                     loading="lazy"
                   />
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-1.5 rounded-full shadow-lg border-2 border-white dark:border-slate-900">
+                <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-1.5 rounded-full shadow-none border-0">
                   <Crown className="w-3.5 h-3.5 fill-current" />
                 </div>
               </>
@@ -987,7 +987,7 @@ export default function StudentDashboard() {
                         <div className="mt-2 flex flex-col items-center">
                           <img
                             src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                            className="h-10 w-10 rounded-full border-2 border-white dark:border-slate-800 shadow-md object-cover"
+                            className="h-10 w-10 rounded-full border-2 border-white dark:border-slate-800 shadow-none object-cover"
                             alt="Leader"
                             loading="lazy"
                           />
@@ -1010,7 +1010,7 @@ export default function StudentDashboard() {
                     </div>
                   ) : topStudents.length > 0 ? (
                     <div className="flex items-center justify-center">
-                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/30">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-full shadow-none">
                         <Crown className="w-3.5 h-3.5 fill-current" />
                         <span className="text-xs font-bold tracking-tight">Top Performer This Week</span>
                       </div>
@@ -1080,7 +1080,7 @@ export default function StudentDashboard() {
               cachedSimulationPapers.map((paper) => (
                 <Card
                   key={paper.id}
-                  className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-0 bg-white dark:bg-muted/30 rounded-2xl"
+                  className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-none hover:-translate-y-1 border-0 bg-white dark:bg-muted/30 rounded-2xl"
                   onClick={() => handleSmoothNavigate(`/simulation/${paper.id}`)}
                 >
                   <CardHeader className="p-5 pb-2">
@@ -1166,7 +1166,7 @@ export default function StudentDashboard() {
         <UnitBreakdown />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full mt-2 px-2 sm:px-0">
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-lg">
@@ -1182,7 +1182,7 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 font-bold shadow-none transition-all active:scale-95"
                 onClick={() => {
                   const shareMessage = `Medrae – The Professional Medical Education & Career Network\n\n• Structured modules\n• Expert-led lectures\n• NCK Exam Prep\n\nJoin today: https://medrae.vercel.app`;
                   if (navigator.share) {
@@ -1198,7 +1198,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all ">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600">
@@ -1219,7 +1219,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all ">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600">
@@ -1240,7 +1240,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-sm transition-all hover:shadow-md">
+          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all ">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-sky-100 dark:bg-sky-500/20 rounded-lg text-sky-600">
