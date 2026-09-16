@@ -12,7 +12,7 @@ import "@fontsource/poppins";
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "1.0.4";
+const APP_VERSION = "1.0.6";
 const CACHE_NAMES = {
     static: `medrae-static-${APP_VERSION}`,
     api: `medrae-api-cache-${APP_VERSION}`,
@@ -135,50 +135,34 @@ window.fetch = async function (...args) {
     }
 
     if (isSupabase) {
+        // Supabase is user-specific and real-time — never cache.
+        // Just pass through, but track performance in the background.
         try {
             const response = await originalFetch.apply(this, args);
 
             if (response && response.ok) {
-                try {
-                    const clone = response.clone();
-                    clone.blob().then(blob => {
-                        PerformanceMonitor.trackCall(url, blob.size);
-                    }).catch(() => { });
-
-                    const cache = await caches.open(CACHE_NAMES.api);
-                    const responseClone = response.clone();
-                    cache.put(request, responseClone);
-                } catch (e) {
-                    // Silent fail for blob reading
-                }
+                // Fire-and-forget size tracking, no caching
+                response
+                    .clone()
+                    .blob()
+                    .then((blob) => PerformanceMonitor.trackCall(url, blob.size))
+                    .catch(() => { });
             }
+
             return response;
         } catch (error) {
-            console.warn("Offline Mode: Returning cached data.");
-
-            try {
-                const cache = await caches.open(CACHE_NAMES.api);
-                const cachedResponse = await cache.match(request);
-                if (cachedResponse) {
-                    console.log('Returning cached response for:', url);
-                    return cachedResponse;
-                }
-            } catch (e) {
-                // Cache read failed
-            }
-
-            const isListRequest = url.includes('?') || url.includes('select=');
-            return new Response(isListRequest ? '[]' : '{}', {
+            // Network failed. Return a safe empty response so UI doesn't crash.
+            const isListRequest = url.includes("?") || url.includes("select=");
+            return new Response(isListRequest ? "[]" : "{}", {
                 status: 200,
-                statusText: 'OK (Offline Mode)',
+                statusText: "OK (Offline Fallback)",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Offline': 'true'
-                }
+                    "Content-Type": "application/json",
+                    "X-Offline": "true",
+                },
             });
         }
     }
-
     return originalFetch.apply(this, args);
 };
 

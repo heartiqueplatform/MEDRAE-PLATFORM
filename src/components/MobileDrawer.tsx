@@ -73,19 +73,61 @@ type IconTone =
     | "neutral" | "ai" | "learning" | "progress" | "practice" | "alert"
     | "communication" | "media" | "finance" | "system" | "people" | "content";
 
+/**
+ * Facebook-style tone palette:
+ * - Solid gradient circles
+ * - White icons inside
+ * - Compact size, soft colored shadow
+ */
 const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
-    neutral: { box: "bg-slate-100 dark:bg-slate-800/60", icon: "text-slate-600 dark:text-slate-300" },
-    ai: { box: "bg-purple-100 dark:bg-purple-900/40", icon: "text-purple-600 dark:text-purple-400" },
-    learning: { box: "bg-blue-100 dark:bg-blue-900/40", icon: "text-blue-600 dark:text-blue-400" },
-    progress: { box: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600 dark:text-emerald-400" },
-    practice: { box: "bg-rose-100 dark:bg-rose-900/40", icon: "text-rose-600 dark:text-rose-400" },
-    alert: { box: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600 dark:text-amber-400" },
-    communication: { box: "bg-cyan-100 dark:bg-cyan-900/40", icon: "text-cyan-600 dark:text-cyan-400" },
-    media: { box: "bg-violet-100 dark:bg-violet-900/40", icon: "text-violet-600 dark:text-violet-400" },
-    finance: { box: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600 dark:text-emerald-400" },
-    system: { box: "bg-slate-200 dark:bg-slate-800", icon: "text-slate-600 dark:text-slate-300" },
-    people: { box: "bg-indigo-100 dark:bg-indigo-900/40", icon: "text-indigo-600 dark:text-indigo-400" },
-    content: { box: "bg-indigo-100 dark:bg-indigo-900/40", icon: "text-indigo-600 dark:text-indigo-400" },
+    neutral: {
+        box: "bg-gradient-to-br from-slate-500 to-slate-700 shadow-sm shadow-slate-500/30",
+        icon: "text-white"
+    },
+    ai: {
+        box: "bg-gradient-to-br from-purple-500 to-purple-700 shadow-sm shadow-purple-500/30",
+        icon: "text-white"
+    },
+    learning: {
+        box: "bg-gradient-to-br from-blue-500 to-blue-700 shadow-sm shadow-blue-500/30",
+        icon: "text-white"
+    },
+    progress: {
+        box: "bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-sm shadow-emerald-500/30",
+        icon: "text-white"
+    },
+    practice: {
+        box: "bg-gradient-to-br from-rose-500 to-rose-700 shadow-sm shadow-rose-500/30",
+        icon: "text-white"
+    },
+    alert: {
+        box: "bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm shadow-amber-500/30",
+        icon: "text-white"
+    },
+    communication: {
+        box: "bg-gradient-to-br from-cyan-500 to-cyan-700 shadow-sm shadow-cyan-500/30",
+        icon: "text-white"
+    },
+    media: {
+        box: "bg-gradient-to-br from-violet-500 to-violet-700 shadow-sm shadow-violet-500/30",
+        icon: "text-white"
+    },
+    finance: {
+        box: "bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm shadow-teal-500/30",
+        icon: "text-white"
+    },
+    system: {
+        box: "bg-gradient-to-br from-gray-500 to-gray-700 shadow-sm shadow-gray-500/30",
+        icon: "text-white"
+    },
+    people: {
+        box: "bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-sm shadow-indigo-500/30",
+        icon: "text-white"
+    },
+    content: {
+        box: "bg-gradient-to-br from-fuchsia-500 to-fuchsia-700 shadow-sm shadow-fuchsia-500/30",
+        icon: "text-white"
+    },
 };
 
 const NATIVE_EASE = [0.32, 0.72, 0, 1];
@@ -145,7 +187,7 @@ const preloadUserRole = (): "student" | "tutor" | null => {
     } catch { return null; }
 };
 
-/* ---------------- Row Item ---------------- */
+/* ---------------- Row Item (Facebook-style compact) ---------------- */
 const DrawerRow = memo(({
     item,
     tone,
@@ -159,16 +201,16 @@ const DrawerRow = memo(({
     return (
         <button
             onClick={onPress}
-            className="group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left
+            className="group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left
                        transition-colors active:bg-slate-100/80 dark:active:bg-slate-800/60
                        hover:bg-slate-50 dark:hover:bg-slate-800/40"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
-            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${styles.box}
+            <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${styles.box}
                              transition-transform group-active:scale-95`}>
-                <item.icon className={`h-5 w-5 ${styles.icon}`} />
+                <item.icon className={`h-[18px] w-[18px] ${styles.icon}`} strokeWidth={2.3} />
             </div>
-            <span className="flex-1 text-[13px] font-semibold text-slate-700 dark:text-slate-200 truncate">
+            <span className="flex-1 text-[13.5px] font-semibold text-slate-700 dark:text-slate-200 truncate">
                 {item.title}
             </span>
             <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />
@@ -188,14 +230,14 @@ const DrawerSection = memo(({
     onClose: () => void;
 }) => {
     return (
-        <div className="space-y-1.5">
-            <div className="flex items-center gap-2 px-1 py-1.5">
+        <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1 py-1">
                 <div className="h-1 w-4 rounded-full bg-blue-500/70" />
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                     {section.label}
                 </h3>
             </div>
-            <div className="space-y-0.5 pl-1">
+            <div className="space-y-0.5">
                 {section.items.map((item: any) => (
                     <DrawerRow
                         key={item.title}
@@ -214,19 +256,19 @@ const DrawerSection = memo(({
 DrawerSection.displayName = "DrawerSection";
 
 /* ---------------- Custom Icons ---------------- */
-const QuizzesHeartIcon = ({ className = "h-6 w-6" }: { className?: string }) => (
+const QuizzesHeartIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     </svg>
 );
 
-const PlayFilledIcon = ({ className = "h-6 w-6" }: { className?: string }) => (
+const PlayFilledIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
         <path d="M4 2v20l18-10L4 2z" />
     </svg>
 );
 
-const NursMartLogo = ({ className = "h-6 w-6" }: { className?: string }) => (
+const NursMartLogo = ({ className = "h-5 w-5" }: { className?: string }) => (
     <img src="/Nurvia_logo.png" alt="" className={`${className} object-contain`} />
 );
 
@@ -297,7 +339,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         }
     }, [isOpen]);
 
-    // Lock body scroll while open
     useEffect(() => {
         if (isOpen) {
             const original = document.body.style.overflow;
@@ -532,8 +573,69 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                         >
                             {/* Header */}
                             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100/70 dark:border-slate-800/60 flex-shrink-0">
-                                <div className="h-10 w-10 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800">
-                                    <img src="/pwa-192x192.jpeg" alt="Medrae" className="h-full w-full object-cover" />
+                                <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-700">
+                                    <svg
+                                        viewBox="0 0 192 192"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-full w-full"
+                                        aria-label="MEDRAE Nursing Logo"
+                                    >
+                                        {/* White rounded background */}
+                                        <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
+
+                                        {/* Red Heart */}
+                                        <path
+                                            d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
+                                            fill="#FF1F1F"
+                                        />
+
+                                        {/* Graduation Cap */}
+                                        <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
+
+                                        {/* Cap lower body */}
+                                        <path
+                                            d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
+                                            fill="#FFFFFF"
+                                        />
+
+                                        {/* Red cap seam */}
+                                        <path
+                                            d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
+                                            fill="none"
+                                            stroke="#FF1F1F"
+                                            strokeWidth="3"
+                                            strokeLinecap="round"
+                                        />
+
+                                        {/* Red cap string */}
+                                        <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
+
+                                        {/* Red button */}
+                                        <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
+
+                                        {/* Tassel */}
+                                        <path
+                                            d="M94 82 C86 86 75 88 63 89"
+                                            fill="none"
+                                            stroke="#FF1F1F"
+                                            strokeWidth="2"
+                                        />
+
+                                        {/* White tassel cord */}
+                                        <path
+                                            d="M63 89 C61 94 61 98 61 103"
+                                            fill="none"
+                                            stroke="#FFFFFF"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                        />
+
+                                        {/* Tassel top */}
+                                        <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
+
+                                        {/* Tassel */}
+                                        <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
+                                    </svg>
                                 </div>
                                 <h2 className="flex-1 text-[15px] font-black tracking-tight">
                                     <span className="bg-gradient-to-r from-red-600 to-red-500 dark:from-red-500 dark:to-red-400 bg-clip-text text-transparent">MEDRAE </span>
@@ -552,7 +654,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             </div>
 
                             {/* SCROLLABLE CONTENT */}
-                            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-4 pb-10 pt-4">
+                            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-3.5 pb-10 pt-4">
                                 {!contentReady ? (
                                     <div className="h-40 flex items-center justify-center">
                                         <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent animate-spin rounded-full" />
@@ -564,7 +666,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         transition={{ duration: 0.25, ease: "easeOut" }}
                                         className="space-y-5"
                                     >
-                                        {/* USER CARD — no border, soft tinted bg */}
+                                        {/* USER CARD */}
                                         <button
                                             onClick={() => handleNavigate("/profile")}
                                             className="w-full flex items-center gap-3 rounded-3xl p-3.5 text-left

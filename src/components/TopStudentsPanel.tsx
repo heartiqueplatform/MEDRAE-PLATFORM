@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageCircle, Timer, Award, Stethoscope, ArrowRight, Zap, TrendingUp, Book, Target, Eye, Trophy, ThumbsUp, Flame, Clap, AlertCircle } from "lucide-react";
+import { Brain, MessageCircle, Timer, Award, Stethoscope, ArrowRight, Zap, TrendingUp, Book, Target, Eye, Trophy, ThumbsUp, Flame, Clap, AlertCircle, Swords } from "lucide-react";
 import confetti from "canvas-confetti";
 import { playSound } from "@/lib/soundManager";
 import { useNavigate } from "react-router-dom";
@@ -65,15 +65,15 @@ const LeaderboardItem = memo(({
         transition={{ delay: idx * 0.05, duration: 0.2 }}
         whileHover={{ y: -4 }}
         onClick={() => onSelect(student.user_id)}
-        className={`relative flex-shrink-0 w-40 p-4 rounded-2xl border flex flex-col items-center cursor-pointer transition-all will-change-transform
-            ${idx === 0 ? "bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-900/10 dark:to-background border-amber-200 dark:border-amber-800 shadow-md shadow-amber-500/10"
-                : "bg-card border-border shadow-sm hover:shadow-md"}`}
+        className={`relative flex-shrink-0 w-40 p-4 rounded-2xl border-0 flex flex-col items-center cursor-pointer transition-all will-change-transform
+            ${idx === 0 ? "bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-900/10 dark:to-background border-0 shadow-none"
+                : "bg-card border-border shadow-none"}`}
     >
-        <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border
-            ${idx === 0 ? "bg-amber-500 text-white border-amber-600"
-                : idx === 1 ? "bg-slate-400 text-white border-slate-500"
-                    : idx === 2 ? "bg-orange-500 text-white border-orange-600"
-                        : "bg-muted text-muted-foreground border-border"}`}>
+        <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-none border-0
+            ${idx === 0 ? "bg-amber-500 text-white border-0"
+                : idx === 1 ? "bg-slate-400 text-white border-0"
+                    : idx === 2 ? "bg-orange-500 text-white border-0"
+                        : "bg-muted text-muted-foreground border-0"}`}>
             {idx + 1}
         </div>
 
@@ -101,7 +101,7 @@ const LeaderboardItem = memo(({
             </div>
         </div>
 
-        <div className="flex flex-col items-center gap-1 w-full pt-2 border-t border-border/50">
+        <div className="flex flex-col items-center gap-1 w-full pt-2 border-0">
             <div className="text-sm font-bold text-primary">
                 {student.score.toLocaleString()} <span className="text-[10px] font-medium opacity-70">PTS</span>
             </div>
@@ -111,7 +111,7 @@ const LeaderboardItem = memo(({
             </div>
         </div>
 
-        <div className="flex items-center justify-center gap-1 mt-4 w-full bg-muted/30 rounded-full py-1 border border-border/50">
+        <div className="flex items-center justify-center gap-1 mt-4 w-full bg-muted/30 rounded-full py-1 border-0">
             <ReactionButton
                 type="like"
                 emoji="👍"
@@ -904,37 +904,46 @@ export const DailyTriviaCard = () => {
 
     return (
         <div className="relative select-none overflow-x-hidden">
-            <Card className="rounded-md overflow-hidden border-0 relative bg-gray-100 dark:bg-muted/70 shadow-md mt-0">
-                <CardHeader className="bg-blue-50 dark:bg-muted/30">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                            <Brain className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                            <CardTitle className="text-base sm:text-lg">Daily 15Teen MindRush Challenge</CardTitle>
-                        </div>
-                        <Badge variant="secondary" className="flex-shrink-0">{questions.length} Questions</Badge>
-                    </div>
-
-                    <CardDescription className="flex justify-between items-center flex-wrap gap-2">
-                        {started ? (
-                            <span className="font-mono flex items-center gap-2">
-                                <Timer className="w-4 h-4" />
-                                Time left: {fmt(timer)}
+            <Card className="rounded-md overflow-hidden border-0 relative bg-gray-100 dark:bg-muted/30 shadow-md mt-0">
+                <CardHeader className="bg-blue-50 dark:bg-muted/30 pb-3">
+                    {started ? (
+                        /* ---------- IN-GAME STATE: timer + progress ---------- */
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <span className="font-mono flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                                <Timer className="w-4 h-4 text-blue-600" />
+                                {fmt(timer)}
                                 {autoSubmitCountdown !== null && autoSubmitCountdown > 0 && (
                                     <span className="text-red-600 dark:text-red-400 font-bold animate-pulse">
                                         ⚠️ {autoSubmitCountdown}s
                                     </span>
                                 )}
                             </span>
-                        ) : (
-                            <span className="text-sm">Ready for today's challenge? Sharpen your mind and earn your bragging rights!</span>
-                        )}
-
-                        {started && !completed && (
-                            <span className="text-sm text-muted-foreground">
-                                Q{currentIndex + 1}/{questions.length}
+                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                Q{currentIndex + 1} / {questions.length}
                             </span>
-                        )}
-                    </CardDescription>
+                        </div>
+                    ) : completed ? (
+                        /* ---------- POST-GAME STATE: minimal ---------- */
+                        <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-emerald-600" />
+                            <CardTitle className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                Today's attempt recorded
+                            </CardTitle>
+                        </div>
+                    ) : (
+                        /* ---------- PRE-GAME STATE: the marketing line ---------- */
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                            <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 flex-1 min-w-0">
+
+                                <span className="align-middle">
+                                    Ready for today's MindRush? Sharpen your mind and earn your bragging rights.
+                                </span>
+                            </p>
+                            <Badge variant="secondary" className="flex-shrink-0 h-6">
+                                {questions.length} Questions
+                            </Badge>
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent className="p-1">
                     {loading ? (
@@ -957,7 +966,7 @@ export const DailyTriviaCard = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <div className="w-full bg-gray-50 dark:bg-muted/80 rounded-3xl">
+                                <div className="w-full bg-gray-50 dark:bg-muted/40 rounded-xl">
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-0 p-4">
                                         Question {currentIndex + 1} of {questions.length}
                                     </p>
@@ -1007,7 +1016,7 @@ export const DailyTriviaCard = () => {
                             {topLoading && topStudents.length === 0 ? (
                                 <div className="flex gap-4 animate-pulse">
                                     {Array.from({ length: 4 }).map((_, idx) => (
-                                        <div key={idx} className="flex-shrink-0 w-40 h-64 rounded-xl bg-muted/50 border border-border" />
+                                        <div key={idx} className="flex-shrink-0 w-40 h-64 rounded-xl bg-muted/50 border-0" />
                                     ))}
                                 </div>
                             ) : topStudents.length === 0 ? (
@@ -1038,7 +1047,7 @@ export const DailyTriviaCard = () => {
 
                     {!started && !completed && (
                         <Button
-                            className="w-full mt-4"
+                            className="mt-4 px-8 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm mx-auto block"
                             disabled={loading || attemptedToday || !selfUserId}
                             onClick={startTrivia}
                         >
@@ -1080,21 +1089,21 @@ export const DailyTriviaCard = () => {
 
                             <div className="p-2 sm:p-4">
                                 <div className="grid grid-cols-2 gap-2 mb-2">
-                                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 sm:p-4 text-center border border-gray-100 dark:border-gray-700">
+                                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 sm:p-4 text-center border-0">
                                         <div className="flex justify-center mb-1">
                                             <Target className="w-5 h-5 text-blue-500" />
                                         </div>
-                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Score</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium  tracking-wider">Score</p>
                                         <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
                                             {savedScore.correct_answers}/{savedScore.total_questions}
                                         </p>
                                         <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 font-bold mt-1 uppercase tracking-tighter">Streak +1 🔥</p>
                                     </div>
-                                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 sm:p-4 text-center border border-gray-100 dark:border-gray-700">
+                                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-3 sm:p-4 text-center border-0">
                                         <div className="flex justify-center mb-1">
                                             <Timer className="w-5 h-5 text-indigo-500" />
                                         </div>
-                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Time</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium  tracking-wider">Time</p>
                                         <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
                                             {timeUsedToday !== null ? `${timeUsedToday}s` : "0s"}
                                         </p>
@@ -1120,7 +1129,7 @@ export const DailyTriviaCard = () => {
                                             <span className="text-gray-700 dark:text-gray-300">Accuracy</span>
                                             <span className="text-blue-600 font-bold">{scorePercentage}%</span>
                                         </div>
-                                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
+                                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden shadow-none border-0">
                                             <div
                                                 className={`h-full rounded-full transition-all duration-700 ${scorePercentage >= 80
                                                     ? "bg-gradient-to-r from-emerald-400 to-green-500"
@@ -1140,7 +1149,7 @@ export const DailyTriviaCard = () => {
                                                 {timeUsedToday !== null && `${Math.floor(timeUsedToday / 60)}m ${timeUsedToday % 60}s`}
                                             </span>
                                         </div>
-                                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden shadow-inner border border-gray-200 dark:border-gray-700">
+                                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden shadow-none border-0">
                                             <div
                                                 className={`h-full rounded-full transition-all duration-700 ${timePercentage <= 50
                                                     ? "bg-gradient-to-r from-emerald-400 to-green-500"
@@ -1154,15 +1163,15 @@ export const DailyTriviaCard = () => {
                                     </div>
                                 </div>
 
-                                <div className="mt-4 p-3 sm:p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-center italic text-blue-800 dark:text-blue-300 font-medium text-sm sm:text-base">
+                                <div className="mt-4 p-3 sm:p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border-0 text-center italic text-blue-800 dark:text-blue-300 font-medium text-sm sm:text-base">
                                     {motivationalMessage}
                                 </div>
 
-                                <div className="mt-6 sm:mt-8 relative overflow-hidden rounded-2xl bg-slate-900 p-4 sm:p-6 text-white shadow-2xl group transition-all hover:scale-[1.01]">
+                                <div className="mt-6 sm:mt-8 relative overflow-hidden rounded-2xl bg-slate-900 p-4 sm:p-6 text-white shadow-none group transition-all hover:scale-[1.01]">
                                     <div className="relative z-10">
                                         <div className="flex items-center gap-2 mb-3">
-                                            <Zap className="w-4 h-4 text-blue-400 fill-blue-400" />
-                                            <span className="inline-block px-3 py-1 rounded-full bg-blue-600 text-[10px] font-bold uppercase tracking-widest">
+
+                                            <span className="inline-block px-3 py-1 rounded-xl bg-blue-600 text-[10px] font-bold tracking-widest">
                                                 Medrae Pro Advantage
                                             </span>
                                         </div>

@@ -51,6 +51,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import DailyStatus from "@/components/DailyStatus";
 import { TermsButton } from "@/components/ui/TermsButton";
 import Algorithm from "@/components/Algorithm/Algorithm";
+import { QuickDuelStrip } from "@/components/QuickDuelStrip";
 
 
 
@@ -87,14 +88,13 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
 
   const config = rankConfig[rank];
   if (!config) return null;
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md"
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/80"
       onClick={onClose}
       style={{
         padding: '16px',
@@ -102,96 +102,65 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
         WebkitOverflowScrolling: 'touch'
       }}
     >
+      {/* Static confetti - CSS only, no JS animation loop */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {typeof window !== 'undefined' && [...Array(20)].map((_, i) => (
-          <motion.div
+        {[...Array(12)].map((_, i) => (
+          <div
             key={i}
-            initial={{
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 400),
-              y: -100,
-              scale: Math.random() * 0.5 + 0.3,
-            }}
-            animate={{
-              y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 100,
-              rotate: 360,
-            }}
-            transition={{
-              duration: Math.random() * 3 + 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-            className="absolute w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full"
+            className="absolute w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full animate-confetti"
             style={{
-              backgroundColor: config.confettiColors[Math.floor(Math.random() * config.confettiColors.length)],
-              left: `${Math.random() * 100}%`,
+              backgroundColor: config.confettiColors[i % config.confettiColors.length],
+              left: `${(i * 8.33) % 100}%`,
+              animationDelay: `${(i * 0.25) % 3}s`,
+              animationDuration: `${3 + (i % 3)}s`,
             }}
           />
         ))}
       </div>
 
       <motion.div
-        initial={{ y: 50, opacity: 0, scale: 0.95 }}
+        initial={{ y: 30, opacity: 0, scale: 0.95 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2, type: "spring", damping: 25 }}
+        transition={{ delay: 0.1, duration: 0.25, ease: "easeOut" }}
         className="relative w-full max-w-[92%] sm:max-w-md"
         style={{ margin: 'auto' }}
       >
-        <div className={`absolute -inset-2 sm:-inset-4 rounded-2xl sm:rounded-3xl ${config.bgGlow} blur-xl sm:blur-2xl animate-pulse`} />
+        <div className={`relative bg-gradient-to-br ${config.gradient} rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-0`}>
 
-        <div className={`relative bg-gradient-to-br ${config.gradient} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-none border border-white/20`}>
+          {/* Static star badge - no ping, no rotate, no border */}
           <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.15, duration: 0.2, ease: "easeOut" }}
             className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6"
           >
-            <div className="relative">
-              <Star className="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 fill-yellow-300" />
-              <Star className="absolute top-0 left-0 w-8 h-8 sm:w-12 sm:h-12 text-yellow-200 animate-ping opacity-50" />
-            </div>
+            <Star className="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 fill-yellow-300" />
           </motion.div>
 
           <div className="text-center space-y-3 sm:space-y-4">
-            <motion.div
-              animate={{ y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 1, repeatType: "reverse" }}
-              className="flex justify-center"
-            >
-              {config.icon}
-            </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-0.5 sm:space-y-1"
-            >
+            {/* Static icon - no bounce */}
+            <div className="flex justify-center">
+              {config.icon}
+            </div>
+
+            <div className="space-y-0.5 sm:space-y-1">
               <h2 className="text-xl sm:text-2xl font-black text-white px-2">
                 {config.title}
               </h2>
               <p className="text-sm sm:text-lg font-bold text-white/90 px-2">
                 {config.subtitle}
               </p>
-            </motion.div>
+            </div>
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-white/90 text-xs sm:text-sm leading-relaxed px-1"
-            >
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed px-1">
               {config.message}
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="flex flex-col gap-2 pt-2 sm:pt-3"
-            >
+            <div className="flex flex-col gap-2 pt-2 sm:pt-3">
               <Button
                 onClick={onClose}
-                className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 font-bold text-xs sm:text-sm py-2 px-3"
+                className="w-full bg-white/20 hover:bg-white/30 text-white border-0 font-bold text-xs sm:text-sm py-2 px-3"
               >
                 Continue Studying
               </Button>
@@ -200,12 +169,12 @@ const RankCelebrationOverlay = ({ rank, name, onClose, navigate }) => {
                   onClose();
                   navigate("/Medrae-quizzes");
                 }}
-                className="w-full bg-white hover:bg-white/90 text-slate-900 font-bold text-xs sm:text-sm py-2 px-3"
+                className="w-full bg-white hover:bg-white/90 text-slate-900 font-bold text-xs sm:text-sm py-2 px-3 border-0"
               >
                 Improve My Rank
                 <ArrowRight className="w-3 h-3 ml-1.5" />
               </Button>
-            </motion.div>
+            </div>
           </div>
         </div>
 
@@ -265,6 +234,22 @@ const getInitialCache = () => {
   try {
     const cachedProgress = localStorage.getItem("dashboard_study_progress");
     if (cachedProgress) result.studyProgress = JSON.parse(cachedProgress);
+  } catch (e) { }
+
+  try {
+    const raw = localStorage.getItem("quick_duel_history_v2");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.d) result.quickDuelHistory = parsed.d;
+    }
+  } catch (e) { }
+
+  try {
+    const raw = localStorage.getItem("quick_duel_players_v2");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.d) result.quickDuelPlayers = parsed.d;
+    }
   } catch (e) { }
 
   try {
@@ -766,6 +751,12 @@ export default function StudentDashboard() {
       </AnimatePresence>
       <div className="w-full space-y-2 md:px-4 lg:px-6">
         <GreetingsCard />
+
+        <QuickDuelStrip
+          userId={user?.id ?? ""}
+          initialHistory={initialCache.quickDuelHistory ?? []}
+          initialPlayers={initialCache.quickDuelPlayers ?? []}
+        />
         <DailyTriviaCard />
         <CountdownFloating />
         <Algorithm />

@@ -19,88 +19,89 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabaseClient";
-// IMPORT THE ROLE CONTEXT
 import { useUserRole } from "@/context/UserRoleContext";
 
 interface AppSidebarProps {
-  userRole?: 'student' | 'tutor' | 'staff'; // Make it optional since we'll use context
+  userRole?: 'student' | 'tutor' | 'staff';
 }
 
 type IconTone = "neutral" | "ai" | "learning" | "progress" | "practice" | "alert"
   | "communication" | "media" | "finance" | "system" | "people" | "content";
 
+/**
+ * Facebook-style tone palette:
+ * - Solid gradient circular backgrounds
+ * - White icons inside
+ */
 const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
   neutral: {
-    box: "bg-slate-100 dark:bg-slate-800",
-    icon: "text-slate-700 dark:text-slate-200"
+    box: "bg-gradient-to-br from-slate-500 to-slate-700 shadow-sm shadow-slate-500/30",
+    icon: "text-white"
   },
   ai: {
-    box: "bg-purple-200 dark:bg-purple-800/60",
-    icon: "text-purple-700 dark:text-purple-300"
+    box: "bg-gradient-to-br from-purple-500 to-purple-700 shadow-sm shadow-purple-500/30",
+    icon: "text-white"
   },
   learning: {
-    box: "bg-blue-200 dark:bg-blue-800/60",
-    icon: "text-blue-700 dark:text-blue-300"
+    box: "bg-gradient-to-br from-blue-500 to-blue-700 shadow-sm shadow-blue-500/30",
+    icon: "text-white"
   },
   progress: {
-    box: "bg-emerald-200 dark:bg-emerald-800/60",
-    icon: "text-emerald-700 dark:text-emerald-300"
+    box: "bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-sm shadow-emerald-500/30",
+    icon: "text-white"
   },
   practice: {
-    box: "bg-rose-200 dark:bg-rose-800/60",
-    icon: "text-rose-700 dark:text-rose-300"
+    box: "bg-gradient-to-br from-rose-500 to-rose-700 shadow-sm shadow-rose-500/30",
+    icon: "text-white"
   },
   alert: {
-    box: "bg-amber-200 dark:bg-amber-800/60",
-    icon: "text-amber-700 dark:text-amber-300"
+    box: "bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm shadow-amber-500/30",
+    icon: "text-white"
   },
   communication: {
-    box: "bg-cyan-200 dark:bg-cyan-800/60",
-    icon: "text-cyan-700 dark:text-cyan-300"
+    box: "bg-gradient-to-br from-cyan-500 to-cyan-700 shadow-sm shadow-cyan-500/30",
+    icon: "text-white"
   },
   media: {
-    box: "bg-violet-200 dark:bg-violet-800/60",
-    icon: "text-violet-700 dark:text-violet-300"
+    box: "bg-gradient-to-br from-violet-500 to-violet-700 shadow-sm shadow-violet-500/30",
+    icon: "text-white"
   },
   finance: {
-    box: "bg-emerald-200 dark:bg-emerald-800/60",
-    icon: "text-emerald-700 dark:text-emerald-300"
+    box: "bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm shadow-teal-500/30",
+    icon: "text-white"
   },
   system: {
-    box: "bg-gray-200 dark:bg-gray-700",
-    icon: "text-gray-700 dark:text-gray-300"
+    box: "bg-gradient-to-br from-gray-500 to-gray-700 shadow-sm shadow-gray-500/30",
+    icon: "text-white"
   },
   people: {
-    box: "bg-indigo-200 dark:bg-indigo-800/60",
-    icon: "text-indigo-700 dark:text-indigo-300"
+    box: "bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-sm shadow-indigo-500/30",
+    icon: "text-white"
   },
   content: {
-    box: "bg-indigo-200 dark:bg-indigo-800/60",
-    icon: "text-indigo-700 dark:text-indigo-300"
+    box: "bg-gradient-to-br from-fuchsia-500 to-fuchsia-700 shadow-sm shadow-fuchsia-500/30",
+    icon: "text-white"
   },
 };
 
-// Cache keys with 1-hour duration (counts rarely change)
+// Cache keys
 const CACHE_PREFIX = "sidebar_cache_";
 const MISTAKE_COUNT_KEY = `${CACHE_PREFIX}mistake_count`;
 const STARS_KEY = `${CACHE_PREFIX}stars`;
 const COUNTS_KEY = `${CACHE_PREFIX}counts`;
 const ANNOUNCEMENTS_KEY = `${CACHE_PREFIX}announcements`;
 
-// Request deduplication
 let fetchInProgress = false;
 let lastFetchTime = 0;
-// 12 hours in milliseconds = 12 * 60 * 60 * 1000 = 43,200,000
-// Data stays "fresh" for 2 minutes, then updates in background
 const CACHE_DURATION = 120000;
-const MIN_FETCH_INTERVAL = 5000; // Prevent spamming (5 seconds)
-// Cache helpers
+const MIN_FETCH_INTERVAL = 5000;
+
 const getCached = (key: string) => {
   try {
     const cached = localStorage.getItem(key);
     if (cached) {
       const parsed = JSON.parse(cached);
-      return parsed.data; // Return the value directly
+      return parsed.data;
     }
   } catch (e) { }
   return null;
@@ -112,7 +113,13 @@ const setCached = (key: string, data: any) => {
   } catch (e) { }
 };
 
-// Memoized Menu Item Component
+/**
+ * Compact Facebook-style MenuItem:
+ * - Circular gradient icon: h-8 w-8 (32px) expanded, h-10 w-10 collapsed
+ * - Icon inside: h-4 w-4 (16px) expanded, h-5 w-5 collapsed
+ * - Text: text-[14px] font-medium (normal weight, readable)
+ * - Tight padding: py-2
+ */
 const MenuItem = memo(({
   item,
   isActive,
@@ -134,18 +141,35 @@ const MenuItem = memo(({
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
         <button
-          className={`w-full ${isActive ? "bg-primary/10 text-primary border-r-2 border-primary font-medium" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"} transition-colors duration-150`}
+          className={`group w-full my-0.5 rounded-lg px-2 py-2 flex items-center gap-2.5
+            ${isActive
+              ? "bg-primary/10 text-primary font-semibold"
+              : "hover:bg-muted/60 text-foreground/85 hover:text-foreground"
+            } transition-all duration-150`}
           onClick={onClick}
           style={{ touchAction: 'manipulation' }}
         >
-          <div className={`flex-shrink-0 mr-2 p-1.5 rounded-md ${styles.box}`}>
-            <item.icon className={`${isCollapsed ? "h-6 w-6" : "h-5 w-5"} ${styles.icon}`} />
+          <div
+            className={`flex-shrink-0 flex items-center justify-center rounded-full
+              ${isCollapsed ? "h-10 w-10" : "h-8 w-8"}
+              ${styles.box} transition-transform duration-150 group-hover:scale-105`}
+          >
+            <item.icon
+              className={`${isCollapsed ? "h-5 w-5" : "h-4 w-4"} ${styles.icon}`}
+              strokeWidth={2.4}
+            />
           </div>
+
           {!isCollapsed && (
-            <div className="flex items-center justify-between w-full">
-              <span>{item.title}</span>
-              {badge && (
-                <Badge variant="secondary" className="ml-auto h-5 text-xs">
+            <div className="flex items-center justify-between w-full min-w-0">
+              <span className="text-[14px] font-medium tracking-tight truncate">
+                {item.title}
+              </span>
+              {badge !== undefined && badge !== null && (
+                <Badge
+                  variant="secondary"
+                  className="ml-2 h-[20px] px-1.5 text-[10px] font-bold rounded-full bg-primary/15 text-primary"
+                >
                   {badge}
                 </Badge>
               )}
@@ -159,7 +183,6 @@ const MenuItem = memo(({
 
 MenuItem.displayName = "MenuItem";
 
-// Memoized Section Component
 const SidebarSection = memo(({
   label,
   items,
@@ -182,19 +205,24 @@ const SidebarSection = memo(({
   if (items.length === 0) return null;
 
   return (
-    <SidebarGroup>
+    <SidebarGroup className="py-0.5">
       <Collapsible open={openGroups.includes(groupId)} onOpenChange={() => toggleGroup(groupId)}>
         <CollapsibleTrigger asChild>
-          <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2 cursor-pointer">
+          <SidebarGroupLabel
+            className="group/label flex items-center gap-2 rounded-md px-3 py-1.5 mx-1
+              text-[10px] font-bold uppercase tracking-[0.12em]
+              text-muted-foreground/70 hover:text-foreground
+              hover:bg-muted/50 cursor-pointer transition-colors"
+          >
             {label}
             {!isCollapsed && (
-              <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/label:rotate-180" />
+              <ChevronDown className="ml-auto h-3.5 w-3.5 transition-transform duration-200 group-data-[state=open]/label:rotate-180" />
             )}
           </SidebarGroupLabel>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0">
               {items.map((item) => (
                 <MenuItem
                   key={item.title}
@@ -217,29 +245,26 @@ const SidebarSection = memo(({
 SidebarSection.displayName = "SidebarSection";
 
 // Custom icons
-const QuizzesHeartIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+const QuizzesHeartIcon = ({ className = "h-5 w-5", ...props }: any) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
   </svg>
 );
 
-const HomeFilledIcon = ({ className = "h-6 w-6" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+const HomeFilledIcon = ({ className = "h-6 w-6", ...props }: any) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
     <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
   </svg>
 );
 
-const PlayFilledIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+const PlayFilledIcon = ({ className = "h-5 w-5", ...props }: any) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
     <path d="M4 2v20l18-10L4 2z" />
   </svg>
 );
 
 export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
-  // GET ROLE FROM CONTEXT
   const { role: contextRole } = useUserRole();
-
-  // Use context role if available, otherwise fallback to prop
   const userRole = (contextRole || propUserRole || 'student') as 'student' | 'tutor' | 'staff';
 
   const { state, toggleSidebar } = useSidebar();
@@ -249,7 +274,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const [openGroups, setOpenGroups] = useState<string[]>(['main', 'learning', 'institutional', 'tutor', 'nck-exam-prep']);
   const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1024));
 
-  // Cached state (initialized from localStorage)
   const [mistakeCount, setMistakeCount] = useState<number>(() => getCached(MISTAKE_COUNT_KEY) || 0);
   const [totalQuestions, setTotalQuestions] = useState<number>(() => getCached(COUNTS_KEY)?.totalQuestions || 0);
   const [totalSimulationPapers, setTotalSimulationPapers] = useState<number>(() => getCached(COUNTS_KEY)?.totalSimulationPapers || 0);
@@ -267,7 +291,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
 
   const footerRoutes = [`/dashboard/${userRole}`, "/Medrae-quizzes", "/my-mistakes", "/progress", "/assessments", "/assessments/history"];
 
-  // Format number helper
   const formatNumber = useCallback((num: number): string => {
     if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
     if (num >= 1_000) return (num / 1_000).toFixed(0) + "k";
@@ -286,14 +309,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     setOpenGroups(prev => prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]);
   }, []);
 
-  // ✅ OPTIMIZED: Batch fetch all counts in a SINGLE operation with head:true
-  // ✅ FULLY OPTIMIZED fetchAllData function
   const fetchAllData = useCallback(async (forceRefresh = false) => {
     if (!isMounted.current) return;
 
     const now = Date.now();
 
-    // 1. Show cached data immediately so UI is fast
     const cachedMistakes = getCached(MISTAKE_COUNT_KEY);
     const cachedCounts = getCached(COUNTS_KEY);
     const cachedStars = getCached(STARS_KEY);
@@ -310,7 +330,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       setTotalEvents(cachedCounts.totalEvents || 0);
     }
 
-    // 2. Only skip the database call if we fetched very recently
     if (!forceRefresh && (now - lastFetchTime < MIN_FETCH_INTERVAL)) {
       return;
     }
@@ -327,7 +346,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         return;
       }
 
-      // ✅ Fetch fresh counts from Supabase
       const [
         mistakesResult,
         questionsResult,
@@ -348,7 +366,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         supabase.from("announcements").select("id", { count: "exact", head: true }).eq("is_published", true)
       ]);
 
-      // Extract results
       const mistakesCount = mistakesResult.status === 'fulfilled' ? mistakesResult.value.count || 0 : 0;
       const questionsCount = questionsResult.status === 'fulfilled' ? questionsResult.value.count || 0 : 0;
       const simCount = simResult.status === 'fulfilled' ? simResult.value.count || 0 : 0;
@@ -359,7 +376,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
 
       let stars = 0;
       if (quizResults.status === 'fulfilled' && quizResults.value?.data) {
-        // Group by unit and find the best percentage score per unit
         const unitBestScores: Record<string, number> = {};
 
         quizResults.value.data.forEach(r => {
@@ -373,7 +389,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           }
         });
 
-        // Award stars based on percentage thresholds
         stars = Object.values(unitBestScores).reduce((total, percent) => {
           if (percent >= 90) return total + 5;
           if (percent >= 75) return total + 4;
@@ -405,7 +420,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         setTotalStars(stars);
         setUnreadAnnouncements(unread);
 
-        // Update Cache
         setCached(COUNTS_KEY, counts);
         setCached(MISTAKE_COUNT_KEY, mistakesCount);
         setCached(STARS_KEY, stars);
@@ -418,16 +432,13 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     }
   }, []);
 
-  // Initial load and visibility refresh
   useEffect(() => {
     isMounted.current = true;
-
-    // Always fetch fresh data on refresh
     fetchAllData(true);
 
     const handleVisibilityChange = () => {
       if (!document.hidden && isMounted.current) {
-        fetchAllData(false); // Check if data is old when returning to tab
+        fetchAllData(false);
       }
     };
 
@@ -438,7 +449,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     };
   }, [fetchAllData]);
 
-  // Optimized resize handler
   useEffect(() => {
     const handleResize = () => {
       if (resizeDebounce.current) clearTimeout(resizeDebounce.current);
@@ -456,25 +466,20 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
 
   const handleAnnouncementsClick = useCallback(() => {
     setUnreadAnnouncements(0);
-    // Update cache immediately
     setCached(ANNOUNCEMENTS_KEY, 0);
     handleNavigate("/announcements");
   }, [handleNavigate]);
 
-  // 🔥 UPDATED: Memoized menu items with dynamic role from context
   const mainItems = useMemo(() => [
     { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: (props: any) => <HomeFilledIcon {...props} />, iconTone: "neutral" as IconTone },
     { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
     { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
     { title: "Nurse Duel (N.D)", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
     { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
-
     { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
   ], [userRole, mistakeCount]);
 
-  // 🔥 NEW: NCK Exam Prep Items - dedicated section for assessment/prep
   const nckExamPrepItems = useMemo(() => [
-
     {
       title: "Prep Quizzes Bank",
       url: "/Medrae-quizzes",
@@ -498,7 +503,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     },
   ], [totalQuestions, totalStars, totalSimulationPapers, formatNumber]);
 
-  // 🔥 UPDATED: Learning items - now excludes assessment/prep items
   const learningItems = useMemo(() => [
     { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone, badge: "New" },
     { title: "Assessment History", url: "/assessments/history", icon: BarChart3, iconTone: "progress" as IconTone },
@@ -507,10 +511,8 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "Create Class", url: "/live-classes/create", icon: Video, iconTone: "learning" as IconTone },
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" as IconTone },
     { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content" as IconTone, badge: formatNumber(totalNotes) },
-
   ], [totalNotes, totalEvents, formatNumber]);
 
-  // 🔥 UPDATED: Institutional exam items with dynamic role
   const institutionalExamItems = useMemo(() => {
     if (userRole === "student") {
       return [
@@ -531,12 +533,10 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "MedTube", url: "/medtube", icon: PlayFilledIcon, iconTone: "media" as IconTone, badge: totalVideos ? formatNumber(totalVideos) : undefined },
   ], [totalVideos, formatNumber]);
 
-  // 🔥 UPDATED: Tutor items with dynamic role
   const tutorItems = useMemo(() => userRole === "tutor" ? [
     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
   ] : [], [userRole]);
 
-  // 🔥 UPDATED: Staff items with dynamic role
   const staffItems = useMemo(() => userRole === "staff" ? [
     { title: "Events & Seminars", url: "/events", icon: CalendarDays, iconTone: "learning" as IconTone },
     { title: "Job Board", url: "/jobs", icon: Briefcase, iconTone: "people" as IconTone },
@@ -550,8 +550,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "Feedback Box", url: "/feedback", icon: MessageSquareX, iconTone: "communication" as IconTone },
     { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" as IconTone },
     { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" as IconTone },
-    { title: "GroupPay", url: "/grouppay", icon: Users, iconTone: "practice" as IconTone, badge: "New" }, // ✅ ADDED
-
+    { title: "GroupPay", url: "/grouppay", icon: Users, iconTone: "practice" as IconTone, badge: "New" },
   ], [handleAnnouncementsClick]);
 
   const visibleMainItems = isFooterMounted ? mainItems.filter(item => !footerRoutes.includes(item.url)) : mainItems;
@@ -559,26 +558,91 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const visibleNckPrepItems = isFooterMounted ? nckExamPrepItems.filter(item => !footerRoutes.includes(item.url)) : nckExamPrepItems;
 
   return (
-    <Sidebar className="fixed top-0 left-0 h-full z-50 bg-background shadow-lg transition-transform duration-300 w-64 overflow-y-auto">
-      <div className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
-            <img src="/pwa-192x192.jpeg" alt="Logo" className="h-full w-full object-cover" loading="lazy" />
+    <Sidebar className="fixed top-0 left-0 h-full z-50 bg-background border-0 shadow-none transition-transform duration-300 w-[380px] overflow-y-auto">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center ring-0 ring-primary/20 shadow-none">
+            <svg
+              viewBox="0 0 192 192"
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-full w-full"
+              aria-label="MEDRAE Nursing Logo"
+            >
+              {/* White rounded background */}
+              <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
+
+              {/* Red Heart */}
+              <path
+                d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
+                fill="#FF1F1F"
+              />
+
+              {/* Graduation Cap */}
+              <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
+
+              {/* Cap lower body */}
+              <path
+                d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
+                fill="#FFFFFF"
+              />
+
+              {/* Red cap seam */}
+              <path
+                d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
+                fill="none"
+                stroke="#FF1F1F"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+
+              {/* Red cap string */}
+              <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
+
+              {/* Red button */}
+              <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
+
+              {/* Tassel */}
+              <path
+                d="M94 82 C86 86 75 88 63 89"
+                fill="none"
+                stroke="#FF1F1F"
+                strokeWidth="2"
+              />
+
+              {/* White tassel cord */}
+              <path
+                d="M63 89 C61 94 61 98 61 103"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+
+              {/* Tassel top */}
+              <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
+
+              {/* Tassel */}
+              <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
+            </svg>
           </div>
           {!isCollapsed && (
-            <div>
-              <div className="text-sm font-bold tracking-wide flex items-center gap-1">
+            <div className="min-w-0">
+              <div className="text-[14px] font-extrabold tracking-tight flex items-center gap-1">
                 <span className="text-red-500">MEDRAE</span>
                 <span className="text-gray-900 dark:text-white">NURSING</span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Kenya Nursing Network Platform (KNN)</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">
+                Kenya Nursing Network (KNN)
+              </p>
             </div>
           )}
         </div>
       </div>
 
-      <SidebarContent className="px-2 overflow-y-auto hide-scrollbar">
-        {/* Main Section */}
+      <div className="mx-4 h-px bg-border/60" />
+
+      <SidebarContent className="px-2 pt-1.5 pb-3 overflow-y-auto hide-scrollbar">
         <SidebarSection
           label="Main"
           items={visibleMainItems}
@@ -590,7 +654,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           groupId="main"
         />
 
-        {/* Institutional Exams Section */}
         <SidebarSection
           label="Institutional Exams"
           items={institutionalExamItems}
@@ -602,7 +665,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           groupId="institutional"
         />
 
-        {/* 🆕 NCK Exam Prep Section */}
         <SidebarSection
           label="NCK Exam Prep"
           items={visibleNckPrepItems}
@@ -614,7 +676,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           groupId="nck-exam-prep"
         />
 
-        {/* Tutor Tools Section */}
         {tutorItems.length > 0 && (
           <SidebarSection
             label="Tutor Tools"
@@ -628,7 +689,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           />
         )}
 
-        {/* Learning Section - Updated (without prep items) */}
         <SidebarSection
           label="Learning"
           items={visibleLearningItems}
@@ -641,12 +701,16 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         />
 
         {/* Media Section */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="group/label hover:bg-muted/50 rounded-md p-2">
+        <SidebarGroup className="py-0.5">
+          <SidebarGroupLabel
+            className="flex items-center gap-2 rounded-md px-3 py-1.5 mx-1
+              text-[10px] font-bold uppercase tracking-[0.12em]
+              text-muted-foreground/70"
+          >
             Media
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0">
               {mediaItems.map((item) => (
                 <MenuItem
                   key={item.title}
@@ -662,7 +726,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Staff Tools Section */}
         {staffItems.length > 0 && (
           <SidebarSection
             label="Staff Tools"
@@ -677,26 +740,58 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         )}
 
         {/* Other Section */}
-        <SidebarGroup>
+        <SidebarGroup className="py-0.5">
+          <SidebarGroupLabel
+            className="flex items-center gap-2 rounded-md px-3 py-1.5 mx-1
+              text-[10px] font-bold uppercase tracking-[0.12em]
+              text-muted-foreground/70"
+          >
+            More
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0">
               {otherItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <button
-                      className={`w-full ${isActive(item.url) ? "bg-primary/10 text-primary border-r-2 border-primary font-medium" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"} transition-colors duration-150`}
+                      className={`group w-full my-0.5 rounded-lg px-2 py-2 flex items-center gap-2.5
+                        ${isActive(item.url)
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "hover:bg-muted/60 text-foreground/85 hover:text-foreground"
+                        } transition-all duration-150`}
                       onClick={() => item.onClick ? item.onClick() : handleNavigate(item.url)}
                       style={{ touchAction: 'manipulation' }}
                     >
-                      <div className={`flex-shrink-0 mr-2 p-1.5 rounded-md ${ICON_TONE_STYLES[item.iconTone || "neutral"].box}`}>
-                        <item.icon className={`${isCollapsed ? "h-6 w-6" : "h-5 w-5"} ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon}`} />
+                      <div
+                        className={`flex-shrink-0 flex items-center justify-center rounded-full
+                          ${isCollapsed ? "h-10 w-10" : "h-8 w-8"}
+                          ${ICON_TONE_STYLES[item.iconTone || "neutral"].box}
+                          transition-transform duration-150 group-hover:scale-105`}
+                      >
+                        <item.icon
+                          className={`${isCollapsed ? "h-5 w-5" : "h-4 w-4"} ${ICON_TONE_STYLES[item.iconTone || "neutral"].icon}`}
+                          strokeWidth={2.4}
+                        />
                       </div>
                       {!isCollapsed && (
-                        <div className="flex items-center w-full">
-                          <span>{item.title}</span>
+                        <div className="flex items-center w-full min-w-0">
+                          <span className="text-[14px] font-medium tracking-tight truncate">
+                            {item.title}
+                          </span>
                           {item.title === "Announcements" && unreadAnnouncements > 0 && (
-                            <Badge variant="secondary" className="ml-auto h-5 text-xs">
+                            <Badge
+                              variant="secondary"
+                              className="ml-2 h-[20px] px-1.5 text-[10px] font-bold rounded-full bg-primary/15 text-primary"
+                            >
                               {unreadAnnouncements}
+                            </Badge>
+                          )}
+                          {item.badge && item.title !== "Announcements" && (
+                            <Badge
+                              variant="secondary"
+                              className="ml-2 h-[20px] px-1.5 text-[10px] font-bold rounded-full bg-primary/15 text-primary"
+                            >
+                              {item.badge}
                             </Badge>
                           )}
                         </div>
@@ -710,27 +805,212 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <div className="mt-auto py-6 text-center select-none border-t border-slate-100 dark:border-slate-900/40">
-        <p className="text-[6px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
-          MEDRAE • ALL RIGHTS RESERVED • CLINICAL INTEGRITY
+      {/* Footer */}
+      <div className="mt-auto py-5 px-4 text-center select-none border-0">
+
+        {/* Brand + Tagline */}
+        <p className="text-[7px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
+          Medrae Nursing All right reserved
         </p>
-        <div className="mt-3 flex items-center justify-center gap-4">
-          <Link to="/privacy" className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors uppercase tracking-widest font-mono">
+
+        {/* Social Icons Row */}
+        <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
+          {/* MEDRAE Logo — links to landing page */}
+          <a
+            href="https://medrae-nursing.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="MEDRAE Nursing Website"
+            className="group flex h-8 w-8 items-center justify-center rounded-full
+                 overflow-hidden
+                 bg-white dark:bg-slate-900
+                 ring-1 ring-slate-200 dark:ring-slate-700
+                 shadow-none
+                 transition-transform hover:scale-110 active:scale-95"
+          >
+            <svg
+              viewBox="0 0 192 192"
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-full w-full"
+              aria-hidden="true"
+            >
+              {/* White rounded background */}
+              <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
+
+              {/* Red Heart */}
+              <path
+                d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
+                fill="#FF1F1F"
+              />
+
+              {/* Graduation Cap */}
+              <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
+
+              {/* Cap lower body */}
+              <path
+                d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
+                fill="#FFFFFF"
+              />
+
+              {/* Red cap seam */}
+              <path
+                d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
+                fill="none"
+                stroke="#FF1F1F"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+
+              {/* Red cap string */}
+              <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
+
+              {/* Red button */}
+              <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
+
+              {/* Tassel */}
+              <path
+                d="M94 82 C86 86 75 88 63 89"
+                fill="none"
+                stroke="#FF1F1F"
+                strokeWidth="2"
+              />
+
+              {/* White tassel cord */}
+              <path
+                d="M63 89 C61 94 61 98 61 103"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+
+              {/* Tassel top */}
+              <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
+
+              {/* Tassel */}
+              <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
+            </svg>
+          </a>
+
+          {/* WhatsApp */}
+          <a
+            href="https://wa.me/254704473503"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WhatsApp 0704473503"
+            className="group flex h-8 w-8 items-center justify-center rounded-full
+           bg-gradient-to-br from-green-500 to-green-600
+           shadow-none
+           transition-transform hover:scale-110 active:scale-95"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+            </svg>
+          </a>
+
+          {/* TikTok */}
+          <a
+            href="https://tiktok.com/@medraenursing"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="TikTok @medraenursing"
+            className="group flex h-8 w-8 items-center justify-center rounded-full
+           bg-gradient-to-br from-slate-800 to-slate-950
+           shadow-none
+           transition-transform hover:scale-110 active:scale-95"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43V8.66a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.09z" />
+            </svg>
+          </a>
+
+          {/* Instagram */}
+          <a
+            href="https://instagram.com/medraenursing"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram @medraenursing"
+            className="group flex h-8 w-8 items-center justify-center rounded-full
+           bg-gradient-to-br from-pink-500 via-fuchsia-500 to-amber-400
+           shadow-none
+           transition-transform hover:scale-110 active:scale-95"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" />
+            </svg>
+          </a>
+
+          {/* X (Twitter) */}
+          <a
+            href="https://x.com/medraenursing"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="X @medraenursing"
+            className="group flex h-8 w-8 items-center justify-center rounded-full
+           bg-gradient-to-br from-slate-700 to-black
+           shadow-none
+           transition-transform hover:scale-110 active:scale-95"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 text-white">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
+
+          {/* YouTube */}
+          <a
+            href="https://youtube.com/@medraenursing"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="YouTube @medraenursing"
+            className="group flex h-8 w-8 items-center justify-center rounded-full
+           bg-gradient-to-br from-red-500 to-red-700
+           shadow-none
+           transition-transform hover:scale-110 active:scale-95"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            </svg>
+          </a>
+
+          {/* Facebook */}
+          <a
+            href="https://facebook.com/medraenursing"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Facebook @medraenursing"
+            className="group flex h-8 w-8 items-center justify-center rounded-full
+           bg-gradient-to-br from-blue-500 to-blue-700
+           shadow-none
+           transition-transform hover:scale-110 active:scale-95"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+          </a>
+        </div>
+
+        {/* Handle */}
+        <a
+          href="https://instagram.com/medraenursing"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-block text-[10px] font-bold text-slate-500 dark:text-slate-400
+         hover:text-blue-600 dark:hover:text-blue-400 transition-colors tracking-wide"
+        >
+          @medraenursing
+        </a>
+
+        {/* Legal Links */}
+        <div className="mt-0 flex items-center justify-center gap-3">
+          <Link to="/privacy" className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors tracking-widest">
             Privacy
           </Link>
-          <span className="h-1 w-1 rounded-full bg-slate-200 dark:bg-slate-800" />
-          <Link to="/terms" className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors uppercase tracking-widest font-mono">
+          <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <Link to="/terms" className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors tracking-widest">
             Terms
           </Link>
         </div>
-        <div className="mt-4 flex flex-col gap-0.5">
-          <p className="text-[6px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600 opacity-40 font-medium">
-            STUDY PURPOSES ONLY
-          </p>
-          <p className="text-[5px] uppercase tracking-[0.1em] text-slate-300 dark:text-slate-700 font-bold">
-            SYSTEM BUILD V2.4.0_STABLE
-          </p>
-        </div>
+
       </div>
     </Sidebar>
   );

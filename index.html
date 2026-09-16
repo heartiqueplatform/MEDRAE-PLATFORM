@@ -5,9 +5,24 @@
   <!-- ============================================ -->
   <!-- PWA & MANIFEST - FIXED -->
   <!-- ============================================ -->
+  <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- SVG favicon (crisp at any size, works in modern browsers) -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20192%20192%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22192%22%20height%3D%22192%22%20rx%3D%2235%22%20fill%3D%22%23FFFFFF%22%2F%3E%3Cpath%20d%3D%22M96%20169%20C91%20165%2031%20116%2020%2091%20C8%2064%2023%2038%2048%2032%20C67%2027%2084%2035%2096%2050%20C108%2035%20125%2027%20144%2032%20C169%2038%20184%2064%20172%2091%20C161%20116%20101%20165%2096%20169%20Z%22%20fill%3D%22%23FF1F1F%22%2F%3E%3Cpath%20d%3D%22M44%2082%20L96%2063%20L150%2082%20L96%20101%20Z%22%20fill%3D%22%23FFFFFF%22%2F%3E%3Cpath%20d%3D%22M62%2088%20V105%20C62%20111%2077%20119%2096%20122%20C115%20119%20130%20111%20130%20105%20V88%20L96%20101%20Z%22%20fill%3D%22%23FFFFFF%22%2F%3E%3Cpath%20d%3D%22M62%2091%20V105%20C62%20111%2077%20119%2096%20122%20C115%20119%20130%20111%20130%20105%20V91%22%20fill%3D%22none%22%20stroke%3D%22%23FF1F1F%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M96%2082%20V101%22%20stroke%3D%22%23FF1F1F%22%20stroke-width%3D%222.5%22%2F%3E%3Ccircle%20cx%3D%2294%22%20cy%3D%2282%22%20r%3D%223.5%22%20fill%3D%22%23FF1F1F%22%2F%3E%3Cpath%20d%3D%22M94%2082%20C86%2086%2075%2088%2063%2089%22%20fill%3D%22none%22%20stroke%3D%22%23FF1F1F%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M63%2089%20C61%2094%2061%2098%2061%20103%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2261%22%20cy%3D%22105%22%20r%3D%224%22%20fill%3D%22%23FFFFFF%22%2F%3E%3Cpath%20d%3D%22M57%20108%20L65%20108%20L67%20122%20C63%20124%2059%20124%2055%20122%20Z%22%20fill%3D%22%23FFFFFF%22%2F%3E%3C%2Fsvg%3E" />
+
+  <!-- PNG favicon fallback (older browsers that don't support SVG icons) -->
   <link rel="icon" type="image/png" href="/favicon.png" />
+
+  <!-- Apple touch icon (iOS home screen — SVG not supported here yet) -->
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- iOS / Android theme color — matches your red brand mark -->
+  <meta name="theme-color" content="#FF1F1F" />
+
+  <!-- Prevent iOS from auto-detecting phone numbers -->
+  <meta name="format-detection" content="telephone=no" />
 
   <meta charset="UTF-8" />
   <meta name="google-site-verification" content="Wkyzq63VRTwSni_NDPpyjJZheCXZq4B3kyo3hdXchG0" />

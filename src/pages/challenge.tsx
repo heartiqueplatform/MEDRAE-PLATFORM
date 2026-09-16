@@ -8,6 +8,7 @@ import { playSound, initSound } from "@/lib/soundManager";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlobalLoader } from "@/components/GlobalLoader";
 import confetti from "canvas-confetti";
+import { useSearchParams } from "react-router-dom";
 import {
     Inbox,
     History,
@@ -883,13 +884,16 @@ export default function ChallengePage() {
     });
     const [isUpdating, setIsUpdating] = useState(false); // New state for update loading
     const [timerWarningPlayed, setTimerWarningPlayed] = useState(false);
-
+    const [searchParams, setSearchParams] = useSearchParams();
+    const duelTarget = searchParams.get("duel");
     const lastShownBattleId = useRef<string | null>(null);
     const processingCompletedRef = useRef(false);
     const timerRef = useRef<NodeJS.Timeout>();
     const intervalRef = useRef<NodeJS.Timeout>();
     const beepIntervalRef = useRef<NodeJS.Timeout>();
-
+    const duelHandledRef = useRef(false);
+    const submitGuardRef = useRef(false);
+    const sendingRef = useRef(false);
     // Load pinned users from cache on mount
     useEffect(() => {
         const cached = loadCache(PLAYERS_CACHE_KEY);
@@ -1113,23 +1117,86 @@ export default function ChallengePage() {
     };
 
     const sendChallenge = async (targetUserId: string) => {
-        playSound("ui-tap");
-        const canSend = !challenges.some(c => (c.from_user_id === user.id && c.to_user_id === targetUserId && c.status !== "completed") || (c.from_user_id === targetUserId && c.to_user_id === user.id && c.status !== "completed"));
-        if (!canSend) { alert("Complete previous challenge with this player first."); return; }
+        // ✅ Prevent double-send from any source
+        if (sendingRef.current) return;
+        sendingRef.current = true;
 
-        const { data: questionsData, error } = await supabase.rpc("get_random_questions", { limit_count: 10 });
-        if (error || !questionsData) return;
+        try {
+            playSound("ui-tap");
 
-        setTempQuestions(questionsData);
-        setPendingTargetUser(targetUserId);
-        setAnswers(Array(questionsData.length).fill(""));
-        setCurrentQIndex(0);
-        setActiveChallenge({ from_user_id: user.id, to_user_id: targetUserId, questions: questionsData, status: "self", score_to_beat: 0 });
-        setTimeout(() => { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { }); }, 100);
-        setTimeLeft(300);
-        setTimerWarningPlayed(false);
+            const canSend = !challenges.some(
+                (c) =>
+                    (c.from_user_id === user.id &&
+                        c.to_user_id === targetUserId &&
+                        c.status !== "completed") ||
+                    (c.from_user_id === targetUserId &&
+                        c.to_user_id === user.id &&
+                        c.status !== "completed")
+            );
+
+            if (!canSend) {
+                alert("Complete previous challenge with this player first.");
+                return;
+            }
+
+            const { data: questionsData, error } = await supabase.rpc(
+                "get_random_questions",
+                { limit_count: 10 }
+            );
+            if (error || !questionsData) return;
+
+            setTempQuestions(questionsData);
+            setPendingTargetUser(targetUserId);
+            setAnswers(Array(questionsData.length).fill(""));
+            setCurrentQIndex(0);
+            setActiveChallenge({
+                from_user_id: user.id,
+                to_user_id: targetUserId,
+                questions: questionsData,
+                status: "self",
+                score_to_beat: 0,
+            });
+
+            setTimeout(() => {
+                if (document.documentElement.requestFullscreen)
+                    document.documentElement.requestFullscreen().catch(() => { });
+            }, 100);
+
+            setTimeLeft(300);
+            setTimerWarningPlayed(false);
+        } finally {
+            // Release after a short delay — long enough to block re-entry
+            setTimeout(() => {
+                sendingRef.current = false;
+            }, 1500);
+        }
     };
+    // Reset the guard whenever the duel param changes (new challenge request)
+    // Reset the guard whenever the duel param changes (new challenge request)
+    useEffect(() => {
+        if (duelTarget) {
+            duelHandledRef.current = false;
+        }
+    }, [duelTarget]);
 
+    // ✅ Deep-link: auto-start duel when ?duel=<userId> is present
+    useEffect(() => {
+        if (!duelTarget) return;
+        if (activeChallenge) return;
+        if (!players.length) return;
+        if (duelHandledRef.current) return;
+
+        const opponent = players.find((p: any) => p.user_id === duelTarget);
+        if (!opponent) return;
+
+        duelHandledRef.current = true;
+
+        // Clear URL FIRST so any re-render sees no duel param
+        setSearchParams({}, { replace: true });
+
+        // Then trigger
+        sendChallenge(duelTarget);
+    }, [duelTarget, players, activeChallenge, sendChallenge, setSearchParams]);
     const handleInvite = (type: string) => {
         playSound("ui-tap");
         const message = `Hey 👋\n\nJoin me on Medrae 🚀\n\nCompete in challenges:\nhttps://medrae.vercel.app/challenge\n\nSign up here:\nhttps://medrae.vercel.app`;
@@ -1164,27 +1231,83 @@ export default function ChallengePage() {
 
     const submitChallenge = useCallback(async () => {
         if (!activeChallenge) return;
-        const score = activeChallenge.questions.reduce((acc: number, q: any, idx: number) => acc + (answers[idx] === q.correct_answer ? 1 : 0), 0);
 
-        if (activeChallenge.status === "self") {
-            const { error } = await supabase.from("challenges").insert({ from_user_id: user?.id, to_user_id: pendingTargetUser, question_ids: tempQuestions.map(q => q.id), score_to_beat: score, status: "pending" });
-            if (!error) { playSound("notification"); await fetchChallenges(); }
-        } else {
-            await supabase.from("challenges").update({ opponent_score: score, status: "completed", winner_id: score > (activeChallenge.score_to_beat || 0) ? user?.id : activeChallenge.from_user_id, completed_at: new Date() }).eq("id", activeChallenge.id);
-            await fetchChallenges(); // Refresh challenges after completion
+        // ✅ Guard: prevent double-submit from button + fullscreen-change + timer
+        if (submitGuardRef.current) return;
+        submitGuardRef.current = true;
+
+        try {
+            const score = activeChallenge.questions.reduce(
+                (acc: number, q: any, idx: number) =>
+                    acc + (answers[idx] === q.correct_answer ? 1 : 0),
+                0
+            );
+
+            if (activeChallenge.status === "self") {
+                const { error } = await supabase
+                    .from("challenges")
+                    .insert({
+                        from_user_id: user?.id,
+                        to_user_id: pendingTargetUser,
+                        question_ids: tempQuestions.map((q) => q.id),
+                        score_to_beat: score,
+                        status: "pending",
+                    });
+
+                if (!error) {
+                    playSound("notification");
+                    await fetchChallenges();
+                }
+            } else {
+                await supabase
+                    .from("challenges")
+                    .update({
+                        opponent_score: score,
+                        status: "completed",
+                        winner_id:
+                            score > (activeChallenge.score_to_beat || 0)
+                                ? user?.id
+                                : activeChallenge.from_user_id,
+                        completed_at: new Date(),
+                    })
+                    .eq("id", activeChallenge.id);
+
+                await fetchChallenges();
+            }
+        } finally {
+            // Cleanup UI state
+            setActiveChallenge(null);
+            setTempQuestions([]);
+            setPendingTargetUser(null);
+            setAnswers([]);
+            setCurrentQIndex(0);
+            setTimerWarningPlayed(false);
+
+            if (beepIntervalRef.current) {
+                clearInterval(beepIntervalRef.current);
+                beepIntervalRef.current = undefined;
+            }
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = undefined;
+            }
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => { });
+            }
+
+            // ✅ Release the guard after a short delay so a fresh challenge can start
+            setTimeout(() => {
+                submitGuardRef.current = false;
+            }, 1000);
         }
-        setActiveChallenge(null);
-        setTempQuestions([]);
-        setPendingTargetUser(null);
-        setAnswers([]);
-        setCurrentQIndex(0);
-        setTimerWarningPlayed(false);
-        if (beepIntervalRef.current) {
-            clearInterval(beepIntervalRef.current);
-            beepIntervalRef.current = undefined;
-        }
-        if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
-    }, [activeChallenge, answers, user, pendingTargetUser, tempQuestions, fetchChallenges]);
+    }, [
+        activeChallenge,
+        answers,
+        user,
+        pendingTargetUser,
+        tempQuestions,
+        fetchChallenges,
+    ]);
 
     // Timer effect with 10-second warning and 5-second repeating beeps
     useEffect(() => {
