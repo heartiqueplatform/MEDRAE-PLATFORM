@@ -134,40 +134,86 @@ const NavItem = memo(({
     isDark: boolean;
     badge?: number;
 }) => {
+    const [pressed, setPressed] = useState(false);
+
+    /* ---------- Color system (WhatsApp-style contrast) ---------- */
+    // Active: solid dark text on light, or solid white on dark
+    // Inactive: mid-gray so it doesn't disappear, but clearly secondary
     const labelColor = isActive
         ? isDark ? "text-white" : "text-gray-900"
-        : isDark ? "text-gray-500" : "text-gray-400";
+        : isDark ? "text-gray-400" : "text-gray-500";
 
     const iconColor = isActive
-        ? isDark ? "text-white" : "text-gray-900"
-        : isDark ? "text-gray-500" : "text-gray-400";
+        ? isDark ? "text-white" : "text-blue-600"
+        : isDark ? "text-gray-400" : "text-gray-500";
+
+    /* ---------- Press handlers ---------- */
+    const handlePointerDown = (e: React.PointerEvent) => {
+        setPressed(true);
+        onPress(e);
+    };
+    const handlePointerUp = () => setPressed(false);
+    const handlePointerLeave = () => setPressed(false);
+    const handlePointerCancel = () => setPressed(false);
 
     return (
         <button
-            onPointerDown={onPress}
-            className="flex flex-col items-center justify-center flex-1 h-full relative select-none"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerLeave}
+            onPointerCancel={handlePointerCancel}
+            className="
+                flex flex-col items-center justify-center flex-1 h-full relative select-none
+                transition-transform duration-150
+            "
+            style={{
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+                transform: pressed ? 'scale(0.94)' : 'scale(1)',
+            }}
         >
-            <div className="relative flex items-center justify-center w-6 h-6">
+            {/* ---------- Blue glow behind tapped icon ---------- */}
+            <div
+                className="absolute top-1 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full pointer-events-none
+                    transition-all duration-300 ease-out"
+                style={{
+                    background: 'radial-gradient(circle, rgba(59,130,246,0.45) 0%, rgba(59,130,246,0.15) 45%, transparent 75%)',
+                    opacity: pressed ? 1 : 0,
+                    transform: `translateX(-50%) scale(${pressed ? 1.35 : 1})`,
+                }}
+            />
+
+            {/* Active underline glow (permanent, subtle) */}
+            {isActive && (
+                <div
+                    className="absolute top-1 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full pointer-events-none
+                        transition-opacity duration-300"
+                    style={{
+                        background: 'radial-gradient(circle, rgba(59,130,246,0.28) 0%, transparent 70%)',
+                    }}
+                />
+            )}
+
+            <div className="relative flex items-center justify-center w-6 h-6 z-10">
                 <span className={`transition-colors duration-200 ${iconColor}`}>
                     <Icon active={isActive} />
                 </span>
                 {badge !== undefined && badge > 0 && (
                     <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-[4px]
-                        text-[9px] font-semibold flex items-center justify-center
-                        bg-red-500 text-white rounded-full leading-none">
+                        text-[9px] font-bold flex items-center justify-center
+                        bg-red-500 text-white rounded-full leading-none
+                        ring-2 ring-background">
                         {badge > 99 ? '99+' : badge}
                     </span>
                 )}
             </div>
-            <span className={`text-[10px] font-medium leading-none mt-1 transition-colors duration-200 ${labelColor}`}>
+            <span className={`text-[10px] font-semibold leading-none mt-1 transition-colors duration-200 z-10 ${labelColor}`}>
                 {label}
             </span>
         </button>
     );
 });
 NavItem.displayName = "NavItem";
-
 /* ============================================================
    FOOTER
    ============================================================ */
