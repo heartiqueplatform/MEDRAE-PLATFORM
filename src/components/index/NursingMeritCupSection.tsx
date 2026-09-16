@@ -76,7 +76,7 @@ const NursingMeritCupSection = () => {
         {
             icon: Trophy,
             title: "National Merit Ranking",
-            description: "A credible, verifiable national ranking based purely on final exam performance — something you can confidently list on your CV.",
+            description: "A credible, verifiable national ranking based purely on final exam performance   something you can confidently list on your CV.",
             color: "text-amber-600",
             bg: "bg-amber-50",
         },
@@ -135,10 +135,7 @@ const NursingMeritCupSection = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-10 md:mb-16 px-4 md:px-0">
-                    <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest mb-3 md:mb-4">
-                        <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                        New on Medrae
-                    </div>
+
                     <h2 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 mb-3 md:mb-4">
                         Medrae National Nursing{" "}
                         <span className="text-blue-600 italic">Merit Cup</span>
@@ -146,12 +143,12 @@ const NursingMeritCupSection = () => {
                     <p className="text-sm md:text-lg text-slate-600 md:max-w-full md:px-4 lg:px-6 mx-auto font-medium">
                         Kenya&rsquo;s first nationwide nursing excellence
                         olympiad. A two-month academic program that builds you
-                        into a stronger nurse — and crowns the top performers
+                        into a stronger nurse   and crowns the top performers
                         in a national merit ranking.
                     </p>
                 </div>
 
-                {/* What Is It — plain explanation card (no gradient) */}
+                {/* What Is It   plain explanation card (no gradient) */}
                 <div className="bg-white rounded-2xl p-6 md:p-10 mb-10 md:mb-12 mx-3 md:mx-0 shadow-sm border border-slate-100">
                     <div className="max-w-3xl mx-auto text-center">
                         <h3 className="text-lg md:text-2xl font-black text-slate-900 mb-3 md:mb-4">
@@ -161,7 +158,7 @@ const NursingMeritCupSection = () => {
                             The Merit Cup is Kenya&rsquo;s first academic
                             olympiad dedicated to nursing excellence. Think of
                             it the way you think of the Kenya Science and
-                            Engineering Fair or the Kenya Music Festival — a
+                            Engineering Fair or the Kenya Music Festival   a
                             serious pursuit of skill, knowledge, and merit.
                         </p>
                         <p className="text-sm md:text-base text-slate-600 leading-relaxed">
@@ -169,7 +166,7 @@ const NursingMeritCupSection = () => {
                             revision, complete three mock NCK-style exams, and
                             sit a supervised final merit exam. The top
                             performers are recognised nationally. Every
-                            participant — regardless of rank — receives two
+                            participant   regardless of rank   receives two
                             months of Medrae Premium, all three mock exams, and
                             a Certificate of Participation.
                         </p>
@@ -266,7 +263,7 @@ const NursingMeritCupSection = () => {
                     </p>
                 </div>
 
-                {/* Why It Matters — Wellness & Support */}
+                {/* Why It Matters   Wellness & Support */}
                 <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 px-3 md:px-0">
                     <div className="bg-white md:rounded-2xl p-6 md:p-8 md:shadow-sm md:border md:border-slate-100">
                         <div className="flex items-center gap-3 mb-3 md:mb-4">
@@ -279,7 +276,7 @@ const NursingMeritCupSection = () => {
                         </div>
                         <p className="text-[12px] md:text-sm text-slate-600 leading-relaxed">
                             Nursing school in Kenya is demanding. The Merit Cup
-                            brings students into a shared academic community —
+                            brings students into a shared academic community
                             with daily wellness check-ins, peer support, and a
                             shared rhythm of study that reduces burnout.
                         </p>
@@ -296,21 +293,18 @@ const NursingMeritCupSection = () => {
                         </div>
                         <p className="text-[12px] md:text-sm text-slate-600 leading-relaxed">
                             Medrae is building long-term support for nursing
-                            students — including mentorship pathways,
+                            students   including mentorship pathways,
                             connections to opportunities, and resources that
                             keep talented nurses in the profession.
                         </p>
                     </div>
                 </div>
 
-                {/* Final CTA — light card, no gradient, no dark */}
+                {/* Final CTA   light card, no gradient, no dark */}
                 <div className="mt-10 md:mt-12 mx-3 md:mx-0">
                     <div className="bg-white md:rounded-2xl p-6 md:p-10 shadow-sm border border-slate-100">
                         <div className="max-w-2xl mx-auto text-center">
-                            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest mb-4 md:mb-5">
-                                <Users className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                                Join Medrae to Participate
-                            </div>
+
                             <h3 className="text-xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4">
                                 Ready to Be Part of the Merit Cup?
                             </h3>
@@ -331,7 +325,7 @@ const NursingMeritCupSection = () => {
                                     </p>
                                     <p className="text-[10px] md:text-xs text-slate-600 leading-relaxed">
                                         All 3 years, 80+ modules, and 1,000+
-                                        units — from Year 1 to licensure
+                                        units   from Year 1 to licensure
                                     </p>
                                 </div>
                                 <div className="rounded-xl bg-slate-50 p-4">
@@ -381,7 +375,7 @@ const NursingMeritCupSection = () => {
                     </div>
                 </div>
 
-                {/* Closing quote — soft, no testimonial pressure */}
+                {/* Closing quote   soft, no testimonial pressure */}
                 <div className="mt-10 md:mt-12 mx-auto text-center px-4 md:px-0 max-w-2xl">
                     <div className="inline-flex items-center justify-center bg-blue-50 rounded-full p-3 mb-3">
                         <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
@@ -389,11 +383,11 @@ const NursingMeritCupSection = () => {
                     <p className="text-sm md:text-base text-slate-600 font-medium italic leading-relaxed">
                         &ldquo;The Merit Cup is more than a competition. It is
                         our commitment to recognising nursing excellence in
-                        Kenya — rewarding study, skill, and merit in the spirit
+                        Kenya   rewarding study, skill, and merit in the spirit
                         of Florence Nightingale.&rdquo;
                     </p>
                     <p className="text-xs md:text-sm font-bold text-slate-800 mt-3">
-                        — Medrae Nursing Leadership
+                        Medrae Nursing Leadership
                     </p>
                 </div>
             </div>

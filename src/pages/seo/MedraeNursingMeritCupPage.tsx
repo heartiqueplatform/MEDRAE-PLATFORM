@@ -56,7 +56,7 @@ export default function MedraeNursingMeritCupPage() {
         setMeta(
             "name",
             "description",
-            "Medrae National Nursing Merit Cup — Kenya's first nationwide nursing excellence olympiad. A merit-based academic competition for KMTC students, interns, and staff nurses. Merit awards, CPD, certificate for all participants. Entry: KSh 999 students, KSh 1,499 staff."
+            "Medrae National Nursing Merit Cup ~ Kenya's first nationwide nursing excellence olympiad. A merit-based academic competition for KMTC students, interns, and staff nurses. Merit awards, CPD, certificate for all participants. Entry: KSh 999 students, KSh 1,499 staff."
         );
         setMeta(
             "property",
@@ -129,7 +129,7 @@ export default function MedraeNursingMeritCupPage() {
 
                     <p className="mt-6 text-[15px] leading-7 text-slate-600 sm:text-base">
                         A two-month academic program that builds you into a
-                        stronger nurse — then crowns the top performers in a
+                        stronger nurse ~ then crowns the top performers in a
                         national merit ranking. Modelled on academic
                         competitions like the Kenya Science and Engineering
                         Fair. A pursuit of excellence in the spirit of Florence
@@ -173,19 +173,19 @@ export default function MedraeNursingMeritCupPage() {
                             to="/register"
                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 sm:w-auto sm:text-base"
                         >
-                            Register as Student — KSh 999
+                            Register as Student ~ KSh 999
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                         <Link
                             to="/register"
                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-4 text-sm font-bold text-blue-700 ring-1 ring-blue-700 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300 sm:w-auto sm:text-base"
                         >
-                            Register as Staff Nurse — KSh 1,499
+                            Register as Staff Nurse ~ KSh 1,499
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
                     <p className="mt-3 text-xs text-slate-500 sm:text-sm">
-                        Limited to <strong>300 slots per Cup</strong>.
+                        Limited to <strong>600 slots per Cup</strong>.
                         Registration opens soon.
                     </p>
                 </section>
@@ -204,7 +204,7 @@ export default function MedraeNursingMeritCupPage() {
                             nationally recognised{" "}
                             <strong>academic olympiad</strong> for Kenyan
                             nursing students and practising nurses. It rewards
-                            study, skill, and merit — never chance.
+                            study, skill, and merit ~ never chance.
                         </p>
                         <p>
                             Think of it as Kenya&rsquo;s Science Congress or
@@ -224,17 +224,17 @@ export default function MedraeNursingMeritCupPage() {
                             </div>
                             <ul className="mt-3 space-y-2 pl-5 text-slate-700">
                                 <li className="list-disc">
-                                    <strong>8-week academic program</strong> —
+                                    <strong>8-week academic program</strong> ~
                                     daily quizzes, structured revision, three
                                     mock NCK-style exams.
                                 </li>
                                 <li className="list-disc">
-                                    <strong>Final Merit Exam</strong> — a
+                                    <strong>Final Merit Exam</strong> ~ a
                                     supervised online examination that
                                     determines national ranking.
                                 </li>
                                 <li className="list-disc">
-                                    <strong>Merit Award Ceremony</strong> —
+                                    <strong>Merit Award Ceremony</strong> ~
                                     trophies, certificates, CPD recognition,
                                     and public acknowledgement of top
                                     performers.
@@ -251,7 +251,7 @@ export default function MedraeNursingMeritCupPage() {
                             </div>
                             <p className="mt-2 text-slate-700">
                                 Every shilling of your entry fee goes to
-                                education services — the study pack, exam
+                                education services ~ the study pack, exam
                                 marking, certificates, and premium access.
                             </p>
                             <ul className="mt-3 space-y-2 pl-5 text-slate-700">
@@ -383,7 +383,7 @@ export default function MedraeNursingMeritCupPage() {
                                 </p>
                             </div>
                             <p className="mt-2 text-[13px] text-slate-600">
-                                Realistic, timed, and marked — to prepare you
+                                Realistic, timed, and marked ~ to prepare you
                                 for the pressure of the NCK exam.
                             </p>
                         </li>
@@ -420,7 +420,7 @@ export default function MedraeNursingMeritCupPage() {
                             </div>
                             <p className="mt-2 text-[13px] text-slate-600">
                                 A national ranking based purely on exam
-                                performance — a credible, verifiable academic
+                                performance ~ a credible, verifiable academic
                                 achievement you can list on your CV.
                             </p>
                         </li>
@@ -438,7 +438,7 @@ export default function MedraeNursingMeritCupPage() {
                     <p className="mt-4 text-[15px] leading-7 text-slate-700 sm:text-base">
                         The Cup awards <strong>fixed merit prizes</strong>{" "}
                         based purely on final exam ranking. These are academic
-                        merit awards — not a pool, not a percentage of fees,
+                        merit awards ~ not a pool, not a percentage of fees,
                         and not a chance draw. Every participant still receives
                         the full study pack, 2 months Premium, and a
                         Certificate of Participation.
@@ -447,7 +447,7 @@ export default function MedraeNursingMeritCupPage() {
                     {/* Student category cash awards */}
                     <div className="mt-6">
                         <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                            Students &amp; Interns Category — Cash Merit Awards
+                            Students &amp; Interns Category ~ Cash Merit Awards
                         </h3>
                         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div className="rounded-xl bg-blue-50 p-5">
@@ -489,7 +489,7 @@ export default function MedraeNursingMeritCupPage() {
                     {/* Staff category cash awards */}
                     <div className="mt-8">
                         <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                            Staff Nurses &amp; Tutors Category — Cash Merit
+                            Staff Nurses &amp; Tutors Category ~ Cash Merit
                             Awards
                         </h3>
                         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -535,14 +535,14 @@ export default function MedraeNursingMeritCupPage() {
                             <div className="flex items-center gap-2">
                                 <Trophy className="h-5 w-5 text-blue-700" />
                                 <p className="text-xs font-bold uppercase tracking-widest text-slate-700">
-                                    Top 3 Nationally — Additional Recognition
+                                    Top 3 Nationally ~ Additional Recognition
                                 </p>
                             </div>
                             <ul className="mt-3 space-y-3 text-[14px] leading-7 text-slate-700">
                                 <li className="flex items-start gap-3">
                                     <Trophy className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-700" />
                                     <span>
-                                        <strong>Nightingale Trophy</strong> —
+                                        <strong>Nightingale Trophy</strong> ~
                                         engraved and awarded at the ceremony
                                     </span>
                                 </li>
@@ -552,13 +552,13 @@ export default function MedraeNursingMeritCupPage() {
                                         <strong>
                                             6 Months Medrae Premium
                                         </strong>{" "}
-                                        — free
+                                        ~ free
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <BookOpenCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-700" />
                                     <span>
-                                        <strong>Paid CPD Workshop</strong> —
+                                        <strong>Paid CPD Workshop</strong> ~
                                         fully sponsored attendance
                                     </span>
                                 </li>
@@ -591,13 +591,13 @@ export default function MedraeNursingMeritCupPage() {
                                     <Award className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-700" />
                                     <span>
                                         <strong>Excellence Certificate</strong>{" "}
-                                        — signed and verifiable
+                                        ~ signed and verifiable
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-700" />
                                     <span>
-                                        <strong>Medrae Hall of Fame</strong> —
+                                        <strong>Medrae Hall of Fame</strong> ~
                                         permanent feature on our platform
                                     </span>
                                 </li>
@@ -615,7 +615,7 @@ export default function MedraeNursingMeritCupPage() {
                                 <li className="flex items-start gap-3">
                                     <FileCheck2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-700" />
                                     <span>
-                                        <strong>Merit Certificate</strong> —
+                                        <strong>Merit Certificate</strong> ~
                                         recognising national ranking
                                     </span>
                                 </li>
@@ -717,7 +717,7 @@ export default function MedraeNursingMeritCupPage() {
                         Festival, it exists to reward study, skill, and merit.
                         Awards are{" "}
                         <strong>fixed, published merit prizes</strong> based
-                        purely on final exam ranking — not a pool, not a
+                        purely on final exam ranking ~ not a pool, not a
                         percentage of entry fees, and not a chance draw. Entry
                         fees cover study materials, exam marking, certificates,
                         and premium access. Cash awards are separate merit
@@ -737,14 +737,14 @@ export default function MedraeNursingMeritCupPage() {
                         <p>
                             Nursing school in Kenya is hard. Between
                             placements, exam pressure, and the cost of
-                            training, many students quietly struggle — with
+                            training, many students quietly struggle ~ with
                             burnout, with fees, and with the loneliness of a
                             demanding course.
                         </p>
                         <p>
                             The Merit Cup exists for more than ranking. It
                             brings nursing students across the country into a
-                            shared academic community — a place where effort
+                            shared academic community ~ a place where effort
                             is seen, where daily practice becomes a habit
                             instead of a panic, and where students support each
                             other through the long haul.
@@ -756,12 +756,12 @@ export default function MedraeNursingMeritCupPage() {
                             </h3>
                             <ul className="mt-3 space-y-3 pl-5 text-slate-700">
                                 <li className="list-disc">
-                                    <strong>Daily wellness check-ins</strong> —
+                                    <strong>Daily wellness check-ins</strong> ~
                                     because your mental health matters as much
                                     as your marks.
                                 </li>
                                 <li className="list-disc">
-                                    <strong>Community support</strong> — a
+                                    <strong>Community support</strong> ~ a
                                     space to ask questions, share struggles,
                                     and encourage other nursing students.
                                 </li>
@@ -769,7 +769,7 @@ export default function MedraeNursingMeritCupPage() {
                                     <strong>
                                         Recognition for consistency
                                     </strong>{" "}
-                                    — streaks, leaderboards, and public
+                                    ~ streaks, leaderboards, and public
                                     acknowledgement of sustained effort, not
                                     just top scores.
                                 </li>
@@ -777,7 +777,7 @@ export default function MedraeNursingMeritCupPage() {
                                     <strong>
                                         Access &amp; opportunity
                                     </strong>{" "}
-                                    — the Merit Cup opens doors for outstanding
+                                    ~ the Merit Cup opens doors for outstanding
                                     students to be noticed by tutors, mentors,
                                     and institutions.
                                 </li>
@@ -786,7 +786,7 @@ export default function MedraeNursingMeritCupPage() {
 
                         <p>
                             Looking ahead, Medrae is actively building ways to
-                            support nursing students beyond academics —
+                            support nursing students beyond academics ~
                             including resources for school fees, mentorship
                             pathways, and connections to opportunities that
                             keep talented students in the profession.
@@ -807,7 +807,7 @@ export default function MedraeNursingMeritCupPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 No. The Medrae Nursing Merit Cup is an academic
-                                olympiad — in the same category as the Kenya
+                                olympiad ~ in the same category as the Kenya
                                 Science and Engineering Fair or the Kenya Music
                                 Festival. There are no wagering mechanics, no
                                 random draws, and no chance-based winners. Cash
@@ -834,8 +834,8 @@ export default function MedraeNursingMeritCupPage() {
                             <p className="mt-2 text-slate-700">
                                 Two months of Medrae Premium, a full study
                                 pack, three mock NCK exams, exam marking, a
-                                Certificate of Participation, and — for staff
-                                nurses — CPD points and a CPD certificate. One
+                                Certificate of Participation, and ~ for staff
+                                nurses ~ CPD points and a CPD certificate. One
                                 hundred percent of the fee goes to education
                                 services. Cash merit awards are funded by
                                 Medrae and are separate from entry fees.
@@ -847,13 +847,13 @@ export default function MedraeNursingMeritCupPage() {
                                 What are the cash merit awards?
                             </h3>
                             <p className="mt-2 text-slate-700">
-                                <strong>Students &amp; Interns:</strong> 1st —
-                                KSh 12,000; 2nd — KSh 8,000; 3rd — KSh 6,000.
+                                <strong>Students &amp; Interns:</strong> 1st ~
+                                KSh 12,000; 2nd ~ KSh 8,000; 3rd ~ KSh 6,000.
                                 <br />
                                 <strong>
                                     Staff Nurses &amp; Tutors:
                                 </strong>{" "}
-                                1st — KSh 16,000; 2nd — KSh 12,000; 3rd — KSh
+                                1st ~ KSh 16,000; 2nd ~ KSh 12,000; 3rd ~ KSh
                                 10,000.
                                 <br />
                                 These are fixed merit prizes based purely on
@@ -905,7 +905,7 @@ export default function MedraeNursingMeritCupPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Each Cup is limited to{" "}
-                                <strong>300 slots</strong> to preserve quality
+                                <strong>600 slots</strong> to preserve quality
                                 of marking, support, and recognition. Two Cups
                                 run each year.
                             </p>
@@ -916,7 +916,7 @@ export default function MedraeNursingMeritCupPage() {
                 {/* ============ FINAL CTA ============ */}
                 <section className="mt-16 rounded-2xl bg-blue-700 p-6 text-white sm:p-10">
                     <h2 className="text-xl font-bold sm:text-3xl">
-                        Register Now — Limited to 300 Slots Per Cup
+                        Register Now ~ Limited to 600 Slots Per Cup
                     </h2>
                     <p className="mt-3 text-[15px] leading-7 text-blue-100 sm:text-base">
                         Registration for the next Medrae National Nursing Merit
@@ -930,14 +930,14 @@ export default function MedraeNursingMeritCupPage() {
                             to="/register"
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-4 text-sm font-bold text-blue-800 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white/60 sm:text-base"
                         >
-                            Register as Student — KSh 999
+                            Register as Student ~ KSh 999
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                         <Link
                             to="/register"
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-800 px-6 py-4 text-sm font-bold text-white ring-1 ring-white/40 transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-white/60 sm:text-base"
                         >
-                            Register as Staff Nurse — KSh 1,499
+                            Register as Staff Nurse ~ KSh 1,499
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
@@ -945,7 +945,7 @@ export default function MedraeNursingMeritCupPage() {
                     <p className="mt-5 text-[13px] text-blue-100">
                         Payment via M-Pesa. Paybill details will be shared
                         immediately after registration. All entry fees go to
-                        education services — study pack, exam marking,
+                        education services ~ study pack, exam marking,
                         certificates, and premium access.
                     </p>
                 </section>
