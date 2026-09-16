@@ -850,7 +850,7 @@ export default function AssessmentNotes() {
                           <TabsContent key={sub} value={sub} className="mt-3 md:mt-4">
                             {loadingNotes ? (
                               // SKELETON LOADERS
-                              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:3">
                                 {Array.from({ length: 4 }).map((_, idx) => <SkeletonCard key={idx} />)}
                               </div>
                             ) : subNotes.length === 0 ? (
@@ -858,7 +858,7 @@ export default function AssessmentNotes() {
                                 No notes yet in {sub}. Check back soon!
                               </p>
                             ) : (
-                              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                                 {subNotes.map((note, index) => (
                                   <React.Fragment key={note.id}>
                                     {/* CARD - NO BORDER ON MOBILE */}

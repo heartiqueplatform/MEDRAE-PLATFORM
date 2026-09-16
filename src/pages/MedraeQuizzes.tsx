@@ -701,7 +701,7 @@ export function MedraeQuizzes() {
                       </div>
                     </div>
 
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
                       {filteredUnits.map((unit, index) => {
                         const questionCount = getQuestionCount(unit.code);
                         const isUnitFree = freeUnits.includes((unit.code ?? "").trim()) || unit.is_free;

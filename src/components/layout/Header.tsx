@@ -132,7 +132,7 @@ const StreakWidget = memo(({ streak, isOnline }: { streak: number; isOnline: boo
   return (
     <div className="px-3 py-3 mb-2 rounded-lg border-0 bg-orange-50/50 dark:bg-orange-950/20">
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-orange-900 shadow-sm border border-orange-100 dark:border-orange-800">
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-orange-900 shadow-sm border-0">
           <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
         </div>
         <div className="flex flex-col">
@@ -638,8 +638,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
   // Determine theme classes based on isDarkMode state
   const themeClasses = isDarkMode
-    ? 'bg-slate-900/95 dark:bg-slate-900/95 border-slate-700/30 shadow-[0_2px_20px_rgba(0,0,0,0.3)]'
-    : 'bg-white/95 border-white/20 shadow-[0_2px_20px_rgba(0,0,0,0.08)]';
+    ? 'bg-slate-900/95 dark:bg-slate-900/95 border-0 shadow-[0_2px_20px_rgba(0,0,0,0.3)]'
+    : 'bg-white/95 border-0 shadow-[0_2px_20px_rgba(0,0,0,0.08)]';
   return (
     <>
       {/* ✅ NEW: Global blur overlay when settings is open */}
@@ -702,7 +702,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               <Popover open={showOnlineUsers} onOpenChange={handleOnlinePopoverOpen}>
                 <PopoverTrigger asChild>
                   <div className="flex items-center shrink-0 cursor-pointer select-none">
-                    <Badge className="h-5 sm:h-6 px-1.5 sm:px-2 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-none flex items-center gap-1.5 transition-all rounded-full shadow-sm shrink-0">
+                    <Badge className="h-5 sm:h-6 px-1.5 sm:px-2 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-0 flex items-center gap-1.5 transition-all rounded-full shadow-sm shrink-0">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
@@ -719,7 +719,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     <h4 className="font-semibold text-sm mb-2">Online Users</h4>
                     {onlineLoading ? (
                       <div className="text-center py-4">
-                        <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                        <div className="inline-block h-4 w-4 animate-spin rounded-full border-0" />
                         <p className="text-xs text-gray-400 mt-2">Loading...</p>
                       </div>
                     ) : onlineUsers.length > 0 ? (
@@ -780,7 +780,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               {notificationCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white dark:border-slate-950"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-0"></span>
                 </span>
               )}
             </Button>
@@ -805,7 +805,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     </span>
                   )}
                   {isMuted && (
-                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 border-2 border-white dark:border-slate-950 animate-pulse">
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 border-0 animate-pulse">
                       <VolumeOff className="h-2 w-2 text-white" />
                     </span>
                   )}
@@ -890,7 +890,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Invite a Friend</span>
                     <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 font-medium">Share with friends</span>
                   </div>
-                  <Badge className="ml-auto h-5 px-2 bg-gradient-to-r from-blue-500 to-blue-600 text-[9px] font-bold text-white border-none rounded-full">Quick</Badge>
+                  <Badge className="ml-auto h-5 px-2 bg-gradient-to-r from-blue-500 to-blue-600 text-[9px] font-bold text-white border-0 rounded-full">Quick</Badge>
                 </DropdownMenuItem>
 
                 <DropdownMenuItem onClick={handleToggleDarkMode} className="flex items-center justify-between py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50">
@@ -944,7 +944,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               </p>
             </div>
             <div className="relative">
-              <Avatar className="h-9 w-9 sm:h-12 sm:w-12 rounded-full border-2 border-pink-300 shadow-sm">
+              <Avatar className="h-9 w-9 sm:h-12 sm:w-12 rounded-full border-0 shadow-none">
                 <AvatarImage
                   src={user?.avatar && isOnline ? user.avatar : undefined}
                   className="object-cover"
@@ -960,7 +960,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                   )}
                 </AvatarFallback>
               </Avatar>
-              <span className={`absolute top-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-white ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400"
+              <span className={`absolute top-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-0 ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400"
                 }`} title={isOnline ? "Online" : "Offline"} />
             </div>
           </div>

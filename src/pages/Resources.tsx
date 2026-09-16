@@ -1066,7 +1066,7 @@ export function Resources() {
                   </h2>
                   {blockCategories.filter((cat) => cat.id === selectedBlock).map((cat) => (
                     <div key={cat.id}>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3 lg:gap-4 w-full">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-3 lg:gap-4 w-full">
                         {loadingNotes ? (
                           // SKELETON LOADERS - 6 cards while loading
                           Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)

@@ -504,13 +504,15 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   ], [totalQuestions, totalStars, totalSimulationPapers, formatNumber]);
 
   const learningItems = useMemo(() => [
+    { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" as IconTone },
+    { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content" as IconTone, badge: formatNumber(totalNotes) },
+
     { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone, badge: "New" },
     { title: "Assessment History", url: "/assessments/history", icon: BarChart3, iconTone: "progress" as IconTone },
     { title: "Live Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
     { title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone },
     { title: "Create Class", url: "/live-classes/create", icon: Video, iconTone: "learning" as IconTone },
-    { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" as IconTone },
-    { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content" as IconTone, badge: formatNumber(totalNotes) },
+
   ], [totalNotes, totalEvents, formatNumber]);
 
   const institutionalExamItems = useMemo(() => {

@@ -670,10 +670,7 @@ export function Subscription() {
 
       {/* Header - full width on mobile */}
       <div className="text-center space-y-1.5 md:space-y-2 px-4 md:px-0 pt-6 md:pt-0 pb-4 md:pb-0 border-0">
-        <div className="inline-flex items-center justify-center p-1.5 md:p-2 bg-primary/10 rounded-full mb-1.5 md:mb-2">
-          <CreditCard className="h-4 w-4 md:h-5 md:w-5 text-primary mr-1.5 md:mr-2" />
-          <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-primary dark:text-primary/80">Secure Billing</span>
-        </div>
+
         <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight dark:text-white">
           {isStaff ? "Ready to empower the next generation?" : "Ready to become a confident nurse?"}
         </h1>
