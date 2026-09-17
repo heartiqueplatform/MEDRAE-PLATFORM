@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { Bell, Moon, Sun, User, Menu, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume } from "lucide-react";
+import { Bell, Moon, Sun, User, Settings, Menu, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -787,21 +787,18 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
             {/* 4. Settings Dropdown - NOW USING settings.png INSTEAD OF CogIcon */}
             <DropdownMenu onOpenChange={handleSettingsOpen}>
               <DropdownMenuTrigger asChild>
+
                 <Button
                   variant="ghost"
                   size="icon"
                   className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none data-[state=open]:ring-0 data-[state=open]:outline-none border-0 group"
                   aria-label="Settings"
                 >
-                  <img
-                    src="/setting.png"
-                    alt="Settings"
-                    className="w-7 h-7 sm:w-8 sm:h-8 object-contain transition-transform duration-500 group-hover:rotate-90"
-                  />
+                  <Settings className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-transform duration-500 group-hover:rotate-90" />
                   {notificationCount > 0 && (
                     <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white dark:border-slate-950"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-0"></span>
                     </span>
                   )}
                   {isMuted && (

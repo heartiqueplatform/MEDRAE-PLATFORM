@@ -506,7 +506,7 @@ export default function GreetingsCard() {
                     className={`pointer-events-none absolute -top-24 -right-16 w-64 h-64 rounded-full bg-gradient-to-br ${theme.glow} to-transparent blur-3xl`}
                 />
 
-                <div className="relative px-4 md:px-6 py-4 md:py-5">
+                <div className="relative px-1 md:px-6 py-1 md:py-1">
                     {/* Row 1 — day + time chip */}
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 text-[11px] md:text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -528,15 +528,9 @@ export default function GreetingsCard() {
                     {/* Row 2 — greeting */}
                     <h1
                         className="mt-3 md:mt-4 text-[22px] leading-tight md:text-3xl lg:text-[26px]
-                        font-semibold tracking-tight text-slate-900 dark:text-white"
+    font-semibold tracking-tight text-slate-900 dark:text-white"
                     >
-                        {theme.greeting},{" "}
-                        <span className="relative inline-block">
-                            <span className="relative z-10">{name}</span>
-                            <span
-                                className={`absolute left-0 -bottom-0.5 h-[3px] w-full rounded-full bg-gradient-to-r ${theme.accent} opacity-70`}
-                            />
-                        </span>
+                        {theme.greeting}, {name}
                     </h1>
 
                     {/* Row 3 — weather + clinical advice, falls back to daily mood */}
