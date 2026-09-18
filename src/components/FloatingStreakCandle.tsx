@@ -39,14 +39,14 @@ const EMOTION_CONFIG: Record<EmotionType, { emoji: string; color: string; bgColo
 };
 
 const STREAK_MESSAGES = [
-    "Your flame is burning bright! 🔥",
-    "Day by day, you're getting stronger! 💪",
-    "Consistency is key, keep going! 🗝️",
-    "Your journey is inspiring! 🌟",
-    "Every day counts, and so do you! ✨",
-    "The fire of knowledge grows within you! 📚",
-    "You're building something amazing! 🏗️",
-    "Keep the momentum going! 🚀",
+    "Your flame is burning bright!",
+    "Day by day, you're getting stronger!",
+    "Consistency is key, keep going!",
+    "Your journey is inspiring!",
+    "Every day counts, and so do you!",
+    "The fire of knowledge grows within you!",
+    "You're building something amazing!",
+    "Keep the momentum going!",
 ];
 
 const backgroundImages = [
@@ -57,6 +57,67 @@ const backgroundImages = [
     "high5.png",
     "high6.png",
 ];
+
+// ============================================
+// CACHE KEYS & HELPERS
+// ============================================
+
+const MESSAGES_CACHE_KEY = 'emotion_messages_cache_v2';
+const MESSAGES_CACHE_TTL_MS = 30 * 60 * 1000;
+const STREAK_CACHE_KEY = 'streak_cache';
+const BEST_STREAK_CACHE_KEY = 'best_streak_cache';
+const FETCH_TIMEOUT_MS = 5000;
+
+const DEFAULT_MESSAGES: StudentMessage[] = [
+    {
+        id: 'default-1',
+        user_id: 'system',
+        display_name: 'Medrae Nursing Community',
+        message: 'Be the first to share how you are feeling today.',
+        emotion_type: 'motivated',
+        is_anonymous: true,
+        likes_count: 0,
+        created_at: new Date().toISOString(),
+        avatar_url: null
+    }
+];
+
+const safeGetItem = (key: string): string | null => {
+    try { return localStorage.getItem(key); } catch { return null; }
+};
+
+const safeSetItem = (key: string, value: string): void => {
+    try { localStorage.setItem(key, value); } catch { }
+};
+
+const safeGetSessionItem = (key: string): string | null => {
+    try { return sessionStorage.getItem(key); } catch { return null; }
+};
+
+const safeSetSessionItem = (key: string, value: string): void => {
+    try { sessionStorage.setItem(key, value); } catch { }
+};
+
+const todayStr = () => new Date().toISOString().split('T')[0];
+
+const readCachedMessages = (): StudentMessage[] | null => {
+    try {
+        const raw = safeGetItem(MESSAGES_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.data)) return null;
+        if (Date.now() - (parsed.ts || 0) > MESSAGES_CACHE_TTL_MS) return null;
+        if (parsed.data.length === 0) return null;
+        return parsed.data as StudentMessage[];
+    } catch {
+        return null;
+    }
+};
+
+const writeCachedMessages = (msgs: StudentMessage[]) => {
+    if (!msgs || msgs.length === 0) return;
+    safeSetItem(MESSAGES_CACHE_KEY, JSON.stringify({ data: msgs, ts: Date.now() }));
+};
 
 // ============================================
 // BACKGROUND SLIDESHOW
@@ -76,14 +137,14 @@ const BackgroundSlideshow = memo(({ bgIndex }: { bgIndex: number }) => (
         ))}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40">
             <div className="absolute bottom-16 left-12 right-12 text-white space-y-4">
-                <div className="inline-flex items-center gap-2 bg-amber-600/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-xs font-semibold tracking-wider uppercase">
+                <div className="inline-flex items-center gap-2 bg-amber-600/30 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">
                     <span className="relative flex h-2 w-2">
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                     </span>
                     Daily Check-in
                 </div>
                 <h1 className="text-5xl font-bold leading-tight">
-                    Mindful Moment 🧘
+                    Mindful Moment
                 </h1>
                 <p className="text-gray-300 text-lg max-w-md leading-relaxed">
                     Your consistency is building something extraordinary. Every day you show up, you grow stronger.
@@ -96,7 +157,7 @@ const BackgroundSlideshow = memo(({ bgIndex }: { bgIndex: number }) => (
 BackgroundSlideshow.displayName = "BackgroundSlideshow";
 
 // ============================================
-// LOADING DOTS ANIMATION - THE ONLY ANIMATION WE KEEP
+// LOADING DOTS
 // ============================================
 
 const LoadingDots = () => (
@@ -114,14 +175,29 @@ const LoadingDots = () => (
     </div>
 );
 
-// Add the keyframes to your global CSS or inject them
-// You can add this to your global.css:
-/*
-@keyframes bounce {
-    0%, 80%, 100% { transform: scale(0.8); opacity: 0.4; }
-    40% { transform: scale(1.2); opacity: 1; }
-}
-*/
+// ============================================
+// SKELETON COMPONENTS
+// ============================================
+
+const MessageSkeleton = () => (
+    <div className="w-full mt-4 p-5 bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg animate-pulse">
+        <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+            <div className="flex-1 space-y-2">
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24" />
+                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+            </div>
+        </div>
+        <div className="space-y-2 mb-4">
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+        </div>
+        <div className="flex justify-between pt-3">
+            <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
+            <div className="h-6 w-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
+        </div>
+    </div>
+);
 
 // ============================================
 // EMOTIONAL CHECK-IN MODAL
@@ -131,6 +207,7 @@ const EmotionalCheckInModal = memo(({
     streak,
     bestStreak,
     messages,
+    isLoadingMessages,
     onClose,
     onLike,
     onShareFeeling,
@@ -141,6 +218,7 @@ const EmotionalCheckInModal = memo(({
     streak: number;
     bestStreak: number;
     messages: StudentMessage[];
+    isLoadingMessages: boolean;
     onClose: () => void;
     onLike: (id: string) => void;
     onShareFeeling: () => void;
@@ -155,16 +233,19 @@ const EmotionalCheckInModal = memo(({
     const currentMessage = useMemo(() => messages[currentIndex] || messages[0], [messages, currentIndex]);
     const config = currentMessage ? EMOTION_CONFIG[currentMessage.emotion_type as EmotionType] : EMOTION_CONFIG.motivated;
 
-    // Auto-rotate messages
     useEffect(() => {
         if (currentStep !== 'messages' || messages.length <= 1) return;
-
         const interval = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % messages.length);
         }, 5000);
-
         return () => clearInterval(interval);
     }, [currentStep, messages.length]);
+
+    useEffect(() => {
+        if (currentIndex >= messages.length) {
+            setCurrentIndex(0);
+        }
+    }, [messages.length, currentIndex]);
 
     const handleNext = useCallback(() => {
         if (currentStep === 'candle') {
@@ -180,14 +261,6 @@ const EmotionalCheckInModal = memo(({
         onClose();
     }, [onClose]);
 
-    const handleLike = useCallback((id: string) => {
-        onLike(id);
-    }, [onLike]);
-
-    const handleShare = useCallback(() => {
-        onShareFeeling();
-    }, [onShareFeeling]);
-
     // ============================================
     // STEP 1: CANDLE + STREAK
     // ============================================
@@ -197,7 +270,6 @@ const EmotionalCheckInModal = memo(({
                 <BackgroundSlideshow bgIndex={bgIndex} />
 
                 <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-white/95 dark:bg-gray-800/95">
-                    {/* Header */}
                     <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 text-white relative shrink-0">
                         <button
                             onClick={handleSkip}
@@ -208,23 +280,17 @@ const EmotionalCheckInModal = memo(({
 
                         <div className="relative z-10 px-6 py-6">
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-white/20 backdrop-blur-md rounded-lg">
-                                    <Flame className="w-5 h-5 text-amber-100" />
-                                </div>
-                                <span className="text-xs font-bold uppercase tracking-wider text-amber-100">
+
+                                <span className="text-xs font-bold  tracking-wider text-amber-100">
                                     Your Journey
                                 </span>
                             </div>
                             <h2 className="text-2xl font-bold tracking-tight font-serif">
                                 Today's Check-in
                             </h2>
-                            <p className="text-amber-50/80 text-sm mt-2 font-medium">
-                                Take a moment to reflect on your progress and connect with the community.
-                            </p>
                         </div>
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 overflow-y-auto hide-scrollbar p-6">
                         <div className="flex flex-col items-center text-center">
                             <img
@@ -260,13 +326,11 @@ const EmotionalCheckInModal = memo(({
 
                             {(bestStreak > streak && streak > 0) && (
                                 <button
-                                    onClick={() => {
-                                        onResuscitateClick();
-                                    }}
+                                    onClick={onResuscitateClick}
                                     className="mt-3 w-full max-w-xs py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-red-500 to-amber-500 text-white font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all active:scale-95 touch-manipulation flex items-center justify-center gap-2"
                                 >
                                     <RefreshCw size={16} />
-                                    Resuscitate Your Best Streak! 🔥
+                                    Resuscitate Your Best Streak
                                 </button>
                             )}
 
@@ -288,11 +352,10 @@ const EmotionalCheckInModal = memo(({
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="px-6 py-3 border-t border-slate-200/50 dark:border-slate-800/50 shrink-0 bg-white/80 dark:bg-gray-800/80">
+                    <div className="px-6 py-3 shrink-0 bg-white/80 dark:bg-gray-800/80">
                         <p className="text-[10px] text-center text-slate-500 dark:text-slate-400">
                             <Sparkles className="w-3 h-3 inline mr-1" />
-                            You're building more than a streak — you're building a brighter future
+                            You are building more than a streak, you are building a brighter future
                         </p>
                     </div>
                 </div>
@@ -304,14 +367,14 @@ const EmotionalCheckInModal = memo(({
     // STEP 2: MESSAGES
     // ============================================
     if (currentStep === 'messages') {
-        if (!currentMessage) return null;
+        const showSkeleton = isLoadingMessages && messages.length === 0;
+        const showEmpty = !isLoadingMessages && messages.length === 0;
 
         return (
             <div className="flex h-screen w-full bg-white dark:bg-gray-900">
                 <BackgroundSlideshow bgIndex={bgIndex} />
 
                 <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-white/95 dark:bg-gray-800/95">
-                    {/* Header */}
                     <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 text-white relative shrink-0">
                         <button
                             onClick={onClose}
@@ -326,19 +389,18 @@ const EmotionalCheckInModal = memo(({
                                     <Users size={20} className="text-amber-100" />
                                 </div>
                                 <span className="text-xs font-bold uppercase tracking-wider text-amber-100">
-                                    {messages.length} Messages
+                                    {showSkeleton ? 'Loading Messages' : `${messages.length} Messages`}
                                 </span>
                             </div>
                             <h2 className="text-2xl font-bold tracking-tight font-serif">
                                 Community Pulse
                             </h2>
                             <p className="text-amber-50/80 text-sm mt-2 font-medium">
-                                Real feelings from real students. Share yours too! 💬
+                                Real feelings from real students. Share yours too.
                             </p>
                         </div>
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 overflow-y-auto p-6">
                         <div className="flex flex-col items-center max-w-sm mx-auto">
                             <img
@@ -347,92 +409,104 @@ const EmotionalCheckInModal = memo(({
                                 className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-lg"
                             />
 
-                            <div className="w-full mt-4 p-5 bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-3 mb-4">
-                                    {currentMessage.is_anonymous ? (
-                                        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                            <UserCircle2 size={20} className="text-gray-500 dark:text-gray-400" />
-                                        </div>
-                                    ) : currentMessage.avatar_url ? (
-                                        <img
-                                            src={currentMessage.avatar_url}
-                                            alt={currentMessage.display_name}
-                                            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                                            loading="lazy"
-                                        />
-                                    ) : (
-                                        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                            <User size={18} className="text-gray-500 dark:text-gray-400" />
-                                        </div>
-                                    )}
-                                    <div className="min-w-0 flex-1">
-                                        <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">
-                                            {currentMessage.display_name}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {new Date(currentMessage.created_at).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </p>
-                                    </div>
-                                </div>
+                            {showSkeleton && <MessageSkeleton />}
 
-                                <div className="flex items-start gap-3 mb-4">
-                                    <span className="text-2xl flex-shrink-0">{config.emoji}</span>
-                                    <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed break-words">
-                                        "{currentMessage.message}"
+                            {showEmpty && (
+                                <div className="w-full mt-4 p-5 bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg">
+                                    <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+                                        No messages yet. Be the first to share how you feel.
                                     </p>
                                 </div>
+                            )}
 
-                                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                                    <span
-                                        className="text-xs px-3 py-1 rounded-full font-medium"
-                                        style={{
-                                            backgroundColor: config.bgColor,
-                                            color: config.color
-                                        }}
-                                    >
-                                        {config.label}
-                                    </span>
+                            {!showSkeleton && currentMessage && (
+                                <>
+                                    <div className="w-full mt-4 p-5 bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            {currentMessage.is_anonymous ? (
+                                                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                                    <UserCircle2 size={20} className="text-gray-500 dark:text-gray-400" />
+                                                </div>
+                                            ) : currentMessage.avatar_url ? (
+                                                <img
+                                                    src={currentMessage.avatar_url}
+                                                    alt={currentMessage.display_name}
+                                                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                                    <User size={18} className="text-gray-500 dark:text-gray-400" />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">
+                                                    {currentMessage.display_name}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {new Date(currentMessage.created_at).toLocaleTimeString([], {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                    <button
-                                        onClick={() => handleLike(currentMessage.id)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group touch-manipulation"
-                                    >
-                                        <Heart
-                                            size={18}
-                                            className="text-gray-400 group-hover:text-red-500 transition-colors"
-                                            fill={currentMessage.likes_count > 0 ? "#ef4444" : "none"}
-                                            stroke={currentMessage.likes_count > 0 ? "#ef4444" : "currentColor"}
-                                        />
-                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                                            {currentMessage.likes_count || 0}
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
+                                        <div className="flex items-start gap-3 mb-4">
+                                            <span className="text-2xl flex-shrink-0">{config.emoji}</span>
+                                            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed break-words">
+                                                "{currentMessage.message}"
+                                            </p>
+                                        </div>
 
-                            {/* Carousel Dots */}
-                            {messages.length > 1 && (
-                                <div className="flex justify-center gap-2 mt-4">
-                                    {messages.map((_, idx) => (
-                                        <button
-                                            key={idx}
-                                            className={`h-2 rounded-full transition-all duration-300 ${idx === currentIndex
-                                                ? 'w-8 bg-amber-500'
-                                                : 'w-2 bg-gray-300 dark:bg-gray-600'
-                                                }`}
-                                            onClick={() => setCurrentIndex(idx)}
-                                        />
-                                    ))}
-                                </div>
+                                        <div className="flex items-center justify-between pt-3">
+                                            <span
+                                                className="text-xs px-3 py-1 rounded-full font-medium"
+                                                style={{
+                                                    backgroundColor: config.bgColor,
+                                                    color: config.color
+                                                }}
+                                            >
+                                                {config.label}
+                                            </span>
+
+                                            <button
+                                                onClick={() => onLike(currentMessage.id)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group touch-manipulation"
+                                            >
+                                                <Heart
+                                                    size={18}
+                                                    className="text-gray-400 group-hover:text-red-500 transition-colors"
+                                                    fill={currentMessage.likes_count > 0 ? "#ef4444" : "none"}
+                                                    stroke={currentMessage.likes_count > 0 ? "#ef4444" : "currentColor"}
+                                                />
+                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                                                    {currentMessage.likes_count || 0}
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {messages.length > 1 && (
+                                        <div className="flex justify-center gap-2 mt-4">
+                                            {messages.map((_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    className={`h-2 rounded-full transition-all duration-300 ${idx === currentIndex
+                                                        ? 'w-8 bg-amber-500'
+                                                        : 'w-2 bg-gray-300 dark:bg-gray-600'
+                                                        }`}
+                                                    onClick={() => setCurrentIndex(idx)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
 
-                    {/* Footer Actions */}
-                    <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 shrink-0 bg-white/80 dark:bg-gray-800/80">
+                    <div className="px-6 py-4 shrink-0 bg-white/80 dark:bg-gray-800/80">
                         <div className="space-y-2.5 max-w-sm mx-auto">
                             <button
                                 onClick={handleNext}
@@ -464,7 +538,6 @@ const EmotionalCheckInModal = memo(({
                 <BackgroundSlideshow bgIndex={bgIndex} />
 
                 <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-white/95 dark:bg-gray-800/95">
-                    {/* Header */}
                     <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 text-white relative shrink-0">
                         <button
                             onClick={handleSkip}
@@ -486,12 +559,11 @@ const EmotionalCheckInModal = memo(({
                                 How Are You Feeling?
                             </h2>
                             <p className="text-amber-50/80 text-sm mt-2 font-medium">
-                                Naming your emotions reduces stress and improves focus. Let's check in. ✨
+                                Naming your emotions reduces stress and improves focus.
                             </p>
                         </div>
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 overflow-y-auto p-6">
                         <div className="flex flex-col items-center text-center max-w-sm mx-auto">
                             <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
@@ -499,35 +571,34 @@ const EmotionalCheckInModal = memo(({
                             </div>
 
                             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                                Share How You're Feeling
+                                Share How You Are Feeling
                             </h3>
 
                             <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                                 Emotional check-ins help you stay aware of your mental state and build emotional intelligence.
-                                Studies show that naming your emotions reduces stress and improves focus. ✨
+                                Studies show that naming your emotions reduces stress and improves focus.
                             </p>
 
-                            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl w-full border border-amber-200/50 dark:border-amber-700/30">
+                            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl w-full">
                                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                                    💡 <span className="font-medium">Self-talk and emotional awareness</span> are key to better studying and learning.
+                                    <span className="font-medium">Self-talk and emotional awareness</span> are key to better studying and learning.
                                     When you acknowledge how you feel, you take the first step toward managing it effectively.
                                 </p>
                             </div>
 
-                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl w-full border border-blue-200/50 dark:border-blue-700/30">
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl w-full">
                                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                                    🎯 <span className="font-medium">Did you know?</span> Students who regularly check in with their emotions
-                                    report 40% less study-related anxiety and 25% better retention of information.
+                                    <span className="font-medium">Did you know?</span> Students who regularly check in with their emotions
+                                    report 40 percent less study-related anxiety and 25 percent better retention of information.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Footer Actions */}
-                    <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 shrink-0 bg-white/80 dark:bg-gray-800/80">
+                    <div className="px-6 py-4 shrink-0 bg-white/80 dark:bg-gray-800/80">
                         <div className="space-y-2.5 max-w-sm mx-auto">
                             <button
-                                onClick={handleShare}
+                                onClick={onShareFeeling}
                                 className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95 touch-manipulation flex items-center justify-center gap-2"
                             >
                                 <Send size={16} />
@@ -559,13 +630,11 @@ EmotionalCheckInModal.displayName = "EmotionalCheckInModal";
 const EmotionPostModal = memo(({
     isOpen,
     onClose,
-    onSubmit,
-    isDarkMode
+    onSubmit
 }: {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (message: string, emotion: EmotionType, isAnonymous: boolean) => void;
-    isDarkMode: boolean;
 }) => {
     const [message, setMessage] = useState('');
     const [selectedEmotion, setSelectedEmotion] = useState<EmotionType>('motivated');
@@ -610,7 +679,7 @@ const EmotionPostModal = memo(({
                 </div>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Choose how you're feeling right now and share with the community
+                    Choose how you are feeling right now and share with the community
                 </p>
 
                 <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-4">
@@ -624,7 +693,6 @@ const EmotionPostModal = memo(({
                                 }`}
                             style={{
                                 backgroundColor: selectedEmotion === key ? config.bgColor : 'transparent',
-                                ringColor: config.color,
                             }}
                         >
                             <div className="text-xl sm:text-2xl">{config.emoji}</div>
@@ -638,8 +706,8 @@ const EmotionPostModal = memo(({
                 <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Share how you're feeling today..."
-                    className="w-full p-3 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm sm:text-base resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                    placeholder="Share how you are feeling today..."
+                    className="w-full p-3 sm:p-4 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm sm:text-base resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
                     rows={isMobile ? 3 : 4}
                     maxLength={200}
                 />
@@ -653,7 +721,7 @@ const EmotionPostModal = memo(({
                         id="anonymous"
                         checked={isAnonymous}
                         onChange={(e) => setIsAnonymous(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
                     />
                     <label htmlFor="anonymous" className="text-sm text-gray-600 dark:text-gray-400">
                         Post anonymously
@@ -665,7 +733,7 @@ const EmotionPostModal = memo(({
                     disabled={!message.trim() || isSubmitting}
                     className="w-full mt-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                 >
-                    {isSubmitting ? 'Posting...' : 'Share Your Feeling ✨'}
+                    {isSubmitting ? 'Posting...' : 'Share Your Feeling'}
                 </button>
             </div>
         </div>
@@ -680,8 +748,34 @@ EmotionPostModal.displayName = "EmotionPostModal";
 
 export default function StreakCandleWelcome() {
     const user = useUser();
-    const [streak, setStreak] = useState(0);
-    const [bestStreak, setBestStreak] = useState(0);
+
+    // Seed from cache synchronously so first paint has real values
+    const initialStreak = (() => {
+        try {
+            const raw = safeGetItem(STREAK_CACHE_KEY);
+            if (!raw) return 0;
+            const parsed = JSON.parse(raw);
+            if (parsed.date === todayStr() && typeof parsed.streakValue === 'number') {
+                return parsed.streakValue;
+            }
+        } catch { }
+        return 0;
+    })();
+
+    const initialBestStreak = (() => {
+        try {
+            const raw = safeGetItem(BEST_STREAK_CACHE_KEY);
+            if (!raw) return 0;
+            const parsed = JSON.parse(raw);
+            if (parsed.date === todayStr() && typeof parsed.bestValue === 'number') {
+                return parsed.bestValue;
+            }
+        } catch { }
+        return 0;
+    })();
+
+    const [streak, setStreak] = useState(initialStreak);
+    const [bestStreak, setBestStreak] = useState(initialBestStreak);
     const [showModal, setShowModal] = useState(false);
     const [showPostModal, setShowPostModal] = useState(false);
     const [showResuscitation, setShowResuscitation] = useState(false);
@@ -689,13 +783,20 @@ export default function StreakCandleWelcome() {
         highestStreak: number;
         currentStreak: number;
     }>({ highestStreak: 0, currentStreak: 0 });
-    const [messages, setMessages] = useState<StudentMessage[]>([]);
+
+    // Seed messages from cache
+    const [messages, setMessages] = useState<StudentMessage[]>(() => {
+        const cached = readCachedMessages();
+        return cached && cached.length > 0 ? cached : DEFAULT_MESSAGES;
+    });
     const [isLoading, setIsLoading] = useState(false);
-    const [isReady, setIsReady] = useState(false);
+    const [isReady, setIsReady] = useState(() => initialStreak > 0);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [bgIndex, setBgIndex] = useState(0);
+
     const { isProcessing, result, setResult } = useResuscitationLink();
-    const hasFetched = useRef(false);
+    const hasFetchedStreak = useRef(false);
+    const hasFetchedMessages = useRef(false);
     const mounted = useRef(true);
 
     // ============================================
@@ -713,119 +814,138 @@ export default function StreakCandleWelcome() {
     // SESSION TRACKING
     // ============================================
     const getSessionId = useCallback(() => {
-        try {
-            let sessionId = sessionStorage.getItem('emotion_checkin_session');
-            if (!sessionId) {
-                sessionId = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
-                sessionStorage.setItem('emotion_checkin_session', sessionId);
-            }
-            return sessionId;
-        } catch {
-            return null;
+        let sessionId = safeGetSessionItem('emotion_checkin_session');
+        if (!sessionId) {
+            sessionId = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
+            safeSetSessionItem('emotion_checkin_session', sessionId);
         }
+        return sessionId;
     }, []);
-
-    const wasShownThisSession = useCallback(() => {
-        try {
-            const sessionId = getSessionId();
-            if (!sessionId) return false;
-            const shown = sessionStorage.getItem('emotion_checkin_shown');
-            return shown === sessionId;
-        } catch {
-            return false;
-        }
-    }, [getSessionId]);
 
     const markShownThisSession = useCallback(() => {
-        try {
-            const sessionId = getSessionId();
-            if (sessionId) {
-                sessionStorage.setItem('emotion_checkin_shown', sessionId);
-            }
-        } catch { }
+        const sessionId = getSessionId();
+        if (sessionId) {
+            safeSetSessionItem('emotion_checkin_shown', sessionId);
+        }
     }, [getSessionId]);
 
-    const saveStreakToCache = useCallback((streakValue: number) => {
-        try {
-            localStorage.setItem("streak_cache", JSON.stringify({
-                streakValue,
-                date: new Date().toISOString().split('T')[0]
+    const saveStreakToCache = useCallback((streakValue: number, bestValue?: number) => {
+        safeSetItem(STREAK_CACHE_KEY, JSON.stringify({
+            streakValue,
+            date: todayStr()
+        }));
+        if (typeof bestValue === 'number') {
+            safeSetItem(BEST_STREAK_CACHE_KEY, JSON.stringify({
+                bestValue,
+                date: todayStr()
             }));
-        } catch { }
-    }, []);
-
-    const getCachedStreak = useCallback(() => {
-        try {
-            const cached = localStorage.getItem("streak_cache");
-            if (!cached) return null;
-            const { streakValue, date } = JSON.parse(cached);
-            if (date === new Date().toISOString().split('T')[0]) return streakValue;
-            return null;
-        } catch {
-            return null;
         }
     }, []);
 
     // ============================================
-    // FETCH STREAK DATA
+    // FETCH STREAK DATA (with timeout, silent failure)
     // ============================================
     const fetchStreakData = useCallback(async () => {
         if (!user?.id) return;
+
+        const withTimeout = <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
+            return new Promise<T>((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error('timeout')), ms);
+                Promise.resolve(promise).then(
+                    (v) => { clearTimeout(timer); resolve(v); },
+                    (e) => { clearTimeout(timer); reject(e); }
+                );
+            });
+        };
+
         try {
-            const { data, error } = await supabase
+            const primary = supabase
                 .from('user_streak_summary')
                 .select('current_streak, best_streak')
                 .eq('user_id', user.id)
                 .single();
 
+            const { data, error } = await withTimeout(primary, FETCH_TIMEOUT_MS);
+
             if (error) {
-                const { data: fallbackData, error: fallbackError } = await supabase
+                const fallback = supabase
                     .from("login_activity")
                     .select("streak, best_streak")
                     .eq("user_id", user.id)
                     .order("login_date", { ascending: false })
                     .limit(1);
 
+                const { data: fallbackData, error: fallbackError } = await withTimeout(fallback, FETCH_TIMEOUT_MS);
+
                 if (!fallbackError && fallbackData && fallbackData.length > 0) {
                     const currentStreak = fallbackData[0].streak || 0;
                     const currentBestStreak = fallbackData[0].best_streak || currentStreak;
-                    setStreak(currentStreak);
-                    setBestStreak(currentBestStreak);
+                    if (mounted.current) {
+                        setStreak(currentStreak);
+                        setBestStreak(currentBestStreak);
+                        saveStreakToCache(currentStreak, currentBestStreak);
+                    }
                 }
             } else if (data) {
                 const currentStreak = data.current_streak || 0;
                 const currentBestStreak = data.best_streak || currentStreak;
-                setStreak(currentStreak);
-                setBestStreak(currentBestStreak);
+                if (mounted.current) {
+                    setStreak(currentStreak);
+                    setBestStreak(currentBestStreak);
+                    saveStreakToCache(currentStreak, currentBestStreak);
+                }
             }
         } catch (err) {
-            console.error("Error fetching streak data:", err);
+            // silent — cached values already showing
+            console.warn("Streak fetch skipped (slow or offline network)");
         }
-    }, [user?.id]);
+    }, [user?.id, saveStreakToCache]);
 
     // ============================================
-    // FETCH MESSAGES
+    // FETCH MESSAGES (cache-first, timeout, never blanks)
     // ============================================
     const fetchMessages = useCallback(async () => {
-        setIsLoading(true);
+        // 1. Cache first
+        const cached = readCachedMessages();
+        if (cached && cached.length > 0) {
+            setMessages(cached);
+            setIsLoading(false);
+        } else {
+            setIsLoading(true);
+        }
+
+        const withTimeout = <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
+            return new Promise<T>((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error('timeout')), ms);
+                Promise.resolve(promise).then(
+                    (v) => { clearTimeout(timer); resolve(v); },
+                    (e) => { clearTimeout(timer); reject(e); }
+                );
+            });
+        };
+
         try {
-            const { data, error } = await supabase
+            const primary = supabase
                 .from('emotion_messages_with_profiles')
                 .select('*')
                 .limit(20);
 
+            const { data, error } = await withTimeout(primary, FETCH_TIMEOUT_MS);
+
             if (error) {
-                const { data: directData, error: directError } = await supabase
+                const fallback = supabase
                     .from('student_messages')
                     .select(`
-                    *,
-                    profiles:user_id (
-                        name,
-                        avatar_url
-                    )
-                `)
+                        *,
+                        profiles:user_id (
+                            name,
+                            avatar_url
+                        )
+                    `)
                     .limit(20)
                     .order('created_at', { ascending: false });
+
+                const { data: directData, error: directError } = await withTimeout(fallback, FETCH_TIMEOUT_MS);
 
                 if (directError) throw directError;
 
@@ -843,36 +963,29 @@ export default function StreakCandleWelcome() {
                         created_at: msg.created_at,
                         avatar_url: msg.profiles?.avatar_url || null
                     }));
-                    setMessages(formattedMessages);
-                } else {
-                    setMessages([{
-                        id: 'default-1',
-                        user_id: 'system',
-                        display_name: '🌟 Medrae Nursing Community',
-                        message: 'Be the first to share how you\'re feeling today! ❤️',
-                        emotion_type: 'motivated',
-                        is_anonymous: true,
-                        likes_count: 0,
-                        created_at: new Date().toISOString(),
-                        avatar_url: null
-                    }]);
+                    if (mounted.current) {
+                        setMessages(formattedMessages);
+                        writeCachedMessages(formattedMessages);
+                    }
                 }
                 return;
             }
 
             if (data && data.length > 0) {
-                const today = new Date().toISOString().split('T')[0];
+                const today = todayStr();
                 const hasToday = data.some(msg =>
                     msg.created_at && msg.created_at.startsWith(today)
                 );
 
+                let finalMessages: StudentMessage[];
+
                 if (!hasToday) {
-                    setMessages([
+                    finalMessages = [
                         {
                             id: 'note-1',
                             user_id: 'system',
                             display_name: 'Medrae Nursing Community Note',
-                            message: 'No one has shared today yet. Here\'s how everyone felt recently:',
+                            message: 'No one has shared today yet. Here is how everyone felt recently.',
                             emotion_type: 'calm',
                             is_anonymous: true,
                             likes_count: 0,
@@ -880,68 +993,68 @@ export default function StreakCandleWelcome() {
                             avatar_url: null
                         },
                         ...data.slice(0, 19)
-                    ]);
+                    ];
                 } else {
-                    setMessages(data);
+                    finalMessages = data;
                 }
-            } else {
-                setMessages([{
-                    id: 'default-1',
-                    user_id: 'system',
-                    display_name: '🌟 Medrae Nursing Community',
-                    message: 'Be the first to share how you\'re feeling today! ❤️',
-                    emotion_type: 'motivated',
-                    is_anonymous: true,
-                    likes_count: 0,
-                    created_at: new Date().toISOString(),
-                    avatar_url: null
-                }]);
+
+                if (mounted.current) {
+                    setMessages(finalMessages);
+                    writeCachedMessages(finalMessages);
+                }
             }
-        } catch (error) {
-            console.error('Error fetching messages:', error);
-            setMessages([{
-                id: 'default-1',
-                user_id: 'system',
-                display_name: '🌟 Medrae Nursing Community',
-                message: 'Be the first to share how you\'re feeling today! ❤️',
-                emotion_type: 'motivated',
-                is_anonymous: true,
-                likes_count: 0,
-                created_at: new Date().toISOString(),
-                avatar_url: null
-            }]);
+        } catch (err) {
+            console.warn('Message refresh skipped (slow or offline network)');
+            // If we had no cache and no messages, keep DEFAULT_MESSAGES visible
         } finally {
-            setIsLoading(false);
+            if (mounted.current) setIsLoading(false);
         }
     }, []);
 
     const handleLike = useCallback(async (messageId: string) => {
-        try {
-            const { error } = await supabase.rpc('emotion_increment_likes', {
-                message_id: messageId
-            });
-            if (error) throw error;
-            setMessages(prev =>
-                prev.map(msg =>
-                    msg.id === messageId
-                        ? { ...msg, likes_count: (msg.likes_count || 0) + 1 }
-                        : msg
-                )
+        // Optimistic update first
+        setMessages(prev => {
+            const next = prev.map(msg =>
+                msg.id === messageId
+                    ? { ...msg, likes_count: (msg.likes_count || 0) + 1 }
+                    : msg
             );
+            writeCachedMessages(next);
+            return next;
+        });
+
+        try {
+            const rpc = supabase.rpc('emotion_increment_likes', { message_id: messageId });
+            await rpc;
         } catch (error) {
-            console.error('Error liking message:', error);
+            console.warn('Like sync failed, will retry next session');
         }
     }, []);
 
     const handlePostMessage = useCallback(async (message: string, emotion: EmotionType, isAnonymous: boolean) => {
         if (!user?.id) return;
-        try {
-            const { data: userData } = await supabase
-                .from('profiles')
-                .select('name')
-                .eq('user_id', user.id)
-                .single();
 
+        // Optimistic insert
+        const optimisticId = `local-${Date.now()}`;
+        const optimisticMessage: StudentMessage = {
+            id: optimisticId,
+            user_id: user.id,
+            display_name: isAnonymous ? 'Anonymous Student' : 'You',
+            message,
+            emotion_type: emotion,
+            is_anonymous: isAnonymous,
+            likes_count: 0,
+            created_at: new Date().toISOString(),
+            avatar_url: null
+        };
+
+        setMessages(prev => {
+            const next = [optimisticMessage, ...prev].slice(0, 20);
+            writeCachedMessages(next);
+            return next;
+        });
+
+        try {
             const { data, error } = await supabase
                 .from('student_messages')
                 .insert([{
@@ -956,150 +1069,103 @@ export default function StreakCandleWelcome() {
             if (error) throw error;
 
             if (data) {
-                const newMessage: StudentMessage = {
-                    id: data.id,
-                    user_id: data.user_id,
-                    display_name: isAnonymous
-                        ? 'Anonymous Student'
-                        : userData?.name || 'You',
-                    message: data.message,
-                    emotion_type: data.emotion_type,
-                    is_anonymous: data.is_anonymous,
-                    likes_count: 0,
-                    created_at: data.created_at,
-                    avatar_url: null
-                };
-                setMessages(prev => [newMessage, ...prev.slice(0, 19)]);
+                setMessages(prev => {
+                    const next = prev.map(msg =>
+                        msg.id === optimisticId
+                            ? { ...msg, id: data.id, created_at: data.created_at }
+                            : msg
+                    );
+                    writeCachedMessages(next);
+                    return next;
+                });
             }
 
             setShowPostModal(false);
             setShowModal(false);
-
         } catch (error) {
             console.error('Error posting message:', error);
+            // Remove optimistic on failure
+            setMessages(prev => {
+                const next = prev.filter(msg => msg.id !== optimisticId);
+                writeCachedMessages(next);
+                return next;
+            });
             throw error;
         }
     }, [user?.id]);
 
-    // Show result modal when link is processed
-    useEffect(() => {
-        if (result) {
-            if (result.success) {
-                fetchStreakData();
-            }
-        }
-    }, [result, fetchStreakData]);
-
     // ============================================
-    // LOAD STREAK
+    // LOAD STREAK (never blocks UI)
     // ============================================
     useEffect(() => {
         mounted.current = true;
+
         if (!user?.id) {
             setIsReady(true);
-            return;
+            return () => { mounted.current = false; };
         }
 
-        const loadStreak = async () => {
-            const cached = getCachedStreak();
-            if (cached !== null) {
-                setStreak(cached);
-                try {
-                    const bestCached = localStorage.getItem("best_streak_cache");
-                    if (bestCached) {
-                        const { bestValue, date } = JSON.parse(bestCached);
-                        if (date === new Date().toISOString().split('T')[0]) {
-                            setBestStreak(bestValue);
-                            setIsReady(true);
-                            return;
-                        }
-                    }
-                } catch (e) { }
-                await fetchStreakData();
-                setIsReady(true);
-                return;
-            }
+        // If we already had cached streak, we are ready instantly
+        if (initialStreak > 0) {
+            setIsReady(true);
+        }
 
-            if (hasFetched.current) {
-                setIsReady(true);
-                return;
-            }
+        if (hasFetchedStreak.current) {
+            setIsReady(true);
+            return () => { mounted.current = false; };
+        }
+        hasFetchedStreak.current = true;
 
-            hasFetched.current = true;
-            try {
-                const { data, error } = await supabase
-                    .from('user_streak_summary')
-                    .select('current_streak, best_streak')
-                    .eq('user_id', user.id)
-                    .single();
+        // Background refresh
+        fetchStreakData().finally(() => {
+            if (mounted.current) setIsReady(true);
+        });
 
-                if (error) {
-                    const { data: fallbackData, error: fallbackError } = await supabase
-                        .from("login_activity")
-                        .select("streak, best_streak")
-                        .eq("user_id", user.id)
-                        .order("login_date", { ascending: false })
-                        .limit(1);
+        // Emergency unlock after 4s no matter what
+        const emergency = setTimeout(() => {
+            if (mounted.current) setIsReady(true);
+        }, 4000);
 
-                    if (!fallbackError && fallbackData && fallbackData.length > 0) {
-                        const currentStreak = fallbackData[0].streak || 0;
-                        const currentBestStreak = fallbackData[0].best_streak || currentStreak;
-                        setStreak(currentStreak);
-                        setBestStreak(currentBestStreak);
-                        saveStreakToCache(currentStreak);
-                        try {
-                            localStorage.setItem("best_streak_cache", JSON.stringify({
-                                bestValue: currentBestStreak,
-                                date: new Date().toISOString().split('T')[0]
-                            }));
-                        } catch (e) { }
-                    }
-                } else if (data) {
-                    const currentStreak = data.current_streak || 0;
-                    const currentBestStreak = data.best_streak || currentStreak;
-                    setStreak(currentStreak);
-                    setBestStreak(currentBestStreak);
-                    saveStreakToCache(currentStreak);
-                    try {
-                        localStorage.setItem("best_streak_cache", JSON.stringify({
-                            bestValue: currentBestStreak,
-                            date: new Date().toISOString().split('T')[0]
-                        }));
-                    } catch (e) { }
-                }
-            } catch (err) {
-                console.error("Error fetching streak:", err);
-            } finally {
-                if (mounted.current) setIsReady(true);
-            }
+        return () => {
+            mounted.current = false;
+            clearTimeout(emergency);
         };
-
-        loadStreak();
-        return () => { mounted.current = false; };
-    }, [user?.id, getCachedStreak, saveStreakToCache, fetchStreakData]);
+    }, [user?.id, initialStreak, fetchStreakData]);
 
     // ============================================
-    // CHECK FOR STREAK DEATH
+    // EMERGENCY UNLOCK — never let isReady stay false forever
     // ============================================
     useEffect(() => {
+        const t = setTimeout(() => setIsReady(true), 4000);
+        return () => clearTimeout(t);
+    }, []);
+
+    // ============================================
+    // CHECK FOR STREAK DEATH (background, non blocking)
+    // ============================================
+    useEffect(() => {
+        if (!user?.id || !isReady) return;
+
+        let cancelled = false;
+
         const checkStreakStatus = async () => {
-            if (!user?.id) return;
             try {
-                const { data, error } = await supabase
+                const q = supabase
                     .from("login_activity")
                     .select("streak, best_streak, login_date")
                     .eq("user_id", user.id)
                     .order("login_date", { ascending: false })
                     .limit(1);
 
-                if (error) return;
+                const { data, error } = await q;
+                if (error || cancelled) return;
 
                 if (data && data.length > 0) {
                     const streakInfo = data[0];
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = todayStr();
                     const lastLogin = streakInfo.login_date?.split('T')[0];
 
-                    if (streakInfo.best_streak > bestStreak) {
+                    if (streakInfo.best_streak > bestStreak && mounted.current) {
                         setBestStreak(streakInfo.best_streak);
                     }
 
@@ -1108,7 +1174,7 @@ export default function StreakCandleWelcome() {
                         yesterday.setDate(yesterday.getDate() - 1);
                         const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-                        if (lastLogin !== yesterdayStr && streakInfo.streak > 0) {
+                        if (lastLogin !== yesterdayStr && streakInfo.streak > 0 && mounted.current) {
                             setResuscitationData({
                                 highestStreak: streakInfo.best_streak || streakInfo.streak,
                                 currentStreak: streakInfo.streak
@@ -1117,14 +1183,13 @@ export default function StreakCandleWelcome() {
                         }
                     }
                 }
-            } catch (error) {
-                console.error('Error checking streak status:', error);
+            } catch {
+                // silent
             }
         };
 
-        if (user?.id && isReady) {
-            checkStreakStatus();
-        }
+        checkStreakStatus();
+        return () => { cancelled = true; };
     }, [user?.id, isReady, bestStreak]);
 
     // ============================================
@@ -1134,9 +1199,7 @@ export default function StreakCandleWelcome() {
         if (!user?.id) return false;
         try {
             const { data: resuscitateData, error: resuscitateError } = await supabase
-                .rpc('resuscitate_streak', {
-                    user_id_param: user.id
-                });
+                .rpc('resuscitate_streak', { user_id_param: user.id });
 
             if (resuscitateError) throw resuscitateError;
             if (!resuscitateData || !resuscitateData[0]?.success) return false;
@@ -1149,24 +1212,18 @@ export default function StreakCandleWelcome() {
             const restoredStreak = resuscitateData[0].restored_streak;
             setStreak(restoredStreak);
             setBestStreak(restoredStreak);
-            saveStreakToCache(restoredStreak);
+            saveStreakToCache(restoredStreak, restoredStreak);
 
             setResuscitationData({
                 highestStreak: restoredStreak,
                 currentStreak: restoredStreak
             });
 
+            safeSetItem(`streak_${user.id}`, '');
             try {
-                localStorage.setItem("best_streak_cache", JSON.stringify({
-                    bestValue: restoredStreak,
-                    date: new Date().toISOString().split('T')[0]
-                }));
-            } catch (e) { }
-
-            localStorage.removeItem(`streak_${user.id}`);
-            localStorage.removeItem(`best_streak_${user.id}`);
-            localStorage.removeItem("streak_cache");
-            localStorage.removeItem("best_streak_cache");
+                localStorage.removeItem(`streak_${user.id}`);
+                localStorage.removeItem(`best_streak_${user.id}`);
+            } catch { }
 
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('streak-updated', {
@@ -1183,35 +1240,31 @@ export default function StreakCandleWelcome() {
     }, [user?.id, saveStreakToCache]);
 
     // ============================================
-    // SHOW MODAL - ONLY ON MONDAY (1) AND FRIDAY (5)
+    // SHOW MODAL — Monday (1) and Friday (5)
     // ============================================
     useEffect(() => {
         const today = new Date();
         const dayOfWeek = today.getDay();
 
-        // Only show on Monday (1) or Friday (5)
-        if (dayOfWeek !== 1 && dayOfWeek !== 5) {
-            console.log('📅 Not Monday or Friday, skipping modal...');
-            return;
-        }
+        if (dayOfWeek !== 1 && dayOfWeek !== 5) return;
+        if (showResuscitation) return;
+        if (!isReady) return;
+        if (streak === 0) return;
 
         const sessionId = getSessionId();
-        const modalShown = sessionStorage.getItem('emotion_checkin_shown');
-
-        if (showResuscitation) return;
-        if (!isReady || streak === 0) return;
-        if (modalShown === sessionId) {
-            console.log('✅ Modal already shown this session, skipping...');
-            return;
-        }
-
-        console.log('🔄 Fresh session detected on Monday/Friday, showing modal...');
+        const modalShown = safeGetSessionItem('emotion_checkin_shown');
+        if (modalShown === sessionId) return;
 
         const timer = setTimeout(() => {
             markShownThisSession();
             setShowModal(true);
-            fetchMessages();
-        }, 500);
+
+            // Trigger background refresh only once per session
+            if (!hasFetchedMessages.current) {
+                hasFetchedMessages.current = true;
+                fetchMessages();
+            }
+        }, 300);
 
         return () => clearTimeout(timer);
     }, [isReady, streak, fetchMessages, showResuscitation, getSessionId, markShownThisSession]);
@@ -1224,10 +1277,10 @@ export default function StreakCandleWelcome() {
         const fetchLatestStreak = async () => {
             if (!user?.id) return;
             try {
-                localStorage.removeItem(`streak_${user.id}`);
-                localStorage.removeItem(`best_streak_${user.id}`);
-                localStorage.removeItem("streak_cache");
-                localStorage.removeItem("best_streak_cache");
+                try {
+                    localStorage.removeItem(`streak_${user.id}`);
+                    localStorage.removeItem(`best_streak_${user.id}`);
+                } catch { }
 
                 const { data, error } = await supabase
                     .from("login_activity")
@@ -1246,8 +1299,8 @@ export default function StreakCandleWelcome() {
                     setStreak(currentStreak);
                     setBestStreak(currentBest);
                 }
-            } catch (error) {
-                console.error('Error fetching streak data:', error);
+            } catch {
+                // silent
             }
             setShowResuscitation(true);
         };
@@ -1285,49 +1338,35 @@ export default function StreakCandleWelcome() {
         setShowPostModal(false);
     }, []);
 
-    if (streak === 0 || !isReady) return null;
+    // Result notification from resuscitation link
+    useEffect(() => {
+        if (result) {
+            if (result.success) {
+                fetchStreakData();
+            }
+        }
+    }, [result, fetchStreakData]);
+
+    // NOTE: We no longer early-return null. The modal shell renders and
+    // content inside shows skeleton until data arrives.
 
     return (
         <>
             {showModal && (
                 <div className="fixed inset-0 z-[99998]">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center h-full w-full bg-black/60 backdrop-blur-sm">
-                            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl p-8 flex flex-col items-center max-w-sm w-full mx-4">
-                                <div className="relative">
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
-                                        <span className="text-3xl">🧘</span>
-                                    </div>
-                                </div>
-
-                                <p className="mt-5 text-center">
-                                    <span className="text-gray-700 dark:text-gray-300 font-medium text-base">
-                                        Taking a mindful moment...
-                                    </span>
-                                    <br />
-                                    <span className="text-gray-500 dark:text-gray-400 text-sm">
-                                        Gathering supportive messages from our community
-                                    </span>
-                                </p>
-
-                                {/* ONLY ANIMATION REMAINING - Loading Dots */}
-                                <LoadingDots />
-                            </div>
-                        </div>
-                    ) : (
-                        <EmotionalCheckInModal
-                            key={`${streak}-${bestStreak}`}
-                            streak={streak}
-                            bestStreak={bestStreak}
-                            messages={messages}
-                            onClose={handleCloseModal}
-                            onLike={handleLike}
-                            onShareFeeling={handleOpenPostModal}
-                            onResuscitateClick={handleOpenResuscitation}
-                            isDarkMode={isDarkMode}
-                            bgIndex={bgIndex}
-                        />
-                    )}
+                    <EmotionalCheckInModal
+                        key={`${streak}-${bestStreak}`}
+                        streak={streak}
+                        bestStreak={bestStreak}
+                        messages={messages}
+                        isLoadingMessages={isLoading}
+                        onClose={handleCloseModal}
+                        onLike={handleLike}
+                        onShareFeeling={handleOpenPostModal}
+                        onResuscitateClick={handleOpenResuscitation}
+                        isDarkMode={isDarkMode}
+                        bgIndex={bgIndex}
+                    />
                 </div>
             )}
 
@@ -1336,7 +1375,6 @@ export default function StreakCandleWelcome() {
                     isOpen={showPostModal}
                     onClose={handleClosePostModal}
                     onSubmit={handlePostMessage}
-                    isDarkMode={isDarkMode}
                 />
             )}
 
@@ -1360,7 +1398,7 @@ export default function StreakCandleWelcome() {
                             Restoring Your Streak...
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                            Please wait while we bring your streak back! 🔥
+                            Please wait while we bring your streak back.
                         </p>
                     </div>
                 </div>
@@ -1383,7 +1421,7 @@ export default function StreakCandleWelcome() {
                         </p>
                         {result.success && (
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                🔥 The person who shared this link got their streak back!
+                                The person who shared this link got their streak back.
                             </p>
                         )}
                         <button
@@ -1395,7 +1433,7 @@ export default function StreakCandleWelcome() {
                             }}
                             className="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold"
                         >
-                            {result.success ? 'Awesome! 🚀' : 'Try Again'}
+                            {result.success ? 'Awesome' : 'Try Again'}
                         </button>
                     </div>
                 </div>
