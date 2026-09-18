@@ -560,7 +560,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const visibleNckPrepItems = isFooterMounted ? nckExamPrepItems.filter(item => !footerRoutes.includes(item.url)) : nckExamPrepItems;
 
   return (
-    <Sidebar className="fixed top-0 left-0 h-full z-50 bg-background border-0 shadow-none transition-transform duration-300 w-[380px] overflow-y-auto">
+    <Sidebar className="fixed top-0 left-0 h-full z-[999] bg-background border-0 shadow-none transition-transform duration-300 w-[380px] overflow-y-auto">
       {/* Header */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-2.5">
