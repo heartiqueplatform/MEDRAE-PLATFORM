@@ -404,7 +404,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
                 {/* Mobile Menu */}
                 <div
-                    className={`absolute top-12 left-0 right-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/50 shadow-xl transition-all duration-300 overflow-hidden ${isMobileMenuOpen
+                    className={`absolute top-12 left-0 right-0 bg-white/100 backdrop-blur-xl border-b border-slate-200/50 shadow-xl transition-all duration-300 overflow-hidden ${isMobileMenuOpen
                         ? 'max-h-[calc(100vh-48px)] opacity-100'
                         : 'max-h-0 opacity-0'
                         }`}

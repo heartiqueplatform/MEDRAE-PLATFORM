@@ -20,6 +20,9 @@ const queryCache = new Map<string, { data: any; timestamp: number; ttl: number }
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const LONG_CACHE_TTL = 60 * 60 * 1000; // 1 hour for static data
 
+const isOffline = (): boolean =>
+  typeof navigator !== 'undefined' && navigator.onLine === false;
+
 const getCacheTTL = (query: string): number => {
   if (query.includes('profiles') && query.includes('user_id')) return LONG_CACHE_TTL;
   if (query.includes('courses') || query.includes('units')) return LONG_CACHE_TTL;
@@ -28,12 +31,20 @@ const getCacheTTL = (query: string): number => {
   return DEFAULT_CACHE_TTL;
 };
 
-const cachedFetch = async (queryFn: () => Promise<any>, queryKey: string, options?: { bypassCache?: boolean; ttl?: number }) => {
+const cachedFetch = async (
+  queryFn: () => Promise<any>,
+  queryKey: string,
+  options?: { bypassCache?: boolean; ttl?: number }
+) => {
   const cacheKey = `supabase_${queryKey}`;
 
   if (!options?.bypassCache) {
     const cached = queryCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < (options?.ttl || cached.ttl)) {
+    // Offline: serve in-memory cache regardless of TTL.
+    if (
+      cached &&
+      (isOffline() || Date.now() - cached.timestamp < (options?.ttl || cached.ttl))
+    ) {
       return cached.data;
     }
   }
@@ -47,12 +58,21 @@ const cachedFetch = async (queryFn: () => Promise<any>, queryKey: string, option
   });
 
   pendingRequests.set(queryKey, promise);
-  const result = await promise;
+
+  let result: any;
+  try {
+    result = await promise;
+  } catch (err) {
+    // Network failed → return stale cache if we have it, otherwise rethrow.
+    const stale = queryCache.get(cacheKey);
+    if (stale) return stale.data;
+    throw err;
+  }
 
   queryCache.set(cacheKey, {
     data: result,
     timestamp: Date.now(),
-    ttl: options?.ttl || getCacheTTL(queryKey)
+    ttl: options?.ttl || getCacheTTL(queryKey),
   });
 
   if (queryCache.size > 100) {
@@ -84,7 +104,7 @@ export const getSupabase = () => {
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
-        autoRefreshToken: true,
+        autoRefreshToken: false, // was true; stops failed-refresh events offline
         detectSessionInUrl: true,
         lockAcquireTimeout: 10000,
         storageKey: 'medrae_auth',
@@ -165,7 +185,7 @@ export async function fetchById<T>(
 ): Promise<T | null> {
   return queryWithCache<T>(
     table,
-    client => client.from(table).select(select).eq('id', id).maybeSingle(),
+    (client) => client.from(table).select(select).eq('id', id).maybeSingle(),
     `id_${id}`,
     { ttl: LONG_CACHE_TTL }
   );
@@ -174,7 +194,8 @@ export async function fetchById<T>(
 export async function fetchUserProfile(userId: string) {
   return queryWithCache(
     'profiles',
-    client => client.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+    (client) =>
+      client.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
     `user_profile_${userId}`,
     { ttl: LONG_CACHE_TTL }
   );
@@ -187,7 +208,7 @@ export async function fetchUserProfile(userId: string) {
 export async function batchQueries<T extends any[]>(
   queries: Array<() => Promise<any>>
 ): Promise<T> {
-  return Promise.all(queries.map(q => q())) as Promise<T>;
+  return Promise.all(queries.map((q) => q())) as Promise<T>;
 }
 
 export async function paginatedQuery<T>(
@@ -220,9 +241,10 @@ export async function paginatedQuery<T>(
 
   const hasMore = (data?.length || 0) > pageSize;
   const items = (data || []).slice(0, pageSize);
-  const nextCursor = hasMore && items.length > 0
-    ? items[items.length - 1][cursor?.column || 'id']
-    : null;
+  const nextCursor =
+    hasMore && items.length > 0
+      ? items[items.length - 1][cursor?.column || 'id']
+      : null;
 
   return { data: items as T[], nextCursor, hasMore };
 }
@@ -245,11 +267,20 @@ export interface CachedData<T> {
   timestamp: number;
 }
 
+/**
+ * Reads a cached entry from localStorage.
+ * Offline: TTL is ignored — the entry is always returned if present.
+ * Online:  TTL is still enforced by callers via `isCacheExpired`.
+ */
 export function getCachedData<T>(key: string): CachedData<T> | null {
   try {
     const cached = localStorage.getItem(key);
     if (!cached) return null;
-    return JSON.parse(cached);
+    const parsed: CachedData<T> = JSON.parse(cached);
+    // Offline → ignore TTL, always return the entry.
+    if (isOffline()) return parsed;
+    // Online → return as-is; the caller decides via isCacheExpired().
+    return parsed;
   } catch {
     return null;
   }
@@ -269,6 +300,8 @@ export function saveCachedData<T>(key: string, data: T): void {
 
 export function isCacheExpired(cached: CachedData<any> | null): boolean {
   if (!cached) return true;
+  // Offline → never "expired" from the caller's point of view.
+  if (isOffline()) return false;
   return Date.now() - cached.timestamp >= CACHE_DURATION;
 }
 
@@ -276,7 +309,7 @@ export function clearCache(key?: string): void {
   if (key) {
     localStorage.removeItem(key);
   } else {
-    Object.values(CACHE_KEYS).forEach(cacheKey => {
+    Object.values(CACHE_KEYS).forEach((cacheKey) => {
       localStorage.removeItem(cacheKey);
     });
     queryCache.clear();
@@ -289,10 +322,11 @@ export function getRandomItem<T>(items: T[]): T | null {
   return items[randomIndex];
 }
 
-
 let connectionListener: ((isConnected: boolean) => void) | null = null;
 
-export const onConnectionChange = (callback: (isConnected: boolean) => void) => {
+export const onConnectionChange = (
+  callback: (isConnected: boolean) => void
+) => {
   connectionListener = callback;
 };
 

@@ -768,12 +768,8 @@ export default function StudentDashboard() {
           <CardHeader className="relative z-10 pb-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-yellow-500/10 dark:bg-yellow-500/20 rounded-2xl">
-                  <Trophy className="h-6 w-6 text-yellow-600 dark:text-yellow-500 animate-bounce" />
-                </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-[3px] font-bold text-slate-500 dark:text-yellow-500/80">Hall of Fame</p>
-                  <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Top Students</CardTitle>
+                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Top Students</CardTitle>
                 </div>
               </div>
             </div>
@@ -1219,32 +1215,46 @@ export default function StudentDashboard() {
             <CardContent>
               <a href="https://chat.whatsapp.com/Lad2s4XXx1AA1TtThbMgWV" target="_blank" rel="noopener noreferrer">
                 <Button className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-0 rounded-xl h-11 font-bold transition-all">
-                  Join WhatsApp Group
+                  WhatsApp Group
                 </Button>
               </a>
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-md rounded-2xl shadow-none transition-all ">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-sky-100 dark:bg-sky-500/20 rounded-lg text-sky-600">
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.28 8.13c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.13-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27a.55.55 0 01.01.16z" /></svg>
+          <Card className="overflow-hidden border-0 bg-white dark:bg-slate-900 rounded-2xl">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-sky-100 dark:bg-sky-500/20 rounded-lg text-sky-600 dark:text-sky-400">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.28 8.13c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.13-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27a.55.55 0 01.01.16z" />
+                  </svg>
                 </div>
-                <CardTitle className="text-lg font-bold">Telegram Hub</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
+                  Telegram Hub
+                </CardTitle>
               </div>
-              <CardDescription className="text-xs mt-2">
-                Access the complete repository of nursing and medical scholarship materials.
+              <CardDescription className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
+                Complete repository of nursing and medical scholarship materials.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex gap-2">
-              <a href="https://t.me/heartiquenursingnexusscholar" target="_blank" rel="noopener noreferrer" className="flex-1">
-                <Button className="w-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-0 rounded-xl h-11 font-bold transition-all">
+            <CardContent className="px-4 pb-4 pt-1 flex flex-col sm:flex-row gap-2">
+              <a
+                href="https://t.me/heartiquenursingnexusscholar"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:flex-1"
+              >
+                <Button className="w-full h-9 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 text-xs font-bold border-0 shadow-none">
                   Telegram
                 </Button>
               </a>
-              <a href="https://web.facebook.com/share/g/1AY4nC9Hcp/" target="_blank" rel="noopener noreferrer" className="flex-1">
-                <Button className="w-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-0 rounded-xl h-11 font-bold transition-all">
+              <a
+                href="https://web.facebook.com/share/g/1AY4nC9Hcp/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:flex-1"
+              >
+                <Button className="w-full h-9 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold border-0 shadow-none">
                   Facebook
                 </Button>
               </a>

@@ -371,7 +371,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
 
     // Memoized loading skeleton
     const LoadingSkeleton = useMemo(() => (
-        <Card className="mt-4 relative overflow-hidden border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/50 rounded-xl shadow-sm animate-pulse">
+        <Card className="mt-4 relative overflow-hidde border-0 bg-white dark:bg-gray-900/50 rounded-xl shadow-sm animate-pulse">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-200 dark:bg-gray-800" />
             <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
                 <div className="flex items-center justify-between mb-4">
@@ -401,7 +401,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         <div className="h-3 w-[40%] bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5" />
                     </div>
                 </div>
-                <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="pt-4 border-0 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex gap-2">
                         <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
                         <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
@@ -450,7 +450,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                                     <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400 leading-none mb-1">
                                         Micro Case Study
                                     </h2>
-                                    <CardTitle className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-gray-100 truncate">
+                                    <CardTitle className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-gray-100 break-words whitespace-normal">
                                         {card.title || "Clinical Scenario"}
                                     </CardTitle>
                                 </div>
@@ -474,7 +474,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                     </div>
 
                     <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-                        <div className="group/item p-4 sm:p-5 bg-white/50 dark:bg-gray-800/30 rounded-2xl border border-slate-200 dark:border-slate-700/50 transition-all hover:bg-white/80 dark:hover:bg-gray-800/50">
+                        <div className="group/item p-4 sm:p-5 bg-white/50 dark:bg-gray-800/30 rounded-2xl transition-all hover:bg-white/80 dark:hover:bg-gray-800/50">
                             <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
                                 <Eye className="w-4 h-4" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">The Patient Situation</span>
@@ -484,7 +484,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                             </p>
                         </div>
 
-                        <div className="p-4 sm:p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border-l-4 border-blue-500">
+                        <div className="p-4 sm:p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
                                 <HelpCircle className="w-4 h-4" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Critical Question</span>
@@ -493,8 +493,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                                 {card.question}
                             </p>
                         </div>
-
-                        <div className="p-4 sm:p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl border-l-4 border-emerald-500">
+                        <div className="p-4 sm:p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="w-4 h-4" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Correct Response</span>
@@ -505,7 +504,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         </div>
 
                         {card.explanation && (
-                            <div className="p-4 sm:p-5 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl border border-amber-200/50 dark:border-amber-800/30">
+                            <div className="p-4 sm:p-5 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl">
                                 <div className="flex items-center gap-2 mb-2 text-amber-600 dark:text-amber-500">
                                     <Lightbulb className="w-4 h-4" />
                                     <span className="text-[10px] font-black uppercase tracking-widest">Clinical Rationale</span>
@@ -527,13 +526,13 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                             </div>
                         )}
 
-                        <div className="pt-4 sm:pt-6 border-t border-gray-200/60 dark:border-gray-800/60 flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
+                        <div className="pt-4 sm:pt-6 flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
                             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-start">
                                 <button
                                     onClick={() => handleInteraction("like")}
-                                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all active:scale-95 border ${liked
-                                        ? 'bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/30'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 border-transparent hover:bg-gray-200 dark:hover:bg-gray-700'
+                                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${liked
+                                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                                         }`}
                                     aria-label="Like"
                                 >
@@ -564,12 +563,12 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                                 </button>
                             </div>
 
-                            <div className="flex items-center gap-3 sm:gap-4 bg-slate-100 dark:bg-gray-800/50 px-3 sm:px-5 py-1.5 sm:py-2 rounded-full border border-slate-200 dark:border-slate-700">
-                                <div className="flex items-center gap-1.5 border-r border-slate-300 dark:border-slate-600 pr-2 sm:pr-3">
+                            <div className="flex items-center gap-3 sm:gap-4 bg-slate-100 dark:bg-gray-800/50 px-3 sm:px-5 py-1.5 sm:py-2 rounded-full">
+                                <div className="flex items-center gap-1.5 border-0 pr-2 sm:pr-3">
                                     <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-500" />
                                     <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">{card.views_count}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 border-r border-slate-300 dark:border-slate-600 pr-2 sm:pr-3">
+                                <div className="flex items-center gap-1.5 border-0 pr-2 sm:pr-3">
                                     <Heart className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-500" />
                                     <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">{card.likes_count}</span>
                                 </div>

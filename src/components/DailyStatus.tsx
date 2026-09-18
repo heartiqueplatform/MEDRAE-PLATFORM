@@ -315,16 +315,10 @@ export default function DailyStatus() {
             <Card className="w-full border-0 bg-white dark:bg-muted/30 shadow-sm rounded-xl overflow-hidden">
                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/10 rounded-xl">
-                            <Globe className="w-5 h-5 text-blue-600" />
-                        </div>
                         <div>
                             <CardTitle className="text-xl font-black tracking-tight dark:text-white">
                                 Community Pulse
                             </CardTitle>
-                            <CardDescription className="text-xs font-medium dark:text-slate-400">
-                                Share clinical insights, study wins, or daily nursing inspiration.
-                            </CardDescription>
                         </div>
                     </div>
                 </CardHeader>

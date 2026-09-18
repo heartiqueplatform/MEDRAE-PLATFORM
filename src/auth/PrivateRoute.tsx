@@ -1,13 +1,15 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "./useAuth";
+import { useAuth } from "@/context/AuthProvider";
 
 export default function PrivateRoute({ children }: { children: JSX.Element }) {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
+
+    // Still hydrating — don't bounce yet, don't flash "/"
+    if (loading) return null;
 
     if (!user) {
         return <Navigate to="/" replace />;
     }
 
-    //  User exists, render children instantly
     return children;
 }

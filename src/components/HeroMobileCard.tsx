@@ -27,7 +27,7 @@ const HeroMobileCard = () => {
     }, []);
 
     return (
-        <Card className="relative w-full  min-h-screen overflow-hidden text-white border-0 rounded-3xl bg-slate-950">
+        <Card className="relative w-full  min-h-screen overflow-hidden text-white border-0 rounded-2xl bg-slate-950">
             {/* Background Images (Smooth Fade) */}
             {backgroundImages.map((img, index) => (
                 <div
@@ -73,7 +73,7 @@ const HeroMobileCard = () => {
 
                 {/* 2. Main Value Prop (Glass Card) */}
                 <div className="space-y-6 mt-8 flex-grow">
-                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-6 shadow-2xl">
+                    <div className="bg-white/5 backdrop-blur-sm border-0 rounded-xl p-6 shadow-none">
                         <h2 className="text-xl font-bold text-blue-100 leading-tight">
                             Master the NCK Exam with Precision.
                         </h2>
@@ -85,7 +85,7 @@ const HeroMobileCard = () => {
                         {/* Feature Chips */}
                         <div className="flex flex-wrap gap-2 mt-4">
                             {["Timed Exams", "Failed-Question Tracking", "Unit Revision"].map((tag) => (
-                                <span key={tag} className="text-[10px] font-bold py-1 px-3 bg-blue-500/10 border border-blue-500/20 text-blue-300 rounded-full">
+                                <span key={tag} className="text-[10px] font-bold py-1 px-3 bg-blue-500/10 border-0 text-blue-300 rounded-full">
                                     {tag}
                                 </span>
                             ))}

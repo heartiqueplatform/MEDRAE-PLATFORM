@@ -92,7 +92,7 @@ export function UnitBreakdown() {
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
                             <p className="text-[10px] font-medium text-gray-600 dark:text-gray-400">
-                                💡 Tip: Consistent daily practice = Better retention = Exam success
+                                Tip: Consistent daily practice = Better retention = Exam success
                             </p>
                             <div className="flex items-center gap-3">
                                 <span className="text-[9px] text-gray-400 uppercase tracking-wider">

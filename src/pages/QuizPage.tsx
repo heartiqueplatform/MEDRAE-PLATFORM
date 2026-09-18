@@ -54,8 +54,23 @@ const TIMER_DURATION = 300_000; // 3 hours
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache for subscription
 const QUESTIONS_PER_BATCH = 20;
 
+// Guard against undefined / "undefined" / null IDs before they hit Supabase.
+function isValidId(id: unknown): id is string {
+  return (
+    typeof id === "string" &&
+    id.length > 0 &&
+    id !== "undefined" &&
+    id !== "null"
+  );
+}
+
+// Helper to fetch more questions (paginated)
 // Helper to fetch more questions (paginated)
 async function fetchMoreQuestions(supabase: any, quizId: string, offset: number, limit: number = 20) {
+  if (!isValidId(quizId)) {
+    console.warn("[QuizPage] fetchMoreQuestions: invalid quizId, skipping", quizId);
+    return [];
+  }
   const { data, error } = await supabase
     .from("quiz_questions")
     .select("*")
@@ -68,6 +83,10 @@ async function fetchMoreQuestions(supabase: any, quizId: string, offset: number,
 
 // Get total question count for a unit
 async function fetchTotalQuestionCount(supabase: any, quizId: string) {
+  if (!isValidId(quizId)) {
+    console.warn("[QuizPage] fetchTotalQuestionCount: invalid quizId, skipping", quizId);
+    return 0;
+  }
   const { count, error } = await supabase
     .from("quiz_questions")
     .select("*", { count: "exact", head: true })
@@ -539,6 +558,7 @@ export default function QuizPage() {
       }
 
       /** STEP 2: Background Sync - Always check Supabase for new questions **/
+      /** STEP 2: Background Sync - Always check Supabase for new questions **/
       try {
         const { data: quiz, error: quizError } = await supabase
           .from("quizzes")
@@ -546,11 +566,12 @@ export default function QuizPage() {
           .eq("unit", unit)
           .single();
 
-        if (quiz && !quizError) {
+        // ✅ GUARD: only proceed if quizError is null AND quiz.id is a real string.
+        if (quiz && !quizError && isValidId(quiz.id)) {
           currentQuizId = quiz.id;
           if (!cancelled) setQuizId(quiz.id);
 
-          // Get total question count
+          // Get total question count (helper is now also guarded)
           const total = await fetchTotalQuestionCount(supabase, quiz.id);
           if (!cancelled) {
             setTotalQuestions(total);
@@ -564,13 +585,19 @@ export default function QuizPage() {
             .eq("quiz_id", quiz.id)
             .order("created_at", { ascending: true });
 
-          if (quizQuestions && !qError && !cancelled) {
+          // ✅ GUARD: never overwrite cached questions with an empty array,
+          // and never fire when this run has already been cancelled.
+          if (
+            !cancelled &&
+            !qError &&
+            quizQuestions &&
+            quizQuestions.length > 0
+          ) {
             const enriched = quizQuestions.map((q: any) => ({
               ...q,
               quiz_id: quiz.id,
             }));
 
-            // Only update if there are changes
             if (JSON.stringify(enriched) !== JSON.stringify(offlineUnit?.questions)) {
               setQuestions(enriched);
               setQuestionsSource("remote");
@@ -583,12 +610,15 @@ export default function QuizPage() {
               });
             }
           }
+        } else {
+          // quiz lookup failed or returned an invalid id — log it so we can see it
+          console.warn("[QuizPage] quizzes lookup failed:", { quiz, quizError, unit });
         }
       } catch (err) {
         console.error("Background sync failed (likely offline):", err);
       } finally {
         if (!cancelled) setLoading(false);
-      }
+      } E
 
       /** STEP 3: Restore State (Answers, Timer, etc.) **/
       if (currentQuizId) {

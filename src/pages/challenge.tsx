@@ -29,6 +29,7 @@ import {
     X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserProfileModal } from '@/components/UserProfileModal';
 
 
 interface CachedUser {
@@ -136,6 +137,7 @@ function ChallengeTabs({
     togglePin,
     onUpdateList,
     isUpdating,
+    onSelectUser,
 }: any) {
 
     const [activeTab, setActiveTab] = useState<"find" | "pinned" | "incoming" | "sent" | "completed">("find");
@@ -166,17 +168,7 @@ function ChallengeTabs({
                                 />
                             </div>
 
-                            <button
-                                onClick={() => setOnlyOnline(!onlyOnline)}
-                                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border active:scale-95 ${onlyOnline
-                                    ? "bg-emerald-500 border-0 text-white shadow-lg shadow-emerald-500/20"
-                                    : "bg-white dark:bg-muted/30 border-0 text-slate-500"
-                                    }`}
-                                style={{ touchAction: 'manipulation' }}
-                            >
-                                <span className={`h-2 w-2 rounded-full ${onlyOnline ? "bg-white animate-pulse" : "bg-slate-300"}`} />
-                                Online Only
-                            </button>
+
 
                             <button
                                 onClick={onUpdateList}
@@ -278,7 +270,9 @@ function ChallengeTabs({
                                             key={p.user_id}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="group relative bg-white dark:bg-muted/30 rounded-2xl  border-0 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                            onClick={() => onSelectUser(p.user_id)}
+                                            className="group relative bg-white dark:bg-muted/30 rounded-2xl border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
+                                            style={{ touchAction: 'manipulation' }}
                                         >
                                             {/* Card Content */}
                                             <div className="p-4">
@@ -308,22 +302,24 @@ function ChallengeTabs({
                                                         )}
                                                     </div>
 
-                                                    {/* Pin Button */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            togglePin(p.user_id);
-                                                        }}
-                                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
+                                                    {/* Pin Button — wrapped so click doesn't open modal */}
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
                                                         style={{ touchAction: 'manipulation' }}
-                                                        title={p.is_pinned ? "Unpin user" : "Pin user"}
                                                     >
-                                                        {p.is_pinned ? (
-                                                            <Star size={16} className="text-amber-500 fill-amber-500" />
-                                                        ) : (
-                                                            <StarOff size={16} className="text-slate-400" />
-                                                        )}
-                                                    </button>
+                                                        <button
+                                                            onClick={() => togglePin(p.user_id)}
+                                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
+                                                            style={{ touchAction: 'manipulation' }}
+                                                            title={p.is_pinned ? "Unpin user" : "Pin user"}
+                                                        >
+                                                            {p.is_pinned ? (
+                                                                <Star size={16} className="text-amber-500 fill-amber-500" />
+                                                            ) : (
+                                                                <StarOff size={16} className="text-slate-400" />
+                                                            )}
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 {/* Name and Username */}
@@ -354,16 +350,25 @@ function ChallengeTabs({
                                                     )}
                                                 </div>
 
-                                                {/* Challenge Button */}
-                                                <Button
-                                                    onClick={() => sendChallenge(p.user_id)}
-                                                    size="sm"
-                                                    className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
+                                                {/* Challenge Button — wrapped so click doesn't open modal */}
+                                                <div
+                                                    onClick={(e) => e.stopPropagation()}
                                                     style={{ touchAction: 'manipulation' }}
                                                 >
-                                                    <Swords size={14} className="mr-1.5" />
-                                                    Challenge
-                                                </Button>
+                                                    <Button
+                                                        onClick={(e: React.MouseEvent) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            sendChallenge(p.user_id);
+                                                        }}
+                                                        size="sm"
+                                                        className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
+                                                        style={{ touchAction: 'manipulation' }}
+                                                    >
+                                                        <Swords size={14} className="mr-1.5" />
+                                                        Challenge
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </motion.div>
                                     ))}
@@ -388,11 +393,14 @@ function ChallengeTabs({
                 return (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
                         {pinnedUsers.map((p: any) => (
+
                             <motion.div
                                 key={p.user_id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="group relative bg-white dark:bg-muted/30 rounded-2xl border-2 border-amber-500/20 hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                onClick={() => onSelectUser(p.user_id)}
+                                className="group relative bg-white dark:bg-muted/30 rounded-2xl border-2 border-amber-500/20 ... cursor-pointer"
+                                style={{ touchAction: 'manipulation' }}
                             >
                                 <div className="p-4">
                                     <div className="flex items-start justify-between mb-3">
@@ -454,7 +462,11 @@ function ChallengeTabs({
                                     </div>
 
                                     <Button
-                                        onClick={() => sendChallenge(p.user_id)}
+                                        onClick={(e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            sendChallenge(p.user_id);
+                                        }}
                                         size="sm"
                                         className="w-full h-10 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-amber-500/20"
                                         style={{ touchAction: 'manipulation' }}
@@ -531,7 +543,11 @@ function ChallengeTabs({
                                     </div>
 
                                     <Button
-                                        onClick={() => acceptChallenge(challenge)}
+                                        onClick={(e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            sendChallenge(p.user_id);
+                                        }}
                                         size="sm"
                                         className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
                                         style={{ touchAction: 'manipulation' }}
@@ -541,8 +557,9 @@ function ChallengeTabs({
                                     </Button>
                                 </div>
                             </motion.div>
-                        ))}
-                    </div>
+                        ))
+                        }
+                    </div >
                 );
 
             case "sent":
@@ -894,6 +911,7 @@ export default function ChallengePage() {
     const duelHandledRef = useRef(false);
     const submitGuardRef = useRef(false);
     const sendingRef = useRef(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     // Load pinned users from cache on mount
     useEffect(() => {
         const cached = loadCache(PLAYERS_CACHE_KEY);
@@ -1157,6 +1175,7 @@ export default function ChallengePage() {
                 score_to_beat: 0,
             });
 
+            // ✅ TEMP: fullscreen disabled for editing
             setTimeout(() => {
                 if (document.documentElement.requestFullscreen)
                     document.documentElement.requestFullscreen().catch(() => { });
@@ -1215,6 +1234,7 @@ export default function ChallengePage() {
         setAnswers(Array(questionsData.length).fill(""));
         setCurrentQIndex(0);
         setActiveChallenge({ ...challenge, questions: questionsData, status: "opponent" });
+
         setTimeout(() => { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { }); }, 100);
         setTimeLeft(300);
         setTimerWarningPlayed(false);
@@ -1458,13 +1478,74 @@ export default function ChallengePage() {
                                 <div className="flex items-center gap-2">
                                     <div className="relative">
                                         <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl" />
-                                        <div className="relative h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                                            <Swords className="text-white w-4 h-4" />
+                                        <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center ring-0 ring-primary/20 shadow-none">
+                                            <svg
+                                                viewBox="0 0 192 192"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="h-full w-full"
+                                                aria-label="MEDRAE Nursing Logo"
+                                            >
+                                                {/* White rounded background */}
+                                                <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
+
+                                                {/* Red Heart */}
+                                                <path
+                                                    d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
+                                                    fill="#FF1F1F"
+                                                />
+
+                                                {/* Graduation Cap */}
+                                                <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
+
+                                                {/* Cap lower body */}
+                                                <path
+                                                    d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
+                                                    fill="#FFFFFF"
+                                                />
+
+                                                {/* Red cap seam */}
+                                                <path
+                                                    d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
+                                                    fill="none"
+                                                    stroke="#FF1F1F"
+                                                    strokeWidth="3"
+                                                    strokeLinecap="round"
+                                                />
+
+                                                {/* Red cap string */}
+                                                <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
+
+                                                {/* Red button */}
+                                                <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
+
+                                                {/* Tassel */}
+                                                <path
+                                                    d="M94 82 C86 86 75 88 63 89"
+                                                    fill="none"
+                                                    stroke="#FF1F1F"
+                                                    strokeWidth="2"
+                                                />
+
+                                                {/* White tassel cord */}
+                                                <path
+                                                    d="M63 89 C61 94 61 98 61 103"
+                                                    fill="none"
+                                                    stroke="#FFFFFF"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                />
+
+                                                {/* Tassel top */}
+                                                <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
+
+                                                {/* Tassel */}
+                                                <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
+                                            </svg>
                                         </div>
                                     </div>
                                     <div>
-                                        <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">Medrae Arena</h2>
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{activeChallenge?.status === "self" ? "Setting Benchmark" : "Peer Challenge"}</p>
+                                        <h2 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">Medrae Nursing Challenge</h2>
+                                        <p className="text-[8px] font-bold text-slate-400  tracking-widest mt-0.5">{activeChallenge?.status === "self" ? "Setting Benchmark" : "Peer Challenge"}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -1483,16 +1564,34 @@ export default function ChallengePage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="mt-3 relative">
-                                <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                    <motion.div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" initial={{ width: "0%" }} animate={{ width: `${((currentQIndex + 1) / activeChallenge.questions.length) * 100}%` }} transition={{ duration: 0.3 }} />
-                                </div>
-                                <div className="absolute -top-0.5 left-0 right-0 flex justify-between px-1">
-                                    {activeChallenge.questions.map((_: any, idx: number) => (
-                                        <div key={idx} className={`w-1 h-1 rounded-full transition-all duration-300 ${idx <= currentQIndex ? 'bg-blue-500 shadow-lg shadow-blue-500/50' : 'bg-slate-300 dark:bg-slate-700'}`} />
-                                    ))}
-                                </div>
-                            </div>
+                            {/* Progress bar — color shifts by quarter, no dots */}
+                            {(() => {
+                                const total = activeChallenge.questions.length;
+                                const progress = (currentQIndex + 1) / total;
+
+                                // Color tiers
+                                let barColor = "from-blue-500 to-indigo-500";       // 0–25%
+                                if (progress > 0.25 && progress <= 0.5) {
+                                    barColor = "from-cyan-500 to-blue-500";         // 25–50%
+                                } else if (progress > 0.5 && progress <= 0.75) {
+                                    barColor = "from-amber-500 to-orange-500";      // 50–75%
+                                } else if (progress > 0.75 && progress < 1) {
+                                    barColor = "from-orange-500 to-rose-500";       // 75–99%
+                                } else if (progress >= 1) {
+                                    barColor = "from-emerald-500 to-green-500";     // 100% = green
+                                }
+
+                                return (
+                                    <div className="mt-3 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className={`h-full bg-gradient-to-r ${barColor} rounded-full`}
+                                            initial={{ width: "0%" }}
+                                            animate={{ width: `${progress * 100}%` }}
+                                            transition={{ duration: 0.3, ease: "easeOut" }}
+                                        />
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 
@@ -1504,11 +1603,11 @@ export default function ChallengePage() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 backdrop-blur-sm">
                                         <Zap size={11} className="text-blue-600 fill-current" />
-                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider">Clinical</span>
+                                        <span className="text-[10px] font-black text-blue-600  tracking-wider">Clinical</span>
                                     </div>
                                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10">
                                         <Trophy size={11} className="text-amber-600" />
-                                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">{activeChallenge?.status === "self" ? "Target" : "vs Peer"}</span>
+                                        <span className="text-[10px] font-black text-amber-600 tracking-wider">{activeChallenge?.status === "self" ? "Target" : "vs Peer"}</span>
                                     </div>
                                 </div>
 
@@ -1519,7 +1618,7 @@ export default function ChallengePage() {
                                     </h3>
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/5">
                                         <p className="text-[11px] font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                                            <span className="text-sm">💡</span>
+                                            <span className="text-sm">Hi</span>
                                             {currentQIndex === 0 && "Let's begin! Read carefully and choose the best answer."}
                                             {currentQIndex === Math.floor(activeChallenge.questions.length / 2) && "You're doing great! Keep the momentum going!"}
                                             {currentQIndex === activeChallenge.questions.length - 2 && "Almost there! One final push!"}
@@ -1640,6 +1739,7 @@ export default function ChallengePage() {
                     togglePin={togglePin}
                     onUpdateList={handleManualUpdate}
                     isUpdating={isUpdating}
+                    onSelectUser={setSelectedUserId}
                 />
             </div>
 
@@ -1695,6 +1795,10 @@ export default function ChallengePage() {
                     )}
                 </AnimatePresence>, document.body
             )}
+            <UserProfileModal
+                userId={selectedUserId}
+                onClose={() => setSelectedUserId(null)}
+            />
         </>
     );
 }

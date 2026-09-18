@@ -29,7 +29,7 @@ export interface PaperData {
 }
 
 const UNITS_CACHE_KEY = "dynamic_units_cache_v2";
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour (units don't change often)
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour — ONLINE only
 const MIN_FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 // Memory cache
@@ -39,15 +39,31 @@ let cacheTimestamp = 0;
 let fetchInProgress = false;
 let lastFetchTime = 0;
 
-// Helper to get cached data
-const getCachedUnits = (): { papers: PaperData[]; allUnits: Unit[] } | null => {
+// ---------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------
+
+const isOffline = (): boolean =>
+    typeof navigator !== "undefined" && navigator.onLine === false;
+
+/**
+ * Read units from localStorage.
+ * @param ignoreTTL  when true, returns the cache no matter how old it is.
+ *                   Used offline and as a last-resort fallback on fetch failure.
+ */
+const getCachedUnits = (
+    ignoreTTL = false
+): { papers: PaperData[]; allUnits: Unit[] } | null => {
     try {
         const cached = localStorage.getItem(UNITS_CACHE_KEY);
-        if (cached) {
-            const { papers, allUnits, timestamp } = JSON.parse(cached);
-            if (Date.now() - timestamp < CACHE_DURATION) {
-                return { papers, allUnits };
-            }
+        if (!cached) return null;
+
+        const { papers, allUnits, timestamp } = JSON.parse(cached);
+
+        if (!papers || !Array.isArray(papers) || papers.length === 0) return null;
+
+        if (ignoreTTL || Date.now() - timestamp < CACHE_DURATION) {
+            return { papers, allUnits };
         }
         return null;
     } catch {
@@ -58,11 +74,14 @@ const getCachedUnits = (): { papers: PaperData[]; allUnits: Unit[] } | null => {
 // Helper to save data to cache
 const saveUnitsToCache = (papers: PaperData[], allUnits: Unit[]) => {
     try {
-        localStorage.setItem(UNITS_CACHE_KEY, JSON.stringify({
-            papers,
-            allUnits,
-            timestamp: Date.now()
-        }));
+        localStorage.setItem(
+            UNITS_CACHE_KEY,
+            JSON.stringify({
+                papers,
+                allUnits,
+                timestamp: Date.now(),
+            })
+        );
         cachedPapers = papers;
         cachedAllUnits = allUnits;
         cacheTimestamp = Date.now();
@@ -91,7 +110,7 @@ const getPaperProperties = (paperNumber: number) => {
 
 // Helper to determine level
 const getUnitLevel = (unitCode: string, title: string): string => {
-    const unitCodeNum = parseInt(unitCode.replace(/\D/g, '')) || 0;
+    const unitCodeNum = parseInt(unitCode.replace(/\D/g, "")) || 0;
 
     if (unitCode.startsWith("MD")) {
         const mdNum = parseInt(unitCode.replace("MD", "")) || 0;
@@ -106,9 +125,11 @@ const getUnitLevel = (unitCode: string, title: string): string => {
     if (unitCodeNum >= 10 || title?.toLowerCase().includes("advanced")) {
         return "Advanced";
     }
-    if (title?.toLowerCase().includes("professional") ||
+    if (
+        title?.toLowerCase().includes("professional") ||
         title?.toLowerCase().includes("expert") ||
-        title?.toLowerCase().includes("nclex")) {
+        title?.toLowerCase().includes("nclex")
+    ) {
         return "Professional";
     }
     if (title?.toLowerCase().includes("foundation")) {
@@ -119,7 +140,9 @@ const getUnitLevel = (unitCode: string, title: string): string => {
 };
 
 // Helper to determine paper from unit code
-const getPaperFromUnitCode = (unitCode: string): { paper: string; paperNumber: number } => {
+const getPaperFromUnitCode = (
+    unitCode: string
+): { paper: string; paperNumber: number } => {
     if (unitCode.startsWith("MD")) {
         return { paper: "Paper 1A: Medical-Surgical Nursing", paperNumber: 5 };
     }
@@ -136,10 +159,12 @@ const getPaperFromUnitCode = (unitCode: string): { paper: string; paperNumber: n
 };
 
 // Transform raw data into units
-const transformUnits = (quizzes: any[]): { allUnits: Unit[]; papersMap: Map<number, PaperData> } => {
+const transformUnits = (
+    quizzes: any[]
+): { allUnits: Unit[]; papersMap: Map<number, PaperData> } => {
     const uniqueUnitsMap = new Map<string, Unit>();
 
-    quizzes?.forEach(quiz => {
+    quizzes?.forEach((quiz) => {
         if (quiz.unit_code && !uniqueUnitsMap.has(quiz.unit_code)) {
             const { paper, paperNumber } = getPaperFromUnitCode(quiz.unit_code);
             const level = getUnitLevel(quiz.unit_code, quiz.title);
@@ -157,7 +182,7 @@ const transformUnits = (quizzes: any[]): { allUnits: Unit[]; papersMap: Map<numb
                 paper: paper,
                 paperNumber: paperNumber,
                 question_count: quiz.question_count || 0,
-                is_free: quiz.is_free || false
+                is_free: quiz.is_free || false,
             });
         }
     });
@@ -165,7 +190,7 @@ const transformUnits = (quizzes: any[]): { allUnits: Unit[]; papersMap: Map<numb
     const allUnitsArray = Array.from(uniqueUnitsMap.values());
     const papersMap = new Map<number, PaperData>();
 
-    allUnitsArray.forEach(unit => {
+    allUnitsArray.forEach((unit) => {
         if (!papersMap.has(unit.paperNumber)) {
             const { color, icon, description } = getPaperProperties(unit.paperNumber);
             papersMap.set(unit.paperNumber, {
@@ -175,7 +200,7 @@ const transformUnits = (quizzes: any[]): { allUnits: Unit[]; papersMap: Map<numb
                 total_questions: 0,
                 color: color,
                 icon: icon,
-                description: description
+                description: description,
             });
         }
 
@@ -185,38 +210,43 @@ const transformUnits = (quizzes: any[]): { allUnits: Unit[]; papersMap: Map<numb
     });
 
     // Sort units within each paper
-    papersMap.forEach(paper => {
+    papersMap.forEach((paper) => {
         paper.units.sort((a, b) => a.code.localeCompare(b.code));
     });
 
     return { allUnits: allUnitsArray, papersMap };
 };
 
+// ---------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------
+
 export function useUnits() {
+    // ✅ Instant hydration — serve cache no matter how old it is when offline
     const [papers, setPapers] = useState<PaperData[]>(() => {
-        if (typeof window !== "undefined") {
-            const cached = getCachedUnits();
-            if (cached) {
-                cachedPapers = cached.papers;
-                cachedAllUnits = cached.allUnits;
-                cacheTimestamp = Date.now();
-                return cached.papers;
-            }
+        if (typeof window === "undefined") return [];
+        const cached = getCachedUnits(isOffline());
+        if (cached) {
+            cachedPapers = cached.papers;
+            cachedAllUnits = cached.allUnits;
+            cacheTimestamp = Date.now();
+            return cached.papers;
         }
         return [];
     });
 
     const [allUnits, setAllUnits] = useState<Unit[]>(() => {
-        if (typeof window !== "undefined") {
-            const cached = getCachedUnits();
-            if (cached) {
-                return cached.allUnits;
-            }
-        }
-        return [];
+        if (typeof window === "undefined") return [];
+        const cached = getCachedUnits(isOffline());
+        return cached ? cached.allUnits : [];
     });
 
-    const [loading, setLoading] = useState(true);
+    // ✅ Only show loader if we have nothing to show
+    const [loading, setLoading] = useState<boolean>(() => {
+        if (typeof window === "undefined") return true;
+        return getCachedUnits(isOffline()) === null;
+    });
+
     const [error, setError] = useState<string | null>(null);
 
     const isMounted = useRef(true);
@@ -233,8 +263,21 @@ export function useUnits() {
     }, []);
 
     const fetchUnits = useCallback(async () => {
-        // Rate limiting
+        // ✅ OFFLINE: skip network entirely, serve cache with TTL ignored
+        if (isOffline()) {
+            const cached = getCachedUnits(true);
+            if (cached && isMounted.current) {
+                setPapers(cached.papers);
+                setAllUnits(cached.allUnits);
+                setError(null);
+            }
+            if (isMounted.current) setLoading(false);
+            return;
+        }
+
         const now = Date.now();
+
+        // Rate limiting (online only)
         if (now - lastFetchTime < MIN_FETCH_INTERVAL && cachedPapers) {
             if (isMounted.current) {
                 setPapers(cachedPapers);
@@ -250,10 +293,10 @@ export function useUnits() {
         lastFetchTime = now;
 
         try {
-            // ✅ Fetch all available fields from quizzes
             const { data, error: fetchError } = await supabase
                 .from("quizzes")
-                .select(`
+                .select(
+                    `
                     unit_code,
                     title,
                     description,
@@ -264,7 +307,8 @@ export function useUnits() {
                     quiz_type,
                     is_free,
                     question_count
-                `)
+                `
+                )
                 .eq("is_active", true)
                 .order("created_at", { ascending: true });
 
@@ -275,8 +319,9 @@ export function useUnits() {
             }
 
             const { allUnits: transformedUnits, papersMap } = transformUnits(data);
-            const papersArray = Array.from(papersMap.values())
-                .sort((a, b) => a.paperNumber - b.paperNumber);
+            const papersArray = Array.from(papersMap.values()).sort(
+                (a, b) => a.paperNumber - b.paperNumber
+            );
 
             if (isMounted.current) {
                 setPapers(papersArray);
@@ -284,12 +329,11 @@ export function useUnits() {
                 setError(null);
                 saveUnitsToCache(papersArray, transformedUnits);
             }
-
         } catch (err) {
             console.error("Error fetching units:", err);
 
-            // Fallback to cached data
-            const cached = getCachedUnits();
+            // ✅ Fallback: use cache regardless of age
+            const cached = getCachedUnits(true);
             if (cached && cached.papers.length > 0) {
                 if (isMounted.current) {
                     setPapers(cached.papers);
@@ -298,36 +342,34 @@ export function useUnits() {
                 }
             } else {
                 if (isMounted.current) {
-                    setError(err instanceof Error ? err.message : "Failed to fetch units");
+                    setError(
+                        err instanceof Error ? err.message : "Failed to fetch units"
+                    );
                 }
             }
         } finally {
-            if (isMounted.current) {
-                setLoading(false);
-            }
+            if (isMounted.current) setLoading(false);
             fetchInProgress = false;
         }
     }, []);
 
     // Initial fetch
     useEffect(() => {
-        // Small delay to prevent blocking initial render
         const timer = setTimeout(() => {
             fetchUnits();
         }, 100);
-
         return () => clearTimeout(timer);
     }, [fetchUnits]);
 
-    // Smart refresh when tab becomes visible (only if cache is stale)
+    // Smart refresh when tab becomes visible (only if cache is stale AND online)
     useEffect(() => {
         let visibilityTimeout: NodeJS.Timeout;
         const handleVisibilityChange = () => {
             if (!document.hidden && isMounted.current) {
                 if (visibilityTimeout) clearTimeout(visibilityTimeout);
                 visibilityTimeout = setTimeout(() => {
+                    if (isOffline()) return; // don't even try offline
                     const cached = getCachedUnits();
-                    // Refresh if no cache or cache older than 30 minutes
                     if (!cached || Date.now() - cacheTimestamp > 30 * 60 * 1000) {
                         fetchUnits();
                     }
@@ -335,11 +377,20 @@ export function useUnits() {
             }
         };
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
         return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
             if (visibilityTimeout) clearTimeout(visibilityTimeout);
         };
+    }, [fetchUnits]);
+
+    // 🔁 Auto-refresh when connection returns
+    useEffect(() => {
+        const handleOnline = () => {
+            if (isMounted.current) fetchUnits();
+        };
+        window.addEventListener("online", handleOnline);
+        return () => window.removeEventListener("online", handleOnline);
     }, [fetchUnits]);
 
     // Listen for cache invalidation from other tabs
@@ -347,7 +398,8 @@ export function useUnits() {
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === UNITS_CACHE_KEY && e.newValue && isMounted.current) {
                 try {
-                    const { papers: cachedPapersData, allUnits: cachedUnitsData } = JSON.parse(e.newValue);
+                    const { papers: cachedPapersData, allUnits: cachedUnitsData } =
+                        JSON.parse(e.newValue);
                     if (cachedPapersData && cachedUnitsData) {
                         setPapers(cachedPapersData);
                         setAllUnits(cachedUnitsData);
@@ -361,28 +413,31 @@ export function useUnits() {
             }
         };
 
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
+        window.addEventListener("storage", handleStorageChange);
+        return () => window.removeEventListener("storage", handleStorageChange);
     }, []);
 
     const refreshUnits = useCallback(async () => {
-        // Clear cache before refresh
-        localStorage.removeItem(UNITS_CACHE_KEY);
-        cachedPapers = null;
-        cachedAllUnits = null;
-        cacheTimestamp = 0;
+        // Only clear cache if online — offline refresh just re-serves cache
+        if (!isOffline()) {
+            localStorage.removeItem(UNITS_CACHE_KEY);
+            cachedPapers = null;
+            cachedAllUnits = null;
+            cacheTimestamp = 0;
+        }
         await fetchUnits();
     }, [fetchUnits]);
 
-    const getUnitsByPaper = useCallback((paperNumber: number) => {
-        return papers.find(p => p.paperNumber === paperNumber);
-    }, [papers]);
+    const getUnitsByPaper = useCallback(
+        (paperNumber: number) => papers.find((p) => p.paperNumber === paperNumber),
+        [papers]
+    );
 
-    const getUnitByCode = useCallback((code: string) => {
-        return allUnits.find(u => u.code === code);
-    }, [allUnits]);
+    const getUnitByCode = useCallback(
+        (code: string) => allUnits.find((u) => u.code === code),
+        [allUnits]
+    );
 
-    // ✅ Returns same structure as before (backward compatible)
     return {
         papers,
         allUnits,
@@ -390,7 +445,7 @@ export function useUnits() {
         error,
         refreshUnits,
         getUnitsByPaper,
-        getUnitByCode
+        getUnitByCode,
     };
 }
 
@@ -403,6 +458,6 @@ export function useUnitsCount() {
 // ✅ Optional: Hook for free units only
 export function useFreeUnits() {
     const { allUnits, loading } = useUnits();
-    const freeUnits = allUnits.filter(unit => unit.is_free);
+    const freeUnits = allUnits.filter((unit) => unit.is_free);
     return { freeUnits, count: freeUnits.length, loading };
 }

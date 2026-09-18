@@ -889,7 +889,7 @@ const Index = () => {
           {/* Video Hero - Full Width */}
           <AnimatedSection direction="up" delay={50}>
             <div className="w-full px-4 md:px-6 mb-8 md:mb-12">
-              <div className="relative w-75 rounded-[2rem] md:rounded-xl overflow-hidden bg-slate-900  border-0">
+              <div className="relative w-75 rounded-xl md:rounded-xl overflow-hidden bg-slate-900  border-0">
                 <div className="relative aspect-video w-full">
                   <video
                     className="w-full h-full object-cover"
@@ -925,7 +925,7 @@ const Index = () => {
               return (
                 <AnimatedCard key={index} index={index}>
                   <Card
-                    className={`bg-slate-50/50 hover:bg-white border-none md:rounded-[2rem] md:shadow-sm md:hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] md:hover:-translate-y-2 transition-all duration-500 cursor-pointer p-3 md:p-4 group h-full ${isHighlighted ? 'ring-2 ring-orange-400/30 md:ring-orange-400/20' : ''
+                    className={`bg-slate-50/50 hover:bg-white border-0 md:rounded-xl md:shadow-sm md:hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] md:hover:-translate-y-2 transition-all duration-500 cursor-pointer p-3 md:p-4 group h-full ${isHighlighted ? 'ring-0' : ''
                       }`}
                     onClick={() => navigate('/register')}
                   >
@@ -978,7 +978,7 @@ const Index = () => {
                         {feature.moreItems?.slice(0, 10).map((item, i) => {
                           const ItemIcon = item.icon;
                           return (
-                            <div key={i} className="flex items-center gap-1.5 bg-white/60 backdrop-blur-sm rounded-lg px-2 py-1.5 border border-white/50 hover:bg-white transition-all group/item">
+                            <div key={i} className="flex items-center gap-1.5 bg-white/60 backdrop-blur-sm rounded-lg px-2 py-1.5 border-0 hover:bg-white transition-all group/item">
                               <ItemIcon className="w-3 h-3 text-purple-500 group-hover/item:scale-110 transition-transform" />
                               <span className="text-[7px] md:text-[8px] font-medium text-slate-600 truncate leading-tight">
                                 {item.label}

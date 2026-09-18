@@ -102,7 +102,7 @@ function TriageBanner({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, type: "spring" }}
-      className={`relative overflow-hidden md:rounded-2xl p-4 md:p-5 border-0 ${triage.bgColor} border-b border-gray-100 dark:border-gray-800 md:border-b-0`}
+      className={`relative overflow-hidden md:rounded-xl p-4 md:p-5 border-0 ${triage.bgColor} border-0`}
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
 
@@ -161,7 +161,7 @@ function UnitTriageBadge({ subject }: { subject: any }) {
   const triage = getTriageCode(subject.progress, true);
 
   return (
-    <div className={`flex items-center justify-between px-2.5 md:px-3 py-1.5 md:py-2 md:rounded-xl border-0 ${triage.bgColor} border-b border-gray-100 dark:border-gray-800 md:border-b-0`}>
+    <div className={`flex items-center justify-between px-2.5 md:px-3 py-1.5 md:py-2 md:rounded-xl border-0 ${triage.bgColor} border-0`}>
       <div className="flex items-center gap-1.5 md:gap-2">
         <h4 className={`text-sm font-normal ${triage.textColor}`}>
           Code {triage.code}
@@ -420,7 +420,7 @@ export function StudyProgress() {
             <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-2xl md:rounded-3xl p-4 md:p-5 border-0">
               <motion.div layout>
                 <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <h3 className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-500">Metric Guide</h3>
+                  <h3 className="text-[10px] md:text-xs font-bold   tracking-widest text-gray-500">Metric Guide</h3>
                   <button
                     onClick={() => setShowProgressDescription(!showProgressDescription)}
                     className="text-[9px] md:text-[10px] font-bold text-blue-600 hover:underline px-1.5 md:px-2 py-0.5 md:py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
@@ -467,7 +467,7 @@ export function StudyProgress() {
             {/* OVERALL STATS GRID */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-2">
               {/* 🚨 TRIAGE CODE STAT CARD */}
-              <Card className="md:border md:border-gray-100 md:dark:border-gray-800 bg-white dark:bg-gray-900 md:shadow-sm md:hover:shadow-md transition-all duration-300 md:rounded-[1.5rem] overflow-hidden border-0 rounded-none border-b border-gray-100 dark:border-gray-800 md:border-b md:border-gray-100">
+              <Card className="border-0 bg-white dark:bg-gray-900 md:shadow-sm md:hover:shadow-md transition-all duration-300 md:rounded-xl overflow-hidden border-0 rounded-none border-0">
                 <CardContent className="p-3 md:p-5 flex flex-col items-center text-center">
                   <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${triage.bgColor} ${triage.color} mb-2 md:mb-3`}>
                     <Activity className="w-5 h-5 md:w-6 md:h-6" />
@@ -480,7 +480,7 @@ export function StudyProgress() {
                   <p className="text-xs font-normal text-gray-400 mt-1 md:mt-2">
                     {triage.label} Status
                   </p>
-                  <p className="text-[9px] md:text-[10px] lg:text-xs font-bold text-gray-400 uppercase tracking-tight mt-1 md:mt-2">
+                  <p className="text-[9px] md:text-[10px] lg:text-xs font-bold text-gray-400   tracking-tight mt-1 md:mt-2">
                     {triage.label} Status
                   </p>
                 </CardContent>
@@ -550,14 +550,14 @@ export function StudyProgress() {
                     {subjects.map((subject) => {
                       const unitTriage = getTriageCode(subject.progress, true);
                       return (
-                        <Card key={subject.id} className="group relative overflow-hidden border-2 border-gray-100 dark:border-gray-900 hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/5 flex flex-col">
+                        <Card key={subject.id} className="group relative overflow-hidden border-0 bg-white dark:bg-muted/60 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/5 flex flex-col">
                           <CardHeader className="pb-4">
                             <div className="flex justify-between items-start">
                               <div className="space-y-1 max-w-[65%]">
                                 <CardTitle className="text-base font-bold leading-tight group-hover:text-blue-600 transition-colors">
                                   {subject.name}
                                 </CardTitle>
-                                <CardDescription className="text-[10px] font-bold uppercase tracking-wider">
+                                <CardDescription className="text-[10px] font-bold   tracking-wider">
                                   {subject.topicsCompleted} of {subject.totalTopics} Attempts
                                 </CardDescription>
                               </div>
@@ -567,7 +567,7 @@ export function StudyProgress() {
                                 </div>
                                 {subject.progress >= 80 && (
                                   <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[9px] font-bold border-none">
-                                    MASTERED
+                                    Mastered
                                   </Badge>
                                 )}
                               </div>
@@ -575,7 +575,7 @@ export function StudyProgress() {
                           </CardHeader>
                           <CardContent className="space-y-6 flex-1 flex flex-col">
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-tighter">
+                              <div className="flex items-center justify-between text-[11px] font-bold   tracking-tighter">
                                 <span className="text-gray-400">Total Mastery</span>
                                 <span className="text-blue-600">{subject.progress}%</span>
                               </div>
@@ -593,15 +593,15 @@ export function StudyProgress() {
                             <div className="grid grid-cols-3 gap-2 py-3 border-t border-gray-50 dark:border-gray-900">
                               <div className="text-center">
                                 <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.hoursStudied}</p>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase mt-1">Hours</p>
+                                <p className="text-[9px] font-bold text-gray-400   mt-1">Hours</p>
                               </div>
                               <div className="text-center border-x border-gray-50 dark:border-gray-900">
                                 <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.topicsCompleted}</p>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase mt-1">Attempts</p>
+                                <p className="text-[9px] font-bold text-gray-400   mt-1">Attempts</p>
                               </div>
                               <div className="text-center">
                                 <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.rating}/5</p>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase mt-1">Rating</p>
+                                <p className="text-[9px] font-bold text-gray-400   mt-1">Rating</p>
                               </div>
                             </div>
 
@@ -948,7 +948,7 @@ function SimulationAndTriviaSummary({ user }) {
           <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/10">
             <Target className="w-5 h-5 text-blue-100" />
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Daily Goal</span>
+              <span className="text-[10px] font-bold   tracking-widest opacity-80">Daily Goal</span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -979,7 +979,7 @@ function SimulationAndTriviaSummary({ user }) {
                 <span className="text-2xl font-bold">{streak}</span>
                 <Flame className="w-6 h-6 text-orange-400 fill-orange-400 animate-bounce" />
               </div>
-              <p className="text-[10px] font-bold uppercase tracking-tight opacity-80">Day Streak</p>
+              <p className="text-[10px] font-bold   tracking-tight opacity-80">Day Streak</p>
             </div>
             <div className="hidden sm:block w-px h-10 bg-white/20" />
             <p className="hidden sm:block max-w-[140px] text-[10px] leading-tight opacity-90 font-medium">
@@ -1084,23 +1084,23 @@ const streakCache = new Map();
 
 function StatPill({ label, value, color }: { label: string, value: string | number, color: string }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border border-gray-100 dark:border-gray-800 text-center">
-      <span className="block text-[9px] uppercase font-bold text-gray-400 tracking-tighter">{label}</span>
+    <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border-0 text-center">
+      <span className="block text-[9px]   font-bold text-gray-400 tracking-tighter">{label}</span>
       <span className={`text-xs font-bold ${color}`}>{value}</span>
     </div>
   );
 }
 function StatCard({ icon, value, label, color, bgColor }: any) {
   return (
-    <Card className="border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-300 rounded-[1.5rem] overflow-hidden">
+    <Card className="border-0 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
       <CardContent className="p-4 sm:p-5 flex flex-col items-center text-center">
-        <div className={`p-3 rounded-2xl ${bgColor} ${color} mb-3`}>
+        <div className={`p-3 rounded-xl ${bgColor} ${color} mb-3`}>
           {icon}
         </div>
         <h4 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-none">
           {value}
         </h4>
-        <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-tight mt-2">
+        <p className="text-[10px] sm:text-xs font-bold text-gray-400   tracking-tight mt-2">
           {label}
         </p>
       </CardContent>

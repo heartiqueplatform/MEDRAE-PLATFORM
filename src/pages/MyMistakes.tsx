@@ -483,24 +483,21 @@ export default function MyMistakes() {
     return (
         <div className="w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 space-y-0 md:space-y-2 pb-4 md:pb-6">
             {/* Header with manual refresh button - NO floating indicators */}
+
             <div className="mb-0 md:mb-1">
-                <div className="relative bg-white/50 dark:bg-muted/30 backdrop-blur-md md:border-0 md:rounded-2xl md:shadow-lg p-4 md:p-6 lg:p-8 text-start overflow-hidden border-b border-slate-100 dark:border-slate-800 md:border-b-0 rounded-none">
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-1.5 md:h-2 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full blur-xl opacity-50" />
+                <div className="relative bg-slate-100 dark:bg-slate-900 md:rounded-2xl p-4 md:p-6 lg:p-8 text-start overflow-hidden rounded-none">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h1 className="text-sm md:text-xl lg:text-4xl font-bold mb-2 md:mb-3 text-gray-900 dark:text-white relative z-10 flex items-center gap-2 md:gap-3">
-
-                                Hello there! You have <span className="font-bold text-red-600 dark:text-red-400">{mistakeCount}</span> unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
-
+                            <h1 className="text-sm lg:text-xl font-bold mb-2 md:mb-3 text-gray-900 dark:text-white flex items-center gap-2 md:gap-3">
+                                Hello there! You have{" "}
+                                <span className="font-bold text-rose-600 dark:text-rose-400">
+                                    {mistakeCount}
+                                </span>{" "}
+                                unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
                             </h1>
-
-
                         </div>
-
-
                     </div>
                 </div>
-
             </div>
 
             <AnimatePresence>

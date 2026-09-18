@@ -186,19 +186,14 @@ export default function FeedSeenTop10() {
         []);
 
     return (
-        <Card className="rounded-xl border-0 bg-card shadow-sm w-full max-w-full overflow-hidden mt-2">
+        <Card className="rounded-xl border-0 bg-card shadow-sm w-full max-w-full overflow-hidden mt-1">
             <CardHeader className="pb-3 px-4 pt-5">
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                                <Trophy className="h-5 w-5 text-amber-600" />
-                            </div>
+                        <CardTitle className="flex items-center gap-2 text-xl font-bold">
                             Feed Mastery
                         </CardTitle>
-                        <CardDescription className="text-[10px] font-medium uppercase tracking-widest">
-                            Live Top 10 Leaderboard
-                        </CardDescription>
+
                     </div>
                 </div>
             </CardHeader>

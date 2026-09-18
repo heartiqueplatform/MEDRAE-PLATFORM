@@ -49,7 +49,9 @@ const getCachedSubscription = () => {
     const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION) {
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
+      // Offline: serve cache no matter how old it is.
+      if (offline || Date.now() - timestamp < CACHE_DURATION) {
         return data;
       }
     }
@@ -62,13 +64,14 @@ const setCachedSubscription = (data: any) => {
     localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
   } catch (e) { }
 };
-
 const getCachedFreeUnits = () => {
   try {
     const cached = localStorage.getItem(FREE_UNITS_CACHE_KEY);
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION) {
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
+      // Offline: serve cache no matter how old it is.
+      if (offline || Date.now() - timestamp < CACHE_DURATION) {
         return data;
       }
     }
@@ -429,8 +432,10 @@ export function MedraeQuizzes() {
       [unitCode]: !prev[unitCode]
     }));
   };
-
-  if (!subscriptionChecked && !getCachedSubscription()) {
+  // Show the loader only if we truly have nothing to show AND we're online.
+  // Offline with a cache = render immediately.
+  const hasSubscriptionCache = !!getCachedSubscription();
+  if (!subscriptionChecked && !hasSubscriptionCache && navigator.onLine) {
     return <GlobalLoader />;
   }
 
@@ -624,7 +629,7 @@ export function MedraeQuizzes() {
                           <p className="text-gray-600 dark:text-gray-300"><span className="font-bold text-gray-900 dark:text-white">Refresh:</span> Syncs latest units.</p>
                         </div>
                         <div className="border-t border-gray-200 dark:border-gray-700 pt-1.5 md:pt-2 mt-1">
-                          <p className="text-gray-500 text-[9px] md:text-[10px]">💡 Use tabs above to filter by category</p>
+                          <p className="text-gray-500 text-[9px] md:text-[10px]"> Use tabs above to filter by category</p>
                         </div>
                       </div>
                       <div className="absolute -bottom-1.5 right-4 w-3 h-3 bg-white dark:bg-gray-800 border-r border-b border-gray-200 dark:border-gray-700 rotate-45"></div>
@@ -711,7 +716,7 @@ export function MedraeQuizzes() {
                         return (
                           <React.Fragment key={unit.code}>
                             <Card
-                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl border-2 border-gray-100 dark:border-gray-800 hover:border-${color}-400 dark:hover:border-${color}-500/50 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl cursor-pointer`}
+                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl border-0  hover:border-${color}-400 dark:hover:border-${color}-500/50 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer`}
                               onClick={() => setSelectedUnit(unit)}
                             >
                               {paper.paperNumber === 4 && (

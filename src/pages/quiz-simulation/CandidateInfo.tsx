@@ -92,7 +92,7 @@ export default function CandidateInfo() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-background flex items-center justify-center p-4 font-sans">
-      <Card className="w-full max-w-2xl border-none shadow-2xl bg-white dark:bg-muted/30 overflow-hidden">
+      <Card className="w-full max-w-2xl border-0 shadow-none bg-white dark:bg-muted/30 overflow-hidden">
         {/* Decorative Progress/Security Bar */}
         <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-400" />
 

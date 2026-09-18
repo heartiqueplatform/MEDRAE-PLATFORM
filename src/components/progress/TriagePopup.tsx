@@ -21,7 +21,7 @@ export interface TriageLevel {
     threshold: number;
     emoji: string;
     actionText: string;
-    actionLink: string;
+    actionLink: string; critical
     detailedMessage: string;
 }
 
@@ -74,10 +74,10 @@ export function TriagePopup({ triage, onClose }: TriagePopupProps) {
                 initial={{ scale: 0.9, y: 100 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 100 }}
-                className={`relative w-full md:max-w-md md:rounded-xl md:border-2 ${triage.borderColor}
+                className={`relative w-full md:max-w-md md:rounded-xl md:border-0 ${triage.borderColor}
     ${triage.code === "RED" ? "bg-red-100 dark:bg-red-950" : triage.bgColor}
     bg-white dark:bg-gray-900 md:shadow-2xl
-    p-4 md:p-6 max-h-[85vh] md:max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl border-0 md:border-2`}
+    p-4 md:p-6 max-h-[85vh] md:max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl border-0 md:border-0`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Drag handle for mobile bottom sheet */}

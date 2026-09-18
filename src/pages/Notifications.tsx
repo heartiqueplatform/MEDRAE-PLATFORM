@@ -223,10 +223,7 @@ export function Notifications() {
           <div className="flex items-center justify-between mb-3 md:mb-4 px-4 md:px-0">
             <div>
               <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 dark:text-white">Notifications</h1>
-              <div className="flex items-center gap-1.5 md:gap-2 mt-0.5 md:mt-1">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest">Your Latest Notifications</p>
-              </div>
+
             </div>
             {notifications.some(n => !n.is_read) && (
               <Button variant="outline" size="sm" onClick={markAllAsRead} className="rounded-full border-0 bg-slate-100 dark:bg-slate-800 text-[9px] md:text-[10px] font-bold uppercase h-8 md:h-9 px-3">
@@ -240,10 +237,6 @@ export function Notifications() {
           {/* 1. FIRST LOAD — skeleton shimmer */}
           {fetchState === "loading" && notifications.length === 0 && (
             <div className="px-4 md:px-0">
-              <div className="flex items-center gap-2 mb-3 md:mb-4 text-xs text-slate-400">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span className="font-normal">Fetching notifications…</span>
-              </div>
               <NotificationSkeleton />
             </div>
           )}

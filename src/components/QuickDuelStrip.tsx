@@ -10,6 +10,7 @@ import {
     RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { UserProfileModal } from "./UserProfileModal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -98,7 +99,7 @@ function QuickDuelStripBase({
     const [refreshing, setRefreshing] = useState(false);
 
     const fetchedRef = useRef(false);
-
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     /* -------------------------------------------------------------- */
     /*  Fetch                                                         */
     /* -------------------------------------------------------------- */
@@ -281,8 +282,117 @@ function QuickDuelStripBase({
             className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 space-y-5 font-sans"
             style={{ contain: "layout paint" }}
         >
+            {/* ---------- Players scroll (NOW FIRST) ---------- */}
+            {sortedPlayers.length > 0 ? (
+                <div
+                    className="flex gap-5 overflow-x-auto -mx-2 px-2 pb-2 pt-1"
+                    style={{
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
+                        WebkitOverflowScrolling: "touch",
+                    }}
+                >
+                    {sortedPlayers.map((p) => (
+                        <div
+                            key={p.user_id}
+                            className="shrink-0 w-[116px] flex flex-col items-center text-center"
+                            style={{ contentVisibility: "auto" }}
+                        >
+                            {/* Avatar + pin badge */}
+                            <div className="relative mb-2">
+                                {/* Avatar → opens profile */}
+                                <button
+                                    onClick={() => {
+                                        if (navigator.vibrate) navigator.vibrate(10);
+                                        setSelectedUserId(p.user_id);
+                                    }}
+                                    className="block active:scale-[0.97] transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                    aria-label={`View ${p.name}'s profile`}
+                                >
+                                    <img
+                                        src={p.avatar_url || "/pwa-512x512.png"}
+                                        alt={p.name}
+                                        loading="lazy"
+                                        decoding="async"
+                                        className={`w-[80px] h-[80px] rounded-full object-cover ${p.is_pinned ? "ring-2 ring-amber-400" : "ring-2 ring-blue-500/20"
+                                            }`}
+                                    />
+                                    {p.is_online && (
+                                        <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
+                                    )}
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                                        <Swords size={11} className="text-white" strokeWidth={2.5} />
+                                    </span>
+                                </button>
 
-            {/* ---------- Last battle card ---------- */}
+                                {/* Pin toggle */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        togglePin(p.user_id);
+                                    }}
+                                    className="absolute -top-1 -left-1 p-1 rounded-full bg-white dark:bg-slate-800 active:scale-90 transition-transform"
+                                    style={{ touchAction: "manipulation" }}
+                                    aria-label={p.is_pinned ? "Unpin" : "Pin"}
+                                >
+                                    {p.is_pinned ? (
+                                        <Star size={12} className="text-amber-500 fill-amber-500" strokeWidth={2.5} />
+                                    ) : (
+                                        <StarOff size={12} className="text-slate-300" strokeWidth={2.5} />
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Name + username → opens profile */}
+                            <button
+                                onClick={() => {
+                                    if (navigator.vibrate) navigator.vibrate(10);
+                                    setSelectedUserId(p.user_id);
+                                }}
+                                className="w-full text-center active:scale-[0.98] transition-transform"
+                                style={{ touchAction: "manipulation" }}
+                            >
+                                <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate w-full leading-tight mt-1">
+                                    {p.name}
+                                </p>
+                                <p className="text-[11px] font-medium text-slate-400 truncate w-full mt-0.5">
+                                    @{p.username}
+                                </p>
+                            </button>
+
+                            {/* Challenge button → goes to arena */}
+                            <button
+                                onClick={() => challengeOpponent(p.user_id)}
+                                className="mt-2.5 w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                style={{ touchAction: "manipulation" }}
+                                aria-label={`Challenge ${p.name}`}
+                            >
+                                <Swords size={11} className="text-white" strokeWidth={2.5} />
+                                <span className="text-[11px] font-bold text-white tracking-wide">
+                                    Challenge
+                                </span>
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                !loading && (
+                    <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
+                            <Swords className="w-5 h-5 text-blue-600" strokeWidth={2.5} />
+                        </div>
+                        <p className="text-[12px] font-bold text-slate-600 dark:text-slate-300">
+                            No players available
+                        </p>
+                        <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+                            Tap refresh to load the directory
+                        </p>
+                    </div>
+                )
+            )}
+
+            {/* ---------- Last battle card (NOW SECOND / BOTTOM) ---------- */}
             {lastDuel && (
                 <div
                     className={`flex items-center gap-3 p-3 rounded-2xl ${lastDuel.won ? "bg-emerald-500/5" : "bg-rose-500/5"
@@ -327,117 +437,17 @@ function QuickDuelStripBase({
                     </button>
                 </div>
             )}
-
-            {/* ---------- Players scroll ---------- */}
-            {sortedPlayers.length > 0 ? (
-                <div
-                    className="flex gap-5 overflow-x-auto -mx-2 px-2 pb-2 pt-1"
-                    style={{
-                        scrollbarWidth: "none",
-                        msOverflowStyle: "none",
-                        WebkitOverflowScrolling: "touch",
-                    }}
-                >
-                    {sortedPlayers.map((p) => (
-                        <div
-                            key={p.user_id}
-                            className="shrink-0 w-[116px] flex flex-col items-center text-center"
-                            style={{ contentVisibility: "auto" }}
-                        >
-                            {/* Avatar + pin badge */}
-                            <div className="relative mb-2">
-                                <button
-                                    onClick={() => challengeOpponent(p.user_id)}
-                                    className="block active:scale-[0.97] transition-transform"
-                                    style={{ touchAction: "manipulation" }}
-                                    aria-label={`Challenge ${p.name}`}
-                                >
-                                    <img
-                                        src={p.avatar_url || "/pwa-512x512.png"}
-                                        alt={p.name}
-                                        loading="lazy"
-                                        decoding="async"
-                                        className={`w-[80px] h-[80px] rounded-full object-cover ${p.is_pinned
-                                            ? "ring-2 ring-amber-400"
-                                            : "ring-2 ring-blue-500/20"
-                                            }`}
-                                    />
-                                    {p.is_online && (
-                                        <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
-                                    )}
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
-                                        <Swords size={11} className="text-white" strokeWidth={2.5} />
-                                    </span>
-                                </button>
-
-                                {/* Pin toggle */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        togglePin(p.user_id);
-                                    }}
-                                    className="absolute -top-1 -left-1 p-1 rounded-full bg-white dark:bg-slate-800 active:scale-90 transition-transform"
-                                    style={{ touchAction: "manipulation" }}
-                                    aria-label={p.is_pinned ? "Unpin" : "Pin"}
-                                >
-                                    {p.is_pinned ? (
-                                        <Star
-                                            size={12}
-                                            className="text-amber-500 fill-amber-500"
-                                            strokeWidth={2.5}
-                                        />
-                                    ) : (
-                                        <StarOff size={12} className="text-slate-300" strokeWidth={2.5} />
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Name */}
-                            <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate w-full leading-tight mt-1">
-                                {p.name}
-                            </p>
-                            {/* Username */}
-                            <p className="text-[11px] font-medium text-slate-400 truncate w-full mt-0.5">
-                                @{p.username}
-                            </p>
-
-                            {/* Challenge label */}
-                            {/* Challenge button - Facebook style, blue */}
-                            <button
-                                onClick={() => challengeOpponent(p.user_id)}
-                                className="mt-2.5 w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                                style={{ touchAction: "manipulation" }}
-                                aria-label={`Challenge ${p.name}`}
-                            >
-                                <Swords size={11} className="text-white" strokeWidth={2.5} />
-                                <span className="text-[11px] font-bold text-white tracking-wide">
-                                    Challenge
-                                </span>
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                !loading && (
-                    <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2">
-                            <Swords className="w-5 h-5 text-blue-600" strokeWidth={2.5} />
-                        </div>
-                        <p className="text-[12px] font-bold text-slate-600 dark:text-slate-300">
-                            No players available
-                        </p>
-                        <p className="text-[10px] font-medium text-slate-400 mt-0.5">
-                            Tap refresh to load the directory
-                        </p>
-                    </div>
-                )
-            )}
+            {/* Profile modal */}
+            <UserProfileModal
+                userId={selectedUserId}
+                onClose={() => setSelectedUserId(null)}
+            />
         </section>
     );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Skeleton                                                          */
+/*  Skeleton (matches new order: players row first, then battle card) */
 /* ------------------------------------------------------------------ */
 
 function StripSkeleton() {
@@ -446,19 +456,7 @@ function StripSkeleton() {
             className="w-full bg-white/70 dark:bg-muted/30 backdrop-blur-xl rounded-2xl p-5 space-y-5 font-sans"
             style={{ contain: "layout paint" }}
         >
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                    <div className="space-y-1.5">
-                        <div className="w-20 h-3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                        <div className="w-28 h-2 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                    </div>
-                </div>
-                <div className="w-12 h-3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            </div>
-
-            <div className="h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
-
+            {/* Players row skeleton (top) */}
             <div className="flex gap-5">
                 {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="shrink-0 w-[116px] flex flex-col items-center">
@@ -469,6 +467,10 @@ function StripSkeleton() {
                     </div>
                 ))}
             </div>
+
+            {/* Last battle card skeleton (bottom) */}
+            <div className="h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+
         </section>
     );
 }
