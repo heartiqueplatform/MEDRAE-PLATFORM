@@ -766,13 +766,9 @@ export default function StudentDashboard() {
           <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px]" />
 
           <CardHeader className="relative z-10 pb-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div>
-                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Top Students</CardTitle>
-                </div>
-              </div>
-            </div>
+            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight py-2">
+              Top Students
+            </CardTitle>
 
             <details className="group mt-4 bg-slate-100/50 dark:bg-white/[0.03] rounded-2xl border-0 dark:border-white/5 overflow-hidden transition-all duration-300">
               <summary className="cursor-pointer list-none p-4 flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">

@@ -1000,7 +1000,6 @@ export const DailyTriviaCard = () => {
                         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <Trophy className="w-5 h-5 text-amber-500 flex-shrink-0" />
                                     <h2 className="text-lg font-bold tracking-tight text-foreground">Daily Leaderboard</h2>
                                 </div>
                                 <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mt-1">
