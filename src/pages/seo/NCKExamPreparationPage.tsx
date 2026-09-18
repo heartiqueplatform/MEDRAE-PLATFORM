@@ -37,7 +37,7 @@ export default function NCKExamPreparationPage() {
         setMeta(
             "name",
             "description",
-            "A practical NCK exam preparation guide for Kenyan nursing students. Step-by-step from registration and rehearsal to final exam day preparation."
+            "A practical NCK exam preparation guide for Kenyan nursing students ~ DCHN (formerly KRCHN), BSN, KRN and all cadres. Step-by-step from registration and rehearsal to final exam day preparation."
         );
         setMeta(
             "property",
@@ -47,7 +47,7 @@ export default function NCKExamPreparationPage() {
         setMeta(
             "property",
             "og:description",
-            "How to prepare for the NCK licensure exam from the first day of revision to final exam preparation — rehearsal, equipment, and exam-day rules."
+            "How to prepare for the NCK licensure exam from the first day of revision to final exam preparation ~ rehearsal, equipment, and exam-day rules ~ across all nursing cadres."
         );
         setMeta("property", "og:type", "article");
         setMeta("property", "og:url", CANONICAL);
@@ -60,7 +60,7 @@ export default function NCKExamPreparationPage() {
         setMeta(
             "name",
             "twitter:description",
-            "A step-by-step NCK preparation guide for Kenyan nursing students — registration, rehearsal, revision strategy, and exam day."
+            "A step-by-step NCK preparation guide for Kenyan nursing students ~ registration, rehearsal, revision strategy, and exam day."
         );
 
         let canonical = document.head.querySelector<HTMLLinkElement>(
@@ -104,13 +104,13 @@ export default function NCKExamPreparationPage() {
                 <p className="mt-3 text-base text-slate-600 sm:text-lg">
                     A step-by-step preparation guide from the first day of
                     revision to the final moments before you sit your NCK
-                    licensure exam.
+                    licensure exam ~ across all nursing cadres.
                 </p>
 
                 <section className="mt-8 space-y-4 text-[15px] leading-7 sm:text-base">
                     <p>
                         Preparing for the NCK exam is not just about studying.
-                        It is a sequence of steps — register, rehearse, revise,
+                        It is a sequence of steps ~ register, rehearse, revise,
                         and show up ready. Miss one step and you can lose your
                         sitting before you answer a single question.
                     </p>
@@ -142,7 +142,7 @@ export default function NCKExamPreparationPage() {
                             NCK portal.
                         </p>
                         <p>
-                            The exam is typically offered three times a year —
+                            The exam is typically offered three times a year ~
                             May, August, and November. Application deadlines
                             are usually set several weeks before the exam, and
                             missing them means waiting for the next sitting.
@@ -350,22 +350,22 @@ export default function NCKExamPreparationPage() {
                             </h3>
                             <ul className="mt-3 list-disc space-y-2 pl-5 text-slate-700">
                                 <li>
-                                    <strong>National ID or Passport</strong> —
+                                    <strong>National ID or Passport</strong> ~
                                     you will not be admitted without it
                                 </li>
                                 <li>
-                                    <strong>NCK Exam Card</strong> — issued at
+                                    <strong>NCK Exam Card</strong> ~ issued at
                                     the centre during rehearsal
                                 </li>
                                 <li>
                                     <strong>
                                         Your laptop and power cable
                                     </strong>{" "}
-                                    — ensure it meets the requirements listed
+                                    ~ ensure it meets the requirements listed
                                     above
                                 </li>
                                 <li>
-                                    <strong>Stationery</strong> — for any
+                                    <strong>Stationery</strong> ~ for any
                                     written components
                                 </li>
                             </ul>
@@ -468,7 +468,7 @@ export default function NCKExamPreparationPage() {
                             </strong>{" "}
                             <span className="text-slate-700">
                                 The exam tests Kenya&rsquo;s national protocols
-                                for TB, malaria, HIV, and immunisation — not
+                                for TB, malaria, HIV, and immunisation ~ not
                                 generic textbook approaches.
                             </span>
                         </li>
@@ -499,7 +499,8 @@ export default function NCKExamPreparationPage() {
                         <p className="mt-3 text-[15px] leading-7 text-slate-600 sm:text-base">
                             Medrae Nursing covers the revision side of NCK
                             preparation with a system that mirrors the digital
-                            exam format — so you walk into the exam centre
+                            exam format ~ for DCHN, BSN, KRN and all nursing
+                            cadres ~ so you walk into the exam centre
                             already familiar with the tools you will use.
                         </p>
                     </div>
@@ -519,7 +520,7 @@ export default function NCKExamPreparationPage() {
                                 with the same layout, question flagging, and
                                 time pressure you will face on the real
                                 platform. Train on-screen, under pressure,
-                                before the rehearsal — so the actual exam
+                                before the rehearsal ~ so the actual exam
                                 system feels familiar.
                             </p>
                         </div>
@@ -534,7 +535,7 @@ export default function NCKExamPreparationPage() {
                                 <strong>unit, condition, and topic</strong>. If
                                 your diagnostic reveals weakness in
                                 pre-eclampsia or pulmonary TB, you jump
-                                straight to that unit — no scrolling through
+                                straight to that unit ~ no scrolling through
                                 one giant pool of random questions.
                             </p>
                         </div>
@@ -550,7 +551,7 @@ export default function NCKExamPreparationPage() {
                                     explanations for why the correct answer is
                                     correct and why the others are wrong
                                 </strong>
-                                . That is where clinical reasoning is built —
+                                . That is where clinical reasoning is built ~
                                 the skill the NCK exam actually tests.
                             </p>
                         </div>
@@ -565,7 +566,7 @@ export default function NCKExamPreparationPage() {
                                 <strong>
                                     flashcards, micro-cards, and memory aids
                                 </strong>{" "}
-                                throughout practice — short bursts of key
+                                throughout practice ~ short bursts of key
                                 facts, mnemonics, and images that help clinical
                                 information stick. Especially useful for
                                 pharmacology and diagnostic criteria.
@@ -582,17 +583,19 @@ export default function NCKExamPreparationPage() {
                                 <strong>
                                     80+ modules and 1,000+ sub-units
                                 </strong>
-                                , Medrae covers the entire KRCHN programme. You
-                                can start revising from Year 1 — building
-                                knowledge continuously instead of cramming in
-                                the final weeks before the NCK exam.
+                                , Medrae covers the entire DCHN (formerly
+                                KRCHN) programme ~ plus content mapped for
+                                BSN, KRN and other cadres. You can start
+                                revising from Year 1 ~ building knowledge
+                                continuously instead of cramming in the final
+                                weeks before the NCK exam.
                             </p>
                         </div>
 
                         {/* Feature 6 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                My Mistakes — Turn Wrong Answers Into Learning
+                                My Mistakes ~ Turn Wrong Answers Into Learning
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Every question you get wrong is automatically
@@ -616,19 +619,19 @@ export default function NCKExamPreparationPage() {
                                     and how your overall readiness is trending
                                 </strong>
                                 . You walk into the rehearsal knowing exactly
-                                where you stand — not guessing.
+                                where you stand ~ not guessing.
                             </p>
                         </div>
 
                         {/* Feature 8 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                MedTube — Curated Nursing Videos
+                                MedTube ~ Curated Nursing Videos
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 If a topic only clicks when you see it
                                 explained, <strong>MedTube</strong> offers
-                                thousands of curated nursing videos —
+                                thousands of curated nursing videos ~
                                 organised by topic, ad-free, and sitting
                                 alongside your question bank.
                             </p>
@@ -767,10 +770,11 @@ export default function NCKExamPreparationPage() {
                             real exam conditions.
                         </p>
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
-                            Medrae Nursing covers the practice side — with
+                            Medrae Nursing covers the practice side ~ with
                             NCK-style questions, rationales, unit-level
                             analytics, and a digital format that mirrors the
-                            actual exam. Use it from Year 1 through to your
+                            actual exam ~ for DCHN, BSN, KRN and all nursing
+                            cadres. Use it from Year 1 through to your
                             licensure exam.
                         </p>
                     </div>

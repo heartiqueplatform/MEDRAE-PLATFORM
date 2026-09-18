@@ -4,7 +4,7 @@ import SeoFooter from "./SeoFooter";
 
 
 /**
- * Public SEO page: KRCHN Revision
+ * Public SEO page: DCHN (formerly KRCHN) Revision
  * Route: /krchn-revision
  * Static content only. No Supabase, no data fetching.
  */
@@ -16,7 +16,7 @@ export default function KRCHNRevisionPage() {
 
         const prevTitle = document.title;
         document.title =
-            "KRCHN Revision in Kenya | Prepare for the NCK Exam";
+            "DCHN (formerly KRCHN) Revision in Kenya | Prepare for the NCK Exam";
 
         const setMeta = (
             attr: "name" | "property",
@@ -37,17 +37,17 @@ export default function KRCHNRevisionPage() {
         setMeta(
             "name",
             "description",
-            "KRCHN revision guide for Kenyan nursing students. Preparation strategy, subjects tested, high-yield topics, and how to practise NCK exam questions on Medrae."
+            "DCHN (formerly KRCHN) revision guide for Kenyan nursing students. Preparation strategy, subjects tested, high-yield topics, and how to practise NCK exam questions on Medrae."
         );
         setMeta(
             "property",
             "og:title",
-            "KRCHN Revision in Kenya | Prepare for the NCK Exam"
+            "DCHN (formerly KRCHN) Revision in Kenya | Prepare for the NCK Exam"
         );
         setMeta(
             "property",
             "og:description",
-            "What to revise for the KRCHN NCK exam, which subjects carry the most marks, and how to build an effective revision routine."
+            "What to revise for the DCHN NCK exam, which subjects carry the most marks, and how to build an effective revision routine."
         );
         setMeta("property", "og:type", "article");
         setMeta("property", "og:url", CANONICAL);
@@ -55,12 +55,12 @@ export default function KRCHNRevisionPage() {
         setMeta(
             "name",
             "twitter:title",
-            "KRCHN Revision in Kenya | Prepare for the NCK Exam"
+            "DCHN (formerly KRCHN) Revision in Kenya | Prepare for the NCK Exam"
         );
         setMeta(
             "name",
             "twitter:description",
-            "A practical KRCHN revision guide for Kenyan nursing students preparing for the NCK licensure exam."
+            "A practical DCHN (formerly KRCHN) revision guide for Kenyan nursing students preparing for the NCK licensure exam."
         );
 
         let canonical = document.head.querySelector<HTMLLinkElement>(
@@ -93,29 +93,30 @@ export default function KRCHNRevisionPage() {
                         <span className="text-slate-800 ml-1">NURSING</span>
                     </p>
                     <p className="mt-1 text-xs font-medium uppercase tracking-widest text-slate-500 sm:text-sm">
-                        KRCHN Revision
+                        DCHN (formerly KRCHN) Revision
                     </p>
                 </div>
 
                 {/* ============ H1 & Intro ============ */}
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-                    KRCHN Revision in Kenya
+                    DCHN Revision in Kenya <span className="block text-lg font-medium text-slate-500 mt-2 sm:text-xl">(formerly KRCHN)</span>
                 </h1>
                 <p className="mt-3 text-base text-slate-600 sm:text-lg">
-                    How to prepare for the KRCHN NCK licensure exam — what to
+                    How to prepare for the DCHN NCK licensure exam ~ what to
                     revise, which topics carry the most marks, and how to
                     practise effectively.
                 </p>
 
                 <section className="mt-8 space-y-4 text-[15px] leading-7 sm:text-base">
                     <p>
-                        If you are a KRCHN student, you are training for one of
-                        the most important exams of your career. The NCK
-                        licensure exam is the final step before you can legally
-                        practise as a Kenya Registered Community Health Nurse.
+                        If you are a DCHN student (the programme formerly known
+                        as KRCHN), you are training for one of the most
+                        important exams of your career. The NCK licensure exam
+                        is the final step before you can legally practise as a
+                        Kenya Registered Community Health Nurse.
                     </p>
                     <p>
-                        This page breaks down what the KRCHN exam covers, which
+                        This page breaks down what the DCHN exam covers, which
                         areas consistently appear in questions, and how to build
                         a revision strategy that gets you ready. You can then
                         put it into practice directly on Medrae Nursing, where
@@ -124,25 +125,29 @@ export default function KRCHNRevisionPage() {
                     </p>
                 </section>
 
-                {/* ============ About KRCHN ============ */}
+                {/* ============ About DCHN ============ */}
                 <section className="mt-12">
                     <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                        What Is the KRCHN Programme?
+                        What Is the DCHN Programme?
                     </h2>
                     <div className="mt-5 space-y-4 text-[15px] leading-7 sm:text-base">
                         <p>
-                            KRCHN stands for{" "}
+                            <strong>DCHN</strong> stands for{" "}
                             <strong>
-                                Kenya Registered Community Health Nurse
+                                Diploma in Community Health Nursing
                             </strong>
-                            . It is a three-year diploma programme regulated by
-                            the Nursing Council of Kenya (NCK) that trains
-                            nurses to provide preventive, promotive, and basic
-                            curative healthcare services — particularly in
-                            community and primary healthcare settings.
+                            . It is the current name for the three-year diploma
+                            programme regulated by the Nursing Council of Kenya
+                            (NCK) ~ <strong>formerly known as KRCHN</strong>{" "}
+                            (Kenya Registered Community Health Nurse). The
+                            curriculum, modules, and licensure path remain the
+                            same; only the official programme name changed.
                         </p>
                         <p>
-                            The programme combines three major areas of
+                            The programme trains nurses to provide preventive,
+                            promotive, and basic curative healthcare services ~
+                            particularly in community and primary healthcare
+                            settings. It combines three major areas of
                             training: general nursing, community health
                             nursing, and midwifery. Graduates are qualified to
                             work as clinical nurses, community nurses, and
@@ -160,19 +165,19 @@ export default function KRCHNRevisionPage() {
                 {/* ============ The Exam ============ */}
                 <section className="mt-12">
                     <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                        What the KRCHN NCK Exam Covers
+                        What the DCHN NCK Exam Covers
                     </h2>
                     <div className="mt-5 space-y-4 text-[15px] leading-7 sm:text-base">
                         <p>
-                            The KRCHN licensure exam is split into{" "}
-                            <strong>two papers</strong>, both sat as timed
+                            The DCHN (formerly KRCHN) licensure exam is split
+                            into <strong>two papers</strong>, both sat as timed
                             computer-based tests at your designated exam
                             centre.
                         </p>
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Paper 1 — Medical-Surgical &amp; Clinical
+                                Paper 1 ~ Medical-Surgical &amp; Clinical
                                 Nursing
                             </h3>
                             <ul className="mt-3 list-disc space-y-1 pl-5 text-slate-700">
@@ -189,7 +194,7 @@ export default function KRCHNRevisionPage() {
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Paper 2 — Community Health, Midwifery &amp;
+                                Paper 2 ~ Community Health, Midwifery &amp;
                                 Professional Practice
                             </h3>
                             <ul className="mt-3 list-disc space-y-1 pl-5 text-slate-700">
@@ -209,7 +214,7 @@ export default function KRCHNRevisionPage() {
                             Both papers are important, but candidates tend to
                             find Paper 1 more content-heavy and Paper 2 more
                             concept-driven. Do not neglect the
-                            &ldquo;easy&rdquo; subjects on Paper 2 —
+                            &ldquo;easy&rdquo; subjects on Paper 2 ~
                             Professional Practice, Research, and Leadership
                             carry guaranteed marks that many students leave on
                             the table.
@@ -220,12 +225,12 @@ export default function KRCHNRevisionPage() {
                 {/* ============ High-Yield Topics ============ */}
                 <section className="mt-12">
                     <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                        High-Yield Topics for KRCHN Revision
+                        High-Yield Topics for DCHN Revision
                     </h2>
                     <div className="mt-5 space-y-5 text-[15px] leading-7 sm:text-base">
                         <p>
                             Not all topics appear equally in the exam. These
-                            are the areas where KRCHN questions cluster most
+                            are the areas where DCHN questions cluster most
                             heavily.
                         </p>
 
@@ -245,7 +250,7 @@ export default function KRCHNRevisionPage() {
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Midwifery — Prioritise Complications
+                                Midwifery ~ Prioritise Complications
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Normal labour and delivery is rarely tested in
@@ -260,11 +265,11 @@ export default function KRCHNRevisionPage() {
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Community Health — Kenya-Specific Frameworks
+                                Community Health ~ Kenya-Specific Frameworks
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Do not study community health from a generic
-                                textbook. KRCHN questions test Kenya&rsquo;s
+                                textbook. DCHN questions test Kenya&rsquo;s
                                 national frameworks: KEPI immunisation
                                 schedule, IDSR disease surveillance, KEPH
                                 levels of care, IMCI protocols, Kenya&rsquo;s
@@ -303,7 +308,7 @@ export default function KRCHNRevisionPage() {
                 {/* ============ Revision Strategy ============ */}
                 <section className="mt-12">
                     <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                        How to Structure Your KRCHN Revision
+                        How to Structure Your DCHN Revision
                     </h2>
                     <div className="mt-5 space-y-5 text-[15px] leading-7 sm:text-base">
                         <div className="rounded-xl bg-slate-50 p-5">
@@ -339,7 +344,7 @@ export default function KRCHNRevisionPage() {
                                 3–4 Weeks)
                             </h3>
                             <p className="mt-2 text-slate-700">
-                                Timed mock exams are non-negotiable. The KRCHN
+                                Timed mock exams are non-negotiable. The DCHN
                                 exam is computer-based, and the time pressure
                                 on screen is different from paper-based
                                 practice. Work through full mock papers within
@@ -358,12 +363,13 @@ export default function KRCHNRevisionPage() {
                             className="mx-auto h-12 w-12 rounded-xl object-contain"
                         />
                         <h2 className="mt-4 text-2xl font-semibold text-slate-900 sm:text-3xl">
-                            Revise KRCHN on Medrae
+                            Revise DCHN on Medrae
                         </h2>
                         <p className="mt-3 text-[15px] leading-7 text-slate-600 sm:text-base">
                             Medrae Nursing is built for Kenyan nursing students
-                            preparing for the NCK exam. It is not just a
-                            question bank — it is a complete KRCHN revision
+                            preparing for the NCK exam ~ across all cadres
+                            (DCHN, BSN, KRN, and more). It is not just a
+                            question bank ~ it is a complete DCHN revision
                             system that follows you from Year 1 of your diploma
                             all the way to your licensure exam.
                         </p>
@@ -373,14 +379,14 @@ export default function KRCHNRevisionPage() {
                         {/* Feature 1 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Complete 3-Year KRCHN Curriculum
+                                Complete 3-Year DCHN Curriculum
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-                                Medrae covers the entire KRCHN programme —{" "}
+                                Medrae covers the entire DCHN programme ~{" "}
                                 <strong>80+ modules</strong> and{" "}
                                 <strong>1,000+ sub-units</strong> organised by
                                 year, semester, module, unit, and topic.
-                                First-year KRCHN students can start practising
+                                First-year DCHN students can start practising
                                 on the same platform they will use to prepare
                                 for the NCK exam.
                             </p>
@@ -389,7 +395,7 @@ export default function KRCHNRevisionPage() {
                         {/* Feature 2 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Unit-Based Questions — Jump to the Exact Weak
+                                Unit-Based Questions ~ Jump to the Exact Weak
                                 Area
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
@@ -398,7 +404,7 @@ export default function KRCHNRevisionPage() {
                                 not dumped into one big pool. If your
                                 diagnostic shows weakness in pre-eclampsia or
                                 pulmonary TB, you jump straight to that unit
-                                and drill only those questions — instead of
+                                and drill only those questions ~ instead of
                                 scrolling through unrelated material.
                             </p>
                         </div>
@@ -414,8 +420,8 @@ export default function KRCHNRevisionPage() {
                                     explanations for why the correct answer is
                                     correct and why the others are wrong
                                 </strong>
-                                . That is where clinical reasoning is built —
-                                the skill the KRCHN NCK exam actually tests. No
+                                . That is where clinical reasoning is built ~
+                                the skill the DCHN NCK exam actually tests. No
                                 more memorising bare answer keys.
                             </p>
                         </div>
@@ -430,7 +436,7 @@ export default function KRCHNRevisionPage() {
                                 <strong>
                                     flashcards, micro-cards, and memory aids
                                 </strong>{" "}
-                                throughout practice — short bursts of key
+                                throughout practice ~ short bursts of key
                                 facts, mnemonics, and images. Especially
                                 powerful for pharmacology, midwifery
                                 emergencies, and Kenya&rsquo;s KEPI
@@ -444,7 +450,7 @@ export default function KRCHNRevisionPage() {
                                 DigiProctor-Style Exam Simulation
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-                                The KRCHN NCK exam is computer-based. Medrae
+                                The DCHN NCK exam is computer-based. Medrae
                                 gives you a{" "}
                                 <strong>
                                     DigiProctor-style timed simulation
@@ -459,7 +465,7 @@ export default function KRCHNRevisionPage() {
                         {/* Feature 6 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                My Mistakes — Turn Wrong Answers Into Learning
+                                My Mistakes ~ Turn Wrong Answers Into Learning
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Every question you get wrong is automatically
@@ -467,7 +473,7 @@ export default function KRCHNRevisionPage() {
                                 <strong>My Mistakes</strong> log. To clear it,
                                 you must go back, re-read the question, and
                                 mark it as understood. Watching that list
-                                shrink is measurable proof of your KRCHN
+                                shrink is measurable proof of your DCHN
                                 progress.
                             </p>
                         </div>
@@ -480,7 +486,7 @@ export default function KRCHNRevisionPage() {
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Medrae shows you{" "}
                                 <strong>
-                                    which KRCHN units are strong and which need
+                                    which DCHN units are strong and which need
                                     work
                                 </strong>
                                 , tracks your score trends over time, and
@@ -492,12 +498,12 @@ export default function KRCHNRevisionPage() {
                         {/* Feature 8 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                MedTube — Curated Nursing Videos
+                                MedTube ~ Curated Nursing Videos
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Some topics click better with visuals.{" "}
                                 <strong>MedTube</strong> offers thousands of
-                                curated nursing education videos — organised by
+                                curated nursing education videos ~ organised by
                                 topic, no ads, no distractions. Perfect for
                                 midwifery, anatomy, and clinical skills.
                             </p>
@@ -527,7 +533,7 @@ export default function KRCHNRevisionPage() {
                                 Survival Hub, Wellness &amp; NursMartt
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-                                Medrae supports the whole KRCHN student. The{" "}
+                                Medrae supports the whole DCHN student. The{" "}
                                 <strong>Survival Hub</strong> helps with
                                 housing, hospital placements, exam centres, and
                                 exam buddies.{" "}
@@ -546,7 +552,7 @@ export default function KRCHNRevisionPage() {
                             to="/nursing"
                             className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base"
                         >
-                            Start KRCHN revision on Medrae
+                            Start DCHN revision on Medrae
                         </Link>
                         <Link
                             to="/register"
@@ -560,7 +566,7 @@ export default function KRCHNRevisionPage() {
                 {/* ============ Common Mistakes ============ */}
                 <section className="mt-12">
                     <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                        Common KRCHN Revision Mistakes
+                        Common DCHN Revision Mistakes
                     </h2>
                     <ul className="mt-5 space-y-4 text-[15px] leading-7 sm:text-base">
                         <li className="rounded-xl bg-slate-50 p-4">
@@ -587,13 +593,14 @@ export default function KRCHNRevisionPage() {
                         </li>
                         <li className="rounded-xl bg-slate-50 p-4">
                             <strong className="text-slate-900">
-                                Using BScN materials for KRCHN revision.
+                                Using BSN materials for DCHN revision.
                             </strong>{" "}
                             <span className="text-slate-700">
-                                KRCHN and BScN candidates sit separate papers.
-                                KRCHN questions are tailored to the diploma
-                                curriculum — do not revise using degree-level
-                                materials.
+                                DCHN (formerly KRCHN) and BSN candidates sit
+                                separate papers. DCHN questions are tailored to
+                                the diploma curriculum ~ do not revise using
+                                degree-level materials. Medrae keeps the two
+                                pathways clearly separated.
                             </span>
                         </li>
                         <li className="rounded-xl bg-slate-50 p-4">
@@ -627,7 +634,7 @@ export default function KRCHNRevisionPage() {
                     <div className="mt-5 space-y-5 text-[15px] leading-7 sm:text-base">
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                How many papers does the KRCHN NCK exam have?
+                                How many papers does the DCHN NCK exam have?
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Two papers: Paper 1 (Medical-Surgical &amp;
@@ -639,25 +646,29 @@ export default function KRCHNRevisionPage() {
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                What is the difference between KRCHN and KRN?
+                                What is the difference between DCHN, KRCHN, and KRN?
                             </h3>
                             <p className="mt-2 text-slate-700">
-                                KRCHN (Kenya Registered Community Health Nurse)
-                                is a diploma that combines general nursing,
-                                community health, and midwifery. KRN (Kenya
-                                Registered Nurse) is a separate diploma
-                                programme. Both are regulated by the NCK, but
-                                they have different curricula and sit separate
-                                licensure exams.
+                                <strong>DCHN</strong> (Diploma in Community
+                                Health Nursing) is the current name for the
+                                programme <strong>formerly called KRCHN</strong>{" "}
+                                (Kenya Registered Community Health Nurse). The
+                                curriculum and licensure path remain the same ~
+                                only the official programme name changed.{" "}
+                                <strong>KRN</strong> (Kenya Registered Nurse)
+                                is a separate diploma programme. Both DCHN and
+                                KRN are regulated by the NCK. Medrae supports
+                                candidates from both, plus BSN and other
+                                cadres.
                             </p>
                         </div>
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                How long is the KRCHN programme?
+                                How long is the DCHN programme?
                             </h3>
                             <p className="mt-2 text-slate-700">
-                                The KRCHN diploma is a three-year programme
+                                The DCHN diploma is a three-year programme
                                 offered at KMTC and private medical training
                                 colleges accredited by the NCK.
                             </p>
@@ -665,7 +676,7 @@ export default function KRCHNRevisionPage() {
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                What entry grade do I need for KRCHN?
+                                What entry grade do I need for DCHN?
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 KCSE mean grade C (Plain) or above, with
@@ -677,10 +688,10 @@ export default function KRCHNRevisionPage() {
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Where can I practise KRCHN NCK questions?
+                                Where can I practise DCHN NCK questions?
                             </h3>
                             <p className="mt-2 text-slate-700">
-                                Medrae Nursing offers KRCHN-style practice
+                                Medrae Nursing offers DCHN-style practice
                                 questions with rationales, covering both
                                 papers. Start practising at{" "}
                                 <Link
@@ -699,20 +710,21 @@ export default function KRCHNRevisionPage() {
                 <section className="mt-12 rounded-2xl bg-blue-50 p-6 sm:p-8">
                     <div className="text-center">
                         <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-                            Ready to Revise for KRCHN?
+                            Ready to Revise for DCHN?
                         </h2>
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
-                            The KRCHN NCK exam tests clinical reasoning across
+                            The DCHN NCK exam tests clinical reasoning across
                             the full diploma syllabus. Reading alone will not
-                            get you there — you need to practise questions,
+                            get you there ~ you need to practise questions,
                             learn from rationales, and track your weak areas.
                         </p>
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
-                            Medrae Nursing helps Kenyan KRCHN students do
-                            exactly that, with NCK-style questions, rationales,
-                            unit-based practice, and progress tracking built
-                            for the diploma curriculum — from Year 1 through to
-                            your licensure exam.
+                            Medrae Nursing helps Kenyan DCHN students (and
+                            students from all nursing cadres) do exactly that,
+                            with NCK-style questions, rationales, unit-based
+                            practice, and progress tracking built for the
+                            diploma curriculum ~ from Year 1 through to your
+                            licensure exam.
                         </p>
                     </div>
                     <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -720,7 +732,7 @@ export default function KRCHNRevisionPage() {
                             to="/nursing"
                             className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-base"
                         >
-                            Continue your KRCHN revision
+                            Continue your DCHN revision
                         </Link>
                         <Link
                             to="/register"

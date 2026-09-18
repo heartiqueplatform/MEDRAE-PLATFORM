@@ -37,7 +37,7 @@ export default function NCKExamRevisionPage() {
         setMeta(
             "name",
             "description",
-            "A practical guide to NCK exam revision in Kenya. Learn what the NCK licensure exam tests, what to revise first, common mistakes, and how to practise effectively on Medrae."
+            "A practical guide to NCK exam revision in Kenya. Learn what the NCK licensure exam tests, what to revise first, common mistakes, and how to practise effectively on Medrae ~ for DCHN (formerly KRCHN), BSN, KRN and all nursing cadres."
         );
         setMeta(
             "property",
@@ -47,7 +47,7 @@ export default function NCKExamRevisionPage() {
         setMeta(
             "property",
             "og:description",
-            "What the NCK exam actually tests, how to structure revision, key exam rules, and how to practise for the online NCK format."
+            "What the NCK exam actually tests, how to structure revision, key exam rules, and how to practise for the online NCK format ~ across all nursing cadres."
         );
         setMeta("property", "og:type", "article");
         setMeta("property", "og:url", CANONICAL);
@@ -60,7 +60,7 @@ export default function NCKExamRevisionPage() {
         setMeta(
             "name",
             "twitter:description",
-            "A practical NCK revision guide for Kenyan nursing students — what to revise, how to practise, and the rules you must know."
+            "A practical NCK revision guide for Kenyan nursing students ~ what to revise, how to practise, and the rules you must know."
         );
 
         let canonical = document.head.querySelector<HTMLLinkElement>(
@@ -103,16 +103,19 @@ export default function NCKExamRevisionPage() {
                 </h1>
                 <p className="mt-3 text-base text-slate-600 sm:text-lg">
                     How to prepare, what to revise, and how to practise for the
-                    Nursing Council of Kenya licensure exam.
+                    Nursing Council of Kenya licensure exam ~ across all nursing
+                    cadres.
                 </p>
 
                 <section className="mt-8 space-y-4 text-[15px] leading-7 sm:text-base">
                     <p>
                         The Nursing Council of Kenya (NCK) licensure exam is the
                         final gateway between you and your nursing licence.
-                        Whether you are sitting for the KRCHN diploma or the
-                        BScN degree, the exam tests whether you can think like a
-                        safe, competent practitioner — not just recall facts.
+                        Whether you are sitting as a DCHN student (the programme
+                        formerly known as KRCHN), a BSN candidate, a KRN
+                        candidate, or from any other cadre, the exam tests
+                        whether you can think like a safe, competent
+                        practitioner ~ not just recall facts.
                     </p>
                     <p>
                         This page breaks down what the NCK exam actually looks
@@ -143,13 +146,13 @@ export default function NCKExamRevisionPage() {
                             sessions at 2:00 p.m.
                         </p>
                         <p>
-                            For basic cadres like KRCHN, the exam is split into{" "}
-                            <strong>two papers</strong>:
+                            For basic cadres like DCHN (formerly KRCHN), the
+                            exam is split into <strong>two papers</strong>:
                         </p>
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Paper 1 — Clinical Nursing
+                                Paper 1 ~ Clinical Nursing
                             </h3>
                             <ul className="mt-3 list-disc space-y-1 pl-5 text-slate-700">
                                 <li>Adult nursing (Medical-Surgical)</li>
@@ -167,7 +170,7 @@ export default function NCKExamRevisionPage() {
 
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Paper 2 — Community &amp; Psychosocial Nursing
+                                Paper 2 ~ Community &amp; Psychosocial Nursing
                             </h3>
                             <ul className="mt-3 list-disc space-y-1 pl-5 text-slate-700">
                                 <li>
@@ -188,9 +191,11 @@ export default function NCKExamRevisionPage() {
                         </div>
 
                         <p>
-                            BScN candidates face the same core areas but with
+                            BSN candidates face the same core areas but with
                             greater depth in evidence-based practice, research,
-                            leadership, and critical care.
+                            leadership, and critical care. KRN candidates share
+                            the same regulatory framework and sit their own
+                            licensure papers.
                         </p>
                     </div>
                 </section>
@@ -202,7 +207,7 @@ export default function NCKExamRevisionPage() {
                     </h2>
                     <div className="mt-5 space-y-5 text-[15px] leading-7 sm:text-base">
                         <p>
-                            Not all topics carry equal weight in the exam — and
+                            Not all topics carry equal weight in the exam ~ and
                             not all topics are equally difficult. Knowing where
                             to focus your energy is the difference between
                             scattered revision and targeted preparation.
@@ -266,7 +271,7 @@ export default function NCKExamRevisionPage() {
                             <p className="mt-2 text-slate-700">
                                 Multiple-choice questions test recall. Scenario
                                 and short-answer questions test{" "}
-                                <strong>clinical reasoning</strong> — your
+                                <strong>clinical reasoning</strong> ~ your
                                 ability to assess a situation, prioritise
                                 actions, and justify decisions. Many candidates
                                 who practise only MCQs struggle with these.
@@ -320,7 +325,7 @@ export default function NCKExamRevisionPage() {
                                     briefly
                                 </li>
                                 <li>
-                                    Study the most commonly tested disorders —
+                                    Study the most commonly tested disorders ~
                                     presentation, nursing assessment, priority
                                     interventions
                                 </li>
@@ -373,8 +378,9 @@ export default function NCKExamRevisionPage() {
                         </h2>
                         <p className="mt-3 text-[15px] leading-7 text-slate-600 sm:text-base">
                             Medrae Nursing is built specifically for the Kenyan
-                            nursing curriculum and the NCK exam. It is not just
-                            a question bank — it is a complete revision system
+                            nursing curriculum and the NCK exam ~ across all
+                            cadres (DCHN, BSN, KRN, and more). It is not just
+                            a question bank ~ it is a complete revision system
                             that follows you from Year 1 of your training all
                             the way to your licensure exam.
                         </p>
@@ -384,11 +390,11 @@ export default function NCKExamRevisionPage() {
                         {/* Feature 1 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Complete 3-Year Curriculum — Use It From Day One
+                                Complete 3-Year Curriculum ~ Use It From Day One
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-                                Medrae covers the entire KRCHN programme —{" "}
-                                <strong>80+ modules</strong> and{" "}
+                                Medrae covers the entire DCHN (formerly KRCHN)
+                                programme ~ <strong>80+ modules</strong> and{" "}
                                 <strong>1,000+ sub-units</strong> organised by
                                 year, semester, and topic. First-year students
                                 can start practising on the same platform they
@@ -400,7 +406,7 @@ export default function NCKExamRevisionPage() {
                         {/* Feature 2 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Unit-Based Question Bank — Jump to the Exact
+                                Unit-Based Question Bank ~ Jump to the Exact
                                 Weak Area
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
@@ -409,7 +415,7 @@ export default function NCKExamRevisionPage() {
                                 <strong>unit, condition, and topic</strong>. If
                                 your diagnostic shows you are weak in, say,
                                 pre-eclampsia or pulmonary TB, you jump straight
-                                to that unit and drill only those questions —
+                                to that unit and drill only those questions ~
                                 instead of scrolling through unrelated material.
                             </p>
                         </div>
@@ -424,7 +430,7 @@ export default function NCKExamRevisionPage() {
                                 <strong>
                                     flashcards, micro-cards, and memory aids
                                 </strong>{" "}
-                                throughout practice — short bursts of key
+                                throughout practice ~ short bursts of key
                                 facts, mnemonics, and images that help clinical
                                 information stick. This is especially powerful
                                 for pharmacology, anatomy, and diagnostic
@@ -447,7 +453,7 @@ export default function NCKExamRevisionPage() {
                                 with the same layout, question flagging, and
                                 time pressure you will face on the real
                                 platform. You practise on-screen, under
-                                pressure, before exam day — so the real thing
+                                pressure, before exam day ~ so the real thing
                                 feels familiar, not frightening.
                             </p>
                         </div>
@@ -466,7 +472,7 @@ export default function NCKExamRevisionPage() {
                                     past-paper patterns and analysis of the
                                     most frequently tested topics
                                 </strong>{" "}
-                                — so you are studying what is most likely to
+                                ~ so you are studying what is most likely to
                                 appear on the exam, not what is unlikely.
                             </p>
                         </div>
@@ -474,7 +480,7 @@ export default function NCKExamRevisionPage() {
                         {/* Feature 6 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                My Mistakes — Turn Every Wrong Answer Into
+                                My Mistakes ~ Turn Every Wrong Answer Into
                                 Learning
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
@@ -484,7 +490,7 @@ export default function NCKExamRevisionPage() {
                                 you must go back, re-read the question, and
                                 mark it as understood. Watching your mistakes
                                 list shrink becomes a measurable sign of
-                                progress — and a strong source of motivation.
+                                progress ~ and a strong source of motivation.
                             </p>
                         </div>
 
@@ -501,7 +507,7 @@ export default function NCKExamRevisionPage() {
                                 </strong>
                                 , tracks your score trends over time, and
                                 recommends what to study next. No more guessing
-                                whether you are ready — you can see your
+                                whether you are ready ~ you can see your
                                 readiness improving week by week.
                             </p>
                         </div>
@@ -527,12 +533,12 @@ export default function NCKExamRevisionPage() {
                         {/* Feature 9 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                MedTube — Curated Nursing Videos
+                                MedTube ~ Curated Nursing Videos
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Some topics click better with visuals.{" "}
                                 <strong>MedTube</strong> offers thousands of
-                                curated nursing education videos — organised by
+                                curated nursing education videos ~ organised by
                                 topic, no ads, no distractions. It sits
                                 alongside your question bank so you can switch
                                 between reading, watching, and practising
@@ -724,10 +730,11 @@ export default function NCKExamRevisionPage() {
                                 How many papers does the NCK exam have?
                             </h3>
                             <p className="mt-2 text-slate-700">
-                                For basic cadres like KRCHN, it is two papers.
-                                The Council states that basic cadres sit four
-                                individual papers, but the current online
-                                format consolidates content into two papers.
+                                For basic cadres like DCHN (formerly KRCHN), it
+                                is two papers. The Council states that basic
+                                cadres sit four individual papers, but the
+                                current online format consolidates content into
+                                two papers.
                             </p>
                         </div>
 
@@ -794,12 +801,12 @@ export default function NCKExamRevisionPage() {
                             question at a time.
                         </p>
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
-                            Medrae Nursing helps Kenyan nursing students
-                            practise the exact topics the NCK exam tests — with
-                            explanations, progress tracking, and a mobile-first
-                            experience built for how students actually study.
-                            Use it from Year 1 all the way to your licensure
-                            exam.
+                            Medrae Nursing helps Kenyan nursing students across
+                            all cadres ~ DCHN, BSN, KRN and more ~ practise the
+                            exact topics the NCK exam tests, with explanations,
+                            progress tracking, and a mobile-first experience
+                            built for how students actually study. Use it from
+                            Year 1 all the way to your licensure exam.
                         </p>
                     </div>
                     <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">

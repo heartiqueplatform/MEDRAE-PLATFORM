@@ -102,13 +102,13 @@ const KRCHNCurriculum = () => {
 
                     <h2 className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter text-slate-900 mb-3 md:mb-4">
                         Complete{" "}
-                        <span className="text-emerald-600 italic">KRCHN Nursing</span>{" "}
+                        <span className="text-emerald-600 italic">Nursing</span>{" "}
                         Curriculum
                     </h2>
                     <p className="text-sm md:text-lg text-slate-600 md:max-w-full md:px-4 lg:px-6 mx-auto font-medium">
-                        Study the entire Kenya Registered Community Health Nursing syllabus
-                        organized by Year, Semester, Module, Unit, and Topic. Every question,
-                        note, and video mapped to the official NCK curriculum.
+                        Study the entire DCHN (formerly KRCHN) syllabus — plus content mapped for
+                        BSN, KRN and other nursing cadres — organized by Year, Semester, Module, Unit,
+                        and Topic. Every question, note, and video mapped to the official NCK curriculum.
                     </p>
                 </div>
 
@@ -335,7 +335,7 @@ const KRCHNCurriculum = () => {
                 <div className="text-center mt-10 md:mt-12 animate-in fade-in slide-in-from-bottom-8 px-4 md:px-0" style={{ animationDelay: '1000ms', animationFillMode: 'both' }}>
 
                     <p className="text-[10px] md:text-xs text-slate-400 mt-2 md:mt-3 font-medium">
-                        Follows the official Nursing Council of Kenya (NCK) KRCHN syllabus
+                        Follows the official Nursing Council of Kenya (NCK) DCHN (formerly KRCHN) syllabus — useful for BSN, KRN and other nursing cadres
                     </p>
                 </div>
             </div>

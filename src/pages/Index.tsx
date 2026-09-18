@@ -379,7 +379,7 @@ const Index = () => {
       bg: "/indexbackground3.jpg",
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
-          Medrae is built for serious NCK,FQEs exam preparation. Practice 6,500+ updated NCK-style questions, get instant explanations after every answer, and focus directly on your weakest and most tested units.
+          Medrae is built for serious NCK, FQEs and nursing exam preparation across all cadres (DCHN, BSN, KRN). Practice 6,500+ updated exam-style questions, get instant explanations after every answer, and focus directly on your weakest and most tested units.
         </h2>
       ),
     },
@@ -409,7 +409,7 @@ const Index = () => {
       bg: "/background03.jpg",
       text: (
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 md:text-white">
-          Kenya's Structured NCK AND FQEs Exam Practice Platform
+          Kenya's Structured NCK, FQEs & Nursing Exam Practice Platform
         </h2>
       ),
     },
@@ -444,7 +444,7 @@ const Index = () => {
       bg: "/background06.jpg",
       text: (
         <h2 className="text-sm md:text-xl font-semibold leading-snug text-gray-900 md:text-white">
-          Access the full NCK revision system—structured units, instant explanations, weak-topic tracking, and a growing bank of 6,500+ questions updated regularly to match exam trends.
+          Access the full nursing revision system—structured units, instant explanations, weak-topic tracking, and a growing bank of 6,500+ questions updated regularly to match exam trends across all nursing cadres.
         </h2>
       ),
     },
@@ -499,7 +499,7 @@ const Index = () => {
     {
       icon: Brain,
       title: "Instant Answer Explanations",
-      description: "Tap any answer and immediately see why it's correct or wrong with detailed rationales. No guessing. No searching through textbooks. Understand the 'why' behind every answer and lock in the knowledge instantly. Each explanation includes key concepts, nursing interventions, and NCK exam tips to reinforce your learning.",
+      description: "Tap any answer and immediately see why it's correct or wrong with detailed rationales. No guessing. No searching through textbooks. Understand the 'why' behind every answer and lock in the knowledge instantly. Each explanation includes key concepts, nursing interventions, and exam tips to reinforce your learning.",
       category: "Core"
     },
 
@@ -507,7 +507,7 @@ const Index = () => {
     {
       icon: Users,
       title: "Unit-Based Smart Revision",
-      description: "Jump directly to your weakest or most tested NCK nursing units. Focus your study time where it matters most. Our smart revision system identifies which nursing units appear most frequently in exams and prioritizes them in your practice sessions. Eliminate blind revision and study with surgical precision.",
+      description: "Jump directly to your weakest or most tested nursing units. Focus your study time where it matters most. Our smart revision system identifies which nursing units appear most frequently in exams and prioritizes them in your practice sessions. Eliminate blind revision and study with surgical precision.",
       category: "Core"
     },
 
@@ -665,7 +665,7 @@ const Index = () => {
               Welcome to <span className="text-red-500">Medrae</span> Nursing
             </h1>
             <p className="text-sm md:text-lg lg:text-xl mt-2 md:mt-3 font-medium text-white/90">
-              Your Premier Nursing Exam Preparation Platform
+              Your Premier Nursing Exam Preparation Platform — All Cadres (DCHN, BSN, KRN)
             </p>
           </div>
         </div>
@@ -878,10 +878,10 @@ const Index = () => {
 
               <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter text-slate-800">
                 Everything You Need to <br />
-                <span className="text-blue-600 italic">Pass the NCK,,FQEs Exams</span>
+                <span className="text-blue-600 italic">Pass the NCK, FQEs & Nursing Exams</span>
               </h2>
               <p className="text-sm md:text-lg lg:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
-                Stop wasting time searching through random PDFs. Medrae organizes revision into structured units and smart analytics.
+                Stop wasting time searching through random PDFs. Medrae organizes revision into structured units and smart analytics — for DCHN, BSN, KRN and all nursing cadres.
               </p>
             </div>
           </AnimatedSection>
@@ -1006,7 +1006,7 @@ const Index = () => {
         <ClinicalAssessmentSection />
         <GroupPayLandingSection />
       </section>
-      {/* KRCHN Curriculum Section */}
+      {/* Nursing Curriculum Section (DCHN formerly KRCHN • BSN • KRN) */}
       <section id="curriculum">
         <KRCHNCurriculum />
       </section>
@@ -1163,7 +1163,7 @@ const Index = () => {
                       <h3 className="text-xl md:text-2xl font-black text-slate-800">Our Mission</h3>
                     </div>
                     <p className="text-slate-500 font-medium leading-relaxed text-sm md:text-base">
-                      To eliminate random, unstructured revision and replace it with a focused NCK exam system that builds confidence through repeated, intelligent practice <span className="text-2xl font-bold tracking-tight text-black">(I.P)</span>.
+                      To eliminate random, unstructured revision and replace it with a focused nursing exam system that builds confidence through repeated, intelligent practice <span className="text-2xl font-bold tracking-tight text-black">(I.P)</span>.
                     </p>
                   </div>
                   {/* Vision Item */}
@@ -1175,7 +1175,7 @@ const Index = () => {
                       <h3 className="text-xl md:text-2xl font-black text-slate-800">Our Vision</h3>
                     </div>
                     <p className="text-slate-500 font-medium leading-relaxed text-sm md:text-base">
-                      To become Kenya's most trusted NCK, FQEs exams preparation platform by helping students pass faster through structured, measurable, and performance-driven practice <span className="text-2xl font-bold tracking-tight text-black">(P.D.P)</span>.
+                      To become Kenya's most trusted nursing exam preparation platform by helping students pass faster through structured, measurable, and performance-driven practice <span className="text-2xl font-bold tracking-tight text-black">(P.D.P)</span>.
                     </p>
                   </div>
                   {/* Slogan Item */}
@@ -1246,12 +1246,12 @@ const Index = () => {
 
                   <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black text-white leading-[1.1] tracking-tighter">
                     Ready to Pass Your <br />
-                    <span className="text-blue-200 italic">NURSING,FQEs and NCK Exams?</span>
+                    <span className="text-blue-200 italic">Nursing, FQEs & NCK Exams?</span>
                   </h2>
                   <p className="text-base md:text-lg lg:text-xl text-blue-50 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
                     Stop scrolling through confusing PDFs. Join Medrae and train daily with
                     <span className="text-white font-bold"> instant explanations</span>,
-                    unit-based drills, and simulations designed for clinical success.
+                    unit-based drills, and simulations designed for clinical success — across all nursing cadres.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 md:gap-4 pt-2 md:pt-4">
                     <Button
@@ -1363,7 +1363,7 @@ const Index = () => {
                 </div>
                 <p className="text-slate-600 text-xs md:text-sm leading-relaxed mb-4 md:mb-6 max-w-sm">
                   Kenya's premier Nursing Network Platform. We empower students and professionals
-                  through integrated learning, seamless collaboration, and clinical innovation.
+                  across all cadres (DCHN, BSN, KRN) through integrated learning, seamless collaboration, and clinical innovation.
                 </p>
                 <div className="flex gap-3 md:gap-4">
                   <Facebook className="w-4 h-4 md:w-5 md:h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors hover:scale-110" />
@@ -1394,7 +1394,7 @@ const Index = () => {
                 <div>
                   <h3 className="font-bold text-xs md:text-sm uppercase tracking-wider mb-3 md:mb-4 text-slate-900">Learning</h3>
                   <ul className="space-y-2 md:space-y-3 text-xs md:text-sm text-slate -600">
-                    {["Assessment Notes", "Quiz Units", "Live  classes", "KRCHN Curriculum", "My Mistakes", "Study Progress", "Challenges", "Simulation Mode", "Resources"].map((item) => (
+                    {["Assessment Notes", "Quiz Units", "Live  classes", "DCHN / BSN Curriculum", "My Mistakes", "Study Progress", "Challenges", "Simulation Mode", "Resources"].map((item) => (
                       <li key={item}>
                         <Tooltip>
                           <TooltipTrigger asChild>

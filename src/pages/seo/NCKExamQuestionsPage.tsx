@@ -36,7 +36,7 @@ export default function NCKExamQuestionsPage() {
         setMeta(
             "name",
             "description",
-            "Practice NCK exam questions for Kenyan nursing students. What the NCK exam tests, question formats, high-yield topics, and how to practise effectively on Medrae."
+            "Practice NCK exam questions for Kenyan nursing students ~ DCHN (formerly KRCHN), BSN, KRN and all cadres. What the NCK exam tests, question formats, high-yield topics, and how to practise effectively on Medrae."
         );
         setMeta(
             "property",
@@ -46,7 +46,7 @@ export default function NCKExamQuestionsPage() {
         setMeta(
             "property",
             "og:description",
-            "NCK question formats, high-yield revision topics, and how to practise for the Nursing Council of Kenya licensure exam."
+            "NCK question formats, high-yield revision topics, and how to practise for the Nursing Council of Kenya licensure exam ~ across all nursing cadres."
         );
         setMeta("property", "og:type", "article");
         setMeta("property", "og:url", CANONICAL);
@@ -102,15 +102,18 @@ export default function NCKExamQuestionsPage() {
                 </h1>
                 <p className="mt-3 text-base text-slate-600 sm:text-lg">
                     What the Nursing Council of Kenya exam actually asks, and
-                    how to practise effectively.
+                    how to practise effectively ~ across all nursing cadres.
                 </p>
 
                 <section className="mt-8 space-y-4 text-[15px] leading-7 sm:text-base">
                     <p>
-                        If you are preparing for the NCK licensure exam, you
-                        need more than textbooks. You need to practise the kind
-                        of questions the exam actually asks — questions that
-                        test clinical reasoning, not just recall.
+                        If you are preparing for the NCK licensure exam ~ as a
+                        DCHN student (the programme formerly known as KRCHN), a
+                        BSN candidate, a KRN candidate, or from any other cadre
+                        ~ you need more than textbooks. You need to practise
+                        the kind of questions the exam actually asks ~
+                        questions that test clinical reasoning, not just
+                        recall.
                     </p>
                     <p>
                         This page breaks down the NCK question formats, the
@@ -130,7 +133,7 @@ export default function NCKExamQuestionsPage() {
                         <p>
                             The NCK exam has moved online and now uses{" "}
                             <strong>two papers</strong> for basic cadres like
-                            KRCHN. Each paper contains{" "}
+                            DCHN (formerly KRCHN). Each paper contains{" "}
                             <strong>100 questions</strong> delivered through an
                             online proctoring platform.
                         </p>
@@ -164,7 +167,7 @@ export default function NCKExamQuestionsPage() {
                                 You are given a healthcare scenario and must
                                 respond with clinical reasoning,
                                 prioritisation, and safe practice. This is
-                                where many candidates struggle — the questions
+                                where many candidates struggle ~ the questions
                                 require you to think like a practising nurse.
                             </p>
                         </div>
@@ -179,7 +182,7 @@ export default function NCKExamQuestionsPage() {
                     <div className="mt-5 space-y-5 text-[15px] leading-7 sm:text-base">
                         <p>
                             Not all topics carry equal weight. These are the
-                            areas where NCK questions cluster most heavily — and
+                            areas where NCK questions cluster most heavily ~ and
                             where your practice time pays off the most.
                         </p>
 
@@ -283,8 +286,8 @@ export default function NCKExamQuestionsPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 When you get a question wrong, the rationale
-                                for the correct answer — and why the other
-                                options are wrong — is where the learning
+                                for the correct answer ~ and why the other
+                                options are wrong ~ is where the learning
                                 happens. If you only check whether you were
                                 right, you are not building the reasoning the
                                 exam tests.
@@ -344,7 +347,8 @@ export default function NCKExamQuestionsPage() {
                         </h2>
                         <p className="mt-3 text-[15px] leading-7 text-slate-600 sm:text-base">
                             Medrae Nursing is built for Kenyan nursing students
-                            preparing for the NCK exam. Instead of scattered
+                            preparing for the NCK exam ~ across all cadres
+                            (DCHN, BSN, KRN, and more). Instead of scattered
                             PDFs and outdated past papers, you get a structured
                             question system where every answer teaches you the
                             reasoning behind it.
@@ -355,11 +359,11 @@ export default function NCKExamQuestionsPage() {
                         {/* Feature 1 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Unit-Based Questions — Not One Giant Pool
+                                Unit-Based Questions ~ Not One Giant Pool
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Medrae organises every question by{" "}
-                                <strong>unit, condition, and topic</strong> —
+                                <strong>unit, condition, and topic</strong> ~
                                 not dumped into one big random pool. If you are
                                 weak in pre-eclampsia or pulmonary TB, you jump
                                 straight to that unit and drill only those
@@ -378,7 +382,7 @@ export default function NCKExamQuestionsPage() {
                                     explanations for why the correct answer is
                                     correct and why the others are wrong
                                 </strong>
-                                . That is where clinical reasoning is built —
+                                . That is where clinical reasoning is built ~
                                 the skill the NCK exam actually tests. No more
                                 guessing from a bare answer key.
                             </p>
@@ -394,7 +398,7 @@ export default function NCKExamQuestionsPage() {
                                 <strong>
                                     flashcards, micro-cards, and memory aids
                                 </strong>{" "}
-                                throughout practice — short bursts of key
+                                throughout practice ~ short bursts of key
                                 facts, mnemonics, and images that help clinical
                                 information stick. This is especially powerful
                                 for pharmacology, anatomy, and diagnostic
@@ -432,7 +436,7 @@ export default function NCKExamQuestionsPage() {
                                     most frequently tested topics
                                 </strong>
                                 , not random generation. You are practising
-                                what is most likely to appear — with coverage
+                                what is most likely to appear ~ with coverage
                                 of the full syllabus, not just one
                                 year&rsquo;s snapshot.
                             </p>
@@ -441,7 +445,7 @@ export default function NCKExamQuestionsPage() {
                         {/* Feature 6 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                My Mistakes — Turn Wrong Answers Into Learning
+                                My Mistakes ~ Turn Wrong Answers Into Learning
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Every question you get wrong is automatically
@@ -481,11 +485,13 @@ export default function NCKExamQuestionsPage() {
                                 <strong>
                                     80+ modules and 1,000+ sub-units
                                 </strong>
-                                , Medrae covers the entire KRCHN programme.
-                                First-year students can start practising on the
-                                same platform they will use to prepare for the
-                                NCK exam — building knowledge continuously
-                                instead of cramming at the end.
+                                , Medrae covers the entire DCHN (formerly
+                                KRCHN) programme ~ plus content mapped for
+                                BSN, KRN and other cadres. First-year students
+                                can start practising on the same platform they
+                                will use to prepare for the NCK exam ~ building
+                                knowledge continuously instead of cramming at
+                                the end.
                             </p>
                         </div>
 
@@ -502,7 +508,7 @@ export default function NCKExamQuestionsPage() {
                                 </strong>{" "}
                                 to keep you consistent. Gentle competition with
                                 peers and visible daily progress turn question
-                                practice into a habit — not a last-minute
+                                practice into a habit ~ not a last-minute
                                 scramble.
                             </p>
                         </div>
@@ -510,7 +516,7 @@ export default function NCKExamQuestionsPage() {
                         {/* Feature 10 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                Beyond Questions — A Complete Nursing Platform
+                                Beyond Questions ~ A Complete Nursing Platform
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Medrae is more than a question bank. It includes{" "}
@@ -654,9 +660,9 @@ export default function NCKExamQuestionsPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Quality matters more than quantity. Working
-                                through questions with rationales — where you
+                                through questions with rationales ~ where you
                                 understand why the correct answer is correct
-                                and why the others are wrong — is more
+                                and why the others are wrong ~ is more
                                 effective than answering hundreds of questions
                                 without review.
                             </p>
@@ -668,7 +674,7 @@ export default function NCKExamQuestionsPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Yes. Medrae Nursing is built mobile-first, so
-                                you can practise questions anywhere — between
+                                you can practise questions anywhere ~ between
                                 classes, during clinical placements, or at
                                 home.
                             </p>
@@ -685,14 +691,14 @@ export default function NCKExamQuestionsPage() {
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
                             The best way to prepare for the NCK exam is to work
                             through questions that match the exam&rsquo;s
-                            format and depth — then learn from every answer.
+                            format and depth ~ then learn from every answer.
                         </p>
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
                             Medrae Nursing gives you NCK-style practice
                             questions with rationales, progress tracking, and a
                             mobile-first experience built for Kenyan nursing
-                            students — from Year 1 through to your licensure
-                            exam.
+                            students across all cadres ~ DCHN, BSN, KRN and
+                            more ~ from Year 1 through to your licensure exam.
                         </p>
                     </div>
                     <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">

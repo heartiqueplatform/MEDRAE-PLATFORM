@@ -15,7 +15,7 @@ export default function NursingRevisionKenyaPage() {
 
         const prevTitle = document.title;
         document.title =
-            "Nursing Revision in Kenya | NCK & KRCHN Exam Preparation";
+            "Nursing Revision in Kenya | NCK & DCHN Exam Preparation";
 
         const setMeta = (
             attr: "name" | "property",
@@ -36,17 +36,17 @@ export default function NursingRevisionKenyaPage() {
         setMeta(
             "name",
             "description",
-            "A complete guide to nursing revision in Kenya. How to prepare for NCK and KRCHN exams, use MCQs and past papers effectively, and build a revision plan that works."
+            "A complete guide to nursing revision in Kenya. How to prepare for NCK and DCHN (formerly KRCHN) exams, use MCQs and past papers effectively, and build a revision plan that works."
         );
         setMeta(
             "property",
             "og:title",
-            "Nursing Revision in Kenya | NCK & KRCHN Exam Preparation"
+            "Nursing Revision in Kenya | NCK & DCHN Exam Preparation"
         );
         setMeta(
             "property",
             "og:description",
-            "How Kenyan nursing students approach revision for NCK and KRCHN exams — active recall, MCQ practice, past-paper-style questions, and building a revision plan."
+            "How Kenyan nursing students approach revision for NCK and DCHN (formerly KRCHN) exams ~ active recall, MCQ practice, past-paper-style questions, and building a revision plan."
         );
         setMeta("property", "og:type", "article");
         setMeta("property", "og:url", CANONICAL);
@@ -54,12 +54,12 @@ export default function NursingRevisionKenyaPage() {
         setMeta(
             "name",
             "twitter:title",
-            "Nursing Revision in Kenya | NCK & KRCHN Exam Preparation"
+            "Nursing Revision in Kenya | NCK & DCHN Exam Preparation"
         );
         setMeta(
             "name",
             "twitter:description",
-            "A practical nursing revision guide for Kenyan students preparing for NCK and KRCHN licensure exams."
+            "A practical nursing revision guide for Kenyan students preparing for NCK and DCHN (formerly KRCHN) licensure exams."
         );
 
         let canonical = document.head.querySelector<HTMLLinkElement>(
@@ -101,23 +101,23 @@ export default function NursingRevisionKenyaPage() {
                     Nursing Revision in Kenya
                 </h1>
                 <p className="mt-3 text-base text-slate-600 sm:text-lg">
-                    How to prepare effectively for NCK, KRCHN, and nursing
-                    exams in Kenya — and where to find the revision resources
-                    that actually work.
+                    How to prepare effectively for NCK, DCHN (formerly KRCHN),
+                    BSN, KRN, and nursing exams in Kenya ~ and where to find the
+                    revision resources that actually work.
                 </p>
 
                 <section className="mt-8 space-y-4 text-[15px] leading-7 sm:text-base">
                     <p>
                         Nursing revision in Kenya is not just about reading
-                        textbooks. The exams you sit — whether the NCK
-                        licensure exam or your college assessments — test
+                        textbooks. The exams you sit ~ whether the NCK
+                        licensure exam or your college assessments ~ test
                         whether you can{" "}
                         <strong>think clinically</strong>, not just recall
                         facts.
                     </p>
                     <p>
                         This hub page brings together everything you need: how
-                        to approach revision, where NCK and KRCHN revision
+                        to approach revision, where NCK and DCHN revision
                         differ, how to use MCQs and past-paper-style questions,
                         and how to build a plan that fits around clinical
                         placements and classes.
@@ -174,7 +174,7 @@ export default function NursingRevisionKenyaPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 45 minutes focused, 15 minutes off. Your
-                                concentration is like a muscle — short,
+                                concentration is like a muscle ~ short,
                                 consistent sessions beat long, exhausting ones.
                             </p>
                         </div>
@@ -209,17 +209,18 @@ export default function NursingRevisionKenyaPage() {
                             answers.
                         </p>
                         <p>
-                            For basic cadres like KRCHN, the exam is now
-                            delivered online through two papers. Each paper
-                            lasts two hours, with morning sessions starting at
-                            9:00 a.m. and afternoon sessions at 2:00 p.m.
+                            For basic cadres like DCHN (formerly KRCHN), the
+                            exam is now delivered online through two papers.
+                            Each paper lasts two hours, with morning sessions
+                            starting at 9:00 a.m. and afternoon sessions at
+                            2:00 p.m.
                         </p>
                         <p>
                             <strong>What matters most during revision:</strong>{" "}
                             Medical-Surgical Nursing and Midwifery are the most
                             content-heavy and commonly failed areas.
-                            Kenya-specific guidelines — TB, malaria, KEPI
-                            immunisation, IMCI — appear constantly in
+                            Kenya-specific guidelines ~ TB, malaria, KEPI
+                            immunisation, IMCI ~ appear constantly in
                             questions. If you only use imported textbooks, you
                             will miss marks.
                         </p>
@@ -237,21 +238,26 @@ export default function NursingRevisionKenyaPage() {
                     </div>
                 </section>
 
-                {/* ============ KRCHN Revision ============ */}
+                {/* ============ DCHN (formerly KRCHN) Revision ============ */}
                 <section className="mt-12">
                     <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                        KRCHN Revision
+                        DCHN Revision <span className="block text-lg font-medium text-slate-500 mt-1 sm:text-xl">(formerly KRCHN)</span>
                     </h2>
                     <div className="mt-5 space-y-4 text-[15px] leading-7 sm:text-base">
                         <p>
-                            KRCHN (Kenya Registered Community Health Nurse) is
-                            a three-year diploma programme that combines
-                            general nursing, community health, and midwifery.
-                            If you are a KRCHN student, your NCK exam covers
-                            both clinical and community-based content.
+                            <strong>DCHN</strong> (Diploma in Community Health
+                            Nursing) is the current name for the programme{" "}
+                            <strong>formerly known as KRCHN</strong> (Kenya
+                            Registered Community Health Nurse). It is a
+                            three-year diploma that combines general nursing,
+                            community health, and midwifery. The curriculum
+                            and licensure path remain the same ~ only the
+                            official programme name changed. If you are a DCHN
+                            student, your NCK exam covers both clinical and
+                            community-based content.
                         </p>
                         <p>
-                            <strong>Common KRCHN revision mistakes:</strong>{" "}
+                            <strong>Common DCHN revision mistakes:</strong>{" "}
                             Ignoring &ldquo;easy&rdquo; subjects like
                             Professional Practice and Leadership; memorising
                             answers instead of reasoning; and studying
@@ -259,13 +265,13 @@ export default function NursingRevisionKenyaPage() {
                             Kenya&rsquo;s national frameworks.
                         </p>
                         <p>
-                            For the full KRCHN revision strategy, including
+                            For the full DCHN revision strategy, including
                             high-yield topics and a phased plan, see our{" "}
                             <Link
                                 to="/krchn-revision"
                                 className="font-medium text-slate-900 underline decoration-slate-400 underline-offset-2 hover:decoration-slate-900"
                             >
-                                KRCHN revision guide
+                                DCHN (formerly KRCHN) revision guide
                             </Link>
                             .
                         </p>
@@ -287,8 +293,8 @@ export default function NursingRevisionKenyaPage() {
                                 Practise with rationales, not just answer keys.
                             </strong>{" "}
                             When you get a question wrong, the explanation for
-                            why the correct answer is correct — and why the
-                            others are wrong — is where the learning happens.
+                            why the correct answer is correct ~ and why the
+                            others are wrong ~ is where the learning happens.
                         </p>
                         <p>
                             <strong>
@@ -325,7 +331,7 @@ export default function NursingRevisionKenyaPage() {
                                 the NCK does not officially publish past papers.
                             </strong>{" "}
                             What circulates online are recalled questions or
-                            compilations — not official releases.
+                            compilations ~ not official releases.
                         </p>
                         <p>
                             That does not make them useless. They show you the{" "}
@@ -392,16 +398,16 @@ export default function NursingRevisionKenyaPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Timed mock exams are non-negotiable. The NCK
-                                exam is digital — practise on screen, not just
+                                exam is digital ~ practise on screen, not just
                                 on paper. Work through full papers within the
                                 time limit and review every wrong answer.
                             </p>
                         </div>
                     </div>
                     <p className="mt-4 text-[15px] leading-7 sm:text-base">
-                        For the practical side of preparation — registration,
+                        For the practical side of preparation ~ registration,
                         the mandatory rehearsal, equipment requirements, and
-                        exam-day rules — see our{" "}
+                        exam-day rules ~ see our{" "}
                         <Link
                             to="/nck-exam-preparation"
                             className="font-medium text-slate-900 underline decoration-slate-400 underline-offset-2 hover:decoration-slate-900"
@@ -482,9 +488,10 @@ export default function NursingRevisionKenyaPage() {
                         </h2>
                         <p className="mt-3 text-[15px] leading-7 text-slate-600 sm:text-base">
                             Medrae Nursing is not just a question bank. It is a
-                            complete revision system built around the KRCHN and
-                            NCK syllabus — designed so a student can use it
-                            from Year 1 all the way to the licensure exam.
+                            complete revision system built around the DCHN
+                            (formerly KRCHN), BSN, KRN and NCK syllabus ~
+                            designed so a student can use it from Year 1 all
+                            the way to the licensure exam.
                         </p>
                     </div>
 
@@ -495,9 +502,9 @@ export default function NursingRevisionKenyaPage() {
                                 Complete 3-Year Nursing Curriculum
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-                                Medrae covers all three years of the KRCHN
-                                programme — organised by year, semester,
-                                module, unit, and topic. With over{" "}
+                                Medrae covers all three years of the DCHN
+                                (formerly KRCHN) programme ~ organised by year,
+                                semester, module, unit, and topic. With over{" "}
                                 <strong>1,000+ sub-units</strong> across{" "}
                                 <strong>80+ modules</strong>, you can keep
                                 practising continuously throughout your
@@ -518,7 +525,7 @@ export default function NursingRevisionKenyaPage() {
                                 <strong>unit, condition, and topic</strong>. If
                                 you are weak in, say, pre-eclampsia or
                                 pulmonary TB, you jump straight to that unit
-                                and practise only those questions — instead of
+                                and practise only those questions ~ instead of
                                 scrolling through unrelated content.
                             </p>
                         </div>
@@ -531,7 +538,7 @@ export default function NursingRevisionKenyaPage() {
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Between questions, Medrae inserts{" "}
-                                <strong>flashcards and micro-cards</strong> —
+                                <strong>flashcards and micro-cards</strong> ~
                                 short bursts of key facts, mnemonics, and
                                 images that help you retain information longer.
                                 Visual memory anchors make clinical facts
@@ -551,7 +558,7 @@ export default function NursingRevisionKenyaPage() {
                                 <strong>DigiProctor-style practice mode</strong>{" "}
                                 with timed sessions, question flagging, and
                                 real exam interface layout. You practise under
-                                the same pressure you will face on exam day —
+                                the same pressure you will face on exam day ~
                                 so the real thing feels familiar, not
                                 frightening.
                             </p>
@@ -567,7 +574,7 @@ export default function NursingRevisionKenyaPage() {
                                 and <strong>curated resources</strong>{" "}
                                 alongside its question bank. Content is derived
                                 from real past-paper patterns and analysis of
-                                the most frequently tested questions — so you
+                                the most frequently tested questions ~ so you
                                 are studying what is likely to appear, not what
                                 is unlikely.
                             </p>
@@ -576,13 +583,13 @@ export default function NursingRevisionKenyaPage() {
                         {/* Feature 6 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                My Mistakes — Error Tracking That Cleans Itself
+                                My Mistakes ~ Error Tracking That Cleans Itself
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Every question you get wrong is stored in your{" "}
                                 <strong>My Mistakes</strong> page. To clear a
                                 mistake, you must go back, re-read the
-                                question, and mark it as understood — a small
+                                question, and mark it as understood ~ a small
                                 act that reinforces learning. Watching your
                                 mistakes list shrink becomes a source of
                                 motivation in itself.
@@ -616,7 +623,7 @@ export default function NursingRevisionKenyaPage() {
                                 Medrae is not only about exam content. The{" "}
                                 <strong>Survival Hub</strong> helps students
                                 find housing, hospital placements, exam
-                                centres, and exam buddies — reducing the stress
+                                centres, and exam buddies ~ reducing the stress
                                 that comes with nursing school logistics.
                                 Daily wellness check-ins and community support
                                 round out the platform, because student
@@ -627,13 +634,13 @@ export default function NursingRevisionKenyaPage() {
                         {/* Feature 9 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                NursMartt — Second-Hand Nursing Essentials
+                                NursMartt ~ Second-Hand Nursing Essentials
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 Need uniforms, stethoscopes, or study materials
                                 at a lower cost?{" "}
                                 <strong>NursMartt</strong> is Medrae&rsquo;s
-                                marketplace for second-hand nursing items — so
+                                marketplace for second-hand nursing items ~ so
                                 students can save money on essentials without
                                 compromising on quality.
                             </p>
@@ -642,11 +649,11 @@ export default function NursingRevisionKenyaPage() {
                         {/* Feature 10 */}
                         <div className="rounded-xl bg-slate-50 p-5">
                             <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                                MedTube — Curated Nursing Videos
+                                MedTube ~ Curated Nursing Videos
                             </h3>
                             <p className="mt-2 text-[14px] leading-7 text-slate-700">
                                 <strong>MedTube</strong> offers thousands of
-                                curated nursing education videos — no ads, no
+                                curated nursing education videos ~ no ads, no
                                 distractions, organised by topic. If you learn
                                 better through visuals and explanations,
                                 MedTube is a study tool in the same place as
@@ -697,8 +704,8 @@ export default function NursingRevisionKenyaPage() {
                                 exams in Kenya?
                             </h3>
                             <p className="mt-2 text-slate-700">
-                                Active recall — closing your notes and testing
-                                yourself from memory — is the most effective
+                                Active recall ~ closing your notes and testing
+                                yourself from memory ~ is the most effective
                                 technique. Combine this with question practice
                                 that includes rationales, and time-block your
                                 study sessions rather than marathon-reading.
@@ -738,7 +745,7 @@ export default function NursingRevisionKenyaPage() {
                             </h3>
                             <p className="mt-2 text-slate-700">
                                 Yes. Medrae Nursing is built mobile-first, so
-                                you can practise questions anywhere — between
+                                you can practise questions anywhere ~ between
                                 classes, during placements, or at home. Start
                                 at{" "}
                                 <Link
@@ -761,14 +768,15 @@ export default function NursingRevisionKenyaPage() {
                         </h2>
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
                             Effective nursing revision in Kenya is not about
-                            reading more — it is about practising the right
+                            reading more ~ it is about practising the right
                             way. Test yourself, learn from rationales, and
                             track your weak areas.
                         </p>
                         <p className="mt-3 text-[15px] leading-7 text-slate-700 sm:text-base">
                             Medrae Nursing gives you the questions, rationales,
-                            and progress tracking you need — from Year 1 of
-                            your training through to your NCK licensure exam.
+                            and progress tracking you need ~ from Year 1 of
+                            your training through to your NCK licensure exam,
+                            for DCHN, BSN, KRN and all cadres.
                         </p>
                     </div>
                     <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
