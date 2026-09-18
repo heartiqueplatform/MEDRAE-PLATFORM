@@ -743,7 +743,7 @@ export default function CountdownCards() {
                                         In Progress
                                     </span>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                        Today's the day! Best of luck! 🎯
+                                        Today's the day! Best of luck!
                                     </p>
                                 </div>
                             ) : (
@@ -897,14 +897,10 @@ export default function CountdownCards() {
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6 px-1">
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-none flex-shrink-0">
-                                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
+
                             <div>
-                                <p className="text-[8px] uppercase tracking-[2px] font-semibold text-blue-600 dark:text-blue-400">
-                                    Countdown
+                                <p className="text-[14px] tracking-[2px] font-semibold text-blue-600 dark:text-blue-400">
+                                    Days Remaining To Exams
                                 </p>
                             </div>
                         </div>
