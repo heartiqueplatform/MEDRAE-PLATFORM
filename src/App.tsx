@@ -1,3 +1,4 @@
+// src/App.tsx
 "use client";
 import GlobalRealtimeListener from "@/components/GlobalRealtimeListener";
 import { Toaster } from "@/components/ui/toaster";
@@ -93,6 +94,7 @@ import GroupDetailsPage from './pages/grouppay/[id]';
 // Layout
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import HelpCenter from "./pages/HelpCenter";
+import MedraeBot from "./components/MedraeBot"; // 🆕 NEW BOT IMPORT
 
 // Role-based Dashboards
 import StudentDashboard from "./pages/dashboard/student";
@@ -133,6 +135,7 @@ import KRCHNRevisionPage from "./pages/seo/KRCHNRevisionPage";
 import NCKExamPreparationPage from "./pages/seo/NCKExamPreparationPage";
 import NursingRevisionKenyaPage from "./pages/seo/NursingRevisionKenyaPage";
 import MedraeNursingMeritCupPage from "./pages/seo/MedraeNursingMeritCupPage";
+import AdminPodcastTest from "./pages/AdminPodcastTest";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -406,6 +409,7 @@ const AppContent = () => {
                         <Route path="/nck-exam-preparation" element={<NCKExamPreparationPage />} />
                         <Route path="/nursing-revision-kenya" element={<NursingRevisionKenyaPage />} />
                         <Route path="/medrae-nursing-merit-cup" element={<MedraeNursingMeritCupPage />} />
+                        <Route path="/admin/podcast-test" element={<AdminPodcastTest />} />
                         <Route path="/dashboard" element={<RedirectToRoleDashboard />} />
 
                         {/* Persistent Dashboard Layout */}
@@ -515,6 +519,9 @@ const AppContent = () => {
                       </Routes>
                       <FloatingStreakCandle />
                       <ProfileIncompleteChecker />
+
+                      {/* 🆕 MEDRAE BOT - Lightweight, appears once per day */}
+                      <MedraeBot />
 
                       <BottomBarWrapper />
 

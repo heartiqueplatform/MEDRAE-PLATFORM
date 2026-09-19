@@ -1019,7 +1019,7 @@ export const DailyTriviaCard = () => {
                                     ))}
                                 </div>
                             ) : topStudents.length === 0 ? (
-                                <div className="w-full py-8 text-center border-2 border-dashed border-muted rounded-xl">
+                                <div className="w-full py-8 text-center border-0 rounded-xl">
                                     <p className="text-sm text-muted-foreground italic">
                                         The leaderboard is empty. Step up and lead the way!
                                     </p>

@@ -52,6 +52,7 @@ import DailyStatus from "@/components/DailyStatus";
 import { TermsButton } from "@/components/ui/TermsButton";
 import Algorithm from "@/components/Algorithm/Algorithm";
 import { QuickDuelStrip } from "@/components/QuickDuelStrip";
+import DailyDose from "@/components/DailyDose";
 
 
 
@@ -757,6 +758,7 @@ export default function StudentDashboard() {
           initialHistory={initialCache.quickDuelHistory ?? []}
           initialPlayers={initialCache.quickDuelPlayers ?? []}
         />
+        <DailyDose onOpenPlayer={() => window.__studifyOpen?.()} />
         <DailyTriviaCard />
         <CountdownFloating />
         <Algorithm />

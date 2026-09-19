@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, memo, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@supabase/auth-helpers-react";
-import { X, Heart, User, UserCircle2, Send, Sparkles, Flame, Trophy, RefreshCw, Users } from "lucide-react";
+import { X, Heart, User, UserCircle2, Send, Sparkles, Flame, Trophy, RefreshCw, Users, WifiOff } from "lucide-react";
 import { StreakResuscitationModal } from "@/components/StreakResuscitation/StreakResuscitation";
 import { useResuscitationLink } from '@/hooks/useResuscitationLink';
 
@@ -21,6 +21,21 @@ interface StudentMessage {
     likes_count: number;
     created_at: string;
     avatar_url: string | null;
+    pending?: boolean;
+}
+
+interface QueuedPost {
+    localId: string;
+    user_id: string;
+    message: string;
+    emotion_type: EmotionType;
+    is_anonymous: boolean;
+    created_at: string;
+}
+
+interface QueuedLike {
+    messageId: string;
+    queuedAt: number;
 }
 
 type EmotionType = 'motivated' | 'stressed' | 'happy' | 'focused' | 'tired' | 'confused' | 'excited' | 'calm' | 'anxious' | 'grateful';
@@ -62,10 +77,12 @@ const backgroundImages = [
 // CACHE KEYS & HELPERS
 // ============================================
 
-const MESSAGES_CACHE_KEY = 'emotion_messages_cache_v2';
+const MESSAGES_CACHE_KEY = 'emotion_messages_cache_v3';
 const MESSAGES_CACHE_TTL_MS = 30 * 60 * 1000;
 const STREAK_CACHE_KEY = 'streak_cache';
 const BEST_STREAK_CACHE_KEY = 'best_streak_cache';
+const QUEUED_POSTS_KEY = 'emotion_queued_posts_v1';
+const QUEUED_LIKES_KEY = 'emotion_queued_likes_v1';
 const FETCH_TIMEOUT_MS = 5000;
 
 const DEFAULT_MESSAGES: StudentMessage[] = [
@@ -88,6 +105,10 @@ const safeGetItem = (key: string): string | null => {
 
 const safeSetItem = (key: string, value: string): void => {
     try { localStorage.setItem(key, value); } catch { }
+};
+
+const safeRemoveItem = (key: string): void => {
+    try { localStorage.removeItem(key); } catch { }
 };
 
 const safeGetSessionItem = (key: string): string | null => {
@@ -117,6 +138,119 @@ const readCachedMessages = (): StudentMessage[] | null => {
 const writeCachedMessages = (msgs: StudentMessage[]) => {
     if (!msgs || msgs.length === 0) return;
     safeSetItem(MESSAGES_CACHE_KEY, JSON.stringify({ data: msgs, ts: Date.now() }));
+};
+
+// ============================================
+// QUEUE STORAGE (offline posts and likes)
+// ============================================
+
+const readQueuedPosts = (): QueuedPost[] => {
+    try {
+        const raw = safeGetItem(QUEUED_POSTS_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const writeQueuedPosts = (queue: QueuedPost[]) => {
+    safeSetItem(QUEUED_POSTS_KEY, JSON.stringify(queue));
+};
+
+const readQueuedLikes = (): QueuedLike[] => {
+    try {
+        const raw = safeGetItem(QUEUED_LIKES_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const writeQueuedLikes = (queue: QueuedLike[]) => {
+    safeSetItem(QUEUED_LIKES_KEY, JSON.stringify(queue));
+};
+
+// ============================================
+// NETWORK DETECTION
+// ============================================
+
+let _onlineCache: { value: boolean; ts: number } | null = null;
+const ONLINE_CACHE_MS = 3000;
+
+const quickOnlineCheck = (): boolean => {
+    if (typeof navigator === 'undefined') return true;
+    return navigator.onLine !== false;
+};
+
+const realReachabilityCheck = async (timeoutMs = 1500): Promise<boolean> => {
+    if (!quickOnlineCheck()) return false;
+
+    if (_onlineCache && Date.now() - _onlineCache.ts < ONLINE_CACHE_MS) {
+        return _onlineCache.value;
+    }
+
+    if (typeof fetch !== 'function') return true;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        await fetch('https://www.gstatic.com/generate_204', {
+            method: 'GET',
+            cache: 'no-store',
+            mode: 'no-cors',
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+        _onlineCache = { value: true, ts: Date.now() };
+        return true;
+    } catch {
+        clearTimeout(timer);
+        _onlineCache = { value: false, ts: Date.now() };
+        return false;
+    }
+};
+
+const invalidateOnlineCache = () => {
+    _onlineCache = null;
+};
+
+const useOnlineStatus = () => {
+    const [isOnline, setIsOnline] = useState<boolean>(() => quickOnlineCheck());
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const handleOnline = async () => {
+            invalidateOnlineCache();
+            const real = await realReachabilityCheck(1500);
+            if (!cancelled) setIsOnline(real);
+        };
+
+        const handleOffline = () => {
+            invalidateOnlineCache();
+            if (!cancelled) setIsOnline(false);
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        realReachabilityCheck(1500).then((real) => {
+            if (!cancelled) setIsOnline(real);
+        });
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    return isOnline;
 };
 
 // ============================================
@@ -200,6 +334,21 @@ const MessageSkeleton = () => (
 );
 
 // ============================================
+// OFFLINE BANNER
+// ============================================
+
+const OfflineBanner = ({ pendingCount }: { pendingCount: number }) => (
+    <div className="px-6 py-2 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center gap-2">
+        <WifiOff size={14} className="text-amber-600 dark:text-amber-400" />
+        <p className="text-xs text-amber-700 dark:text-amber-300">
+            {pendingCount > 0
+                ? `Offline. ${pendingCount} ${pendingCount === 1 ? 'item' : 'items'} will send when you reconnect.`
+                : 'Offline. Showing saved messages.'}
+        </p>
+    </div>
+);
+
+// ============================================
 // EMOTIONAL CHECK-IN MODAL
 // ============================================
 
@@ -208,22 +357,24 @@ const EmotionalCheckInModal = memo(({
     bestStreak,
     messages,
     isLoadingMessages,
+    isOnline,
+    pendingCount,
     onClose,
     onLike,
     onShareFeeling,
     onResuscitateClick,
-    isDarkMode,
     bgIndex
 }: {
     streak: number;
     bestStreak: number;
     messages: StudentMessage[];
     isLoadingMessages: boolean;
+    isOnline: boolean;
+    pendingCount: number;
     onClose: () => void;
     onLike: (id: string) => void;
     onShareFeeling: () => void;
     onResuscitateClick: () => void;
-    isDarkMode: boolean;
     bgIndex: number;
 }) => {
     const [currentStep, setCurrentStep] = useState<'candle' | 'messages' | 'share'>('candle');
@@ -280,8 +431,7 @@ const EmotionalCheckInModal = memo(({
 
                         <div className="relative z-10 px-6 py-6">
                             <div className="flex items-center gap-3 mb-2">
-
-                                <span className="text-xs font-bold  tracking-wider text-amber-100">
+                                <span className="text-xs font-bold tracking-wider text-amber-100">
                                     Your Journey
                                 </span>
                             </div>
@@ -290,6 +440,8 @@ const EmotionalCheckInModal = memo(({
                             </h2>
                         </div>
                     </div>
+
+                    {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
 
                     <div className="flex-1 overflow-y-auto hide-scrollbar p-6">
                         <div className="flex flex-col items-center text-center">
@@ -401,6 +553,8 @@ const EmotionalCheckInModal = memo(({
                         </div>
                     </div>
 
+                    {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
+
                     <div className="flex-1 overflow-y-auto p-6">
                         <div className="flex flex-col items-center max-w-sm mx-auto">
                             <img
@@ -421,7 +575,7 @@ const EmotionalCheckInModal = memo(({
 
                             {!showSkeleton && currentMessage && (
                                 <>
-                                    <div className="w-full mt-4 p-5 bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg">
+                                    <div className={`w-full mt-4 p-5 bg-white dark:bg-gray-800/50 rounded-2xl shadow-lg ${currentMessage.pending ? 'opacity-70' : ''}`}>
                                         <div className="flex items-center gap-3 mb-4">
                                             {currentMessage.is_anonymous ? (
                                                 <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
@@ -444,10 +598,12 @@ const EmotionalCheckInModal = memo(({
                                                     {currentMessage.display_name}
                                                 </p>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {new Date(currentMessage.created_at).toLocaleTimeString([], {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
+                                                    {currentMessage.pending
+                                                        ? 'Sending...'
+                                                        : new Date(currentMessage.created_at).toLocaleTimeString([], {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
                                                 </p>
                                             </div>
                                         </div>
@@ -564,6 +720,8 @@ const EmotionalCheckInModal = memo(({
                         </div>
                     </div>
 
+                    {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
+
                     <div className="flex-1 overflow-y-auto p-6">
                         <div className="flex flex-col items-center text-center max-w-sm mx-auto">
                             <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
@@ -629,10 +787,12 @@ EmotionalCheckInModal.displayName = "EmotionalCheckInModal";
 
 const EmotionPostModal = memo(({
     isOpen,
+    isOnline,
     onClose,
     onSubmit
 }: {
     isOpen: boolean;
+    isOnline: boolean;
     onClose: () => void;
     onSubmit: (message: string, emotion: EmotionType, isAnonymous: boolean) => void;
 }) => {
@@ -677,6 +837,15 @@ const EmotionPostModal = memo(({
                         <X size={20} className="text-gray-500" />
                     </button>
                 </div>
+
+                {!isOnline && (
+                    <div className="mb-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-start gap-2">
+                        <WifiOff size={14} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                            You are offline. Your message will be saved and posted automatically when you reconnect.
+                        </p>
+                    </div>
+                )}
 
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
                     Choose how you are feeling right now and share with the community
@@ -733,7 +902,11 @@ const EmotionPostModal = memo(({
                     disabled={!message.trim() || isSubmitting}
                     className="w-full mt-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                 >
-                    {isSubmitting ? 'Posting...' : 'Share Your Feeling'}
+                    {isSubmitting
+                        ? 'Posting...'
+                        : isOnline
+                            ? 'Share Your Feeling'
+                            : 'Save and Send Later'}
                 </button>
             </div>
         </div>
@@ -748,8 +921,8 @@ EmotionPostModal.displayName = "EmotionPostModal";
 
 export default function StreakCandleWelcome() {
     const user = useUser();
+    const isOnline = useOnlineStatus();
 
-    // Seed from cache synchronously so first paint has real values
     const initialStreak = (() => {
         try {
             const raw = safeGetItem(STREAK_CACHE_KEY);
@@ -784,20 +957,21 @@ export default function StreakCandleWelcome() {
         currentStreak: number;
     }>({ highestStreak: 0, currentStreak: 0 });
 
-    // Seed messages from cache
     const [messages, setMessages] = useState<StudentMessage[]>(() => {
         const cached = readCachedMessages();
         return cached && cached.length > 0 ? cached : DEFAULT_MESSAGES;
     });
     const [isLoading, setIsLoading] = useState(false);
     const [isReady, setIsReady] = useState(() => initialStreak > 0);
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [bgIndex, setBgIndex] = useState(0);
+    const [pendingCount, setPendingCount] = useState(0);
 
     const { isProcessing, result, setResult } = useResuscitationLink();
     const hasFetchedStreak = useRef(false);
     const hasFetchedMessages = useRef(false);
     const mounted = useRef(true);
+    const wasOnlineRef = useRef(isOnline);
+    const flushingRef = useRef(false);
 
     // ============================================
     // BACKGROUND SLIDESHOW
@@ -843,10 +1017,14 @@ export default function StreakCandleWelcome() {
     }, []);
 
     // ============================================
-    // FETCH STREAK DATA (with timeout, silent failure)
+    // FETCH STREAK DATA
     // ============================================
     const fetchStreakData = useCallback(async () => {
         if (!user?.id) return;
+        if (!quickOnlineCheck()) return;
+
+        const reachable = await realReachabilityCheck(1500);
+        if (!reachable) return;
 
         const withTimeout = <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
             return new Promise<T>((resolve, reject) => {
@@ -895,23 +1073,31 @@ export default function StreakCandleWelcome() {
                     saveStreakToCache(currentStreak, currentBestStreak);
                 }
             }
-        } catch (err) {
-            // silent — cached values already showing
+        } catch {
             console.warn("Streak fetch skipped (slow or offline network)");
         }
     }, [user?.id, saveStreakToCache]);
 
     // ============================================
-    // FETCH MESSAGES (cache-first, timeout, never blanks)
+    // FETCH MESSAGES
     // ============================================
     const fetchMessages = useCallback(async () => {
-        // 1. Cache first
         const cached = readCachedMessages();
         if (cached && cached.length > 0) {
             setMessages(cached);
             setIsLoading(false);
         } else {
+            if (!quickOnlineCheck()) {
+                setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
+        }
+
+        const reachable = await realReachabilityCheck(1500);
+        if (!reachable) {
+            setIsLoading(false);
+            return;
         }
 
         const withTimeout = <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
@@ -1003,38 +1189,164 @@ export default function StreakCandleWelcome() {
                     writeCachedMessages(finalMessages);
                 }
             }
-        } catch (err) {
+        } catch {
             console.warn('Message refresh skipped (slow or offline network)');
-            // If we had no cache and no messages, keep DEFAULT_MESSAGES visible
         } finally {
             if (mounted.current) setIsLoading(false);
         }
     }, []);
 
+    // ============================================
+    // QUEUE FLUSHING (posts and likes)
+    // ============================================
+    const flushQueue = useCallback(async () => {
+        if (flushingRef.current) return;
+        if (!user?.id) return;
+        if (!quickOnlineCheck()) return;
+
+        const reachable = await realReachabilityCheck(1500);
+        if (!reachable) return;
+
+        flushingRef.current = true;
+
+        try {
+            // Flush likes
+            const likeQueue = readQueuedLikes();
+            if (likeQueue.length > 0) {
+                const remaining: QueuedLike[] = [];
+                for (const item of likeQueue) {
+                    try {
+                        await supabase.rpc('emotion_increment_likes', { message_id: item.messageId });
+                    } catch {
+                        remaining.push(item);
+                    }
+                }
+                writeQueuedLikes(remaining);
+            }
+
+            // Flush posts
+            const postQueue = readQueuedPosts();
+            if (postQueue.length > 0) {
+                const remaining: QueuedPost[] = [];
+                for (const item of postQueue) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('student_messages')
+                            .insert([{
+                                user_id: item.user_id,
+                                message: item.message,
+                                emotion_type: item.emotion_type,
+                                is_anonymous: item.is_anonymous
+                            }])
+                            .select()
+                            .single();
+
+                        if (error) throw error;
+
+                        // Replace optimistic entry with real one
+                        if (data) {
+                            setMessages(prev => {
+                                const next = prev.map(msg =>
+                                    msg.id === item.localId
+                                        ? { ...msg, id: data.id, created_at: data.created_at, pending: false }
+                                        : msg
+                                );
+                                writeCachedMessages(next.filter(m => !m.pending));
+                                return next;
+                            });
+                        }
+                    } catch {
+                        remaining.push(item);
+                    }
+                }
+                writeQueuedPosts(remaining);
+            }
+
+            // Update pending count and refresh from server
+            const total = readQueuedPosts().length + readQueuedLikes().length;
+            if (mounted.current) setPendingCount(total);
+
+            if (total === 0) {
+                fetchMessages();
+            }
+        } finally {
+            flushingRef.current = false;
+        }
+    }, [user?.id, fetchMessages]);
+
+    // Restore queued state on mount
+    useEffect(() => {
+        const posts = readQueuedPosts();
+        const likes = readQueuedLikes();
+        setPendingCount(posts.length + likes.length);
+
+        // Inject queued posts as pending messages
+        if (posts.length > 0) {
+            setMessages(prev => {
+                const pendingMessages: StudentMessage[] = posts.map(p => ({
+                    id: p.localId,
+                    user_id: p.user_id,
+                    display_name: p.is_anonymous ? 'Anonymous Student' : 'You',
+                    message: p.message,
+                    emotion_type: p.emotion_type,
+                    is_anonymous: p.is_anonymous,
+                    likes_count: 0,
+                    created_at: p.created_at,
+                    avatar_url: null,
+                    pending: true
+                }));
+
+                // Merge, avoiding duplicates
+                const existingIds = new Set(prev.map(m => m.id));
+                const merged = [...pendingMessages.filter(p => !existingIds.has(p.id)), ...prev];
+                return merged.slice(0, 20);
+            });
+        }
+    }, []);
+
+    // ============================================
+    // LIKE HANDLER (optimistic + queued)
+    // ============================================
     const handleLike = useCallback(async (messageId: string) => {
-        // Optimistic update first
+        // Skip liking pending local messages
+        if (messageId.startsWith('local-') || messageId.startsWith('default-') || messageId.startsWith('note-')) {
+            return;
+        }
+
         setMessages(prev => {
             const next = prev.map(msg =>
                 msg.id === messageId
                     ? { ...msg, likes_count: (msg.likes_count || 0) + 1 }
                     : msg
             );
-            writeCachedMessages(next);
+            writeCachedMessages(next.filter(m => !m.pending));
             return next;
         });
 
+        if (!quickOnlineCheck()) {
+            const queue = readQueuedLikes();
+            queue.push({ messageId, queuedAt: Date.now() });
+            writeQueuedLikes(queue);
+            setPendingCount(readQueuedPosts().length + queue.length);
+            return;
+        }
+
         try {
-            const rpc = supabase.rpc('emotion_increment_likes', { message_id: messageId });
-            await rpc;
-        } catch (error) {
-            console.warn('Like sync failed, will retry next session');
+            await supabase.rpc('emotion_increment_likes', { message_id: messageId });
+        } catch {
+            const queue = readQueuedLikes();
+            queue.push({ messageId, queuedAt: Date.now() });
+            writeQueuedLikes(queue);
+            setPendingCount(readQueuedPosts().length + queue.length);
         }
     }, []);
 
+    // ============================================
+    // POST HANDLER (optimistic + queued)
+    // ============================================
     const handlePostMessage = useCallback(async (message: string, emotion: EmotionType, isAnonymous: boolean) => {
         if (!user?.id) return;
 
-        // Optimistic insert
         const optimisticId = `local-${Date.now()}`;
         const optimisticMessage: StudentMessage = {
             id: optimisticId,
@@ -1045,14 +1357,33 @@ export default function StreakCandleWelcome() {
             is_anonymous: isAnonymous,
             likes_count: 0,
             created_at: new Date().toISOString(),
-            avatar_url: null
+            avatar_url: null,
+            pending: true
         };
 
         setMessages(prev => {
             const next = [optimisticMessage, ...prev].slice(0, 20);
-            writeCachedMessages(next);
+            writeCachedMessages(next.filter(m => !m.pending));
             return next;
         });
+
+        // If offline, queue and return immediately
+        if (!quickOnlineCheck()) {
+            const queue = readQueuedPosts();
+            queue.push({
+                localId: optimisticId,
+                user_id: user.id,
+                message,
+                emotion_type: emotion,
+                is_anonymous: isAnonymous,
+                created_at: optimisticMessage.created_at
+            });
+            writeQueuedPosts(queue);
+            setPendingCount(queue.length + readQueuedLikes().length);
+            setShowPostModal(false);
+            setShowModal(false);
+            return;
+        }
 
         try {
             const { data, error } = await supabase
@@ -1072,25 +1403,31 @@ export default function StreakCandleWelcome() {
                 setMessages(prev => {
                     const next = prev.map(msg =>
                         msg.id === optimisticId
-                            ? { ...msg, id: data.id, created_at: data.created_at }
+                            ? { ...msg, id: data.id, created_at: data.created_at, pending: false }
                             : msg
                     );
-                    writeCachedMessages(next);
+                    writeCachedMessages(next.filter(m => !m.pending));
                     return next;
                 });
             }
 
             setShowPostModal(false);
             setShowModal(false);
-        } catch (error) {
-            console.error('Error posting message:', error);
-            // Remove optimistic on failure
-            setMessages(prev => {
-                const next = prev.filter(msg => msg.id !== optimisticId);
-                writeCachedMessages(next);
-                return next;
+        } catch {
+            // Network failed mid-request — queue it
+            const queue = readQueuedPosts();
+            queue.push({
+                localId: optimisticId,
+                user_id: user.id,
+                message,
+                emotion_type: emotion,
+                is_anonymous: isAnonymous,
+                created_at: optimisticMessage.created_at
             });
-            throw error;
+            writeQueuedPosts(queue);
+            setPendingCount(queue.length + readQueuedLikes().length);
+            setShowPostModal(false);
+            setShowModal(false);
         }
     }, [user?.id]);
 
@@ -1105,7 +1442,6 @@ export default function StreakCandleWelcome() {
             return () => { mounted.current = false; };
         }
 
-        // If we already had cached streak, we are ready instantly
         if (initialStreak > 0) {
             setIsReady(true);
         }
@@ -1116,12 +1452,10 @@ export default function StreakCandleWelcome() {
         }
         hasFetchedStreak.current = true;
 
-        // Background refresh
         fetchStreakData().finally(() => {
             if (mounted.current) setIsReady(true);
         });
 
-        // Emergency unlock after 4s no matter what
         const emergency = setTimeout(() => {
             if (mounted.current) setIsReady(true);
         }, 4000);
@@ -1132,19 +1466,41 @@ export default function StreakCandleWelcome() {
         };
     }, [user?.id, initialStreak, fetchStreakData]);
 
-    // ============================================
-    // EMERGENCY UNLOCK — never let isReady stay false forever
-    // ============================================
+    // Emergency unlock
     useEffect(() => {
         const t = setTimeout(() => setIsReady(true), 4000);
         return () => clearTimeout(t);
     }, []);
 
     // ============================================
-    // CHECK FOR STREAK DEATH (background, non blocking)
+    // AUTO-FLUSH WHEN BACK ONLINE
+    // ============================================
+    useEffect(() => {
+        if (isOnline && !wasOnlineRef.current) {
+            flushQueue();
+            if (user?.id) {
+                fetchStreakData();
+                if (hasFetchedMessages.current) {
+                    fetchMessages();
+                }
+            }
+        }
+        wasOnlineRef.current = isOnline;
+    }, [isOnline, user?.id, flushQueue, fetchStreakData, fetchMessages]);
+
+    // Flush on initial mount if online
+    useEffect(() => {
+        if (isOnline && user?.id) {
+            flushQueue();
+        }
+    }, [isOnline, user?.id, flushQueue]);
+
+    // ============================================
+    // CHECK FOR STREAK DEATH
     // ============================================
     useEffect(() => {
         if (!user?.id || !isReady) return;
+        if (!isOnline) return;
 
         let cancelled = false;
 
@@ -1190,7 +1546,7 @@ export default function StreakCandleWelcome() {
 
         checkStreakStatus();
         return () => { cancelled = true; };
-    }, [user?.id, isReady, bestStreak]);
+    }, [user?.id, isReady, isOnline, bestStreak]);
 
     // ============================================
     // HANDLE RESUSCITATE
@@ -1219,11 +1575,8 @@ export default function StreakCandleWelcome() {
                 currentStreak: restoredStreak
             });
 
-            safeSetItem(`streak_${user.id}`, '');
-            try {
-                localStorage.removeItem(`streak_${user.id}`);
-                localStorage.removeItem(`best_streak_${user.id}`);
-            } catch { }
+            safeRemoveItem(`streak_${user.id}`);
+            safeRemoveItem(`best_streak_${user.id}`);
 
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('streak-updated', {
@@ -1259,7 +1612,6 @@ export default function StreakCandleWelcome() {
             markShownThisSession();
             setShowModal(true);
 
-            // Trigger background refresh only once per session
             if (!hasFetchedMessages.current) {
                 hasFetchedMessages.current = true;
                 fetchMessages();
@@ -1277,10 +1629,13 @@ export default function StreakCandleWelcome() {
         const fetchLatestStreak = async () => {
             if (!user?.id) return;
             try {
-                try {
-                    localStorage.removeItem(`streak_${user.id}`);
-                    localStorage.removeItem(`best_streak_${user.id}`);
-                } catch { }
+                safeRemoveItem(`streak_${user.id}`);
+                safeRemoveItem(`best_streak_${user.id}`);
+
+                if (!quickOnlineCheck()) {
+                    setShowResuscitation(true);
+                    return;
+                }
 
                 const { data, error } = await supabase
                     .from("login_activity")
@@ -1308,22 +1663,6 @@ export default function StreakCandleWelcome() {
     }, [user?.id]);
 
     // ============================================
-    // DARK MODE
-    // ============================================
-    useEffect(() => {
-        const checkDarkMode = () => {
-            const isDark = document.documentElement.classList.contains('dark') ||
-                (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            setIsDarkMode(isDark);
-        };
-        checkDarkMode();
-
-        const observer = new MutationObserver(checkDarkMode);
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-        return () => observer.disconnect();
-    }, []);
-
-    // ============================================
     // HANDLERS
     // ============================================
     const handleCloseModal = useCallback(() => {
@@ -1338,7 +1677,6 @@ export default function StreakCandleWelcome() {
         setShowPostModal(false);
     }, []);
 
-    // Result notification from resuscitation link
     useEffect(() => {
         if (result) {
             if (result.success) {
@@ -1346,9 +1684,6 @@ export default function StreakCandleWelcome() {
             }
         }
     }, [result, fetchStreakData]);
-
-    // NOTE: We no longer early-return null. The modal shell renders and
-    // content inside shows skeleton until data arrives.
 
     return (
         <>
@@ -1360,11 +1695,12 @@ export default function StreakCandleWelcome() {
                         bestStreak={bestStreak}
                         messages={messages}
                         isLoadingMessages={isLoading}
+                        isOnline={isOnline}
+                        pendingCount={pendingCount}
                         onClose={handleCloseModal}
                         onLike={handleLike}
                         onShareFeeling={handleOpenPostModal}
                         onResuscitateClick={handleOpenResuscitation}
-                        isDarkMode={isDarkMode}
                         bgIndex={bgIndex}
                     />
                 </div>
@@ -1373,6 +1709,7 @@ export default function StreakCandleWelcome() {
             {showPostModal && (
                 <EmotionPostModal
                     isOpen={showPostModal}
+                    isOnline={isOnline}
                     onClose={handleClosePostModal}
                     onSubmit={handlePostMessage}
                 />
@@ -1386,7 +1723,7 @@ export default function StreakCandleWelcome() {
                     isOpen={showResuscitation}
                     onClose={() => setShowResuscitation(false)}
                     onResuscitate={handleResuscitate}
-                    isDarkMode={isDarkMode}
+                    isDarkMode={false}
                 />
             )}
 

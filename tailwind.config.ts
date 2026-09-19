@@ -29,7 +29,6 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Kunst Grotesk", "Poppins", "sans-serif"],
-
       },
       colors: {
         border: "hsl(var(--border))",
@@ -75,6 +74,25 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+
+        // ─── GitHub palette (Studify) ───
+        gh: {
+          // dark
+          canvas: "#0d1117",
+          card: "#161b22",
+          hover: "#1f242c",
+          border: "#30363d",
+          text: "#e6edf3",
+          muted: "#7d8590",
+          blue: "#1f6feb",
+          // light
+          "l-canvas": "#ffffff",
+          "l-card": "#f6f8fa",
+          "l-hover": "#eaeef2",
+          "l-border": "#d0d7de",
+          "l-text": "#1f2328",
+          "l-muted": "#59636e",
+        },
       },
       backgroundImage: {
         "gradient-medical": "var(--gradient-medical)",
@@ -95,22 +113,16 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      // ADD THIS SECTION HERE 👇
       transitionDuration: {
         '2000': '2000ms',
         '3000': '3000ms',
         '5000': '5000ms',
       },
-      /* ----------------------------- */
-      /*  COMBINED KEYFRAMES         */
-      /* ----------------------------- */
       keyframes: {
-
         ecg: {
           "0%": { strokeDashoffset: "1200" },
           "100%": { strokeDashoffset: "0" },
         },
-
         spinMotor: {
           "0%": { transform: "rotate(0deg)" },
           "25%": { transform: "rotate(20deg)" },
@@ -118,8 +130,6 @@ export default {
           "75%": { transform: "rotate(-20deg)" },
           "100%": { transform: "rotate(0deg)" },
         },
-
-
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -136,7 +146,6 @@ export default {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(0%)" },
         },
-        // Emoji pop + wiggle
         "emoji-zoom-bounce": {
           "0%": { transform: "scale(0) rotate(0deg)", opacity: "0" },
           "40%": { transform: "scale(1.8) rotate(-15deg)", opacity: "1" },
@@ -144,20 +153,13 @@ export default {
           "80%": { transform: "scale(1.6) rotate(-5deg)" },
           "100%": { transform: "scale(1) rotate(0deg)", opacity: "1" },
         },
-
         "scale-up": {
           "0%": { transform: "scale(0.9)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
       },
-
-      /* ----------------------------- */
-      /* ⭐ COMBINED ANIMATIONS         */
-      /* ----------------------------- */
       animation: {
-
         ecg: "ecg 3s linear infinite",
-
         spinMotor: "spinMotor 0.5s linear infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",

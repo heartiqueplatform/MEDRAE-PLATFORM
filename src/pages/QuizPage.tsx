@@ -936,9 +936,9 @@ Please provide a detailed discussion and guidance.`;
   </p>
 
   return (
-    <div className="space-y-0 max-w-8xl mx-auto px-3 sm:px-6 lg:px-8  ">
+    <div className="space-y-0 max-w-8xl mx-auto px-1 sm:px-6 lg:px-8  ">
       <div className="flex flex-wrap justify-between items-center gap-2">
-        <header className="sticky top-0 rounded-xl  w-full bg-white/80 dark:bg-background backdrop-blur-md border-b border-gray-200 dark:border-gray-900 shadow-sm">
+        <header className="sticky top-0 rounded-xl  w-full bg-white/80 dark:bg-background backdrop-blur-md border-0 shadow-none">
           <div className="max-w-7xl mx-auto px-4  py-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -961,7 +961,7 @@ Please provide a detailed discussion and guidance.`;
                   date={timerEnd ?? new Date().getTime() + TIMER_DURATION}
                   onComplete={() => handleSubmit(true)}
                   renderer={({ hours, minutes, seconds }) => (
-                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-full border border-red-100 dark:border-red-900/30">
+                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-full border-0">
                       <Timer className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
                       <div className="flex items-center font-mono font-bold text-red-600 dark:text-red-400 text-sm sm:text-base">
                         <span>{String(hours).padStart(2, '0')}</span>
@@ -1037,7 +1037,7 @@ Please provide a detailed discussion and guidance.`;
       />
       <div className="mt-2 flex justify-between items-center w-full gap-4"></div>
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-6xl min-h-[500px] relative">
+        <div className="w-full max-w-6xl min-h-[500px] relative px-0">
           {/* Course Filter Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-4 mt-2 scrollbar-hide">
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
@@ -1051,8 +1051,8 @@ Please provide a detailed discussion and guidance.`;
                 className={cn(
                   "px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
                   selectedCourse === course
-                    ? "bg-indigo-600 border-indigo-600 text-white shadow-md"
-                    : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-indigo-300"
+                    ? "bg-indigo-600 border-0 text-white shadow-md"
+                    : "bg-white dark:bg-muted/30 border-0 text-slate-600 dark:text-slate-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
                 )}
               >
                 {course}
@@ -1123,17 +1123,17 @@ Please provide a detailed discussion and guidance.`;
               }
 
               return (
-                <div key={q.id} className="relative flex flex-col gap-0 w-full rounded-lg overflow-hidden">
+                <div key={q.id} className="relative flex flex-col gap-0 w-full overflow-hidden">
                   <div
                     className={cn(
-                      "flex-1 px-3 md:px-4 py-2 md:py-2 transition-all duration-300 md:border-0",
-                      "md:shadow-sm md:rounded-xl",
-                      "border-0",
+                      "flex-1 px-4 md:px-4 py-3 md:py-3 transition-all duration-300",
+                      "md:shadow-sm md:rounded-xl md:my-2",
+                      "rounded-none my-0", // full-bleed on phone
                       understood[q.id]
-                        ? "border-0 bg-emerald-50/30  dark:bg-emerald-500/5"
+                        ? "bg-emerald-50/40 dark:bg-emerald-500/10"
                         : notUnderstood[q.id]
-                          ? "border-0 bg-rose-50/30 dark:bg-rose-500/5"
-                          : "border-0 bg-white  dark:bg-muted/30",
+                          ? "bg-rose-50/40 dark:bg-rose-500/10"
+                          : "bg-white dark:bg-muted/50",
                       "text-slate-900 dark:text-slate-100"
                     )}>
                     <div className="min-h-[60px] md:min-h-[70px] flex items-start">
@@ -1155,9 +1155,9 @@ border-l-4 transition-all duration-150
 
 ${selectedAnswer
                                 ? correct
-                                  ? "bg-transparent border-l-blue-500 text-black dark:text-white"
-                                  : "bg-transparent border-l-gray-400 text-black dark:text-white"
-                                : "bg-transparent border-l-gray-200 dark:border-l-gray-700 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  ? "bg-transparent border-0 text-black dark:text-white"
+                                  : "bg-transparent border-0 text-black dark:text-white"
+                                : "bg-transparent border-0 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                               }
 
 ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
@@ -1290,8 +1290,8 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                         onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
                         disabled={currentQuestionIndex === 0}
                         className="inline-flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 h-10 md:h-11 rounded-lg md:rounded-xl
-        border border-gray-200 bg-white text-gray-700
-        dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200
+        border-0 bg-white text-gray-700
+        dark:border-0 dark:bg-gray-900 dark:text-gray-200
         hover:bg-gray-50 dark:hover:bg-gray-800
         active:bg-gray-100 dark:active:bg-gray-700
         transition-all duration-200 font-semibold shadow-sm
@@ -1350,8 +1350,8 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           disabled={!showFeedback}
                           className={`relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
     ${showFeedback
-                              ? "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:border-cyan-200 dark:hover:border-cyan-800"
-                              : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 opacity-50 cursor-not-allowed"
+                              ? "bg-white dark:bg-muted/30 border-0 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:border-cyan-200 dark:hover:border-cyan-800"
+                              : "bg-slate-50 dark:bg-slate-800/50 border-0 opacity-50 cursor-not-allowed"
                             }`}
                         >
                           <BookOpen className={`w-3.5 h-3.5 md:w-4 md:h-4 transition-colors ${showFeedback ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400"}`} />
@@ -1381,8 +1381,8 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           onClick={toggleMute}
                           className={`ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm active:scale-95
     ${isMuted
-                              ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
-                              : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800"}
+                              ? "bg-slate-50 dark:bg-slate-800/50 border-0"
+                              : "bg-white dark:bg-muted/30 border-0 hover:border-indigo-200 dark:hover:border-indigo-800"}
   `}
                         >
                           <div className="relative">
@@ -1407,8 +1407,8 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           disabled={resetting}
                           className={`relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border transition-all duration-300 group shadow-sm
     ${resetting
-                              ? "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-70 cursor-not-allowed"
-                              : "bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 active:scale-95"}
+                              ? "bg-slate-100 dark:bg-slate-800 border-0 opacity-70 cursor-not-allowed"
+                              : "bg-white dark:bg-muted/30 border-0 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-0 active:scale-95"}
   `}
                         >
                           {resetting ? (
@@ -1431,7 +1431,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
 
                         <button
                           onClick={handleResetTimer}
-                          className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-800/50 active:scale-95 transition-all group shadow-sm"
+                          className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl bg-green-50 dark:bg-green-900/30 border-0 hover:bg-green-100 dark:hover:bg-green-800/50 active:scale-95 transition-all group shadow-sm"
                         >
                           <TimerReset className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-600 dark:text-green-300 group-hover:rotate-[-45deg] transition-transform duration-300" />
                           <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-green-700 dark:text-green-300">
@@ -1441,7 +1441,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
 
                         <button
                           onClick={() => handleReportQuestion(q)}
-                          className="ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-muted/30 transition-all duration-300 group hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-800 shadow-sm active:scale-95"
+                          className="ml-auto relative flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg md:rounded-xl border-0 bg-white dark:bg-muted/30 transition-all duration-300 group hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-800 shadow-sm active:scale-95"
                         >
                           <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors group-hover:animate-pulse" />
                           <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.1em] text-slate-600 dark:text-slate-400 group-hover:text-red-700 dark:group-hover:text-red-400">

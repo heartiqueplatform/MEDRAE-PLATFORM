@@ -76,6 +76,7 @@
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.19",
     "detect-libc": "^2.1.2",
+    "dexie": "^4.4.6",
     "dotenv": "^17.4.2",
     "embla-carousel-react": "^8.3.0",
     "emoji-picker-react": "^4.16.1",

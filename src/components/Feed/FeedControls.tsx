@@ -12,11 +12,8 @@ type Props = {
     setQuestions: (val: any) => void;
     setAnswers: (val: any) => void;
     setQuestionCount: (val: number) => void;
-    fetchQuestions: (page: number, limit?: number) => Promise<any[]>;
+
     user: any;
-    loading: boolean;
-    setLoading: (val: boolean) => void;
-    setPage: (val: number) => void;
 };
 
 /* ── Milestone ladder: 100 → 10,000 ── */
@@ -52,11 +49,7 @@ export default function FeedControls({
     setQuestions,
     setAnswers,
     setQuestionCount,
-    fetchQuestions,
     user,
-    loading,
-    setLoading,
-    setPage,
 }: Props) {
     /* ── Compute current tier, next milestone, progress ── */
     const { next, prev, progress, remaining, currentTier } = useMemo(() => {
@@ -101,7 +94,7 @@ export default function FeedControls({
                 {/* ── HEADER: Tier badge + human message ── */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${tierStyle.bg} ring-2 ${tierStyle.ring}`}>
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${tierStyle.bg} ring-1 ${tierStyle.ring}`}>
                             <TierIcon className={tierStyle.text} size={22} />
                         </div>
                         <div>
@@ -234,43 +227,6 @@ export default function FeedControls({
                     >
                         <Eraser size={16} />
                         <span className="text-sm">Reset Questions</span>
-                    </Button>
-
-                    {/* Reload Feed — green (primary positive action) */}
-                    <Button
-                        size="sm"
-                        disabled={loading}
-                        className="flex items-center gap-2 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.98] border-0 shadow-none disabled:opacity-60"
-                        onClick={async () => {
-                            if (!user) return alert("Login first!");
-
-                            setLoading(true);
-                            setPage(0);
-                            setQuestions([]);
-
-                            try {
-                                const fresh = await fetchQuestions(0, 50);
-                                setQuestions(fresh);
-
-                                localStorage.setItem(
-                                    `feed_questions_${user.id}`,
-                                    JSON.stringify(fresh)
-                                );
-                            } catch (err) {
-                                console.error(err);
-                                alert("Failed to reload feed.");
-                            } finally {
-                                setLoading(false);
-                            }
-                        }}
-                    >
-                        <RefreshCw
-                            size={16}
-                            className={loading ? "animate-spin" : ""}
-                        />
-                        <span className="text-sm">
-                            {loading ? "Loading..." : "Reload Feed"}
-                        </span>
                     </Button>
                 </div>
             </div>

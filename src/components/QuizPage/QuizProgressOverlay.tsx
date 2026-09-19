@@ -76,9 +76,7 @@ export function QuizProgressOverlay({
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight truncate">
                                 Quiz Progress
                             </h2>
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Review your answered and remaining questions
-                            </p>
+
                         </div>
                         <button
                             onClick={() => setProgressOpen(false)}

@@ -2,7 +2,7 @@
 
 import { X, CheckCircle2, AlertCircle, BookOpen, Lightbulb, PlayCircle, Image as ImageIcon } from "lucide-react";
 import { Flashcard } from "@/components/Flashcard";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 
 type ExplanationOverlayProps = {
     open: boolean;
@@ -27,7 +27,28 @@ export function ExplanationOverlay({
 }: ExplanationOverlayProps) {
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
+    const CORRECT_VERDICTS = [
+        "Correct Answer",
+        "Answer Confirmed",
+        "Well Done",
+        "Accurate Response",
+        "That's Right",
+    ];
 
+    const WRONG_VERDICTS = [
+        "Incorrect Answer",
+        "Review Answer",
+        "Not Quite",
+        "Answer Missed",
+        "Needs Review",
+    ];
+
+    // pick based on a stable hash so it doesn't flicker on re-render
+    const verdict = useMemo(() => {
+        const pool = isCorrect ? CORRECT_VERDICTS : WRONG_VERDICTS;
+        const seed = (correctAnswer || "").length + (explanation || "").length;
+        return pool[seed % pool.length];
+    }, [isCorrect, correctAnswer, explanation]);
     // Reset scroll state when overlay opens with new content
     useEffect(() => {
         if (open) {
@@ -148,20 +169,40 @@ export function ExplanationOverlay({
         <div className="fixed inset-0 z-[9999] bg-white dark:bg-muted/100 flex flex-col">
             {/* Header - Kept original colors */}
             <div className="px-6 py-4 flex items-center justify-between border-0 shrink-0 bg-white dark:bg-muted/80">
-                <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl ${isCorrect ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'}`}>
-                        {isCorrect ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                <div className="flex items-start gap-3 min-w-0">
+                    <div className="min-w-0">
+                        {/* Verdict + icon inline */}
+                        <div className="flex items-center gap-2">
+                            <h2 className="font-semibold text-lg leading-tight text-gray-900 dark:text-white">
+                                {verdict}
+                            </h2>
+                            {isCorrect ? (
+                                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+                            ) : (
+                                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+                            )}
+                        </div>
+
+                        {/* Secondary line — always shows the correct answer */}
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
+                            {isCorrect ? (
+                                <>
+                                    You selected{" "}
+                                    <span className="font-semibold text-green-600 dark:text-green-400">
+                                        {correctAnswer}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    Correct answer:{" "}
+                                    <span className="font-semibold text-gray-900 dark:text-white">
+                                        {correctAnswer}
+                                    </span>
+                                </>
+                            )}
+                        </p>
                     </div>
-                    <div>
-                        <h2 className="font-bold text-lg leading-none text-gray-900 dark:text-white">
-                            {isCorrect ? "Brilliant! Correct." : "Not quite right"}
-                        </h2>
-                        {!isCorrect && (
-                            <p className="text-sm font-medium text-red-500 mt-1">
-                                Correct: <span className="underline decoration-2 underline-offset-2">{correctAnswer}</span>
-                            </p>
-                        )}
-                    </div>
+
                 </div>
                 <button
                     onClick={onClose}
@@ -183,13 +224,13 @@ export function ExplanationOverlay({
                         {(imageUrl || videoUrl) && (
                             <div className="space-y-3">
                                 {imageUrl && (
-                                    <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 aspect-video group">
+                                    <div className="relative rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 aspect-video group">
                                         <img src={imageUrl} alt="Explanation" className="object-cover w-full h-full" />
                                     </div>
                                 )}
 
                                 {videoUrl && (
-                                    <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 aspect-video flex items-center justify-center">
+                                    <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 aspect-video flex items-center justify-center">
                                         <div className="flex flex-col items-center gap-2 text-gray-400">
                                             <PlayCircle className="w-10 h-10" />
                                             <span className="text-xs font-medium uppercase tracking-widest">
@@ -204,10 +245,11 @@ export function ExplanationOverlay({
                         {explanation && (
                             <section className="space-y-3">
                                 <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                    <BookOpen className="w-5 h-5" />
+
                                     <h3 className="font-bold text-sm uppercase tracking-wider">
                                         Concept Breakdown
                                     </h3>
+                                    <BookOpen className="w-5 h-5" />
                                 </div>
 
                                 {renderAsBulletPoints(explanation)}
@@ -215,15 +257,16 @@ export function ExplanationOverlay({
                         )}
 
                         {additional && (
-                            <section className="bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl p-5 border border-purple-100/50 dark:border-purple-800/30 space-y-3">
-                                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                            <section className="relative -mx-6 bg-purple-50/50 dark:bg-purple-900/10 py-5 space-y-3">
+                                <div className="px-6 flex items-center gap-2 text-purple-600 dark:text-purple-400">
                                     <Lightbulb className="w-5 h-5" />
                                     <h3 className="font-bold text-sm uppercase tracking-wider">
                                         Expert Insights
                                     </h3>
                                 </div>
-
-                                {renderAdditionalAsBulletPoints(additional)}
+                                <div className="px-6">
+                                    {renderAdditionalAsBulletPoints(additional)}
+                                </div>
                             </section>
                         )}
 
@@ -232,7 +275,8 @@ export function ExplanationOverlay({
                     </div>
 
                     {/* RIGHT SIDE → FLASHCARD */}
-                    <div className="w-full lg:w-[480px] xl:w-[540px] border-0 bg-gray-50/50 dark:bg-gray-900/30 p-4 shrink-0">
+                    {/* RIGHT SIDE → FLASHCARD (edge-to-edge) */}
+                    <div className="w-full lg:w-[480px] xl:w-[540px] bg-white dark:bg-gray-950 shrink-0 border-0">
                         <div className="w-full h-full overflow-y-auto hide-scrollbar">
                             <Flashcard />
                         </div>
@@ -241,21 +285,27 @@ export function ExplanationOverlay({
             </div>
 
             {/* Footer - With original colors and animation when scrolled to bottom */}
-            <div className={`p-4 bg-gray-50 dark:bg-gray-900/60 border-t border-gray-100 dark:border-gray-800 transition-all duration-500 ${hasScrolledToBottom ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : ''
-                }`}>
+            <div
+                className={`px-4 py-3 transition-all duration-500 ${hasScrolledToBottom
+                    ? "bg-green-50 dark:bg-green-900/20"
+                    : "bg-gray-50 dark:bg-gray-900/60"
+                    }`}
+            >
                 <button
                     onClick={onClose}
                     className={`
-                        w-full py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98]
-                        ${hasScrolledToBottom
-                            ? 'bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600'
-                            : 'bg-white text-black hover:bg-gray-100 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800'
+            block mx-auto w-full max-w-xs sm:max-w-sm
+            py-2.5 px-6 rounded-full font-semibold text-sm
+            transition-all active:scale-[0.98]
+            ${hasScrolledToBottom
+                            ? "bg-green-600 text-white hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                            : "bg-white text-black hover:bg-gray-100 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800"
                         }
-                    `}
+        `}
                 >
-                    {hasScrolledToBottom ? " Perfect! Got it! Thanks Medrae Nursing!" : "Got it, Thanks Medrae Nursing!"}
+                    {hasScrolledToBottom ? "Perfect! Got it." : "Got it, Thanks!"}
                 </button>
-                {/* Only show scroll hint if content is actually scrollable and not at bottom */}
+
                 {!hasScrolledToBottom && isContentScrollable() && (
                     <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-2 animate-pulse">
                         ↓ Keep scrolling for a surprise ↓

@@ -318,30 +318,10 @@ function QuickDuelStripBase({
                                         className={`w-[80px] h-[80px] rounded-full object-cover ${p.is_pinned ? "ring-2 ring-amber-400" : "ring-2 ring-blue-500/20"
                                             }`}
                                     />
-                                    {p.is_online && (
-                                        <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
-                                    )}
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
-                                        <Swords size={11} className="text-white" strokeWidth={2.5} />
-                                    </span>
+
                                 </button>
 
-                                {/* Pin toggle */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        togglePin(p.user_id);
-                                    }}
-                                    className="absolute -top-1 -left-1 p-1 rounded-full bg-white dark:bg-slate-800 active:scale-90 transition-transform"
-                                    style={{ touchAction: "manipulation" }}
-                                    aria-label={p.is_pinned ? "Unpin" : "Pin"}
-                                >
-                                    {p.is_pinned ? (
-                                        <Star size={12} className="text-amber-500 fill-amber-500" strokeWidth={2.5} />
-                                    ) : (
-                                        <StarOff size={12} className="text-slate-300" strokeWidth={2.5} />
-                                    )}
-                                </button>
+
                             </div>
 
                             {/* Name + username → opens profile */}
@@ -360,17 +340,40 @@ function QuickDuelStripBase({
                                     @{p.username}
                                 </p>
                             </button>
-
+                            {/* Favorite toggle */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    togglePin(p.user_id);
+                                }}
+                                className={`mt-1.5 w-full h-7 rounded-md flex items-center justify-center gap-1 transition-all active:scale-95 ${p.is_pinned
+                                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                    }`}
+                                style={{ touchAction: "manipulation" }}
+                                aria-label={p.is_pinned ? "Remove favorite" : "Add favorite"}
+                            >
+                                {p.is_pinned ? (
+                                    <>
+                                        <Star size={11} className="fill-amber-500 text-amber-500" strokeWidth={2.5} />
+                                        <span className="text-[10px] font-bold tracking-wide">Favorited</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <StarOff size={11} strokeWidth={2.5} />
+                                        <span className="text-[10px] font-bold tracking-wide">+ Favorite</span>
+                                    </>
+                                )}
+                            </button>
                             {/* Challenge button → goes to arena */}
                             <button
                                 onClick={() => challengeOpponent(p.user_id)}
-                                className="mt-2.5 w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                                className="mt-1.5 w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-1.5"
                                 style={{ touchAction: "manipulation" }}
                                 aria-label={`Challenge ${p.name}`}
                             >
-                                <Swords size={11} className="text-white" strokeWidth={2.5} />
                                 <span className="text-[11px] font-bold text-white tracking-wide">
-                                    Challenge
+                                    Challenge Me
                                 </span>
                             </button>
                         </div>

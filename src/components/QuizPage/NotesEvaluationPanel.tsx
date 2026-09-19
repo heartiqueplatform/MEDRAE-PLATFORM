@@ -28,14 +28,12 @@ type NotesEvaluationPanelProps = {
     supabase: any;
 };
 
-// ✅ Cache for help others data to prevent repeated fetches
 const helpOthersCache = new Map();
 const pendingHelpOthersRequests = new Map();
 
 async function fetchHelpOthersWithCache(supabase: any, questionId: string) {
     const cacheKey = `help_others_${questionId}`;
 
-    // Check cache (30 second TTL)
     if (helpOthersCache.has(cacheKey)) {
         const { data, timestamp } = helpOthersCache.get(cacheKey);
         if (Date.now() - timestamp < 30000) {
@@ -44,7 +42,6 @@ async function fetchHelpOthersWithCache(supabase: any, questionId: string) {
         helpOthersCache.delete(cacheKey);
     }
 
-    // Check for pending request
     if (pendingHelpOthersRequests.has(cacheKey)) {
         return pendingHelpOthersRequests.get(cacheKey);
     }
@@ -183,7 +180,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
         <>
             {helpModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-sm bg-white dark:bg-muted/30 rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+                    <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-none border-0 animate-in zoom-in-95 duration-200">
                         <div className="bg-teal-600 p-6 text-center">
                             <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-3">
                                 <Users className="text-white w-6 h-6" />
@@ -204,7 +201,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                     value={phoneInput}
                                     onChange={(e) => setPhoneInput(e.target.value)}
                                     placeholder="+254 7XX XXX XXX"
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl text-sm focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all font-medium"
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition-all font-medium border-0"
                                 />
                             </div>
 
@@ -219,14 +216,14 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                         setPhoneInput("");
                                         setActiveQuestionId(null);
                                     }}
-                                    className="px-4 py-3 text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+                                    className="px-4 py-3 text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                                 >
                                     Cancel
                                 </button>
 
                                 <button
                                     onClick={handleEnableHelp}
-                                    className="px-4 py-3 text-sm font-bold rounded-xl bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="px-4 py-3 text-sm font-bold rounded-xl bg-teal-600 text-white hover:bg-teal-700 active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
                                     <CheckCircle2 size={16} />
                                     Enable Support
@@ -236,23 +233,28 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                     </div>
                 </div>
             )}
-            <div className="w-full mt-2 bg-white dark:bg-muted/30 border-0 rounded-xl overflow-hidden shadow-sm transition-all">
+
+            {/* ─── MAIN PANEL — no borders, no shadow, soft note-paper bg ─── */}
+            <div className="w-full mt-2 bg-amber-50/40 dark:bg-slate-800/40 overflow-hidden transition-all">
+
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-0 bg-gray-50/50 dark:bg-gray-800/50">
+                <div className="flex items-center justify-between px-4 py-3 bg-amber-100/50 dark:bg-slate-800/70">
                     <div className="flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 text-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 text-amber-600 dark:text-amber-400">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                         </svg>
-                        <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-tight">Study Notes</h2>
+                        <h2 className="text-sm font-bold text-amber-900 dark:text-amber-100 tracking-tight">
+                            Study Notes
+                        </h2>
                     </div>
                     {attempts[q.id] > 0 && (
-                        <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] bg-amber-200/60 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold">
                             {attempts[q.id]} ATTEMPTS
                         </span>
                     )}
                 </div>
 
-                {/* Textarea Area */}
+                {/* Textarea — paper-like */}
                 <div className="p-1">
                     <textarea
                         value={notes[q.id] || ""}
@@ -262,18 +264,16 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                             saveNoteOffline(q.id, val).catch(console.error);
                             syncStatus(!!understood[q.id], !!notUnderstood[q.id]);
                         }}
-                        className="w-full min-h-[160px] p-4 text-sm bg-transparent border-0 focus:ring-0 resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400 hide-scrollbar"
+                        className="w-full min-h-[160px] p-4 text-sm bg-transparent border-0 focus:ring-0 focus:outline-none resize-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 hide-scrollbar"
                         placeholder="Reflect on this question... Why was it tricky? What's the key takeaway?"
                     />
                 </div>
 
-                {/* Action Toolbar - UPDATED with labels */}
-                {/* Action Toolbar — 2 rows on mobile, 1 row on desktop */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 bg-gray-50/30 dark:bg-gray-800/30 border-0">
+                {/* Action Toolbar */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 p-3 bg-amber-100/30 dark:bg-slate-800/50">
 
-                    {/* Row 1 (mobile) / Left group (desktop) */}
+                    {/* Left group — Understood / Need Help / Attempt */}
                     <div className="flex items-center gap-1 md:gap-2 w-full md:w-auto md:flex-1 min-w-0">
-                        {/* Understood */}
                         <button
                             onClick={() => {
                                 const next = !understood[q.id];
@@ -281,19 +281,16 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setNotUnderstood(prev => ({ ...prev, [q.id]: false }));
                                 syncStatus(next, false);
                             }}
-                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all border-0 ${understood[q.id]
-                                ? 'bg-green-100 text-green-600 dark:bg-green-900/30'
-                                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all ${understood[q.id]
+                                ? 'bg-green-500/15 text-green-700 dark:text-green-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 shrink-0">
                                 <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.74-5.24Z" clipRule="evenodd" />
                             </svg>
-                            <span className={`text-xs font-medium truncate ${understood[q.id] ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                                Understood
-                            </span>
+                            <span className="text-xs font-medium truncate">Understood</span>
                         </button>
 
-                        {/* Need Help */}
                         <button
                             onClick={() => {
                                 const next = !notUnderstood[q.id];
@@ -301,39 +298,35 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setUnderstood(prev => ({ ...prev, [q.id]: false }));
                                 syncStatus(false, next);
                             }}
-                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all border-0 ${notUnderstood[q.id]
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30'
-                                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all ${notUnderstood[q.id]
+                                ? 'bg-red-500/15 text-red-700 dark:text-red-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 shrink-0">
                                 <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clipRule="evenodd" />
                             </svg>
-                            <span className={`text-xs font-medium truncate ${notUnderstood[q.id] ? 'text-red-700 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                                Need Help
-                            </span>
+                            <span className="text-xs font-medium truncate">Need Help</span>
                         </button>
 
-                        {/* Attempt */}
                         <button
                             onClick={() => {
                                 const nextVal = (attempts[q.id] || 0) + 1;
                                 setAttempts(prev => ({ ...prev, [q.id]: nextVal }));
                                 syncStatus(!!understood[q.id], !!notUnderstood[q.id], nextVal);
                             }}
-                            className="group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20 transition-all border-0"
+                            className="group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5 shrink-0">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
                             </svg>
-                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
+                            <span className="text-xs font-medium truncate">
                                 Attempt{attempts[q.id] > 0 ? ` (${attempts[q.id]})` : ''}
                             </span>
                         </button>
                     </div>
 
-                    {/* Row 2 (mobile) / Right group (desktop) */}
+                    {/* Right group — Help Others / Find Buddy / Save */}
                     <div className="flex items-center gap-1 md:gap-2 w-full md:w-auto md:flex-1 min-w-0">
-                        {/* Help Others */}
                         <button
                             onClick={() => {
                                 if (!userId || helpOthersDisabled[q.id]) return;
@@ -342,23 +335,22 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setHelpModalOpen(true);
                             }}
                             disabled={helpOthersDisabled[q.id]}
-                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all border-0 ${helpOthersDisabled[q.id]
-                                ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                : 'text-gray-400 hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20'}`}
+                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all ${helpOthersDisabled[q.id]
+                                ? 'text-blue-600 bg-blue-500/15 dark:text-blue-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5 shrink-0">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
                             </svg>
-                            <span className={`text-xs font-medium truncate ${helpOthersDisabled[q.id] ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                            <span className="text-xs font-medium truncate">
                                 {helpOthersDisabled[q.id] ? 'Helping' : 'Help Others'}
                             </span>
                         </button>
 
-                        {/* Find Buddy */}
                         <button
                             onClick={handleFindHelp}
                             disabled={isLoadingHelpers}
-                            className="group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-500 dark:hover:bg-green-900/20 transition-all disabled:opacity-50 border-0"
+                            className="group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400 transition-all disabled:opacity-50"
                         >
                             {isLoadingHelpers ? (
                                 <div className="w-5 h-5 flex items-center justify-center shrink-0">
@@ -369,12 +361,9 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                     <path d="M12.031 2c-5.508 0-9.969 4.461-9.969 9.969 0 1.758.461 3.469 1.336 4.969L2 22l5.25-1.383a9.897 9.897 0 0 0 4.781 1.234h.008c5.508 0 9.961-4.461 9.961-9.969 0-2.656-1.031-5.156-2.906-7.031A9.873 9.873 0 0 0 12.031 2Zm0 1.688c2.203 0 4.273.859 5.82 2.406s2.406 3.617 2.406 5.875c0 4.578-3.719 8.281-8.281 8.281h-.008a8.216 8.216 0 0 1-4.188-1.148l-.305-.18-3.102.813.828-3.016-.203-.32a8.204 8.204 0 0 1-1.258-4.383c.008-4.547 3.734-8.281 8.297-8.281Zm-2.336 3.141c-.227 0-.469.055-.656.258-.234.258-.891.875-.891 2.133 0 1.258.914 2.477 1.039 2.648s1.805 2.758 4.375 3.867c.609.266 1.086.422 1.461.539.617.195 1.172.164 1.617.102.492-.07 1.516-.617 1.727-1.219.211-.594.211-1.102.148-1.211-.063-.109-.234-.172-.492-.297-.258-.125-1.516-.75-1.75-.836-.234-.086-.406-.125-.578.133-.172.258-.664.836-.813 1.008-.148.172-.297.195-.555.07a3.896 3.896 0 0 1-2.063-1.805c-.148-.258-.016-.406.117-.539.125-.117.258-.297.391-.445.125-.156.172-.258.258-.43.086-.172.047-.32-.023-.445-.07-.125-.578-1.398-.797-1.922-.211-.5-.422-.43-.578-.438Z" />
                                 </svg>
                             )}
-                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
-                                Find Buddy
-                            </span>
+                            <span className="text-xs font-medium truncate">Find Buddy</span>
                         </button>
 
-                        {/* Save */}
                         <button
                             onClick={async () => {
                                 if (!userId) return;
@@ -392,9 +381,9 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
                                 setSaved(true);
                                 setTimeout(() => setSaved(false), 2000);
                             }}
-                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all border-0 ${saved
+                            className={`group flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-lg transition-all ${saved
                                 ? 'bg-green-500 text-white'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200 dark:shadow-none'}`}
+                                : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                         >
                             {saving ? (
                                 <div className="flex gap-1 shrink-0">
