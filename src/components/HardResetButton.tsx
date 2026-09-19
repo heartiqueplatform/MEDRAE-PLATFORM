@@ -72,20 +72,11 @@ export function HardResetButton({
                         px-5 sm:px-8 pt-6 pb-5
                         ${keepLoggedIn
                             ? "bg-slate-50 dark:bg-slate-900"
-                            : "bg-red-50 dark:bg-red-950/40"}
+                            : "bg-red-50 dark:bg-red-950"}
                     `}
                 >
                     <div className="flex items-start gap-4 max-w-2xl mx-auto">
-                        <div
-                            className={`
-                                shrink-0 p-3 rounded-2xl
-                                ${keepLoggedIn
-                                    ? "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-                                    : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400"}
-                            `}
-                        >
-                            <AlertTriangle className="h-6 w-6" />
-                        </div>
+
                         <div className="flex-1 min-w-0">
                             <AlertDialogTitle
                                 className={`
