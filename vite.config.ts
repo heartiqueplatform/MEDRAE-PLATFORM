@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       mode === "development" && componentTagger(),
       VitePWA({
         registerType: "autoUpdate",
-        injectRegister: 'auto',
+        injectRegister: 'auto', // Changed from 'inline' to 'auto'
         includeAssets: [
           'favicon.ico',
           'apple-touch-icon.png',
@@ -78,31 +78,23 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           maximumFileSizeToCacheInBytes: 60 * 1024 * 1024,
-
-          // ✅ EDIT 1: Only precache truly static assets.
-          // HTML and JS go through navigateFallback + runtimeCaching
-          // so a new deploy is picked up on the first reload.
           globPatterns: [
-            "**/*.{ico,png,svg,jpeg,jpg,woff2,woff,mp3,mp4,webm}"
+            "**/*.{js,css,html,ico,png,svg,jpeg,jpg,woff2,woff,json,mp4,mp3,webm}"
           ],
-
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
           navigateFallback: 'index.html',
           directoryIndex: 'index.html',
-
-          // ✅ EDIT 3: Strict denylist for real asset extensions.
-          // Removed the greedy /[.][a-zA-Z0-9]+$/ that broke deep links.
           navigateFallbackDenylist: [
-            /\.(?:js|css|map|json|png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|mp3|mp4|webm)$/,
+            /[.][a-zA-Z0-9]+$/,
             /^\/api/,
-            /^\/__/,
+            /^\/__/
           ],
-
+          navigateFallbackAllowlist: [/^(?!\/__).*/],
           runtimeCaching: [
             {
-              // Images & Fonts — safe to cache aggressively
+              // Images & Fonts
               urlPattern: /\.(?:png|jpg|jpeg|svg|gif|woff2|webp)$/,
               handler: 'CacheFirst',
               options: {
@@ -114,7 +106,7 @@ export default defineConfig(({ mode }) => {
               },
             },
             {
-              // Internal API calls — network first
+              // API calls - network first for fresh data
               urlPattern: /^\/api\/.*/,
               handler: 'NetworkFirst',
               options: {
@@ -126,19 +118,21 @@ export default defineConfig(({ mode }) => {
               },
             },
             {
-              // ✅ EDIT 2: Supabase — NetworkOnly.
-              // Our own localStorage / IndexedDB caches handle offline.
-              // The SW gets out of the way so mobile doesn't wait 15s for
-              // a NetworkFirst fallback on every API call.
+              // Supabase calls
               urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
-              handler: 'NetworkOnly',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'supabase-cache',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60,
+                },
+              },
             }
           ]
         },
         devOptions: {
-          // ✅ BONUS: turn OFF the SW in dev to avoid stale caches during
-          // local development. Production builds still register it.
-          enabled: false,
+          enabled: true,
           type: 'module',
           navigateFallback: 'index.html'
         }

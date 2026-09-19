@@ -53,21 +53,41 @@ class AuthManager {
         this.persistSession(newSession);
       }
       // INITIAL_SESSION with null, TOKEN_REFRESH_FAILED, offline errors → IGNORE.
-      // Cached user stays. This is what makes offline behave like WhatsApp.
     });
 
-    // Initial session check — never wipes cache on failure.
     try {
       const { data } = await supabase.auth.getSession();
+
       if (data?.session?.user) {
+        // ✅ Supabase has a real session — persist and let the app through.
         this.persistSession(data.session);
       } else {
-        // No server session (offline / expired). Keep cached user.
-        this.setState({ loading: false });
+        // ⚠️ Supabase has NO session. Critical rule:
+        // The Supabase session is the single source of truth for "am I
+        // logged in?". If we were holding a cached supabaseUser but
+        // Supabase itself has no session, the app is in a half-logged-in
+        // state where every request goes out unauthenticated (401) and
+        // loaders hang. Clear the cached user so the app consistently
+        // logs the user out and lets them sign in cleanly.
+        const hadCachedUser = !!this.state.user;
+        if (hadCachedUser) {
+          try { localStorage.removeItem("supabaseUser"); } catch { /* ignore */ }
+        }
+        this.setState({ user: null, session: null, loading: false });
       }
     } catch {
-      // Network error. Keep cached user.
-      this.setState({ loading: false });
+      // Network error (offline). If we have a cached user, keep them
+      // logged in — they can still browse cached content.
+      // If no cached user, we're logged out.
+      const hasCached = !!this.state.user;
+      if (!hasCached) {
+        try { localStorage.removeItem("supabaseUser"); } catch { /* ignore */ }
+      }
+      this.setState({
+        user: hasCached ? this.state.user : null,
+        session: null,
+        loading: false,
+      });
     }
   }
 

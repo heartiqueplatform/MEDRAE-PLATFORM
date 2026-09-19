@@ -26,6 +26,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { UserProfileModal } from "@/components/UserProfileModal";
 // ✅ Import shared profile cache
 import { getProfileCache, setProfileCache, clearProfileCache, PROFILE_CACHE_KEY } from "@/lib/profileCache";
+import { HardResetButton } from "../HardResetButton";
 
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
@@ -915,7 +916,10 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">System Update</span>
                     <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 font-medium">Refresh platform content</span>
                   </div>
+
                 </DropdownMenuItem>
+                <HardResetButton asMenuItem keepLoggedIn label="Clear Caches" />
+                <HardResetButton asMenuItem label="Hard Reset" />
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
