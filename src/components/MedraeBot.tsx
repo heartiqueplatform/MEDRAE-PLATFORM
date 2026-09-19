@@ -48,7 +48,7 @@ const BOT_TRACK_TITLE = "Medrae Nursing Theme";
 const BOT_TRACK_ARTIST = "Medrae Original";
 
 const LOCKOUT_SECONDS = 7;
-const BOT_VOLUME = 0.5;
+const BOT_VOLUME = 0.3; // ← softer, medium background level
 const FADE_IN_MS = 1400;
 const FADE_OUT_MS = 1000;
 // ============================================
@@ -65,6 +65,16 @@ const BOT_SESSION_FLAG = "medrae_bot_session_started";
 const BOT_DISMISSED_THIS_OPEN = "medrae_bot_dismissed_this_open";
 
 const MAX_SHOWS_PER_DAY = 3;
+
+// ─── Time-aware greeting ───
+// Returns a greeting that matches the user's local time of day.
+const getTimeGreeting = (): string => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Good morning!";
+    if (hour >= 12 && hour < 17) return "Good afternoon!";
+    if (hour >= 17 && hour < 21) return "Good evening!";
+    return "Good night!";
+};
 
 // ─── Format seconds as mm:ss ───
 const fmt = (s: number) => {
@@ -117,6 +127,8 @@ const MedraeBot = () => {
     const preMuteVolumeRef = useRef<number>(BOT_VOLUME);
     const raf2Ref = useRef<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+    // ─── Time-aware greeting, computed once on mount ───
+    const [greeting] = useState<string>(() => getTimeGreeting());
     // ─── Track a fresh app open ───
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -718,7 +730,7 @@ const MedraeBot = () => {
                                     <Sparkles className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <p className="text-white font-bold text-base leading-tight">Good morning! Medraen</p>
+                                    <p className="text-white font-bold text-base leading-tight">{greeting} Medraen</p>
                                     <p className="text-white/80 text-xs">I'm Medrae, your assistant</p>
                                 </div>
                             </div>
@@ -813,7 +825,7 @@ const MedraeBot = () => {
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <p className="text-white font-bold text-base leading-tight">Good morning! ☀️</p>
+                                <p className="text-white font-bold text-base leading-tight">{greeting}</p>
                                 <p className="text-white/80 text-xs">I'm Medrae, your assistant</p>
                             </div>
                         </div>
