@@ -743,9 +743,9 @@ export function Resources() {
   return (
     <>
       {/* EDGE-TO-EDGE ON MOBILE - COMPLETELY REMOVED ALL PADDING/MARGINS */}
-      <div className="min-h-screen w-full flex justify-center bg-transparent px-3 md:px-4 lg:px-6">
+      <div className="min-h-screen w-full flex justify-center bg-transparent px-[1px] md:px-4 lg:px-6">
         <div className="w-full max-w-full space-y-0 md:space-y-6 py-0 md:py-6 px-0 sm:px-0">
-          <div className="w-full max-w-full mx-auto space-y-0 px-0 sm:px-6 pt-0 sm:pt-4">
+          <div className="w-full max-w-full mx-auto space-y-0 px-[1px] sm:px-6 pt-0 sm:pt-4">
             {/* REMOVED ALL CARD STYLING ON MOBILE - NO BORDERS, NO ROUNDED, NO PADDING */}
             <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0 bg-transparent dark:bg-transparent mx-0">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600" />
@@ -760,7 +760,7 @@ export function Resources() {
                     <CardTitle className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
                       Notes & <span className="text-blue-600">Resources</span>
                     </CardTitle>
-                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-0.5 md:mt-1">
+                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400 tracking-[0.2em] mt-0.5 md:mt-1">
                       KMTC & Private Institution Archive
                     </p>
                   </div>
@@ -768,9 +768,9 @@ export function Resources() {
               </CardHeader>
 
               {/* REMOVED PADDING FROM CONTENT ON MOBILE */}
-              <CardContent className="space-y-4 md:space-y-6 px-3 md:px-6 pb-0 md:pb-6">
+              <CardContent className="space-y-4 md:space-y-6 px-[1px] md:px-6 pb-0 md:pb-6">
                 {/* Description Area - REMOVED PADDING ON MOBILE */}
-                <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-none md:rounded-xl p-3 md:p-5 border-0 mx-0">
+                <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-xl md:rounded-xl p-3 md:p-5 border-0 mx-0">
 
                   <motion.div layout>
                     <div className="text-gray-600 dark:text-gray-400 text-xs md:text-sm leading-relaxed font-medium">
@@ -794,7 +794,7 @@ export function Resources() {
                             exit={{ opacity: 0, height: 0 }}
                             className="overflow-hidden"
                           >
-                            <div className="pt-3 md:pt-4 space-y-3 mt-3 border-t border-gray-200/50 dark:border-gray-700/50">
+                            <div className="pt-3 md:pt-4 space-y-3 mt-3 border-0">
                               <p className="text-xs md:text-sm">
                                 This ensures diverse, high-quality content to support your learning,
                                 research, and personal note uploads. While some notes may appear mixed,
@@ -825,13 +825,13 @@ export function Resources() {
                       placeholder="Search by topic, unit, course, institution..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="h-10 md:h-12 pl-9 md:pl-12 pr-3 md:pr-4 rounded-none md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-none text-gray-900 dark:text-white placeholder-gray-400 font-medium focus:ring-2 focus:ring-blue-500/50 transition-all outline-none text-sm md:text-base"
+                      className="h-10 md:h-12 pl-9 md:pl-12 pr-3 md:pr-4 rounded-xl md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-none text-gray-900 dark:text-white placeholder-gray-400 font-medium focus:ring-2 focus:ring-blue-500/50 transition-all outline-none text-sm md:text-base"
                     />
                   </div>
                   <Button
                     onClick={() => setShowUploadForm(!showUploadForm)}
-                    className={`h-10 md:h-12 px-4 md:px-6 rounded-none md:rounded-2xl font-bold transition-all flex items-center gap-2 shadow-lg active:scale-95 text-sm md:text-base ${showUploadForm
-                      ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 dark:bg-red-900/20 dark:border-red-900/30 shadow-none"
+                    className={`h-10 md:h-12 px-4 md:px-6 rounded-xl md:rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg active:scale-95 text-sm md:text-base ${showUploadForm
+                      ? "bg-red-50 text-red-600 hover:bg-red-100 border-0 dark:bg-red-900/20 dark:border-red-900/30 shadow-none"
                       : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200 dark:shadow-none"
                       }`}
                   >
@@ -859,7 +859,7 @@ export function Resources() {
                         </div>
                         <div className="grid gap-4 md:gap-5 md:grid-cols-2">
                           <div className="space-y-1.5">
-                            <label className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Course (Optional)</label>
+                            <label className="text-[8px] md:text-[10px] font-bold  tracking-widest text-gray-400 ml-1">Course (Optional)</label>
                             <Input
                               placeholder="e.g. Nursing BSc"
                               value={uploadForm.course}
@@ -868,7 +868,7 @@ export function Resources() {
                                 setUploadForm({ ...uploadForm, course: value });
                                 localStorage.setItem("selectedCourse", value);
                               }}
-                              className="h-10 md:h-12 rounded-none md:rounded-xl bg-gray-50 dark:bg-gray-900 border-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
+                              className="h-10 md:h-12 rounded-xl md:rounded-xl bg-gray-50 dark:bg-gray-900 border-none focus:ring-2 focus:ring-emerald-500/50 text-sm"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -984,9 +984,9 @@ export function Resources() {
                 <div className="relative mt-4 md:mt-6 w-full flex justify-center px-0 sm:px-0">
                   <Button
                     onClick={() => setFloatingBlockOpen(!floatingBlockOpen)}
-                    className={`relative z-40 h-10 md:h-12 px-4 md:px-6 rounded-none md:rounded-2xl transition-all duration-300 flex items-center gap-2 md:gap-3 w-full sm:w-auto shadow-lg active:scale-95 text-sm md:text-base ${floatingBlockOpen
+                    className={`relative z-40 h-10 md:h-12 px-4 md:px-6 rounded-xl md:rounded-xl transition-all duration-300 flex items-center gap-2 md:gap-3 w-full sm:w-auto shadow-lg active:scale-95 text-sm md:text-base ${floatingBlockOpen
                       ? "bg-blue-600 text-white shadow-blue-200 dark:shadow-none"
-                      : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-800 hover:border-blue-500"
+                      : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-0 hover:border-blue-500"
                       }`}
                   >
                     <div className={`p-1 md:p-1.5 rounded-lg transition-colors ${floatingBlockOpen ? 'bg-white/20' : 'bg-blue-50 dark:bg-blue-900/30'}`}>

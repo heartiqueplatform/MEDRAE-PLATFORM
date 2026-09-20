@@ -699,7 +699,7 @@ export function MedraeQuizzes() {
                 }
 
                 return (
-                  <div key={paper.paperNumber} className="space-y-3 px-4 md:px-0">
+                  <div key={paper.paperNumber} className="space-y-3 px-[4px] md:px-0">
                     {/* PAPER HEADER */}
                     <div className="flex items-center justify-between gap-3 mt-5 md:mt-6 pb-2 border-b border-gray-100 dark:border-gray-800">
                       <div className="flex items-center gap-3 min-w-0">
@@ -721,7 +721,7 @@ export function MedraeQuizzes() {
                     </div>
 
                     {/* MOBILE EDGE-TO-EDGE GRID */}
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
+                    <div className="grid gap-[1px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
                       {filteredUnits.map((unit, index) => {
                         const questionCount = getQuestionCount(unit.code);
                         const isUnitFree = freeUnits.includes((unit.code ?? "").trim()) || unit.is_free;

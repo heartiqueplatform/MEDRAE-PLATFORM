@@ -29,16 +29,16 @@ import { useInView } from 'react-intersection-observer';
 function VideoCardSkeleton() {
   return (
     <div className="animate-pulse">
-      <Card className="border-0 md:border rounded-none md:rounded-xl shadow-none md:shadow-sm dark:bg-muted/30">
-        <div className="relative w-full aspect-video md:h-48 bg-gray-200 dark:bg-gray-700 rounded-none md:rounded-t-lg" />
-        <CardHeader className="pb-1 md:pb-2 px-4 md:px-6 pt-3 md:pt-4">
+      <Card className="border-0 rounded-xl shadow-none bg-muted/80 dark:bg-muted/40">
+        <div className="relative w-full aspect-video md:h-48 bg-gray-200 dark:bg-gray-700 rounded-t-xl" />
+        <CardHeader className="pb-1 md:pb-2 px-2 md:px-6 pt-3 md:pt-4">
           <div className="h-4 md:h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
           <div className="flex items-center gap-1.5 md:gap-2">
             <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-gray-200 dark:bg-gray-700" />
             <div className="h-3 md:h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </CardHeader>
-        <CardContent className="px-4 md:px-6 pt-0 pb-3 md:pb-4">
+        <CardContent className="px-2 md:px-6 pt-0 pb-3 md:pb-4">
           <div className="h-3 md:h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-1 md:mb-2" />
           <div className="space-y-1 mb-2 md:mb-4">
             <div className="h-3 md:h-4 w-full bg-gray-200 dark:bg-gray-700 rounded" />
@@ -59,16 +59,14 @@ function VideoCardSkeleton() {
           </div>
         </CardContent>
       </Card>
-      <div className="block md:hidden h-px bg-gray-200/50 dark:bg-gray-800/50 mx-4" />
     </div>
   );
 }
 
 function MedTubeSkeleton() {
   return (
-    <div className="space-y-0 md:space-y-4 max-w-8xl mx-auto px-0 md:px-4 py-0 md:py-4 animate-pulse">
-      {/* Header Skeleton */}
-      <div className="px-4 md:px-0 pt-4 md:pt-0 pb-3 md:pb-0 border-b md:border-b-0 border-gray-200/50 dark:border-gray-800/50">
+    <div className="space-y-0 md:space-y-4 max-w-8xl mx-auto px-0 md:px-2 py-0 md:py-4 animate-pulse">
+      <div className="px-2 md:px-0 pt-4 md:pt-0 pb-3 md:pb-0">
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
           <div>
             <div className="h-7 md:h-9 w-32 md:w-40 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -81,33 +79,25 @@ function MedTubeSkeleton() {
         </div>
       </div>
 
-      {/* Search Skeleton */}
-      <div className="relative flex flex-col md:flex-row gap-2 md:gap-3 px-4 md:px-0">
+      <div className="relative flex flex-col md:flex-row gap-3 md:gap-3 px-2 md:px-0">
         <div className="relative flex-1">
           <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded-lg md:rounded-xl" />
         </div>
         <div className="h-10 md:h-11 w-full md:w-32 bg-gray-200 dark:bg-gray-700 rounded-lg md:rounded-xl" />
       </div>
 
-      {/* Tabs Skeleton */}
-      <div className="space-y-1">
-        <div className="hidden md:block px-0">
-          <div className="grid w-full grid-cols-8 gap-1">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="h-9 md:h-10 bg-gray-200 dark:bg-gray-700 rounded" />
-            ))}
-          </div>
-        </div>
-        <div className="md:hidden px-4">
-          <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
-        </div>
+      {/* Story cards skeleton */}
+      <div className="flex gap-3 overflow-x-auto px-2 md:px-0 pb-1 custom-scrollbar">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-14 md:h-16 w-28 md:w-32 bg-gray-200 dark:bg-gray-700 rounded-xl flex-shrink-0" />
+        ))}
+      </div>
 
-        <div className="px-0 md:px-0">
-          <div className="grid gap-0 md:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <VideoCardSkeleton key={i} />
-            ))}
-          </div>
+      <div className="px-0 md:px-0">
+        <div className="grid gap-4 md:gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 px-2 md:px-0">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <VideoCardSkeleton key={i} />
+          ))}
         </div>
       </div>
     </div>
@@ -306,13 +296,13 @@ const CommentsModal = ({ videoId, isOpen, onClose }: { videoId: string; isOpen: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] rounded-xl overflow-y-auto custom-scrollbar">
+      <DialogContent className="max-w-2xl max-h-[80vh] rounded-xl overflow-y-auto custom-scrollbar border-0">
         <DialogHeader>
           <DialogTitle>Feedback & Comments</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-3 border-b pb-4">
+          <div className="space-y-3 pb-4">
             <div className="flex items-center gap-2">
               <Star className="h-4 w-4 text-yellow-500" />
               <div className="flex gap-1">
@@ -327,7 +317,7 @@ const CommentsModal = ({ videoId, isOpen, onClose }: { videoId: string; isOpen: 
                 ))}
               </div>
               <Select value={commentType} onValueChange={setCommentType}>
-                <SelectTrigger className="ml-auto w-[180px] h-9">
+                <SelectTrigger className="ml-auto w-[180px] h-9 border-0">
                   <SelectValue placeholder="Feedback Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -344,6 +334,7 @@ const CommentsModal = ({ videoId, isOpen, onClose }: { videoId: string; isOpen: 
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               rows={3}
+              className="border-0 bg-muted/80 dark:bg-muted/40"
             />
 
             <Button onClick={submitComment} disabled={submitting || !newComment.trim()}>
@@ -354,7 +345,7 @@ const CommentsModal = ({ videoId, isOpen, onClose }: { videoId: string; isOpen: 
 
           <div className="space-y-3">
             {comments.map((comment) => (
-              <div key={comment.id} className="border rounded-lg p-3">
+              <div key={comment.id} className="rounded-lg p-3 bg-muted/80 dark:bg-muted/40">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
@@ -407,7 +398,7 @@ interface VideoCache {
 class VideoCacheManager {
   private static instance: VideoCacheManager;
   private cache: Map<string, VideoCache> = new Map();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private readonly CACHE_DURATION = 5 * 60 * 1000;
 
   static getInstance() {
     if (!VideoCacheManager.instance) {
@@ -511,6 +502,8 @@ export function MedTube() {
     { id: "conditions", name: "Medical Conditions", icon: Play },
     { id: "mine", name: "My Uploads", icon: Upload },
   ];
+
+  const allTabs = [{ id: "all", name: "All Videos", icon: Play }, ...categories];
 
   const getSortOrder = useCallback(() => {
     if (activeTab === "trending") {
@@ -749,8 +742,6 @@ export function MedTube() {
 
     if (activeTab === "all") {
       setVideos(prev => prev.filter(v => v.id !== videoId));
-      const watchedArray = Array.from(watchedIds);
-      watchedArray.push(videoId);
       cacheManager.clearForUser(user.id);
     }
 
@@ -767,7 +758,7 @@ export function MedTube() {
       console.error("Error marking video as watched:", err);
       await loadVideos(0, true, true);
     }
-  }, [user, activeTab, watchedIds, loadVideos]);
+  }, [user, activeTab, loadVideos]);
 
   const recordView = useCallback(async (videoId: string) => {
     if (!user || !videoId) return;
@@ -1022,16 +1013,15 @@ export function MedTube() {
     );
   }
 
-  // Show skeleton while loading and no videos
   if (loading && videos.length === 0) {
     return <MedTubeSkeleton />;
   }
 
   return (
-    <div className="space-y-0 md:space-y-4 max-w-8xl mx-auto px-0 md:px-4 py-0 md:py-4">
-      {/* Header - Mobile Native */}
-      <div className="px-4 md:px-0 pt-4 md:pt-0 pb-3 md:pb-0 border-b md:border-b-0 border-gray-200/50 dark:border-gray-800/50">
-        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+    <div className="space-y-0 md:space-y-4 max-w-8xl mx-auto px-0 md:px-2 py-0 md:py-4">
+      {/* Header */}
+      <div className="px-2 md:px-0 pt-4 md:pt-0 pb-3 md:pb-0">
+        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-medical bg-clip-text text-transparent">MedTube</h1>
             <p className="text-sm text-muted-foreground mt-0.5 md:mt-1">
@@ -1044,11 +1034,11 @@ export function MedTube() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={triggerVideoSync} disabled={syncing} className="gap-2 text-xs md:text-sm">
+            <Button variant="outline" size="sm" onClick={triggerVideoSync} disabled={syncing} className="gap-2 text-xs md:text-sm border-0 bg-muted/80 dark:bg-muted/40">
               <RefreshCw className={`h-3 w-3 md:h-4 md:w-4 ${syncing ? 'animate-spin' : ''}`} />
               Sync YouTube
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowResetConfirm(true)} className="gap-2 text-xs md:text-sm">
+            <Button variant="outline" size="sm" onClick={() => setShowResetConfirm(true)} className="gap-2 text-xs md:text-sm border-0 bg-muted/80 dark:bg-muted/40">
               <RefreshCw className="h-3 w-3 md:h-4 md:w-4" />
               Reset Watch History
             </Button>
@@ -1056,9 +1046,9 @@ export function MedTube() {
         </div>
       </div>
 
-      {/* Upload Form - Mobile Native */}
+      {/* Upload Form */}
       {showUploadForm && (
-        <div className="space-y-3 md:space-y-4 border-0 md:border rounded-none md:rounded-lg p-4 md:p-4 mx-4 md:mx-0 dark:bg-muted/30">
+        <div className="space-y-3 md:space-y-4 rounded-xl p-4 md:p-5 mx-4 md:mx-0 bg-muted/80 dark:bg-muted/40">
           <div>
             <Input
               placeholder="Video URL (YouTube, Vimeo, or direct MP4 link)"
@@ -1067,18 +1057,18 @@ export function MedTube() {
                 setVideoUrl(e.target.value);
                 if (urlError) setUrlError("");
               }}
-              className="rounded-lg md:rounded-xl"
+              className="rounded-lg md:rounded-xl border-0 bg-background/60 dark:bg-background/40"
             />
             {urlError && <p className="text-red-500 text-xs md:text-sm mt-1">{urlError}</p>}
             <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
               Supported: YouTube, Vimeo, direct video links (.mp4, .webm, etc.)
             </p>
           </div>
-          <Input placeholder="Video Title" value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-lg md:rounded-xl" />
-          <Textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-lg md:rounded-xl" />
-          <Input placeholder="Tags (comma separated)" value={tags} onChange={(e) => setTags(e.target.value)} className="rounded-lg md:rounded-xl" />
+          <Input placeholder="Video Title" value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-lg md:rounded-xl border-0 bg-background/60 dark:bg-background/40" />
+          <Textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-lg md:rounded-xl border-0 bg-background/60 dark:bg-background/40" />
+          <Input placeholder="Tags (comma separated)" value={tags} onChange={(e) => setTags(e.target.value)} className="rounded-lg md:rounded-xl border-0 bg-background/60 dark:bg-background/40" />
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-full rounded-lg md:rounded-xl">
+            <SelectTrigger className="w-full rounded-lg md:rounded-xl border-0 bg-background/60 dark:bg-background/40">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
@@ -1093,211 +1083,210 @@ export function MedTube() {
         </div>
       )}
 
-      {/* Search and Actions - Mobile Native */}
-      <div className="relative flex flex-col md:flex-row gap-2 md:gap-3 px-4 md:px-0">
+      {/* Search and Actions */}
+      <div className="relative flex flex-col md:flex-row gap-3 md:gap-3 2 md:px-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search videos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 rounded-lg md:rounded-xl"
+            className="pl-10 rounded-lg md:rounded-xl border-0 bg-muted/80 dark:bg-muted/40"
           />
         </div>
-        <Button className="flex items-center gap-2 w-full md:w-auto rounded-lg md:rounded-xl" onClick={() => setShowUploadForm(!showUploadForm)}>
+        <Button
+          className="flex items-center gap-2 w-full md:w-auto rounded-lg md:rounded-xl"
+          onClick={() => setShowUploadForm(!showUploadForm)}
+        >
           <Upload className="h-4 w-4" /> Add Video
         </Button>
       </div>
 
-      {/* Tabs - Mobile Native */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-1">
-        <div className="md:hidden px-4">
-          <Select value={activeTab} onValueChange={setActiveTab}>
-            <SelectTrigger className="w-full rounded-lg">
-              <SelectValue placeholder="Select section" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Videos</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Story-style Category Cards */}
+      <div className="pt-1 md:pt-0">
+        <div className="flex gap-3 overflow-x-auto px-2 md:px-0 pb-1 custom-scrollbar scroll-smooth">
+          {allTabs.map((c) => {
+            const Icon = c.icon;
+            const isActive = activeTab === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setActiveTab(c.id)}
+                className={`flex-shrink-0 flex flex-col items-center justify-center gap-1 h-16 md:h-20 w-24 md:w-28 rounded-xl transition-all ${isActive
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/80 dark:bg-muted/40 text-foreground hover:bg-muted"
+                  }`}
+              >
+                <div
+                  className={`flex items-center justify-center h-7 w-7 md:h-8 md:w-8 rounded-full ${isActive ? "bg-primary-foreground/20" : "bg-background/60 dark:bg-background/40"
+                    }`}
+                >
+                  <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </div>
+                <span className="text-[10px] md:text-xs font-medium leading-tight px-1 text-center line-clamp-1">
+                  {c.name}
+                </span>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="hidden md:block px-0">
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="all" className="flex items-center gap-1 text-xs">All Videos</TabsTrigger>
-            {categories.map((c) => (
-              <TabsTrigger key={c.id} value={c.id} className="flex items-center gap-1 text-xs">
-                <c.icon className="h-3 w-3" /> {c.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-
-        <TabsContent value={activeTab} className="px-0 md:px-0">
-          {loading && videos.length === 0 ? (
-            <MedTubeSkeleton />
-          ) : filteredVideos.length === 0 && !loading ? (
-            <div className="text-center py-12 px-4">
-              <p className="text-muted-foreground mb-4">
-                {activeTab === "all"
-                  ? "You've watched all videos! Click 'Reset Watch History' to see them again."
-                  : `No videos found in ${categories.find(c => c.id === activeTab)?.name || activeTab}`}
-              </p>
-              {activeTab === "all" && (
-                <Button onClick={() => setShowResetConfirm(true)} variant="outline">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset Watch History
-                </Button>
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-0 md:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {filteredVideos.map((video, index) => (
-                  <div key={video.id}>
-                    <Card className="group cursor-pointer transition-all hover:md:shadow-lg border-0 md:border rounded-none md:rounded-xl shadow-none md:shadow-sm dark:bg-muted/30">
-                      <div className="relative">
-                        <div className="relative w-full aspect-video md:h-48">
-                          <VideoPlayer
-                            video={video}
-                            className="rounded-none md:rounded-t-lg"
-                            onPlay={() => {
-                              recordView(video.id);
-                              if (activeTab === "all" && !video.is_watched) {
-                                markVideoAsWatched(video.id);
-                              }
-                            }}
-                          />
-                        </div>
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-none md:rounded-t-lg flex items-center justify-center pointer-events-none">
-                          <Button
-                            size="lg"
-                            className="rounded-full w-14 h-14 md:w-16 md:h-16 pointer-events-auto"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOverlayVideo(video);
-                              recordView(video.id);
-                            }}
-                          >
-                            <Play className="h-5 w-5 md:h-6 md:w-6" />
-                          </Button>
-                        </div>
-                        <Badge className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] md:text-xs">{video.duration || "00:00"}</Badge>
-                        <Badge className="absolute top-2 left-2 bg-black/70 text-white text-[8px] md:text-xs">
-                          {video.embed_type === 'youtube' ? 'YouTube' : video.embed_type === 'vimeo' ? 'Vimeo' : video.embed_type === 'direct' ? 'Direct' : 'Video'}
-                        </Badge>
-                        {video.is_watched && activeTab === "all" && (
-                          <Badge className="absolute top-2 right-2 bg-green-600 text-white text-[8px] md:text-xs">Watched ✓</Badge>
-                        )}
-                      </div>
-
-                      <CardHeader className="pb-1 md:pb-2 px-4 md:px-6 pt-3 md:pt-4">
-                        <CardTitle className="text-sm md:text-base line-clamp-2 group-hover:md:text-primary transition-colors">{video.title}</CardTitle>
-                        <div className="flex items-center gap-1.5 md:gap-2">
-                          <Avatar className="h-5 w-5 md:h-6 md:w-6">
-                            <AvatarImage src={video.uploader_avatar || "/placeholder.svg"} className="object-cover" />
-                            <AvatarFallback className="flex items-center justify-center text-[8px] md:text-xs">
-                              {video.uploader?.[0]?.toUpperCase() || "👤"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-[10px] md:text-sm text-muted-foreground truncate">{video.uploader}</span>
-                        </div>
-                      </CardHeader>
-
-                      <CardContent className="px-4 md:px-6 pt-0 pb-3 md:pb-4">
-                        <div className="flex items-center gap-1 text-[10px] md:text-sm text-muted-foreground mb-1 md:mb-2">
-                          <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" /> {formatDate(video.created_at)}
-                        </div>
-                        <CardDescription className="line-clamp-2 text-xs md:text-sm mb-2 md:mb-4">{video.description}</CardDescription>
-                        <div className="flex flex-wrap gap-0.5 md:gap-1 mb-3 md:mb-4">
-                          {video.tags?.slice(0, 3).map((tag: string) => (
-                            <Badge key={tag} variant="secondary" className="text-[8px] md:text-xs">{tag}</Badge>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] md:text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1.5 md:gap-2">
-                            <Eye className="h-3 w-3 md:h-4 md:w-4" /> {formatViews(video.views_count)}
-                            <Heart
-                              className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-3 cursor-pointer transition-transform active:scale-90"
-                              fill={video.liked_by_me ? "red" : "none"}
-                              stroke={video.liked_by_me ? "red" : "currentColor"}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleLikeToggle(video.id);
-                              }}
-                            />
-                            {video.likes_count}
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setSelectedVideoForComments(video.id);
-                              }}
-                              className="ml-1 md:ml-2 p-0.5 md:p-1 hover:bg-muted rounded-full transition"
-                            >
-                              <MessageCircle className="h-3 w-3 md:h-4 md:w-4" />
-                            </button>
-                          </div>
-                          {user?.id === video.uploaded_by && (
-                            <Button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteVideo(video);
-                              }}
-                              variant="ghost"
-                              className="p-1 md:p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition h-auto"
-                            >
-                              <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    {/* Mobile Separator */}
-                    {index < filteredVideos.length - 1 && (
-                      <div className="block md:hidden h-px bg-gray-200/50 dark:bg-gray-800/50 mx-4" />
+      {/* Videos */}
+      <div className="pt-1 md:pt-0">
+        {loading && videos.length === 0 ? (
+          <MedTubeSkeleton />
+        ) : filteredVideos.length === 0 && !loading ? (
+          <div className="text-center py-12 px-2">
+            <p className="text-muted-foreground mb-4">
+              {activeTab === "all"
+                ? "You've watched all videos! Click 'Reset Watch History' to see them again."
+                : `No videos found in ${categories.find(c => c.id === activeTab)?.name || activeTab}`}
+            </p>
+            {activeTab === "all" && (
+              <Button onClick={() => setShowResetConfirm(true)} variant="outline" className="border-0 bg-muted/80 dark:bg-muted/40">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reset Watch History
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 md:gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 px-2 md:px-0">
+              {filteredVideos.map((video) => (
+                <Card key={video.id} className="group cursor-pointer transition-all hover:md:shadow-lg border-0 rounded-xl shadow-none bg-muted/80 dark:bg-muted/40">
+                  <div className="relative">
+                    <div className="relative w-full aspect-video md:h-48">
+                      <VideoPlayer
+                        video={video}
+                        className="rounded-t-xl"
+                        onPlay={() => {
+                          recordView(video.id);
+                          if (activeTab === "all" && !video.is_watched) {
+                            markVideoAsWatched(video.id);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-xl flex items-center justify-center pointer-events-none">
+                      <Button
+                        size="lg"
+                        className="rounded-full w-14 h-14 md:w-16 md:h-16 pointer-events-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOverlayVideo(video);
+                          recordView(video.id);
+                        }}
+                      >
+                        <Play className="h-5 w-5 md:h-6 md:w-6" />
+                      </Button>
+                    </div>
+                    <Badge className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] md:text-xs">{video.duration || "00:00"}</Badge>
+                    <Badge className="absolute top-2 left-2 bg-black/70 text-white text-[8px] md:text-xs">
+                      {video.embed_type === 'youtube' ? 'YouTube' : video.embed_type === 'vimeo' ? 'Vimeo' : video.embed_type === 'direct' ? 'Direct' : 'Video'}
+                    </Badge>
+                    {video.is_watched && activeTab === "all" && (
+                      <Badge className="absolute top-2 right-2 bg-green-600 text-white text-[8px] md:text-xs">Watched ✓</Badge>
                     )}
                   </div>
-                ))}
-              </div>
 
-              {/* Load more trigger */}
-              {hasMore && filteredVideos.length > 0 && (
-                <div ref={loadMoreRef} className="flex justify-center py-6 md:py-8">
-                  {loadingMore ? (
-                    <div className="flex items-center gap-2 text-muted-foreground text-xs md:text-sm">
-                      <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
-                      Loading more videos...
+                  <CardHeader className="pb-1 md:pb-2 px-2 md:px-6 pt-3 md:pt-4">
+                    <CardTitle className="text-sm md:text-base line-clamp-2 group-hover:md:text-primary transition-colors">{video.title}</CardTitle>
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <Avatar className="h-5 w-5 md:h-6 md:w-6">
+                        <AvatarImage src={video.uploader_avatar || "/placeholder.svg"} className="object-cover" />
+                        <AvatarFallback className="flex items-center justify-center text-[8px] md:text-xs">
+                          {video.uploader?.[0]?.toUpperCase() || "👤"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-[10px] md:text-sm text-muted-foreground truncate">{video.uploader}</span>
                     </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => loadVideos(page, false)}
-                      className="gap-2 text-xs md:text-sm"
-                    >
-                      <Loader2 className="h-3 w-3 md:h-4 md:w-4" />
-                      Load More
-                    </Button>
-                  )}
-                </div>
-              )}
+                  </CardHeader>
 
-              {!hasMore && videos.length > 0 && (
-                <div className="text-center py-4 text-muted-foreground text-xs md:text-sm">
-                  You've reached the end of the list 🎉
-                </div>
-              )}
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
+                  <CardContent className="px-2 md:px-6 pt-0 pb-3 md:pb-4">
+                    <div className="flex items-center gap-1 text-[10px] md:text-sm text-muted-foreground mb-1 md:mb-2">
+                      <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" /> {formatDate(video.created_at)}
+                    </div>
+                    <CardDescription className="line-clamp-2 text-xs md:text-sm mb-2 md:mb-4">{video.description}</CardDescription>
+                    <div className="flex flex-wrap gap-0.5 md:gap-1 mb-3 md:mb-4">
+                      {video.tags?.slice(0, 3).map((tag: string) => (
+                        <Badge key={tag} variant="secondary" className="text-[8px] md:text-xs">{tag}</Badge>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] md:text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        <Eye className="h-3 w-3 md:h-4 md:w-4" /> {formatViews(video.views_count)}
+                        <Heart
+                          className="h-3 w-3 md:h-4 md:w-4 ml-1 md:ml-3 cursor-pointer transition-transform active:scale-90"
+                          fill={video.liked_by_me ? "red" : "none"}
+                          stroke={video.liked_by_me ? "red" : "currentColor"}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleLikeToggle(video.id);
+                          }}
+                        />
+                        {video.likes_count}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedVideoForComments(video.id);
+                          }}
+                          className="ml-1 md:ml-2 p-0.5 md:p-1 hover:bg-muted rounded-full transition"
+                        >
+                          <MessageCircle className="h-3 w-3 md:h-4 md:w-4" />
+                        </button>
+                      </div>
+                      {user?.id === video.uploaded_by && (
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteVideo(video);
+                          }}
+                          variant="ghost"
+                          className="p-1 md:p-2 rounded-full hover:bg-red-200 dark:hover:bg-red-700 active:scale-95 transition h-auto"
+                        >
+                          <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-      {/* Video Overlay - z-index updated to z-[9999] */}
+            {hasMore && filteredVideos.length > 0 && (
+              <div ref={loadMoreRef} className="flex justify-center py-6 md:py-8">
+                {loadingMore ? (
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs md:text-sm">
+                    <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                    Loading more videos...
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => loadVideos(page, false)}
+                    className="gap-2 text-xs md:text-sm border-0 bg-muted/80 dark:bg-muted/40"
+                  >
+                    <Loader2 className="h-3 w-3 md:h-4 md:w-4" />
+                    Load More
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {!hasMore && videos.length > 0 && (
+              <div className="text-center py-4 text-muted-foreground text-xs md:text-sm">
+                You've reached the end of the list 🎉
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Video Overlay */}
       {overlayVideo && (
         <div className="fixed inset-0 z-[9999] bg-black bg-opacity-90 flex items-center justify-center p-2 md:p-4" onClick={() => setOverlayVideo(null)}>
           <div className="relative w-full max-w-5xl aspect-video" onClick={(e) => e.stopPropagation()}>
@@ -1313,14 +1302,14 @@ export function MedTube() {
 
       {/* Reset Confirm Dialog */}
       <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
-        <DialogContent className="rounded-xl">
+        <DialogContent className="rounded-xl border-0">
           <DialogHeader>
             <DialogTitle>Reset Watch History?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm">This will reset your watch history and all videos will reappear in your feed. Your likes and comments will not be affected.</p>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowResetConfirm(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setShowResetConfirm(false)} className="border-0 bg-muted/80 dark:bg-muted/40">Cancel</Button>
               <Button onClick={resetWatchHistory}>Reset History</Button>
             </div>
           </div>

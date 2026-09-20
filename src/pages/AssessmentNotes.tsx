@@ -638,10 +638,10 @@ export default function AssessmentNotes() {
   return (
     <>
       {/* EDGE-TO-EDGE ON MOBILE - NO PADDING */}
-      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-3 md:px-4 lg:px-6">
+      <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-[3px] md:px-4 lg:px-6">
         <div className="w-full max-w-full mx-auto space-y-0 md:space-y-6 py-0 md:py-6 px-0 md:px-0">
           {/* Header Card - NO BORDER ON MOBILE */}
-          <div className="shadow-md hover:shadow-lg transition-all rounded-none md:rounded-2xl border-0 overflow-hidden bg-white dark:bg-muted/30 mx-0">
+          <div className="shadow-md hover:shadow-lg transition-all rounded-xl md:rounded-2xl border-0 overflow-hidden bg-white dark:bg-muted/30 mx-0">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
             <div className="p-3 md:p-6 pb-2 md:pb-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -726,18 +726,18 @@ export default function AssessmentNotes() {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="border-0 md:border rounded-none md:rounded-xl p-3 md:p-4 space-y-3 md:space-y-4 bg-muted/20 mx-0"
+                className="border-0 md:border rounded-xl md:rounded-xl p-3 md:p-4 space-y-3 md:space-y-4 bg-muted/20 mx-0"
               >
                 <form onSubmit={handleUpload} className="space-y-3 md:space-y-4">
                   <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2">
-                    <Input name="title" placeholder="Title *" required className="rounded-none md:rounded-xl text-sm h-9 md:h-10" />
-                    <Input name="description" placeholder="Short Description" className="rounded-none md:rounded-xl text-sm h-9 md:h-10" />
-                    <Input name="course" placeholder="Course *" required className="rounded-none md:rounded-xl text-sm h-9 md:h-10" />
-                    <Input name="institution" placeholder="Institution *" required className="rounded-none md:rounded-xl text-sm h-9 md:h-10" />
-                    <Input name="unit" placeholder="Unit *" required className="rounded-none md:rounded-xl text-sm h-9 md:h-10" />
-                    <Input name="category" placeholder="Category *" required className="rounded-none md:rounded-xl text-sm h-9 md:h-10" />
+                    <Input name="title" placeholder="Title *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
+                    <Input name="description" placeholder="Short Description" className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
+                    <Input name="course" placeholder="Course *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
+                    <Input name="institution" placeholder="Institution *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
+                    <Input name="unit" placeholder="Unit *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
+                    <Input name="category" placeholder="Category *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
                     <select
-                      className="border-0 md:border rounded-none md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
+                      className="border-0 md:border rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
                       value={selectedBlock}
                       onChange={(e) => {
                         setSelectedBlock(e.target.value);
@@ -751,7 +751,7 @@ export default function AssessmentNotes() {
                       ))}
                     </select>
                     <select
-                      className="border-0 md:border rounded-none md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
+                      className="border-0 md:border rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
                       value={selectedSubcategory}
                       onChange={(e) => setSelectedSubcategory(e.target.value)}
                       required
@@ -766,7 +766,7 @@ export default function AssessmentNotes() {
                       type="file"
                       name="file"
                       required
-                      className="rounded-none md:rounded-xl text-sm h-9 md:h-10"
+                      className="rounded-xl md:rounded-xl text-sm h-9 md:h-10"
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         setSelectedFile(file);
@@ -792,7 +792,7 @@ export default function AssessmentNotes() {
                     </div>
                   )}
 
-                  <Button type="submit" disabled={uploading} className="w-full rounded-none md:rounded-xl text-sm h-9 md:h-10">
+                  <Button type="submit" disabled={uploading} className="w-full rounded-xl md:rounded-xl text-sm h-9 md:h-10">
                     <UploadCloud className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1 md:mr-2" />
                     {uploading ? "Uploading..." : "Upload Note"}
                   </Button>
@@ -808,9 +808,9 @@ export default function AssessmentNotes() {
               const hasNotes = sectionNotes.length > 0;
 
               return (
-                <div key={i} className="border-0 md:border rounded-none md:rounded-xl px-0 md:px-3 bg-card">
+                <div key={i} className="border-0 md:border rounded-xl md:rounded-xl px-0 md:px-3 bg-card">
                   <div className="py-3 md:py-4">
-                    <div className="flex items-center gap-2 px-3 md:px-0">
+                    <div className="flex items-center gap-2 px-[4px] md:px-0">
                       <span className="text-sm md:text-base font-semibold">{section.title}</span>
                       {hasNotes && (
                         <Badge variant="secondary" className="text-[10px] md:text-xs">
@@ -1138,7 +1138,7 @@ export default function AssessmentNotes() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0 md:border border-gray-200 dark:border-gray-800 rounded-none md:rounded-xl"
+                className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0 md:border border-gray-200 dark:border-gray-800 rounded-xl md:rounded-xl"
               >
                 {/* Header with gradient bar - sticky on mobile */}
                 <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -1281,7 +1281,7 @@ export default function AssessmentNotes() {
                   {/* Action buttons */}
                   <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-1 md:pt-2">
                     <Button
-                      className="w-full sm:flex-1 rounded-none md:rounded-xl text-xs md:text-sm h-9 md:h-10"
+                      className="w-full sm:flex-1 rounded-xl md:rounded-xl text-xs md:text-sm h-9 md:h-10"
                       onClick={() => {
                         setDetailsOverlayNote(null);
                         handleViewNote(detailsOverlayNote);
@@ -1292,7 +1292,7 @@ export default function AssessmentNotes() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full sm:flex-1 rounded-none md:rounded-xl text-xs md:text-sm h-9 md:h-10"
+                      className="w-full sm:flex-1 rounded-xl md:rounded-xl text-xs md:text-sm h-9 md:h-10"
                       onClick={() => {
                         setDetailsOverlayNote(null);
                         handleDownloadNote(detailsOverlayNote.id, detailsOverlayNote.file_url);
@@ -1304,7 +1304,7 @@ export default function AssessmentNotes() {
                   </div>
 
                   {!isPremium && (
-                    <div className="mt-1 md:mt-2 p-2 md:p-3 bg-amber-50 dark:bg-amber-950/30 rounded-none md:rounded-xl border-0 md:border border-amber-200 dark:border-amber-800">
+                    <div className="mt-1 md:mt-2 p-2 md:p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl md:rounded-xl border-0 md:border border-amber-200 dark:border-amber-800">
                       <p className="text-[10px] md:text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
                         <Lock className="h-2.5 w-2.5 md:h-3 md:w-3" />
                         This is a premium resource. Upgrade to view the full document.
