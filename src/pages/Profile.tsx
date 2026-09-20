@@ -17,11 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession, useSupabaseClient, useSessionContext } from "@supabase/auth-helpers-react";
-import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { GlobalLoader } from "@/components/GlobalLoader";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Cache helpers
@@ -29,19 +27,51 @@ const profileCache = new Map();
 const subscriptionCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000;
 
+// ---------------------------------------------------------
+// Small reusable helper for empty values
+// ---------------------------------------------------------
+
+const EmptyValue = ({ label }: { label?: string }) => (
+  <span className="text-muted-foreground/60 italic text-xs md:text-sm">
+    {label ? `Add your ${label}` : "—"}
+  </span>
+);
+
+const InfoRow = ({
+  icon: Icon,
+  value,
+  fallback,
+}: {
+  icon: any;
+  value?: string | null;
+  fallback?: string;
+}) => {
+  const hasValue = value && value.trim() !== "" && value !== "Not set";
+  return (
+    <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+      <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+      {hasValue ? (
+        <span className="text-xs md:text-sm truncate">{value}</span>
+      ) : (
+        <EmptyValue label={fallback} />
+      )}
+    </div>
+  );
+};
+
 // Skeleton Components
 const ProfileSkeleton = () => (
   <div className="space-y-0 md:space-y-2 px-0 md:px-2 border-0 md:max-w-full md:px-4 lg:px-6 mx-auto w-full pb-20 md:pb-6">
     <Tabs defaultValue="overview" className="space-y-0 md:space-y-2">
-      <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-none md:rounded-xl mx-0 md:mx-0">
-        <TabsTrigger value="overview" className="rounded-lg md:rounded-xl">Overview</TabsTrigger>
-        <TabsTrigger value="stats" className="rounded-lg md:rounded-xl">Statistics</TabsTrigger>
-        <TabsTrigger value="settings" className="rounded-lg md:rounded-xl">Account</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none">
+        <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
+        <TabsTrigger value="stats" className="rounded-xl">Statistics</TabsTrigger>
+        <TabsTrigger value="settings" className="rounded-xl">Account</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-0 md:space-y-2">
         {/* Profile Card Skeleton */}
-        <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
+        <Card className="border-0 shadow-none rounded-xl">
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
               <Skeleton className="h-5 w-5 md:h-6 md:w-6 rounded" />
@@ -81,7 +111,7 @@ const ProfileSkeleton = () => (
         </Card>
 
         {/* Academic Card Skeleton */}
-        <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
+        <Card className="border-0 shadow-none rounded-xl">
           <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
             <Skeleton className="h-5 w-48 md:h-6 md:w-56" />
           </CardHeader>
@@ -126,7 +156,6 @@ export function Profile() {
   const isMounted = useRef(true);
   const isFetchingProfile = useRef(false);
   const lastProfileFetch = useRef(0);
-  const channelRef = useRef<any>(null);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -268,7 +297,6 @@ export function Profile() {
 
   useEffect(() => { if (!sessionLoading && !user && !isOffline && isMounted.current) navigate("/login", { replace: true }); }, [user, sessionLoading, isOffline, navigate]);
 
-  // Show skeleton while loading
   if (isLoading || (sessionLoading && !profileState)) {
     return <ProfileSkeleton />;
   }
@@ -284,18 +312,21 @@ export function Profile() {
     );
   }
 
+  const displayName = profileState?.name?.trim() || profileState?.username || "Your Profile";
+  const initials = profileState?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "ME";
+
   return (
     <div className="space-y-0 md:space-y-2 px-0 md:px-2 border-0 md:max-w-full md:px-4 lg:px-6 mx-auto w-full pb-20 md:pb-6">
       <Tabs defaultValue="overview" className="space-y-0 md:space-y-2">
-        <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-none md:rounded-xl mx-0 md:mx-0">
-          <TabsTrigger value="overview" className="rounded-lg md:rounded-xl">Overview</TabsTrigger>
-          <TabsTrigger value="stats" className="rounded-lg md:rounded-xl">Statistics</TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-lg md:rounded-xl">Account</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none mx-0 md:mx-0">
+          <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
+          <TabsTrigger value="stats" className="rounded-xl">Statistics</TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-xl">Account</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-0 md:space-y-2">
           {/* Profile Card */}
-          <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
+          <Card className="border-0 shadow-none rounded-xl">
             <CardContent className="p-4 md:p-6">
               <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
                 <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
@@ -305,11 +336,11 @@ export function Profile() {
                 <div className="relative flex-shrink-0">
                   <Avatar className="h-20 w-20 md:h-24 md:w-24">
                     <AvatarImage src={profileState?.avatar_url || undefined} className="object-cover" loading="lazy" />
-                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xl md:text-2xl">
-                      {profileState?.name?.split(" ").map((n: string) => n[0]).join("") || "??"}
+                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xl md:text-2xl font-semibold">
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 md:h-8 md:w-8 rounded-full" onClick={handleAvatarUpdate}>
+                  <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 md:h-8 md:w-8 rounded-full shadow-none border-0" onClick={handleAvatarUpdate}>
                     <Camera className="h-3.5 w-3.5 md:h-4 md:w-4" />
                   </Button>
                 </div>
@@ -317,30 +348,59 @@ export function Profile() {
                 <div className="flex-1 space-y-3 md:space-y-4 w-full">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
                     <div>
-                      <h2 className="text-xl md:text-2xl font-bold">{profileState?.name}</h2>
-                      <p className="text-muted-foreground text-sm">@{profileState?.username}</p>
+                      <h2 className="text-xl md:text-2xl font-bold">{displayName}</h2>
+                      {profileState?.username ? (
+                        <p className="text-muted-foreground text-sm">@{profileState.username}</p>
+                      ) : (
+                        <p className="text-muted-foreground/60 italic text-xs md:text-sm">
+                          No username yet
+                        </p>
+                      )}
                     </div>
-                    <div className="flex gap-1.5 md:gap-2">
-                      <Badge variant="secondary" className="capitalize text-[10px] md:text-xs">{profileState?.role}</Badge>
-                      <Badge variant="outline" className="text-[10px] md:text-xs">{activePlan || "Free"}</Badge>
+                    <div className="flex gap-1.5 md:gap-2 flex-wrap">
+                      {profileState?.role && (
+                        <Badge variant="secondary" className="capitalize text-[10px] md:text-xs border-0">
+                          {profileState.role}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-[10px] md:text-xs border-0 bg-muted">
+                        {activePlan || "Free"}
+                      </Badge>
                     </div>
                   </div>
 
-                  <p className="text-muted-foreground text-xs md:text-sm">{profileState?.bio || "No bio provided"}</p>
+                  {profileState?.bio?.trim() ? (
+                    <p className="text-muted-foreground text-xs md:text-sm">{profileState.bio}</p>
+                  ) : (
+                    <p className="text-muted-foreground/60 italic text-xs md:text-sm">
+                      No bio yet — add one from Settings to personalize your profile.
+                    </p>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
                     <div className="space-y-2 md:space-y-3">
-                      <div className="flex items-center gap-1.5 md:gap-2"><Mail className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" /><span className="text-xs md:text-sm">{profileState?.email || "Not set"}</span></div>
-                      <div className="flex items-center gap-1.5 md:gap-2"><Phone className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" /><span className="text-xs md:text-sm">{profileState?.phone || "Not set"}</span></div>
-                      <div className="flex items-center gap-1.5 md:gap-2"><MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" /><span className="text-xs md:text-sm">{profileState?.county || "Not set"}</span></div>
+                      <InfoRow icon={Mail} value={profileState?.email} fallback="email" />
+                      <InfoRow icon={Phone} value={profileState?.phone} fallback="phone number" />
+                      <InfoRow icon={MapPin} value={profileState?.county} fallback="county" />
                     </div>
                     <div className="space-y-2 md:space-y-3">
-                      <div className="flex items-center gap-1.5 md:gap-2"><School className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" /><span className="text-xs md:text-sm">{profileState?.institution || "Not set"}</span></div>
-                      <div className="flex items-center gap-1.5 md:gap-2"><Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" /><span className="text-xs md:text-sm">Joined {profileState?.joined_date ? new Date(profileState?.joined_date).toLocaleDateString() : "N/A"}</span></div>
+                      <InfoRow icon={School} value={profileState?.institution} fallback="institution" />
+                      <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+                        <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                        {profileState?.joined_date ? (
+                          <span className="text-xs md:text-sm">
+                            Joined {new Date(profileState.joined_date).toLocaleDateString(undefined, {
+                              year: "numeric", month: "short", day: "numeric",
+                            })}
+                          </span>
+                        ) : (
+                          <EmptyValue />
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 w-full md:w-auto">
+                  <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 w-full md:w-auto border-0 shadow-none bg-muted hover:bg-muted/80">
                     <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> Edit My Profile
                   </Button>
                 </div>
@@ -349,27 +409,80 @@ export function Profile() {
           </Card>
 
           {/* Academic Card */}
-          <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
+          <Card className="border-0 shadow-none rounded-xl">
             <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
               <CardTitle className="text-base md:text-lg">Academic & Professional Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6 pb-4 md:pb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-                <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground">Course</label><p className="font-medium text-xs md:text-sm">{profileState?.course || "Not set"}</p></div>
-                <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground">Block/Class</label><p className="font-medium text-xs md:text-sm">{profileState?.block || "Not set"}</p></div>
-                {profileState?.nck_number && <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground">NCK / Exam Number</label><p className="font-medium text-xs md:text-sm">{profileState?.nck_number}</p></div>}
-                {profileState?.specialization && <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground">Specialization</label><p className="font-medium text-xs md:text-sm">{profileState?.specialization}</p></div>}
-                {profileState?.workplace && <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1"><Building2 className="h-2.5 w-2.5 md:h-3 md:w-3" /> Workplace</label><p className="font-medium text-xs md:text-sm">{profileState?.workplace}</p></div>}
-                {profileState?.employment_type && <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1"><Briefcase className="h-2.5 w-2.5 md:h-3 md:w-3" /> Employment Type</label><p className="font-medium text-xs md:text-sm capitalize">{profileState?.employment_type?.replace("_", " ")}</p></div>}
-                {profileState?.years_experience !== undefined && profileState?.years_experience !== null && <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground">Years of Experience</label><p className="font-medium text-xs md:text-sm">{profileState?.years_experience} years</p></div>}
-                {profileState?.license_status && <div><label className="text-[10px] md:text-xs font-medium text-muted-foreground">License Status</label><Badge variant={profileState?.license_status === "active" ? "default" : "secondary"} className="capitalize text-[10px] md:text-xs">{profileState?.license_status?.replace("_", " ")}</Badge></div>}
-              </div>
+              {(() => {
+                const items = [
+                  profileState?.course && { label: "Course", value: profileState.course },
+                  profileState?.block && { label: "Block/Class", value: profileState.block },
+                  profileState?.nck_number && { label: "NCK / Exam Number", value: profileState.nck_number },
+                  profileState?.specialization && { label: "Specialization", value: profileState.specialization },
+                  profileState?.workplace && { label: "Workplace", value: profileState.workplace, icon: Building2 },
+                  profileState?.employment_type && {
+                    label: "Employment Type",
+                    value: profileState.employment_type.replace("_", " "),
+                    icon: Briefcase,
+                    capitalize: true,
+                  },
+                  profileState?.years_experience !== undefined &&
+                  profileState?.years_experience !== null && {
+                    label: "Years of Experience",
+                    value: `${profileState.years_experience} years`,
+                  },
+                  profileState?.license_status && {
+                    label: "License Status",
+                    value: profileState.license_status.replace("_", " "),
+                    capitalize: true,
+                  },
+                ].filter(Boolean) as Array<{
+                  label: string;
+                  value: string;
+                  icon?: any;
+                  capitalize?: boolean;
+                }>;
+
+                if (items.length === 0) {
+                  return (
+                    <div className="text-center py-6 md:py-8">
+                      <p className="text-muted-foreground/70 italic text-xs md:text-sm">
+                        No academic or professional details added yet.
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={handleProfileUpdate}
+                        className="mt-3 text-xs md:text-sm border-0 shadow-none bg-muted hover:bg-muted/80"
+                      >
+                        <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> Add details
+                      </Button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                    {items.map((item) => (
+                      <div key={item.label}>
+                        <label className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          {item.icon && <item.icon className="h-2.5 w-2.5 md:h-3 md:w-3" />}
+                          {item.label}
+                        </label>
+                        <p className={`font-medium text-xs md:text-sm ${item.capitalize ? "capitalize" : ""}`}>
+                          {item.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-0 md:space-y-6">
-          <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
+          <Card className="border-0 shadow-none rounded-xl">
             <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
               <CardTitle className="text-base md:text-lg">Platform Statistics</CardTitle>
             </CardHeader>
@@ -380,43 +493,88 @@ export function Profile() {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-0 md:space-y-6">
-          <Card className="md:border-0 rounded-none md:rounded-xl">
+          <Card className="border-0 shadow-none rounded-xl">
             <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
               <CardTitle className="text-base md:text-lg">Account Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6 pb-4 md:pb-6">
               <p className="text-muted-foreground text-xs md:text-sm">Update your account settings and preferences in the Settings page.</p>
               <div className="flex flex-wrap gap-2 md:gap-3">
-                <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10"><Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> Edit Profile</Button>
+                <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80">
+                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> Edit Profile
+                </Button>
                 <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-                  <DialogTrigger asChild><Button variant="outline" className="text-xs md:text-sm h-9 md:h-10">Logout</Button></DialogTrigger>
-                  <DialogContent><DialogHeader><DialogTitle>Confirm Logout</DialogTitle><DialogDescription>Are you sure you want to log out?</DialogDescription></DialogHeader><DialogFooter className="mt-4"><Button variant="secondary" onClick={() => setShowLogoutDialog(false)} className="text-xs md:text-sm">Cancel</Button><Button variant="destructive" onClick={handleLogout} className="text-xs md:text-sm">Logout</Button></DialogFooter></DialogContent>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80">
+                      Logout
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Confirm Logout</DialogTitle>
+                      <DialogDescription>Are you sure you want to log out?</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4">
+                      <Button variant="secondary" onClick={() => setShowLogoutDialog(false)} className="text-xs md:text-sm">Cancel</Button>
+                      <Button variant="destructive" onClick={handleLogout} className="text-xs md:text-sm">Logout</Button>
+                    </DialogFooter>
+                  </DialogContent>
                 </Dialog>
                 <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                  <DialogTrigger asChild><Button variant="destructive" className="text-xs md:text-sm h-9 md:h-10">Delete My Account</Button></DialogTrigger>
-                  <DialogContent><DialogHeader><DialogTitle>Confirm Delete</DialogTitle><DialogDescription>This action cannot be undone.</DialogDescription></DialogHeader><DialogFooter className="mt-4"><Button variant="secondary" onClick={() => setShowDeleteDialog(false)} className="text-xs md:text-sm">Cancel</Button><Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting} className="text-xs md:text-sm">{deleting ? "Deleting..." : "Delete"}</Button></DialogFooter></DialogContent>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none">
+                      Delete My Account
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Confirm Delete</DialogTitle>
+                      <DialogDescription>This action cannot be undone.</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4">
+                      <Button variant="secondary" onClick={() => setShowDeleteDialog(false)} className="text-xs md:text-sm">Cancel</Button>
+                      <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting} className="text-xs md:text-sm">
+                        {deleting ? "Deleting..." : "Delete"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
                 </Dialog>
                 <Dialog open={showDialog} onOpenChange={setShowDialog}>
-                  <DialogTrigger asChild><Button variant="outline" className="text-xs md:text-sm h-9 md:h-10">Change Password</Button></DialogTrigger>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80">
+                      Change Password
+                    </Button>
+                  </DialogTrigger>
                   <DialogContent>
-                    <DialogHeader><DialogTitle>Change Password</DialogTitle><DialogDescription>Enter and confirm your new password.</DialogDescription></DialogHeader>
+                    <DialogHeader>
+                      <DialogTitle>Change Password</DialogTitle>
+                      <DialogDescription>Enter and confirm your new password.</DialogDescription>
+                    </DialogHeader>
                     <div className="space-y-3 md:space-y-4 mt-2">
                       <div>
                         <Label htmlFor="newPassword" className="text-xs md:text-sm">New Password</Label>
                         <div className="relative">
                           <Input id="newPassword" type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="text-xs md:text-sm h-10 md:h-11" />
-                          <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>{showNewPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}</button>
+                          <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>
+                            {showNewPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}
+                          </button>
                         </div>
                       </div>
                       <div>
                         <Label htmlFor="confirmPassword" className="text-xs md:text-sm">Confirm Password</Label>
                         <div className="relative">
                           <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="text-xs md:text-sm h-10 md:h-11" />
-                          <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}</button>
+                          <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                            {showConfirmPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}
+                          </button>
                         </div>
                       </div>
                     </div>
-                    <DialogFooter className="mt-4"><Button onClick={handleChangePassword} disabled={passwordLoading} className="text-xs md:text-sm">{passwordLoading ? "Updating..." : "Update Password"}</Button></DialogFooter>
+                    <DialogFooter className="mt-4">
+                      <Button onClick={handleChangePassword} disabled={passwordLoading} className="text-xs md:text-sm">
+                        {passwordLoading ? "Updating..." : "Update Password"}
+                      </Button>
+                    </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>

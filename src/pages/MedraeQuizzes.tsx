@@ -177,16 +177,31 @@ const getQuizTypeColor = (type: string) => {
   }
 };
 
+/* Accent gradient fallback — used when a unit has no image */
+const ACCENT_GRADIENTS: Record<string, string> = {
+  blue: "from-blue-500 to-blue-700",
+  emerald: "from-emerald-500 to-emerald-700",
+  rose: "from-rose-500 to-rose-700",
+  amber: "from-amber-500 to-amber-700",
+  purple: "from-purple-500 to-purple-700",
+  gray: "from-gray-600 to-gray-800",
+  slate: "from-slate-500 to-slate-700",
+  indigo: "from-indigo-500 to-indigo-700",
+  teal: "from-teal-500 to-teal-700",
+  cyan: "from-cyan-500 to-cyan-700",
+};
+
+const getAccentGradient = (accent?: string | null) =>
+  ACCENT_GRADIENTS[(accent ?? "blue").toLowerCase()] ?? ACCENT_GRADIENTS.blue;
+
 /* ============================================================
    CATEGORY STORY TABS — Facebook-style
-   Each category = circular avatar with a colored ring.
-   Active story gets a solid colored ring + larger circle.
    ============================================================ */
 const CATEGORY_STORIES: {
   id: CategoryType;
   label: string;
   avatar: string;
-  ring: string;      // ring color when active
+  ring: string;
   icon: React.ElementType;
 }[] = [
     { id: "all", label: "All Units", avatar: "/pwaa-512x512.png", ring: "ring-gray-500", icon: BookOpen },
@@ -505,11 +520,7 @@ export function MedraeQuizzes() {
               </motion.div>
             </div>
 
-            {/* ============================================================
-                FACEBOOK-STYLE STORY TABS
-                Edge-to-edge on mobile (negative margin), padded on desktop.
-                Each story = circular avatar + label below.
-                ============================================================ */}
+            {/* FACEBOOK-STYLE STORY TABS */}
             <div className="relative">
               <div className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 pb-2 pt-1
                   -mx-0 px-4 md:mx-0 md:px-0
@@ -523,7 +534,6 @@ export function MedraeQuizzes() {
                       className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px] md:w-[76px]
                           focus:outline-none group"
                     >
-                      {/* Story circle */}
                       <div
                         className={`relative rounded-full p-[2.5px] transition-all duration-200
                             ${isActive
@@ -543,7 +553,6 @@ export function MedraeQuizzes() {
                         )}
                       </div>
 
-                      {/* Label */}
                       <span
                         className={`text-[10px] md:text-[11px] font-semibold leading-tight text-center truncate w-full
                             ${isActive
@@ -664,7 +673,7 @@ export function MedraeQuizzes() {
                   </div>
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                     {[1, 2].map(j => (
-                      <div key={j} className="h-44 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+                      <div key={j} className="h-72 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
                     ))}
                   </div>
                 </div>
@@ -691,10 +700,7 @@ export function MedraeQuizzes() {
 
                 return (
                   <div key={paper.paperNumber} className="space-y-3 px-4 md:px-0">
-                    {/* ============================================
-                        PROFESSIONAL PAPER HEADER
-                        No avatar — clean typographic heading
-                        ============================================ */}
+                    {/* PAPER HEADER */}
                     <div className="flex items-center justify-between gap-3 mt-5 md:mt-6 pb-2 border-b border-gray-100 dark:border-gray-800">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-1.5 h-8 md:h-10 rounded-full bg-${paper.color}-500 flex-shrink-0`} />
@@ -714,6 +720,7 @@ export function MedraeQuizzes() {
                       </div>
                     </div>
 
+                    {/* MOBILE EDGE-TO-EDGE GRID */}
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
                       {filteredUnits.map((unit, index) => {
                         const questionCount = getQuestionCount(unit.code);
@@ -724,34 +731,60 @@ export function MedraeQuizzes() {
                         return (
                           <React.Fragment key={unit.code}>
                             <Card
-                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl border-0 hover:border-${paper.color}-400 dark:hover:border-${paper.color}-500/50 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer`}
+                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl sm:rounded-xl border-0 hover:border-${paper.color}-400 dark:hover:border-${paper.color}-500/50 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer p-0`}
                               onClick={() => setSelectedUnit(unit)}
                             >
-                              {paper.paperNumber === 4 && (
-                                <div className="absolute -right-8 top-4 rotate-45 bg-emerald-500 text-white text-[10px] font-bold px-10 py-1 shadow-sm">
-                                  NEW
-                                </div>
-                              )}
+                              {/* ============================================
+                                  COVER IMAGE — the ONLY addition
+                                  Sits above the original CardHeader content
+                                  ============================================ */}
+                              <div className="relative h-60 sm:h-64 w-full overflow-hidden">
+                                {unit.image_url ? (
+                                  <img
+                                    src={unit.image_url}
+                                    alt={unit.image_alt ?? unit.title}
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                      e.currentTarget.parentElement?.classList.add(
+                                        "bg-gradient-to-br",
+                                        "from-blue-500",
+                                        "to-blue-700"
+                                      );
+                                    }}
+                                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                  />
+                                ) : (
+                                  <div className={`h-full w-full bg-gradient-to-br ${getAccentGradient(unit.accent_color ?? paper.color)} flex items-center justify-center`}>
+                                    <BookOpen className="w-12 h-12 text-white/60" />
+                                  </div>
+                                )}
 
-                              <CardHeader className="pb-2 pt-5">
-                                {/* Status pill only — avatar removed */}
-                                <div className="flex justify-end items-start">
+                                {paper.paperNumber === 4 && (
+                                  <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md">
+                                    NEW
+                                  </div>
+                                )}
+
+                                <div className="absolute top-3 right-3">
                                   {isPremium ? (
-                                    <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                                    <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
                                       <CheckCircle2 className="w-3 h-3" /> UNLOCKED
                                     </div>
                                   ) : isUnitFree ? (
-                                    <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                                    <div className="flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
                                       <Sparkles className="w-3 h-3" /> FREE
                                     </div>
                                   ) : (
-                                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
+                                    <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
                                       <Lock className="w-3 h-3" /> PREMIUM
                                     </div>
                                   )}
                                 </div>
+                              </div>
 
-                                <CardTitle className="text-lg font-bold leading-tight mt-1 text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
+                              <CardHeader className="pb-2 pt-5">
+                                <CardTitle className="text-lg font-bold leading-tight text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
                                   {unit.title}
                                 </CardTitle>
                               </CardHeader>
@@ -759,17 +792,10 @@ export function MedraeQuizzes() {
                               <CardContent>
                                 <div className="flex flex-col gap-3">
                                   {unit.description && (
-                                    <div className="group/desc">
-                                      <p className={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
-                                        {unit.description}
-                                      </p>
-                                      <div className="flex items-center gap-1 mt-1 text-xs font-medium text-blue-600 dark:text-blue-400 group-hover/desc:underline">
-                                        <span>Tap for details</span>
-                                        <ChevronRight className="w-3.5 h-3.5" />
-                                      </div>
-                                    </div>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">
+                                      {unit.description}
+                                    </p>
                                   )}
-
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
                                       {questionCount} Questions
@@ -866,36 +892,44 @@ export function MedraeQuizzes() {
             </>
           )}
 
-          {/* Progress & Sync Footer */}
-          <Card className="mt-12 mb-8 overflow-hidden rounded-xl border-0 dark:bg-muted/30 mx-4 md:mx-0">
-            <CardHeader className="pb-2">
+          {/* Progress & Sync Footer — GitHub themed */}
+          <Card className="mt-12 mb-8 overflow-hidden rounded-xl border-0 bg-transparent dark:bg-transparent shadow-none mx-4 md:mx-0">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                   <Trophy className="w-5 h-5 text-amber-500" />
                   Your Journey
                 </CardTitle>
-                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-100 dark:border-emerald-800">
+
+                {/* GitHub-style status badge */}
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#dafbe1] dark:bg-[#1f6feb]/15">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2da44e] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2da44e]"></span>
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-[#1a7f37] dark:text-[#3fb950] uppercase tracking-widest">
                     Cloud Synced
                   </span>
                 </div>
               </div>
             </CardHeader>
+
             <CardContent className="space-y-6">
-              <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner">
+              {/* GitHub subtle card surface — no border, uses bg only */}
+              <div className="bg-[#f6f8fa] dark:bg-[#161b22] p-5 rounded-2xl">
                 <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                  You are securely connected to <span className="font-bold text-gray-900 dark:text-white">Supabase Cloud</span>.
+                  You are securely connected to{" "}
+                  <span className="font-bold text-gray-900 dark:text-white">Supabase Cloud</span>.
                   Your quiz progress, scores, and custom notes are being tracked in real-time.
                 </p>
-                <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-500">Ready to see your results?</span>
+
+                <div className="mt-4 pt-4 flex items-center justify-between border-t border-[#d0d7de] dark:border-[#30363d]">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Ready to see your results?
+                  </span>
                   <Link
                     to="/progress"
-                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-[#0969da] dark:text-[#58a6ff] hover:underline flex items-center gap-1"
                   >
                     View Study Progress <ChevronRight className="w-3 h-3" />
                   </Link>
@@ -906,14 +940,14 @@ export function MedraeQuizzes() {
         </Card>
       </div>
 
-      {/* DETAILS MODAL */}
+      {/* DETAILS MODAL — with hero image at top */}
       <AnimatePresence>
         {selectedUnit && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[999999999] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[999999999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setSelectedUnit(null)}
           >
             <motion.div
@@ -921,27 +955,45 @@ export function MedraeQuizzes() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
+              className="w-full max-w-md bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
-                    {selectedUnit.title}
-                  </h3>
-                  <p className="text-xs font-medium text-gray-400">
-                    {selectedUnit.code}
-                  </p>
-                </div>
+              {/* Hero image */}
+              <div className="relative h-44 w-full overflow-hidden flex-shrink-0">
+                {selectedUnit.image_url ? (
+                  <img
+                    src={selectedUnit.image_url}
+                    alt={selectedUnit.image_alt ?? selectedUnit.title}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className={`h-full w-full bg-gradient-to-br ${getAccentGradient(selectedUnit.accent_color)} flex items-center justify-center`}>
+                    <BookOpen className="w-16 h-16 text-white/60" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
                 <button
                   onClick={() => setSelectedUnit(null)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0 -mr-1"
+                  className="absolute top-3 right-3 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-white" />
                 </button>
+
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider mb-1">
+                    {selectedUnit.code}
+                  </p>
+                  <h3 className="text-lg font-bold text-white leading-tight">
+                    {selectedUnit.title}
+                  </h3>
+                </div>
               </div>
 
-              <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+              <div className="p-5 space-y-4 overflow-y-auto flex-1">
                 {selectedUnit.description && (
                   <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -1021,6 +1073,9 @@ export function MedraeQuizzes() {
                   <button
                     onClick={() => {
                       setSelectedUnit(null);
+                      markUnitStarted(selectedUnit.code);
+                      playSound("start");
+                      if (navigator.vibrate) navigator.vibrate(50);
                       navigate(`/quiz?unit=${encodeURIComponent(selectedUnit.title)}`);
                     }}
                     className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
@@ -1038,8 +1093,6 @@ export function MedraeQuizzes() {
                   </button>
                 )}
               </div>
-
-              <div className="h-1 sm:h-0" />
             </motion.div>
           </motion.div>
         )}

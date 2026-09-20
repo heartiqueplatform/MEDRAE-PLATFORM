@@ -16,6 +16,10 @@ export interface Unit {
     paperNumber: number;
     question_count: number;
     is_free: boolean;
+    // ✅ NEW: premium image fields
+    image_url?: string | null;
+    image_alt?: string | null;
+    accent_color?: string | null;
 }
 
 export interface PaperData {
@@ -28,7 +32,7 @@ export interface PaperData {
     description: string;
 }
 
-const UNITS_CACHE_KEY = "dynamic_units_cache_v2";
+const UNITS_CACHE_KEY = "dynamic_units_cache_v3"; // bumped version → forces fresh fetch with new fields
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour — ONLINE only
 const MIN_FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -183,6 +187,10 @@ const transformUnits = (
                 paperNumber: paperNumber,
                 question_count: quiz.question_count || 0,
                 is_free: quiz.is_free || false,
+                // ✅ NEW: pass through premium image fields
+                image_url: quiz.image_url || null,
+                image_alt: quiz.image_alt || null,
+                accent_color: quiz.accent_color || null,
             });
         }
     });
@@ -306,7 +314,10 @@ export function useUnits() {
                     unit,
                     quiz_type,
                     is_free,
-                    question_count
+                    question_count,
+                    image_url,
+                    image_alt,
+                    accent_color
                 `
                 )
                 .eq("is_active", true)
