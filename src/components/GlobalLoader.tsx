@@ -4,75 +4,29 @@ import { useEffect, useState, useRef } from "react";
 const BRAND = "MEDRAE NURSING";
 
 const TAGLINES = [
-  // --- Wave 1: Identity anchors the tone ---
+  // --- Identity ---
   "Think like a nurse.",
-  "Antidote for heparin: protamine.",
-  "Care starts with knowledge.",
-  "Antidote for warfarin: vitamin K.",
+  "Care starts here.",
   "Built for the bedside.",
-  "Antidote for opioids: naloxone.",
-  "Become the one they trust.",
-  "Antidote for benzos: flumazenil.",
-
-  // --- Wave 2: Identity → Mnemonics ---
-  "Every shift starts with study.",
-  "ABCDE: Airway, Breathing, Circulation, Disability, Exposure.",
-  "For the nurse you're becoming.",
-  "OPQRST: Onset, Provocation, Quality, Region, Severity, Time.",
+  "Become the one.",
+  "For the becoming nurse.",
   "Sharp minds. Steady hands.",
-  "SAMPLE: Signs, Allergies, Meds, Past, Last meal, Events.",
-  "Knowledge. Compassion. Duty.",
-  "SOCRATES for pain — location is just the start.",
 
-  // --- Wave 3: Identity → Drug patterns ---
-  "Trust your gut. Document everything.",
-  "Beta-blockers end in -olol.",
+  // --- Mindset ---
   "Assess, don't assume.",
-  "ACE inhibitors end in -pril.",
+  "Trust your gut.",
   "When in doubt, escalate.",
-  "ARBs end in -sartan.",
-  "If you didn't chart it, you didn't do it.",
-  "Statins end in -statin.",
-
-  // --- Wave 4: Identity → High-yield facts ---
-  "Every patient is someone's whole world.",
-  "Normal saline is 0.9% NaCl.",
-  "Hand hygiene saves more lives than any drug.",
-  "Blood transfusion: first 15 minutes matter most.",
-  "Nursing is a calling — sharpen it daily.",
-  "Insulin onset: rapid in 15, regular in 30, NPH in 2h.",
-  "The most dangerous word in nursing is 'routine'.",
-  "Never ignore new confusion in the elderly.",
-
-  // --- Wave 5: Identity → More antidotes ---
-  "Learn. Care. Lead.",
-  "Antidote for paracetamol: NAC.",
-  "You'll be the one they trust.",
-  "Antidote for digoxin: digibind.",
-  "Compassion meets competence.",
-  "Antidote for iron: deferoxamine.",
-  "Study like someone's life depends on it.",
-  "Antidote for methotrexate: leucovorin.",
-
-  // --- Wave 6: Identity → More mnemonics ---
-  "For the nurse you promised to be.",
-  "MONA for chest pain: Morphine, Oxygen, Nitrates, Aspirin.",
+  "Study like it matters.",
   "Practice with purpose.",
-  "DKA: fluids first, insulin second, potassium always.",
-  "The floor respects the prepared.",
-  "Shock: cold, clammy, confused — act fast.",
-  "Where good nurses become great.",
-  "Pediatric vitals — weight is your guide.",
+  "Show up ready.",
 
-  // --- Wave 7: Identity → Final facts ---
-  "Your patients are waiting.",
-  "Potassium: never IV push — always diluted.",
-  "Sharp minds heal faster.",
-  "Pediatric dose: mg/kg, not just mg.",
-  "You don't rise to the occasion — you fall to your training.",
-  "Fever in the elderly may be the only sepsis sign.",
+  // --- Growth ---
   "Become undeniable.",
-  "Hypoxia can present as agitation, not cyanosis.",
+  "Learn. Care. Lead.",
+  "Earn the trust.",
+  "Where great nurses grow.",
+  "You'll be trusted.",
+  "Your patients wait.",
 ];
 
 /* Expanded gradient palette — cycles through identity and knowledge palettes */
@@ -140,7 +94,6 @@ export function GlobalLoader() {
         i++;
         timer = setTimeout(typeNext, 110);
       } else {
-        // Brand fully typed — hold for a beat
         timer = setTimeout(() => setPhase("holding-brand"), 900);
       }
     };
@@ -169,7 +122,6 @@ export function GlobalLoader() {
         setDisplayedBrand(BRAND.slice(0, j));
         timer = setTimeout(erase, 55);
       } else {
-        // Brand fully erased — begin taglines
         timer = setTimeout(() => setPhase("taglines"), 350);
       }
     };
@@ -194,10 +146,10 @@ export function GlobalLoader() {
       if (i < letters.length) {
         setDisplayedTagline(letters.slice(0, i + 1).join(""));
         i++;
-        typeTimer = setTimeout(typeIn, 38);
+        typeTimer = setTimeout(typeIn, 55);
       } else {
-        // Hold longer so long facts are readable
-        eraseTimer = setTimeout(typeOut, 2000);
+        // Short hold — phrases are only 3 words, read instantly
+        eraseTimer = setTimeout(typeOut, 1100);
       }
     };
 
@@ -209,10 +161,9 @@ export function GlobalLoader() {
         setDisplayedTagline(letters.slice(0, j));
         eraseTimer = setTimeout(typeOut, 22);
       } else {
-        // Next tagline
         nextTimer = setTimeout(() => {
           setTaglineIndex((prev) => prev + 1);
-        }, 300);
+        }, 350);
       }
     };
 

@@ -267,7 +267,7 @@ export function GlobalDuelManager() {
                                 <motion.div
                                     initial={{ y: 50, scale: 0.95 }}
                                     animate={{ y: 0, scale: 1 }}
-                                    className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full relative overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.3)]"
+                                    className="bg-white dark:bg-slate-900 rounded-xl p-8 max-w-sm w-full relative overflow-hidden shadow-none]"
                                 >
                                     <button
                                         onClick={() => setShowPromo(false)}
@@ -281,7 +281,7 @@ export function GlobalDuelManager() {
                                             <Zap size={40} className="text-white fill-current" />
                                         </div>
                                         <div className="space-y-2">
-                                            <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">
+                                            <h2 className="text-2xl font-black text-slate-900 dark:text-white  tracking-tight italic">
                                                 Prove Them Wrong.
                                             </h2>
                                             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -293,7 +293,7 @@ export function GlobalDuelManager() {
                                                 VS
                                             </div>
                                             <div className="text-left">
-                                                <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">
+                                                <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400  tracking-tighter">
                                                     Community Battle
                                                 </p>
                                                 <p className="text-xs font-bold dark:text-white">
@@ -303,13 +303,13 @@ export function GlobalDuelManager() {
                                         </div>
                                         <Button
                                             onClick={() => { setShowPromo(false); navigate("/challenge"); }}
-                                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl text-lg shadow-xl shadow-indigo-500/40 group active:scale-95 transition-all"
+                                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-lg shadow-none group active:scale-95 transition-all"
                                         >
-                                            SEND AN N.D.
+                                            Send an N.D.
                                             <Send size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
                                         </Button>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest animate-pulse">
-                                            HUMBLE YOUR FRIENDS TODAY
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500  tracking-widest animate-pulse">
+                                            Humble your friends today
                                         </p>
                                     </div>
                                 </motion.div>
