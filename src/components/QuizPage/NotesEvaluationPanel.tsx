@@ -235,7 +235,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
             )}
 
             {/* ─── MAIN PANEL — no borders, no shadow, soft note-paper bg ─── */}
-            <div className="w-full mt-2 bg-amber-50/40 dark:bg-slate-800/40 overflow-hidden transition-all">
+            <div className="w-full mt-2 bg-amber-50/40 dark:bg-slate-800/80 overflow-hidden transition-all">
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 bg-amber-100/50 dark:bg-slate-800/70">

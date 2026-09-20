@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, ArrowRight, ChevronDown, MoreHorizontal } from 'lucide-react';
+import {
+    Menu, X, ArrowRight, ChevronDown, MoreHorizontal,
+    Home, Sparkles, Users, Trophy, Stethoscope, BookOpen,
+    Brain, Info, Mail, FileText, HelpCircle, ClipboardList,
+    GraduationCap, Award, LogIn, UserPlus,
+} from 'lucide-react';
 
 interface HeaderProps {
     onNavigate?: (sectionId: string) => void;
@@ -101,38 +106,37 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         }
     };
 
-    // Primary tabs — always visible on desktop
+    // Primary tabs
     const primaryNavItems = [
-        { id: 'home', label: 'Home' },
-        { id: 'features', label: 'Features' },
-        { id: 'grouppay', label: 'GroupPay' },
-        { id: 'merit-cup', label: 'Merit Cup' },
+        { id: 'home', label: 'Home', icon: Home, bg: 'bg-[#1f6feb]' },
+        { id: 'features', label: 'Features', icon: Sparkles, bg: 'bg-[#8957e5]' },
+        { id: 'grouppay', label: 'GroupPay', icon: Users, bg: 'bg-[#3fb950]' },
+        { id: 'merit-cup', label: 'Merit Cup', icon: Trophy, bg: 'bg-[#d29922]' },
     ];
 
-    // Secondary tabs — tucked inside "More" dropdown
+    // Secondary tabs
     const moreNavItems = [
-        { id: 'clinical-assessment', label: 'Clinical Assessment' },
-        { id: 'curriculum', label: 'Curriculum' },
-        { id: 'algorithm', label: 'AI Algorithm' },
-        { id: 'about', label: 'About' },
-        { id: 'contact', label: 'Contact' },
+        { id: 'clinical-assessment', label: 'Clinical Assessment', icon: Stethoscope, bg: 'bg-[#f85149]' },
+        { id: 'curriculum', label: 'Curriculum', icon: BookOpen, bg: 'bg-[#1f6feb]' },
+        { id: 'algorithm', label: 'AI Algorithm', icon: Brain, bg: 'bg-[#8957e5]' },
+        { id: 'about', label: 'About', icon: Info, bg: 'bg-[#3fb950]' },
+        { id: 'contact', label: 'Contact', icon: Mail, bg: 'bg-[#d29922]' },
     ];
 
     // Full list for mobile menu
     const allNavItems = [...primaryNavItems, ...moreNavItems];
 
-    // SEO pages — each opens a separate route
+    // SEO pages — icon + color per page
     const seoPages = [
-        { to: '/nursing-revision-kenya', label: 'Nursing Revision in Kenya' },
-        { to: '/nck-exam-revision', label: 'NCK Exam Revision' },
-        { to: '/nck-exam-questions', label: 'NCK Exam Questions' },
-        { to: '/nck-past-papers', label: 'NCK Past Papers' },
-        { to: '/nck-exam-preparation', label: 'NCK Exam Preparation' },
-        { to: '/krchn-revision', label: 'KRCHN Revision' },
-        { to: '/medrae-nursing-merit-cup', label: 'Medrae Merit Cup' },
+        { to: '/nursing-revision-kenya', label: 'Nursing Revision in Kenya', icon: GraduationCap, bg: 'bg-[#1f6feb]' },
+        { to: '/nck-exam-revision', label: 'NCK Exam Revision', icon: FileText, bg: 'bg-[#8957e5]' },
+        { to: '/nck-exam-questions', label: 'NCK Exam Questions', icon: HelpCircle, bg: 'bg-[#3fb950]' },
+        { to: '/nck-past-papers', label: 'NCK Past Papers', icon: ClipboardList, bg: 'bg-[#d29922]' },
+        { to: '/nck-exam-preparation', label: 'NCK Exam Preparation', icon: Award, bg: 'bg-[#f85149]' },
+        { to: '/krchn-revision', label: 'KRCHN Revision', icon: BookOpen, bg: 'bg-[#1f6feb]' },
+        { to: '/medrae-nursing-merit-cup', label: 'Medrae Merit Cup', icon: Trophy, bg: 'bg-[#8957e5]' },
     ];
 
-    // Full rainbow color palette
     const rainbowColors = [
         'from-red-500 via-orange-500 to-yellow-500',
         'from-orange-500 via-yellow-500 to-green-500',
@@ -186,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
     return (
         <>
-            {/* Desktop Header - ALWAYS STICKY */}
+            {/* Desktop Header */}
             <header
                 className={`fixed top-0 left-0 right-0 z-[999] hidden md:block transition-all duration-300 ${!isScrolled
                     ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b border-slate-100/50'
@@ -215,7 +219,6 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
                         {/* Navigation */}
                         <nav className="flex items-center gap-0.5 lg:gap-1">
-                            {/* Primary tabs */}
                             {primaryNavItems.map((item) => (
                                 <button
                                     key={item.id}
@@ -245,10 +248,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                                         }`}
                                 >
                                     More
-                                    <ChevronDown
-                                        className={`w-3.5 h-3.5 transition-transform ${isMoreOpen ? 'rotate-180' : ''
-                                            }`}
-                                    />
+                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMoreOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {isMoreOpen && (
@@ -268,7 +268,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                                 )}
                             </div>
 
-                            {/* SEO Guides dropdown */}
+                            {/* SEO dropdown */}
                             <div
                                 className="relative"
                                 onMouseEnter={() => setIsSeoOpen(true)}
@@ -281,10 +281,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                                         }`}
                                 >
                                     Guides
-                                    <ChevronDown
-                                        className={`w-3.5 h-3.5 transition-transform ${isSeoOpen ? 'rotate-180' : ''
-                                            }`}
-                                    />
+                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isSeoOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {isSeoOpen && (
@@ -309,23 +306,23 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                         {/* Auth Buttons */}
                         <div className="flex items-center gap-1.5">
                             <button
-                                className="text-sm font-medium transition-all px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50/50"
+                                className="text-sm font-medium transition-colors px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                                 onClick={() => navigate('/login')}
                             >
                                 Sign In
                             </button>
                             <button
-                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-lg shadow-blue-200/50 hover:shadow-xl hover:scale-105 transition-all duration-300 text-sm"
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-1.5 rounded-lg transition-colors text-sm inline-flex items-center"
                                 onClick={() => navigate('/register')}
                             >
                                 Get Started
-                                <ArrowRight className="w-3 h-3 ml-1 inline" />
+                                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* GLOWING LED SNAKE BORDER */}
+                {/* LED snake + dots */}
                 <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
                     <div
                         className={`h-full bg-gradient-to-r ${getGlowColor()} ${getGlowAnimation()} ${getGlowWidth()} relative`}
@@ -343,7 +340,6 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                     />
                 </div>
 
-                {/* LED Dots */}
                 <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
                     <div className="flex justify-between items-center h-full px-1">
                         {[...Array(40)].map((_, i) => (
@@ -369,104 +365,130 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
-            {/* Mobile Header - ALWAYS STICKY */}
+            {/* ============================================================ */}
+            {/* Mobile Header — WhatsApp-sized */}
+            {/* ============================================================ */}
             <header
                 className={`fixed top-0 left-0 right-0 z-[9999] md:hidden transition-all duration-300 ${!isScrolled
-                    ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b border-slate-100/50'
-                    : 'bg-white/90 backdrop-blur-xl shadow-lg border-b border-slate-200/50'
+                    ? 'bg-white shadow-md'
+                    : 'bg-white shadow-lg'
                     }`}
             >
-                <div className="px-3">
-                    <div className="flex items-center justify-between h-12">
+                <div className="px-4">
+                    <div className="flex items-center justify-between h-16">
+                        {/* Logo */}
                         <div
-                            className="flex items-center gap-1.5 cursor-pointer"
+                            className="flex items-center gap-2.5 cursor-pointer"
                             onClick={() => scrollToSection('home')}
                         >
                             <img
                                 src="/pwa-192x192.jpeg"
                                 alt="Medrae Logo"
-                                className="h-6 w-6 rounded-lg"
+                                className="h-9 w-9 rounded-xl"
                             />
-                            <span className="text-xs font-black">
+                            <span className="text-base font-black">
                                 <span className="text-red-600">MEDRAE</span>
-                                <span className="text-slate-800 ml-0.5">NURSING</span>
+                                <span className="text-slate-800 ml-1">NURSING</span>
                             </span>
                         </div>
 
+                        {/* Menu toggle — 44px tap target */}
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="p-1.5 rounded-lg transition-all text-slate-600 hover:bg-slate-100"
+                            aria-label="Toggle menu"
+                            className="p-2.5 rounded-xl transition-all text-slate-700 active:bg-slate-100"
                         >
-                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
                     </div>
                 </div>
 
-                {/* Mobile Menu */}
+                {/* Mobile Menu — opaque, no transparency */}
                 <div
-                    className={`absolute top-12 left-0 right-0 bg-white/100 backdrop-blur-xl border-b border-slate-200/50 shadow-xl transition-all duration-300 overflow-hidden ${isMobileMenuOpen
-                        ? 'max-h-[calc(100vh-48px)] opacity-100'
+                    className={`absolute top-16 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl transition-all duration-300 overflow-hidden ${isMobileMenuOpen
+                        ? 'max-h-[calc(100vh-64px)] opacity-100'
                         : 'max-h-0 opacity-0'
                         }`}
                 >
-                    <div className="p-3 space-y-0.5 max-h-[calc(100vh-60px)] overflow-y-auto">
-                        {/* All section links */}
-                        {allNavItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => scrollToSection(item.id)}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all ${activeSection === item.id
-                                    ? 'text-blue-600 bg-blue-50'
-                                    : 'text-slate-600 hover:text-blue-600 hover:bg-blue-50/50'
-                                    }`}
-                            >
-                                {item.label}
-                            </button>
-                        ))}
+                    <div className="p-4 space-y-4 max-h-[calc(100vh-64px)] overflow-y-auto">
 
-                        {/* SEO pages section */}
-                        <div className="pt-3 mt-2 border-t border-slate-100">
-                            <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {/* Section links */}
+                        <div className="space-y-1.5">
+                            {allNavItems.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => scrollToSection(item.id)}
+                                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${activeSection === item.id
+                                            ? 'bg-blue-50 text-blue-700'
+                                            : 'text-slate-700 active:bg-slate-100'
+                                            }`}
+                                    >
+                                        <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${item.bg}`}>
+                                            <Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
+                                        </span>
+                                        <span>{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Revision Guides */}
+                        <div className="pt-4 border-t border-slate-200">
+                            <p className="px-1 pb-3 text-[11px] font-bold uppercase tracking-widest text-slate-500">
                                 Revision Guides
                             </p>
-                            {seoPages.map((page) => (
-                                <Link
-                                    key={page.to}
-                                    to={page.to}
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="block w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 transition-all"
-                                >
-                                    {page.label}
-                                </Link>
-                            ))}
+                            <div className="space-y-1.5">
+                                {seoPages.map((page) => {
+                                    const Icon = page.icon;
+                                    return (
+                                        <Link
+                                            key={page.to}
+                                            to={page.to}
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-slate-700 active:bg-slate-100 transition-all"
+                                        >
+                                            <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${page.bg}`}>
+                                                <Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
+                                            </span>
+                                            <span>{page.label}</span>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* Auth buttons */}
-                        <div className="pt-3 border-t border-slate-100 space-y-1.5">
+                        <div className="pt-4 border-t border-slate-200 space-y-2">
                             <button
-                                className="w-full text-center px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 transition-all border border-slate-200"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 transition-colors"
                                 onClick={() => {
                                     setIsMobileMenuOpen(false);
                                     navigate('/login');
                                 }}
                             >
+
                                 Sign In
                             </button>
                             <button
-                                className="w-full text-center px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold transition-all shadow-lg shadow-blue-200/50 text-xs"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold transition-colors text-sm"
                                 onClick={() => {
                                     setIsMobileMenuOpen(false);
                                     navigate('/register');
                                 }}
                             >
+                                <span className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                                    <UserPlus className="w-4 h-4 text-white" strokeWidth={2.2} />
+                                </span>
                                 Get Started
-                                <ArrowRight className="w-3 h-3 ml-1.5 inline" />
+                                <ArrowRight className="w-4 h-4 ml-1" />
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Mobile LED Snake */}
+                {/* Mobile LED snake */}
                 <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
                     <div
                         className={`h-full bg-gradient-to-r ${getGlowColor()} ${getGlowAnimation()} ${getGlowWidth()} relative`}
@@ -485,8 +507,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
-            {/* Spacer - pushes content below the fixed header */}
-            <div className="h-10 md:h-14 lg:h-16" />
+            {/* Spacer */}
+            <div className="h-16 md:h-14 lg:h-16" />
         </>
     );
 };

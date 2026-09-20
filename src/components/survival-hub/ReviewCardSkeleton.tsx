@@ -2,7 +2,7 @@ import React from 'react';
 
 export const ReviewCardSkeleton = () => {
     return (
-        <div className="px-4 py-4 md:px-0 md:py-4 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0 animate-pulse">
+        <div className="rounded-2xl bg-white dark:bg-muted/30 p-4 md:p-5 animate-pulse">
 
             {/* Header with Avatar and User Info */}
             <div className="flex items-center gap-2.5 md:gap-3">

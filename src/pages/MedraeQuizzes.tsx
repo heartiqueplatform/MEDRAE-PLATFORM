@@ -50,7 +50,6 @@ const getCachedSubscription = () => {
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
-      // Offline: serve cache no matter how old it is.
       if (offline || Date.now() - timestamp < CACHE_DURATION) {
         return data;
       }
@@ -70,7 +69,6 @@ const getCachedFreeUnits = () => {
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
       const offline = typeof navigator !== "undefined" && !navigator.onLine;
-      // Offline: serve cache no matter how old it is.
       if (offline || Date.now() - timestamp < CACHE_DURATION) {
         return data;
       }
@@ -179,23 +177,33 @@ const getQuizTypeColor = (type: string) => {
   }
 };
 
-// Category avatar mapping - uses images from public folder
-const categoryAvatars: Record<string, string> = {
-  all: "/pwaa-512x512.png",
-  paper1: "/indexbackground5.jpg",
-  paper2: "/background05.jpg",
-  practice: "/high4.png",
-  nclex: "/pwaa-512x512.png",
-  medical: "/pwaa-512x512.png"
-};
+/* ============================================================
+   CATEGORY STORY TABS — Facebook-style
+   Each category = circular avatar with a colored ring.
+   Active story gets a solid colored ring + larger circle.
+   ============================================================ */
+const CATEGORY_STORIES: {
+  id: CategoryType;
+  label: string;
+  avatar: string;
+  ring: string;      // ring color when active
+  icon: React.ElementType;
+}[] = [
+    { id: "all", label: "All Units", avatar: "/pwaa-512x512.png", ring: "ring-gray-500", icon: BookOpen },
+    { id: "paper1", label: "Paper 1", avatar: "/indexbackground5.jpg", ring: "ring-amber-500", icon: GraduationCap },
+    { id: "paper2", label: "Paper 2", avatar: "/background05.jpg", ring: "ring-blue-500", icon: FileText },
+    { id: "practice", label: "Practice", avatar: "/high4.png", ring: "ring-emerald-500", icon: ClipboardCheck },
+    { id: "nclex", label: "NCLEX", avatar: "/pwaa-512x512.png", ring: "ring-purple-500", icon: Globe },
+    { id: "medical", label: "Medical", avatar: "/pwaa-512x512.png", ring: "ring-rose-500", icon: Stethoscope },
+  ];
 
-// Paper avatar mapping
-const paperAvatars: Record<number, string> = {
-  1: "/indexbackground5.jpg",
-  2: "/background05.jpg",
-  3: "/high4.png",
-  4: "/high1.png",
-  5: "/high3.png"
+const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
+  all: "View all available quizzes",
+  paper1: "Core Nursing Fundamentals & Foundation Units",
+  paper2: "Leadership, Research & Community Health",
+  practice: "Full-length mock exams for readiness evaluation",
+  nclex: "International nursing standards (Coming Soon)",
+  medical: "Condition-specific quizzes - Hypertension, Diabetes & more",
 };
 
 export function MedraeQuizzes() {
@@ -209,7 +217,7 @@ export function MedraeQuizzes() {
   const [showHelp, setShowHelp] = React.useState(false);
   const [freeUnits, setFreeUnits] = useState<string[]>(() => getCachedFreeUnits() || []);
   const [activeCategory, setActiveCategory] = useState<CategoryType>("all");
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null); // For modal
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 
   const { papers, loading: unitsLoading, refreshUnits } = useUnits();
   const { data: unitCounts, loading: countsLoading, refreshCounts } = useUnitQuestionCount();
@@ -222,7 +230,6 @@ export function MedraeQuizzes() {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const isMounted = useRef(true);
 
-  // Cleanup on unmount
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -230,7 +237,6 @@ export function MedraeQuizzes() {
     };
   }, []);
 
-  // ✅ OPTIMIZED: Fetch subscription with caching (24 hours)
   const fetchSubscription = useCallback(async () => {
     if (!user) return;
 
@@ -278,7 +284,6 @@ export function MedraeQuizzes() {
     }
   }, [user]);
 
-  // ✅ OPTIMIZED: Fetch free units with caching (24 hours)
   const fetchFreeUnits = useCallback(async () => {
     const cached = getCachedFreeUnits();
     if (cached !== null) {
@@ -317,13 +322,11 @@ export function MedraeQuizzes() {
     }
   }, []);
 
-  // Initial data fetch (only once)
   useEffect(() => {
     fetchSubscription();
     fetchFreeUnits();
   }, [fetchSubscription, fetchFreeUnits]);
 
-  // Helper to get question count for a unit
   const getQuestionCount = (code: string) => {
     const unit = unitCounts?.find((u) => u.unit_code?.trim() === code.trim());
     return unit ? unit.count : 0;
@@ -345,7 +348,6 @@ export function MedraeQuizzes() {
     setRefreshing(false);
   };
 
-  // Filter units based on search term and category
   const getFilteredUnitsForPaper = (units: Unit[], paperNumber: number) => {
     let filtered = units;
 
@@ -416,24 +418,13 @@ export function MedraeQuizzes() {
 
   const isLoading = (unitsLoading && papers.length === 0) || (countsLoading && !unitCounts?.length);
 
-  // Category tabs configuration with avatars
-  const categories = [
-    { id: "all", label: "All Units", icon: BookOpen, color: "gray", avatar: "/pwaa-512x512.png", description: "View all available quizzes" },
-    { id: "paper1", label: "Paper 1", icon: GraduationCap, color: "amber", avatar: "/pwaa-512x512.png", description: "Core Nursing Fundamentals & Foundation Units" },
-    { id: "paper2", label: "Paper 2", icon: FileText, color: "blue", avatar: "/pwaa-512x512.png", description: "Leadership, Research & Community Health" },
-    { id: "practice", label: "Practice Papers", icon: ClipboardCheck, color: "emerald", avatar: "/pwaa-512x512.png", description: "Full-length mock exams for readiness evaluation" },
-    { id: "nclex", label: "NCLEX Prep", icon: Globe, color: "purple", avatar: "/pwaa-512x512.png", description: "International nursing standards (Coming Soon)" },
-    { id: "medical", label: "Medical Conditions", icon: Stethoscope, color: "rose", avatar: "/pwaa-512x512.png", description: "Condition-specific quizzes - Hypertension, Diabetes & more" },
-  ];
-
   const toggleDescription = (unitCode: string) => {
     setExpandedDescriptions(prev => ({
       ...prev,
       [unitCode]: !prev[unitCode]
     }));
   };
-  // Show the loader only if we truly have nothing to show AND we're online.
-  // Offline with a cache = render immediately.
+
   const hasSubscriptionCache = !!getCachedSubscription();
   if (!subscriptionChecked && !hasSubscriptionCache && navigator.onLine) {
     return <GlobalLoader />;
@@ -441,8 +432,7 @@ export function MedraeQuizzes() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center">
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-2 px-2 sm:px-6 pt-4 sm:pt-8">
-        {/* Popup Notification */}
+      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-2 px-0 sm:px-6 pt-4 sm:pt-8">
         <AnimatePresence>
           {popup && (
             <PopupMessage
@@ -459,9 +449,6 @@ export function MedraeQuizzes() {
 
           <CardHeader className="relative pb-2 px-4 md:px-6 pt-4 md:pt-6">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="p-1.5 md:p-2.5 bg-red-50 dark:bg-red-900/20 rounded-lg md:rounded-2xl">
-                <Heart className="h-5 w-5 md:h-7 md:w-7 text-red-500 animate-pulse" fill="currentColor" />
-              </div>
               <div>
                 <CardTitle className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
                   Your <span className="text-blue-600">Nursing</span> Journey Starts Here
@@ -473,9 +460,9 @@ export function MedraeQuizzes() {
             </div>
           </CardHeader>
 
-          <CardContent className="relative space-y-2 md:space-y-2 px-4 md:px-6 pb-4 md:pb-6">
-            {/* Description - Clean, no box */}
-            <div>
+          <CardContent className="relative space-y-3 md:space-y-4 px-0 md:px-6 pb-4 md:pb-6">
+            {/* Description */}
+            <div className="px-4 md:px-0">
               <motion.div layout>
                 <p className="text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed">
                   <span className="font-bold text-blue-600 dark:text-blue-400">Master</span> nursing concepts with our comprehensive quizzes bank. Choose from core units, practice papers, or condition-specific quizzes to build confidence and save time.
@@ -518,28 +505,54 @@ export function MedraeQuizzes() {
               </motion.div>
             </div>
 
-            {/* Category Tabs with Avatar Images */}
+            {/* ============================================================
+                FACEBOOK-STYLE STORY TABS
+                Edge-to-edge on mobile (negative margin), padded on desktop.
+                Each story = circular avatar + label below.
+                ============================================================ */}
             <div className="relative">
-              <div className="flex overflow-x-auto scrollbar-hide gap-1.5 md:gap-2 pb-2 -mx-1 px-1 sm:overflow-visible sm:flex-wrap sm:justify-center">
-                {categories.map((cat) => {
-                  const Icon = cat.icon;
+              <div className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 pb-2 pt-1
+                  -mx-0 px-4 md:mx-0 md:px-0
+                  sm:flex-wrap sm:justify-center sm:overflow-visible">
+                {CATEGORY_STORIES.map((cat) => {
                   const isActive = activeCategory === cat.id;
                   return (
                     <button
                       key={cat.id}
-                      onClick={() => setActiveCategory(cat.id as CategoryType)}
-                      className={`flex-shrink-0 flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg md:rounded-xl transition-all duration-200 whitespace-nowrap text-[10px] md:text-xs
-                        ${isActive
-                          ? `bg-${cat.color}-500 text-white shadow-lg shadow-${cat.color}-500/30`
-                          : `bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700`
-                        }`}
+                      onClick={() => setActiveCategory(cat.id)}
+                      className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px] md:w-[76px]
+                          focus:outline-none group"
                     >
-                      <img
-                        src={cat.avatar}
-                        alt={cat.label}
-                        className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover border-2 border-white/20 flex-shrink-0"
-                      />
-                      <span className="font-bold">{cat.label}</span>
+                      {/* Story circle */}
+                      <div
+                        className={`relative rounded-full p-[2.5px] transition-all duration-200
+                            ${isActive
+                            ? `bg-foreground ring-2 ring-offset-2 ring-offset-background ${cat.ring}`
+                            : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
+                          }`}
+                      >
+                        <div className="rounded-full p-[2px] bg-background">
+                          <img
+                            src={cat.avatar}
+                            alt={cat.label}
+                            className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover"
+                          />
+                        </div>
+                        {isActive && (
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background ${cat.ring.replace('ring-', 'bg-')}`} />
+                        )}
+                      </div>
+
+                      {/* Label */}
+                      <span
+                        className={`text-[10px] md:text-[11px] font-semibold leading-tight text-center truncate w-full
+                            ${isActive
+                            ? 'text-foreground'
+                            : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
+                          }`}
+                      >
+                        {cat.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -549,17 +562,17 @@ export function MedraeQuizzes() {
                 <motion.div
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-1.5 md:mt-2 text-center"
+                  className="mt-2 md:mt-3 text-center px-4 md:px-0"
                 >
                   <p className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400">
-                    {categories.find(c => c.id === activeCategory)?.description}
+                    {CATEGORY_DESCRIPTIONS[activeCategory]}
                   </p>
                 </motion.div>
               )}
             </div>
 
             {/* SEARCH BAR */}
-            <div className="relative w-full group">
+            <div className="relative w-full group px-4 md:px-0">
               <div className="relative w-full group">
                 <input
                   type="text"
@@ -569,10 +582,10 @@ export function MedraeQuizzes() {
                   className="w-full h-11 md:h-14 pl-9 md:pl-12 pr-20 md:pr-28 rounded-lg md:rounded-2xl bg-gray-100 dark:bg-gray-900 border-2 border-transparent text-xs md:text-base text-gray-900 dark:text-white placeholder-gray-400 font-medium focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none shadow-inner"
                   autoComplete="off"
                 />
-                <div className="absolute left-2.5 md:left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-transform group-focus-within:scale-110">
+                <div className="absolute left-6 md:left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-transform group-focus-within:scale-110">
                   <Search className="w-3.5 h-3.5 md:w-5 md:h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
-                <div className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 md:gap-1">
+                <div className="absolute right-5 md:right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 md:gap-1">
                   <button
                     onClick={() => setShowHelp(!showHelp)}
                     className={`p-1 md:p-1.5 rounded-lg transition-colors ${showHelp ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:bg-gray-200'}`}
@@ -613,7 +626,7 @@ export function MedraeQuizzes() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="absolute bottom-full right-0 mb-2 md:mb-3 w-64 md:w-72 p-2.5 md:p-3 bg-white dark:bg-gray-800 rounded-lg md:rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50"
+                      className="absolute bottom-full right-4 md:right-0 mb-2 md:mb-3 w-64 md:w-72 p-2.5 md:p-3 bg-white dark:bg-gray-800 rounded-lg md:rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50"
                     >
                       <div className="space-y-2 md:space-y-3 text-[10px] md:text-xs">
                         <div className="flex gap-2 md:gap-3">
@@ -663,10 +676,6 @@ export function MedraeQuizzes() {
                 const filteredUnits = getFilteredUnitsForPaper(paper.units, paper.paperNumber);
                 if (!shouldShowPaper(paper)) return null;
 
-                const IconComponent = getIconComponent(paper.icon);
-                const color = paper.color;
-                const paperAvatar = paperAvatars[paper.paperNumber] || "/pwaa-512x512.png";
-
                 let headerDescription = paper.description;
                 if (paper.paperNumber === 1) {
                   headerDescription = "Most frequently tested foundational nursing units";
@@ -681,26 +690,25 @@ export function MedraeQuizzes() {
                 }
 
                 return (
-                  <div key={paper.paperNumber} className="space-y-2">
-                    <div className="flex items-end justify-between px-2 sm:px-0 mt-3">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={paperAvatar}
-                          alt={paper.paper}
-                          className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 flex-shrink-0"
-                        />
-                        <div>
-                          <h2 className={`text-xl sm:text-2xl font-bold text-${color}-600 dark:text-${color}-500 flex items-center gap-2`}>
-                            <div className={`w-2 h-8 bg-${color}-600 rounded-full`} />
+                  <div key={paper.paperNumber} className="space-y-3 px-4 md:px-0">
+                    {/* ============================================
+                        PROFESSIONAL PAPER HEADER
+                        No avatar — clean typographic heading
+                        ============================================ */}
+                    <div className="flex items-center justify-between gap-3 mt-5 md:mt-6 pb-2 border-b border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-1.5 h-8 md:h-10 rounded-full bg-${paper.color}-500 flex-shrink-0`} />
+                        <div className="min-w-0">
+                          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white leading-tight truncate">
                             {paper.paper}
                           </h2>
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 max-w-md">
+                          <p className="text-[11px] md:text-xs font-medium text-gray-500 dark:text-gray-400 truncate">
                             {headerDescription}
                           </p>
                         </div>
                       </div>
-                      <div className={`bg-${color}-100 dark:bg-${color}-900/30 px-3 py-1 rounded-full border border-${color}-200`}>
-                        <span className={`text-xs font-bold text-${color}-700 dark:text-${color}-400`}>
+                      <div className="flex-shrink-0 px-2.5 md:px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                        <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300 whitespace-nowrap">
                           {paper.total_questions} Questions
                         </span>
                       </div>
@@ -716,7 +724,7 @@ export function MedraeQuizzes() {
                         return (
                           <React.Fragment key={unit.code}>
                             <Card
-                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl border-0  hover:border-${color}-400 dark:hover:border-${color}-500/50 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer`}
+                              className={`group relative overflow-hidden transition-all duration-300 rounded-xl border-0 hover:border-${paper.color}-400 dark:hover:border-${paper.color}-500/50 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer`}
                               onClick={() => setSelectedUnit(unit)}
                             >
                               {paper.paperNumber === 4 && (
@@ -725,14 +733,9 @@ export function MedraeQuizzes() {
                                 </div>
                               )}
 
-                              <CardHeader className="pb-2">
-                                <div className="flex justify-between items-start">
-                                  <img
-                                    src="/pwaa-512x512.png"
-                                    alt="Unit"
-                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 flex-shrink-0"
-                                  />
-
+                              <CardHeader className="pb-2 pt-5">
+                                {/* Status pill only — avatar removed */}
+                                <div className="flex justify-end items-start">
                                   {isPremium ? (
                                     <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
                                       <CheckCircle2 className="w-3 h-3" /> UNLOCKED
@@ -748,17 +751,13 @@ export function MedraeQuizzes() {
                                   )}
                                 </div>
 
-                                <CardTitle className="text-lg font-bold leading-tight mt-3 text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
+                                <CardTitle className="text-lg font-bold leading-tight mt-1 text-gray-900 dark:text-gray-100 min-h-[3rem] line-clamp-2">
                                   {unit.title}
                                 </CardTitle>
-
                               </CardHeader>
 
                               <CardContent>
                                 <div className="flex flex-col gap-3">
-
-
-                                  {/* DESCRIPTION - Clean, clickable */}
                                   {unit.description && (
                                     <div className="group/desc">
                                       <p className={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
@@ -771,8 +770,6 @@ export function MedraeQuizzes() {
                                     </div>
                                   )}
 
-                                  {/* Questions count and level */}
-                                  {/* Questions count and level */}
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
                                       {questionCount} Questions
@@ -853,7 +850,7 @@ export function MedraeQuizzes() {
               })}
 
               {papers.every(paper => !shouldShowPaper(paper)) && (
-                <div className="text-center py-12">
+                <div className="text-center py-12 px-4">
                   <p className="text-gray-500 dark:text-gray-400">No units match your search or category selection.</p>
                   <button
                     onClick={() => {
@@ -870,7 +867,7 @@ export function MedraeQuizzes() {
           )}
 
           {/* Progress & Sync Footer */}
-          <Card className="mt-12 mb-8 overflow-hidden rounded-xl border-0 dark:bg-muted/30">
+          <Card className="mt-12 mb-8 overflow-hidden rounded-xl border-0 dark:bg-muted/30 mx-4 md:mx-0">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
@@ -909,7 +906,7 @@ export function MedraeQuizzes() {
         </Card>
       </div>
 
-      {/* DETAILS MODAL - Smart Bottom Sheet for Mobile, Centered for Desktop */}
+      {/* DETAILS MODAL */}
       <AnimatePresence>
         {selectedUnit && (
           <motion.div
@@ -927,22 +924,14 @@ export function MedraeQuizzes() {
               className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header with avatar */}
               <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <img
-                    src="/pwaa-512x512.png"
-                    alt="Unit"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
-                      {selectedUnit.title}
-                    </h3>
-                    <p className="text-xs font-medium text-gray-400">
-                      {selectedUnit.code}
-                    </p>
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
+                    {selectedUnit.title}
+                  </h3>
+                  <p className="text-xs font-medium text-gray-400">
+                    {selectedUnit.code}
+                  </p>
                 </div>
                 <button
                   onClick={() => setSelectedUnit(null)}
@@ -952,9 +941,7 @@ export function MedraeQuizzes() {
                 </button>
               </div>
 
-              {/* Content */}
               <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
-                {/* Full Description */}
                 {selectedUnit.description && (
                   <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -963,7 +950,6 @@ export function MedraeQuizzes() {
                   </div>
                 )}
 
-                {/* All Details in a Clean Grid */}
                 <div className="space-y-3">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                     <span className="w-1 h-4 bg-blue-500 rounded-full"></span>
@@ -1016,7 +1002,6 @@ export function MedraeQuizzes() {
                     )}
                   </div>
 
-                  {/* Level & Questions Tags */}
                   <div className="flex flex-wrap items-center gap-2 pt-2">
                     <Badge variant={getLevelVariant(selectedUnit.level)} className="font-bold px-3 py-1.5 text-xs">
                       {selectedUnit.level}
@@ -1032,7 +1017,6 @@ export function MedraeQuizzes() {
                   </div>
                 </div>
 
-                {/* Action Button */}
                 {(isPremium || freeUnits.includes(selectedUnit.code?.trim() || "") || selectedUnit.is_free) ? (
                   <button
                     onClick={() => {
@@ -1055,14 +1039,13 @@ export function MedraeQuizzes() {
                 )}
               </div>
 
-              {/* Bottom Safe Area for iOS */}
               <div className="h-1 sm:h-0" />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 px-4 md:px-0">
         <div className="flex items-center gap-4">
           <TermsButton />
         </div>

@@ -1015,52 +1015,87 @@ const Index = () => {
         <NursingMeritCupSection />
       </section>
       {/* ============================================================ */}
-      {/* MEDRAE ALGORITHM SECTION - with scroll animations */}
+      {/* MEDRAE ALGORITHM SECTION - GitHub dark, flat, no color */}
       {/* ============================================================ */}
       <section id="algorithm">
         <AnimatedSection direction="up">
-          <section className="py-16 md:py-24 px-4 md:px-6 bg-gradient-to-br from-slate-50 to-blue-50/50 overflow-hidden">
+          <section
+            className="py-16 md:py-24 px-4 md:px-6 overflow-hidden"
+            style={{ backgroundColor: "#0d1117" }}
+          >
             <div className="max-w-7xl mx-auto">
 
               {/* Header */}
               <div className="text-center mb-12 md:mb-16">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-slate-800">
-                  The Medrae Nursing <span className="text-blue-600 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI Algorithm</span>
+                <h2
+                  className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight"
+                  style={{ color: "#e6edf3" }}
+                >
+                  The Medrae Nursing AI Algorithm
                 </h2>
-                <p className="text-base md:text-lg text-slate-600 max-w-2xl mx-auto mt-4 font-medium">
-                  Know exactly where you stand. Our AI predicts your NCK exam performance with <span className="text-blue-600 font-bold">95% accuracy</span>.
+                <p
+                  className="text-base md:text-lg max-w-2xl mx-auto mt-4 font-medium"
+                  style={{ color: "#8b949e" }}
+                >
+                  Know exactly where you stand. Our AI predicts your NCK exam performance with 95% accuracy.
                 </p>
               </div>
 
               {/* Main Algorithm Card */}
-              <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden hover:shadow-3xl transition-shadow duration-500">
+              <div
+                className="rounded-[2.5rem] overflow-hidden"
+                style={{ backgroundColor: "#161b22" }}
+              >
                 <div className="p-6 md:p-10 lg:p-12">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-                    {/* Left Column: Stats & Visualization */}
+                    {/* Left Column */}
                     <div>
                       <div className="flex items-center gap-2 mb-4">
-                        <Gauge className="w-6 h-6 text-blue-600 animate-pulse" />
-                        <span className="text-sm font-black uppercase tracking-widest text-blue-600">Real-Time Prediction</span>
+                        <Gauge className="w-6 h-6" style={{ color: "#8b949e" }} />
+                        <span
+                          className="text-sm font-black uppercase tracking-widest"
+                          style={{ color: "#8b949e" }}
+                        >
+                          Real-Time Prediction
+                        </span>
                       </div>
 
                       {/* Score Display */}
-                      <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 md:p-8 text-white mb-6 hover:scale-[1.01] transition-transform duration-300">
+                      <div
+                        className="rounded-2xl p-6 md:p-8 mb-6"
+                        style={{ backgroundColor: "#0d1117" }}
+                      >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium opacity-80">Your Predicted NCK Score</p>
-                            <p className="text-5xl md:text-6xl font-black">95%</p>
+                            <p className="text-sm font-medium" style={{ color: "#8b949e" }}>
+                              Your Predicted NCK Score
+                            </p>
+                            <p
+                              className="text-5xl md:text-6xl font-black"
+                              style={{ color: "#e6edf3" }}
+                            >
+                              95%
+                            </p>
                           </div>
-                          <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full animate-pulse">
-                            <span className="text-sm font-bold uppercase">High Readiness</span>
+                          <div
+                            className="px-4 py-2 rounded-full"
+                            style={{ backgroundColor: "#1c2128" }}
+                          >
+                            <span
+                              className="text-sm font-bold uppercase"
+                              style={{ color: "#e6edf3" }}
+                            >
+                              High Readiness
+                            </span>
                           </div>
                         </div>
-                        <div className="mt-4 flex items-center gap-4 text-sm">
+                        <div className="mt-4 flex items-center gap-4 text-sm" style={{ color: "#8b949e" }}>
                           <span className="flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4 text-green-300" />
+                            <CheckCircle className="w-4 h-4" />
                             95% Accuracy
                           </span>
                           <span className="flex items-center gap-1">
-                            <TrendingUp className="w-4 h-4 text-blue-300 animate-bounce" />
+                            <TrendingUp className="w-4 h-4" />
                             +12% Improvement
                           </span>
                         </div>
@@ -1069,23 +1104,45 @@ const Index = () => {
                       {/* Quick Stats Grid */}
                       <div className="grid grid-cols-3 gap-3">
                         {[
-                          { value: "8", label: "Units Tracked", color: "text-blue-600" },
-                          { value: "78%", label: "Avg Score", color: "text-green-600" },
-                          { value: "2", label: "Weak Units", color: "text-purple-600" }
+                          { value: "8", label: "Units Tracked" },
+                          { value: "78%", label: "Avg Score" },
+                          { value: "2", label: "Weak Units" },
                         ].map((stat, i) => (
-                          <div key={i} className="bg-slate-50 rounded-xl p-4 text-center border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all duration-300 hover:scale-105">
-                            <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase">{stat.label}</p>
+                          <div
+                            key={i}
+                            className="rounded-xl p-4 text-center"
+                            style={{ backgroundColor: "#0d1117" }}
+                          >
+                            <p
+                              className="text-2xl font-black"
+                              style={{ color: "#e6edf3" }}
+                            >
+                              {stat.value}
+                            </p>
+                            <p
+                              className="text-[10px] font-bold uppercase"
+                              style={{ color: "#8b949e" }}
+                            >
+                              {stat.label}
+                            </p>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Right Column: Features & CTA */}
+                    {/* Right Column */}
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-xl md:text-2xl font-black text-slate-800">Know Your Strengths. Fix Your Weaknesses.</h3>
-                        <p className="text-slate-600 mt-2 text-sm leading-relaxed">
+                        <h3
+                          className="text-xl md:text-2xl font-black"
+                          style={{ color: "#e6edf3" }}
+                        >
+                          Know Your Strengths. Fix Your Weaknesses.
+                        </h3>
+                        <p
+                          className="mt-2 text-sm leading-relaxed"
+                          style={{ color: "#8b949e" }}
+                        >
                           The Medrae Nursing Algorithm analyzes every question you answer to build a complete picture of your NCK readiness.
                         </p>
                       </div>
@@ -1093,21 +1150,29 @@ const Index = () => {
                       {/* Feature List */}
                       <div className="space-y-3">
                         {[
-                          { icon: Trophy, label: "Identify your strongest units", color: "text-green-600" },
-                          { icon: AlertTriangle, label: "Pinpoint critical weak areas", color: "text-red-600" },
-                          { icon: TrendingUp, label: "Track improvement trends", color: "text-blue-600" },
-                          { icon: Target, label: "Get personalized recommendations", color: "text-purple-600" },
+                          { icon: Trophy, label: "Identify your strongest units" },
+                          { icon: AlertTriangle, label: "Pinpoint critical weak areas" },
+                          { icon: TrendingUp, label: "Track improvement trends" },
+                          { icon: Target, label: "Get personalized recommendations" },
                         ].map((item, i) => (
-                          <div key={i} className="flex items-center gap-3 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-300 hover:scale-[1.02] cursor-default group">
-                            <item.icon className={`w-5 h-5 ${item.color} group-hover:scale-110 transition-transform`} />
-                            <span className="text-sm font-medium text-slate-700">{item.label}</span>
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 rounded-xl px-4 py-3 cursor-default"
+                            style={{ backgroundColor: "#0d1117" }}
+                          >
+                            <item.icon className="w-5 h-5" style={{ color: "#8b949e" }} />
+                            <span className="text-sm font-medium" style={{ color: "#e6edf3" }}>
+                              {item.label}
+                            </span>
                           </div>
                         ))}
                       </div>
 
-                      {/* CTA */}
-
-                      <p className="text-[10px] text-slate-400 text-center font-medium uppercase tracking-widest">
+                      {/* Footnote */}
+                      <p
+                        className="text-[10px] text-center font-medium uppercase tracking-widest"
+                        style={{ color: "#6e7681" }}
+                      >
                         Available for Premium Members • Starting at 399 KSh
                       </p>
                     </div>
@@ -1115,28 +1180,42 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Testimonial / Social Proof */}
+              {/* Testimonial */}
               <div className="mt-8 md:max-w-full md:px-4 lg:px-6 mx-auto text-center">
                 <div className="flex justify-center -space-x-2 mb-3">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden hover:scale-110 transition-transform">
+                    <div
+                      key={i}
+                      className="w-8 h-8 rounded-full overflow-hidden"
+                      style={{ backgroundColor: "#161b22" }}
+                    >
                       <img src={`https://i.pravatar.cc/100?img=${i + 20}`} alt="user" />
                     </div>
                   ))}
-                  <div className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-[8px] font-bold text-white hover:scale-110 transition-transform">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-[8px] font-bold"
+                    style={{ backgroundColor: "#1c2128", color: "#e6edf3" }}
+                  >
                     +2k
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 font-medium italic animate-pulse">
+                <p
+                  className="text-sm font-medium italic"
+                  style={{ color: "#8b949e" }}
+                >
                   "The algorithm showed me exactly which units needed work. I went from 62% to 84% in 3 weeks!"
                 </p>
-                <p className="text-xs text-slate-400 font-bold mt-1">— Sarah K., KMTC Nairobi</p>
+                <p
+                  className="text-xs font-bold mt-1"
+                  style={{ color: "#6e7681" }}
+                >
+                  — Sarah K., KMTC Nairobi
+                </p>
               </div>
             </div>
           </section>
         </AnimatedSection>
       </section>
-
 
       {/* ============================================================ */}
       {/* MISSION & VISION SECTION - with scroll animations */}
@@ -1304,36 +1383,45 @@ const Index = () => {
       {/* Footer - full width on mobile */}
       <footer
         id="contact"
-        className="bg-slate-50 text-slate-900 border-t border-slate-200 pt-6 md:pt-8 pb-6 md:pb-8 px-0 md:px-4">
+        className="pt-6 md:pt-8 pb-6 md:pb-8 px-0 md:px-4"
+        style={{ backgroundColor: "#0d1117", color: "#e6edf3" }}
+      >
         <TooltipProvider>
           <div className="max-w-7xl mx-auto px-4 md:px-0">
 
             {/* ===== TERMS AGREEMENT NOTICE ===== */}
-            <div className="mb-6 md:mb-8 p-4 md:p-6 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+            <div
+              className="mb-6 md:mb-8 p-4 md:p-6 rounded-2xl"
+              style={{ backgroundColor: "#161b22" }}
+            >
               <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4">
                 <div className="flex items-start gap-2 md:gap-3">
-                  <Shield className="h-5 w-5 md:h-6 md:w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <Shield className="h-5 w-5 md:h-6 md:w-6 flex-shrink-0 mt-0.5" style={{ color: "#8b949e" }} />
                   <div>
-                    <p className="text-sm md:text-base font-semibold text-slate-800">
+                    <p className="text-sm md:text-base font-semibold" style={{ color: "#e6edf3" }}>
                       By using Medrae Nursing Platform, you agree to our:
                     </p>
                     <div className="flex flex-wrap gap-2 md:gap-3 mt-1.5">
                       <button
                         onClick={() => navigate("/terms")}
-                        className="text-xs md:text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        className="text-xs md:text-sm font-medium hover:underline transition-colors"
+                        style={{ color: "#8b949e" }}
                       >
                         Terms & Conditions
                       </button>
-                      <span className="text-slate-300">•</span>
+                      <span style={{ color: "#30363d" }}>•</span>
                       <button
                         onClick={() => navigate("/privacy")}
-                        className="text-xs md:text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        className="text-xs md:text-sm font-medium hover:underline transition-colors"
+                        style={{ color: "#8b949e" }}
                       >
                         Privacy Policy
                       </button>
-                      <span className="text-slate-300">•</span>
-                      <button onClick={() => navigate("/cookies")}
-                        className="text-xs md:text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                      <span style={{ color: "#30363d" }}>•</span>
+                      <button
+                        onClick={() => navigate("/cookies")}
+                        className="text-xs md:text-sm font-medium hover:underline transition-colors"
+                        style={{ color: "#8b949e" }}
                       >
                         Cookie Policy
                       </button>
@@ -1341,8 +1429,8 @@ const Index = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-xs md:text-sm font-medium text-slate-600">
+                  <CheckCircle className="h-4 w-4" style={{ color: "#8b949e" }} />
+                  <span className="text-xs md:text-sm font-medium" style={{ color: "#8b949e" }}>
                     Continued use = Acceptance
                   </span>
                 </div>
@@ -1356,33 +1444,48 @@ const Index = () => {
                 <div className="flex items-center gap-2 mb-3 md:mb-4">
                   <img
                     src="/pwa-192x192.jpeg"
-                    className="h-7 w-7 md:h-8 md:w-8 rounded-lg shadow-sm"
+                    className="h-7 w-7 md:h-8 md:w-8 rounded-lg"
                     alt="Medrae Logo"
                   />
-                  <span className="text-xl md:text-2xl font-bold text-red-500">Medrae</span><span className="text-xl md:text-2xl font-bold tracking-tight text-black">Nursing</span>
+                  <span className="text-xl md:text-2xl font-bold" style={{ color: "#e6edf3" }}>Medrae</span>
+                  <span className="text-xl md:text-2xl font-bold tracking-tight" style={{ color: "#8b949e" }}>Nursing</span>
                 </div>
-                <p className="text-slate-600 text-xs md:text-sm leading-relaxed mb-4 md:mb-6 max-w-sm">
+                <p
+                  className="text-xs md:text-sm leading-relaxed mb-4 md:mb-6 max-w-sm"
+                  style={{ color: "#8b949e" }}
+                >
                   Kenya's premier Nursing Network Platform. We empower students and professionals
                   across all cadres (DCHN, BSN, KRN) through integrated learning, seamless collaboration, and clinical innovation.
                 </p>
                 <div className="flex gap-3 md:gap-4">
-                  <Facebook className="w-4 h-4 md:w-5 md:h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors hover:scale-110" />
-                  <Twitter className="w-4 h-4 md:w-5 md:h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors hover:scale-110" />
-                  <Linkedin className="w-4 h-4 md:w-5 md:h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors hover:scale-110" />
-                  <Instagram className="w-4 h-4 md:w-5 md:h-5 text-slate-400 hover:text-primary cursor-pointer transition-colors hover:scale-110" />
+                  <Facebook className="w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors hover:scale-110" style={{ color: "#6e7681" }} />
+                  <Twitter className="w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors hover:scale-110" style={{ color: "#6e7681" }} />
+                  <Linkedin className="w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors hover:scale-110" style={{ color: "#6e7681" }} />
+                  <Instagram className="w-4 h-4 md:w-5 md:h-5 cursor-pointer transition-colors hover:scale-110" style={{ color: "#6e7681" }} />
                 </div>
               </div>
+
               {/* Links Columns */}
               <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-8">
                 {/* Platform */}
                 <div>
-                  <h3 className="font-bold text-xs md:text-sm uppercase tracking-wider mb-3 md:mb-4 text-slate-900">Platform</h3>
-                  <ul className="space-y-2 md:space-y-3 text-xs md:text-sm text-slate-600">
+                  <h3
+                    className="font-bold text-xs md:text-sm uppercase tracking-wider mb-3 md:mb-4"
+                    style={{ color: "#e6edf3" }}
+                  >
+                    Platform
+                  </h3>
+                  <ul className="space-y-2 md:space-y-3 text-xs md:text-sm">
                     {["Feed", "Medrae Quizzes", "MedTube", "Forum", "Feed Page", "NursMartt", "institutional Exams", "Announcements"].map((item) => (
                       <li key={item}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="cursor-pointer hover:text-blue-600 transition-colors hover:translate-x-1 inline-block">{item}</span>
+                            <span
+                              className="cursor-pointer transition-colors hover:translate-x-1 inline-block"
+                              style={{ color: "#8b949e" }}
+                            >
+                              {item}
+                            </span>
                           </TooltipTrigger>
                           <TooltipContent>Login to access {item}</TooltipContent>
                         </Tooltip>
@@ -1392,13 +1495,23 @@ const Index = () => {
                 </div>
                 {/* Learning */}
                 <div>
-                  <h3 className="font-bold text-xs md:text-sm uppercase tracking-wider mb-3 md:mb-4 text-slate-900">Learning</h3>
-                  <ul className="space-y-2 md:space-y-3 text-xs md:text-sm text-slate -600">
-                    {["Assessment Notes", "Quiz Units", "Live  classes", "DCHN / BSN Curriculum", "My Mistakes", "Study Progress", "Challenges", "Simulation Mode", "Resources"].map((item) => (
+                  <h3
+                    className="font-bold text-xs md:text-sm uppercase tracking-wider mb-3 md:mb-4"
+                    style={{ color: "#e6edf3" }}
+                  >
+                    Learning
+                  </h3>
+                  <ul className="space-y-2 md:space-y-3 text-xs md:text-sm">
+                    {["Assessment Notes", "Quiz Units", "Live classes", "DCHN / BSN Curriculum", "My Mistakes", "Study Progress", "Challenges", "Simulation Mode", "Resources"].map((item) => (
                       <li key={item}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="cursor-pointer hover:text-blue-600 transition-colors hover:translate-x-1 inline-block">{item}</span>
+                            <span
+                              className="cursor-pointer transition-colors hover:translate-x-1 inline-block"
+                              style={{ color: "#8b949e" }}
+                            >
+                              {item}
+                            </span>
                           </TooltipTrigger>
                           <TooltipContent>Login to access {item}</TooltipContent>
                         </Tooltip>
@@ -1408,13 +1521,23 @@ const Index = () => {
                 </div>
                 {/* Support */}
                 <div>
-                  <h3 className="font-bold text-xs md:text-sm uppercase tracking-wider mb-3 md:mb-4 text-slate-900">Support</h3>
-                  <ul className="space-y-2 md:space-y-3 text-xs md:text-sm text-slate-600">
+                  <h3
+                    className="font-bold text-xs md:text-sm uppercase tracking-wider mb-3 md:mb-4"
+                    style={{ color: "#e6edf3" }}
+                  >
+                    Support
+                  </h3>
+                  <ul className="space-y-2 md:space-y-3 text-xs md:text-sm">
                     {["Survival Hub", "Login", "Register", "Subscription", "Feedback", "Help Center", "GroupPay", "Settings"].map((item) => (
                       <li key={item}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="cursor-pointer hover:text-blue-600 transition-colors hover:translate-x-1 inline-block">{item}</span>
+                            <span
+                              className="cursor-pointer transition-colors hover:translate-x-1 inline-block"
+                              style={{ color: "#8b949e" }}
+                            >
+                              {item}
+                            </span>
                           </TooltipTrigger>
                           <TooltipContent>Login to access</TooltipContent>
                         </Tooltip>
@@ -1424,40 +1547,67 @@ const Index = () => {
                 </div>
               </div>
             </div>
+
             {/* Middle Section: Regulatory Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-6 mb-8 md:mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
               {[
                 { title: "College & Licensing Prep", desc: "Structured support for college finals and NCK licensing exams. We align with Ministry of Health standards to ensure high-quality preparation.", link: "https://www.kmtc.ac.ke", linkText: "KMTC Resources" },
                 { title: "NCK & Professional Guidance", desc: "Sample questions and exam tips tailored for the NCK licensing exam. Stay updated with regulatory policies and ethical standards in Kenya.", link: "https://www.nckenya.com", linkText: "NCK Official" },
                 { title: "Global Mobility", desc: "Introducing NCLEX preparation and international licensing pathways for nurses aiming to expand their careers globally.", link: "https://www.ncsbn.org/nclex.htm", linkText: "NCLEX Info" }
               ].map((card, i) => (
-                <div key={i} className={`bg-white p-4 md:p-6 md:rounded-2xl md:border md:border-slate-200 md:shadow-sm md:hover:shadow-md transition-shadow ${i < 2 ? 'border-b border-slate-100 md:border-b md:border-slate-200' : ''} hover:scale-[1.02] transition-all duration-300`}>
-                  <h4 className="font-bold mb-2 md:mb-3 text-slate-900 text-sm md:text-base">{card.title}</h4>
-                  <p className="text-[11px] md:text-xs leading-relaxed text-slate-600 mb-3 md:mb-4">
+                <div
+                  key={i}
+                  className="p-4 md:p-6 rounded-2xl"
+                  style={{ backgroundColor: "#161b22" }}
+                >
+                  <h4
+                    className="font-bold mb-2 md:mb-3 text-sm md:text-base"
+                    style={{ color: "#e6edf3" }}
+                  >
+                    {card.title}
+                  </h4>
+                  <p
+                    className="text-[11px] md:text-xs leading-relaxed mb-3 md:mb-4"
+                    style={{ color: "#8b949e" }}
+                  >
                     {card.desc}
                   </p>
-                  <a href={card.link} target="_blank" rel="noopener noreferrer"
-                    className="text-[10px] md:text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 hover:gap-2 transition-all">
+                  <a
+                    href={card.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] md:text-xs font-semibold inline-flex items-center gap-1 hover:gap-2 transition-all"
+                    style={{ color: "#e6edf3" }}
+                  >
                     {card.linkText} <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
                   </a>
                 </div>
               ))}
             </div>
+
             {/* Bottom Section */}
-            <div className="pt-6 md:pt-8 border-t border-slate-200 text-center">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 text-xs md:text-sm text-slate-500">
+            <div className="pt-6 md:pt-8 text-center" style={{ borderTop: "1px solid #21262d" }}>
+              <div
+                className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4 text-xs md:text-sm"
+                style={{ color: "#8b949e" }}
+              >
                 <p>© {currentYear} Medrae Kenya. All rights reserved.</p>
                 <div className="flex items-center gap-1.5 md:gap-2">
                   <Mail className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   <span>Contact:</span>
-                  <a href="mailto:medraenursing@gmail.com" className="text-slate-900 font-medium hover:underline text-xs md:text-sm">
+                  <a
+                    href="mailto:medraenursing@gmail.com"
+                    className="font-medium hover:underline text-xs md:text-sm"
+                    style={{ color: "#e6edf3" }}
+                  >
                     medraenursing@gmail.com
                   </a>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
                   <a
                     href="tel:0717517371"
-                    className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 md:px-4 py-2 rounded-xl transition-colors text-xs md:text-sm font-medium"
+                    className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl transition-colors text-xs md:text-sm font-medium"
+                    style={{ backgroundColor: "#161b22", color: "#e6edf3" }}
                   >
                     <Phone className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     0717 517 371
@@ -1466,29 +1616,42 @@ const Index = () => {
                     href="https://wa.me/254704473503"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-center justify-between bg-white md:bg-white/10 md:hover:bg-white/20 md:border md:border-white/20 p-3 md:p-5 rounded-xl md:rounded-2xl transition-all active:scale-[0.98] w-full md:w-auto hover:scale-[1.02]"
+                    className="group flex items-center justify-between p-3 md:p-5 rounded-xl md:rounded-2xl transition-all active:scale-[0.98] w-full md:w-auto hover:scale-[1.02]"
+                    style={{ backgroundColor: "#161b22" }}
                   >
                     <div className="flex items-center gap-3 md:gap-4">
-                      <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-green-100 md:bg-white text-green-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <div
+                        className="h-8 w-8 md:h-10 md:w-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform"
+                        style={{ backgroundColor: "#21262d", color: "#e6edf3" }}
+                      >
                         <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
                       </div>
                       <div>
-                        <p className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold opacity-70 mb-0.5">WhatsApp Support</p>
-                        <p className="text-xs md:text-sm lg:text-base font-bold">0704 473 503</p>
+                        <p
+                          className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold mb-0.5"
+                          style={{ color: "#6e7681" }}
+                        >
+                          WhatsApp Support
+                        </p>
+                        <p className="text-xs md:text-sm lg:text-base font-bold" style={{ color: "#e6edf3" }}>
+                          0704 473 503
+                        </p>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 md:h-5 md:w-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                    <ArrowRight className="h-4 w-4 md:h-5 md:w-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" style={{ color: "#8b949e" }} />
                   </a>
                 </div>
                 <div className="flex gap-4 md:gap-6 text-[10px] md:text-xs font-medium">
                   <span
-                    className="underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
+                    className="underline cursor-pointer transition-colors font-bold"
+                    style={{ color: "#8b949e", textDecorationColor: "#30363d", textUnderlineOffset: "4px" }}
                     onClick={() => navigate("/privacy")}
                   >
                     Privacy & Policy
                   </span>
                   <span
-                    className="underline decoration-blue-200 decoration-2 underline-offset-4 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors font-bold"
+                    className="underline cursor-pointer transition-colors font-bold"
+                    style={{ color: "#8b949e", textDecorationColor: "#30363d", textUnderlineOffset: "4px" }}
                     onClick={() => navigate("/terms")}
                   >
                     Terms & Conditions
@@ -1496,7 +1659,10 @@ const Index = () => {
                 </div>
               </div>
 
-              <p className="mt-4 md:mt-6 text-[9px] md:text-[10px] text-slate-400 max-w-2xl mx-auto uppercase tracking-widest animate-pulse">
+              <p
+                className="mt-4 md:mt-6 text-[9px] md:text-[10px] max-w-2xl mx-auto uppercase tracking-widest"
+                style={{ color: "#6e7681" }}
+              >
                 Learn. Practice. Advance.
               </p>
             </div>

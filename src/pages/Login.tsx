@@ -44,7 +44,14 @@ const ROLE_CONFIG = {
     color: 'text-purple-600 dark:text-purple-400'
   }
 };
-
+function getOrCreateDeviceId(): string {
+  let id = localStorage.getItem("device_id");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("device_id", id);
+  }
+  return id;
+}
 export function Login() {
   useEffect(() => {
     document.documentElement.classList.remove("dark");
@@ -149,38 +156,37 @@ export function Login() {
         const userId = data.user.id;
 
         // 2. Get or create device ID
-        let deviceId = localStorage.getItem("device_id");
-        if (!deviceId) {
-          deviceId = crypto.randomUUID();
-          localStorage.setItem("device_id", deviceId);
-        }
+        // 2. Get or create device ID (stable across logins)
+        const deviceId = getOrCreateDeviceId();
 
-        // 3. Handle sessions (non-blocking)
+        // 3. Handle sessions — idempotent, scoped per device, never fatal
         try {
-          const { data: existingSessions, error: sessionError } = await supabase
+          const { data: existing } = await supabase
             .from("user_sessions")
-            .select("*")
-            .eq("user_id", userId);
+            .select("id")
+            .eq("user_id", userId)
+            .eq("device_id", deviceId)
+            .maybeSingle();
 
-          if (sessionError) throw new Error("Session check failed");
-
-          const currentDeviceSession = existingSessions?.find(
-            (s) => s.device_id === deviceId
-          );
-
-          if (!currentDeviceSession) {
-            if (existingSessions && existingSessions.length >= 2) {
-              throw new Error("Maximum devices reached. Log out from another device first.");
-            }
-            await supabase.from("user_sessions").insert({
-              user_id: userId,
-              device_id: deviceId,
-              device_info: navigator.userAgent,
-            });
+          if (!existing) {
+            await supabase.from("user_sessions").upsert(
+              {
+                user_id: userId,
+                device_id: deviceId,
+                device_info: navigator.userAgent,
+                last_seen: new Date().toISOString(),
+              },
+              { onConflict: "user_id,device_id" }
+            );
+          } else {
+            await supabase
+              .from("user_sessions")
+              .update({ last_seen: new Date().toISOString() })
+              .eq("id", existing.id);
           }
         } catch (sessionErr) {
-          console.error("Session error:", sessionErr);
-          // Continue - non-critical
+          console.warn("Session tracking failed (non-fatal):", sessionErr);
+          // Never throw — login already succeeded.
         }
 
         // 4. Heartbeat (non-blocking)
@@ -249,9 +255,22 @@ export function Login() {
           ),
           duration: 5000,
         });
+        // 9b. Persist the full session so the app can boot offline next time
+        try {
+          localStorage.setItem("supabaseUser", JSON.stringify(data.user));
+          localStorage.setItem(
+            "supabaseUserTokens",
+            JSON.stringify({
+              access_token: data.session?.access_token,
+              refresh_token: data.session?.refresh_token,
+              expires_at: data.session?.expires_at,
+            })
+          );
+        } catch { /* ignore quota */ }
 
         // 10. Clear loading state BEFORE navigation
         setIsLoading(false);
+
 
         // 11. Navigate with delay to ensure toast is seen
         setTimeout(() => {

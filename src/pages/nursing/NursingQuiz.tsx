@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-    ArrowLeft,
+    ChevronLeft,
     Brain,
     CheckCircle2,
-    ChevronLeft,
+
     ChevronRight,
     ClipboardCheck,
     HelpCircle,
@@ -16,6 +16,7 @@ import {
     Trophy,
     Volume2,
     VolumeX,
+    ArrowLeft,
     XCircle,
 } from "lucide-react";
 import { getTopicQuestions } from "@/lib/nursingQueries";
@@ -430,16 +431,10 @@ export default function NursingQuiz() {
         return (
             <div className="min-h-screen bg-transparent text-slate-950 dark:text-white">
                 <section className="mx-auto flex w-full max-w-none flex-col gap-4 md:gap-6 px-0 md:px-4 py-4 md:py-6 lg:px-8">
+
                     <div className="px-3 md:px-0">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="inline-flex w-fit items-center gap-1.5 md:gap-2 rounded-full border border-slate-200 bg-white/70 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900 dark:hover:text-emerald-300"
-                        >
-                            <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                            Back
-                        </button>
-                    </div>
-                    <div className="relative overflow-hidden md:rounded-2xl md:border-0 bg-white/70 p-4 md:p-6 md:shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-muted/30 sm:p-8 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+
+                    </div>  <div className="relative overflow-hidden md:rounded-2xl md:border-0 bg-white/70 p-4 md:p-6 md:shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-muted/30 sm:p-8 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
                         <div className="absolute right-0 top-0 h-24 md:h-32 w-24 md:w-32 rounded-bl-full bg-emerald-100/80 dark:bg-emerald-400/10" />
                         <div className="absolute bottom-0 left-0 h-20 md:h-24 w-20 md:w-24 rounded-tr-full bg-cyan-100/80 dark:bg-cyan-400/10" />
                         <div className="relative">
@@ -472,10 +467,10 @@ export default function NursingQuiz() {
                 <section className="mx-auto flex w-full max-w-none flex-col gap-4 md:gap-6 px-3 md:px-4 py-4 md:py-6 lg:px-8">
                     <button
                         onClick={() => navigate(-1)}
-                        className="inline-flex w-fit items-center gap-1.5 md:gap-2 rounded-full border border-slate-200 bg-white/70 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900 dark:hover:text-emerald-300"
+                        aria-label="Go back"
+                        className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                     >
-                        <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                        Back
+                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
                     </button>
                     <div className="md:rounded-2xl md:border-0 bg-white/70 p-6 md:p-8 text-center md:shadow-sm backdrop-blur dark:bg-muted/30">
                         <HelpCircle className="mx-auto mb-2 md:mb-3 h-7 w-7 md:h-8 md:w-8 text-slate-400" />
@@ -511,10 +506,10 @@ export default function NursingQuiz() {
                         <div className="mb-3 md:mb-4 flex items-center justify-between">
                             <button
                                 onClick={() => navigate(-1)}
-                                className="inline-flex items-center gap-1.5 md:gap-2 rounded-full border border-slate-200 bg-white/70 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-slate-800 dark:bg-muted/30 dark:text-slate-200 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900 dark:hover:text-emerald-300"
+                                aria-label="Go back"
+                                className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                             >
-                                <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                Back
+                                <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
                             </button>
                             <div className="flex items-center gap-1.5 md:gap-2">
                                 <button
@@ -829,7 +824,7 @@ export default function NursingQuiz() {
                                 onClick={() => navigate(-1)}
                                 className="inline-flex items-center justify-center gap-1.5 md:gap-2 rounded-xl md:rounded-2xl border-0 bg-white/70 px-4 md:px-5 py-2.5 md:py-3 text-xs md:text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition hover:bg-white dark:bg-muted/30 dark:text-slate-200 dark:hover:bg-slate-900"
                             >
-                                <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                <ChevronLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                 Back to topics
                             </button>
                         </div>

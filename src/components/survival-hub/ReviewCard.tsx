@@ -69,11 +69,11 @@ export const ReviewCard = ({
     };
 
     return (
-        <div className={`px-4 py-4 md:px-0 md:py-4 border-b border-slate-100/50 dark:border-slate-800/50 last:border-0 ${deleting ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`relative rounded-2xl bg-white dark:bg-muted/30 p-4 md:p-5 ${deleting ? 'opacity-50 pointer-events-none' : ''}`}>
 
             {/* Deleting Overlay */}
             {deleting && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-none md:rounded-xl">
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
                     <div className="flex flex-col items-center gap-2 text-white">
                         <div className="h-6 w-6 md:h-8 md:w-8 animate-spin rounded-full border-4 border-white border-t-transparent" />
                         <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">Deleting...</span>
@@ -134,7 +134,7 @@ export const ReviewCard = ({
                         value={editedComment}
                         onChange={(e) => setEditedComment(e.target.value)}
                         rows={3}
-                        className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 p-2.5 md:p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        className="w-full rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 p-2.5 md:p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
                     />
 
                     <div className="flex gap-2">

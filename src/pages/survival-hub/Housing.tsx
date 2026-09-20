@@ -80,19 +80,21 @@ const HousingPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20 dark:bg-background">
-            {/* 1. Header Area - full width on mobile */}
-            <div className="md:rounded-2xl sticky -top-4 z-20 bg-white/90 p-3 md:p-4 backdrop-blur-md dark:bg-muted/100 border-b border-slate-100 dark:border-slate-800">
+            {/* 1. Header Area */}
+            <div className="sticky -top-4 z-20 bg-white/90 p-3 md:p-4 backdrop-blur-md dark:bg-muted/100">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                     <div className="flex items-center gap-2 md:gap-3">
+                        {/* Back button — icon only, no chrome */}
                         <button
                             onClick={() => navigate('/survival-hub')}
-                            className="p-1.5 md:p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            aria-label="Go back"
+                            className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                         >
-                            <ChevronLeft size={18} className="text-slate-600 dark:text-slate-300" />
+                            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
                         </button>
                         <div>
                             <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white leading-none">Student Housing</h1>
-                            <p className="text-[9px] md:text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mt-0.5 md:mt-1 tracking-widest">
+                            <p className="text-[9px] md:text-[10px] text-emerald-600 dark:text-emerald-400 font-bold  mt-0.5 md:mt-1 tracking-widest">
                                 {loading ? 'Loading...' : `${displayHousing.length} Rooms Available`}
                             </p>
                         </div>
@@ -100,7 +102,7 @@ const HousingPage = () => {
 
                     <Link
                         to="/survival-hub/add-housing"
-                        className="flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-blue-600 px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-xs font-bold text-white shadow-lg shadow-blue-200 dark:shadow-none transition-transform active:scale-95"
+                        className="flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-blue-600 hover:bg-blue-700 px-3 md:px-4 py-2 md:py-2.5 text-[10px] md:text-xs font-bold text-white transition-transform active:scale-95"
                     >
                         <Plus size={14} />
                         <span className="hidden sm:inline">Add Listing</span>
@@ -126,7 +128,7 @@ const HousingPage = () => {
                         </div>
                     </div>
 
-                    {/* Search Bar - phone optimized */}
+                    {/* Search Bar */}
                     <div className="relative">
                         <Search className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
@@ -141,9 +143,9 @@ const HousingPage = () => {
                 </div>
             </div>
 
-            {/* 3. Context Indicator - full width on mobile */}
+            {/* 3. Context Indicator */}
             {selectedCenter && (
-                <div className="px-3 md:px-4 py-2.5 md:py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+                <div className="px-3 md:px-4 py-2.5 md:py-3 bg-blue-50 dark:bg-blue-900/20 flex items-center justify-between">
                     <p className="text-[10px] md:text-xs text-blue-700 dark:text-blue-300">
                         Showing results for <span className="font-bold">{selectedCenter.name}</span>
                     </p>
@@ -156,15 +158,15 @@ const HousingPage = () => {
                 </div>
             )}
 
-            {/* 4. Results Grid - full width on mobile */}
+            {/* 4. Results Grid */}
             <div className="p-0 md:p-4">
                 {loading ? (
-                    <div className="grid gap-0 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
+                    <div className="grid gap-3 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
                         {renderSkeletons()}
                     </div>
                 ) : (
                     <>
-                        <div className="grid gap-0 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
+                        <div className="grid gap-3 mt-3 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
                             {displayHousing.map(item => (
                                 <HousingCard
                                     key={item.id}

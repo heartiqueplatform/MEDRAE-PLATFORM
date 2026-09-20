@@ -1,5 +1,4 @@
 "use client";
-import { GlobalLoader } from "@/components/GlobalLoader";
 import {
     ThumbsUp, Bookmark, Eye, Heart, BookmarkIcon, ImageIcon,
     Brain, Flag, Hash, Activity, X, AlertCircle
@@ -16,8 +15,11 @@ import {
     useEffect, useState, useRef, useCallback, useMemo, memo
 } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useSession } from "@supabase/auth-helpers-react";
 
+// ============================================================
+// TYPES
+// ============================================================
 interface FlashcardType {
     id: string;
     type: string;
@@ -34,6 +36,10 @@ interface FlashcardType {
     saves_count: number;
     reports_count: number;
     is_active: boolean;
+    is_liked?: boolean;
+    is_saved?: boolean;
+    is_reported?: boolean;
+    report_reason?: string | null;
 }
 
 const FLASHCARD_REPORT_REASONS = [
@@ -43,8 +49,22 @@ const FLASHCARD_REPORT_REASONS = [
     "Copyright violation",
     "Duplicate flashcard",
     "Poor quality or confusing content",
-    "Other (please specify)"
+    "Other (please specify)",
 ];
+
+const RPC_TIMEOUT_MS = 7000;
+
+// ============================================================
+// HELPERS
+// ============================================================
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error("timeout")), ms)
+        ),
+    ]);
+}
 
 const useMobileDetect = () => {
     const [isMobile, setIsMobile] = useState(false);
@@ -57,128 +77,120 @@ const useMobileDetect = () => {
     return isMobile;
 };
 
-async function fetchFlashcardLiveStats(userId: string, cardId: string) {
-    const { data: cardData } = await supabase
-        .from("flashcard_cards")
-        .select("views_count, likes_count, saves_count, reports_count")
-        .eq("id", cardId)
-        .single();
+// ============================================================
+// DATA LAYER
+// ============================================================
 
-    if (!userId) {
-        return {
-            counts: cardData,
-            interactions: { saved: false, liked: false, reported: false, reportReason: null }
-        };
-    }
-
-    const [{ data: reports }, { data: saved }, { data: liked }] = await Promise.all([
-        supabase.from("flashcard_reports").select("reason").eq("user_id", userId).eq("card_id", cardId).maybeSingle(),
-        supabase.from("flashcard_saves").select("card_id").eq("user_id", userId).eq("card_id", cardId).maybeSingle(),
-        supabase.from("flashcard_likes").select("card_id").eq("user_id", userId).eq("card_id", cardId).maybeSingle()
-    ]);
-
+function normalizeCard(row: any): FlashcardType {
     return {
-        counts: cardData,
-        interactions: {
-            saved: !!saved,
-            liked: !!liked,
-            reported: !!reports,
-            reportReason: reports?.reason || null
-        }
+        id: row.id,
+        type: row.type,
+        title: row.title,
+        text: row.text,
+        related_unit: row.related_unit,
+        difficulty: row.difficulty,
+        tags: row.tags,
+        image_url: row.image_url,
+        source: row.source,
+        exam_relevance: row.exam_relevance,
+        views_count: Number(row.views_count ?? 0),
+        likes_count: Number(row.likes_count ?? 0),
+        saves_count: Number(row.saves_count ?? 0),
+        reports_count: Number(row.reports_count ?? 0),
+        is_active: true,
+        is_liked: !!row.is_liked,
+        is_saved: !!row.is_saved,
+        is_reported: !!row.is_reported,
+        report_reason: row.report_reason ?? null,
     };
 }
 
-const CACHE_KEY = "flashcards_cache";
-const CACHE_DURATION = 24 * 60 * 60 * 1000;
-
-interface CachedFlashcard {
-    id: string;
-    type: string;
-    title?: string;
-    text: string;
-    related_unit?: string;
-    difficulty?: string;
-    tags?: string;
-    image_url?: string;
-    source?: string;
-    exam_relevance?: string;
-}
-
-function getCachedFlashcards(): CachedFlashcard[] | null {
+async function pickFlashcard(userId: string): Promise<FlashcardType | null> {
     try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (!cached) return null;
-        const parsed = JSON.parse(cached);
-        if (Date.now() - parsed.timestamp >= CACHE_DURATION) return null;
-        return parsed.data;
-    } catch {
+        const { data, error } = await withTimeout(
+            Promise.resolve(
+                supabase.rpc("get_unseen_flashcard", { p_user_id: userId })
+            ),
+            RPC_TIMEOUT_MS
+        );
+
+        if (!error && data && data.length > 0) {
+            return normalizeCard(data[0]);
+        }
+
+        const { data: fallback, error: fbErr } = await withTimeout(
+            Promise.resolve(supabase.rpc("get_random_flashcard")),
+            RPC_TIMEOUT_MS
+        );
+
+        if (fbErr || !fallback || fallback.length === 0) return null;
+        return normalizeCard(fallback[0]);
+    } catch (err) {
+        console.warn("[Flashcard] pick failed:", err);
         return null;
     }
 }
 
-function saveFlashcards(cards: CachedFlashcard[]): void {
-    try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-            data: cards,
-            timestamp: Date.now()
-        }));
-    } catch (error) {
-        console.error("Failed to save flashcards cache:", error);
-    }
+/**
+ * Fire-and-forget counter RPC. Never awaited.
+ * If it fails, the row is still the source of truth — counter
+ * catches up next time the user interacts, or we can rebuild it
+ * from the row table later.
+ */
+function fireCounterRpc(
+    rpcName: string,
+    cardId: string
+): void {
+    supabase
+        .rpc(rpcName, { card_id_param: cardId })
+        .then(({ error }) => {
+            if (error) {
+                console.warn(`[Flashcard] ${rpcName} failed:`, error.message);
+            }
+        });
 }
 
-function getRandomFlashcard(cards: CachedFlashcard[]): CachedFlashcard | null {
-    if (!cards || cards.length === 0) return null;
-    return cards[Math.floor(Math.random() * cards.length)];
-}
-
-const updateFlashcardCount = async (cardId: string, action: "like" | "unlike" | "save" | "unsave") => {
-    const map: Record<string, string> = {
-        like: "increment_flashcard_likes",
-        unlike: "decrement_flashcard_likes",
-        save: "increment_flashcard_saves",
-        unsave: "decrement_flashcard_saves"
-    };
-    const rpcFunction = map[action];
-    if (!rpcFunction) return;
-    const { error } = await supabase.rpc(rpcFunction, { card_id_param: cardId });
-    if (error) {
-        console.error(`Failed to ${action}:`, error);
-        throw error;
-    }
-};
-
-/* ------------------------------------------------------------------ */
-/*  Sub-components (memoized)                                         */
-/* ------------------------------------------------------------------ */
+// ============================================================
+// SUBCOMPONENTS
+// ============================================================
 
 const FlashcardActions = memo(function FlashcardActions({
     saved, liked, reported, isMobile,
-    onSave, onLike, onReport
+    onSave, onLike, onReport,
 }: {
     saved: boolean; liked: boolean; reported: boolean; isMobile: boolean;
     onSave: () => void; onLike: () => void; onReport: () => void;
 }) {
-    const base = "w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-90";
+    const base =
+        "w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-90";
     return (
         <div className="flex items-center gap-2">
             <button
                 onClick={onSave}
-                className={`${base} ${saved ? "bg-amber-500 text-white" : "bg-white/15 text-blue-50 hover:bg-white/25"}`}
+                className={`${base} ${saved
+                    ? "bg-amber-500 text-white"
+                    : "bg-white/15 text-blue-50 hover:bg-white/25"
+                    }`}
                 aria-label="Save"
             >
                 <Bookmark size={isMobile ? 18 : 20} fill={saved ? "currentColor" : "none"} />
             </button>
             <button
                 onClick={onLike}
-                className={`${base} ${liked ? "bg-indigo-500 text-white" : "bg-white/15 text-blue-50 hover:bg-white/25"}`}
+                className={`${base} ${liked
+                    ? "bg-indigo-500 text-white"
+                    : "bg-white/15 text-blue-50 hover:bg-white/25"
+                    }`}
                 aria-label="Like"
             >
                 <ThumbsUp size={isMobile ? 18 : 20} fill={liked ? "currentColor" : "none"} />
             </button>
             <button
                 onClick={onReport}
-                className={`${base} ${reported ? "bg-rose-500 text-white" : "bg-white/15 text-blue-50 hover:bg-white/25"}`}
+                className={`${base} ${reported
+                    ? "bg-rose-500 text-white"
+                    : "bg-white/15 text-blue-50 hover:bg-white/25"
+                    }`}
                 aria-label="Report"
             >
                 <Flag size={isMobile ? 18 : 20} fill={reported ? "currentColor" : "none"} />
@@ -188,8 +200,10 @@ const FlashcardActions = memo(function FlashcardActions({
 });
 
 const FlashcardStats = memo(function FlashcardStats({
-    views, likes, saves
-}: { views: number; likes: number; saves: number }) {
+    views, likes, saves,
+}: {
+    views: number; likes: number; saves: number;
+}) {
     return (
         <div className="flex items-center gap-4 text-blue-50">
             <div className="flex items-center gap-1.5">
@@ -208,9 +222,9 @@ const FlashcardStats = memo(function FlashcardStats({
     );
 });
 
-/* ------------------------------------------------------------------ */
-/*  Root component                                                    */
-/* ------------------------------------------------------------------ */
+// ============================================================
+// ROOT
+// ============================================================
 
 export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }) {
     const [card, setCard] = useState<FlashcardType | null>(null);
@@ -222,7 +236,10 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
     const [showReportDialog, setShowReportDialog] = useState(false);
     const [reportReason, setReportReason] = useState("");
     const [customReasonText, setCustomReasonText] = useState("");
-    const [viewReportReason, setViewReportReason] = useState<{ show: boolean; reason: string }>({ show: false, reason: "" });
+    const [viewReportReason, setViewReportReason] = useState<{
+        show: boolean;
+        reason: string;
+    }>({ show: false, reason: "" });
     const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
     const tapSound = useMemo(
@@ -230,10 +247,13 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
         []
     );
     const session = useSession();
-    const supabaseClient = useSupabaseClient();
     const user = session?.user || null;
     const isMounted = useRef(true);
     const isMobile = useMobileDetect();
+
+    // Prevents duplicate view writes on React StrictMode double-mount
+    // and on rapid re-renders.
+    const viewedCardsRef = useRef<Set<string>>(new Set());
 
     const lastTapRef = useRef(0);
     const playTap = useCallback(() => {
@@ -245,110 +265,210 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
         tapSound.play().catch(() => { });
     }, [tapSound, isMobile]);
 
-    /* ---------------- Interactions ---------------- */
-    const handleInteraction = useCallback(
-        async (type: "save" | "like" | "report", finalReason?: string) => {
-            if (!card || !user) return;
-            playTap();
+    // ── Load card via RPC ────────────────────────────────────
+    useEffect(() => {
+        if (!user?.id) {
+            setLoading(false);
+            return;
+        }
+        isMounted.current = true;
 
-            if (type === "report" && !reported && !finalReason) {
-                setShowReportDialog(true);
-                return;
+        const load = async () => {
+            setLoading(true);
+            try {
+                const picked = await pickFlashcard(user.id);
+                if (!isMounted.current) return;
+
+                if (!picked) {
+                    setNoCard(true);
+                    return;
+                }
+
+                // Optimistically bump view count in the UI.
+                setCard({
+                    ...picked,
+                    views_count: picked.views_count + 1,
+                });
+                setLiked(!!picked.is_liked);
+                setSaved(!!picked.is_saved);
+                setReported(!!picked.is_reported);
+                setNoCard(false);
+
+                // Record the view ONCE per card per session.
+                if (!viewedCardsRef.current.has(picked.id)) {
+                    viewedCardsRef.current.add(picked.id);
+
+                    // 1. Row insert — source of truth. Fire and forget.
+                    supabase
+                        .from("flashcard_views")
+                        .insert({
+                            user_id: user.id,
+                            card_id: picked.id,
+                        })
+                        .then(({ error }) => {
+                            // 23505 = unique constraint hit (already viewed today).
+                            if (error && error.code !== "23505") {
+                                console.warn(
+                                    "[Flashcard] view row failed:",
+                                    error.message
+                                );
+                            }
+                        });
+
+                    // 2. Counter RPC — fast read path. Fire and forget.
+                    fireCounterRpc("increment_flashcard_views", picked.id);
+                }
+            } catch (err) {
+                console.error("[Flashcard] load failed:", err);
+                if (isMounted.current) setNoCard(true);
+            } finally {
+                if (isMounted.current) setLoading(false);
             }
+        };
 
-            if (type === "save") {
-                const newStatus = !saved;
-                if (!newStatus && card.saves_count <= 0) return;
+        load();
+        return () => {
+            isMounted.current = false;
+        };
+    }, [user?.id, cardId]);
 
-                setSaved(newStatus);
-                setCard(prev => prev ? {
+    // ── Save ─────────────────────────────────────────────────
+    const handleSave = useCallback(async () => {
+        if (!card || !user?.id) return;
+        playTap();
+        const newStatus = !saved;
+        if (!newStatus && card.saves_count <= 0) return;
+
+        const prevCard = card;
+
+        // Optimistic UI.
+        setSaved(newStatus);
+        setCard((prev) =>
+            prev
+                ? {
                     ...prev,
-                    saves_count: Math.max(0, prev.saves_count + (newStatus ? 1 : -1))
-                } : null);
-
-                try {
-                    if (newStatus) {
-                        await updateFlashcardCount(card.id, "save");
-                        await supabase.from("flashcard_saves").upsert({ user_id: user.id, card_id: card.id });
-                    } else {
-                        await updateFlashcardCount(card.id, "unsave");
-                        await supabase.from("flashcard_saves").delete().match({ user_id: user.id, card_id: card.id });
-                    }
-                } catch (error) {
-                    console.error("Save interaction failed:", error);
-                    setSaved(!newStatus);
-                    setCard(prev => prev ? {
-                        ...prev,
-                        saves_count: Math.max(0, prev.saves_count + (newStatus ? -1 : 1))
-                    } : prev);
+                    saves_count: Math.max(0, prev.saves_count + (newStatus ? 1 : -1)),
                 }
-                return;
+                : prev
+        );
+
+        try {
+            if (newStatus) {
+                // 1. Row insert — awaited. Source of truth.
+                const { error: rowErr } = await supabase
+                    .from("flashcard_saves")
+                    .upsert(
+                        { user_id: user.id, card_id: card.id },
+                        { onConflict: "user_id,card_id" }
+                    );
+                if (rowErr) throw rowErr;
+
+                // 2. Counter — parallel, fire-and-forget.
+                fireCounterRpc("increment_flashcard_saves", card.id);
+            } else {
+                const { error: rowErr } = await supabase
+                    .from("flashcard_saves")
+                    .delete()
+                    .match({ user_id: user.id, card_id: card.id });
+                if (rowErr) throw rowErr;
+
+                fireCounterRpc("decrement_flashcard_saves", card.id);
             }
+        } catch (err) {
+            console.warn("[Flashcard] save failed:", err);
+            setSaved(!newStatus);
+            setCard(prevCard);
+        }
+    }, [card, user?.id, saved, playTap]);
 
-            if (type === "like") {
-                const newStatus = !liked;
-                if (!newStatus && card.likes_count <= 0) return;
+    // ── Like ─────────────────────────────────────────────────
+    const handleLike = useCallback(async () => {
+        if (!card || !user?.id) return;
+        playTap();
+        const newStatus = !liked;
+        if (!newStatus && card.likes_count <= 0) return;
 
-                setLiked(newStatus);
-                setCard(prev => prev ? {
+        const prevCard = card;
+
+        // Optimistic UI.
+        setLiked(newStatus);
+        setCard((prev) =>
+            prev
+                ? {
                     ...prev,
-                    likes_count: Math.max(0, prev.likes_count + (newStatus ? 1 : -1))
-                } : prev);
-
-                try {
-                    if (newStatus) {
-                        await updateFlashcardCount(card.id, "like");
-                        await supabase.from("flashcard_likes").upsert({ user_id: user.id, card_id: card.id });
-                    } else {
-                        await updateFlashcardCount(card.id, "unlike");
-                        await supabase.from("flashcard_likes").delete().match({ user_id: user.id, card_id: card.id });
-                    }
-                } catch (error) {
-                    console.error("Like interaction failed:", error);
-                    setLiked(!newStatus);
-                    setCard(prev => prev ? {
-                        ...prev,
-                        likes_count: Math.max(0, prev.likes_count + (newStatus ? -1 : 1))
-                    } : prev);
+                    likes_count: Math.max(0, prev.likes_count + (newStatus ? 1 : -1)),
                 }
-                return;
+                : prev
+        );
+
+        try {
+            if (newStatus) {
+                // 1. Row insert — awaited.
+                const { error: rowErr } = await supabase
+                    .from("flashcard_likes")
+                    .upsert(
+                        { user_id: user.id, card_id: card.id },
+                        { onConflict: "user_id,card_id" }
+                    );
+                if (rowErr) throw rowErr;
+
+                // 2. Counter — parallel.
+                fireCounterRpc("increment_flashcard_likes", card.id);
+            } else {
+                const { error: rowErr } = await supabase
+                    .from("flashcard_likes")
+                    .delete()
+                    .match({ user_id: user.id, card_id: card.id });
+                if (rowErr) throw rowErr;
+
+                fireCounterRpc("decrement_flashcard_likes", card.id);
             }
+        } catch (err) {
+            console.warn("[Flashcard] like failed:", err);
+            setLiked(!newStatus);
+            setCard(prevCard);
+        }
+    }, [card, user?.id, liked, playTap]);
 
-            if (type === "report" && finalReason) {
-                const previousReported = reported;
-                const previousCard = { ...card };
-
-                setReported(true);
-                setCard(prev => prev ? { ...prev, reports_count: prev.reports_count + 1 } : prev);
-
-                try {
-                    await supabase.from("flashcard_reports").upsert({
-                        user_id: user.id,
-                        card_id: card.id,
-                        reason: finalReason
-                    });
-                    await supabase.rpc("increment_flashcard_reports", { card_id_param: card.id });
-                } catch (error) {
-                    console.error("Report failed:", error);
-                    setReported(previousReported);
-                    setCard(previousCard);
-                }
-            }
-        },
-        [card, user, saved, liked, reported, playTap]
-    );
-
+    // ── Report ───────────────────────────────────────────────
     const submitReportWithReason = useCallback(async () => {
-        if (!reportReason.trim()) return;
+        if (!card || !user?.id || !reportReason.trim()) return;
         let finalReason = reportReason;
-        if (customReasonText.trim()) finalReason = `${reportReason}\n\nDetails: ${customReasonText.trim()}`;
+        if (customReasonText.trim()) {
+            finalReason = `${reportReason}\n\nDetails: ${customReasonText.trim()}`;
+        }
         setIsSubmittingReport(true);
-        await handleInteraction("report", finalReason);
-        setShowReportDialog(false);
-        setReportReason("");
-        setCustomReasonText("");
-        setIsSubmittingReport(false);
-    }, [reportReason, customReasonText, handleInteraction]);
+        const prevCard = card;
+        const prevReported = reported;
+
+        setReported(true);
+        setCard((prev) =>
+            prev ? { ...prev, reports_count: prev.reports_count + 1 } : prev
+        );
+
+        try {
+            // 1. Row insert — awaited.
+            const { error: rowErr } = await supabase
+                .from("flashcard_reports")
+                .upsert(
+                    { user_id: user.id, card_id: card.id, reason: finalReason },
+                    { onConflict: "user_id,card_id" }
+                );
+            if (rowErr) throw rowErr;
+
+            // 2. Counter — parallel.
+            fireCounterRpc("increment_flashcard_reports", card.id);
+        } catch (err) {
+            console.warn("[Flashcard] report failed:", err);
+            setReported(prevReported);
+            setCard(prevCard);
+        } finally {
+            setShowReportDialog(false);
+            setReportReason("");
+            setCustomReasonText("");
+            setIsSubmittingReport(false);
+        }
+    }, [card, user?.id, reportReason, customReasonText, reported]);
 
     const fetchAndViewReportReason = useCallback(async () => {
         if (!user || !card) return;
@@ -365,95 +485,49 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
         }
     }, [user, card]);
 
-    /* ---------------- Load data ---------------- */
-    useEffect(() => {
-        if (!user) return;
-        isMounted.current = true;
-
-        const loadFlashcards = async () => {
-            setLoading(true);
-            let baseCard: any = null;
-
-            const cachedCards = getCachedFlashcards();
-            if (cachedCards?.length) baseCard = getRandomFlashcard(cachedCards);
-
-            if (!baseCard) {
-                const { data } = await supabase
-                    .from("flashcard_cards")
-                    .select("id, type, title, text, related_unit, difficulty, tags, image_url, source, exam_relevance")
-                    .eq("is_active", true)
-                    .limit(20);
-
-                if (data?.length) {
-                    saveFlashcards(data);
-                    baseCard = getRandomFlashcard(data);
-                }
-            }
-
-            if (baseCard && isMounted.current) {
-                await supabase.rpc("increment_flashcard_views", { card_id_param: baseCard.id });
-                const liveData = await fetchFlashcardLiveStats(user.id, baseCard.id);
-
-                if (isMounted.current) {
-                    setCard({
-                        ...baseCard,
-                        is_active: true,
-                        views_count: liveData.counts?.views_count ?? 0,
-                        likes_count: liveData.counts?.likes_count ?? 0,
-                        saves_count: liveData.counts?.saves_count ?? 0,
-                        reports_count: liveData.counts?.reports_count ?? 0,
-                    } as FlashcardType);
-
-                    setSaved(liveData.interactions.saved);
-                    setLiked(liveData.interactions.liked);
-                    setReported(liveData.interactions.reported);
-                    setNoCard(false);
-                }
-            } else {
-                setNoCard(true);
-            }
-            setLoading(false);
-        };
-
-        loadFlashcards();
-        return () => { isMounted.current = false; };
-    }, [user]);
-
-    /* ---------------- Skeleton (edge-to-edge) ---------------- */
-    const LoadingSkeleton = useMemo(() => (
-        <div className="w-full min-h-[400px] bg-blue-800 dark:bg-blue-900 animate-pulse">
-            <div className="h-1 w-full bg-blue-950" />
-            <div className="pt-5 pb-3">
-                <div className="flex items-center gap-3 mb-3 px-4">
-                    <div className="w-10 h-10 rounded-xl bg-muted/50" />
-                    <div className="space-y-2">
-                        <div className="h-2 w-24 rounded-full bg-muted/50" />
-                        <div className="h-4 w-40 rounded-full bg-muted/50" />
+    // ── Skeleton ─────────────────────────────────────────────
+    const LoadingSkeleton = useMemo(
+        () => (
+            <div className="w-full min-h-[400px] bg-blue-800 dark:bg-blue-900 animate-pulse rounded-2xl overflow-hidden shadow-lg">
+                <div className="h-1 w-full bg-blue-950" />
+                <div className="pt-5 pb-3">
+                    <div className="flex items-center gap-3 mb-3 px-4">
+                        <div className="w-10 h-10 rounded-xl bg-muted/50" />
+                        <div className="space-y-2">
+                            <div className="h-2 w-24 rounded-full bg-muted/50" />
+                            <div className="h-4 w-40 rounded-full bg-muted/50" />
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-3">
+                    <div className="h-3.5 w-full bg-muted/50 rounded-none" />
+                    <div className="h-3.5 w-full bg-muted/50 rounded-none" />
+                    <div className="h-3.5 w-[85%] bg-muted/50 rounded-none" />
+                    <div className="h-3.5 w-[60%] bg-muted/50 rounded-none" />
+                    <div className="h-32 w-full bg-muted/50 flex items-center justify-center">
+                        <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
                     </div>
                 </div>
             </div>
-            <div className="space-y-3">
-                <div className="h-3.5 w-full bg-muted/50 rounded-none" />
-                <div className="h-3.5 w-full bg-muted/50 rounded-none" />
-                <div className="h-3.5 w-[85%] bg-muted/50 rounded-none" />
-                <div className="h-3.5 w-[60%] bg-muted/50 rounded-none" />
-                <div className="h-32 w-full bg-muted/50 flex items-center justify-center">
-                    <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
-                </div>
-            </div>
-        </div>
-    ), []);
+        ),
+        []
+    );
 
-    /* ---------------- Render helpers ---------------- */
+    // ── Rich text renderer ───────────────────────────────────
     const renderStyledText = useCallback((rawText: string) => {
         const cleanText = rawText.replace(/\\n/g, "\n");
-        const lines = cleanText.split("\n").filter(line => line.trim() !== "" || line.length > 0);
+        const lines = cleanText
+            .split("\n")
+            .filter((line) => line.trim() !== "" || line.length > 0);
 
         return lines.map((line, index) => {
             const trimmedLine = line.trim();
             const lowerLine = trimmedLine.toLowerCase();
 
-            if (lowerLine.startsWith("pathophysiology:") || lowerLine.startsWith("mechanism:")) {
+            if (
+                lowerLine.startsWith("pathophysiology:") ||
+                lowerLine.startsWith("mechanism:")
+            ) {
                 return (
                     <div key={index} className="mt-5 mb-2">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 bg-indigo-100/50 dark:bg-indigo-900/40 px-2.5 py-1 rounded-md">
@@ -466,12 +540,20 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                 );
             }
 
-            if (lowerLine.startsWith("exam tip:") || lowerLine.startsWith("key point:")) {
+            if (
+                lowerLine.startsWith("exam tip:") ||
+                lowerLine.startsWith("key point:")
+            ) {
                 return (
-                    <div key={index} className="my-5 p-4 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-900/20 dark:to-transparent border-l-4 border-amber-500">
+                    <div
+                        key={index}
+                        className="my-5 p-4 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-900/20 dark:to-transparent border-l-4 border-amber-500"
+                    >
                         <div className="flex items-center gap-2 mb-1">
                             <span className="text-lg">🔥</span>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">High-Yield Exam Tip</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                                High-Yield Exam Tip
+                            </span>
                         </div>
                         <p className="text-sm sm:text-base text-amber-900 dark:text-amber-200 font-bold leading-relaxed">
                             {trimmedLine.split(":")[1]?.trim()}
@@ -480,7 +562,10 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                 );
             }
 
-            if (lowerLine.startsWith("clinical features:") || lowerLine.startsWith("symptoms:")) {
+            if (
+                lowerLine.startsWith("clinical features:") ||
+                lowerLine.startsWith("symptoms:")
+            ) {
                 return (
                     <div key={index} className="mt-5 mb-2">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 dark:text-rose-400 bg-rose-100/50 dark:bg-rose-900/40 px-2.5 py-1 rounded-md">
@@ -493,7 +578,10 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                 );
             }
 
-            if (lowerLine.startsWith("management:") || lowerLine.startsWith("treatment:")) {
+            if (
+                lowerLine.startsWith("management:") ||
+                lowerLine.startsWith("treatment:")
+            ) {
                 return (
                     <div key={index} className="mt-5 mb-2">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/40 px-2.5 py-1 rounded-md">
@@ -509,35 +597,41 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
             if (trimmedLine.length === 0) return <div key={index} className="h-2" />;
 
             return (
-                <p key={index} className="text-sm sm:text-base leading-relaxed font-medium text-gray-800 dark:text-gray-200 mb-3 last:mb-0">
+                <p
+                    key={index}
+                    className="text-sm sm:text-base leading-relaxed font-medium text-gray-800 dark:text-gray-200 mb-3 last:mb-0"
+                >
                     {trimmedLine}
                 </p>
             );
         });
     }, []);
 
-    const tags = useMemo(() => card?.tags?.split(",").slice(0, 5) ?? [], [card?.tags]);
+    const tags = useMemo(
+        () => card?.tags?.split(",").slice(0, 5) ?? [],
+        [card?.tags]
+    );
 
-    /* ---------------- Early returns ---------------- */
+    // ── Early returns ────────────────────────────────────────
     if (loading) return LoadingSkeleton;
 
-    if (noCard) {
+    if (noCard || !card) {
         return (
             <div className="w-full py-10 bg-blue-800 dark:bg-blue-900">
-                <p className="text-center text-blue-50 font-semibold">No flashcard found</p>
+                <p className="text-center text-blue-50 font-semibold">
+                    {noCard
+                        ? "You've reviewed every flashcard — more coming soon!"
+                        : "No flashcard available"}
+                </p>
             </div>
         );
     }
 
-    if (!card) return null;
-
-    /* ---------------- Render (edge-to-edge) ---------------- */
     return (
         <>
-            <article className="w-full bg-blue-800 dark:bg-blue-900 relative">
+            <article className="w-full bg-blue-800 dark:bg-blue-900 relative rounded-2xl overflow-hidden shadow-lg">
                 <div className="h-1 w-full bg-blue-950" />
 
-                {/* Header — full width, inner px only */}
                 <header className="pt-5 pb-3">
                     <div className="flex items-start gap-3 px-4">
                         <div className="p-2.5 bg-white/15 text-white rounded-xl flex-shrink-0">
@@ -574,16 +668,11 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                     </div>
                 </header>
 
-                {/* Body — edge-to-edge sections */}
                 <div className="space-y-4">
-                    {/* Text block — full width, inner px only */}
                     <div className="px-4 py-3 bg-white/95 dark:bg-blue-950/60">
-                        <div className="space-y-1">
-                            {renderStyledText(card.text)}
-                        </div>
+                        <div className="space-y-1">{renderStyledText(card.text)}</div>
                     </div>
 
-                    {/* Image — full bleed */}
                     {card.image_url && (
                         <div className="w-full bg-white/10 overflow-hidden">
                             <img
@@ -596,12 +685,13 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                         </div>
                     )}
 
-                    {/* Meta grid — edge-to-edge, gap only between cards */}
                     <div className="grid grid-cols-2 gap-px bg-white/10">
                         <div className="flex items-center gap-2 p-3 bg-blue-800 dark:bg-blue-900">
                             <Activity className="w-4 h-4 text-blue-100 shrink-0" />
                             <div className="min-w-0 flex-1">
-                                <p className="text-[8px] uppercase font-black text-blue-200">Exam Priority</p>
+                                <p className="text-[8px] uppercase font-black text-blue-200">
+                                    Exam Priority
+                                </p>
                                 <p className="text-[11px] font-bold text-white truncate">
                                     {card.exam_relevance || "Standard"}
                                 </p>
@@ -610,7 +700,9 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                         <div className="flex items-center gap-2 p-3 bg-blue-800 dark:bg-blue-900">
                             <ImageIcon className="w-4 h-4 text-blue-100 shrink-0" />
                             <div className="min-w-0 flex-1">
-                                <p className="text-[8px] uppercase font-black text-blue-200">Reference</p>
+                                <p className="text-[8px] uppercase font-black text-blue-200">
+                                    Reference
+                                </p>
                                 <p className="text-[11px] font-bold text-white truncate">
                                     {card.source || "Verified"}
                                 </p>
@@ -618,7 +710,6 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                         </div>
                     </div>
 
-                    {/* Tags — full width row */}
                     {tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 px-4">
                             {tags.map((tag) => (
@@ -634,7 +725,6 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                     )}
                 </div>
 
-                {/* Footer — full width, inner px only */}
                 <footer className="py-4 mt-3">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4">
                         <FlashcardActions
@@ -642,10 +732,12 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                             liked={liked}
                             reported={reported}
                             isMobile={isMobile}
-                            onSave={() => handleInteraction("save")}
-                            onLike={() => handleInteraction("like")}
+                            onSave={handleSave}
+                            onLike={handleLike}
                             onReport={() =>
-                                reported ? fetchAndViewReportReason() : handleInteraction("report")
+                                reported
+                                    ? fetchAndViewReportReason()
+                                    : setShowReportDialog(true)
                             }
                         />
                         <FlashcardStats
@@ -672,7 +764,9 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                                 <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
                                     <Flag className="w-5 h-5 text-rose-500" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Report Flashcard</h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    Report Flashcard
+                                </h3>
                             </div>
                             <button
                                 onClick={() => {
@@ -695,7 +789,10 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Reason for reporting *
                                 </label>
-                                <Select value={reportReason} onValueChange={setReportReason}>
+                                <Select
+                                    value={reportReason}
+                                    onValueChange={setReportReason}
+                                >
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select a reason..." />
                                     </SelectTrigger>
@@ -765,10 +862,14 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                                 <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
                                     <AlertCircle className="w-5 h-5 text-rose-500" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Your Report</h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    Your Report
+                                </h3>
                             </div>
                             <button
-                                onClick={() => setViewReportReason({ show: false, reason: "" })}
+                                onClick={() =>
+                                    setViewReportReason({ show: false, reason: "" })
+                                }
                                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5 text-gray-500" />
@@ -782,7 +883,9 @@ export const Flashcard = memo(function Flashcard({ cardId }: { cardId?: string }
                         </div>
 
                         <Button
-                            onClick={() => setViewReportReason({ show: false, reason: "" })}
+                            onClick={() =>
+                                setViewReportReason({ show: false, reason: "" })
+                            }
                             className="w-full mt-6 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                         >
                             Close

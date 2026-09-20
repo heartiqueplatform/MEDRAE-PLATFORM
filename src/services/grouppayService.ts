@@ -1,7 +1,13 @@
 // src/services/grouppayService.ts
 
 import { supabase } from '@/lib/supabaseClient';
-import { StudyGroup, GroupMember } from '@/types/grouppay';
+import {
+    StudyGroup,
+    GroupMember,
+    GroupDuration,
+    GROUPPAY_CONFIG,
+    getGroupPricePerMember,
+} from '@/types/grouppay';
 
 export const grouppayService = {
     // Get all groups with optional filters
@@ -137,23 +143,30 @@ export const grouppayService = {
         return data;
     },
 
-    // Create a new group
-    // Create a new group
+    // ==========================================================
+    // CREATE GROUP
+    // ==========================================================
     async createGroup(groupData: {
         name: string;
         school: string;
         max_members: number;
         description?: string;
         contribution_per_member?: number;
-        leader_phone?: string;      // ✅ NEW
-        leader_whatsapp?: string;   // ✅ NEW
-        leader_email?: string;      // ✅ NEW
+        duration_type?: GroupDuration;
+        leader_phone?: string;
+        leader_whatsapp?: string;
+        leader_email?: string;
     }, creatorId: string): Promise<StudyGroup> {
         try {
-            // Generate a unique group code
             const codePrefix = 'MEDRAE';
             const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
             const groupCode = `${codePrefix}-${randomNum}`;
+
+            const durationType: GroupDuration =
+                groupData.duration_type === '1-month' ? '1-month' : '2-months';
+            const unitPrice =
+                groupData.contribution_per_member ??
+                getGroupPricePerMember(durationType);
 
             console.log('Creating group with data:', {
                 group_name: groupData.name,
@@ -161,12 +174,13 @@ export const grouppayService = {
                 created_by: creatorId,
                 max_members: groupData.max_members,
                 group_code: groupCode,
+                duration_type: durationType,
+                price_per_member: unitPrice,
                 leader_phone: groupData.leader_phone,
                 leader_whatsapp: groupData.leader_whatsapp,
                 leader_email: groupData.leader_email,
             });
 
-            // Start with 0 - trigger will increment when we add the creator as a member
             const { data: newGroup, error: groupError } = await supabase
                 .from('grouppay_groups')
                 .insert({
@@ -176,11 +190,12 @@ export const grouppayService = {
                     created_by: creatorId,
                     max_members: groupData.max_members,
                     group_code: groupCode,
-                    contribution_per_member: groupData.contribution_per_member || 100,
-                    current_members: 0, // Start at 0, trigger will add 1
+                    contribution_per_member: unitPrice,
+                    duration_type: durationType,
+                    price_per_member: unitPrice,
+                    current_members: 0,
                     status: 'open',
                     is_locked: false,
-                    // ✅ NEW: Contact fields
                     leader_phone: groupData.leader_phone || null,
                     leader_whatsapp: groupData.leader_whatsapp || null,
                     leader_email: groupData.leader_email || null,
@@ -195,7 +210,6 @@ export const grouppayService = {
 
             console.log('Group created successfully:', newGroup);
 
-            // Add the creator as a member - trigger will increment current_members to 1
             const { error: memberError } = await supabase
                 .from('grouppay_members')
                 .insert({
@@ -206,17 +220,14 @@ export const grouppayService = {
 
             if (memberError) {
                 console.error('Error adding creator as member:', memberError);
-                // Rollback: delete the group if we can't add the creator
                 await supabase.from('grouppay_groups').delete().eq('id', newGroup.id);
                 throw new Error('Failed to add creator as member');
             }
 
             console.log('Creator added as member successfully');
 
-            // Wait a moment for the trigger to complete
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            // Fetch the complete group with relations
             const { data: completeData, error: fetchError } = await supabase
                 .from('grouppay_groups')
                 .select(`
@@ -256,12 +267,12 @@ export const grouppayService = {
             throw error;
         }
     },
+
     // Add a member to a group - Trigger handles increment
     async addMemberToGroup(groupId: string, userId: string, role: 'leader' | 'member' = 'member'): Promise<void> {
         try {
             console.log('Adding member to group:', { groupId, userId, role });
 
-            // Check if user is already a member
             const { data: existingMember, error: checkError } = await supabase
                 .from('grouppay_members')
                 .select('id')
@@ -273,7 +284,6 @@ export const grouppayService = {
                 throw new Error('You are already a member of this group');
             }
 
-            // Check if group is full
             const { data: group, error: groupError } = await supabase
                 .from('grouppay_groups')
                 .select('current_members, max_members')
@@ -290,7 +300,6 @@ export const grouppayService = {
                 throw new Error('This group is full');
             }
 
-            // Add member - trigger will handle incrementing current_members
             const { error: insertError } = await supabase
                 .from('grouppay_members')
                 .insert({
@@ -317,7 +326,6 @@ export const grouppayService = {
         try {
             console.log('Removing member from group:', { groupId, userId });
 
-            // Check if user is the leader
             const { data: member, error: memberError } = await supabase
                 .from('grouppay_members')
                 .select('role')
@@ -333,7 +341,6 @@ export const grouppayService = {
                 throw new Error('Group leader cannot leave. Transfer leadership first or delete the group.');
             }
 
-            // Get current member count before deletion
             const { data: group, error: groupError } = await supabase
                 .from('grouppay_groups')
                 .select('current_members')
@@ -346,7 +353,6 @@ export const grouppayService = {
 
             console.log('Current group state before removal:', group);
 
-            // Remove member - trigger will handle decrementing current_members
             const { error: deleteError } = await supabase
                 .from('grouppay_members')
                 .delete()
@@ -375,7 +381,7 @@ export const grouppayService = {
             .eq('user_id', userId)
             .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+        if (error && error.code !== 'PGRST116') {
             console.error('Error checking membership:', error);
         }
 
@@ -403,7 +409,6 @@ export const grouppayService = {
         try {
             console.log('Deleting group:', { groupId, userId });
 
-            // Check if user is the creator/leader
             const { data: group, error: groupError } = await supabase
                 .from('grouppay_groups')
                 .select('created_by')
@@ -418,7 +423,6 @@ export const grouppayService = {
                 throw new Error('Only the group leader can delete this group');
             }
 
-            // Delete the group - this will cascade delete members and payments
             const { error: deleteError } = await supabase
                 .from('grouppay_groups')
                 .delete()
@@ -563,7 +567,6 @@ export const grouppayService = {
     // Fix group count if it's out of sync
     async fixGroupCount(groupId: string): Promise<void> {
         try {
-            // Get actual member count
             const { count, error: countError } = await supabase
                 .from('grouppay_members')
                 .select('*', { count: 'exact', head: true })
@@ -574,7 +577,6 @@ export const grouppayService = {
                 throw countError;
             }
 
-            // Update current_members to actual count
             const { error: updateError } = await supabase
                 .from('grouppay_groups')
                 .update({ current_members: count || 0 })
@@ -594,11 +596,8 @@ export const grouppayService = {
     },
 
     // ==========================================================
-    // GROUPPAY PAYMENT METHODS
+    // INITIATE GROUP PAYMENT
     // ==========================================================
-    // src/services/grouppayService.ts - Updated initiateGroupPayment
-
-    // Initiate group payment
     async initiateGroupPayment(
         groupId: string,
         userId: string,
@@ -613,7 +612,6 @@ export const grouppayService = {
                 groupIdType: typeof groupId
             });
 
-            // Validate inputs
             if (!groupId) {
                 throw new Error('Group ID is required');
             }
@@ -624,10 +622,9 @@ export const grouppayService = {
                 throw new Error('Valid phone number is required');
             }
 
-            // Get group details
             const { data: group, error: groupError } = await supabase
                 .from('grouppay_groups')
-                .select('created_by, status, current_members, contribution_per_member')
+                .select('created_by, status, current_members, contribution_per_member, duration_type, price_per_member')
                 .eq('id', groupId)
                 .single();
 
@@ -638,24 +635,26 @@ export const grouppayService = {
 
             console.log('📊 Group data:', group);
 
-            // Verify user is group leader
             if (group.created_by !== userId) {
                 throw new Error('Only the group leader can initiate payment');
             }
 
-            // Check if group is already active
             if (group.status === 'active') {
                 throw new Error('Group is already active');
             }
 
-            // Calculate total amount
-            const totalAmount = group.current_members * group.contribution_per_member;
-            console.log(`💰 Total amount: ${totalAmount} (${group.current_members} members × ${group.contribution_per_member})`);
+            const durationType: GroupDuration =
+                (group as any).duration_type === '1-month' ? '1-month' : '2-months';
+            const unitPrice =
+                (group as any).price_per_member ??
+                group.contribution_per_member ??
+                getGroupPricePerMember(durationType);
 
-            // Generate checkout request ID
+            const totalAmount = group.current_members * unitPrice;
+            console.log(`💰 Total amount: ${totalAmount} (${group.current_members} members × ${unitPrice}) [${durationType}]`);
+
             const checkoutRequestId = `GP_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-            // Create payment record
             const { data: payment, error: paymentError } = await supabase
                 .from('grouppay_payments')
                 .insert({
@@ -664,7 +663,8 @@ export const grouppayService = {
                     amount: totalAmount,
                     phone_number: phoneNumber,
                     checkout_request_id: checkoutRequestId,
-                    status: 'pending'
+                    status: 'pending',
+                    duration_type: durationType,
                 })
                 .select()
                 .single();
@@ -676,7 +676,6 @@ export const grouppayService = {
 
             console.log('✅ Payment record created:', payment);
 
-            // Update group status to payment_pending
             await supabase
                 .from('grouppay_groups')
                 .update({
@@ -685,17 +684,16 @@ export const grouppayService = {
                 })
                 .eq('id', groupId);
 
-            // Call the GroupPay STK Push edge function
             const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/grouppay-stk-push`;
             console.log(`📤 Calling edge function: ${functionUrl}`);
 
-            // IMPORTANT: Use 'phone' key (not 'phoneNumber') to match the edge function
             const requestBody = {
-                phone: phoneNumber,  // ✅ Changed from phoneNumber to phone
+                phone: phoneNumber,
                 amount: totalAmount,
-                userId: userId,      // ✅ Add userId
+                userId: userId,
                 groupId: groupId,
-                paymentId: payment.id
+                paymentId: payment.id,
+                durationType: durationType,
             };
 
             console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
@@ -713,7 +711,6 @@ export const grouppayService = {
             console.log('📥 Edge function response:', result);
 
             if (!response.ok) {
-                // If STK push fails, update payment status
                 await supabase
                     .from('grouppay_payments')
                     .update({
@@ -738,7 +735,10 @@ export const grouppayService = {
             throw error;
         }
     },
-    // Check payment status
+
+    // ==========================================================
+    // CHECK PAYMENT STATUS
+    // ==========================================================
     async getGroupPaymentStatus(groupId: string): Promise<{
         status: string;
         total_amount: number;
@@ -751,7 +751,6 @@ export const grouppayService = {
         result_desc?: string;
     }> {
         try {
-            // Get latest payment
             const { data: payment, error: paymentError } = await supabase
                 .from('grouppay_payments')
                 .select('*')
@@ -762,18 +761,21 @@ export const grouppayService = {
 
             if (paymentError) throw paymentError;
 
-            // Get group info
             const { data: group, error: groupError } = await supabase
                 .from('grouppay_groups')
-                .select('current_members, status, contribution_per_member')
+                .select('current_members, status, contribution_per_member, price_per_member, duration_type')
                 .eq('id', groupId)
                 .single();
 
             if (groupError) throw groupError;
 
+            const unitPrice =
+                (group as any).price_per_member ??
+                group.contribution_per_member;
+
             return {
                 status: payment?.status || 'pending',
-                total_amount: group.current_members * group.contribution_per_member,
+                total_amount: group.current_members * unitPrice,
                 paid_amount: payment?.amount || 0,
                 members_count: group.current_members,
                 is_successful: payment?.status === 'success',
@@ -841,7 +843,7 @@ export const grouppayService = {
         }
     },
 
-    // Check if group is active (all members have premium)
+    // Check if group is active
     async isGroupActive(groupId: string): Promise<boolean> {
         try {
             const { data, error } = await supabase
@@ -859,10 +861,11 @@ export const grouppayService = {
         }
     },
 
-    // Retry failed payment
+    // ==========================================================
+    // RETRY FAILED PAYMENT
+    // ==========================================================
     async retryGroupPayment(groupId: string, userId: string): Promise<{ checkoutRequestId: string }> {
         try {
-            // Get the failed payment
             const { data: payment, error: paymentError } = await supabase
                 .from('grouppay_payments')
                 .select('*')
@@ -874,10 +877,8 @@ export const grouppayService = {
 
             if (paymentError) throw paymentError;
 
-            // Generate new checkout request ID
             const newCheckoutRequestId = `GP_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-            // Update payment with new checkout ID and reset status
             const { error: updateError } = await supabase
                 .from('grouppay_payments')
                 .update({
@@ -891,7 +892,6 @@ export const grouppayService = {
 
             if (updateError) throw updateError;
 
-            // Update group status back to payment_pending
             await supabase
                 .from('grouppay_groups')
                 .update({
@@ -900,7 +900,6 @@ export const grouppayService = {
                 })
                 .eq('id', groupId);
 
-            // Re-initiate STK push
             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/grouppay-stk-push`, {
                 method: 'POST',
                 headers: {
@@ -913,7 +912,8 @@ export const grouppayService = {
                     checkoutRequestId: newCheckoutRequestId,
                     paymentId: payment.id,
                     groupId: groupId,
-                    isRetry: true
+                    isRetry: true,
+                    durationType: (payment as any).duration_type || '2-months',
                 })
             });
 
@@ -925,6 +925,58 @@ export const grouppayService = {
 
         } catch (error) {
             console.error('Error retrying payment:', error);
+            throw error;
+        }
+    },
+
+    // ==========================================================
+    // SEARCH USERS — for the AddMember component
+    // ✅ Uses `institution`, `county`, `course` from your profiles schema
+    // ==========================================================
+    async searchUsers(
+        query: string,
+        excludeUserIds: string[] = [],
+        limit: number = 40
+    ): Promise<Array<{
+        user_id: string;
+        name: string;
+        email?: string;
+        phone?: string;
+        role?: string;
+        avatar_url?: string;
+        institution?: string;
+        county?: string;
+        course?: string;
+        has_active_subscription?: boolean;
+    }>> {
+        try {
+            let q = supabase
+                .from('profiles')
+                .select('user_id, name, email, phone, role, avatar_url, institution, county, course, has_active_subscription')
+                .order('name', { ascending: true })
+                .limit(limit);
+
+            // Apply search filter — name, email, phone
+            if (query.trim()) {
+                const term = query.trim();
+                q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
+            }
+
+            // Exclude users already in the group
+            if (excludeUserIds.length > 0) {
+                q = q.not('user_id', 'in', `(${excludeUserIds.join(',')})`);
+            }
+
+            const { data, error } = await q;
+
+            if (error) {
+                console.error('Error searching users:', error);
+                throw error;
+            }
+
+            return data || [];
+        } catch (error) {
+            console.error('Error in searchUsers:', error);
             throw error;
         }
     },

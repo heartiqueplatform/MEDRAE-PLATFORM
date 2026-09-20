@@ -2,7 +2,7 @@ import React from 'react';
 
 export const PlacementCardSkeleton = () => {
     return (
-        <div className="overflow-hidden rounded-none md:rounded-2xl border-0 md:border bg-white shadow-none md:shadow-sm dark:bg-muted/30 border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50 animate-pulse">
+        <div className="overflow-hidden rounded-2xl bg-white dark:bg-muted/30 md:shadow-sm animate-pulse">
 
             {/* PHOTO SECTION SKELETON */}
             <div className="relative h-48 md:h-56 w-full bg-slate-200 dark:bg-slate-700">
@@ -30,8 +30,8 @@ export const PlacementCardSkeleton = () => {
                 <div className="h-6 md:h-7 w-48 rounded bg-slate-200 dark:bg-slate-700 mb-1" />
                 <div className="h-3 w-32 rounded bg-slate-200 dark:bg-slate-700 mb-3 md:mb-4" />
 
-                {/* Wards Section Skeleton */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl mb-3 md:mb-4 border border-slate-100 dark:border-slate-800">
+                {/* Wards Section Skeleton — no border */}
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl mb-3 md:mb-4">
                     <div className="flex items-start gap-1.5 md:gap-2">
                         <div className="h-3 w-3 rounded bg-slate-200 dark:bg-slate-700 mt-0.5" />
                         <div className="flex-1">

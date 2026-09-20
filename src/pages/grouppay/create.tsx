@@ -28,20 +28,34 @@ import {
     AlertTriangle,
     Shield,
     UserCheck,
+    Calendar,
+    ChevronLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { GROUPPAY_CONFIG } from '@/types/grouppay';
+import {
+    GROUPPAY_CONFIG,
+    GroupDuration,
+    getGroupPricePerMember,
+    getIndividualPrice,
+    getSavingsPerMember,
+    getMonthlyRate,
+} from '@/types/grouppay';
 
 export default function CreateGroupPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { createGroup } = useGroupPay();
     const [loading, setLoading] = useState(false);
+
+    // Duration toggle state — defaults to 2-months (better value)
+    const [selectedDuration, setSelectedDuration] = useState<GroupDuration>('2-months');
+
     const [formData, setFormData] = useState({
         name: '',
         school: '',
-        max_members: String(GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED),
+        // ✅ CHANGED: use DEFAULT_MAX_MEMBERS as the form prefill
+        max_members: String(GROUPPAY_CONFIG.DEFAULT_MAX_MEMBERS),
         description: '',
         leader_phone: '',
         leader_whatsapp: '',
@@ -75,10 +89,34 @@ export default function CreateGroupPage() {
             isWhatsappValid;
     }, [formData.name, formData.school, isMaxMembersValid, isPhoneValid, isWhatsappValid]);
 
-    const totalGroupCost = useMemo(() => maxMembers * GROUPPAY_CONFIG.PRICE_PER_MEMBER, [maxMembers]);
-    const individualCost = 399;
-    const savingsPerMember = individualCost - GROUPPAY_CONFIG.PRICE_PER_MEMBER;
-    const totalSavings = useMemo(() => maxMembers * savingsPerMember, [maxMembers]);
+    // Dynamic price based on selected duration
+    const pricePerMember = useMemo(
+        () => getGroupPricePerMember(selectedDuration),
+        [selectedDuration]
+    );
+    const individualPrice = useMemo(
+        () => getIndividualPrice(selectedDuration),
+        [selectedDuration]
+    );
+    const savingsPerMember = useMemo(
+        () => getSavingsPerMember(selectedDuration),
+        [selectedDuration]
+    );
+    const monthlyRate = useMemo(
+        () => getMonthlyRate(selectedDuration),
+        [selectedDuration]
+    );
+
+    const totalGroupCost = useMemo(
+        () => maxMembers * pricePerMember,
+        [maxMembers, pricePerMember]
+    );
+    const totalSavings = useMemo(
+        () => maxMembers * savingsPerMember,
+        [maxMembers, savingsPerMember]
+    );
+
+    const durationLabel = selectedDuration === '1-month' ? '1 Month' : '2 Months';
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { id, value } = e.target;
@@ -107,7 +145,7 @@ export default function CreateGroupPage() {
             return;
         }
         if (!isMaxMembersValid) {
-            toast.error(`Maximum members must be between ${GROUPPAY_CONFIG.MIN_MEMBERS_LIMIT} and ${GROUPPAY_CONFIG.MAX_MEMBERS_LIMIT}`);
+            toast.error(`Group size must be between ${GROUPPAY_CONFIG.MIN_MEMBERS_LIMIT} and ${GROUPPAY_CONFIG.MAX_MEMBERS_LIMIT}`);
             return;
         }
         if (!isPhoneValid) {
@@ -126,7 +164,8 @@ export default function CreateGroupPage() {
                 school: formData.school.trim(),
                 max_members: maxMembers,
                 description: formData.description.trim() || undefined,
-                contribution_per_member: GROUPPAY_CONFIG.PRICE_PER_MEMBER,
+                contribution_per_member: pricePerMember,
+                duration_type: selectedDuration,
                 leader_phone: formData.leader_phone.trim(),
                 leader_whatsapp: formData.leader_whatsapp.trim() || undefined,
                 leader_email: formData.leader_email.trim() || undefined,
@@ -142,28 +181,26 @@ export default function CreateGroupPage() {
         } finally {
             setLoading(false);
         }
-    }, [user, formData, isMaxMembersValid, isPhoneValid, isWhatsappValid, maxMembers, createGroup, navigate]);
+    }, [user, formData, isMaxMembersValid, isPhoneValid, isWhatsappValid, maxMembers, pricePerMember, selectedDuration, createGroup, navigate]);
 
     return (
         <div className="min-h-screen w-full bg-slate-50/50 dark:bg-background pb-16 md:pb-10">
-            {/* Edge-to-edge container on mobile, constrained on desktop */}
             <div className="w-full md:max-w-2xl md:mx-auto md:px-4 md:pt-6">
 
-                {/* Back button — edge to edge on mobile */}
+                {/* Back button */}
                 <div className="px-4 md:px-0 pt-4 md:pt-0 pb-2">
                     <Button
                         variant="ghost"
                         onClick={() => navigate('/grouppay')}
-                        className="gap-2 text-sm border-0 -ml-2"
+                        className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Groups
+                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
+
                     </Button>
                 </div>
 
-                {/* MAIN CARD — borderless, edge-to-edge on mobile */}
+                {/* MAIN CARD */}
                 <Card className="border-0 rounded-none md:rounded-2xl bg-white dark:bg-muted/30 shadow-none md:shadow-sm overflow-hidden">
-                    {/* Top gradient accent */}
                     <div className="h-1 w-full bg-gradient-to-r from-green-500 via-emerald-500 to-blue-500" />
 
                     <CardHeader className="pb-4 px-4 md:px-6 pt-5 md:pt-6">
@@ -186,6 +223,80 @@ export default function CreateGroupPage() {
 
                     <form onSubmit={handleSubmit}>
                         <CardContent className="space-y-5 px-4 md:px-6">
+
+                            {/* DURATION TOGGLE */}
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2 text-sm font-medium">
+                                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                                    Plan Duration *
+                                </Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {/* 1 Month option */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedDuration('1-month')}
+                                        className={`relative p-3.5 rounded-xl border-0 text-left transition-all duration-200 ${selectedDuration === '1-month'
+                                            ? 'bg-green-50 dark:bg-green-950/30 ring-2 ring-green-500/40'
+                                            : 'bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-900/60'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className={`text-xs font-bold ${selectedDuration === '1-month' ? 'text-green-700 dark:text-green-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                1 Month
+                                            </span>
+                                            {selectedDuration === '1-month' && (
+                                                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className={`text-lg font-bold tabular-nums ${selectedDuration === '1-month' ? 'text-green-700 dark:text-green-400' : 'text-slate-900 dark:text-white'}`}>
+                                                {GROUPPAY_CONFIG.CURRENCY} {GROUPPAY_CONFIG.PRICE_PER_MEMBER_1_MONTH}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground">/person</span>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground line-through mt-0.5">
+                                            {GROUPPAY_CONFIG.CURRENCY} {GROUPPAY_CONFIG.INDIVIDUAL_PRICE_1_MONTH} solo
+                                        </p>
+                                    </button>
+
+                                    {/* 2 Months option */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedDuration('2-months')}
+                                        className={`relative p-3.5 rounded-xl border-0 text-left transition-all duration-200 ${selectedDuration === '2-months'
+                                            ? 'bg-green-50 dark:bg-green-950/30 ring-2 ring-green-500/40'
+                                            : 'bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-900/60'
+                                            }`}
+                                    >
+                                        <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full tracking-wider shadow-sm">
+                                            SAVE
+                                        </span>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className={`text-xs font-bold ${selectedDuration === '2-months' ? 'text-green-700 dark:text-green-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                2 Months
+                                            </span>
+                                            {selectedDuration === '2-months' && (
+                                                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className={`text-lg font-bold tabular-nums ${selectedDuration === '2-months' ? 'text-green-700 dark:text-green-400' : 'text-slate-900 dark:text-white'}`}>
+                                                {GROUPPAY_CONFIG.CURRENCY} {GROUPPAY_CONFIG.PRICE_PER_MEMBER_2_MONTHS}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground">/person</span>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground line-through mt-0.5">
+                                            {GROUPPAY_CONFIG.CURRENCY} {GROUPPAY_CONFIG.INDIVIDUAL_PRICE_2_MONTHS} solo
+                                        </p>
+                                    </button>
+                                </div>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Info className="w-3 h-3 flex-shrink-0" />
+                                    <span>
+                                        {durationLabel} plan · Save {GROUPPAY_CONFIG.CURRENCY} {savingsPerMember}/person · Only {GROUPPAY_CONFIG.CURRENCY} {monthlyRate}/month
+                                    </span>
+                                </p>
+                            </div>
 
                             {/* Leader responsibilities notice */}
                             <div className="p-3.5 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-0">
@@ -242,11 +353,11 @@ export default function CreateGroupPage() {
                                 </p>
                             </div>
 
-                            {/* Maximum Members */}
+                            {/* Group Size — renamed from "Maximum Members" for clarity */}
                             <div className="space-y-2">
                                 <Label htmlFor="max_members" className="flex items-center gap-2 text-sm font-medium">
                                     <Users className="w-4 h-4 text-muted-foreground" />
-                                    Maximum Members *
+                                    Group Size *
                                 </Label>
                                 <div className="relative">
                                     <Input
@@ -254,7 +365,7 @@ export default function CreateGroupPage() {
                                         type="number"
                                         min={GROUPPAY_CONFIG.MIN_MEMBERS_LIMIT}
                                         max={GROUPPAY_CONFIG.MAX_MEMBERS_LIMIT}
-                                        placeholder={`${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED} recommended`}
+                                        placeholder={`${GROUPPAY_CONFIG.DEFAULT_MAX_MEMBERS} recommended`}
                                         value={formData.max_members}
                                         onChange={handleInputChange}
                                         className={`text-base h-11 md:h-10 rounded-xl border-0 pr-20 bg-slate-50 dark:bg-slate-900/50 focus-visible:ring-2 ${!isMaxMembersValid && formData.max_members
@@ -268,56 +379,48 @@ export default function CreateGroupPage() {
                                     </span>
                                 </div>
 
+                                {/* ✅ CHANGED: simpler, honest copy — activation = fill the group */}
                                 <div className="flex items-center gap-2 text-xs">
-                                    {maxMembers >= GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED ? (
+                                    {maxMembers > 0 ? (
                                         <CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
-                                    ) : maxMembers > 0 ? (
-                                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
                                     ) : (
                                         <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                                     )}
-                                    <span className={`
-                                        ${maxMembers >= GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED ? 'text-green-700 dark:text-green-400' : ''}
-                                        ${maxMembers > 0 && maxMembers < GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED ? 'text-amber-700 dark:text-amber-400' : ''}
-                                        ${maxMembers === 0 ? 'text-muted-foreground' : ''}
-                                    `}>
-                                        {maxMembers >= GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED
-                                            ? `Ready! ${maxMembers} members (${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED}+ recommended for best savings)`
-                                            : maxMembers > 0
-                                                ? `Need ${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED - maxMembers} more members to reach ${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED}`
-                                                : `Minimum ${GROUPPAY_CONFIG.MIN_MEMBERS_LIMIT}, recommended ${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED}+`
-                                        }
+                                    <span className={maxMembers > 0 ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}>
+                                        {maxMembers > 0
+                                            ? `Your group activates once all ${maxMembers} slots are filled`
+                                            : `Pick how many members you want in the group`}
                                     </span>
                                 </div>
 
                                 <p className="text-xs text-muted-foreground">
-                                    Groups with <span className="font-medium text-green-600">{GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED}+</span> members get the best savings
+                                    Choose carefully — smaller groups activate faster. Max {GROUPPAY_CONFIG.MAX_MEMBERS_LIMIT} members.
                                 </p>
                             </div>
 
-                            {/* Fixed Price */}
+                            {/* Price Per Member — dynamic by duration */}
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-2 text-sm font-medium">
                                     <DollarSign className="w-4 h-4 text-muted-foreground" />
-                                    Price Per Member
+                                    Price Per Member ({durationLabel})
                                 </Label>
                                 <div className="flex flex-wrap items-center gap-3 p-3.5 bg-green-50 dark:bg-green-950/30 rounded-xl border-0">
                                     <div className="flex items-center gap-2">
                                         <Lock className="w-4 h-4 text-green-600 dark:text-green-400" />
                                         <span className="text-lg font-bold text-green-700 dark:text-green-400">
-                                            {GROUPPAY_CONFIG.CURRENCY} {GROUPPAY_CONFIG.PRICE_PER_MEMBER}
+                                            {GROUPPAY_CONFIG.CURRENCY} {pricePerMember}
                                         </span>
                                     </div>
                                     <span className="text-xs text-muted-foreground line-through">
-                                        {GROUPPAY_CONFIG.CURRENCY} 399
+                                        {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
                                     </span>
                                     <Badge variant="outline" className="text-[9px] border-0 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                                        Save 50%
+                                        Save {GROUPPAY_CONFIG.CURRENCY} {savingsPerMember}
                                     </Badge>
                                 </div>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Info className="w-3 h-3 flex-shrink-0" />
-                                    <span>Price is fixed and cannot be changed. <span className="font-medium">Save {savingsPerMember} KSh per member!</span></span>
+                                    <span>Price is set by the plan duration. <span className="font-medium">Save {savingsPerMember} KSh per member!</span></span>
                                 </p>
                             </div>
 
@@ -409,12 +512,21 @@ export default function CreateGroupPage() {
                             {maxMembers >= GROUPPAY_CONFIG.MIN_MEMBERS_LIMIT && (
                                 <div className="p-3.5 bg-blue-50 dark:bg-blue-950/20 rounded-xl border-0 space-y-1.5">
                                     <div className="flex items-center justify-between text-sm">
-                                        <span className="text-muted-foreground">Total Members</span>
+                                        <span className="text-muted-foreground">Plan</span>
+                                        <span className="font-medium">{durationLabel}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">Group Size</span>
                                         <span className="font-medium">{maxMembers}</span>
                                     </div>
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="text-muted-foreground">Price Per Member</span>
-                                        <span className="font-medium">{GROUPPAY_CONFIG.CURRENCY} {GROUPPAY_CONFIG.PRICE_PER_MEMBER}</span>
+                                        <span className="font-medium">
+                                            {GROUPPAY_CONFIG.CURRENCY} {pricePerMember}
+                                            <span className="text-[10px] text-muted-foreground line-through ml-1.5 opacity-60">
+                                                {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
+                                            </span>
+                                        </span>
                                     </div>
                                     <div className="h-px bg-blue-200 dark:bg-blue-800/30 my-1" />
                                     <div className="flex items-center justify-between text-base font-bold">
@@ -423,10 +535,10 @@ export default function CreateGroupPage() {
                                             {GROUPPAY_CONFIG.CURRENCY} {totalGroupCost.toLocaleString()}
                                         </span>
                                     </div>
-                                    {maxMembers >= GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED && (
+                                    {maxMembers >= GROUPPAY_CONFIG.MIN_MEMBERS_LIMIT && (
                                         <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 pt-1">
                                             <TrendingUp className="w-3.5 h-3.5 flex-shrink-0" />
-                                            <span>You're saving {GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()} compared to individual plans!</span>
+                                            <span>You're saving {GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()} compared to {durationLabel} individual plans!</span>
                                         </div>
                                     )}
                                 </div>
@@ -466,7 +578,7 @@ export default function CreateGroupPage() {
                                 />
                             </div>
 
-                            {/* How GroupPay Works */}
+                            {/* ✅ CHANGED: How GroupPay Works — reflects fill-to-activate model */}
                             <div className="p-3.5 bg-blue-50 dark:bg-blue-950/20 rounded-xl border-0">
                                 <div className="flex items-start gap-2.5">
                                     <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -477,16 +589,16 @@ export default function CreateGroupPage() {
                                         <ol className="text-xs text-blue-600/80 dark:text-blue-400/80 space-y-0.5 leading-relaxed list-none">
                                             <li>1. Create a group with your classmates</li>
                                             <li>2. Share your phone number for contributions</li>
-                                            <li>3. Members send their {GROUPPAY_CONFIG.CURRENCY} {GROUPPAY_CONFIG.PRICE_PER_MEMBER} contribution to you</li>
-                                            <li>4. Once everyone has paid, you activate the group with one payment</li>
-                                            <li>5. Everyone gets premium access instantly!</li>
+                                            <li>3. Members send their {GROUPPAY_CONFIG.CURRENCY} {pricePerMember} contribution to you</li>
+                                            <li>4. Once all {maxMembers || 'group'} slots are filled, you activate with one payment</li>
+                                            <li>5. Everyone gets {durationLabel} premium access instantly!</li>
                                         </ol>
                                     </div>
                                 </div>
                             </div>
                         </CardContent>
 
-                        {/* Footer — sticky on mobile for easy reach */}
+                        {/* Footer */}
                         <CardFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-2 pb-5 px-4 md:px-6 border-0 bg-transparent">
                             <Button
                                 type="button"
@@ -509,7 +621,7 @@ export default function CreateGroupPage() {
                                 ) : (
                                     <>
                                         <Users2 className="w-4 h-4 mr-2" />
-                                        Create Group
+                                        Create {durationLabel} Group
                                     </>
                                 )}
                             </Button>
@@ -517,7 +629,7 @@ export default function CreateGroupPage() {
                     </form>
                 </Card>
 
-                {/* Pro Tips — borderless, edge-to-edge on mobile */}
+                {/* Pro Tips — ✅ CHANGED: reflects fill-to-activate model */}
                 <div className="mx-4 md:mx-0 mt-4 p-3.5 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-0">
                     <div className="flex items-start gap-2.5">
                         <UserCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
@@ -529,8 +641,8 @@ export default function CreateGroupPage() {
                                 <li>• Only collect money from members you know and trust</li>
                                 <li>• Keep a record of who has paid and who hasn't</li>
                                 <li>• Share your phone number clearly with all members</li>
-                                <li>• Once everyone has paid, activate the group with one payment</li>
-                                <li>• Groups with {GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED}+ members save the most!</li>
+                                <li>• Once all slots are filled, activate the group with one payment</li>
+                                <li>• Smaller groups activate faster — pick a size you can actually fill</li>
                             </ul>
                         </div>
                     </div>

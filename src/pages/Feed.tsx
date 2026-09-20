@@ -14,16 +14,25 @@ import FeedControls from "@/components/Feed/FeedControls";
 import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
 import { MicroCaseCard } from "@/components/MicroCaseCard";
+import { clearMediaPanelCaches } from "@/components/Feed/FeedMediaPanel";
 import ShareButtonsGroup from "@/components/Share/ShareButtonsGroup";
 import confetti from "canvas-confetti";
 import { createPortal } from 'react-dom';
 
 // Enhanced request deduplication cache with longer TTLs
+// Enhanced request deduplication cache with longer TTLs
 const pendingRequests = new Map();
 const requestCache = new Map();
 
-const fetchWithDedupe = async (key, fetcher, ttl = 300000) => { // Increased to 5 minutes
-  // Check memory cache
+// Exported so the Feed component can clear them on user change / unmount.
+// Without this, account A's cached questions leak to account B on the
+// same browser.
+export const clearFeedCaches = () => {
+  requestCache.clear();
+  pendingRequests.clear();
+};
+
+const fetchWithDedupe = async (key, fetcher, ttl = 300000) => { // 5 minutes
   if (requestCache.has(key)) {
     const { data, timestamp } = requestCache.get(key);
     if (Date.now() - timestamp < ttl) {
@@ -32,7 +41,6 @@ const fetchWithDedupe = async (key, fetcher, ttl = 300000) => { // Increased to 
     requestCache.delete(key);
   }
 
-  // Check for pending request
   if (pendingRequests.has(key)) {
     return pendingRequests.get(key);
   }
@@ -127,7 +135,17 @@ export default function Feed() {
   useEffect(() => {
     localStorage.setItem("feed_isMuted", JSON.stringify(isMuted));
   }, [isMuted]);
-
+  // Clear the module-level caches whenever the logged-in user changes.
+  // Clear the module-level caches whenever the logged-in user changes.
+  // Prevents account A's cached questions from leaking to account B.
+  useEffect(() => {
+    clearFeedCaches();
+    clearMediaPanelCaches();
+    return () => {
+      clearFeedCaches();
+      clearMediaPanelCaches();
+    };
+  }, [userId]);
   const [imageIndex, setImageIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -350,53 +368,66 @@ export default function Feed() {
   }, [feedbackMessage]);
 
   // ✅ OPTIMIZED: Load images with pagination and reduced batch size
+  // ✅ RPC-based image loading. The DB excludes anything the user has
+  // liked, commented on, or seen — so we always get fresh images.
   useEffect(() => {
     const loadImages = async () => {
       if (!userId || isLoadingImages) return;
       setIsLoadingImages(true);
 
       try {
-        const cacheKey = `images_page_${imagePage}_user_${userId}`;
+        const cacheKey = `unseen_images_page_${imagePage}_user_${userId}`;
+
         const images = await fetchWithDedupe(cacheKey, async () => {
-          const { data: images, error: imgErr } = await supabase
-            .from("qfeed_images")
-            .select(`
-              id,
-              image_url,
-              description,
-              title,
-              storage_path,
-              added_by,
-              created_at,
-              profiles (name, avatar_url)
-            `)
-            .order("created_at", { ascending: false })
-            .range(imagePage * 15, (imagePage + 1) * 15 - 1); // ✅ Reduced from 20 to 15
+          // Hard timeout so a hung network can't stall the feed.
+          const rpcPromise = supabase.rpc("get_unseen_feed_images", {
+            p_user_id: userId,
+            p_limit: 15,
+            p_offset: imagePage * 15,
+          });
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("images RPC timeout")), 8000)
+          );
 
-          if (imgErr) throw imgErr;
-
-          if (!images || images.length === 0) {
-            setHasMoreImages(false);
+          let result: any;
+          try {
+            result = await Promise.race([rpcPromise, timeoutPromise]);
+          } catch (err) {
+            console.warn("[Feed] images RPC failed:", err);
             return [];
           }
 
-          const imageIds = images.map(img => img.id);
-          const { data: seen, error: seenErr } = await supabase
-            .from("seen_images")
-            .select("image_id")
-            .eq("user_id", userId)
-            .in("image_id", imageIds);
+          const { data, error } = result;
+          if (error) {
+            console.error("[Feed] get_unseen_feed_images error:", error);
+            return [];
+          }
 
-          if (seenErr) throw seenErr;
+          // Reshape to match what FeedMediaPanel expects.
+          return (data ?? []).map((row: any) => ({
+            id: row.id,
+            image_url: row.image_url,
+            description: row.description,
+            title: row.title,
+            storage_path: "cloudinary",
+            added_by: row.added_by,
+            created_at: row.created_at,
+            profiles: {
+              name: row.uploader_name,
+              avatar_url: row.uploader_avatar,
+            },
+          }));
+        }, 60000); // 60s cache
 
-          const seenIds = new Set(seen.map(row => row.image_id));
-          const unseenImages = images.filter(img => !seenIds.has(img.id));
-
-          if (unseenImages.length < 15) setHasMoreImages(false);
-          return unseenImages;
-        }, 120000); // Cache for 2 minutes
-
-        setFeedImages(prev => imagePage === 0 ? images : [...prev, ...images]);
+        if (!images || images.length === 0) {
+          setHasMoreImages(false);
+          if (imagePage === 0) setFeedImages([]);
+        } else {
+          setFeedImages((prev) =>
+            imagePage === 0 ? images : [...prev, ...images]
+          );
+          if (images.length < 15) setHasMoreImages(false);
+        }
       } catch (err) {
         console.error("❌ Error loading images:", err);
       } finally {
@@ -408,176 +439,167 @@ export default function Feed() {
   }, [userId, imagePage]);
 
   // Load user & restore localStorage safely with preloading
+  // Load user & restore localStorage safely with preloading
   useEffect(() => {
-    let saveTimer: NodeJS.Timeout;
+    let cancelled = false;
+
     const init = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) return;
-      setUser(data.user);
-      const userId = data.user.id;
-      const storageKey = `feed_questions_${userId}`;
-      const answersKey = `feed_answers_${userId}`;
-      const savedAnswers = JSON.parse(localStorage.getItem(answersKey) || "{}");
-      setAnswers(savedAnswers);
-      const storedRaw = localStorage.getItem(storageKey);
-      let cachedQuestions: any[] = [];
-      if (storedRaw) {
-        const parsed = JSON.parse(storedRaw);
-        if (Date.now() - (parsed.lastSaved || 0) < 24 * 60 * 60 * 1000) {
-          cachedQuestions = (parsed.questions || []).filter(
-            (q) => q && q.id && !savedAnswers[q.id]
-          );
-        } else {
-          localStorage.removeItem(storageKey);
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) {
+          if (!cancelled) setLoading(false);
+          return;
         }
+        if (cancelled) return;
+
+        setUser(data.user);
+        const userId = data.user.id;
+        const storageKey = `feed_questions_${userId}`;
+        const answersKey = `feed_answers_${userId}`;
+        const savedAnswers = JSON.parse(localStorage.getItem(answersKey) || "{}");
+        setAnswers(savedAnswers);
+
+        const storedRaw = localStorage.getItem(storageKey);
+        let cachedQuestions: any[] = [];
+        if (storedRaw) {
+          const parsed = JSON.parse(storedRaw);
+          if (Date.now() - (parsed.lastSaved || 0) < 24 * 60 * 60 * 1000) {
+            cachedQuestions = (parsed.questions || []).filter(
+              (q) => q && q.id && !savedAnswers[q.id]
+            );
+          } else {
+            localStorage.removeItem(storageKey);
+          }
+        }
+
+        if (cachedQuestions.length > 0) {
+          setQuestions(cachedQuestions);
+          setLoading(false);
+        }
+
+        const INITIAL_LIMIT = 8;
+        try {
+          const fresh = await fetchQuestions(0, INITIAL_LIMIT);
+          if (cancelled) return;
+
+          if (fresh && fresh.length > 0) {
+            // Belt-and-suspenders: never re-add a question we already answered.
+            const trulyFresh = fresh.filter((q) => !savedAnswers[q.id]);
+            setQuestions((prev) => {
+              const ids = new Set(prev.map((q) => q.id));
+              return [...prev, ...trulyFresh.filter((q) => !ids.has(q.id))];
+            });
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify({ questions: trulyFresh, lastSaved: Date.now() })
+            );
+          }
+        } catch (err) {
+          console.error("❌ Initial fetch failed:", err);
+        }
+      } finally {
+        // ALWAYS ends loading, no matter what happened above.
+        if (!cancelled) setLoading(false);
       }
-      if (cachedQuestions.length > 0) {
-        setQuestions(cachedQuestions);
-        setLoading(false);
-      }
-      const INITIAL_LIMIT = 8; // ✅ Reduced from 10 to 8
-      fetchQuestions(0, INITIAL_LIMIT).then((fresh) => {
-        if (!fresh || fresh.length === 0) return;
-        setQuestions((prev) => {
-          const ids = new Set(prev.map((q) => q.id));
-          return [...prev, ...fresh.filter((q) => !ids.has(q.id))];
-        });
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({ questions: fresh, lastSaved: Date.now() })
-        );
-        enrichQuestions(fresh).then((enriched) => {
-          setQuestions((prev) => {
-            const map = new Map(prev.map((q) => [q.id, q]));
-            enriched.forEach((q) => map.set(q.id, q));
-            return Array.from(map.values());
-          });
-        });
-      });
     };
+
     init();
     return () => {
-      if (saveTimer) clearTimeout(saveTimer);
+      cancelled = true;
     };
   }, []);
 
   // ✅ OPTIMIZED: fetchQuestions with better caching and smaller batch size
-  const fetchQuestions = async (pageNum = 0, limit = 8) => { // ✅ Changed from 10 to 8
+  const fetchQuestions = async (pageNum = 0, limit = 8) => {
     if (!userId) return [];
 
     const cacheKey = `questions_${userId}_page_${pageNum}_limit_${limit}`;
 
     return fetchWithDedupe(cacheKey, async () => {
       try {
-        const { data: seenData, error: seenError } = await supabase
-          .from("qfeed_seen")
-          .select("question_id")
-          .eq("user_id", userId);
-        if (seenError) {
-          console.error("Seen fetch error:", seenError);
+        // 1. Ask the DB for unseen questions directly.
+        // 1. Ask the DB for unseen questions directly.
+        //    Pagination: pageNum * limit is the offset.
+        const offset = pageNum * limit;
+
+        // Wrap the RPC in a hard timeout so a hung connection can't leave
+        // the UI stuck on skeletons forever.
+        const rpcPromise = supabase.rpc("get_unseen_questions", {
+          p_user_id: userId,
+          p_limit: limit,
+          p_offset: offset,
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("RPC timeout after 8s")), 8000)
+        );
+
+        let rpcResult;
+        try {
+          rpcResult = await Promise.race([rpcPromise, timeoutPromise]);
+        } catch (err) {
+          console.error("RPC timed out or failed:", err);
           return [];
         }
-        const seenList = seenData?.map(s => s.question_id) || [];
 
-        if (seenList.length > 0) {
-          const { data: questions, error: questionsError } = await supabase
-            .from("quiz_questions")
-            .select(
-              "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation"
-            )
-            .not(
-              "id",
-              "in",
-              `(${seenList.slice(0, 100).join(",")})` // ✅ Limit to 100 seen items
-            )
-            .range(pageNum * limit, pageNum * limit + limit - 1);
+        const { data: questions, error: rpcError } = rpcResult;
 
-          if (questionsError) {
-            console.error("Questions fetch error:", questionsError);
-            return [];
-          }
-
-          if (!questions?.length) return [];
-
-          const shuffled = [...questions].sort(() => Math.random() - 0.5);
-          const ids = shuffled.map(q => q.id);
-          const quizIds = [...new Set(shuffled.map(q => q.quiz_id))];
-
-          const [{ data: likes }, { data: commentsData }, { data: quizzes }] =
-            await Promise.all([
-              supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
-              supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
-              supabase.from("quizzes").select("id, title").in("id", quizIds),
-            ]);
-
-          const likesMap = new Map<string, any[]>();
-          likes?.forEach(l => {
-            if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
-            likesMap.get(l.question_id)!.push(l);
-          });
-
-          const commentsCountMap = new Map<string, number>();
-          commentsData?.forEach(c => {
-            commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
-          });
-
-          const quizTitleMap = new Map<string, string>();
-          quizzes?.forEach(q => quizTitleMap.set(q.id, q.title));
-
-          return shuffled.map(q => ({
-            ...q,
-            qfeed_likes: likesMap.get(q.id) || [],
-            comments_count: commentsCountMap.get(q.id) || 0,
-            quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
-          }));
-        } else {
-          // No seen questions yet - fetch first batch
-          const { data: questions, error: questionsError } = await supabase
-            .from("quiz_questions")
-            .select(
-              "id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation"
-            )
-            .range(0, limit - 1);
-
-          if (questionsError || !questions?.length) return [];
-
-          const shuffled = [...questions].sort(() => Math.random() - 0.5);
-          const ids = shuffled.map(q => q.id);
-          const quizIds = [...new Set(shuffled.map(q => q.quiz_id))];
-
-          const [{ data: likes }, { data: commentsData }, { data: quizzes }] =
-            await Promise.all([
-              supabase.from("qfeed_likes").select("question_id, user_id").in("question_id", ids),
-              supabase.from("qfeed_comments").select("id, question_id").in("question_id", ids),
-              supabase.from("quizzes").select("id, title").in("id", quizIds),
-            ]);
-
-          const likesMap = new Map();
-          likes?.forEach(l => {
-            if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
-            likesMap.get(l.question_id)!.push(l);
-          });
-
-          const commentsCountMap = new Map();
-          commentsData?.forEach(c => {
-            commentsCountMap.set(c.question_id, (commentsCountMap.get(c.question_id) || 0) + 1);
-          });
-
-          const quizTitleMap = new Map();
-          quizzes?.forEach(q => quizTitleMap.set(q.id, q.title));
-
-          return shuffled.map(q => ({
-            ...q,
-            qfeed_likes: likesMap.get(q.id) || [],
-            comments_count: commentsCountMap.get(q.id) || 0,
-            quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
-          }));
+        if (rpcError) {
+          console.error("RPC error:", rpcError);
+          return [];
         }
+
+        if (!questions || questions.length === 0) return [];
+
+        // 2. Shuffle client-side too (SQL random() is enough, but a second
+        //    pass breaks any residual ordering from the DB).
+        const shuffled = [...questions].sort(() => Math.random() - 0.5);
+
+        const ids = shuffled.map((q) => q.id);
+        const quizIds = [...new Set(shuffled.map((q) => q.quiz_id))];
+
+        // 3. Fetch likes, comments, quiz titles in parallel — same as before.
+        const [{ data: likes }, { data: commentsData }, { data: quizzes }] =
+          await Promise.all([
+            supabase
+              .from("qfeed_likes")
+              .select("question_id, user_id")
+              .in("question_id", ids),
+            supabase
+              .from("qfeed_comments")
+              .select("id, question_id")
+              .in("question_id", ids),
+            supabase.from("quizzes").select("id, title").in("id", quizIds),
+          ]);
+
+        const likesMap = new Map<string, any[]>();
+        likes?.forEach((l) => {
+          if (!likesMap.has(l.question_id)) likesMap.set(l.question_id, []);
+          likesMap.get(l.question_id)!.push(l);
+        });
+
+        const commentsCountMap = new Map<string, number>();
+        commentsData?.forEach((c) => {
+          commentsCountMap.set(
+            c.question_id,
+            (commentsCountMap.get(c.question_id) || 0) + 1
+          );
+        });
+
+        const quizTitleMap = new Map<string, string>();
+        quizzes?.forEach((q) => quizTitleMap.set(q.id, q.title));
+
+        return shuffled.map((q) => ({
+          ...q,
+          qfeed_likes: likesMap.get(q.id) || [],
+          comments_count: commentsCountMap.get(q.id) || 0,
+          quiz_title: quizTitleMap.get(q.quiz_id) || "Untitled Quiz",
+        }));
       } catch (err) {
         console.error("❌ Error fetching questions:", err);
         return [];
       }
-    }, 120000); // Cache for 2 minutes instead of 1
+    }, 120000);
   };
 
   // Load more with smaller batch size
@@ -665,8 +687,8 @@ export default function Feed() {
     setVoteStatsCache(prev => ({ ...prev, [questionId]: counts }));
     return counts;
   };
-
   const handleAnswer = async (q, option) => {
+    if (!user?.id) return;            // ← guard: no user, no answer
     if (answers[q.id]) return;
     const isCorrect = q.correct_answer === option;
     if (!isMuted) {
@@ -675,7 +697,16 @@ export default function Feed() {
     if (navigator.vibrate) {
       isCorrect ? navigator.vibrate(50) : navigator.vibrate([100, 50, 100]);
     }
-    setAnswers((prev) => ({ ...prev, [q.id]: option }));
+    setAnswers((prev) => {
+      const next = { ...prev, [q.id]: option };
+      try {
+        localStorage.setItem(
+          `feed_answers_${user.id}`,
+          JSON.stringify(next)
+        );
+      } catch { /* quota */ }
+      return next;
+    });
     if (isCorrect) {
       setCorrectStreak((prev) => prev + 1);
       setWrongStreak(0);
@@ -684,11 +715,23 @@ export default function Feed() {
       setWrongStreak((prev) => prev + 1);
       setCorrectStreak(0);
     }
-    await supabase.from("qfeed_seen").upsert({
-      question_id: q.id,
-      user_id: user.id,
-      selected_option: option
-    }, { onConflict: 'user_id,question_id' });
+    // Fail loudly. If this upsert fails, the question WILL come back next
+    // session — we need to know about it instead of silently continuing.
+    const { error: seenError } = await supabase.from("qfeed_seen").upsert(
+      {
+        question_id: q.id,
+        user_id: user.id,
+        selected_option: option,
+      },
+      { onConflict: "user_id,question_id" }
+    );
+
+    if (seenError) {
+      console.error("❌ qfeed_seen upsert FAILED:", seenError);
+      // Don't increment local count if the DB didn't record it.
+      return;
+    }
+
     setQuestionCount((prev) => {
       const newCount = prev + 1;
       localStorage.setItem(`feed_count_${user.id}`, newCount.toString());
@@ -889,8 +932,18 @@ export default function Feed() {
     <>
       <PullToRefresh
         onRefresh={() => {
+          // Clear in-memory caches so we don't show stale / already-interacted items.
+          clearFeedCaches();
+          clearMediaPanelCaches();
+
+          // Reset pages.
           setPage(0);
-          return fetchQuestions(0, 8).then((fresh) => { // ✅ Use smaller batch
+          setImagePage(0);
+          setHasMore(true);
+          setHasMoreImages(true);
+
+          // Refetch questions.
+          const refetchQuestions = fetchQuestions(0, 8).then((fresh) => {
             setQuestions(fresh);
             if (user) {
               localStorage.setItem(
@@ -899,6 +952,35 @@ export default function Feed() {
               );
             }
           });
+
+          // Refetch images (the effect will fire again since we bumped
+          // imagePage back to 0; this is belt-and-suspenders for the
+          // case where imagePage was already 0).
+          const refetchImages = (async () => {
+            if (!userId) return;
+            const { data, error } = await supabase.rpc(
+              "get_unseen_feed_images",
+              { p_user_id: userId, p_limit: 15, p_offset: 0 }
+            );
+            if (error) return;
+            const images = (data ?? []).map((row: any) => ({
+              id: row.id,
+              image_url: row.image_url,
+              description: row.description,
+              title: row.title,
+              storage_path: "cloudinary",
+              added_by: row.added_by,
+              created_at: row.created_at,
+              profiles: {
+                name: row.uploader_name,
+                avatar_url: row.uploader_avatar,
+              },
+            }));
+            setFeedImages(images);
+            if (images.length < 15) setHasMoreImages(false);
+          })();
+
+          return Promise.all([refetchQuestions, refetchImages]);
         }}
       >
         <div
@@ -1172,9 +1254,11 @@ export default function Feed() {
                       />
                     )}
                   </CardContent>
-                  <MicroCaseCard />
+
                 </Card>
+                <MicroCaseCard />
               </motion.div>
+
             );
             if (
               (index + 1) % 10 === 0 &&

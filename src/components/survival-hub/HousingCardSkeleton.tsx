@@ -2,10 +2,7 @@ import React from 'react';
 
 export const HousingCardSkeleton = () => {
     return (
-        <div className="group relative overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200 bg-white transition-all dark:border-slate-800 dark:bg-muted/30 border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50 animate-pulse">
-
-            {/* Header Color Skeleton */}
-            <div className="h-1.5 md:h-2 bg-gradient-to-r from-emerald-500 to-teal-500" />
+        <div className="group relative overflow-hidden rounded-2xl bg-white dark:bg-muted/30 animate-pulse">
 
             {/* Photo Area Skeleton */}
             <div className="relative h-48 md:h-56 w-full bg-slate-200 dark:bg-slate-700">
@@ -16,7 +13,7 @@ export const HousingCardSkeleton = () => {
 
             <div className="p-4 md:p-5">
                 {/* Location Badge Skeleton */}
-                <div className="flex items-center justify-between gap-1 bg-slate-50 px-3 md:px-4 py-1.5 md:py-2 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800 -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-3 md:mb-4">
+                <div className="flex items-center justify-between gap-1 bg-slate-50 dark:bg-slate-800/50 px-3 md:px-4 py-1.5 md:py-2 -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-3 md:mb-4">
                     <div className="flex items-center gap-1 md:gap-1.5 min-w-0 flex-1">
                         <div className="h-2.5 w-2.5 rounded bg-slate-200 dark:bg-slate-600" />
                         <div className="h-2.5 w-32 rounded bg-slate-200 dark:bg-slate-600" />
@@ -41,7 +38,7 @@ export const HousingCardSkeleton = () => {
                 </div>
 
                 {/* Amenities & Price Skeleton */}
-                <div className="flex items-center justify-between mt-4 md:mt-6 bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between mt-4 md:mt-6 bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl">
                     <div>
                         <div className="h-2 w-16 rounded bg-slate-200 dark:bg-slate-600 mb-1" />
                         <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-600" />
@@ -61,7 +58,7 @@ export const HousingCardSkeleton = () => {
             </div>
 
             {/* Contributor Profile Bar Skeleton */}
-            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/30 p-3 md:p-4 dark:border-slate-800 dark:bg-slate-800/30">
+            <div className="flex items-center justify-between bg-slate-50/30 p-3 md:p-4 dark:bg-slate-800/30">
                 <div className="flex items-center gap-2 md:gap-2.5 flex-1 min-w-0">
                     <div className="h-7 w-7 md:h-9 md:w-9 rounded-full bg-slate-200 dark:bg-slate-600 border-2 border-white dark:border-slate-700" />
                     <div className="min-w-0 flex-1">

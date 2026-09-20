@@ -618,7 +618,7 @@ export default function QuizPage() {
         console.error("Background sync failed (likely offline):", err);
       } finally {
         if (!cancelled) setLoading(false);
-      } E
+      }
 
       /** STEP 3: Restore State (Answers, Timer, etc.) **/
       if (currentQuizId) {
@@ -1035,7 +1035,7 @@ Please provide a detailed discussion and guidance.`;
         playSound={playSound}
         isDarkMode={isDarkMode}
       />
-      <div className="mt-2 flex justify-between items-center w-full gap-4"></div>
+      <div className="mt-1 flex justify-between items-center w-full gap-4"></div>
       <div className="flex flex-col items-center">
         <div className="w-full max-w-6xl min-h-[500px] relative px-0">
           {/* Course Filter Tabs */}
@@ -1065,9 +1065,7 @@ Please provide a detailed discussion and guidance.`;
             <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/30 rounded-xl border-0">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-full">
-                    <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  </div>
+
                   <div>
                     <p className="font-bold text-amber-800 dark:text-amber-300">
                       {totalQuestions - QUESTIONS_PER_BATCH} more questions available!
@@ -1133,7 +1131,7 @@ Please provide a detailed discussion and guidance.`;
                         ? "bg-emerald-50/40 dark:bg-emerald-500/10"
                         : notUnderstood[q.id]
                           ? "bg-rose-50/40 dark:bg-rose-500/10"
-                          : "bg-white dark:bg-muted/50",
+                          : "bg-white dark:bg-muted/100",
                       "text-slate-900 dark:text-slate-100"
                     )}>
                     <div className="min-h-[60px] md:min-h-[70px] flex items-start">

@@ -14,7 +14,7 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
     const isOwner = user?.id === center.created_by;
 
     return (
-        <div className="group relative flex flex-col justify-between overflow-hidden rounded-none md:rounded-[2rem] border-0 md:border bg-white px-4 py-4 md:p-5 shadow-none md:shadow-sm transition-all hover:md:shadow-xl hover:md:-translate-y-1 dark:bg-muted/30 md:border md:border-transparent hover:md:border-blue-100 dark:hover:md:border-blue-900/30 border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50">
+        <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white px-4 py-4 md:p-5 md:shadow-sm transition-all hover:md:shadow-xl hover:md:-translate-y-1 dark:bg-muted/30">
 
             {/* 1. Header: Badge & Status */}
             <div className="flex justify-between items-start mb-3 md:mb-4">
@@ -44,7 +44,6 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
             {/* 2. Location Info */}
             <div className="flex items-center gap-2 mb-4 md:mb-5 px-0 md:px-1">
                 <div className="flex -space-x-1.5 md:-space-x-2 mr-1.5 md:mr-2">
-                    {/* Visual hint of community */}
                     <div className="h-5 w-5 md:h-6 md:w-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 flex items-center justify-center">
                         <User size={8} className="md:w-2.5 md:h-2.5" />
                     </div>
@@ -60,10 +59,10 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
                 </div>
             </div>
 
-            {/* 3. THE AMAZING FEATURE: EXAM BUDDIES BUTTON */}
+            {/* 3. Exam Buddies Button */}
             <Link
                 to={`/survival-hub/buddies?centerId=${center.id}&name=${encodeURIComponent(center.name)}`}
-                className="relative mb-3 flex items-center justify-between overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-3 md:p-4 text-white shadow-lg shadow-blue-200 transition-all active:scale-95 dark:shadow-none group/buddy"
+                className="relative mb-3 flex items-center justify-between overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-3 md:p-4 text-white transition-all active:scale-95 dark:shadow-none group/buddy"
             >
                 <div className="relative z-10 flex items-center gap-2 md:gap-3">
                     <div className="rounded-lg md:rounded-xl bg-white/20 p-1.5 md:p-2 backdrop-blur-md">
@@ -74,9 +73,8 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
                         <p className="text-xs md:text-sm font-black">Find Exam Buddies</p>
                     </div>
                 </div>
-                <Sparkles className="relative z-10 opacity-50 group-hover/buddy:rotate-12 transition-transform" size={18} className="md:w-5 md:h-5" />
+                <Sparkles className="relative z-10 opacity-50 group-hover/buddy:rotate-12 transition-transform" size={18} />
 
-                {/* Decorative background element */}
                 <div className="absolute -right-3 md:-right-4 -top-3 md:-top-4 h-14 w-14 md:h-16 md:w-16 rounded-full bg-white/10 transition-transform group-hover/buddy:scale-150" />
             </Link>
 
@@ -112,7 +110,7 @@ export const ExamCenterCard = ({ center, onEdit, onDelete }: ExamCenterCardProps
             </div>
 
             {/* 5. Footer: Uploader & Meta */}
-            <div className="pt-3 md:pt-4 border-t border-slate-100/50 md:border-t md:border-dashed md:border-slate-100 dark:border-slate-800/50 flex items-center justify-between">
+            <div className="pt-3 md:pt-4 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 md:gap-2">
                     <div className="h-6 w-6 md:h-7 md:w-7 rounded-full bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 p-0.5 border border-white dark:border-slate-800 shadow-sm overflow-hidden">
                         {center.uploader?.avatar_url ? (

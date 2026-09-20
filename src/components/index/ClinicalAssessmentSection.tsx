@@ -41,7 +41,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 
 // ============================================================
-// ANIMATION UTILITY: Intersection Observer for scroll animations
+// ANIMATION UTILITY
 // ============================================================
 const useIntersectionObserver = (options = {}) => {
     const [isVisible, setIsVisible] = useState(false);
@@ -107,7 +107,6 @@ const useCountUp = (target: number, duration: number = 2000) => {
 const ClinicalAssessmentSection = () => {
     const navigate = useNavigate();
 
-    // Stats counters
     const [assessmentsRef, assessmentsCount] = useCountUp(24, 1500);
     const [stepsRef, stepsCount] = useCountUp(200, 1800);
     const [usersRef, usersCount] = useCountUp(2231, 2000);
@@ -199,11 +198,10 @@ const ClinicalAssessmentSection = () => {
     ];
 
     return (
-        <section className="py-12 md:py-20 px-0 md:px-4 bg-gradient-to-br from-blue-50 via-white to-purple-50 font-sans antialiased">
+        <section className="py-12 md:py-20 px-0 md:px-4 bg-white font-sans antialiased">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-10 md:mb-16 px-4 md:px-0">
-
                     <h2 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 mb-3 md:mb-4">
                         Clinical{" "}
                         <span className="text-blue-600 italic">Assessment</span>{" "}
@@ -221,7 +219,7 @@ const ClinicalAssessmentSection = () => {
                         <div
                             key={i}
                             ref={stat.ref}
-                            className="bg-white md:rounded-2xl p-3 md:p-6 text-center md:border md:border-slate-100 md:shadow-sm md:hover:shadow-lg md:hover:-translate-y-1 transition-all duration-300 border-b border-slate-100 md:border-b-0"
+                            className="bg-white md:rounded-2xl p-3 md:p-6 text-center transition-all duration-300"
                             style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'both' }}
                         >
                             <stat.icon className={`w-5 h-5 md:w-8 md:h-8 mx-auto mb-1.5 md:mb-3 ${stat.color}`} />
@@ -233,12 +231,12 @@ const ClinicalAssessmentSection = () => {
                     ))}
                 </div>
 
-                {/* Main Assessment Card - Hero */}
-                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl md:rounded-3xl p-6 md:p-10 mb-10 md:mb-12 mx-3 md:mx-0 shadow-xl shadow-blue-200/50 hover:shadow-2xl transition-all duration-500">
+                {/* Main Assessment Card - Hero (flat blue) */}
+                <div className="bg-blue-600 rounded-2xl md:rounded-3xl p-6 md:p-10 mb-10 md:mb-12 mx-3 md:mx-0">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
                         <div className="text-white space-y-3 md:space-y-4">
                             <div className="flex items-center gap-2">
-                                <Brain className="w-5 h-5 md:w-6 md:h-6 text-blue-200 animate-pulse" />
+                                <Brain className="w-5 h-5 md:w-6 md:h-6 text-blue-200" />
                                 <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-200">
                                     AI-Powered Clinical Practice
                                 </span>
@@ -254,19 +252,18 @@ const ClinicalAssessmentSection = () => {
                             <div className="flex flex-wrap gap-3 pt-2">
                                 <Button
                                     onClick={() => navigate('/register')}
-                                    className="bg-white text-blue-700 hover:bg-blue-50 font-bold py-2.5 md:py-3 px-6 md:px-8 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-sm md:text-base"
+                                    className="bg-white text-blue-700 hover:bg-blue-50 font-bold py-2.5 md:py-3 px-6 md:px-8 rounded-xl transition-all hover:scale-105 text-sm md:text-base"
                                 >
                                     <Play className="w-4 h-4 mr-2" />
                                     Start Practicing
                                     <ArrowRight className="w-4 h-4 ml-2" />
                                 </Button>
-
                             </div>
                         </div>
                         <div className="flex-shrink-0 hidden md:block">
-                            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                            <div className="bg-blue-700 rounded-2xl p-6">
                                 <div className="flex items-center gap-3 text-white">
-                                    <div className="bg-white/20 rounded-full p-2">
+                                    <div className="bg-blue-500 rounded-full p-2">
                                         <GraduationCap className="w-8 h-8" />
                                     </div>
                                     <div>
@@ -275,7 +272,7 @@ const ClinicalAssessmentSection = () => {
                                         <p className="text-xs text-blue-200">Practice Scenarios</p>
                                     </div>
                                 </div>
-                                <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-2 text-xs text-blue-200">
+                                <div className="mt-4 pt-4 flex items-center gap-2 text-xs text-blue-200">
                                     <CheckCircle className="w-4 h-4 text-green-300" />
                                     <span>Instant feedback on every answer</span>
                                 </div>
@@ -293,7 +290,7 @@ const ClinicalAssessmentSection = () => {
                     {features.map((feature, index) => (
                         <div
                             key={index}
-                            className={`bg-white md:rounded-2xl p-5 md:p-6 md:border md:border-slate-100 md:shadow-sm md:hover:shadow-lg md:hover:-translate-y-1 transition-all duration-300 border-b border-slate-100 md:border-b-0 ${feature.highlight ? 'md:ring-2 md:ring-blue-400/30' : ''}`}
+                            className="bg-white md:rounded-2xl p-5 md:p-6 transition-all duration-300"
                             style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
                         >
                             <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${feature.bg}`}>
@@ -312,7 +309,7 @@ const ClinicalAssessmentSection = () => {
                 </div>
 
                 {/* Assessment Types Section */}
-                <div className="bg-white md:rounded-2xl p-5 md:p-8 md:shadow-sm md:border md:border-slate-100 mx-3 md:mx-0">
+                <div className="bg-white md:rounded-2xl p-5 md:p-8 mx-3 md:mx-0">
                     <h3 className="text-lg md:text-xl font-black text-slate-900 mb-4 md:mb-6 text-center">
                         What You'll Practice
                     </h3>
@@ -320,7 +317,7 @@ const ClinicalAssessmentSection = () => {
                         {assessmentTypes.map((type, i) => (
                             <div
                                 key={i}
-                                className="bg-slate-50 md:rounded-xl p-4 md:p-5 md:hover:shadow-md transition-all duration-300 border-b border-slate-100 md:border-b-0"
+                                className="bg-slate-50 md:rounded-xl p-4 md:p-5 transition-all duration-300"
                             >
                                 <type.icon className={`w-5 h-5 md:w-6 md:h-6 ${type.color} mb-2 md:mb-3`} />
                                 <h4 className="font-bold text-slate-900 text-sm md:text-base mb-1">{type.title}</h4>
@@ -332,7 +329,7 @@ const ClinicalAssessmentSection = () => {
 
                 {/* Testimonial */}
                 <div className="mt-10 md:mt-12 md:max-w-full md:px-4 lg:px-6 mx-auto text-center px-4 md:px-0">
-                    <div className="bg-white md:rounded-2xl p-5 md:p-8 md:shadow-sm md:border md:border-slate-100">
+                    <div className="bg-white md:rounded-2xl p-5 md:p-8">
                         <div className="flex justify-center mb-3">
                             <div className="flex -space-x-2">
                                 {[1, 2, 3, 4].map((i) => (

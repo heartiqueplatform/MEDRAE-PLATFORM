@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-hot-toast";
-import { ArrowLeft, CheckCircle, Heart, Info, Phone, ShieldAlert, X } from "lucide-react";
+import { ChevronLeft, CheckCircle, Heart, Info, Phone, ShieldAlert, X } from "lucide-react";
 
 interface Listing {
     id: string;
@@ -29,48 +29,42 @@ interface Listing {
     contact_clicks?: number;
 }
 
-// Skeleton Components
+// Skeleton Component
 const DetailSkeleton = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-background animate-pulse">
             {/* Top Navigation Bar Skeleton */}
-            <div className="sticky -top-4 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-3 md:px-4 py-3 md:py-3">
+            <div className="sticky top-0 z-30 bg-white dark:bg-gray-900 px-3 md:px-4 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-1.5 md:gap-2">
-                        <div className="h-8 w-20 md:h-9 md:w-28 rounded bg-gray-200 dark:bg-gray-700" />
-                    </div>
-                    <div className="flex items-center gap-1.5 md:gap-2">
-                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
-                    </div>
+                    <div className="h-8 w-20 md:h-9 md:w-28 rounded bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-0 md:px-4 pt-0 md:pt-4">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 md:gap-6">
+            <div className="max-w-6xl mx-auto px-3 md:px-4 pt-3 md:pt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-6">
 
                     {/* LEFT COLUMN Skeleton */}
-                    <div className="lg:col-span-7 space-y-0 md:space-y-4">
+                    <div className="lg:col-span-7 space-y-3 md:space-y-4">
                         {/* Main Image Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-xl overflow-hidden shadow-none md:shadow-sm border-0 md:border border-gray-100 dark:border-gray-800">
-                            <div className="flex flex-col">
-                                <div className="relative w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                                    <div className="w-full aspect-square md:aspect-[4/3]">
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-gray-300 dark:bg-gray-600" />
-                                        </div>
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
+                            <div className="relative w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                                <div className="w-full aspect-square md:aspect-[4/3]">
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-gray-300 dark:bg-gray-600" />
                                     </div>
                                 </div>
-                                {/* Thumbnails Row Skeleton */}
-                                <div className="flex gap-1.5 md:gap-2 p-2 md:p-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-                                    {[...Array(4)].map((_, i) => (
-                                        <div key={i} className="w-16 h-16 md:w-20 md:h-20 rounded-lg md:rounded-xl bg-gray-200 dark:bg-gray-700" />
-                                    ))}
-                                </div>
+                            </div>
+                            {/* Thumbnails Row Skeleton */}
+                            <div className="flex gap-1.5 md:gap-2 p-2 md:p-3">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="w-16 h-16 md:w-20 md:h-20 rounded-lg md:rounded-xl bg-gray-200 dark:bg-gray-700" />
+                                ))}
                             </div>
                         </div>
 
                         {/* Description Box Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-xl px-4 py-5 md:p-8 shadow-none md:shadow-sm border-0 md:border border-gray-100 dark:border-gray-800 border-b md:border-b md:border-gray-100">
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
                             <div className="h-6 md:h-7 w-32 rounded bg-gray-200 dark:bg-gray-700 mb-2 md:mb-4" />
                             <div className="space-y-2">
                                 <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700" />
@@ -82,9 +76,9 @@ const DetailSkeleton = () => {
                     </div>
 
                     {/* RIGHT COLUMN Skeleton */}
-                    <div className="lg:col-span-5 space-y-0 md:space-y-4">
+                    <div className="lg:col-span-5 space-y-3 md:space-y-4">
                         {/* Price Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-2xl px-4 py-5 md:p-8 shadow-none md:shadow-xl border-0 md:border border-gray-100 dark:border-gray-800 border-b md:border-b">
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
                             <div className="mb-3 md:mb-4">
                                 <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700 mb-1" />
                                 <div className="h-7 md:h-9 w-48 rounded bg-gray-200 dark:bg-gray-700" />
@@ -102,7 +96,7 @@ const DetailSkeleton = () => {
                         </div>
 
                         {/* Seller Card Skeleton */}
-                        <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-xl px-4 py-5 md:p-6 shadow-none md:shadow-sm border-0 md:border border-gray-100 dark:border-gray-800 border-b md:border-b">
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-6">
                             <div className="h-3 w-32 rounded bg-gray-200 dark:bg-gray-700 mb-3 md:mb-4" />
                             <div className="flex items-center gap-3 md:gap-4">
                                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gray-200 dark:bg-gray-700" />
@@ -111,7 +105,7 @@ const DetailSkeleton = () => {
                                     <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
                                 </div>
                             </div>
-                            <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-50 dark:border-gray-800">
+                            <div className="mt-3 md:mt-4 pt-3 md:pt-4">
                                 <div className="h-3 w-48 rounded bg-gray-200 dark:bg-gray-700" />
                             </div>
                         </div>
@@ -141,7 +135,6 @@ export default function ListingDetail() {
     const [reporting, setReporting] = useState(false);
     const [activeImage, setActiveImage] = useState<string | null>(null);
 
-    // Preserve theme from localStorage
     useEffect(() => {
         const storedTheme = (localStorage.getItem("theme") as "light" | "dark") || "light";
         setTheme(storedTheme);
@@ -339,45 +332,41 @@ export default function ListingDetail() {
         }
     };
 
-    // ✅ Show skeleton instead of GlobalLoader
     if (loading) return <DetailSkeleton />;
     if (!listing) return <DetailSkeleton />;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-background">
-            {/* Top Navigation Bar - Mobile Native */}
-            <div className="sticky -top-4 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-3 md:px-4 py-3 md:py-3">
+
+            {/* Top Navigation Bar */}
+            <div className="sticky top-0 z-30 bg-white dark:bg-gray-900 px-3 md:px-4 py-3">
                 <div className="max-w-6xl mx-auto flex justify-between items-center">
                     <button
                         onClick={() => navigate("/market")}
-                        className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium text-sm md:text-base"
+                        aria-label="Go back"
+                        className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-gray-700 dark:text-gray-300 active:opacity-60 transition"
                     >
-                        <ArrowLeft size={18} className="md:w-5 md:h-5" />
-                        <span className="hidden sm:inline">Back to NursMartt</span>
-                        <span className="sm:hidden">Back</span>
+                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
                     </button>
-                    <div className="flex items-center gap-1.5 md:gap-2">
-                        <button
-                            onClick={handleSave}
-                            className={`p-1.5 md:p-2 rounded-full transition ${saved ? "text-red-500" : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
-                        >
-                            <Heart size={20} className="md:w-6 md:h-6" fill={saved ? "currentColor" : "none"} />
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleSave}
+                        aria-label="Save listing"
+                        className={`p-1.5 md:p-2 rounded-full transition ${saved ? "text-red-500" : "text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                    >
+                        <Heart size={20} className="md:w-6 md:h-6" fill={saved ? "currentColor" : "none"} />
+                    </button>
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-0 md:px-4 pt-0 md:pt-4">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 md:gap-6">
+            <div className="max-w-6xl mx-auto px-3 md:px-4 pt-3 md:pt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-6">
 
-                    {/* LEFT COLUMN: IMAGES & DESCRIPTION - Mobile Native */}
-                    <div className="lg:col-span-7 space-y-0 md:space-y-4">
-                        {/* Main Image Gallery - Mobile Native */}
-                        <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-xl overflow-hidden shadow-none md:shadow-sm border-0 md:border border-gray-100 dark:border-gray-800">
+                    {/* LEFT COLUMN */}
+                    <div className="lg:col-span-7 space-y-3 md:space-y-4">
+                        {/* Main Image Gallery */}
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
                             <div className="flex flex-col">
-                                {/* Large Main Display - EDGE TO EDGE ON MOBILE */}
                                 <div className="relative w-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                                    {/* Mobile: Full width, square aspect ratio. Desktop: 4:3 aspect ratio */}
                                     <div className="w-full aspect-square md:aspect-[4/3]">
                                         <img
                                             src={activeImage || listing.thumbnail_url}
@@ -387,22 +376,21 @@ export default function ListingDetail() {
                                         />
                                     </div>
                                     {listing.is_featured && (
-                                        <div className="absolute top-3 md:top-4 left-3 md:left-4 bg-yellow-400 text-black text-[8px] md:text-[10px] font-black px-2 md:px-3 py-0.5 md:py-1 rounded-lg shadow-lg uppercase z-10">
+                                        <div className="absolute top-3 md:top-4 left-3 md:left-4 bg-yellow-400 text-black text-[8px] md:text-[10px] font-black px-2 md:px-3 py-0.5 md:py-1 rounded-lg uppercase z-10">
                                             Featured
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Thumbnails Row */}
                                 {listing.image_urls && listing.image_urls.length > 1 && (
-                                    <div className="flex gap-1.5 md:gap-2 p-2 md:p-3 overflow-x-auto no-scrollbar bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+                                    <div className="flex gap-1.5 md:gap-2 p-2 md:p-3 overflow-x-auto no-scrollbar">
                                         {listing.image_urls.map((url, idx) => (
                                             <button
                                                 key={idx}
                                                 onClick={() => setActiveImage(url)}
-                                                className={`relative flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg md:rounded-xl overflow-hidden border-2 transition-all ${activeImage === url
-                                                    ? "border-blue-600 ring-2 ring-blue-100 dark:ring-blue-900"
-                                                    : "border-transparent opacity-70 hover:opacity-100"
+                                                className={`relative flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg md:rounded-xl overflow-hidden transition-all ${activeImage === url
+                                                    ? "ring-2 ring-blue-500"
+                                                    : "opacity-70 hover:opacity-100"
                                                     }`}
                                             >
                                                 <img src={url} className="w-full h-full object-cover" alt={`Thumbnail ${idx + 1}`} />
@@ -413,8 +401,8 @@ export default function ListingDetail() {
                             </div>
                         </div>
 
-                        {/* Description Box - Mobile Native */}
-                        <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-xl px-4 py-5 md:p-8 shadow-none md:shadow-sm border-0 md:border border-gray-100 dark:border-gray-800 border-b md:border-b md:border-gray-100">
+                        {/* Description Box */}
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
                             <h2 className="text-base md:text-xl font-bold text-gray-900 dark:text-white mb-2 md:mb-4">Description</h2>
                             <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                                 {listing.description}
@@ -422,93 +410,91 @@ export default function ListingDetail() {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: PRICING, SELLER & ACTIONS - Mobile Native */}
-                    <div className="lg:col-span-5 space-y-0 md:space-y-4">
-                        <div className="space-y-0 md:space-y-4">
+                    {/* RIGHT COLUMN */}
+                    <div className="lg:col-span-5 space-y-3 md:space-y-4">
 
-                            {/* Price Card - Mobile Native */}
-                            <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-2xl px-4 py-5 md:p-8 shadow-none md:shadow-xl border-0 md:border border-gray-100 dark:border-gray-800 border-b md:border-b">
-                                <div className="flex justify-between items-start mb-3 md:mb-4">
-                                    <div>
-                                        <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                                            {listing.category}
-                                        </span>
-                                        <h1 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white mt-0.5 md:mt-1 leading-tight">
-                                            {listing.title}
-                                        </h1>
-                                    </div>
-                                    <span className="px-2 md:px-3 py-0.5 md:py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] md:text-xs font-bold rounded-full border border-gray-200 dark:border-gray-700 shrink-0 ml-2">
-                                        {listing.condition}
+                        {/* Price Card */}
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-8">
+                            <div className="flex justify-between items-start mb-3 md:mb-4">
+                                <div>
+                                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                                        {listing.category}
                                     </span>
+                                    <h1 className="text-xl md:text-3xl font-black text-gray-900 dark:text-white mt-0.5 md:mt-1 leading-tight">
+                                        {listing.title}
+                                    </h1>
                                 </div>
-
-                                <div className="flex items-baseline gap-1.5 md:gap-2 mb-3 md:mb-4">
-                                    <span className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white">
-                                        {listing.currency} {Number(listing.price).toLocaleString()}
-                                    </span>
-                                    {listing.negotiable && (
-                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs md:text-sm flex items-center gap-0.5 md:gap-1">
-                                            <CheckCircle size={12} className="md:w-3.5 md:h-3.5" /> Negotiable
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Action Buttons - Mobile Optimized */}
-                                <div className="flex flex-col gap-1.5 md:gap-2">
-                                    <button
-                                        onClick={handleContact}
-                                        className="w-full flex items-center justify-center gap-2 md:gap-3 bg-green-600 hover:bg-green-700 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-sm md:text-lg shadow-lg shadow-green-100 dark:shadow-none transition-all active:scale-[0.98]"
-                                    >
-                                        <Phone size={16} className="md:w-5 md:h-5" />
-                                        Contact Seller
-                                    </button>
-
-                                    <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                                        <button
-                                            onClick={handleSave}
-                                            className={`flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-bold border transition-all text-xs md:text-sm ${saved
-                                                ? "bg-gray-100 dark:bg-gray-800 border-gray-200 text-gray-500"
-                                                : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50"
-                                                }`}
-                                        >
-                                            <Heart size={14} className="md:w-[18px] md:h-[18px]" fill={saved ? "currentColor" : "none"} />
-                                            {saving ? "..." : saved ? "Saved" : "Save"}
-                                        </button>
-
-                                        <button
-                                            onClick={handleReport}
-                                            className={`flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-bold border transition-all text-xs md:text-sm ${reported
-                                                ? "bg-red-50 text-red-400 border-red-100"
-                                                : "bg-white dark:bg-gray-900 border-red-100 dark:border-red-900/30 text-red-600 hover:bg-red-50"
-                                                }`}
-                                        >
-                                            <ShieldAlert size={14} className="md:w-[18px] md:h-[18px]" />
-                                            {reporting ? "..." : reported ? "Reported" : "Report"}
-                                        </button>
-                                    </div>
-                                </div>
+                                <span className="px-2 md:px-3 py-0.5 md:py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] md:text-xs font-bold rounded-full shrink-0 ml-2">
+                                    {listing.condition}
+                                </span>
                             </div>
 
-                            {/* Seller Card - Mobile Native */}
-                            <div className="bg-white dark:bg-gray-900 rounded-none md:rounded-xl px-4 py-5 md:p-6 shadow-none md:shadow-sm border-0 md:border border-gray-100 dark:border-gray-800 border-b md:border-b">
-                                <h3 className="text-[10px] md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 md:mb-4">Seller Information</h3>
-                                <div className="flex items-center gap-3 md:gap-4">
-                                    {listing.seller_avatar ? (
-                                        <img src={listing.seller_avatar} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover border-2 border-blue-50" alt={listing.seller_name} />
-                                    ) : (
-                                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-blue-600 flex items-center justify-center text-white text-base md:text-xl font-bold">
-                                            {listing.seller_name?.[0]}
-                                        </div>
-                                    )}
-                                    <div>
-                                        <div className="font-bold text-gray-900 dark:text-white text-base md:text-lg">{listing.seller_name}</div>
-                                        <div className="text-blue-600 dark:text-blue-400 text-xs md:text-sm font-medium">{listing.seller_role}</div>
+                            <div className="flex items-baseline gap-1.5 md:gap-2 mb-3 md:mb-4">
+                                <span className="text-2xl md:text-4xl font-black text-gray-900 dark:text-white">
+                                    {listing.currency} {Number(listing.price).toLocaleString()}
+                                </span>
+                                {listing.negotiable && (
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs md:text-sm flex items-center gap-0.5 md:gap-1">
+                                        <CheckCircle size={12} className="md:w-3.5 md:h-3.5" /> Negotiable
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col gap-1.5 md:gap-2">
+                                <button
+                                    onClick={handleContact}
+                                    className="w-full flex items-center justify-center gap-2 md:gap-3 bg-green-600 hover:bg-green-700 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-bold text-sm md:text-lg transition-all active:scale-[0.98]"
+                                >
+                                    <Phone size={16} className="md:w-5 md:h-5" />
+                                    Contact Seller
+                                </button>
+
+                                <div className="grid grid-cols-2 gap-1.5 md:gap-2">
+                                    <button
+                                        onClick={handleSave}
+                                        className={`flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-bold transition-all text-xs md:text-sm ${saved
+                                            ? "bg-gray-100 dark:bg-gray-800 text-gray-500"
+                                            : "bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            }`}
+                                    >
+                                        <Heart size={14} className="md:w-[18px] md:h-[18px]" fill={saved ? "currentColor" : "none"} />
+                                        {saving ? "..." : saved ? "Saved" : "Save"}
+                                    </button>
+
+                                    <button
+                                        onClick={handleReport}
+                                        className={`flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-bold transition-all text-xs md:text-sm ${reported
+                                            ? "bg-red-50 text-red-400"
+                                            : "bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                            }`}
+                                    >
+                                        <ShieldAlert size={14} className="md:w-[18px] md:h-[18px]" />
+                                        {reporting ? "..." : reported ? "Reported" : "Report"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Seller Card */}
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 md:p-6">
+                            <h3 className="text-[10px] md:text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 md:mb-4">Seller Information</h3>
+                            <div className="flex items-center gap-3 md:gap-4">
+                                {listing.seller_avatar ? (
+                                    <img src={listing.seller_avatar} className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover" alt={listing.seller_name} />
+                                ) : (
+                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-blue-600 flex items-center justify-center text-white text-base md:text-xl font-bold">
+                                        {listing.seller_name?.[0]}
                                     </div>
+                                )}
+                                <div>
+                                    <div className="font-bold text-gray-900 dark:text-white text-base md:text-lg">{listing.seller_name}</div>
+                                    <div className="text-blue-600 dark:text-blue-400 text-xs md:text-sm font-medium">{listing.seller_role}</div>
                                 </div>
-                                <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-50 dark:border-gray-800 flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-gray-500">
-                                    <Info size={12} className="md:w-3.5 md:h-3.5" />
-                                    Verified Student / Nurse Professional
-                                </div>
+                            </div>
+                            <div className="mt-3 md:mt-4 pt-3 md:pt-4 flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs text-gray-500">
+                                <Info size={12} className="md:w-3.5 md:h-3.5" />
+                                Verified Student / Nurse Professional
                             </div>
                         </div>
                     </div>
@@ -519,7 +505,7 @@ export default function ListingDetail() {
                 </div>
             </div>
 
-            {/* FULLSCREEN IMAGE MODAL - z-index updated to z-[9999] */}
+            {/* FULLSCREEN IMAGE MODAL */}
             {fullscreenImage && (
                 <div
                     className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 md:p-10"
@@ -527,6 +513,7 @@ export default function ListingDetail() {
                 >
                     <button
                         onClick={() => setFullscreenImage(null)}
+                        aria-label="Close image"
                         className="absolute top-4 right-4 md:top-6 md:right-6 text-white/50 hover:text-white transition p-1.5 md:p-2 bg-white/10 rounded-full"
                     >
                         <X size={24} className="md:w-8 md:h-8" />
@@ -535,7 +522,7 @@ export default function ListingDetail() {
                     <img
                         src={fullscreenImage}
                         alt="Full Screen View"
-                        className="max-h-[90vh] md:max-h-full max-w-full object-contain rounded-lg shadow-2xl transition-transform duration-300"
+                        className="max-h-[90vh] md:max-h-full max-w-full object-contain rounded-lg transition-transform duration-300"
                         onClick={(e) => e.stopPropagation()}
                     />
                 </div>

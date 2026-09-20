@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { toast as sonnerToast } from "sonner";
 import { DailyTriviaCard } from "@/components/TopStudentsPanel";
 import CountdownFloating from "@/components/CountdownFloating";
-import FloatingQuickActions from "@/components/FloatingQuickActions";
+
 import { UnitBreakdown } from "@/components/UnitBreakdown";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -1258,7 +1258,7 @@ export default function StudentDashboard() {
               </a>
             </CardContent>
           </Card>
-          <FloatingQuickActions />
+
         </div>
 
         <TermsButton />

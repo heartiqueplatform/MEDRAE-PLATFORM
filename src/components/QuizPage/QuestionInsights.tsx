@@ -182,7 +182,7 @@ export function QuestionInsights({
 
             {/* ─── REFLECTION PANEL ─── */}
             {showReasonBox && (
-                <div className="rounded-xl overflow-hidden bg-blue-500/8 dark:bg-blue-500/10">
+                <div className="rounded-xl overflow-hidden bg-blue-500/8 dark:bg-blue-500/50">
                     {!selectedReason ? (
                         <>
                             <button

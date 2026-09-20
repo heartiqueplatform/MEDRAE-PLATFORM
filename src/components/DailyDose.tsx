@@ -106,7 +106,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                 whileHover={{ scale: 1.008 }}
                 whileTap={{ scale: 0.995 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-                className="relative w-full overflow-hidden rounded-xl bg-gh-l-card dark:bg-gh-card shadow-xl shadow-black/10 dark:shadow-black/40 p-4 md:p-5 mb-5 text-left"
+                className="relative w-full overflow-hidden rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-4 md:p-5 mb-5 text-left"
             >
                 {/* blurred artwork background */}
                 {featured.artwork && (
@@ -119,7 +119,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
 
                 <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
                     {/* artwork */}
-                    <div className="relative shrink-0 w-full md:w-44 md:h-44 lg:w-52 lg:h-52 aspect-square md:aspect-auto rounded-xl overflow-hidden shadow-2xl shadow-black/30">
+                    <div className="relative shrink-0 w-full md:w-44 md:h-44 lg:w-52 lg:h-52 aspect-square md:aspect-auto rounded-xl overflow-hidden shadow-none">
                         {featured.artwork ? (
                             <img src={featured.artwork} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -128,7 +128,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                             </div>
                         )}
                         <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="w-14 h-14 rounded-full bg-blue-600 shadow-xl shadow-black/40 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-full bg-blue-600 shadow-none flex items-center justify-center">
                                 <Play size={22} fill="white" className="text-white ml-0.5" />
                             </div>
                         </div>
@@ -169,7 +169,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
 
                         {/* play CTA row */}
                         <div className="mt-3 flex items-center gap-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg shadow-blue-600/30">
+                            <span className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-none">
                                 <Play size={12} fill="white" className="ml-0.5" />
                                 Play now
                             </span>
@@ -212,7 +212,7 @@ function TopPickCard({ track, index, onClick }: { track: Track; index: number; o
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="group w-full text-left rounded-xl bg-gh-l-card dark:bg-gh-card shadow-md shadow-black/5 dark:shadow-black/30 overflow-hidden hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow"
+            className="group w-full text-left rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none overflow-hidden hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow"
         >
             {/* ── Big artwork on top, edge to edge ── */}
             <div className="relative w-full aspect-square overflow-hidden">
@@ -229,7 +229,7 @@ function TopPickCard({ track, index, onClick }: { track: Track; index: number; o
                 )}
                 {/* play overlay on hover */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-blue-600 shadow-xl shadow-black/40 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-blue-600 shadow-none flex items-center justify-center">
                         <Play size={20} fill="white" className="text-white ml-0.5" />
                     </div>
                 </div>
@@ -264,7 +264,7 @@ function DailyDoseSkeleton() {
     return (
         <section className="w-full max-w-5xl mx-auto animate-pulse">
             <div className="h-5 w-32 rounded-full bg-gh-l-hover dark:bg-gh-hover mb-4" />
-            <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card shadow-md shadow-black/5 dark:shadow-black/30 p-5 mb-5">
+            <div className="w-full rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-5 mb-5">
                 <div className="flex items-center gap-4">
                     <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl bg-gh-l-hover dark:bg-gh-hover" />
                     <div className="flex-1 space-y-3">
@@ -308,7 +308,7 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="group w-full text-left rounded-xl overflow-hidden shadow-md shadow-black/5 dark:shadow-black/30 hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow bg-gh-l-card dark:bg-gh-card"
+            className="group w-full text-left rounded-xl overflow-hidden shadow-none hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow bg-gh-l-card dark:bg-gh-card"
         >
             {/* Top block — purple gradient with Apple logo, same height as episode artwork */}
             <div className="relative w-full aspect-square bg-gradient-to-br from-[#B150F2] to-[#8927EB] flex items-center justify-center">
@@ -317,7 +317,7 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
 
                 <ApplePodcastsIcon className="w-20 h-20 md:w-28 md:h-28 text-white relative z-10 drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)]" />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-white shadow-xl shadow-black/40 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-white shadow-none flex items-center justify-center">
                         <Play size={20} className="text-[#8927EB] ml-0.5" />
                     </div>
                 </div>

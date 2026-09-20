@@ -19,7 +19,6 @@ export const HousingCard = ({
 }) => {
     const navigate = useNavigate();
 
-    // State for fullscreen view
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
     const [localDeleting, setLocalDeleting] = useState(false);
@@ -40,7 +39,6 @@ export const HousingCard = ({
     const LocationIcon = house.exam_center_id ? Building2 : house.nearby_hospital_id ? Hospital : Briefcase;
     const safetyStars = house.safety_rating || 3;
 
-    // Functions to move through photos
     const nextPhoto = (e: any) => {
         e.stopPropagation();
         setCurrentPhotoIndex((prev) => (prev + 1) % images.length);
@@ -51,7 +49,6 @@ export const HousingCard = ({
         setCurrentPhotoIndex((prev) => (prev - 1 + images.length) % images.length);
     };
 
-    // UPDATED: Delete handler with proper loading state
     const handleDelete = async () => {
         if (!house.is_owner) {
             toast.error('You can only delete your own listings');
@@ -87,11 +84,11 @@ export const HousingCard = ({
     const showDeleting = isDeleting || localDeleting;
 
     return (
-        <div className={`group relative overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200 bg-white transition-all hover:md:shadow-lg dark:border-slate-800 dark:bg-muted/30 border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50 ${showDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`group relative overflow-hidden rounded-2xl bg-white transition-all hover:md:shadow-lg dark:bg-muted/30 ${showDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
 
             {/* Deleting Overlay */}
             {showDeleting && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-none md:rounded-2xl">
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
                     <div className="flex flex-col items-center gap-2 text-white">
                         <Loader2 className="h-8 w-8 md:h-10 md:w-10 animate-spin" />
                         <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">Deleting...</span>
@@ -99,10 +96,7 @@ export const HousingCard = ({
                 </div>
             )}
 
-            {/* 1. Header Color */}
-            <div className="h-1.5 md:h-2 bg-gradient-to-r from-emerald-500 to-teal-500" />
-
-            {/* 2. Photo Area (Clickable) */}
+            {/* 1. Photo Area (Clickable) */}
             <div
                 className="relative h-48 md:h-56 w-full cursor-pointer overflow-hidden"
                 onClick={() => images.length > 0 && setIsFullscreen(true)}
@@ -117,15 +111,15 @@ export const HousingCard = ({
                 />
 
                 {images.length > 1 && (
-                    <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[8px] md:text-[10px] font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full border border-white/20">
+                    <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[8px] md:text-[10px] font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full">
                         {currentPhotoIndex + 1} / {images.length} Photos
                     </span>
                 )}
             </div>
 
             <div className="p-4 md:p-5">
-                {/* 3. TAGGED LOCATION BADGE */}
-                <div className="flex items-center justify-between gap-1 bg-slate-50 px-3 md:px-4 py-1.5 md:py-2 border-b border-slate-100 dark:bg-slate-800/50 dark:border-slate-800 -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-3 md:mb-4">
+                {/* 2. TAGGED LOCATION BADGE */}
+                <div className="flex items-center justify-between gap-1 bg-slate-50 px-3 md:px-4 py-1.5 md:py-2 dark:bg-slate-800/50 -mx-4 md:-mx-5 -mt-4 md:-mt-5 mb-3 md:mb-4">
                     <div className="flex items-center gap-1 md:gap-1.5 min-w-0 flex-1">
                         <LocationIcon size={10} className="md:w-3 md:h-3 text-blue-500 shrink-0" />
                         <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-tight truncate">
@@ -133,7 +127,6 @@ export const HousingCard = ({
                         </span>
                     </div>
 
-                    {/* Delete button moved to top right */}
                     {house.is_owner && !showDeleting && (
                         <button
                             onClick={handleDelete}
@@ -146,7 +139,7 @@ export const HousingCard = ({
                     )}
                 </div>
 
-                {/* 4. Title & Verification */}
+                {/* 3. Title & Verification */}
                 <div className="flex justify-between items-start mb-1">
                     <h3 className="text-base md:text-lg font-extrabold text-slate-900 dark:text-white group-hover:md:text-emerald-600 transition-colors truncate">
                         {house.name}
@@ -159,22 +152,21 @@ export const HousingCard = ({
                     )}
                 </div>
 
-                {/* 5. Distance & Safety */}
+                {/* 4. Distance & Safety */}
                 <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                     <p className="text-[10px] md:text-xs text-slate-500 font-medium">{house.distance_to_center} from center</p>
                     <div className="flex items-center gap-0.5">
                         {[...Array(5)].map((_, i) => (
                             <Star
                                 key={i}
-                                size={8} className="md:w-2.5 md:h-2.5"
-                                className={i < safetyStars ? "fill-amber-400 text-amber-400" : "text-slate-200 dark:text-slate-700"}
+                                size={8} className={`md:w-2.5 md:h-2.5 ${i < safetyStars ? "fill-amber-400 text-amber-400" : "text-slate-200 dark:text-slate-700"}`}
                             />
                         ))}
                     </div>
                 </div>
 
-                {/* 6. Amenities & Price */}
-                <div className="flex items-center justify-between mt-4 md:mt-6 bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl border border-slate-100 dark:border-slate-800">
+                {/* 5. Amenities & Price */}
+                <div className="flex items-center justify-between mt-4 md:mt-6 bg-slate-50 dark:bg-slate-800/50 p-2.5 md:p-3 rounded-lg md:rounded-xl">
                     <div>
                         <p className="text-[8px] md:text-[9px] uppercase text-slate-400 font-black tracking-widest">Price / Night</p>
                         <p className="text-base md:text-xl font-black text-emerald-600 dark:text-emerald-400">
@@ -189,7 +181,7 @@ export const HousingCard = ({
                     </div>
                 </div>
 
-                {/* 7. Quick Actions */}
+                {/* 6. Quick Actions */}
                 <div className="grid grid-cols-2 gap-1.5 md:gap-2 mt-3 md:mt-4">
                     <a
                         href={`tel:${house.contact_phone}`}
@@ -200,7 +192,7 @@ export const HousingCard = ({
                     </a>
                     <button
                         onClick={() => navigate(`/survival-hub/reviews/${house.id}?type=housing`)}
-                        className="flex items-center justify-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl border border-slate-200 py-2 md:py-2.5 text-[10px] md:text-xs font-bold text-slate-600 hover:md:bg-slate-50 transition-all active:scale-95 dark:border-slate-800 dark:text-slate-400 dark:hover:md:bg-slate-800"
+                        className="flex items-center justify-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-slate-50 py-2 md:py-2.5 text-[10px] md:text-xs font-bold text-slate-600 hover:md:bg-slate-100 transition-all active:scale-95 dark:bg-slate-800 dark:text-slate-400 dark:hover:md:bg-slate-700"
                     >
                         <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />
                         Reviews
@@ -208,13 +200,13 @@ export const HousingCard = ({
                 </div>
             </div>
 
-            {/* 8. Contributor Profile Bar */}
-            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/30 p-3 md:p-4 dark:border-slate-800 dark:bg-slate-800/30">
+            {/* 7. Contributor Profile Bar */}
+            <div className="flex items-center justify-between bg-slate-50/30 p-3 md:p-4 dark:bg-slate-800/30">
                 <button
                     onClick={() => navigate(`/profile/${contributor?.username || house.created_by}`)}
                     className="flex items-center gap-2 md:gap-2.5 text-left flex-1 min-w-0"
                 >
-                    <div className="h-7 w-7 md:h-9 md:w-9 overflow-hidden rounded-full border-2 border-white bg-slate-200 shadow-sm dark:border-slate-700 shrink-0">
+                    <div className="h-7 w-7 md:h-9 md:w-9 overflow-hidden rounded-full border-2 border-white bg-slate-200 dark:border-slate-700 shrink-0">
                         {contributor?.avatar_url ? (
                             <img src={contributor.avatar_url} alt="" className="h-full w-full object-cover" />
                         ) : (
@@ -237,7 +229,6 @@ export const HousingCard = ({
             {/* FULLSCREEN VIEWPORT MODAL */}
             {isFullscreen && (
                 <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl p-4">
-                    {/* Close Button */}
                     <button
                         onClick={() => setIsFullscreen(false)}
                         className="absolute top-4 right-4 md:top-6 md:right-6 z-[110] rounded-full bg-white/10 p-2 md:p-3 text-white hover:bg-white/20 transition-colors"
@@ -245,7 +236,6 @@ export const HousingCard = ({
                         <X size={20} className="md:w-6 md:h-6" />
                     </button>
 
-                    {/* Image Display */}
                     <div className="relative flex w-full max-w-4xl items-center justify-center">
                         {images.length > 1 && (
                             <button
@@ -275,7 +265,6 @@ export const HousingCard = ({
                         )}
                     </div>
 
-                    {/* Photo Counter */}
                     <p className="mt-4 md:mt-6 text-xs md:text-sm font-bold text-white tracking-widest uppercase">
                         Photo {currentPhotoIndex + 1} of {images.length}
                     </p>

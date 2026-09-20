@@ -2,7 +2,7 @@ import React from 'react';
 
 export const ExamCenterCardSkeleton = () => {
     return (
-        <div className="group relative flex flex-col justify-between overflow-hidden rounded-none md:rounded-[2rem] border-0 md:border bg-white px-4 py-4 md:p-5 shadow-none md:shadow-sm dark:bg-muted/30 border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50 animate-pulse">
+        <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white px-4 py-4 md:p-5 md:shadow-sm dark:bg-muted/30 animate-pulse">
 
             {/* 1. Header: Badge & Status Skeleton */}
             <div className="flex justify-between items-start mb-3 md:mb-4">
@@ -61,7 +61,7 @@ export const ExamCenterCardSkeleton = () => {
             </div>
 
             {/* 5. Footer: Uploader & Meta Skeleton */}
-            <div className="pt-3 md:pt-4 border-t border-slate-100/50 md:border-t md:border-dashed md:border-slate-100 dark:border-slate-800/50 flex items-center justify-between">
+            <div className="pt-3 md:pt-4 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 md:gap-2">
                     <div className="h-6 w-6 md:h-7 md:w-7 rounded-full bg-gradient-to-tr from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 p-0.5 border border-white dark:border-slate-800 shadow-sm" />
                     <div className="flex flex-col">

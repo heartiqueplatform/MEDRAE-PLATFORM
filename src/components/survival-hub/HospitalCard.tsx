@@ -12,11 +12,10 @@ interface HospitalCardProps {
 export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) => {
     const { user } = useAuth();
 
-    // Check if current logged-in user created this card
     const isOwner = user?.id === hospital.created_by;
 
     return (
-        <div className="rounded-none md:rounded-xl border-0 md:border bg-white px-4 py-4 md:p-5 dark:bg-muted/30 shadow-none md:shadow-sm border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50">
+        <div className="rounded-2xl bg-white px-4 py-4 md:p-5 dark:bg-muted/30 md:shadow-sm">
             <div className="flex gap-3 md:gap-4">
                 <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-900/20">
                     <Hospital size={20} className="md:w-6 md:h-6" />
@@ -40,7 +39,7 @@ export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) 
                     <div className="mt-3 md:mt-4 flex gap-1.5 md:gap-2">
                         <Link
                             to={`/survival-hub/housing?hospitalId=${hospital.id}`}
-                            className="flex-1 rounded-lg md:rounded-xl bg-gray-200 dark:bg-gray-800 dark:text-white py-2 md:py-2.5 text-center text-[9px] md:text-xs font-bold uppercase tracking-wider text-black shadow-sm active:scale-95 transition-all"
+                            className="flex-1 rounded-lg md:rounded-xl bg-gray-200 dark:bg-gray-800 dark:text-white py-2 md:py-2.5 text-center text-[9px] md:text-xs font-bold uppercase tracking-wider text-black active:scale-95 transition-all"
                         >
                             Find Housing Nearby
                         </Link>
@@ -48,7 +47,7 @@ export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) 
                         {hospital.contact && (
                             <a
                                 href={`tel:${hospital.contact}`}
-                                className="rounded-lg md:rounded-xl border border-slate-200 px-2.5 md:px-3 py-2 text-slate-600 dark:border-slate-800 dark:text-slate-400 active:scale-95 transition-transform"
+                                className="rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 px-2.5 md:px-3 py-2 text-slate-600 dark:text-slate-400 active:scale-95 transition-transform"
                             >
                                 <Phone size={14} className="md:w-4 md:h-4" />
                             </a>
@@ -59,7 +58,7 @@ export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) 
 
             {/* Departments Section */}
             {hospital.department_availability && (
-                <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2 border-t border-slate-50 pt-3 md:pt-4 dark:border-slate-800">
+                <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2 pt-3 md:pt-4">
                     {hospital.department_availability.split(',').map((dept: string) => (
                         <span key={dept} className="rounded-md bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                             {dept.trim()}
@@ -69,8 +68,7 @@ export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) 
             )}
 
             {/* Uploader Info & Owner Actions */}
-            <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-dashed border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                {/* User who uploaded it */}
+            <div className="mt-3 md:mt-4 pt-3 md:pt-4 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 md:gap-2">
                     <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
                         {hospital.uploader?.avatar_url ? (
@@ -84,7 +82,6 @@ export const HospitalCard = ({ hospital, onEdit, onDelete }: HospitalCardProps) 
                     </p>
                 </div>
 
-                {/* Show Edit/Delete only if user is the owner */}
                 {isOwner && (
                     <div className="flex items-center gap-0.5 md:gap-1">
                         <button

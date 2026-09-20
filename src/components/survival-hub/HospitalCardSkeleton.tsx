@@ -2,7 +2,7 @@ import React from 'react';
 
 export const HospitalCardSkeleton = () => {
     return (
-        <div className="rounded-none md:rounded-xl border-0 md:border bg-white px-4 py-4 md:p-5 dark:bg-muted/30 shadow-none md:shadow-sm border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50 animate-pulse">
+        <div className="rounded-2xl bg-white px-4 py-4 md:p-5 dark:bg-muted/30 md:shadow-sm animate-pulse">
             <div className="flex gap-3 md:gap-4">
                 {/* Icon Skeleton */}
                 <div className="flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700">
@@ -37,7 +37,7 @@ export const HospitalCardSkeleton = () => {
             </div>
 
             {/* Departments Section Skeleton */}
-            <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2 border-t border-slate-50 pt-3 md:pt-4 dark:border-slate-800">
+            <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2 pt-3 md:pt-4">
                 {[...Array(3)].map((_, i) => (
                     <div
                         key={i}
@@ -47,7 +47,7 @@ export const HospitalCardSkeleton = () => {
             </div>
 
             {/* Uploader Info Skeleton */}
-            <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-dashed border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="mt-3 md:mt-4 pt-3 md:pt-4 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 md:gap-2">
                     <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-slate-200 dark:bg-slate-700" />
                     <div className="h-3 w-32 rounded bg-slate-200 dark:bg-slate-700" />

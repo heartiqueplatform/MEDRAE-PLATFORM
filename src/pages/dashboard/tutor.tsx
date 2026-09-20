@@ -28,7 +28,7 @@ import {
 import CohortAnnouncement from "@/components/CohortAnnouncement";
 import DailyStatus from "@/components/DailyStatus";
 
-import FloatingQuickActions from "@/components/FloatingQuickActions";
+
 import { TermsButton } from "@/components/ui/TermsButton";
 import TutorQuickAction from "@/components/exams/TutorQuickAction";
 import { TutorShare } from "@/components/exams/TutorShare";
@@ -1552,7 +1552,7 @@ export default function TutorDashboard() {
               </a>
             </CardContent>
           </Card>
-          <FloatingQuickActions />
+
         </div>
         <TermsButton />
       </div>

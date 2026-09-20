@@ -4,7 +4,15 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthProvider';
 import { grouppayService } from '@/services/grouppayService';
-import { StudyGroup, GroupPaymentStatus, GROUPPAY_CONFIG } from '@/types/grouppay';
+import {
+    StudyGroup,
+    GroupPaymentStatus,
+    GROUPPAY_CONFIG,
+    GroupDuration,
+    getGroupPricePerMember,
+    getIndividualPrice,
+    getSavingsPerMember,
+} from '@/types/grouppay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -60,13 +68,13 @@ import {
     PartyPopper,
     Gift,
     Rocket,
+    ChevronLeft,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
-
-// Individual plan price — used only for savings comparison
-const INDIVIDUAL_PRICE = 399;
+// ✅ NEW: AddMember component
+import { AddMember } from '@/components/grouppay/AddMember';
 
 export default function GroupDetailsPage() {
     const { id } = useParams<{ id: string }>();
@@ -185,32 +193,51 @@ export default function GroupDetailsPage() {
     const isCreator = user?.id === group?.created_by;
     const currentMemberCount = group?.current_members || 0;
     const maxMembers = group?.max_members || GROUPPAY_CONFIG.MAX_MEMBERS_LIMIT;
-    const pricePerMember = group?.contribution_per_member || GROUPPAY_CONFIG.PRICE_PER_MEMBER;
 
-    const totalAmount = useMemo(() => currentMemberCount * pricePerMember, [currentMemberCount, pricePerMember]);
+    const durationType: GroupDuration =
+        group?.duration_type === '1-month' ? '1-month' : '2-months';
 
-    const hasMinimumMembers = useMemo(
-        () => currentMemberCount >= GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED,
-        [currentMemberCount]
+    const pricePerMember =
+        group?.price_per_member ??
+        group?.contribution_per_member ??
+        getGroupPricePerMember(durationType);
+
+    const individualPrice = getIndividualPrice(durationType);
+    const savingsPerMember = getSavingsPerMember(durationType);
+
+    const totalAmount = useMemo(
+        () => currentMemberCount * pricePerMember,
+        [currentMemberCount, pricePerMember]
     );
 
-    const isFull = useMemo(() => currentMemberCount >= maxMembers, [currentMemberCount, maxMembers]);
+    const totalSavings = useMemo(
+        () => currentMemberCount * savingsPerMember,
+        [currentMemberCount, savingsPerMember]
+    );
+
+    // ✅ SIMPLE MODEL: activation = fill to max_members
+    const hasMinimumMembers = useMemo(
+        () => currentMemberCount >= maxMembers,
+        [currentMemberCount, maxMembers]
+    );
+
+    const isFull = useMemo(
+        () => currentMemberCount >= maxMembers,
+        [currentMemberCount, maxMembers]
+    );
 
     const canPay = useMemo(() => {
         return isCreator && hasMinimumMembers && group?.status !== 'active' && !group?.is_locked;
     }, [isCreator, hasMinimumMembers, group?.status, group?.is_locked]);
 
-    const progress = useMemo(() => (currentMemberCount / maxMembers) * 100, [currentMemberCount, maxMembers]);
-
-    const membersNeeded = useMemo(
-        () => Math.max(0, GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED - currentMemberCount),
-        [currentMemberCount]
+    const progress = useMemo(
+        () => (currentMemberCount / maxMembers) * 100,
+        [currentMemberCount, maxMembers]
     );
 
-    // Total savings vs individual plan (399)
-    const totalSavings = useMemo(
-        () => currentMemberCount * (INDIVIDUAL_PRICE - pricePerMember),
-        [currentMemberCount, pricePerMember]
+    const membersNeeded = useMemo(
+        () => Math.max(0, maxMembers - currentMemberCount),
+        [currentMemberCount, maxMembers]
     );
 
     const handlePhoneClick = (phone: string) => {
@@ -313,7 +340,7 @@ export default function GroupDetailsPage() {
         if (!group) { toast.error('Group data not loaded'); return; }
         if (!phoneNumber || phoneNumber.length < 10) { toast.error('Please enter a valid phone number'); return; }
         if (!hasMinimumMembers) {
-            toast.error(`Need at least ${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED} members to activate the group`);
+            toast.error(`Group needs ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''} to activate`);
             return;
         }
         if (!user.id) { toast.error('User ID not found. Please log out and log in again.'); return; }
@@ -393,16 +420,19 @@ export default function GroupDetailsPage() {
                         The group you're looking for doesn't exist or has been deleted.
                     </p>
                     <Button
+                        variant="ghost"
                         onClick={() => navigate('/grouppay')}
-                        className="mt-5 border-0 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+                        className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                     >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Groups
+                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
+
                     </Button>
                 </div>
             </div>
         );
     }
+
+    const durationLabel = durationType === '1-month' ? '1 Month' : '2 Months';
 
     return (
         <div className="min-h-screen w-full bg-slate-50/50 dark:bg-background pb-16">
@@ -441,7 +471,7 @@ export default function GroupDetailsPage() {
                             </h3>
 
                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                                Premium access unlocked for all {currentMemberCount} members
+                                {durationLabel} premium access unlocked for all {currentMemberCount} members
                             </p>
 
                             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 mb-6 border-0">
@@ -461,11 +491,10 @@ export default function GroupDetailsPage() {
                                 </div>
                             </div>
 
-                            {/* Savings message — now correctly compares to 399 individual price */}
                             <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-green-50 dark:bg-green-950/30 rounded-xl border-0">
                                 <Rocket className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
                                 <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                                    Saved {GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()} vs individual plans
+                                    Saved {GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()} vs {durationLabel} individual plans
                                 </p>
                             </div>
 
@@ -506,13 +535,14 @@ export default function GroupDetailsPage() {
                 {/* BACK BUTTON */}
                 {/* ============================================ */}
                 <div className="px-4 md:px-0 pt-4 md:pt-0 pb-2">
+
                     <Button
                         variant="ghost"
                         onClick={() => navigate('/grouppay')}
-                        className="gap-2 text-sm border-0 -ml-2"
+                        className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Groups
+                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
+
                     </Button>
                 </div>
 
@@ -520,7 +550,6 @@ export default function GroupDetailsPage() {
                 {/* MAIN GROUP CARD */}
                 {/* ============================================ */}
                 <Card className="rounded-none md:rounded-2xl shadow-none md:shadow-sm border-0 bg-white dark:bg-muted/30 overflow-hidden mb-3 md:mb-6">
-                    {/* Gradient accent */}
                     <div className="h-1 w-full bg-gradient-to-r from-green-500 via-emerald-500 to-blue-500" />
 
                     <CardHeader className="pb-4 px-4 md:px-6 pt-5 md:pt-6">
@@ -544,6 +573,15 @@ export default function GroupDetailsPage() {
                                 <CardDescription className="text-xs md:text-sm mt-1">
                                     {group.school}
                                 </CardDescription>
+
+                                <div className="flex items-center gap-2 mt-2">
+                                    <Badge className="border-0 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[10px] font-semibold">
+                                        {durationLabel} Plan
+                                    </Badge>
+                                    <Badge className="border-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] font-semibold">
+                                        Save {GROUPPAY_CONFIG.CURRENCY} {savingsPerMember}/person
+                                    </Badge>
+                                </div>
                             </div>
                             <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                 <Badge
@@ -607,7 +645,7 @@ export default function GroupDetailsPage() {
                                     <span className="text-[10px] text-muted-foreground">For Contributions</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Send your contribution ({GROUPPAY_CONFIG.CURRENCY} {group.contribution_per_member}) to the group leader
+                                    Send your contribution ({GROUPPAY_CONFIG.CURRENCY} {pricePerMember}) to the group leader
                                 </p>
                                 <div className="space-y-2">
                                     {group.leader_phone && (
@@ -691,13 +729,12 @@ export default function GroupDetailsPage() {
                                 <span className="text-xs text-muted-foreground tabular-nums">{Math.round(progress)}% full</span>
                             </div>
                             <Progress value={Math.min(progress, 100)} className="h-2" />
-
                             <div className={`flex items-center gap-2 text-xs ${hasMinimumMembers ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
                                 {hasMinimumMembers ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
                                 <span>
                                     {hasMinimumMembers
-                                        ? `Ready! ${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED}+ members`
-                                        : `Need ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''} to reach ${GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED} members`}
+                                        ? `Ready! Group is full — you can activate it`
+                                        : `Need ${membersNeeded} more member${membersNeeded > 1 ? 's' : ''} to fill the group (${currentMemberCount}/${maxMembers})`}
                                 </span>
                             </div>
                         </div>
@@ -707,6 +744,9 @@ export default function GroupDetailsPage() {
                             <div className="text-center">
                                 <p className="text-[10px] text-muted-foreground">Per Member</p>
                                 <p className="text-base md:text-lg font-semibold tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {pricePerMember}</p>
+                                <p className="text-[9px] text-muted-foreground line-through opacity-60">
+                                    {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
+                                </p>
                             </div>
                             <div className="text-center border-l border-slate-200 dark:border-slate-700">
                                 <p className="text-[10px] text-muted-foreground">Members</p>
@@ -715,6 +755,9 @@ export default function GroupDetailsPage() {
                             <div className="text-center border-l border-slate-200 dark:border-slate-700">
                                 <p className="text-[10px] text-muted-foreground">Total</p>
                                 <p className="text-base md:text-lg font-semibold text-green-600 dark:text-green-400 tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {totalAmount}</p>
+                                <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">
+                                    Save {GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()}
+                                </p>
                             </div>
                         </div>
 
@@ -808,7 +851,7 @@ export default function GroupDetailsPage() {
                                         className="flex-1 gap-2 h-11 rounded-xl border-0 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-normal text-sm"
                                         onClick={() => setShowPaymentDialog(true)}
                                         disabled={group.status === 'active' || !hasMinimumMembers}
-                                        title={!hasMinimumMembers ? `Need ${membersNeeded} more members` : ''}
+                                        title={!hasMinimumMembers ? `Group must fill up first — ${membersNeeded} more needed` : ''}
                                     >
                                         <DollarSign className="w-4 h-4" />
                                         {group.status === 'active' ? 'Group Active' : 'Pay for Group'}
@@ -825,6 +868,20 @@ export default function GroupDetailsPage() {
                                         <Trash2 className="w-4 h-4" />
                                         Delete
                                     </Button>
+
+                                    {/* ✅ NEW: Add Member — only when group is open, unlocked, not full */}
+                                    {group.status === 'open' && !group.is_locked && !isFull && (
+                                        <AddMember
+                                            groupId={group.id}
+                                            existingMemberIds={(group.members ?? []).map((m) => m.user_id)}
+                                            currentMemberCount={currentMemberCount}
+                                            maxMembers={maxMembers}
+                                            onMemberAdded={async () => {
+                                                await loadGroup();
+                                            }}
+                                        />
+                                    )}
+
                                     <Button
                                         className="flex-1 gap-2 h-11 rounded-xl border-0 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-normal text-sm"
                                         onClick={() => setShowPaymentDialog(true)}
@@ -854,13 +911,16 @@ export default function GroupDetailsPage() {
                         </div>
 
                         {/* Minimum Members Warning */}
+                        {/* Fill-Up Warning (SIMPLE MODEL) */}
                         {isCreator && !hasMinimumMembers && group.status !== 'active' && (
                             <div className="flex items-start gap-2 p-3.5 bg-amber-50 dark:bg-amber-950/20 rounded-xl border-0">
                                 <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-700 dark:text-amber-300">
-                                    <p className="font-medium">Need {membersNeeded} more members</p>
+                                    <p className="font-medium">
+                                        Need {membersNeeded} more member{membersNeeded > 1 ? 's' : ''} to fill the group
+                                    </p>
                                     <p className="text-amber-600/80 dark:text-amber-400/80 mt-0.5 leading-relaxed">
-                                        Groups need at least {GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED} members to activate premium access.
+                                        Your group activates once all {maxMembers} slots are filled ({currentMemberCount}/{maxMembers}).
                                         Share your group code with friends!
                                     </p>
                                 </div>
@@ -876,7 +936,7 @@ export default function GroupDetailsPage() {
                     <CardHeader className="pb-3 px-4 md:px-6 pt-5 md:pt-6">
                         <CardTitle className="flex items-center gap-2 text-base font-medium">
                             <Users className="w-4 h-4" />
-                            Members ({currentMemberCount})
+                            Members ({currentMemberCount}/{maxMembers})
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 md:px-6 pb-6">
@@ -963,7 +1023,7 @@ export default function GroupDetailsPage() {
                     <DialogHeader className="px-5 pt-5 pb-3 border-0">
                         <DialogTitle>Group Payment</DialogTitle>
                         <DialogDescription>
-                            Pay to activate premium access for all {currentMemberCount} members
+                            Pay to activate <span className="font-semibold">{durationLabel}</span> premium access for all {currentMemberCount} members
                         </DialogDescription>
                     </DialogHeader>
 
@@ -972,22 +1032,38 @@ export default function GroupDetailsPage() {
                             <div className="space-y-4 py-2">
                                 <div className="space-y-2 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl border-0">
                                     <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Plan duration</span>
+                                        <span className="font-medium">{durationLabel}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">Members</span>
                                         <span className="font-medium tabular-nums">{currentMemberCount}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">Contribution per member</span>
-                                        <span className="font-medium tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {pricePerMember}</span>
+                                        <span className="font-medium tabular-nums">
+                                            {GROUPPAY_CONFIG.CURRENCY} {pricePerMember}
+                                            <span className="text-[10px] text-muted-foreground line-through ml-1.5 opacity-60">
+                                                {GROUPPAY_CONFIG.CURRENCY} {individualPrice}
+                                            </span>
+                                        </span>
                                     </div>
                                     <div className="h-px bg-slate-200 dark:bg-slate-700 my-1" />
                                     <div className="flex justify-between text-base font-bold">
                                         <span>Total Amount</span>
                                         <span className="text-green-600 dark:text-green-400 tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {totalAmount}</span>
                                     </div>
+                                    <div className="flex items-center justify-between text-xs text-green-600 dark:text-green-400">
+                                        <span>You save</span>
+                                        <span className="font-bold tabular-nums">{GROUPPAY_CONFIG.CURRENCY} {totalSavings.toLocaleString()}</span>
+                                    </div>
                                     {!hasMinimumMembers && (
                                         <div className="flex items-center gap-2 text-xs text-amber-600">
                                             <AlertCircle className="w-3.5 h-3.5" />
-                                            <span>Need {membersNeeded} more members to reach {GROUPPAY_CONFIG.MIN_MEMBERS_REQUIRED}</span>
+                                            <span>
+                                                Need {membersNeeded} more member{membersNeeded > 1 ? 's' : ''} to activate
+                                                {' '}({currentMemberCount}/{maxMembers})
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -1031,7 +1107,7 @@ export default function GroupDetailsPage() {
                                 </Button>
 
                                 <p className="text-xs text-center text-muted-foreground">
-                                    All {currentMemberCount} members will get premium access immediately after payment
+                                    All {currentMemberCount} members will get {durationLabel} premium access after payment
                                 </p>
                             </div>
                         )}
@@ -1054,7 +1130,7 @@ export default function GroupDetailsPage() {
                                 <h3 className="text-lg font-semibold">Payment Initiated!</h3>
                                 <p className="text-muted-foreground text-sm mt-2">
                                     You will receive an M-Pesa prompt shortly.
-                                    All group members will be upgraded to premium automatically.
+                                    All group members will be upgraded to {durationLabel} premium automatically.
                                 </p>
                             </div>
                         )}

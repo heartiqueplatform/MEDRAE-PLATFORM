@@ -41,7 +41,7 @@ const tapFeedback = (type: "light" | "success" | "warning" = "light") => {
 
 function YearCardSkeleton() {
     return (
-        <div className="relative overflow-hidden md:rounded-2xl md:border-0 bg-white/70 p-4 md:p-5 text-left md:shadow-sm backdrop-blur dark:bg-muted/30 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+        <div className="relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur dark:bg-muted/30">
             <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
             <div className="relative flex items-start justify-between gap-3 md:gap-4">
                 <div>
@@ -382,7 +382,7 @@ export default function NursingHome() {
                         </div>
                     </div>
 
-                    <div className="grid gap-0 md:gap-4 sm:grid-cols-3 px-3 md:px-0">
+                    <div className="grid gap-3 md:gap-4 sm:grid-cols-3 px-3 md:px-0">
                         {loading ? (
                             <><YearCardSkeleton /><YearCardSkeleton /><YearCardSkeleton /><YearCardSkeleton /></>
                         ) : (
@@ -393,7 +393,7 @@ export default function NursingHome() {
                                         tapFeedback("light");
                                         navigate(`/nursing/${year.id}`);
                                     }}
-                                    className="group relative overflow-hidden md:rounded-2xl md:border-0 bg-white/70 p-4 md:p-5 text-left md:shadow-sm backdrop-blur transition duration-200 md:hover:-translate-y-1 md:hover:border-2 md:hover:border-emerald-300 md:hover:bg-white md:hover:shadow-xl border-b border-slate-100 dark:border-slate-800 md:border-b-0 dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
+                                    className="group relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-2 hover:border-emerald-300 hover:bg-white hover:shadow-xl dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
                                 >
                                     <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-emerald-50 transition group-hover:bg-emerald-100 dark:bg-emerald-400/10 dark:group-hover:bg-emerald-400/20" />
 

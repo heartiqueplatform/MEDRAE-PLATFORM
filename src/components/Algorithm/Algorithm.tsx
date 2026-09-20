@@ -380,7 +380,7 @@ export default function Algorithm() {
                     <div className="flex items-center justify-center gap-2 mb-5">
                         <Brain className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                         <span className="text-[10px] md:text-xs font-normal tracking-[0.18em] text-gray-400 dark:text-gray-500 ">
-                            NCK Prediction
+                            Exam Prediction Readiness
                         </span>
                     </div>
 

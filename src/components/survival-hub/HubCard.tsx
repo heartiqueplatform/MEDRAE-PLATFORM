@@ -16,7 +16,7 @@ export const HubCard = ({ title, description, icon: Icon, href, color, count, lo
     // If loading, show skeleton
     if (loading) {
         return (
-            <div className="group relative flex flex-col items-start gap-3 md:gap-4 border-0 md:border rounded-none md:rounded-2xl bg-white px-4 py-5 md:p-6 transition-all md:shadow-sm dark:bg-muted/30 border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50 animate-pulse">
+            <div className="group relative flex flex-col items-start gap-3 md:gap-4 rounded-2xl bg-white px-4 py-5 md:p-6 transition-all md:shadow-sm dark:bg-muted/30 animate-pulse">
 
                 {/* Icon Skeleton */}
                 <div className="rounded-xl md:rounded-2xl bg-slate-200 dark:bg-slate-700 p-2.5 md:p-3">
@@ -53,7 +53,7 @@ export const HubCard = ({ title, description, icon: Icon, href, color, count, lo
     return (
         <Link
             to={href}
-            className="group relative overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200 bg-white px-4 py-5 md:p-6 shadow-none md:shadow-sm transition-all hover:md:shadow-md dark:border-slate-800 dark:bg-slate-900 border-b md:border-b md:border-slate-100/50 dark:border-slate-800/50 active:scale-[0.98] md:active:scale-100"
+            className="group relative overflow-hidden rounded-2xl bg-white px-4 py-5 md:p-6 md:shadow-sm transition-all hover:md:shadow-md dark:bg-slate-900 active:scale-[0.98] md:active:scale-100"
         >
             <div className="flex items-center gap-3 md:block md:gap-0">
                 <div className={`${color} inline-flex rounded-lg p-2.5 md:p-3 text-white shrink-0`}>

@@ -26,7 +26,8 @@ export function ExplanationOverlay({
     videoUrl,
 }: ExplanationOverlayProps) {
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
-    const contentRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);   // mobile scroller + desktop outer
+    const leftPanelRef = useRef<HTMLDivElement>(null); // desktop explanation scroller
     const CORRECT_VERDICTS = [
         "Correct Answer",
         "Answer Confirmed",
@@ -43,24 +44,20 @@ export function ExplanationOverlay({
         "Needs Review",
     ];
 
-    // pick based on a stable hash so it doesn't flicker on re-render
     const verdict = useMemo(() => {
         const pool = isCorrect ? CORRECT_VERDICTS : WRONG_VERDICTS;
         const seed = (correctAnswer || "").length + (explanation || "").length;
         return pool[seed % pool.length];
     }, [isCorrect, correctAnswer, explanation]);
-    // Reset scroll state when overlay opens with new content
+
     useEffect(() => {
         if (open) {
             setHasScrolledToBottom(false);
-            // Scroll to top when opening
-            if (contentRef.current) {
-                contentRef.current.scrollTop = 0;
-            }
+            if (contentRef.current) contentRef.current.scrollTop = 0;
+            if (leftPanelRef.current) leftPanelRef.current.scrollTop = 0;
         }
-    }, [open, explanation, additional, imageUrl, videoUrl]); // Reset when content changes
+    }, [open, explanation, additional, imageUrl, videoUrl]);
 
-    // Prevent body scroll when overlay is open
     useEffect(() => {
         if (open) {
             document.body.style.overflow = 'hidden';
@@ -72,50 +69,61 @@ export function ExplanationOverlay({
         };
     }, [open]);
 
-    // Track scroll to bottom for dopamine hit
+    // Track scroll-to-bottom on whichever element is actually scrolling:
+    // - Mobile: contentRef (the outer wrapper)
+    // - Desktop: leftPanelRef (the explanation column)
     useEffect(() => {
-        const element = contentRef.current;
-        if (!element || !open) return;
+        if (!open) return;
+
+        const isDesktop = () =>
+            typeof window !== "undefined" &&
+            window.matchMedia("(min-width: 1024px)").matches;
+
+        const getScroller = () =>
+            isDesktop() ? leftPanelRef.current : contentRef.current;
 
         const handleScroll = () => {
-            const { scrollTop, scrollHeight, clientHeight } = element;
-            // Check if content is actually scrollable
+            const el = getScroller();
+            if (!el) return;
+            const { scrollTop, scrollHeight, clientHeight } = el;
             const isScrollable = scrollHeight > clientHeight;
             const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
 
-            // Only trigger if content is scrollable and we're at the bottom
             if (isAtBottom && isScrollable && !hasScrolledToBottom) {
                 setHasScrolledToBottom(true);
-                // Small haptic feedback simulation
-                if (navigator.vibrate) {
-                    navigator.vibrate(10);
-                }
+                if (navigator.vibrate) navigator.vibrate(10);
             }
         };
 
-        element.addEventListener('scroll', handleScroll);
+        // Attach to both — only the active one will actually scroll.
+        const contentEl = contentRef.current;
+        const leftEl = leftPanelRef.current;
 
-        // Check initial state (in case content is shorter than viewport)
-        // But only if content is actually scrollable
+        contentEl?.addEventListener("scroll", handleScroll, { passive: true });
+        leftEl?.addEventListener("scroll", handleScroll, { passive: true });
+
+        // On resize (e.g. crossing the lg breakpoint), re-check.
+        window.addEventListener("resize", handleScroll);
+
+        // If the content is shorter than the viewport on desktop, the user
+        // has effectively "seen everything". Treat that as bottom-reached
+        // only on mobile-style flow where scrolling is possible. On desktop
+        // we still require an actual scroll, to preserve the "surprise".
         const initialCheck = () => {
-            const { scrollHeight, clientHeight } = element;
-            const isScrollable = scrollHeight > clientHeight;
-            // If content is NOT scrollable, we shouldn't trigger the bottom state
-            // because the user hasn't actually scrolled
+            handleScroll();
         };
-
-        // Small delay to ensure content is rendered
-        const timeoutId = setTimeout(initialCheck, 100);
+        const timeoutId = setTimeout(initialCheck, 120);
 
         return () => {
-            element.removeEventListener('scroll', handleScroll);
+            contentEl?.removeEventListener("scroll", handleScroll);
+            leftEl?.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleScroll);
             clearTimeout(timeoutId);
         };
-    }, [open, hasScrolledToBottom, explanation, additional, imageUrl, videoUrl]); // Re-run when content changes
+    }, [open, hasScrolledToBottom, explanation, additional, imageUrl, videoUrl]);
 
     if (!open) return null;
 
-    // Helper function to convert text to bullet points WITHOUT losing content
     const renderAsBulletPoints = (text: string) => {
         const sentences = text
             .split(/(?<=[.!?])\s+/)
@@ -158,20 +166,21 @@ export function ExplanationOverlay({
         );
     };
 
-    // Check if content is scrollable (for the footer hint)
+    // The footer hint should reflect whether the *active* scroller can scroll.
     const isContentScrollable = () => {
-        const element = contentRef.current;
-        if (!element) return false;
-        return element.scrollHeight > element.clientHeight;
+        if (typeof window === "undefined") return false;
+        const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+        const el = isDesktop ? leftPanelRef.current : contentRef.current;
+        if (!el) return false;
+        return el.scrollHeight > el.clientHeight;
     };
 
     return (
         <div className="fixed inset-0 z-[9999] bg-white dark:bg-muted/100 flex flex-col">
-            {/* Header - Kept original colors */}
+            {/* Header */}
             <div className="px-6 py-4 flex items-center justify-between border-0 shrink-0 bg-white dark:bg-muted/80">
                 <div className="flex items-start gap-3 min-w-0">
                     <div className="min-w-0">
-                        {/* Verdict + icon inline */}
                         <div className="flex items-center gap-2">
                             <h2 className="font-semibold text-lg leading-tight text-gray-900 dark:text-white">
                                 {verdict}
@@ -183,7 +192,6 @@ export function ExplanationOverlay({
                             )}
                         </div>
 
-                        {/* Secondary line — always shows the correct answer */}
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
                             {isCorrect ? (
                                 <>
@@ -202,7 +210,6 @@ export function ExplanationOverlay({
                             )}
                         </p>
                     </div>
-
                 </div>
                 <button
                     onClick={onClose}
@@ -212,15 +219,19 @@ export function ExplanationOverlay({
                 </button>
             </div>
 
-            {/* MAIN CONTENT - Infinite scroll with dopamine trigger */}
+            {/* MAIN CONTENT */}
             <div
                 ref={contentRef}
-                className="flex-1 overflow-y-auto hide-scrollbar"
+                className="flex-1 min-h-0 overflow-y-auto hide-scrollbar lg:overflow-hidden"
             >
-                <div className="flex flex-col lg:flex-row h-full">
-                    {/* LEFT SIDE → Explanation Content */}
-                    <div className="flex-1 p-6 space-y-6">
-                        {/* MEDIA SECTION */}
+                <div className="flex flex-col lg:grid lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_540px] lg:h-full lg:min-h-0">
+                    {/* LEFT → Explanation (this is the desktop scroller) */}
+                    <div
+                        ref={leftPanelRef}
+                        className="p-6 space-y-6 min-w-0 lg:overflow-y-auto hide-scrollbar
+                bg-slate-50 dark:bg-slate-900
+                lg:m-3 lg:rounded-2xl lg:border lg:border-slate-200 dark:lg:border-slate-800
+                lg:shadow-sm">
                         {(imageUrl || videoUrl) && (
                             <div className="space-y-3">
                                 {imageUrl && (
@@ -245,7 +256,6 @@ export function ExplanationOverlay({
                         {explanation && (
                             <section className="space-y-3">
                                 <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-
                                     <h3 className="font-bold text-sm uppercase tracking-wider">
                                         Concept Breakdown
                                     </h3>
@@ -270,21 +280,19 @@ export function ExplanationOverlay({
                             </section>
                         )}
 
-                        {/* Spacer for scroll momentum */}
                         <div className="h-4" />
                     </div>
 
-                    {/* RIGHT SIDE → FLASHCARD */}
-                    {/* RIGHT SIDE → FLASHCARD (edge-to-edge) */}
-                    <div className="w-full lg:w-[480px] xl:w-[540px] bg-white dark:bg-gray-950 shrink-0 border-0">
-                        <div className="w-full h-full overflow-y-auto hide-scrollbar">
+                    {/* RIGHT → Flashcard */}
+                    <div className="w-full bg-white dark:bg-transparent border-0 lg:h-full lg:min-h-0 lg:overflow-hidden flex flex-col">
+                        <div className="flex-1 lg:min-h-0 lg:overflow-y-auto hide-scrollbar overscroll-contain">
                             <Flashcard />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Footer - With original colors and animation when scrolled to bottom */}
+            {/* Footer */}
             <div
                 className={`px-4 py-3 transition-all duration-500 ${hasScrolledToBottom
                     ? "bg-green-50 dark:bg-green-900/20"

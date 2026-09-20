@@ -1,4 +1,3 @@
-// NEW
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { survivalApi } from '../../lib/survivalApi';
@@ -9,7 +8,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Cloudinary configuration (same as your CreateClass)
 const CLOUDINARY_CLOUD_NAME = 'dpj5vprwf';
 const CLOUDINARY_UPLOAD_PRESET = 'medrae-placements';
 
@@ -21,7 +19,6 @@ const AddPlacementPage = () => {
     const [checkingSub, setCheckingSub] = useState(true);
     const [showLockOverlay, setShowLockOverlay] = useState(false);
 
-    // State for photos - storing files for later upload
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
     const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
@@ -36,7 +33,6 @@ const AddPlacementPage = () => {
         intake_notes: ''
     });
 
-    // Cloudinary upload function (copied from CreateClass)
     const uploadToCloudinary = async (file: File): Promise<string> => {
         const formData = new FormData();
         formData.append('file', file);
@@ -60,12 +56,10 @@ const AddPlacementPage = () => {
         return data.secure_url;
     };
 
-    // Handle photo selection - preview only, NO upload yet
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
 
-            // Validate files
             const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
             if (invalidFiles.length > 0) {
                 toast.error('Please upload only image files');
@@ -83,10 +77,8 @@ const AddPlacementPage = () => {
                 return;
             }
 
-            // Store files for later upload
             setSelectedFiles([...selectedFiles, ...files]);
 
-            // Show previews only
             const newPreviews = files.map(file => URL.createObjectURL(file));
             setPreviews([...previews, ...newPreviews]);
 
@@ -94,14 +86,12 @@ const AddPlacementPage = () => {
         }
     };
 
-    // Remove photo from list
     const removePhoto = (index: number) => {
         setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
         setPreviews(previews.filter((_, i) => i !== index));
         setUploadedUrls(uploadedUrls.filter((_, i) => i !== index));
     };
 
-    // Check subscription (same as before)
     useEffect(() => {
         const checkSubscription = async () => {
             try {
@@ -124,6 +114,10 @@ const AddPlacementPage = () => {
                     const isActive = sub.is_active === true;
                     const notExpired = expiry ? expiry > now : true;
 
+                    if (isPaid && isActive && !notExpired === false) {
+                        setIsPremium(true);
+                    }
+                    // simpler:
                     if (isPaid && isActive && notExpired) {
                         setIsPremium(true);
                     }
@@ -138,13 +132,11 @@ const AddPlacementPage = () => {
         checkSubscription();
     }, []);
 
-    // Handle form submit - upload images AND create placement
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            // Validate required fields
             if (!formData.hospital_name.trim()) {
                 toast.error('Hospital name is required');
                 setLoading(false);
@@ -159,13 +151,11 @@ const AddPlacementPage = () => {
 
             let imageUrls: string[] = [];
 
-            // Upload images NOW (during submit, not before)
             if (selectedFiles.length > 0) {
                 setUploadingImage(true);
                 toast.info(`Uploading ${selectedFiles.length} image(s)...`);
 
                 try {
-                    // Upload each image to Cloudinary
                     for (const file of selectedFiles) {
                         const url = await uploadToCloudinary(file);
                         imageUrls.push(url);
@@ -181,7 +171,6 @@ const AddPlacementPage = () => {
                 }
             }
 
-            // Save to database including uploaded image URLs
             await survivalApi.createPlacementSite({
                 ...formData,
                 images: imageUrls
@@ -200,15 +189,18 @@ const AddPlacementPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-background">
-            {/* Header - Mobile Native Style */}
-            <div className="sticky -top-4 z-20 bg-white dark:bg-slate-900 border-b border-slate-200/50 dark:border-slate-800/50">
+
+            {/* ============ STICKY HEADER — sits on top, no border ============ */}
+            <div className="sticky top-0 z-30 bg-white dark:bg-slate-900">
                 <div className="flex items-center justify-between px-3 py-3 md:px-6 md:py-4">
                     <div className="flex items-center gap-3 md:gap-4">
+                        {/* Back button — pure chevron icon */}
                         <button
                             onClick={() => navigate(-1)}
-                            className="p-1.5 md:p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-90 transition-transform"
+                            aria-label="Go back"
+                            className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                         >
-                            <ChevronLeft size={20} className="md:w-5 md:h-5" />
+                            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
                         </button>
                         <h1 className="text-lg md:text-xl font-bold dark:text-white">Add Placement Site</h1>
                     </div>
@@ -220,17 +212,18 @@ const AddPlacementPage = () => {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="mx-auto max-w-xl px-0 md:px-4 py-0 md:py-4 space-y-0 md:space-y-4">
+            {/* ============ FORM ============ */}
+            <form onSubmit={handleSubmit} className="mx-auto max-w-xl px-3 md:px-4 py-3 md:py-4 space-y-3 md:space-y-4">
 
                 {/* 1. HOSPITAL INFO */}
-                <div className="bg-white dark:bg-muted/30 px-4 py-5 md:p-5 border-b md:border md:rounded-2xl md:border-slate-100 dark:md:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 p-4 md:p-5 rounded-2xl space-y-4">
                     <div className="flex items-center gap-2 text-amber-600 font-bold text-[10px] md:text-xs uppercase tracking-widest">
                         <Hospital size={16} className="md:w-4 md:h-4" /> Step 1: Hospital Info
                     </div>
                     <input
                         required
                         placeholder="Hospital Name"
-                        className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 p-3.5 md:p-4 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 p-3.5 md:p-4 text-sm dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
                         onChange={e => setFormData({ ...formData, hospital_name: e.target.value })}
                     />
 
@@ -238,27 +231,27 @@ const AddPlacementPage = () => {
                         <input
                             required
                             placeholder="County"
-                            className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 p-3.5 md:p-4 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
+                            className="w-full rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 p-3.5 md:p-4 text-sm dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
                             onChange={e => setFormData({ ...formData, county: e.target.value })}
                         />
                         <input
                             required
                             placeholder="Town/Location"
-                            className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 p-3.5 md:p-4 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
+                            className="w-full rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 p-3.5 md:p-4 text-sm dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
                             onChange={e => setFormData({ ...formData, location: e.target.value })}
                         />
                     </div>
                 </div>
 
-                {/* 2. PHOTO UPLOAD SECTION - Preview Only */}
-                <div className="bg-white dark:bg-muted/30 px-4 py-5 md:p-5 border-b md:border md:rounded-2xl md:border-slate-100 dark:md:border-slate-800 space-y-4">
+                {/* 2. PHOTO UPLOAD */}
+                <div className="bg-white dark:bg-muted/30 p-4 md:p-5 rounded-2xl space-y-4">
                     <div className="flex items-center gap-2 text-blue-500 font-bold text-[10px] md:text-xs uppercase tracking-widest">
                         <Camera size={16} className="md:w-4 md:h-4" /> Step 2: Site Photos
                     </div>
 
                     <div className="grid grid-cols-3 gap-1.5 md:gap-2">
                         {previews.map((src, index) => (
-                            <div key={index} className="relative aspect-square rounded-lg md:rounded-xl overflow-hidden border dark:border-slate-700">
+                            <div key={index} className="relative aspect-square rounded-lg md:rounded-xl overflow-hidden">
                                 <img src={src} className="h-full w-full object-cover" alt="Preview" />
                                 {uploadedUrls[index] && (
                                     <div className="absolute bottom-1 left-1 bg-green-500 text-white text-[7px] md:text-[8px] px-1 py-0.5 rounded">
@@ -268,7 +261,7 @@ const AddPlacementPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => removePhoto(index)}
-                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-colors"
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                 >
                                     <X size={10} className="md:w-3 md:h-3" />
                                 </button>
@@ -276,7 +269,7 @@ const AddPlacementPage = () => {
                         ))}
 
                         {selectedFiles.length < 3 && (
-                            <label className="flex flex-col items-center justify-center aspect-square rounded-lg md:rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <label className="flex flex-col items-center justify-center aspect-square rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                 <Camera className="text-slate-400" size={20} />
                                 <span className="text-[8px] md:text-[10px] font-bold text-slate-400 mt-0.5 md:mt-1">Add Photo</span>
                                 <input
@@ -306,41 +299,41 @@ const AddPlacementPage = () => {
                 </div>
 
                 {/* 3. WARD DETAILS */}
-                <div className="bg-white dark:bg-muted/30 px-4 py-5 md:p-5 border-b md:border md:rounded-2xl md:border-slate-100 dark:md:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 p-4 md:p-5 rounded-2xl space-y-4">
                     <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] md:text-xs uppercase tracking-widest">
                         <Stethoscope size={16} className="md:w-4 md:h-4" /> Step 3: Ward Details
                     </div>
                     <input
                         required
                         placeholder="Specialties (e.g. Med/Surg, Paeds)"
-                        className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 p-3.5 md:p-4 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 p-3.5 md:p-4 text-sm dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
                         onChange={e => setFormData({ ...formData, ward_specialties: e.target.value })}
                     />
                     <textarea
                         placeholder="Intake Notes (e.g. Bring own scrubs)"
-                        className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 p-3.5 md:p-4 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 min-h-[80px] md:min-h-[100px]"
+                        className="w-full rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 p-3.5 md:p-4 text-sm dark:text-white outline-none focus:ring-2 focus:ring-amber-500 min-h-[80px] md:min-h-[100px]"
                         onChange={e => setFormData({ ...formData, intake_notes: e.target.value })}
                     />
                 </div>
 
                 {/* 4. CONTACT INFO */}
-                <div className="bg-white dark:bg-muted/30 px-4 py-5 md:p-5 border-b md:border md:rounded-2xl md:border-slate-100 dark:md:border-slate-800 space-y-4">
+                <div className="bg-white dark:bg-muted/30 p-4 md:p-5 rounded-2xl space-y-4">
                     <div className="flex items-center gap-2 text-rose-600 font-bold text-[10px] md:text-xs uppercase tracking-widest">
                         <Phone size={16} className="md:w-4 md:h-4" /> Step 4: Contact Info
                     </div>
                     <input
                         placeholder="WhatsApp Number or Email"
-                        className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 p-3.5 md:p-4 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800 p-3.5 md:p-4 text-sm dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
                         onChange={e => setFormData({ ...formData, supervisor_contact: e.target.value })}
                     />
                 </div>
 
-                {/* SECTION: SAVE / LOCK LOGIC */}
-                <div className="relative px-4 md:px-0 pb-4 md:pb-0">
-                    {/* FLOATING OVERLAY - Mobile Optimized */}
+                {/* SAVE / LOCK LOGIC */}
+                <div className="relative pb-4 md:pb-0">
+                    {/* FLOATING OVERLAY */}
                     {showLockOverlay && (
-                        <div className="absolute bottom-full left-0 right-0 mb-3 md:mb-4 animate-in fade-in slide-in-from-bottom-4 duration-300 z-30">
-                            <div className="bg-white dark:bg-muted/30 border-2 border-amber-500 rounded-xl md:rounded-2xl p-4 md:p-6 shadow-2xl mx-2 md:mx-0">
+                        <div className="absolute bottom-full left-0 right-0 mb-3 md:mb-4 z-30">
+                            <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-6 shadow-2xl">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2 text-amber-600 font-bold uppercase text-[9px] md:text-[10px] tracking-widest">
                                         <Sparkles size={14} className="md:w-4 md:h-4" /> Contributor Verification
@@ -360,12 +353,11 @@ const AddPlacementPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => navigate('/subscription')}
-                                    className="w-full mt-3 md:mt-4 bg-amber-600 hover:bg-amber-700 text-white text-[10px] md:text-xs font-bold py-2.5 md:py-3 rounded-lg md:rounded-xl transition-all shadow-md active:scale-95"
+                                    className="w-full mt-3 md:mt-4 bg-amber-600 hover:bg-amber-700 text-white text-[10px] md:text-xs font-bold py-2.5 md:py-3 rounded-lg md:rounded-xl transition-all active:scale-95"
                                 >
                                     Upgrade & Unlock Access
                                 </button>
                             </div>
-                            <div className="w-3 h-3 md:w-4 md:h-4 bg-white dark:bg-muted/30 border-r-2 border-b-2 border-amber-500 rotate-45 mx-auto -mt-1.5 md:-mt-2"></div>
                         </div>
                     )}
 
@@ -378,10 +370,10 @@ const AddPlacementPage = () => {
                                 setShowLockOverlay(true);
                             }
                         }}
-                        className={`w-full rounded-xl md:rounded-2xl p-4 md:p-5 font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg
+                        className={`w-full rounded-2xl p-4 md:p-5 font-bold transition-all active:scale-95 flex items-center justify-center gap-2
                             ${isPremium
-                                ? "bg-amber-600 text-white shadow-amber-200 dark:shadow-none hover:bg-amber-700"
-                                : "bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-default shadow-none"
+                                ? "bg-amber-600 text-white hover:bg-amber-700"
+                                : "bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-default"
                             }`}
                     >
                         {loading || uploadingImage ? (

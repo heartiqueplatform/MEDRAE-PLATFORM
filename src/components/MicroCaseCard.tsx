@@ -1,22 +1,23 @@
 "use client";
-import { GlobalLoader } from "@/components/GlobalLoader";
+
 import {
-    ThumbsUp, Bookmark, Flag, Eye, Heart, BookmarkIcon, ClipboardCheck,
-    HelpCircle, CheckCircle2, Lightbulb, Stethoscope, Hash, X, AlertCircle
+    ThumbsUp, Bookmark, Flag, Eye, Heart, BookmarkIcon,
+    HelpCircle, CheckCircle2, Lightbulb, Stethoscope, Hash, X, AlertCircle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+    Select, SelectContent, SelectItem,
+    SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/lib/supabaseClient";
+
+// ============================================================
+// TYPES
+// ============================================================
 
 interface MicroCaseCardType {
     id: string;
@@ -34,82 +35,9 @@ interface MicroCaseCardType {
     reports_count: number;
 }
 
-// Optimized: ONLY cache the text that doesn't change (counts removed!)
-interface CachedCard {
-    id: string;
-    title?: string;
-    scenario: string;
-    question: string;
-    answer: string;
-    explanation?: string;
-    related_unit?: string;
-    difficulty?: string;
-    tags?: string;
-    // Counts removed from here!
-}
-
-const CACHE_KEY = "micro_case_cards_cache";
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-
-const useMobileDetect = () => {
-    const [isMobile, setIsMobile] = useState(false);
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-    return isMobile;
-};
-
-// IMPROVED: Fetches Live Count and User Status at the exact same time
-async function fetchFreshCardStats(userId: string, cardId: string) {
-    // 1. Get the actual numbers from the cards table
-    // 2. Get the user's specific like/save/report status
-    const [cardReq, savedReq, likedReq, reportedReq] = await Promise.all([
-        supabase.from("micro_case_cards").select("views_count, likes_count, saves_count, reports_count").eq("id", cardId).single(),
-        supabase.from("micro_case_card_saved_reports").select("card_id").eq("user_id", userId).eq("card_id", cardId).maybeSingle(),
-        supabase.from("micro_case_card_likes").select("card_id").eq("user_id", userId).eq("card_id", cardId).maybeSingle(),
-        supabase.from("micro_case_card_reports").select("reason").eq("user_id", userId).eq("card_id", cardId).maybeSingle()
-    ]);
-
-    return {
-        liveCounts: cardReq.data,
-        isSaved: !!savedReq.data,
-        isLiked: !!likedReq.data,
-        isReported: !!reportedReq.data,
-        reportReason: reportedReq.data?.reason || null
-    };
-}
-
-function getCachedMicroCaseCards(): CachedCard[] | null {
-    try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (!cached) return null;
-        const parsed = JSON.parse(cached);
-        if (Date.now() - parsed.timestamp >= CACHE_DURATION) return null;
-        return parsed.data;
-    } catch {
-        return null;
-    }
-}
-
-function saveMicroCaseCards(cards: CachedCard[]): void {
-    try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-            data: cards,
-            timestamp: Date.now()
-        }));
-    } catch (error) {
-        console.error("Failed to save cache:", error);
-    }
-}
-
-function getRandomCard(cards: CachedCard[]): CachedCard | null {
-    if (!cards.length) return null;
-    const randomIndex = Math.floor(Math.random() * cards.length);
-    return cards[randomIndex];
-}
+// ============================================================
+// CONSTANTS
+// ============================================================
 
 const REPORT_REASONS = [
     "Inappropriate or offensive content",
@@ -117,323 +45,415 @@ const REPORT_REASONS = [
     "Spam or promotional",
     "Copyright violation",
     "Duplicates another case",
-    "Other (please specify)"
+    "Other (please specify)",
 ];
 
+// Bounded timeouts so a slow network never hangs the UI.
+const RPC_TIMEOUT_MS = 7000;
+const STATS_TIMEOUT_MS = 5000;
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error("timeout")), ms)
+        ),
+    ]);
+}
+
+const useMobileDetect = () => {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
+    return isMobile;
+};
+
+// ============================================================
+// DATA LAYER — three small functions
+// ============================================================
+
+/**
+ * Fetch one random card the user has not interacted with.
+ * Returns null if the user has interacted with every card.
+ */
+async function fetchUnseenCard(userId: string): Promise<MicroCaseCardType | null> {
+    const { data, error } = await withTimeout(
+        Promise.resolve(supabase.rpc("get_unseen_micro_case", { p_user_id: userId })),
+        RPC_TIMEOUT_MS
+    );
+
+    if (error) {
+        console.warn("[MicroCase] RPC error:", error.message);
+        return null;
+    }
+    if (!data || data.length === 0) return null;
+    return data[0] as MicroCaseCardType;
+}
+
+/**
+ * Fallback when the user has interacted with everything:
+ * pick a random card regardless of interaction history.
+ */
+async function fetchRandomCard(): Promise<MicroCaseCardType | null> {
+    const { data, error } = await withTimeout(
+        Promise.resolve(
+            supabase
+                .from("micro_case_cards")
+                .select("id, title, scenario, question, answer, explanation, related_unit, difficulty, tags, views_count, likes_count, saves_count, reports_count")
+                .limit(50)
+        ),
+        RPC_TIMEOUT_MS
+    );
+
+    if (error || !data || data.length === 0) return null;
+    return data[Math.floor(Math.random() * data.length)] as MicroCaseCardType;
+}
+
+/**
+ * Fetch this user's like/save/report status for one card.
+ * Returns null on failure so the caller can fall back gracefully.
+ */
+async function fetchUserStateForCard(userId: string, cardId: string) {
+    try {
+        const [liked, saved, reported] = await withTimeout(
+            Promise.all([
+                supabase
+                    .from("micro_case_card_likes")
+                    .select("card_id")
+                    .eq("user_id", userId)
+                    .eq("card_id", cardId)
+                    .maybeSingle(),
+                supabase
+                    .from("micro_case_card_saved_reports")
+                    .select("card_id")
+                    .eq("user_id", userId)
+                    .eq("card_id", cardId)
+                    .maybeSingle(),
+                supabase
+                    .from("micro_case_card_reports")
+                    .select("reason")
+                    .eq("user_id", userId)
+                    .eq("card_id", cardId)
+                    .maybeSingle(),
+            ]),
+            STATS_TIMEOUT_MS
+        );
+
+        return {
+            isLiked: !!liked.data,
+            isSaved: !!saved.data,
+            isReported: !!reported.data,
+            reportReason: reported.data?.reason ?? null,
+        };
+    } catch {
+        return { isLiked: false, isSaved: false, isReported: false, reportReason: null };
+    }
+}
+
+// ============================================================
+// COMPONENT
+// ============================================================
+
 export function MicroCaseCard({ cardId }: { cardId?: string }) {
+    const session = useSession();
+    const user = session?.user ?? null;
+    const isMobile = useMobileDetect();
+
     const [card, setCard] = useState<MicroCaseCardType | null>(null);
-    const [saved, setSaved] = useState(false);
     const [liked, setLiked] = useState(false);
+    const [saved, setSaved] = useState(false);
     const [reported, setReported] = useState(false);
     const [loading, setLoading] = useState(true);
     const [noCard, setNoCard] = useState(false);
+
     const [showReportDialog, setShowReportDialog] = useState(false);
     const [reportReason, setReportReason] = useState("");
     const [customReasonText, setCustomReasonText] = useState("");
-    const [viewReportReason, setViewReportReason] = useState<{ show: boolean; reason: string }>({ show: false, reason: "" });
+    const [viewReportReason, setViewReportReason] = useState<{
+        show: boolean;
+        reason: string;
+    }>({ show: false, reason: "" });
     const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
-    const tapSound = typeof Audio !== "undefined" ? new Audio("/sounds/tap0.mp3") : null;
-    const session = useSession();
-    const supabaseClient = useSupabaseClient();
-    const user = session?.user || null;
-    const cardRef = useRef<MicroCaseCardType | null>(null);
+    const tapSound =
+        typeof Audio !== "undefined" ? new Audio("/sounds/tap0.mp3") : null;
     const isMounted = useRef(true);
-    const isMobile = useMobileDetect();
-
+    // Prevents duplicate view writes on React StrictMode double-mount
+    // and on rapid re-renders.
+    const viewedCardsRef = useRef<Set<string>>(new Set());
+    // ── Load a card ──────────────────────────────────────────────
     useEffect(() => {
-        cardRef.current = card;
-    }, [card]);
-
-    // Update count with error handling
-    const updateCount = useCallback(async (cardId: string, action: 'like' | 'save' | 'unlike' | 'unsave') => {
-        let rpcFunction = '';
-        switch (action) {
-            case 'like': rpcFunction = 'increment_likes'; break;
-            case 'unlike': rpcFunction = 'decrement_likes'; break;
-            case 'save': rpcFunction = 'increment_saves'; break;
-            case 'unsave': rpcFunction = 'decrement_saves'; break;
+        // If the session hasn't hydrated yet, keep the skeleton visible.
+        // Do NOT flip loading to false — that's what causes the
+        // "unavailable" flash before the first real fetch.
+        if (!user?.id) {
+            return;
         }
+        isMounted.current = true;
 
-        if (rpcFunction) {
-            const { error } = await supabase.rpc(rpcFunction, { card_id_param: cardId });
-            if (error) {
-                console.error(`Failed to ${action}:`, error);
-                throw new Error(`Failed to ${action}`);
+        const load = async () => {
+            setLoading(true);
+            try {
+                // 1. Try unseen card first.
+                let picked = await fetchUnseenCard(user.id);
+
+                // 2. Fall back to random if user has interacted with everything.
+                if (!picked) {
+                    picked = await fetchRandomCard();
+                }
+
+                if (!picked) {
+                    if (isMounted.current) {
+                        setNoCard(true);
+                        setLoading(false);
+                    }
+                    return;
+                }
+
+                // 3. Fetch user's specific interaction state for this card.
+                const state = await fetchUserStateForCard(user.id, picked.id);
+
+                if (!isMounted.current) return;
+                // Optimistic UI bump — the card the user is looking at shows
+                // "1 view" from their own view, not just prior views.
+                setCard({
+                    ...picked,
+                    views_count: picked.views_count + 1,
+                });
+                setLiked(state.isLiked);
+                setSaved(state.isSaved);
+                setReported(state.isReported);
+                setNoCard(false);
+
+                // ── Record the view ─────────────────────────────────────────
+                // A row in micro_case_card_views does two things:
+                //   1. Fires the DB trigger that increments views_count.
+                //   2. Makes get_unseen_micro_case exclude this card forever.
+                //
+                // Because the table has a UNIQUE (user_id, card_id) constraint,
+                // re-inserting returns code 23505 which we ignore silently.
+                if (!viewedCardsRef.current.has(picked.id)) {
+                    viewedCardsRef.current.add(picked.id);
+
+                    supabase
+                        .from("micro_case_card_views")
+                        .insert({
+                            user_id: user.id,
+                            card_id: picked.id,
+                        })
+                        .then(({ error }) => {
+                            // 23505 = this user already viewed this card. Ignore.
+                            // Anything else, log it — the card might repeat otherwise.
+                            if (error && error.code !== "23505") {
+                                console.warn("[MicroCase] view insert failed:", error.message);
+                            }
+                        });
+                }
+            } catch (err) {
+                console.error("[MicroCase] Load failed:", err);
+                if (isMounted.current) setNoCard(true);
+            } finally {
+                if (isMounted.current) setLoading(false);
             }
-        }
+        };
+
+        load();
+        return () => {
+            isMounted.current = false;
+        };
+    }, [user?.id, cardId]);
+
+    // ── Fire-and-forget RPC helper ───────────────────────────────
+    const fireRpc = useCallback((name: string, cardId: string) => {
+        supabase
+            .rpc(name, { card_id_param: cardId })
+            .then(({ error }) => {
+                if (error) console.warn(`[MicroCase] ${name} failed:`, error.message);
+            })
+            .catch((err) => {
+                console.warn(`[MicroCase] ${name} threw:`, err);
+            });
     }, []);
 
-    // FIXED: Handle interactions with synchronized state updates
-    const handleInteraction = async (type: "save" | "like" | "report", finalReason?: string) => {
-        if (!card || !user) return;
+    // ── Like ─────────────────────────────────────────────────────
+    const handleLike = useCallback(async () => {
+        if (!card || !user?.id) return;
         if (tapSound && !isMobile) tapSound.play().catch(() => { });
 
-        if (type === "report" && !reported && !finalReason) {
-            setShowReportDialog(true);
-            return;
-        }
+        const newLiked = !liked;
+        const prevCard = card;
 
-        // Handle LIKE - Update both highlight and count together
-        if (type === "like") {
-            const newLikedStatus = !liked;
-
-            // Prevent negative count
-            if (!newLikedStatus && card.likes_count <= 0) {
-                console.warn("Cannot unlike: count is already 0");
-                return;
-            }
-
-            // UPDATE BOTH AT ONCE - Optimistic UI
-            setLiked(newLikedStatus);
-            setCard(prev => prev ? {
-                ...prev,
-                likes_count: Math.max(0, prev.likes_count + (newLikedStatus ? 1 : -1))
-            } : prev);
-
-            // Update Database
-            try {
-                if (newLikedStatus) {
-                    await updateCount(card.id, 'like');
-                    const { error } = await supabase.from("micro_case_card_likes").upsert({ user_id: user.id, card_id: card.id });
-                    if (error) throw error;
-                } else {
-                    await updateCount(card.id, 'unlike');
-                    const { error } = await supabase.from("micro_case_card_likes").delete().match({ user_id: user.id, card_id: card.id });
-                    if (error) throw error;
-                }
-            } catch (error) {
-                // Revert on error
-                console.error("Like interaction failed:", error);
-                setLiked(!newLikedStatus);
-                setCard(prev => prev ? {
+        // Optimistic UI — instant.
+        setLiked(newLiked);
+        setCard((prev) =>
+            prev
+                ? {
                     ...prev,
-                    likes_count: Math.max(0, prev.likes_count + (newLikedStatus ? -1 : 1))
-                } : prev);
-            }
-            return;
-        }
-
-        // Handle SAVE - Update both highlight and count together
-        if (type === "save") {
-            const newSavedStatus = !saved;
-
-            // Prevent negative count
-            if (!newSavedStatus && card.saves_count <= 0) {
-                console.warn("Cannot unsave: count is already 0");
-                return;
-            }
-
-            // UPDATE BOTH AT ONCE - Optimistic UI
-            setSaved(newSavedStatus);
-            setCard(prev => prev ? {
-                ...prev,
-                saves_count: Math.max(0, prev.saves_count + (newSavedStatus ? 1 : -1))
-            } : prev);
-
-            // Update Database
-            try {
-                if (newSavedStatus) {
-                    await updateCount(card.id, 'save');
-                    const { error } = await supabase.from("micro_case_card_saved_reports").upsert({ user_id: user.id, card_id: card.id });
-                    if (error) throw error;
-                } else {
-                    await updateCount(card.id, 'unsave');
-                    const { error } = await supabase.from("micro_case_card_saved_reports").delete().match({ user_id: user.id, card_id: card.id });
-                    if (error) throw error;
+                    likes_count: Math.max(0, prev.likes_count + (newLiked ? 1 : -1)),
                 }
-            } catch (error) {
-                // Revert on error
-                console.error("Save interaction failed:", error);
-                setSaved(!newSavedStatus);
-                setCard(prev => prev ? {
+                : prev
+        );
+
+        try {
+            if (newLiked) {
+                const { error } = await supabase
+                    .from("micro_case_card_likes")
+                    .upsert(
+                        { user_id: user.id, card_id: card.id },
+                        { onConflict: "user_id,card_id" }
+                    );
+                if (error) throw error;
+                fireRpc("increment_likes", card.id);
+            } else {
+                const { error } = await supabase
+                    .from("micro_case_card_likes")
+                    .delete()
+                    .match({ user_id: user.id, card_id: card.id });
+                if (error) throw error;
+                fireRpc("decrement_likes", card.id);
+            }
+        } catch (err) {
+            // Revert on failure.
+            console.warn("[MicroCase] Like failed:", err);
+            setLiked(!newLiked);
+            setCard(prevCard);
+        }
+    }, [card, user?.id, liked, tapSound, isMobile, fireRpc]);
+
+    // ── Save ─────────────────────────────────────────────────────
+    const handleSave = useCallback(async () => {
+        if (!card || !user?.id) return;
+        if (tapSound && !isMobile) tapSound.play().catch(() => { });
+
+        const newSaved = !saved;
+        const prevCard = card;
+
+        setSaved(newSaved);
+        setCard((prev) =>
+            prev
+                ? {
                     ...prev,
-                    saves_count: Math.max(0, prev.saves_count + (newSavedStatus ? -1 : 1))
-                } : prev);
+                    saves_count: Math.max(0, prev.saves_count + (newSaved ? 1 : -1)),
+                }
+                : prev
+        );
+
+        try {
+            if (newSaved) {
+                const { error } = await supabase
+                    .from("micro_case_card_saved_reports")
+                    .upsert(
+                        { user_id: user.id, card_id: card.id },
+                        { onConflict: "user_id,card_id" }
+                    );
+                if (error) throw error;
+                fireRpc("increment_saves", card.id);
+            } else {
+                const { error } = await supabase
+                    .from("micro_case_card_saved_reports")
+                    .delete()
+                    .match({ user_id: user.id, card_id: card.id });
+                if (error) throw error;
+                fireRpc("decrement_saves", card.id);
             }
-            return;
+        } catch (err) {
+            console.warn("[MicroCase] Save failed:", err);
+            setSaved(!newSaved);
+            setCard(prevCard);
         }
+    }, [card, user?.id, saved, tapSound, isMobile, fireRpc]);
 
-        // Handle REPORT
-        if (type === "report" && finalReason) {
-            // Store previous state for rollback
-            const previousReported = reported;
-            const previousCard = { ...card };
+    // ── Report ───────────────────────────────────────────────────
+    const submitReportWithReason = useCallback(async () => {
+        if (!card || !user?.id || !reportReason.trim()) return;
 
-            setReported(true);
-            setCard(prev => prev ? {
-                ...prev,
-                reports_count: prev.reports_count + 1
-            } : prev);
-
-            try {
-                await supabase.from("micro_case_card_reports").upsert({
-                    user_id: user.id,
-                    card_id: card.id,
-                    reason: finalReason
-                });
-                await supabase.rpc('increment_reports', { card_id_param: card.id });
-            } catch (error) {
-                console.error("Report interaction failed:", error);
-                // Revert optimistic update
-                setReported(previousReported);
-                setCard(previousCard);
-            }
-        }
-    };
-
-    const submitReportWithReason = async () => {
-        if (!reportReason.trim()) return;
         let finalReason = reportReason;
         if (customReasonText.trim()) {
             finalReason = `${reportReason}\n\nDetails: ${customReasonText.trim()}`;
         }
+
         setIsSubmittingReport(true);
-        await handleInteraction("report", finalReason);
-        setShowReportDialog(false);
-        setReportReason("");
-        setCustomReasonText("");
-        setIsSubmittingReport(false);
-    };
+        const prevCard = card;
+        const prevReported = reported;
 
-    const fetchAndViewReportReason = useCallback(async () => {
-        if (!user || !card) return;
-        const { data, error } = await supabase
-            .from("micro_case_card_reports")
-            .select("reason")
-            .eq("user_id", user.id)
-            .eq("card_id", card.id)
-            .maybeSingle();
-        if (!error && data?.reason) {
-            setViewReportReason({ show: true, reason: data.reason });
-        } else {
-            setViewReportReason({ show: true, reason: "No reason provided" });
+        setReported(true);
+        setCard((prev) =>
+            prev ? { ...prev, reports_count: prev.reports_count + 1 } : prev
+        );
+
+        try {
+            const { error } = await supabase
+                .from("micro_case_card_reports")
+                .upsert(
+                    { user_id: user.id, card_id: card.id, reason: finalReason },
+                    { onConflict: "user_id,card_id" }
+                );
+            if (error) throw error;
+            fireRpc("increment_reports", card.id);
+        } catch (err) {
+            console.warn("[MicroCase] Report failed:", err);
+            setReported(prevReported);
+            setCard(prevCard);
+        } finally {
+            setShowReportDialog(false);
+            setReportReason("");
+            setCustomReasonText("");
+            setIsSubmittingReport(false);
         }
-    }, [user, card]);
+    }, [card, user?.id, reportReason, customReasonText, reported, fireRpc]);
 
-    // FIXED: Load cards - Cache for text, fresh stats for counts and interactions
-    useEffect(() => {
-        if (!user) return;
-        isMounted.current = true;
-
-        const loadData = async () => {
-            setLoading(true);
-            let baseCard: any = null;
-
-            // Try cache for TEXT content only
-            const cachedCards = getCachedMicroCaseCards();
-            if (cachedCards?.length) {
-                baseCard = getRandomCard(cachedCards);
-            }
-
-            // If no cache, fetch text from DB (no counts)
-            if (!baseCard) {
-                const { data } = await supabase
-                    .from("micro_case_cards")
-                    .select("id, title, scenario, question, answer, explanation, related_unit, difficulty, tags")
-                    .limit(20);
-
-                if (data?.length) {
-                    saveMicroCaseCards(data);
-                    baseCard = getRandomCard(data);
-                }
-            }
-
-            if (baseCard && isMounted.current) {
-                // FETCH FRESH STATS IMMEDIATELY - counts and user status together
-                const stats = await fetchFreshCardStats(user.id, baseCard.id);
-
-                if (isMounted.current) {
-                    setCard({
-                        ...baseCard,
-                        likes_count: stats.liveCounts?.likes_count ?? 0,
-                        saves_count: stats.liveCounts?.saves_count ?? 0,
-                        views_count: stats.liveCounts?.views_count ?? 0,
-                        reports_count: stats.liveCounts?.reports_count ?? 0
-                    });
-                    setLiked(stats.isLiked);
-                    setSaved(stats.isSaved);
-                    setReported(stats.isReported);
-                    setNoCard(false);
-                }
-            } else {
-                setNoCard(true);
-            }
-            setLoading(false);
-        };
-
-        loadData();
-
-        return () => {
-            isMounted.current = false;
-        };
-    }, [user]);
-
-    // Memoized loading skeleton
-    const LoadingSkeleton = useMemo(() => (
-        <Card className="mt-4 relative overflow-hidde border-0 bg-white dark:bg-gray-900/50 rounded-xl shadow-sm animate-pulse">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-200 dark:bg-gray-800" />
-            <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl" />
-                        <div className="space-y-2">
-                            <div className="h-2 w-20 bg-gray-100 dark:bg-gray-800 rounded-full" />
-                            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded-full" />
+    // ── Loading skeleton ─────────────────────────────────────────
+    const LoadingSkeleton = useMemo(
+        () => (
+            <Card className="mt-4 relative overflow-hidden border-0 bg-white dark:bg-gray-900/50 rounded-xl shadow-sm animate-pulse">
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-200 dark:bg-muted/50" />
+                <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-100 dark:bg-muted/50 rounded-xl" />
+                            <div className="space-y-2">
+                                <div className="h-2 w-20 bg-gray-100 dark:bg-muted/50 rounded-full" />
+                                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                            </div>
                         </div>
-                    </div>
-                    <div className="h-6 w-16 bg-gray-100 dark:bg-gray-800 rounded-lg" />
-                </div>
-            </div>
-            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-                <div className="p-4 sm:p-5 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800/50 space-y-3">
-                    <div className="h-3 w-full bg-gray-200 dark:bg-gray-800 rounded-full" />
-                    <div className="h-3 w-[90%] bg-gray-200 dark:bg-gray-800 rounded-full" />
-                    <div className="h-3 w-[70%] bg-gray-200 dark:bg-gray-800 rounded-full" />
-                </div>
-                <div className="space-y-4">
-                    <div className="flex gap-3">
-                        <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800" />
-                        <div className="h-3 w-[80%] bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5" />
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800" />
-                        <div className="h-3 w-[40%] bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5" />
+                        <div className="h-6 w-16 bg-gray-100 dark:bg-muted/50 rounded-lg" />
                     </div>
                 </div>
-                <div className="pt-4 border-0 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800" />
+                <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4">
+                    <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border-0 space-y-3">
+                        <div className="h-3 w-full bg-gray-200 dark:bg-muted/50 rounded-full" />
+                        <div className="h-3 w-[90%] bg-gray-200 dark:bg-muted/50 rounded-full" />
+                        <div className="h-3 w-[70%] bg-gray-200 dark:bg-muted/50 rounded-full" />
                     </div>
-                    <div className="w-24 h-8 bg-gray-100 dark:bg-gray-800 rounded-full" />
-                </div>
-                <div className="flex items-center justify-center gap-2 py-2">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">
-                        Loading Case...
-                    </span>
-                    <div className="flex gap-1">
-                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                        <div className="w-1 h-1 bg-teal-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                        <div className="w-1 h-1 bg-cyan-500 rounded-full animate-bounce" />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    ), []);
 
+                </CardContent>
+            </Card>
+        ),
+        []
+    );
+
+    // ── Render ───────────────────────────────────────────────────
     if (loading) return LoadingSkeleton;
-    if (noCard) {
+
+    if (noCard || !card) {
         return (
             <Card className="mt-4 bg-white dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
                 <CardContent className="py-8">
-                    <p className="text-center text-red-500 font-semibold">No micro-case card found</p>
+                    <p className="text-center text-gray-500 dark:text-gray-400 font-semibold text-sm">
+                        Micro-case unavailable — try again in a moment
+                    </p>
                 </CardContent>
             </Card>
         );
     }
-    if (!card) return null;
 
     return (
         <>
@@ -462,10 +482,14 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                                     </Badge>
                                 )}
                                 {card.difficulty && (
-                                    <Badge className={`text-[9px] uppercase font-black border-none px-2 py-0.5 rounded-md ${card.difficulty.toLowerCase() === 'hard' ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' :
-                                        card.difficulty.toLowerCase() === 'medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300' :
-                                            'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300'
-                                        }`}>
+                                    <Badge
+                                        className={`text-[9px] uppercase font-black border-none px-2 py-0.5 rounded-md ${card.difficulty.toLowerCase() === "hard"
+                                            ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300"
+                                            : card.difficulty.toLowerCase() === "medium"
+                                                ? "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300"
+                                                : "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300"
+                                            }`}
+                                    >
                                         {card.difficulty}
                                     </Badge>
                                 )}
@@ -474,10 +498,12 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                     </div>
 
                     <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-                        <div className="group/item p-4 sm:p-5 bg-white/50 dark:bg-gray-800/30 rounded-2xl transition-all hover:bg-white/80 dark:hover:bg-gray-800/50">
+                        <div className="p-4 sm:p-5 bg-white/50 dark:bg-gray-800/30 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-slate-500 dark:text-slate-400">
                                 <Eye className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">The Patient Situation</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                    The Patient Situation
+                                </span>
                             </div>
                             <p className="text-sm sm:text-base leading-relaxed font-medium text-gray-800 dark:text-gray-200 italic">
                                 "{card.scenario}"
@@ -487,18 +513,23 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         <div className="p-4 sm:p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-blue-600 dark:text-blue-400">
                                 <HelpCircle className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Critical Question</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                    Critical Question
+                                </span>
                             </div>
-                            <p className="text-sm sm:text-md font-bold text-gray-900 dark:text-gray-100">
+                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                                 {card.question}
                             </p>
                         </div>
+
                         <div className="p-4 sm:p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl">
                             <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Correct Response</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                    Correct Response
+                                </span>
                             </div>
-                            <p className="text-sm sm:text-md font-bold text-emerald-700 dark:text-emerald-400">
+                            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
                                 {card.answer}
                             </p>
                         </div>
@@ -507,7 +538,9 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                             <div className="p-4 sm:p-5 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl">
                                 <div className="flex items-center gap-2 mb-2 text-amber-600 dark:text-amber-500">
                                     <Lightbulb className="w-4 h-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Clinical Rationale</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                        Clinical Rationale
+                                    </span>
                                 </div>
                                 <p className="text-xs sm:text-sm leading-relaxed text-gray-600 dark:text-gray-400 font-medium">
                                     {card.explanation}
@@ -518,7 +551,10 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         {card.tags && (
                             <div className="flex flex-wrap gap-2 pt-2">
                                 {card.tags.split(",").slice(0, 5).map((tag) => (
-                                    <div key={tag} className="flex items-center gap-1 text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full uppercase tracking-tight">
+                                    <div
+                                        key={tag}
+                                        className="flex items-center gap-1 text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full uppercase tracking-tight"
+                                    >
                                         <Hash className="w-2.5 h-2.5" />
                                         {tag.trim()}
                                     </div>
@@ -529,20 +565,23 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                         <div className="pt-4 sm:pt-6 flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
                             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-start">
                                 <button
-                                    onClick={() => handleInteraction("like")}
+                                    onClick={handleLike}
                                     className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${liked
-                                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30"
+                                        : "bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                                         }`}
                                     aria-label="Like"
                                 >
-                                    <ThumbsUp size={isMobile ? 18 : 20} fill={liked ? "currentColor" : "none"} />
+                                    <ThumbsUp
+                                        size={isMobile ? 18 : 20}
+                                        fill={liked ? "currentColor" : "none"}
+                                    />
                                 </button>
                                 <button
-                                    onClick={() => handleInteraction("save")}
+                                    onClick={handleSave}
                                     className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl transition-all font-bold text-xs active:scale-95 ${saved
-                                        ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        ? "bg-green-500 text-white shadow-lg shadow-green-500/30"
+                                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
                                         }`}
                                     aria-label="Save"
                                 >
@@ -550,31 +589,47 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                                     <span className="hidden sm:inline">{saved ? "Saved" : "Save"}</span>
                                 </button>
                                 <button
-                                    onClick={() => reported ? fetchAndViewReportReason() : handleInteraction("report")}
+                                    onClick={() =>
+                                        reported
+                                            ? setViewReportReason({
+                                                show: true,
+                                                reason:
+                                                    "You have already reported this case. Thank you.",
+                                            })
+                                            : setShowReportDialog(true)
+                                    }
                                     title={reported ? "View Report Reason" : "Report Issue"}
                                     className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl transition-all font-bold text-xs active:scale-95 ${reported
-                                        ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-500'
+                                        ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30"
+                                        : "bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-500"
                                         }`}
                                     aria-label="Report"
                                 >
                                     <Flag size={14} fill={reported ? "currentColor" : "none"} />
-                                    <span className="hidden sm:inline">{reported ? "View Report" : "Report"}</span>
+                                    <span className="hidden sm:inline">
+                                        {reported ? "Reported" : "Report"}
+                                    </span>
                                 </button>
                             </div>
 
                             <div className="flex items-center gap-3 sm:gap-4 bg-slate-100 dark:bg-gray-800/50 px-3 sm:px-5 py-1.5 sm:py-2 rounded-full">
-                                <div className="flex items-center gap-1.5 border-0 pr-2 sm:pr-3">
+                                <div className="flex items-center gap-1.5 pr-2 sm:pr-3">
                                     <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-500" />
-                                    <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">{card.views_count}</span>
+                                    <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">
+                                        {card.views_count}
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-1.5 border-0 pr-2 sm:pr-3">
+                                <div className="flex items-center gap-1.5 pr-2 sm:pr-3">
                                     <Heart className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-500" />
-                                    <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">{card.likes_count}</span>
+                                    <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">
+                                        {card.likes_count}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <BookmarkIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" />
-                                    <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">{card.saves_count}</span>
+                                    <span className="text-[10px] sm:text-xs font-black text-slate-600 dark:text-slate-300">
+                                        {card.saves_count}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -584,14 +639,22 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
 
             {/* Report Dialog */}
             {showReportDialog && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowReportDialog(false)}>
-                    <div className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl border border-gray-200 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setShowReportDialog(false)}
+                >
+                    <div
+                        className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl border border-gray-200 dark:border-gray-800"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
                                     <Flag className="w-5 h-5 text-rose-500" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Report Micro-Case</h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    Report Micro-Case
+                                </h3>
                             </div>
                             <button
                                 onClick={() => {
@@ -671,14 +734,22 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
 
             {/* View Report Dialog */}
             {viewReportReason.show && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setViewReportReason({ show: false, reason: "" })}>
-                    <div className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-200 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setViewReportReason({ show: false, reason: "" })}
+                >
+                    <div
+                        className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-200 dark:border-gray-800"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
                                     <AlertCircle className="w-5 h-5 text-rose-500" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Report Details</h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    Report Details
+                                </h3>
                             </div>
                             <button
                                 onClick={() => setViewReportReason({ show: false, reason: "" })}

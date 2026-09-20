@@ -77,46 +77,50 @@ const ExamCenters = () => {
         <div className="min-h-screen bg-slate-50 p-0 md:p-8 pb-20 dark:bg-background">
             <div className="mx-auto max-w-full">
 
-                {/* 1. Header - full width on mobile */}
+                {/* 1. Header */}
                 <div className="flex items-center justify-between mb-3 md:mb-4 px-4 md:px-0 pt-4 md:pt-0">
                     <div className="flex items-center gap-2 md:gap-2">
+                        {/* Back button — icon only, no chrome */}
                         <button
                             onClick={() => navigate('/survival-hub')}
-                            className="p-1.5 md:p-2 rounded-full bg-white dark:bg-muted/30 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 active:scale-95 transition-all"
+                            aria-label="Go back"
+                            className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                         >
-                            <ChevronLeft size={18} />
+                            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
                         </button>
                         <div>
                             <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white leading-none">NCK Exam Centers</h1>
-                            <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 md:mt-1 uppercase tracking-widest font-medium">
+                            <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 md:mt-1  tracking-widest font-medium">
                                 {loading ? 'Loading...' : `${filteredCenters.length} Examination Venues`}
                             </p>
                         </div>
                     </div>
 
+                    {/* Add button — flat, no shadow */}
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="p-2.5 md:p-3 rounded-xl md:rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none active:scale-90 transition-transform"
+                        aria-label="Add exam center"
+                        className="p-2 md:p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white active:scale-90 transition-all"
                     >
                         <Plus size={20} />
                     </button>
                 </div>
 
-                {/* 2. Search Bar & Counter - full width on mobile */}
+                {/* 2. Search Bar & Counter */}
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-2 mb-2 md:mb-3 px-3 md:px-0">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
                             type="text"
                             placeholder="Search by name, county or town..."
-                            className="w-full rounded-xl md:rounded-2xl border border-slate-200 bg-white py-3 md:py-4 pl-10 md:pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm dark:border-slate-800 dark:bg-muted/30 dark:text-white transition-all text-sm md:text-base"
+                            className="w-full rounded-xl md:rounded-2xl border border-slate-200 bg-white py-3 md:py-4 pl-10 md:pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-muted/30 dark:text-white transition-all text-sm md:text-base"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             autoComplete="off"
                         />
                     </div>
                     {!loading && (
-                        <div className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg md:rounded-xl border border-blue-100 dark:border-blue-800/50 w-fit">
+                        <div className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg md:rounded-xl w-fit">
                             <span className="text-xs md:text-sm font-bold text-blue-600 dark:text-blue-400">
                                 {filteredCenters.length} Centers
                             </span>
@@ -124,13 +128,13 @@ const ExamCenters = () => {
                     )}
                 </div>
 
-                {/* 3. Results Area - full width on mobile */}
+                {/* 3. Results Area */}
                 {loading ? (
-                    <div className="grid gap-0 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
+                    <div className="grid gap-3 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
                         {renderSkeletons()}
                     </div>
                 ) : filteredCenters.length > 0 ? (
-                    <div className="grid gap-0 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
+                    <div className="grid gap-3 md:gap-3 lg:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 px-3 md:px-0">
                         {filteredCenters.map((center: any) => (
                             <ExamCenterCard
                                 key={center.id}
@@ -141,7 +145,7 @@ const ExamCenters = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-16 md:py-20 bg-white dark:bg-muted/30 md:rounded-3xl md:border md:border-dashed md:border-slate-200 md:dark:border-slate-800 mx-3 md:mx-0 rounded-xl">
+                    <div className="text-center py-16 md:py-20 bg-white dark:bg-muted/30 rounded-2xl mx-3 md:mx-0">
                         <div className="inline-flex p-3 md:p-4 bg-slate-50 dark:bg-slate-800 rounded-full mb-3 md:mb-4">
                             <MapPin size={28} className="text-slate-300" />
                         </div>

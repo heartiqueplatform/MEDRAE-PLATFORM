@@ -22,7 +22,6 @@ const HospitalsPage = () => {
     const [editingHospital, setEditingHospital] = useState<any>(null);
     const [triggerRefresh, setTriggerRefresh] = useState(0);
 
-    // Use cached query for hospitals
     const { data: hospitals = [], loading } = useCachedQuery(
         `hospitals-${centerId}-${hospitalId}-${placementId}`,
         () => cachedSurvivalService.getHospitals({
@@ -31,17 +30,14 @@ const HospitalsPage = () => {
             placementId: placementId || undefined
         }),
         [centerId, hospitalId, placementId, triggerRefresh],
-        { ttl: 5 * 60 * 1000 } // 5 minute cache for static data
+        { ttl: 5 * 60 * 1000 }
     );
 
-    // Combined Save Function (Handles both Add and Update)
     const handleSaveHospital = async (formData: any) => {
         try {
             if (editingHospital) {
-                // Update existing
                 await cachedSurvivalService.updateHospital(editingHospital.id, formData);
             } else {
-                // Add new (include the uploader's ID)
                 await cachedSurvivalService.addHospital({
                     ...formData,
                     created_by: user?.id
@@ -57,7 +53,6 @@ const HospitalsPage = () => {
         }
     };
 
-    // Handle Delete
     const handleDelete = async (id: string) => {
         if (window.confirm("Are you sure you want to delete this facility?")) {
             try {
@@ -69,7 +64,6 @@ const HospitalsPage = () => {
         }
     };
 
-    // Handle Edit Click
     const handleEdit = (hospital: any) => {
         setEditingHospital(hospital);
         setIsModalOpen(true);
@@ -80,7 +74,6 @@ const HospitalsPage = () => {
         setEditingHospital(null);
     };
 
-    // Filter Logic
     const filteredHospitals = Array.isArray(hospitals)
         ? hospitals.filter((h: any) =>
             h.hospital_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,7 +82,6 @@ const HospitalsPage = () => {
         )
         : [];
 
-    // Render skeleton cards
     const renderSkeletons = () => {
         return Array(6).fill(0).map((_, index) => (
             <HospitalCardSkeleton key={`skeleton-${index}`} />
@@ -98,33 +90,37 @@ const HospitalsPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-background">
-            {/* Header - Mobile Native Style */}
-            <div className="sticky -top-4 z-20 bg-white dark:bg-muted/100 border-b border-slate-200/50 dark:border-slate-800/50">
+            {/* Header */}
+            <div className="sticky -top-4 z-20 bg-white dark:bg-muted/100">
                 <div className="flex items-center justify-between gap-3 px-3 py-3 md:px-6 md:py-4">
                     <div className="flex items-center gap-3 md:gap-4">
+                        {/* Back button — icon only */}
                         <button
                             onClick={() => navigate('/survival-hub')}
-                            className="p-1.5 md:p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"
+                            aria-label="Go back"
+                            className="inline-flex w-fit items-center justify-center p-1.5 -ml-1.5 text-slate-700 dark:text-slate-200 active:opacity-60 transition"
                         >
-                            <ChevronLeft size={20} className="md:w-5 md:h-5" />
+                            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" strokeWidth={2.5} />
                         </button>
                         <div>
                             <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white leading-none">Nearby Hospitals</h1>
-                            <p className="text-[10px] font-bold text-rose-600 uppercase mt-0.5 md:mt-1 tracking-widest">
+                            <p className="text-[10px] font-bold text-rose-600  mt-0.5 md:mt-1 tracking-widest">
                                 {loading ? 'Loading...' : `${filteredHospitals.length} Facilities Available`}
                             </p>
                         </div>
                     </div>
 
+                    {/* Add button — flat, no shadow */}
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="p-2 md:p-2.5 rounded-full bg-rose-600 text-white shadow-lg active:scale-90 transition-transform"
+                        aria-label="Add hospital"
+                        className="p-2 md:p-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white active:scale-90 transition-all"
                     >
                         <Plus size={18} className="md:w-5 md:h-5" />
                     </button>
                 </div>
 
-                {/* Search Bar - Full Width Mobile */}
+                {/* Search Bar */}
                 <div className="px-3 pb-3 md:px-6 md:pb-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -139,26 +135,21 @@ const HospitalsPage = () => {
                 </div>
             </div>
 
-            {/* Hospital Cards - Mobile Feed Style */}
-            <div className="px-0 md:px-4 lg:px-6 py-0 md:py-4">
+            {/* Hospital Cards */}
+            <div className="px-3 md:px-4 lg:px-6 py-3 md:py-4">
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 md:gap-4 lg:gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
                         {renderSkeletons()}
                     </div>
                 ) : filteredHospitals.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 md:gap-4 lg:gap-6">
-                        {filteredHospitals.map((h: any, index: number) => (
-                            <div key={h.id}>
-                                <HospitalCard
-                                    hospital={h}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
-                                />
-                                {/* Mobile Feed Separator */}
-                                {index < filteredHospitals.length - 1 && (
-                                    <div className="block md:hidden h-px bg-slate-200/50 dark:bg-slate-800/50 mx-3" />
-                                )}
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
+                        {filteredHospitals.map((h: any) => (
+                            <HospitalCard
+                                key={h.id}
+                                hospital={h}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                            />
                         ))}
                     </div>
                 ) : (
@@ -170,8 +161,8 @@ const HospitalsPage = () => {
                 )}
             </div>
 
-            {/* Safety Notice - Mobile Native Style */}
-            <div className="mx-3 md:mx-4 lg:mx-6 mt-4 md:mt-6 py-3 md:py-4 px-3 md:px-4 bg-rose-50 dark:bg-rose-900/10 border-t border-rose-100/50 dark:border-rose-900/30 md:rounded-2xl">
+            {/* Safety Notice */}
+            <div className="mx-3 md:mx-4 lg:mx-6 mt-4 md:mt-6 py-3 md:py-4 px-3 md:px-4 bg-rose-50 dark:bg-rose-900/10 rounded-2xl">
                 <p className="text-[10px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-widest mb-0.5 md:mb-1">Medical Note</p>
                 <p className="text-xs text-rose-600/80 dark:text-rose-400/70 leading-relaxed">
                     Carry your student ID and NCK clinical logbook when visiting.

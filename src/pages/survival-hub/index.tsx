@@ -24,10 +24,9 @@ const SurvivalHubDashboard = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-background p-0 md:p-6 pb-24">
-            {/* 1. Header Section - Centered on Mobile & Desktop */}
+            {/* 1. Header Section */}
             <header className="mb-6 md:mb-8 mt-4 md:mt-0 px-4 md:px-0">
                 <div className="flex flex-col items-center md:items-start gap-1.5 md:gap-2 mb-1">
-
                     <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white text-center md:text-left">
                         Student Survival Hub 🇰🇪
                     </h1>
@@ -37,8 +36,8 @@ const SurvivalHubDashboard = () => {
                 </div>
             </header>
 
-            {/* 2. Main Navigation Grid - edge-to-edge on mobile */}
-            <div className="grid grid-cols-1 gap-0 md:gap-4 sm:grid-cols-2 lg:grid-cols-4 px-0 md:px-0">
+            {/* 2. Main Navigation Grid */}
+            <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-4 px-3 md:px-0">
                 <HubCard
                     title="Exam Centers"
                     description="Official venues, maps, and important center notes."
@@ -76,9 +75,9 @@ const SurvivalHubDashboard = () => {
                 />
             </div>
 
-            {/* 3. Loading State for Pro-Tip Section */}
+            {/* 3. Pro-Tip Section */}
             {loading ? (
-                <section className="mt-4 md:mt-6 rounded-none md:rounded-xl bg-white md:border-0 md:p-6 md:shadow-sm dark:bg-muted/30 p-4 mx-0 md:mx-0 border-0 md:border md:border-slate-100 dark:border-slate-800 animate-pulse">
+                <section className="mt-4 md:mt-6 rounded-2xl bg-white dark:bg-muted/30 p-4 md:p-6 mx-3 md:mx-0 shadow-sm animate-pulse">
                     <div className="flex items-start gap-3 md:gap-4">
                         <div className="rounded-full bg-slate-200 dark:bg-slate-700 p-2 md:p-3 flex-shrink-0">
                             <div className="h-4 w-4 md:h-5 md:w-5 rounded bg-slate-300 dark:bg-slate-600" />
@@ -94,7 +93,7 @@ const SurvivalHubDashboard = () => {
                     </div>
                 </section>
             ) : (
-                <section className="mt-4 md:mt-6 rounded-none md:rounded-xl bg-white md:border-0 md:p-6 md:shadow-sm dark:bg-muted/30 p-4 mx-0 md:mx-0 border-0 md:border md:border-slate-100 dark:border-slate-800">
+                <section className="mt-4 md:mt-6 rounded-2xl bg-white dark:bg-muted/30 p-4 md:p-6 mx-3 md:mx-0 shadow-sm">
                     <div className="flex items-start gap-3 md:gap-4">
                         <div className="rounded-full bg-amber-100 p-2 md:p-3 dark:bg-amber-900/30 flex-shrink-0">
                             <Star className="text-amber-600 dark:text-amber-400 md:w-5 md:h-5" size={18} />

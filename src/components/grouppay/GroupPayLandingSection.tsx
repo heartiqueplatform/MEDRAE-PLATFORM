@@ -5,111 +5,104 @@ import { useNavigate } from "react-router-dom";
 import {
     Users,
     Wallet,
-    GraduationCap,
-    TrendingUp,
+    PiggyBank,
+    Sparkles,
     ArrowRight,
     CheckCircle,
-    Sparkles,
-    Shield,
     Clock,
     BookOpen,
-    Star,
-    Zap,
-    ChevronRight,
-    Heart,
-    ThumbsUp,
-    Medal,
-    Gauge,
-    Eye,
     UserPlus,
-    Calendar,
     DollarSign,
-    PiggyBank,
     Target,
     Crown,
     Smartphone,
-    Copy,
-    Gift,
-    Rocket,
-    Award,
-    Globe,
     Network,
-    Briefcase,
-    FileCheck,
-    Headphones,
     Users2,
-    Building,
-    StarHalf,
-    MessageCircle,
-    Phone,
-    Mail,
-    MapPin,
-    Clock as ClockIcon,
-    LogIn
+    LogIn,
+    Rocket,
+    ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
-import { motion } from "framer-motion";
+import {
+    GROUPPAY_CONFIG,
+    getGroupPricePerMember,
+    getIndividualPrice,
+    getSavingsPerMember,
+} from "@/types/grouppay";
 
 // ============================================================
-// ANIMATION UTILITY: Intersection Observer for scroll animations
+// GitHub dark palette (hardcoded, flat only)
+// ============================================================
+const GH = {
+    bg: "#0d1117",
+    surface: "#161b22",
+    surfaceHover: "#1c2128",
+    text: "#e6edf3",
+    textMuted: "#8b949e",
+    textDim: "#6e7681",
+    green: "#3fb950",
+    greenBg: "#12261e",
+    blue: "#58a6ff",
+    blueBg: "#0c2d6b",
+    yellow: "#d29922",
+    yellowBg: "#3a2d00",
+    purple: "#a371f7",
+    purpleBg: "#2d1b4e",
+    red: "#f85149",
+    redBg: "#4b1113",
+    indigo: "#a371f7",
+    indigoBg: "#2d1b4e",
+};
+
+// ============================================================
+// ANIMATION UTILITY
 // ============================================================
 const useIntersectionObserver = (options = {}) => {
     const [isVisible, setIsVisible] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const observer = new IntersectionObserver(([entry]) => {
-            if (entry.isIntersecting) {
-                setIsVisible(true);
-                observer.unobserve(entry.target);
-            }
-        }, {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px',
-            ...options
-        });
-
-        if (ref.current) {
-            observer.observe(ref.current);
-        }
-
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                    observer.unobserve(entry.target);
+                }
+            },
+            { threshold: 0.1, rootMargin: "0px 0px -50px 0px", ...options }
+        );
+        if (ref.current) observer.observe(ref.current);
         return () => {
-            if (ref.current) {
-                observer.unobserve(ref.current);
-            }
+            if (ref.current) observer.unobserve(ref.current);
         };
     }, [options]);
 
     return [ref, isVisible];
 };
 
-// ============================================================
-// ANIMATED SECTION WRAPPER - Matching main page theme
-// ============================================================
 const AnimatedSection = ({ children, className = "", delay = 0, direction = "up" }: any) => {
     const [ref, isVisible] = useIntersectionObserver();
 
     const getTransform = () => {
         switch (direction) {
-            case 'up': return 'translateY(60px)';
-            case 'down': return 'translateY(-60px)';
-            case 'left': return 'translateX(-60px)';
-            case 'right': return 'translateX(60px)';
-            default: return 'translateY(60px)';
+            case "up": return "translateY(60px)";
+            case "down": return "translateY(-60px)";
+            case "left": return "translateX(-60px)";
+            case "right": return "translateX(60px)";
+            default: return "translateY(60px)";
         }
     };
 
     return (
         <div
             ref={ref}
-            className={`transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0'}`}
+            className={`transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0"}`}
             style={{
-                transform: isVisible ? 'translateY(0)' : getTransform(),
+                transform: isVisible ? "translateY(0)" : getTransform(),
                 transitionDelay: `${delay}ms`,
-                ...(className ? { className } : {})
+                ...(className ? { className } : {}),
             }}
         >
             {children}
@@ -118,120 +111,97 @@ const AnimatedSection = ({ children, className = "", delay = 0, direction = "up"
 };
 
 // ============================================================
-// COUNTER ANIMATION
+// PRICING — all derived from config, no hardcoded values
 // ============================================================
-const useCountUp = (target: number, duration: number = 2000) => {
-    const [count, setCount] = useState(0);
-    const [ref, isVisible] = useIntersectionObserver();
+const CURRENCY = GROUPPAY_CONFIG.CURRENCY;
 
-    useEffect(() => {
-        if (!isVisible) return;
-
-        let startTime: number;
-        let animationFrame: number;
-
-        const animate = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            const progress = Math.min((timestamp - startTime) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(eased * target));
-
-            if (progress < 1) {
-                animationFrame = requestAnimationFrame(animate);
-            }
-        };
-
-        animationFrame = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationFrame);
-    }, [isVisible, target, duration]);
-
-    return [ref, count];
-};
+const GROUP_1MO = getGroupPricePerMember("1-month");
+const GROUP_2MO = getGroupPricePerMember("2-months");
+const IND_1MO = getIndividualPrice("1-month");
+const IND_2MO = getIndividualPrice("2-months");
+const SAVE_1MO = getSavingsPerMember("1-month");
+const SAVE_2MO = getSavingsPerMember("2-months");
 
 const GroupPayLandingSection = () => {
     const navigate = useNavigate();
 
-    // Realistic stats
-    const [groupsRef, groupsCount] = useCountUp(47, 1800);
-    const [membersRef, membersCount] = useCountUp(523, 2000);
-    const [savingsRef, savingsCount] = useCountUp(24500, 2200);
-    const [schoolsRef, schoolsCount] = useCountUp(18, 1600);
-
     const features = [
         {
             icon: Wallet,
-            title: "Save on Premium Access",
-            description: "Instead of paying KSh 399 individually, contribute just KSh 299 per member when you join a group of 10+ students.",
-            color: "text-emerald-600",
-            bg: "bg-emerald-50",
-            highlight: true,
-            saving: "Save 50%"
+            title: "Save from Day One",
+            description: `Split premium across your group and pay just ${CURRENCY} ${GROUP_2MO} each — instead of ${CURRENCY} ${IND_2MO} solo.`,
+            color: GH.green,
+            bg: GH.greenBg,
+            saving: `Save ${CURRENCY} ${SAVE_2MO}`,
         },
         {
             icon: Users2,
-            title: "Study Together",
-            description: "Form study groups with classmates and fellow nursing students. Collaborate, share resources, and motivate each other.",
-            color: "text-blue-600",
-            bg: "bg-blue-50",
-            highlight: false,
-            saving: null
+            title: "Built for Study Groups",
+            description:
+                "Form a group with classmates, share resources, and keep each other on track for exams.",
+            color: GH.blue,
+            bg: GH.blueBg,
+            saving: null,
         },
         {
             icon: Crown,
             title: "Premium for Everyone",
-            description: "When the group pays, EVERY member gets instant premium access. No individual payments needed.",
-            color: "text-amber-600",
-            bg: "bg-amber-50",
-            highlight: false,
-            saving: null
+            description:
+                "When the group pays, every member unlocks premium instantly — no individual payments, no waiting.",
+            color: GH.yellow,
+            bg: GH.yellowBg,
+            saving: null,
         },
         {
             icon: Smartphone,
-            title: "Simple M-Pesa Payments",
-            description: "Group leaders pay via M-Pesa with just a few taps. All members get activated automatically.",
-            color: "text-purple-600",
-            bg: "bg-purple-50",
-            highlight: false,
-            saving: null
+            title: "One M-Pesa Payment",
+            description:
+                "The leader pays once via M-Pesa. Everyone else's account upgrades automatically within seconds.",
+            color: GH.purple,
+            bg: GH.purpleBg,
+            saving: null,
         },
         {
             icon: Network,
-            title: "Build Your Network",
-            description: "Connect with nursing students across Kenya. Share knowledge and grow together in your medical career.",
-            color: "text-indigo-600",
-            bg: "bg-indigo-50",
-            highlight: false,
-            saving: null
+            title: "Grow Your Circle",
+            description:
+                "Connect with nursing students from other schools, share notes, and build your professional network early.",
+            color: GH.indigo,
+            bg: GH.indigoBg,
+            saving: null,
         },
         {
             icon: Target,
-            title: "Study Efficiently",
-            description: "Group learning helps you stay motivated, cover more content, and prepare better for your exams.",
-            color: "text-rose-600",
-            bg: "bg-rose-50",
-            highlight: false,
-            saving: null
-        }
+            title: "Study Smarter",
+            description:
+                "Group learning beats solo. Cover more ground, stay motivated, and walk into exams prepared.",
+            color: GH.red,
+            bg: GH.redBg,
+            saving: null,
+        },
     ];
 
     const pricingComparison = [
         {
             plan: "Individual Premium",
-            price: "KSh 399",
+            price: `${CURRENCY} ${IND_2MO}`,
+            priceUnit: "per 2 months",
             features: [
                 "Full premium access",
                 "Clinical assessments",
                 "AI tutor feedback",
                 "Progress tracking",
                 "MedTube access",
-                "Resources bank"
+                "Resources bank",
             ],
             icon: UserPlus,
-            recommended: false
+            recommended: false,
+            savings: null,
         },
         {
-            plan: "GroupPay (10+ Members)",
-            price: "KSh 299",
+            plan: "GroupPay · 2 Months",
+            price: `${CURRENCY} ${GROUP_2MO}`,
+            priceUnit: "per member · 2 months",
             features: [
                 "Full premium access",
                 "Clinical assessments",
@@ -240,191 +210,162 @@ const GroupPayLandingSection = () => {
                 "MedTube access",
                 "Resources bank",
                 "Collaborative learning",
-                "Group chat & support"
+                "Group chat & support",
             ],
             icon: Users,
             recommended: true,
-            savings: "Save KSh 100/member"
-        }
-    ];
-
-    const stats = [
-        {
-            value: groupsCount,
-            suffix: "+",
-            label: "Active Study Groups",
-            icon: Users,
-            color: "text-emerald-600",
-            ref: groupsRef
+            savings: `Save ${CURRENCY} ${SAVE_2MO} each`,
         },
-        {
-            value: membersCount,
-            suffix: "+",
-            label: "Students Saving Together",
-            icon: GraduationCap,
-            color: "text-blue-600",
-            ref: membersRef
-        },
-        {
-            value: savingsCount,
-            suffix: "+",
-            label: "KSh Saved Together",
-            icon: PiggyBank,
-            color: "text-amber-600",
-            ref: savingsRef
-        },
-        {
-            value: schoolsCount,
-            suffix: "+",
-            label: "Nursing Schools",
-            icon: Building,
-            color: "text-purple-600",
-            ref: schoolsRef
-        },
-    ];
-
-    const testimonials = [
-        {
-            name: "Mary Wanjiru",
-            role: "Nursing Student, KMTC Embu",
-            avatar: "https://i.pravatar.cc/100?img=1",
-            quote: "GroupPay helps me save money while studying with my friends. We're 12 in our group and everyone gets premium access.",
-            rating: 5
-        },
-        {
-            name: "David Otieno",
-            role: "Nursing Student, University of Nairobi",
-            avatar: "https://i.pravatar.cc/100?img=2",
-            quote: "Forming a group was easy. We have 15 members and everyone gets premium access instantly when we pay together.",
-            rating: 5
-        },
-        {
-            name: "Sarah Akinyi",
-            role: "Clinical Medicine, Moi University",
-            avatar: "https://i.pravatar.cc/100?img=3",
-            quote: "The money I save with GroupPay goes to buying medical textbooks. It's a smart way for students to access premium content.",
-            rating: 5
-        }
     ];
 
     const benefits = [
         {
             icon: DollarSign,
-            title: "Affordable Access",
-            description: "Pay as low as KSh 299 per member"
+            title: "Budget-Friendly",
+            description: `From ${CURRENCY} ${GROUP_1MO} per member`,
         },
         {
             icon: BookOpen,
-            title: "Premium Content",
-            description: "Full access to all Medrae features"
+            title: "Full Premium Access",
+            description: "Every Medrae feature, unlocked",
         },
         {
             icon: Users,
-            title: "Collaborative Learning",
-            description: "Study and grow together as a group"
+            title: "Learn Together",
+            description: "Study with your classmates, not alone",
         },
         {
             icon: Sparkles,
             title: "Instant Activation",
-            description: "Access immediately after payment"
-        }
+            description: "Access unlocks the moment you pay",
+        },
     ];
 
     const handleJoinClick = () => {
-        navigate('/register');
+        navigate("/register");
     };
 
     return (
         <section
             id="grouppay"
-            className="py-16 md:py-24 px-0 md:px-4 bg-white text-slate-900 overflow-hidden"
+            className="py-16 md:py-24 px-0 md:px-4 overflow-hidden"
+            style={{ backgroundColor: GH.bg, color: GH.text }}
         >
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
+                {/* HEADER */}
                 <AnimatedSection direction="up">
                     <div className="text-center mb-12 md:mb-16 px-4 md:px-0">
-
-
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter text-slate-800">
-                            Study <span className="text-emerald-600">Together</span>.<br className="block sm:hidden" />
-                            <span className="text-blue-600">Pay Together</span>.<br className="block sm:hidden" />
-                            <span className="text-purple-600">Learn Together</span>.
+                        <h2
+                            className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black tracking-tighter leading-[1.05]"
+                            style={{ color: GH.text }}
+                        >
+                            Study together.
+                            <br />
+                            <span style={{ color: GH.green }}>
+                                Pay a fraction. Unlock everything.
+                            </span>
                         </h2>
-                        <p className="text-sm md:text-lg lg:text-xl text-slate-500 md:max-w-full md:px-4 lg:px-6 mx-auto mt-4 font-medium leading-relaxed">
-                            Join a study group and get premium access for everyone at a fraction of the cost.
-                            Save up to 50% on your monthly subscription while learning alongside fellow nursing students.
+                        <p
+                            className="text-sm md:text-lg lg:text-xl max-w-3xl mx-auto mt-4 font-medium leading-relaxed"
+                            style={{ color: GH.textMuted }}
+                        >
+                            Form a group with your classmates and unlock premium for every member at a fraction
+                            of the solo price. Cheaper for you, cheaper for them, better for everyone.
                         </p>
                     </div>
                 </AnimatedSection>
 
-                {/* Stats Cards */}
-                <AnimatedSection direction="up" delay={100}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-12 md:mb-16 px-3 md:px-0">
-                        {stats.map((stat, i) => (
-                            <div
-                                key={i}
-                                ref={stat.ref}
-                                className="bg-slate-50/50 hover:bg-white rounded-2xl p-4 md:p-6 text-center border border-slate-100 hover:border-emerald-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-default"
-                            >
-                                <stat.icon className={`w-6 h-6 md:w-8 md:h-8 mx-auto mb-2 md:mb-3 ${stat.color}`} />
-                                <p className={`text-2xl md:text-3xl lg:text-4xl font-black ${stat.color} tabular-nums`}>
-                                    {stat.value.toLocaleString()}{stat.suffix}
-                                </p>
-                                <p className="text-[10px] md:text-sm font-semibold text-slate-600 mt-0.5 md:mt-1">{stat.label}</p>
-                            </div>
-                        ))}
-                    </div>
-                </AnimatedSection>
-
-                {/* Main Hero Card */}
+                {/* MAIN HERO CARD */}
                 <AnimatedSection direction="up" delay={150}>
-                    <div className="bg-gradient-to-br from-slate-50 to-emerald-50/50 rounded-2xl md:rounded-3xl p-6 md:p-10 mb-12 md:mb-16 mx-3 md:mx-0 border border-slate-100 shadow-lg hover:shadow-xl transition-all duration-500">
+                    <div
+                        className="rounded-3xl p-6 md:p-10 mb-12 md:mb-16 mx-3 md:mx-0"
+                        style={{ backgroundColor: GH.surface }}
+                    >
                         <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
                             <div className="space-y-4 md:space-y-5">
                                 <div className="flex items-center gap-2">
-                                    <PiggyBank className="w-5 h-5 md:w-6 md:h-6 text-emerald-600" />
-                                    <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-500">
-                                        Smart Savings for Nursing Students
+                                    <PiggyBank className="w-5 h-5 md:w-6 md:h-6" style={{ color: GH.green }} />
+                                    <span
+                                        className="text-[10px] md:text-xs font-black uppercase tracking-widest"
+                                        style={{ color: GH.textMuted }}
+                                    >
+                                        Smart savings for nursing students
                                     </span>
                                 </div>
-                                <h3 className="text-2xl md:text-4xl lg:text-5xl font-black leading-tight text-slate-800">
-                                    Pay Less. <br />
-                                    <span className="text-emerald-600">Learn More.</span>
+                                <h3
+                                    className="text-2xl md:text-4xl lg:text-5xl font-black leading-tight"
+                                    style={{ color: GH.text }}
+                                >
+                                    Pay less.
+                                    <br />
+                                    <span style={{ color: GH.green }}>Learn more.</span>
                                 </h3>
-                                <p className="text-slate-600 text-sm md:text-base max-w-md leading-relaxed">
-                                    Join a group of 10+ nursing students and pay just <span className="font-bold text-emerald-600">KSh 299</span> per member instead of <span className="line-through text-slate-400">KSh 399</span>.
-                                    That's <span className="font-bold text-emerald-600">KSh 100 saved</span> every month!
+                                <p
+                                    className="text-sm md:text-base max-w-md leading-relaxed"
+                                    style={{ color: GH.textMuted }}
+                                >
+                                    Skip the {CURRENCY} {IND_2MO} solo price. Form a group and pay only{" "}
+                                    <span className="font-bold" style={{ color: GH.green }}>
+                                        {CURRENCY} {GROUP_2MO}
+                                    </span>{" "}
+                                    each — that's{" "}
+                                    <span className="font-bold" style={{ color: GH.green }}>
+                                        {CURRENCY} {SAVE_2MO} saved
+                                    </span>{" "}
+                                    for the same premium access.
                                 </p>
                                 <div className="flex flex-wrap gap-3 pt-2">
                                     <Button
                                         onClick={handleJoinClick}
-                                        className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-bold py-2.5 md:py-3 px-6 md:px-8 rounded-xl shadow-lg shadow-emerald-200 hover:shadow-xl transition-all hover:scale-105 text-sm md:text-base"
+                                        className="border-0 rounded-xl text-white font-bold py-2.5 md:py-3 px-6 md:px-8 hover:scale-105 transition-all text-sm md:text-base"
+                                        style={{ backgroundColor: GH.green }}
                                     >
                                         <LogIn className="w-4 h-4 mr-2" />
-                                        Join Medrae Nursing
+                                        Get Started Free
                                         <ArrowRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 </div>
                             </div>
                             <div className="flex-shrink-0 hidden md:block">
-                                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-md">
-                                    <div className="flex items-center gap-3 text-slate-900">
-                                        <div className="bg-emerald-100 rounded-full p-2">
-                                            <Users className="w-8 h-8 text-emerald-600" />
+                                <div
+                                    className="rounded-2xl p-6"
+                                    style={{ backgroundColor: GH.bg }}
+                                >
+                                    <div className="flex items-center gap-3" style={{ color: GH.text }}>
+                                        <div className="rounded-full p-2" style={{ backgroundColor: GH.greenBg }}>
+                                            <Users className="w-8 h-8" style={{ color: GH.green }} />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-medium text-slate-500">Per Member</p>
-                                            <p className="text-3xl font-black text-emerald-600">KSh 299</p>
-                                            <p className="text-xs text-slate-400 line-through">Was KSh 399</p>
+                                            <p className="text-xs font-medium" style={{ color: GH.textMuted }}>
+                                                Per member
+                                            </p>
+                                            <p
+                                                className="text-3xl font-black tabular-nums"
+                                                style={{ color: GH.green }}
+                                            >
+                                                {CURRENCY} {GROUP_2MO}
+                                            </p>
+                                            <p
+                                                className="text-xs line-through tabular-nums"
+                                                style={{ color: GH.textDim }}
+                                            >
+                                                Was {CURRENCY} {IND_2MO}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
-                                        <CheckCircle className="w-4 h-4 text-emerald-600" />
-                                        <span>Save 50% on premium access</span>
+                                    <div
+                                        className="mt-4 pt-4 flex items-center gap-2 text-xs"
+                                        style={{ color: GH.textMuted }}
+                                    >
+                                        <CheckCircle className="w-4 h-4" style={{ color: GH.green }} />
+                                        <span>Save {CURRENCY} {SAVE_2MO} per member</span>
                                     </div>
-                                    <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
-                                        <Clock className="w-4 h-4 text-emerald-600" />
-                                        <span>Instant activation for all members</span>
+                                    <div
+                                        className="mt-2 flex items-center gap-2 text-xs"
+                                        style={{ color: GH.textMuted }}
+                                    >
+                                        <Clock className="w-4 h-4" style={{ color: GH.green }} />
+                                        <span>Instant activation for everyone</span>
                                     </div>
                                 </div>
                             </div>
@@ -432,21 +373,41 @@ const GroupPayLandingSection = () => {
                     </div>
                 </AnimatedSection>
 
-                {/* Features Grid */}
+                {/* FEATURES GRID */}
                 <AnimatedSection direction="up" delay={200}>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 px-3 md:px-0 mb-12 md:mb-16">
                         {features.map((feature, index) => (
                             <div
                                 key={index}
-                                className={`bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-6 border ${feature.highlight ? 'border-0 ring-0 ' : 'border-0'} shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-default group`}
+                                className="rounded-2xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 cursor-default group"
+                                style={{ backgroundColor: GH.surface }}
                             >
-                                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center mb-3 md:mb-4 ${feature.bg} group-hover:scale-110 transition-transform duration-300`}>
-                                    <feature.icon className={`w-5 h-5 md:w-6 md:h-6 ${feature.color}`} />
+                                <div
+                                    className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300"
+                                    style={{ backgroundColor: feature.bg }}
+                                >
+                                    <feature.icon
+                                        className="w-5 h-5 md:w-6 md:h-6"
+                                        style={{ color: feature.color }}
+                                    />
                                 </div>
-                                <h4 className="font-bold text-slate-800 mb-1.5 md:mb-2 text-sm md:text-base">{feature.title}</h4>
-                                <p className="text-[11px] md:text-sm text-slate-500 leading-relaxed">{feature.description}</p>
+                                <h4
+                                    className="font-bold mb-1.5 md:mb-2 text-sm md:text-base"
+                                    style={{ color: GH.text }}
+                                >
+                                    {feature.title}
+                                </h4>
+                                <p
+                                    className="text-[11px] md:text-sm leading-relaxed"
+                                    style={{ color: GH.textMuted }}
+                                >
+                                    {feature.description}
+                                </p>
                                 {feature.saving && (
-                                    <div className="mt-3 inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-wider border border-emerald-200">
+                                    <div
+                                        className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-wider"
+                                        style={{ backgroundColor: GH.greenBg, color: GH.green }}
+                                    >
                                         <Sparkles className="w-3 h-3" />
                                         {feature.saving}
                                     </div>
@@ -456,100 +417,115 @@ const GroupPayLandingSection = () => {
                     </div>
                 </AnimatedSection>
 
-                {/* Pricing Comparison */}
+                {/* PRICING COMPARISON */}
                 <AnimatedSection direction="up" delay={250}>
                     <div className="mb-12 md:mb-16 px-3 md:px-0">
-                        <h3 className="text-xl md:text-2xl lg:text-3xl font-black text-slate-800 mb-6 md:mb-8 text-center">
-                            How Much Can You Save?
+                        <h3
+                            className="text-xl md:text-2xl lg:text-3xl font-black mb-6 md:mb-8 text-center"
+                            style={{ color: GH.text }}
+                        >
+                            How much can you save?
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 md:max-w-full md:px-4 lg:px-6 mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 md:max-w-4xl mx-auto">
                             {pricingComparison.map((plan, i) => (
                                 <div
                                     key={i}
-                                    className={`bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-6 border ${plan.recommended ? 'border-0 ring-0' : 'border-slate-100'} shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1`}
+                                    className="rounded-2xl p-5 md:p-6 transition-all duration-300 hover:-translate-y-1"
+                                    style={{
+                                        backgroundColor: plan.recommended ? GH.surfaceHover : GH.surface,
+                                    }}
                                 >
                                     <div className="flex items-center gap-2 mb-3">
-                                        <plan.icon className={`w-5 h-5 ${plan.recommended ? 'text-emerald-600' : 'text-slate-500'}`} />
-                                        <span className="font-bold text-slate-800">{plan.plan}</span>
+                                        <plan.icon
+                                            className="w-5 h-5"
+                                            style={{ color: plan.recommended ? GH.green : GH.textMuted }}
+                                        />
+                                        <span className="font-bold" style={{ color: GH.text }}>
+                                            {plan.plan}
+                                        </span>
                                         {plan.recommended && (
-                                            <Badge className="bg-gradient-to-r from-emerald-600 to-blue-600 text-white text-[8px] font-black uppercase tracking-wider border-0">
-                                                Best Value
+                                            <Badge
+                                                className="border-0 text-white text-[9px] font-black uppercase tracking-wider"
+                                                style={{ backgroundColor: GH.green }}
+                                            >
+                                                Best value
                                             </Badge>
                                         )}
                                     </div>
-                                    <p className={`text-2xl md:text-3xl font-black ${plan.recommended ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                    <p
+                                        className="text-2xl md:text-3xl font-black tabular-nums"
+                                        style={{ color: plan.recommended ? GH.green : GH.text }}
+                                    >
                                         {plan.price}
-                                        <span className="text-xs font-medium text-slate-400"> /month</span>
+                                        <span
+                                            className="text-xs font-medium ml-1"
+                                            style={{ color: GH.textDim }}
+                                        >
+                                            {plan.priceUnit}
+                                        </span>
                                     </p>
                                     {plan.savings && (
-                                        <p className="text-xs text-emerald-600 font-bold mt-1">
+                                        <p className="text-xs font-bold mt-1" style={{ color: GH.green }}>
                                             {plan.savings}
                                         </p>
                                     )}
                                     <ul className="mt-4 space-y-2">
                                         {plan.features.map((feature, idx) => (
-                                            <li key={idx} className="flex items-start gap-2 text-xs md:text-sm text-slate-600">
-                                                <CheckCircle className={`w-3 h-3 md:w-4 md:h-4 flex-shrink-0 mt-0.5 ${plan.recommended ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                            <li
+                                                key={idx}
+                                                className="flex items-start gap-2 text-xs md:text-sm"
+                                                style={{ color: GH.textMuted }}
+                                            >
+                                                <CheckCircle
+                                                    className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 mt-0.5"
+                                                    style={{
+                                                        color: plan.recommended ? GH.green : GH.textDim,
+                                                    }}
+                                                />
                                                 <span>{feature}</span>
                                             </li>
                                         ))}
                                     </ul>
-
                                 </div>
                             ))}
                         </div>
                     </div>
                 </AnimatedSection>
 
-                {/* Benefits Section */}
+                {/* BENEFITS */}
                 <AnimatedSection direction="up" delay={300}>
-                    <div className="bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-8 border border-slate-100 shadow-sm mx-3 md:mx-0 mb-12 md:mb-16 transition-all duration-300">
-                        <h3 className="text-lg md:text-xl lg:text-2xl font-black text-slate-800 mb-4 md:mb-6 text-center">
-                            Why Nursing Students Love GroupPay
+                    <div
+                        className="rounded-2xl p-5 md:p-8 mx-3 md:mx-0 mb-12 md:mb-16"
+                        style={{ backgroundColor: GH.surface }}
+                    >
+                        <h3
+                            className="text-lg md:text-xl lg:text-2xl font-black mb-4 md:mb-6 text-center"
+                            style={{ color: GH.text }}
+                        >
+                            Why students love GroupPay
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                             {benefits.map((benefit, i) => (
                                 <div
                                     key={i}
-                                    className="bg-white rounded-xl p-4 md:p-5 hover:shadow-md transition-all duration-300 hover:-translate-y-1 border border-slate-100"
+                                    className="rounded-xl p-4 md:p-5 hover:-translate-y-1 transition-all duration-300"
+                                    style={{ backgroundColor: GH.bg }}
                                 >
-                                    <benefit.icon className="w-5 h-5 md:w-6 md:h-6 text-emerald-600 mb-2 md:mb-3" />
-                                    <h4 className="font-bold text-slate-800 text-sm md:text-base mb-1">{benefit.title}</h4>
-                                    <p className="text-[10px] md:text-xs text-slate-500 leading-relaxed">{benefit.description}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </AnimatedSection>
-
-                {/* Testimonials */}
-                <AnimatedSection direction="up" delay={350}>
-                    <div className="mb-12 md:mb-16 px-3 md:px-0">
-                        <h3 className="text-xl md:text-2xl lg:text-3xl font-black text-slate-800 mb-6 md:mb-8 text-center">
-                            What Students Are Saying
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                            {testimonials.map((testimonial, i) => (
-                                <div
-                                    key={i}
-                                    className="bg-slate-50/50 hover:bg-white rounded-2xl p-5 md:p-6 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
-                                >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-emerald-200">
-                                            <img src={testimonial.avatar} alt={testimonial.name} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-slate-800 text-sm">{testimonial.name}</p>
-                                            <p className="text-[10px] text-slate-500">{testimonial.role}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex mb-2">
-                                        {[...Array(testimonial.rating)].map((_, idx) => (
-                                            <Star key={idx} className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                        ))}
-                                    </div>
-                                    <p className="text-xs md:text-sm text-slate-600 leading-relaxed italic">
-                                        "{testimonial.quote}"
+                                    <benefit.icon
+                                        className="w-5 h-5 md:w-6 md:h-6 mb-2 md:mb-3"
+                                        style={{ color: GH.green }}
+                                    />
+                                    <h4
+                                        className="font-bold text-sm md:text-base mb-1"
+                                        style={{ color: GH.text }}
+                                    >
+                                        {benefit.title}
+                                    </h4>
+                                    <p
+                                        className="text-[10px] md:text-xs leading-relaxed"
+                                        style={{ color: GH.textMuted }}
+                                    >
+                                        {benefit.description}
                                     </p>
                                 </div>
                             ))}
@@ -557,30 +533,43 @@ const GroupPayLandingSection = () => {
                     </div>
                 </AnimatedSection>
 
-                {/* CTA */}
+                {/* FINAL CTA */}
                 <AnimatedSection direction="up" delay={400}>
                     <div className="text-center mt-10 md:mt-12 px-4 md:px-0">
-                        <div className="bg-gradient-to-br from-slate-50 to-emerald-50/50 border border-slate-100 rounded-2xl md:rounded-3xl p-8 md:p-12 shadow-lg hover:shadow-xl transition-all duration-500">
-                            <h3 className="text-2xl md:text-4xl lg:text-5xl font-black text-slate-800 mb-3 md:mb-4">
-                                Ready to Save & Study Together?
+                        <div
+                            className="rounded-3xl p-8 md:p-12"
+                            style={{ backgroundColor: GH.surface }}
+                        >
+                            <h3
+                                className="text-2xl md:text-4xl lg:text-5xl font-black mb-3 md:mb-4 leading-tight"
+                                style={{ color: GH.text }}
+                            >
+                                Ready to split the cost?
                             </h3>
-                            <p className="text-slate-600 text-sm md:text-base max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed">
-                                Join Medrae Nursing today and start saving money with GroupPay.
-                                Form study groups, access premium content, and learn alongside fellow nursing students.
+                            <p
+                                className="text-sm md:text-base max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed"
+                                style={{ color: GH.textMuted }}
+                            >
+                                Create your account, form a group with your classmates, and unlock premium
+                                for everyone at a fraction of the price. No hidden fees, no surprises.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <Button
                                     size="lg"
-                                    className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-black text-base md:text-lg px-8 md:px-10 py-5 md:py-6 rounded-2xl shadow-lg shadow-emerald-200 hover:shadow-xl hover:scale-105 transition-all duration-300 group"
+                                    className="border-0 rounded-2xl text-white font-black text-base md:text-lg px-8 md:px-10 py-5 md:py-6 hover:scale-105 transition-all duration-300 group"
+                                    style={{ backgroundColor: GH.green }}
                                     onClick={handleJoinClick}
                                 >
                                     <Rocket className="w-4 h-4 md:w-5 md:h-5 mr-2 group-hover:animate-bounce" />
-                                    Join Medrae Nursing
+                                    Create Your Account
                                     <ChevronRight className="w-4 h-4 md:w-5 md:h-5 ml-2 transition-transform group-hover:translate-x-2" />
                                 </Button>
                             </div>
-                            <p className="text-[10px] md:text-xs text-slate-500 mt-4 font-medium">
-                                10+ members = KSh 99 per member • Instant premium activation • No hidden fees
+                            <p
+                                className="text-[10px] md:text-xs mt-4 font-medium"
+                                style={{ color: GH.textMuted }}
+                            >
+                                From {CURRENCY} {GROUP_1MO} per member · Instant premium activation · No hidden fees
                             </p>
                         </div>
                     </div>

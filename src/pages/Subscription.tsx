@@ -11,28 +11,35 @@ import { Label } from "@/components/ui/label";
 import { Check, CreditCard, Smartphone, Users, Crown, Loader2, AlertCircle, X, HelpCircle, Info, Shield, FileText, Gavel, Briefcase, ArrowLeft, Settings as SettingsIcon } from "lucide-react";
 import { LegalTermsModal } from "@/components/subscription/LegalTermsModal";
 import { SubscriptionInfoModal } from "@/components/subscription/SubscriptionInfoModal";
-import { toast } from "sonner"; // Add this import
+import { toast } from "sonner";
 import { GroupPaySubscriptionCard } from "@/components/grouppay/GroupPaySubscriptionCard";
 
+// ✅ UPDATED: 1-month and 2-months pricing
 const PRICES = {
   STUDENT: {
+    ONE_MONTH: 249,
     TWO_MONTHS: 399,
   },
   TUTOR: {
+    ONE_MONTH: 1249,
     TWO_MONTHS: 1999,
   },
   STAFF: {
+    ONE_MONTH: 679,
     TWO_MONTHS: 999,
   },
   DURATION: {
+    ONE_MONTH: 1,
     TWO_MONTHS: 2,
   }
 };
 
+// ✅ NEW: type for duration selection
+type DurationKey = "1-month" | "2-months";
+
 function SubscriptionSkeleton() {
   return (
     <div className="md:max-w-full md:px-4 lg:px-6 mx-auto p-0 md:p-4 lg:p-8 space-y-0 md:space-y-6 animate-pulse">
-      {/* Header Skeleton */}
       <div className="text-center space-y-1.5 md:space-y-2 px-4 md:px-0 pt-6 md:pt-0 pb-4 md:pb-0 border-0">
         <div className="inline-flex items-center justify-center p-1.5 md:p-2 bg-primary/10 rounded-full mb-1.5 md:mb-2">
           <div className="h-4 w-4 md:h-5 md:w-5 bg-gray-300 dark:bg-gray-700 rounded" />
@@ -42,7 +49,6 @@ function SubscriptionSkeleton() {
         <div className="h-4 md:h-6 w-48 md:w-72 bg-gray-300 dark:bg-gray-700 rounded mx-auto mt-1 md:mt-2" />
       </div>
 
-      {/* Active Subscription Status Skeleton */}
       <div className="bg-gray-200 dark:bg-gray-800 rounded-none md:rounded-xl border-0">
         <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 gap-3 md:gap-4">
           <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto">
@@ -63,8 +69,7 @@ function SubscriptionSkeleton() {
       </div>
 
       <div className="flex flex-col space-y-0 md:space-y-2">
-        {/* Main Pricing Card Skeleton */}
-        <div className="md:border-0 md:shadow-2xl overflow-hidden md:rounded-xl dark:md:bg-muted/30 rounded-none border-0 shadow-none">
+        <div className="md:border-0 shadow-none overflow-hidden md:rounded-xl dark:md:bg-muted/30 rounded-none border-0 shadow-none">
           <div className="bg-primary/5 p-4 md:p-6 lg:p-8 border-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
               <div>
@@ -89,7 +94,6 @@ function SubscriptionSkeleton() {
                 </ul>
               </div>
 
-              {/* Terms Agreement Skeleton */}
               <div className="bg-yellow-50 dark:bg-muted/50 p-3 md:p-4 rounded-lg md:rounded-xl border-0">
                 <div className="flex items-start gap-2 md:gap-3">
                   <div className="h-5 w-5 md:h-6 md:w-6 bg-gray-300 dark:bg-gray-700 rounded mt-0.5" />
@@ -100,7 +104,6 @@ function SubscriptionSkeleton() {
                 </div>
               </div>
 
-              {/* Payment Box Skeleton */}
               <div className="bg-muted/50 dark:bg-gray-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border-0 space-y-3 md:space-y-4">
                 <div className="space-y-1.5 md:space-y-2">
                   <div className="flex justify-between items-center">
@@ -122,7 +125,6 @@ function SubscriptionSkeleton() {
           </div>
         </div>
 
-        {/* Transaction History Skeleton */}
         <div className="md:border-none md:bg-muted/30 dark:md:bg-gray-800/30 md:shadow-none md:rounded-2xl rounded-none border-0 shadow-none">
           <div className="px-4 md:px-6 pt-4 md:pt-6 pb-2 md:pb-3">
             <div className="h-4 md:h-5 w-32 bg-gray-300 dark:bg-gray-700 rounded" />
@@ -144,7 +146,6 @@ function SubscriptionSkeleton() {
           </div>
         </div>
 
-        {/* Secure Information Skeleton */}
         <div className="p-4 md:p-6 md:bg-primary/5 dark:md:bg-primary/10 md:rounded-2xl border-0">
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <div className="bg-primary/10 dark:bg-primary/20 p-1.5 md:p-2 rounded-lg h-fit w-fit">
@@ -163,7 +164,6 @@ function SubscriptionSkeleton() {
   );
 }
 
-// Custom Overlay Modal Component
 const OverlayMessage = ({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) => {
   useEffect(() => {
     if (type === 'error') {
@@ -174,12 +174,11 @@ const OverlayMessage = ({ message, type, onClose }: { message: string; type: 'su
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className={`relative overflow-hidden rounded-[2rem] shadow-2xl p-6 md:p-10 max-w-lg w-full mx-auto border-0 transform animate-in zoom-in-95 duration-300 ${type === 'success'
-        ? 'bg-white dark:bg-slate-900 shadow-emerald-500/20'
-        : 'bg-white dark:bg-slate-900 shadow-rose-500/20'
+      <div className={`relative overflow-hidden rounded-[2rem] shadow-none p-6 md:p-10 max-w-lg w-full mx-auto border-0 transform animate-in zoom-in-95 duration-300 ${type === 'success'
+        ? 'bg-white dark:bg-slate-900 shadow-none'
+        : 'bg-white dark:bg-slate-900 shadow-none'
         }`}>
 
-        {/* Background Decorative Gradient */}
         <div className={`absolute top-0 left-0 w-full h-2 ${type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
 
         <div className="flex flex-col items-center text-center space-y-6">
@@ -202,7 +201,7 @@ const OverlayMessage = ({ message, type, onClose }: { message: string; type: 'su
 
           <Button
             onClick={onClose}
-            className={`w-full py-6 rounded-2xl text-lg font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] border-0 ${type === 'success'
+            className={`w-full py-6 rounded-2xl text-lg font-bold shadow-none transition-all hover:scale-[1.02] active:scale-[0.98] border-0 ${type === 'success'
               ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
               : 'bg-slate-800 hover:bg-slate-900 text-white'
               }`}
@@ -221,7 +220,6 @@ const OverlayMessage = ({ message, type, onClose }: { message: string; type: 'su
   );
 };
 
-// Confetti Component
 const Confetti = () => {
   useEffect(() => {
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff1493', '#ffffff', '#00ffcc'];
@@ -296,6 +294,7 @@ const Confetti = () => {
 
   return null;
 };
+
 export function Subscription() {
   const session = useSession();
   const supabase = useSupabaseClient();
@@ -316,9 +315,10 @@ export function Subscription() {
   const [showTermsWarning, setShowTermsWarning] = useState(false);
   const [otherSubscriptions, setOtherSubscriptions] = useState<any[]>([]);
   const [checkingOthers, setCheckingOthers] = useState(false);
+  // ✅ NEW: duration toggle state — defaults to 2-months (better value)
+  const [selectedDuration, setSelectedDuration] = useState<DurationKey>("2-months");
   const paymentChannelRef = useRef<any>(null);
 
-  // ✅ ALL useEffect hooks at the top
   useEffect(() => {
     async function loadProfile() {
       if (!session?.user?.id) {
@@ -433,7 +433,6 @@ export function Subscription() {
     return () => clearInterval(interval);
   }, [session, supabase]);
 
-  // ✅ Check for other subscriptions
   useEffect(() => {
     const checkOthers = async () => {
       if (!session?.user?.id) return;
@@ -465,7 +464,6 @@ export function Subscription() {
     checkOthers();
   }, [session, supabase, activeSub, userRole]);
 
-  // ✅ OPTIMIZED PAYMENT LISTENER
   const startPaymentListener = () => {
     console.log("Listening for payment success...");
 
@@ -513,7 +511,12 @@ export function Subscription() {
     }, 120000);
   };
 
-  const handleMpesapayment = async (planId: string, amount: number) => {
+  // ✅ UPDATED: handleMpesapayment now accepts durationType
+  const handleMpesapayment = async (
+    planId: string,
+    amount: number,
+    durationType: DurationKey
+  ) => {
     if (!hasAgreedToTerms) {
       setShowTermsWarning(true);
       return;
@@ -550,16 +553,18 @@ export function Subscription() {
         body: JSON.stringify({
           phone: cleanPhone,
           amount: amount,
-          planType: planType, // ✅ FIXED: Removed the stray "A"
+          planType: planType,
           userId: session?.user?.id,
-          roleAtPayment: currentRole
+          roleAtPayment: currentRole,
+          durationType: durationType, // ✅ NEW: send duration to backend
         })
       });
       const data = await res.json();
 
       if (res.ok && (data.ResponseCode === "0" || data.CheckoutRequestID)) {
+        const durationLabel = durationType === "1-month" ? "1 month" : "2 months";
         setOverlayMessage({
-          text: `Awesome! We've sent the M-Pesa prompt to ${cleanPhone}. Please check your phone, enter your PIN, and stay right here. We'll automatically upgrade your account the second it's confirmed!`,
+          text: `Awesome! We've sent the M-Pesa prompt for your ${durationLabel} plan to ${cleanPhone}. Please check your phone, enter your PIN, and stay right here. We'll automatically upgrade your account the second it's confirmed!`,
           type: 'success'
         });
         startPaymentListener();
@@ -585,7 +590,11 @@ export function Subscription() {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  // ✅ Conditional return AFTER all hooks
+  // ✅ NEW: helper — total days of the active plan (for progress bar)
+  const getTotalPlanDays = (sub: any) => {
+    return sub?.duration_type === "1-month" ? 30 : 60;
+  };
+
   if (fetchingProfile) {
     return <SubscriptionSkeleton />;
   }
@@ -593,10 +602,16 @@ export function Subscription() {
   const isTutor = userRole === "tutor" || userRole === "institution";
   const isStaff = userRole === "staff";
 
+  // ✅ UPDATED: prices now come from selectedDuration
+  const priceForRole = (role: "student" | "tutor" | "staff") => {
+    const tbl = role === "staff" ? PRICES.STAFF : role === "tutor" ? PRICES.TUTOR : PRICES.STUDENT;
+    return selectedDuration === "1-month" ? tbl.ONE_MONTH : tbl.TWO_MONTHS;
+  };
+
   const plan = isStaff ? {
-    id: "staff-2m",
+    id: "staff",
     name: "Staff Premium Access",
-    price: PRICES.STAFF.TWO_MONTHS,
+    price: priceForRole("staff"),
     description: "Complete administrative toolkit for staff members to manage content, access CPD, and oversee platform operations.",
     features: [
       "Full access to all student and tutor resources",
@@ -609,9 +624,9 @@ export function Subscription() {
     ],
     icon: <Briefcase className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
   } : isTutor ? {
-    id: "tutor-2m",
+    id: "tutor",
     name: "Tutor Pro Access",
-    price: PRICES.TUTOR.TWO_MONTHS,
+    price: priceForRole("tutor"),
     description: "Complete institutional toolkit for educators and training institutions to manage exams, post jobs, and access premium content.",
     features: [
       "Full access to all student resources (notes, quizzes, simulations)",
@@ -623,9 +638,9 @@ export function Subscription() {
     ],
     icon: <Crown className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
   } : {
-    id: "student-2m",
+    id: "student",
     name: "Premium Student Access",
-    price: PRICES.STUDENT.TWO_MONTHS,
+    price: priceForRole("student"),
     description: "Complete access to the full academic repository and specialized tools designed for thorough exam preparation and performance tracking.",
     features: [
       "Unrestricted access to premium quizzes and exam-bank questions",
@@ -652,10 +667,11 @@ export function Subscription() {
       {showInfoOverlay && (
         <SubscriptionInfoModal
           onClose={() => setShowInfoOverlay(false)}
-          durationMonths={PRICES.DURATION.TWO_MONTHS}
-          tutorPrice={PRICES.TUTOR.TWO_MONTHS}
-          studentPrice={PRICES.STUDENT.TWO_MONTHS}
-          staffPrice={PRICES.STAFF.TWO_MONTHS}
+          // ✅ UPDATED: reflect current selection
+          durationMonths={selectedDuration === "1-month" ? 1 : 2}
+          tutorPrice={priceForRole("tutor")}
+          studentPrice={priceForRole("student")}
+          staffPrice={priceForRole("staff")}
         />
       )}
       {showLegalTerms && (
@@ -668,21 +684,21 @@ export function Subscription() {
         />
       )}
 
-      {/* Header - full width on mobile */}
       <div className="text-center space-y-1.5 md:space-y-2 px-4 md:px-0 pt-6 md:pt-0 pb-4 md:pb-0 border-0">
-
         <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight dark:text-white">
           {isStaff ? "Ready to empower the next generation?" : "Ready to become a confident nurse?"}
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-lg dark:text-gray-400">
           You are currently signed in as a <span className="text-foreground font-bold capitalize dark:text-white">{userRole || "Student"}</span>.
-          Below is your exclusive {PRICES.DURATION.TWO_MONTHS}-month access plan.
+          {/* ✅ UPDATED: no longer hardcoded to 2 months */}
+          Choose between 1-month or 2-month access below.
         </p>
       </div>
+
       <GroupPaySubscriptionCard />
-      {/* Active Subscription Status - full width on mobile */}
+
       {activeSub && (
-        <Card className="md:bg-primary/5 dark:md:bg-primary/10 overflow-hidden md:shadow-md rounded-none md:rounded-xl border-0">
+        <Card className="md:bg-primary/5 dark:md:bg-primary/10 overflow-hidden md:shadow-none rounded-none md:rounded-xl border-0">
           <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 gap-3 md:gap-4">
             <div className="flex items-center gap-3 md:gap-4">
               <div className="bg-primary p-2 md:p-3 rounded-full">
@@ -713,13 +729,13 @@ export function Subscription() {
           <div className="bg-primary/10 dark:bg-primary/20 h-1 w-full">
             <div
               className="bg-primary dark:bg-primary/90 h-full transition-all duration-1000"
-              style={{ width: `${Math.min(100, (getDaysRemaining(activeSub.expires_at) / (PRICES.DURATION.TWO_MONTHS * 30)) * 100)}%` }}
+              // ✅ UPDATED: progress now respects 1-month (30d) vs 2-months (60d)
+              style={{ width: `${Math.min(100, (getDaysRemaining(activeSub.expires_at) / getTotalPlanDays(activeSub)) * 100)}%` }}
             />
           </div>
         </Card>
       )}
 
-      {/* ✅ Role/Subscription mismatch warning with SWITCH BACK functionality */}
       {!activeSub && otherSubscriptions.length > 0 && (
         <div className="p-4 md:p-5 bg-blue-50 dark:bg-blue-900/20 rounded-lg md:rounded-xl border-0">
           <div className="flex items-start gap-3">
@@ -748,7 +764,6 @@ export function Subscription() {
         </div>
       )}
 
-      {/* ✅ Role/Subscription mismatch warning for current role mismatch */}
       {activeSub && activeSub.role_at_payment && activeSub.role_at_payment !== userRole && (
         <div className="p-4 md:p-5 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg md:rounded-xl border-0">
           <div className="flex items-start gap-3">
@@ -781,21 +796,61 @@ export function Subscription() {
       )}
 
       <div className="flex flex-col space-y-0 md:space-y-2">
-
-        {/* Block 1: Main Pricing Card - full width on mobile */}
-        <Card className="md:border-0 md:shadow-2xl overflow-hidden md:rounded-xl dark:md:bg-muted/30 rounded-none border-0 shadow-none">
+        <Card className="md:border-0 shadow-none overflow-hidden md:rounded-xl dark:md:bg-muted/30 rounded-none border-0 shadow-none">
           <div className="bg-primary/5 p-4 md:p-6 lg:p-8 border-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
               <div>
                 <h2 className="text-xl md:text-2xl font-bold flex items-center gap-1.5 md:gap-2 flex-wrap dark:text-white">
                   {plan.icon} {plan.name}
                 </h2>
-                <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 dark:text-gray-400">{PRICES.DURATION.TWO_MONTHS} Months full access</p>
+                {/* ✅ UPDATED: dynamic caption */}
+                <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 dark:text-gray-400">
+                  {selectedDuration === "1-month" ? "1 Month" : "2 Months"} full access
+                </p>
               </div>
-              <div className="text-left sm:text-right">
-                <span className="text-2xl md:text-3xl font-black text-primary dark:text-primary/80">KSh {plan.price}</span>
+
+              {/* ✅ NEW: clean borderless duration toggle + dynamic price */}
+              <div className="text-left sm:text-right w-full sm:w-auto">
+                <div className="inline-flex bg-gray-100 dark:bg-gray-800/70 rounded-xl p-1 gap-1 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDuration("1-month")}
+                    disabled={hasActivePlan}
+                    className={`relative px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all duration-200 ${selectedDuration === "1-month"
+                      ? "bg-white dark:bg-gray-900 text-primary shadow-none"
+                      : "text-muted-foreground hover:text-foreground dark:text-gray-400 dark:hover:text-gray-200"
+                      } ${hasActivePlan ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    1 Month
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDuration("2-months")}
+                    disabled={hasActivePlan}
+                    className={`relative px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[11px] md:text-xs font-bold transition-all duration-200 ${selectedDuration === "2-months"
+                      ? "bg-white dark:bg-gray-900 text-primary shadow-none"
+                      : "text-muted-foreground hover:text-foreground dark:text-gray-400 dark:hover:text-gray-200"
+                      } ${hasActivePlan ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    2 Months
+                    <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] md:text-[9px] font-black px-1.5 py-0.5 rounded-full tracking-wider shadow-sm">
+                      SAVE
+                    </span>
+                  </button>
+                </div>
+                <div className="flex items-baseline justify-start sm:justify-end gap-2">
+                  <span className="text-2xl md:text-3xl font-black text-primary dark:text-primary/80">
+                    KSh {plan.price}
+                  </span>
+                  {/* ✅ NEW: strike-through the 1-month price when 2-months is selected */}
+                  {selectedDuration === "2-months" && (
+                    <span className="text-xs md:text-sm text-muted-foreground line-through opacity-60">
+                      KSh {isStaff ? PRICES.STAFF.ONE_MONTH : isTutor ? PRICES.TUTOR.ONE_MONTH : PRICES.STUDENT.ONE_MONTH}
+                    </span>
+                  )}
+                </div>
                 {isStaff && (
-                  <div className="flex items-center gap-1 mt-1">
+                  <div className="flex items-center justify-start sm:justify-end gap-1 mt-1">
                     <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] md:text-[10px] font-bold border-0">
                       Best for Staff
                     </Badge>
@@ -820,7 +875,6 @@ export function Subscription() {
                   ))}
                 </ul>
 
-                {/* Staff-only additional features badge */}
                 {isStaff && (
                   <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border-0">
                     <div className="flex items-start gap-2">
@@ -839,7 +893,6 @@ export function Subscription() {
                 )}
               </div>
 
-              {/* Terms Agreement Checkbox - SIMPLIFIED */}
               <div className="bg-yellow-50 dark:bg-muted/50 p-3 md:p-4 rounded-lg md:rounded-xl border-0">
                 <label className="flex items-start gap-2 md:gap-3 cursor-pointer">
                   <input
@@ -892,7 +945,6 @@ export function Subscription() {
                 )}
               </div>
 
-              {/* Payment Box */}
               <div className="bg-muted/50 dark:bg-gray-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border-0 space-y-3 md:space-y-4 shadow-inner">
                 <div className="space-y-1.5 md:space-y-2">
                   <div className="flex justify-between items-center">
@@ -927,9 +979,10 @@ export function Subscription() {
                   </p>
                 </div>
 
+                {/* ✅ UPDATED: pass durationType to handler */}
                 <Button
-                  className="w-full h-12 md:h-14 text-base md:text-lg font-bold rounded-lg md:rounded-xl shadow-lg transition-all hover:opacity-90 active:scale-[0.98] border-0"
-                  onClick={() => handleMpesapayment(plan.id, plan.price)}
+                  className="w-full h-12 md:h-14 text-base md:text-lg font-bold rounded-lg md:rounded-xl shadow-none transition-all hover:opacity-90 active:scale-[0.98] border-0"
+                  onClick={() => handleMpesapayment(plan.id, plan.price, selectedDuration)}
                   disabled={loading || hasActivePlan || !hasAgreedToTerms}
                 >
                   {loading ? (
@@ -937,7 +990,11 @@ export function Subscription() {
                   ) : (
                     <CreditCard className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                   )}
-                  {loading ? "Processing..." : hasActivePlan ? "Subscription Active" : `Pay KSh ${plan.price}`}
+                  {loading
+                    ? "Processing..."
+                    : hasActivePlan
+                      ? "Subscription Active"
+                      : `Pay KSh ${plan.price} · ${selectedDuration === "1-month" ? "1 Month" : "2 Months"}`}
                 </Button>
 
                 <p className="text-[9px] md:text-[10px] text-center text-blue-600 dark:text-blue-400 font-bold mt-1.5 md:mt-2 uppercase tracking-wide">
@@ -957,7 +1014,6 @@ export function Subscription() {
           </CardContent>
         </Card>
 
-        {/* Block 2: Transaction History - full width on mobile */}
         <Card className="md:border-none md:bg-muted/30 dark:md:bg-gray-800/30 md:shadow-none md:rounded-2xl rounded-none border-0 shadow-none">
           <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2 md:pb-3">
             <CardTitle className="text-xs md:text-sm font-bold uppercase tracking-widest text-muted-foreground dark:text-gray-400 flex items-center gap-1.5 md:gap-2">
@@ -1002,7 +1058,6 @@ export function Subscription() {
           </CardContent>
         </Card>
 
-        {/* Block 3: Secure Information Message - full width on mobile */}
         <div className="p-4 md:p-6 md:bg-primary/5 dark:md:bg-primary/10 md:rounded-2xl border-0">
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <div className="bg-primary/10 dark:bg-primary/20 p-1.5 md:p-2 rounded-lg h-fit w-fit">
