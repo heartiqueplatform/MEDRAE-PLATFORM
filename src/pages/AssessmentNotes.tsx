@@ -959,7 +959,7 @@ export default function AssessmentNotes() {
                               </div>
                             ) : subNotes.length === 0 ? (
                               <p className="text-xs md:text-sm text-muted-foreground text-center py-6 md:py-8">
-                                Check your Internet {sub}. connection!
+                                No notes yet in {sub}. Check back soon!
                               </p>
                             ) : (
                               <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
