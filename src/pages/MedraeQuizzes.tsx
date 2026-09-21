@@ -442,9 +442,6 @@ export function MedraeQuizzes() {
                 <CardTitle className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
                   Your <span className="text-blue-600">Nursing</span> Journey Starts Here
                 </CardTitle>
-                <p className="text-[9px] md:text-[10px] font-bold text-blue-500/60 uppercase tracking-[0.2em] mt-0.5 md:mt-1.5">
-                  Master NCK • FQE • NCLEX with Confidence
-                </p>
               </div>
             </div>
           </CardHeader>

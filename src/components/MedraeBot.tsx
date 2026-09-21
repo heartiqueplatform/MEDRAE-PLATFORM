@@ -67,7 +67,6 @@ const BOT_DISMISSED_THIS_OPEN = "medrae_bot_dismissed_this_open";
 const MAX_SHOWS_PER_DAY = 3;
 
 // ─── Time-aware greeting ───
-// Returns a greeting that matches the user's local time of day.
 const getTimeGreeting = (): string => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return "Good morning!";
@@ -116,6 +115,9 @@ const MedraeBot = () => {
     const [isPremium, setIsPremium] = useState<boolean>(
         () => getCachedPremium(session?.user?.id) ?? false
     );
+    const [premiumResolved, setPremiumResolved] = useState<boolean>(
+        () => getCachedPremium(session?.user?.id) !== null
+    );
 
     const [isVisible, setIsVisible] = useState(false);
     const [isDismissing, setIsDismissing] = useState(false);
@@ -136,22 +138,29 @@ const MedraeBot = () => {
     // ─── Time-aware greeting, computed once on mount ───
     const [greeting] = useState<string>(() => getTimeGreeting());
 
-    // ─── Premium: seed again once auth hydrates (first render may lack id) ───
+    // ─── Premium: seed from cache when auth hydrates ───
     useEffect(() => {
         if (!session?.user?.id) return;
         const cached = getCachedPremium(session.user.id);
-        if (cached !== null) setIsPremium(cached);
+        if (cached !== null) {
+            setIsPremium(cached);
+            setPremiumResolved(true);
+        }
     }, [session?.user?.id]);
 
-    // ─── Premium: background refresh — no-op offline, deduped, cache-aware ───
+    // ─── Premium: single background refresh, sets resolved flag ───
     useEffect(() => {
         if (!session?.user?.id) return;
         let cancelled = false;
         resolveSubscription(session.user.id)
             .then((snap) => {
-                if (!cancelled) setIsPremium(snap.isPremium);
+                if (cancelled) return;
+                setIsPremium(snap.isPremium);
+                setPremiumResolved(true);
             })
-            .catch(() => { /* resolveSubscription falls back to cache internally */ });
+            .catch(() => {
+                if (!cancelled) setPremiumResolved(true);
+            });
         return () => { cancelled = true; };
     }, [session?.user?.id]);
 
@@ -189,6 +198,7 @@ const MedraeBot = () => {
     useEffect(() => {
         if (!session?.user) return;
         if (hasChecked) return;
+        if (!premiumResolved) return;
 
         if (FORCE_SHOW_ON_REFRESH) {
             setIsVisible(true);
@@ -197,9 +207,6 @@ const MedraeBot = () => {
         }
 
         try {
-            // Premium users never see the bot (unless explicitly overridden).
-            // isPremium comes from the shared cache synchronously, so this is
-            // correct even offline and before any network request settles.
             if (isPremium && !SHOW_BOT_FOR_PREMIUM) {
                 setHasChecked(true);
                 return;
@@ -221,8 +228,7 @@ const MedraeBot = () => {
                 return;
             }
 
-            const dismissedForThisOpen = sessionStorage.getItem(BOT_DISMISSED_THIS_OPEN);
-            if (dismissedForThisOpen) {
+            if (sessionStorage.getItem(BOT_DISMISSED_THIS_OPEN)) {
                 setHasChecked(true);
                 return;
             }
@@ -232,7 +238,7 @@ const MedraeBot = () => {
         } catch {
             setHasChecked(true);
         }
-    }, [session, isPremium, hasChecked]);
+    }, [session, isPremium, hasChecked, premiumResolved]);
 
     // ─── Trigger overlay mount animation (fade + glide in) ───
     useEffect(() => {
@@ -241,7 +247,6 @@ const MedraeBot = () => {
             return;
         }
 
-        // Double rAF: paints the "start" state before animating
         let raf2: number | null = null;
         const raf1 = requestAnimationFrame(() => {
             raf2 = requestAnimationFrame(() => setIsMounted(true));
@@ -509,6 +514,37 @@ const MedraeBot = () => {
     const handleUpgrade = useCallback(() => closeAndThen(() => navigate("/subscription")), [closeAndThen, navigate]);
     const handleSuggestion = useCallback(() => closeAndThen(() => navigate("/feedback")), [closeAndThen, navigate]);
 
+    // ─── Stop & dispose audio the moment the bot stops being visible ───
+    useEffect(() => {
+        if (isVisible) return;
+        if (!audioRef.current && !tickIntervalRef.current && !fadeIntervalRef.current) return;
+
+        if (fadeIntervalRef.current) { clearInterval(fadeIntervalRef.current); fadeIntervalRef.current = null; }
+        if (tickIntervalRef.current) { clearInterval(tickIntervalRef.current); tickIntervalRef.current = null; }
+
+        const audio = audioRef.current;
+        if (audio) {
+            audio.pause();
+            audio.removeAttribute("src");
+            audio.load();
+            audioRef.current = null;
+        }
+        setIsPlaying(false);
+    }, [isVisible]);
+
+    // ─── If premium resolves mid-session, hide the bot gracefully ───
+    useEffect(() => {
+        if (!isPremium || SHOW_BOT_FOR_PREMIUM) return;
+        if (!isVisible) return;
+
+        fadeOutAndStop();
+        setIsVisible(false);
+        setIsDismissing(false);
+        setIsMounted(false);
+        setSecondsLeft(LOCKOUT_SECONDS);
+        setSoundPlayed(false);
+    }, [isPremium, isVisible, fadeOutAndStop]);
+
     // ─── Escape key ───
     useEffect(() => {
         if (!isVisible) return;
@@ -520,7 +556,6 @@ const MedraeBot = () => {
     }, [isVisible, isLocked, handleDismiss]);
 
     if (!isVisible && !isDismissing) return null;
-    // Belt-and-braces: never paint for premium users (unless explicitly overridden).
     if (isPremium && !SHOW_BOT_FOR_PREMIUM) return null;
 
     const LockoutRing = () => (
@@ -686,21 +721,10 @@ const MedraeBot = () => {
 
     // ─── Listen / Support block ───
     const ListenBlock = ({ accent }: { accent: "emerald" | "blue" }) => {
-        const wrapperBg = accent === "emerald"
-            ? "bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20"
-            : "bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20";
-
-        const iconColor = accent === "emerald"
-            ? "text-rose-600 dark:text-rose-400"
-            : "text-rose-600 dark:text-rose-400";
-
-        const titleColor = accent === "emerald"
-            ? "text-rose-800 dark:text-rose-300"
-            : "text-rose-800 dark:text-rose-300";
-
-        const textColor = accent === "emerald"
-            ? "text-rose-700 dark:text-rose-400"
-            : "text-rose-700 dark:text-rose-400";
+        const wrapperBg = "bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20";
+        const iconColor = "text-rose-600 dark:text-rose-400";
+        const titleColor = "text-rose-800 dark:text-rose-300";
+        const textColor = "text-rose-700 dark:text-rose-400";
 
         const waLink = `https://wa.me/${SUPPORT_WHATSAPP}`;
 
@@ -737,7 +761,6 @@ const MedraeBot = () => {
     };
 
     // ─── PREMIUM USER VIEW ───
-    // (Only reachable if SHOW_BOT_FOR_PREMIUM is set to true.)
     if (isPremium) {
         return (
             <div

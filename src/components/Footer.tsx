@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo, memo, Suspense, lazy, useTransition } from "react";
+import { useEffect, useState, useRef, useCallback, memo, Suspense, lazy } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/context/AuthProvider";
-import { playSound } from "@/lib/soundManager";
 import { useUserRole } from "@/context/UserRoleContext";
 
 const MobileDrawer = lazy(() => import("@/components/MobileDrawer").then(module => ({ default: module.MobileDrawer })));
@@ -13,17 +12,19 @@ type IconTone = "neutral" | "practice" | "content" | "alert";
 
 const MISTAKE_COUNT_CACHE_KEY = "footer_mistake_count";
 
+// ⚡ Deferred so haptics NEVER block the navigation tap
 const superFastTap = (type: "light" | "success" | "warning" = "light") => {
-    playSound("ui-tap");
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        if (type === "success") {
-            navigator.vibrate([30, 40, 30]);
-        } else if (type === "warning") {
-            navigator.vibrate(100);
-        } else {
-            navigator.vibrate(35);
+    requestAnimationFrame(() => {
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+            if (type === "success") {
+                navigator.vibrate([30, 40, 30]);
+            } else if (type === "warning") {
+                navigator.vibrate(100);
+            } else {
+                navigator.vibrate(35);
+            }
         }
-    }
+    });
 };
 
 /* ============================================================
@@ -59,7 +60,6 @@ const IconQuizzes = ({ active }: { active: boolean }) => (
 
 const IconFeed = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Newspaper / magazine — matches "Feed" icon in MobileDrawer */}
         <path
             d="M4 5.5C4 4.67 4.67 4 5.5 4H16.5C17.33 4 18 4.67 18 5.5V19.5C18 20.33 17.33 21 16.5 21H6.5C5.12 21 4 19.88 4 18.5V5.5Z"
             stroke="currentColor"
@@ -84,7 +84,6 @@ const IconFeed = ({ active }: { active: boolean }) => (
 
 const IconMistakes = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Left half — stays upright */}
         <path
             d="M11.5 6.8
                L10 9.2 L11.5 11 L10 13 L11.5 15 L11.5 20.6
@@ -98,7 +97,6 @@ const IconMistakes = ({ active }: { active: boolean }) => (
             fill={active ? "currentColor" : "none"}
             fillOpacity={active ? 0.18 : 0}
         />
-        {/* Right half — rotated ~18° clockwise and shifted, like it's falling off */}
         <g transform="rotate(18 16 12) translate(1.2 0.6)">
             <path
                 d="M12.5 5.2
@@ -146,9 +144,6 @@ const NavItem = memo(({
 }) => {
     const [pressed, setPressed] = useState(false);
 
-    /* ---------- Color system (WhatsApp-style contrast) ---------- */
-    // Active: solid dark text on light, or solid white on dark
-    // Inactive: mid-gray so it doesn't disappear, but clearly secondary
     const labelColor = isActive
         ? isDark ? "text-white" : "text-gray-900"
         : isDark ? "text-gray-400" : "text-gray-500";
@@ -157,7 +152,6 @@ const NavItem = memo(({
         ? isDark ? "text-white" : "text-blue-600"
         : isDark ? "text-gray-400" : "text-gray-500";
 
-    /* ---------- Press handlers ---------- */
     const handlePointerDown = (e: React.PointerEvent) => {
         setPressed(true);
         onPress(e);
@@ -182,7 +176,6 @@ const NavItem = memo(({
                 transform: pressed ? 'scale(0.94)' : 'scale(1)',
             }}
         >
-            {/* ---------- Blue glow behind tapped icon ---------- */}
             <div
                 className="absolute top-1 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full pointer-events-none
                     transition-all duration-300 ease-out"
@@ -193,7 +186,6 @@ const NavItem = memo(({
                 }}
             />
 
-            {/* Active underline glow (permanent, subtle) */}
             {isActive && (
                 <div
                     className="absolute top-1 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full pointer-events-none
@@ -224,6 +216,7 @@ const NavItem = memo(({
     );
 });
 NavItem.displayName = "NavItem";
+
 /* ============================================================
    FOOTER
    ============================================================ */
@@ -256,7 +249,6 @@ export function Footer() {
     });
 
     const isMounted = useRef(true);
-    const [isPending, startTransition] = useTransition();
     const prefetchDone = useRef(false);
     const lastScrollY = useRef(0);
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -339,19 +331,19 @@ export function Footer() {
         };
     }, [theme]);
 
+    // ⚡ Navigate FIRST, feedback LAST — no startTransition blocking
     const handleNavigate = useCallback((e: React.PointerEvent, url: string) => {
         e.preventDefault();
+        navigate(url);
         superFastTap("light");
-        startTransition(() => {
-            navigate(url);
-        });
     }, [navigate]);
 
+    // ⚡ Open drawer FIRST, feedback LAST
     const handleMenuPress = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        superFastTap("success");
         setIsDrawerOpen(true);
+        superFastTap("success");
     }, []);
 
     useEffect(() => {
@@ -380,6 +372,7 @@ export function Footer() {
         return () => window.removeEventListener('resize', updateSafeArea);
     }, []);
 
+    // ⚡ Scroll container detection — MutationObserver REMOVED (was firing on every DOM change)
     useEffect(() => {
         const findScrollContainer = () => {
             if (location.pathname === '/feed') {
@@ -454,37 +447,9 @@ export function Footer() {
             container.addEventListener('scroll', handleScrollStop, { passive: true });
         }
 
-        const observer = new MutationObserver(() => {
-            const currentContainer = findScrollContainer();
-            if (currentContainer !== scrollContainerRef.current) {
-                if (scrollContainerRef.current) {
-                    const old = scrollContainerRef.current;
-                    if (old === document.documentElement || old === document.body) {
-                        window.removeEventListener('scroll', handleScroll);
-                        window.removeEventListener('scroll', handleScrollStop);
-                    } else {
-                        old.removeEventListener('scroll', handleScroll);
-                        old.removeEventListener('scroll', handleScrollStop);
-                    }
-                }
-
-                if (currentContainer) {
-                    scrollContainerRef.current = currentContainer;
-                    if (currentContainer === document.documentElement || currentContainer === document.body) {
-                        window.addEventListener('scroll', handleScroll, { passive: true });
-                        window.addEventListener('scroll', handleScrollStop, { passive: true });
-                    } else {
-                        currentContainer.addEventListener('scroll', handleScroll, { passive: true });
-                        currentContainer.addEventListener('scroll', handleScrollStop, { passive: true });
-                    }
-                }
-            }
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-        });
+        // ❌ MutationObserver removed — it re-fired on every DOM change (drawer mount,
+        // route change, etc.), causing hundreds of wasted re-renders per navigation.
+        // The effect already re-runs on location.pathname change, which is enough.
 
         return () => {
             if (container === document.documentElement || container === document.body || !container) {
@@ -494,7 +459,6 @@ export function Footer() {
                 container.removeEventListener('scroll', handleScroll);
                 container.removeEventListener('scroll', handleScrollStop);
             }
-            observer.disconnect();
             if (scrollTimeout.current) {
                 clearTimeout(scrollTimeout.current);
             }
@@ -503,8 +467,6 @@ export function Footer() {
 
     const isActive = useCallback((url: string) => location.pathname === url, [location.pathname]);
 
-    // Instagram/WhatsApp standard footer height: 49px content + safe area
-    // We use 56px for comfortable touch targets (still standard)
     const FOOTER_CONTENT_HEIGHT = 56;
     const footerHeight = FOOTER_CONTENT_HEIGHT + safeAreaBottom;
 

@@ -216,11 +216,11 @@ export const AssessmentHome: React.FC = () => {
     };
     if (loading && !cache.get('assessments')) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-transparent w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
+            <div className="min-h-screen bg-gray-50 dark:bg-transparent w-full max-w-full mx-auto px-0 md:px-2 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
                 {/* Hero skeleton */}
-                <div className="px-4 md:px-0">
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-4 py-5 shadow-sm animate-pulse">
-                        <div className="h-6 w-40 bg-gray-100 dark:bg-[#21262d] rounded-full mb-3" />
+                <div className="px-2 md:px-0">
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm animate-pulse">
+
                         <div className="h-6 w-72 bg-gray-200 dark:bg-[#30363d] rounded mb-2" />
                         <div className="h-4 w-full max-w-xl bg-gray-100 dark:bg-[#30363d] rounded mb-1.5" />
                         <div className="h-4 w-2/3 bg-gray-100 dark:bg-[#30363d] rounded mb-4" />
@@ -233,7 +233,7 @@ export const AssessmentHome: React.FC = () => {
                 </div>
 
                 {/* Stats skeleton */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm animate-pulse">
                             <div className="h-3 bg-gray-100 dark:bg-[#21262d] rounded w-1/2 mb-2" />
@@ -243,12 +243,12 @@ export const AssessmentHome: React.FC = () => {
                 </div>
 
                 {/* Search skeleton */}
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <div className="h-12 w-full bg-white dark:bg-[#161b22] rounded-2xl shadow-sm animate-pulse" />
                 </div>
 
                 {/* Card grid skeleton */}
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <div className="flex items-center justify-between mb-3 md:mb-4">
                         <div className="h-5 w-48 bg-gray-200 dark:bg-[#30363d] rounded animate-pulse" />
                         <div className="h-4 w-16 bg-gray-100 dark:bg-[#30363d] rounded animate-pulse" />
@@ -264,7 +264,7 @@ export const AssessmentHome: React.FC = () => {
     }
     if (error && !cache.get('assessments')) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-2 lg:px-6 py-4 md:py-8">
                 <ErrorState message={error} onRetry={handleRetry} />
             </div>
         );
@@ -273,7 +273,7 @@ export const AssessmentHome: React.FC = () => {
     const showLoadingIndicator = loading && cache.get('assessments');
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-transparent w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-transparent w-full max-w-full mx-auto px-0 md:px-2 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
 
             {showLoadingIndicator && (
                 <div className="fixed top-0 right-0 m-4 z-50">
@@ -306,12 +306,8 @@ export const AssessmentHome: React.FC = () => {
                 <span className="text-sm font-semibold hidden sm:inline">History</span>
             </button>
             {/* Hero — muted, uniform, no gradients */}
-            <div className="px-4 md:px-0">
-                <div className="bg-white dark:bg-[#161b22] rounded-2xl px-4 py-5 shadow-sm">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-[#21262d] px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Clinical Assessment Suite
-                    </div>
+            <div className="px-2 md:px-0">
+                <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm">
 
                     <h1 className="font-bold text-gray-800 dark:text-gray-200 text-lg md:text-2xl">
                         Test your clinical knowledge
@@ -339,7 +335,7 @@ export const AssessmentHome: React.FC = () => {
 
             {/* Stats */}
             {stats ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0">
                     <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
                         <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
                             <Award className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
@@ -378,7 +374,7 @@ export const AssessmentHome: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0 opacity-50">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0 opacity-50">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
                             <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2" />
@@ -389,7 +385,7 @@ export const AssessmentHome: React.FC = () => {
             )}
 
             {/* Search */}
-            <div className="px-4 md:px-0">
+            <div className="px-2 md:px-0">
                 <SearchBar
                     value={searchQuery}
                     onChange={handleSearch}
@@ -399,7 +395,7 @@ export const AssessmentHome: React.FC = () => {
 
             {/* All Assessments */}
             {assessments.length > 0 && (
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <div className="flex items-center justify-between mb-3 md:mb-4">
                         <div className="flex items-center gap-2">
                             <BookOpen className="w-4 h-4 md:w-5 md:h-5 text-gray-500 dark:text-gray-400" />
@@ -441,7 +437,7 @@ export const AssessmentHome: React.FC = () => {
 
             {/* Categories */}
             {categories.length > 0 && (
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <div className="flex items-center justify-between mb-3 md:mb-4">
                         <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-gray-200">
                             Categories
@@ -467,7 +463,7 @@ export const AssessmentHome: React.FC = () => {
 
             {/* Continue Assessment */}
             {stats?.recent_attempts?.some(a => a.status === 'in_progress') && (
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 md:p-5 shadow-sm">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                             <div className="flex items-center gap-3">
@@ -485,7 +481,7 @@ export const AssessmentHome: React.FC = () => {
                             </div>
                             <Link
                                 to="/assessments/history"
-                                className="px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-[#21262d] dark:hover:bg-[#30363d] text-white rounded-xl transition-all flex items-center gap-2 font-medium text-xs md:text-sm w-full sm:w-auto justify-center"
+                                className="px-2 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-[#21262d] dark:hover:bg-[#30363d] text-white rounded-xl transition-all flex items-center gap-2 font-medium text-xs md:text-sm w-full sm:w-auto justify-center"
                             >
                                 <RotateCcw className="w-3.5 h-3.5" />
                                 Continue
@@ -497,7 +493,7 @@ export const AssessmentHome: React.FC = () => {
 
             {/* Empty State */}
             {assessments.length === 0 && categories.length === 0 && !loading && (
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <EmptyState
                         title="No assessments available"
                         description="There are currently no assessments to display. Check back later or create your first assessment."

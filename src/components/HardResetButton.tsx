@@ -28,12 +28,14 @@ type Props = {
     keepLoggedIn?: boolean;
     label?: string;
     asMenuItem?: boolean;
+    asRow?: boolean;        // 👈 NEW — for portals like SettingsSheet
 };
 
 export function HardResetButton({
     keepLoggedIn = false,
     label,
     asMenuItem = false,
+    asRow = false,          // 👈 NEW
 }: Props) {
     const [open, setOpen] = useState(false);
     const [working, setWorking] = useState(false);
@@ -53,11 +55,19 @@ export function HardResetButton({
         }
     };
 
+    /** Ask any open sheet/dropdown to close before we show the dialog. */
+    const closeAnyOverlay = () => {
+        try {
+            document.body.classList.remove("settings-open");
+            window.dispatchEvent(new CustomEvent("close-settings-sheet"));
+        } catch { /* silent */ }
+    };
+
     const dialog = (
         <AlertDialog open={open} onOpenChange={(v) => !working && setOpen(v)}>
             <AlertDialogContent
                 className="
-                    z-[999999]
+                    z-[1000000]
                     w-screen h-screen max-w-none max-h-none m-0 p-0
                     rounded-none border-0 shadow-none
                     flex flex-col
@@ -251,13 +261,66 @@ export function HardResetButton({
         </AlertDialog>
     );
 
+    /* ---------- asRow: plain button for portals (SettingsSheet) ---------- */
+    if (asRow) {
+        return (
+            <>
+                <button
+                    type="button"
+                    onClick={() => {
+                        closeAnyOverlay();
+                        // Defer so the sheet unmounts first, then dialog mounts
+                        setTimeout(() => setOpen(true), 0);
+                    }}
+                    className="
+                        w-full min-h-[52px] flex items-center gap-3 px-3 py-3
+                        rounded-xl text-left transition-colors cursor-pointer
+                        hover:bg-gray-50 dark:hover:bg-[#21262d]
+                    "
+                >
+                    <div
+                        className={`flex items-center justify-center h-9 w-9 shrink-0 rounded-lg ${keepLoggedIn
+                            ? "bg-gray-100 dark:bg-[#21262d] text-gray-600 dark:text-gray-300"
+                            : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                            }`}
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <span
+                            className={`text-sm font-semibold truncate ${keepLoggedIn
+                                ? "text-gray-800 dark:text-gray-200"
+                                : "text-red-700 dark:text-red-300"
+                                }`}
+                        >
+                            {finalLabel}
+                        </span>
+                        <span
+                            className={`text-[10px] font-medium truncate ${keepLoggedIn
+                                ? "text-gray-500 dark:text-gray-400"
+                                : "text-red-600/70 dark:text-red-400/60"
+                                }`}
+                        >
+                            {keepLoggedIn
+                                ? "Clears saved data on this device"
+                                : "Signs you out and clears everything"}
+                        </span>
+                    </div>
+                </button>
+                {dialog}
+            </>
+        );
+    }
+
+    /* ---------- asMenuItem: for real dropdowns (Header) ---------- */
     if (asMenuItem) {
         return (
             <>
                 <DropdownMenuItem
                     onSelect={(e) => {
                         e.preventDefault();
-                        setOpen(true);
+                        closeAnyOverlay();
+                        setTimeout(() => setOpen(true), 0);
                     }}
                     className="flex items-center gap-3 py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50"
                 >
@@ -290,6 +353,7 @@ export function HardResetButton({
         );
     }
 
+    /* ---------- Default: standalone Button ---------- */
     return (
         <>
             <Button

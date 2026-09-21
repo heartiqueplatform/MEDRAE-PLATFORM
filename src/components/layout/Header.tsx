@@ -4,13 +4,7 @@ import { useWindowWidth } from "@/hooks/useWindowWidth";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
+
 import { Bell, Moon, Sun, User, Settings, Menu, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +23,7 @@ import { getProfileCache, setProfileCache, clearProfileCache, PROFILE_CACHE_KEY 
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { HardResetButton } from "../HardResetButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { SettingsSheet } from "@/components/SettingsSheet";
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
 const CACHE_DURATION = 30 * 60 * 1000;
@@ -487,23 +482,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   // ✅ UPDATED: Handle settings open/close with blur effect
   const handleSettingsOpen = useCallback((open: boolean) => {
     setIsSettingsOpen(open);
-
-    // Toggle body blur when settings opens/closes
-    if (open) {
-      document.body.classList.add('settings-open');
-      // Lazy fetch data when opening
-      lazyFetchData();
-    } else {
-      document.body.classList.remove('settings-open');
-    }
+    if (open) lazyFetchData();   // sheet handles body scroll-lock itself
   }, [lazyFetchData]);
-
-  // ✅ Cleanup blur on unmount
-  useEffect(() => {
-    return () => {
-      document.body.classList.remove('settings-open');
-    };
-  }, []);
 
   // ✅ Visibility change - refresh in background
   useEffect(() => {
@@ -693,17 +673,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     : 'bg-white/95 border-0 shadow-[0_2px_20px_rgba(0,0,0,0.08)]';
   return (
     <>
-      {/* ✅ NEW: Global blur overlay when settings is open */}
-      {isSettingsOpen && (
-        <div
-          className="fixed inset-0 z-[999999] backdrop-blur-sm bg-black/20 transition-all duration-300"
-          onClick={() => {
-            // Close settings when clicking outside
-            setIsSettingsOpen(false);
-            document.body.classList.remove('settings-open');
-          }}
-        />
-      )}
+
 
       <header className={`
   sticky top-0 z-50 w-full h-16 sm:h-20
@@ -836,187 +806,27 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               )}
             </Button>
             {/* 4. Settings Dropdown - NOW USING settings.png INSTEAD OF CogIcon */}
-            <DropdownMenu onOpenChange={handleSettingsOpen}>
-              <DropdownMenuTrigger asChild>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none data-[state=open]:ring-0 data-[state=open]:outline-none border-0 group"
-                  aria-label="Settings"
-                >
-                  <Settings className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-transform duration-500 group-hover:rotate-90" />
-                  {notificationCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-0"></span>
-                    </span>
-                  )}
-                  {isMuted && (
-                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 border-0 animate-pulse">
-                      <VolumeOff className="h-2 w-2 text-white" />
-                    </span>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                sideOffset={8}
-                collisionPadding={10}
-                className="w-[calc(100vw-20px)] sm:w-80 sm:max-w-[420px] p-4 mt-2 rounded-xl border-0 bg-white dark:bg-muted/100 z-[100]"
-              >
-                {!isPremium && (
-                  <button
-                    onClick={() => { navigate("/subscription"); setIsSettingsOpen(false); }}
-                    className="w-full mb-3 flex items-center gap-3 px-4 py-3 rounded-xl
-                   bg-gradient-to-r from-amber-50 to-yellow-50
-                   dark:from-amber-950/40 dark:to-yellow-950/40
-
-                   active:scale-[0.98] transition-transform text-left"
-                  >
-                    <span className="relative inline-flex items-center justify-center h-8 w-8 rounded-full
-                         bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-600
-                         shadow-[0_0_0_1px_rgba(255,255,255,0.5)_inset,0_1px_3px_rgba(0,0,0,0.15)]">
-                      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
-                        <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" strokeWidth="3"
-                          strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    <span className="flex-1">
-                      <span className="block text-sm font-bold text-amber-900 dark:text-amber-100">
-                        Get Verified
-                      </span>
-                      <span className="block text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium">
-                        Unlock the golden badge on your profile
-                      </span>
-                    </span>
-                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">Upgrade →</span>
-                  </button>
-                )}
-
-                {isPremium && (
-                  <div className="mb-3 flex items-center gap-3 px-4 py-3 rounded-xl
-                    bg-gradient-to-r from-amber-50 to-yellow-50
-                    dark:from-amber-950/40 dark:to-yellow-950/40
-                 ">
-                    <VerifiedBadge isPremium={true} size="lg" />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-amber-900 dark:text-amber-100">
-                        Verified Premium Member
-                      </p>
-                      <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium">
-                        Your account is officially recognized
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <StreakWidget streak={streak} isOnline={isOnline} />
-
-                {/* Sound Control */}
-                <div className="mb-4 px-1">
-                  <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 p-4 rounded-xl transition-all duration-300 ${isMuted
-                    ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30 border-0'
-                    : 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/30 border-0'
-                    }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2.5 rounded-xl transition-all ${isMuted
-                        ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
-                        : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400'
-                        }`}>
-                        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                          {isMuted ? (
-                            <>
-                              <VolumeOff className="w-4 h-4 text-red-500" />
-                              Sound Muted
-                            </>
-                          ) : (
-                            <>
-                              <Volume className="w-4 h-4 text-emerald-500" />
-                              Sound Enabled
-                            </>
-                          )}
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                          {isMuted ? "All notifications are silent" : "You'll hear notification sounds"}
-                        </span>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleMuteToggle}
-                      variant={isMuted ? "destructive" : "default"}
-                      size="sm"
-                      className={`rounded-full px-6 h-10 text-xs font-bold transition-all shadow-sm hover:shadow-md w-full sm:w-auto ${isMuted
-                        ? 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white'
-                        : 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white'
-                        }`}
-                    >
-                      {isMuted ? (
-                        <>
-                          <Volume className="w-4 h-4 mr-2" />
-                          Unmute
-                        </>
-                      ) : (
-                        <>
-                          <VolumeOff className="w-4 h-4 mr-2" />
-                          Mute
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                <DropdownMenuItem onClick={handleShare} className="flex items-center gap-3 py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50">
-                  <div className="p-1.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-                    <Share2 className="w-4 h-4" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Invite Colleagues</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={() => navigate("/share")} className="flex items-center gap-3 py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50">
-                  <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                    <Share2 className="w-4 h-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Invite a Friend</span>
-                    <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 font-medium">Share with friends</span>
-                  </div>
-                  <Badge className="ml-auto h-5 px-2 bg-gradient-to-r from-blue-500 to-blue-600 text-[9px] font-bold text-white border-0 rounded-full">Quick</Badge>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem onClick={handleToggleDarkMode} className="flex items-center justify-between py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-md ${isDarkMode ? 'bg-amber-900/30 text-amber-400' : 'bg-slate-100 text-slate-600'}`}>
-                      {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </div>
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                      {isDarkMode ? "Light Mode" : "Dark Mode"}
-                    </span>
-                  </div>
-                  <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full relative">
-                    <div className={`absolute top-1 w-2 h-2 rounded-full transition-all duration-200 ${isDarkMode ? 'right-1 bg-amber-400' : 'left-1 bg-slate-400'
-                      }`} />
-                  </div>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
-
-                <DropdownMenuItem onClick={handleReload} className="flex items-center gap-3 py-3 px-3 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 focus:bg-slate-50 dark:focus:bg-slate-800/50">
-                  <div className={`p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 ${rotating ? "animate-spin" : ""}`}>
-                    <RefreshCcw className="w-4 h-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">System Update</span>
-                    <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60 font-medium">Refresh platform content</span>
-                  </div>
-
-                </DropdownMenuItem>
-                <HardResetButton asMenuItem keepLoggedIn label="Clear Caches" />
-                <HardResetButton asMenuItem label="Hard Reset" />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* 4. Settings Button — opens full-screen native-like sheet */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleSettingsOpen(true)}
+              className="relative h-9 w-9 sm:h-11 sm:w-11 rounded-full transition-all duration-300 hover:bg-transparent active:scale-95 shrink-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none border-0 group"
+              aria-label="Settings"
+            >
+              <Settings className="w-7 h-7 sm:w-8 sm:h-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-transform duration-500 group-hover:rotate-90" />
+              {notificationCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-0"></span>
+                </span>
+              )}
+              {isMuted && (
+                <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 border-0 animate-pulse">
+                  <VolumeOff className="h-2 w-2 text-white" />
+                </span>
+              )}
+            </Button>
           </div>
 
           {/* User Info - ALWAYS shows cached data immediately */}
@@ -1080,6 +890,16 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       </header>
 
       {selectedUserId && <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />}
+      <SettingsSheet
+        open={isSettingsOpen}
+        onClose={() => handleSettingsOpen(false)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={handleToggleDarkMode}
+        isPremium={isPremium}
+        isOnline={isOnline}
+        streak={streak}
+        notificationCount={notificationCount}
+      />
     </>
   );
 }

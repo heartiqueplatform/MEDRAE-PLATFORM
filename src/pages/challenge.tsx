@@ -155,25 +155,24 @@ function ChallengeTabs({
         switch (activeTab) {
             case "find":
                 return (
-                    <div className="space-y-4 w-full">
-                        {/* Search and filters - full width */}
-                        <div className="flex flex-col sm:flex-row gap-3 w-full">
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                <input
-                                    defaultValue={search}
-                                    onChange={(e) => handleSearchChange(e.target.value)}
-                                    placeholder="Search peers..."
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-100 dark:bg-muted/30 border-none text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
-                                />
-                            </div>
+                    <div className="space-y-3 w-full px-2">
+                        {/* Search input — full width */}
+                        <div className="relative w-full group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                            <input
+                                defaultValue={search}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                placeholder="Search peers..."
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-100 dark:bg-muted/30 border-none text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
+                            />
+                        </div>
 
-
-
+                        {/* Update List button — centered on its own line */}
+                        <div className="flex justify-center w-full">
                             <button
                                 onClick={onUpdateList}
                                 disabled={isUpdating}
-                                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border active:scale-95 ${isUpdating
+                                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all border active:scale-95 ${isUpdating
                                     ? "bg-slate-400 border-0 text-white cursor-not-allowed"
                                     : "bg-blue-500 border-0 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600"
                                     }`}
@@ -187,12 +186,9 @@ function ChallengeTabs({
                         {/* User Cards Grid */}
                         <div className="w-full">
                             <AnimatePresence>
-                                {/* Invite Card */}
-                                {/* Invite Card - Now part of the grid */}
-
                                 {/* Empty State */}
                                 {filteredPlayers.length === 0 && !loading && (
-                                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 w-full">
+                                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 w-full px-2">
                                         <Users size={48} className="text-slate-300" />
                                         <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Players Found</p>
                                         <p className="text-xs text-slate-400">Tap "Update List" to refresh the player directory</p>
@@ -200,9 +196,9 @@ function ChallengeTabs({
                                 )}
 
                                 {/* User Cards Grid - 4 columns on desktop */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full">
 
-                                    {/* Invite Card - Now part of the grid */}
+                                    {/* Invite Card */}
                                     {!loading && inviteCards.map((card) => (
                                         <motion.div
                                             key={card.id}
@@ -214,7 +210,7 @@ function ChallengeTabs({
                                             style={{ touchAction: 'manipulation' }}
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-transparent to-transparent dark:from-blue-900/10 pointer-events-none" />
-                                            <div className="p-4 relative">
+                                            <div className="px-3 py-4 relative">
                                                 {/* Icon - Centered like other cards */}
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="relative">
@@ -238,7 +234,7 @@ function ChallengeTabs({
                                                         Strengthen the network
                                                     </p>
                                                 </div>
-                                                {/* Status Badge - Mimicking other cards */}
+                                                {/* Status Badge */}
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
                                                         <Users size={10} />
@@ -250,7 +246,7 @@ function ChallengeTabs({
                                                     </span>
                                                 </div>
 
-                                                {/* Invite Button - Mimicking Challenge button */}
+                                                {/* Invite Button */}
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -275,7 +271,7 @@ function ChallengeTabs({
                                             style={{ touchAction: 'manipulation' }}
                                         >
                                             {/* Card Content */}
-                                            <div className="p-4">
+                                            <div className="px-3 py-4">
                                                 {/* Avatar and Online Status */}
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="relative">
@@ -302,7 +298,7 @@ function ChallengeTabs({
                                                         )}
                                                     </div>
 
-                                                    {/* Pin Button — wrapped so click doesn't open modal */}
+                                                    {/* Pin Button */}
                                                     <div
                                                         onClick={(e) => e.stopPropagation()}
                                                         style={{ touchAction: 'manipulation' }}
@@ -350,7 +346,7 @@ function ChallengeTabs({
                                                     )}
                                                 </div>
 
-                                                {/* Challenge Button — wrapped so click doesn't open modal */}
+                                                {/* Challenge Button */}
                                                 <div
                                                     onClick={(e) => e.stopPropagation()}
                                                     style={{ touchAction: 'manipulation' }}
@@ -378,12 +374,10 @@ function ChallengeTabs({
                     </div>
                 );
 
-            // ... rest of tabs remain the same (pinned, incoming, sent, completed)
             case "pinned":
-                // ... keep existing pinned tab code
                 if (pinnedUsers.length === 0) {
                     return (
-                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50">
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
                             <Star size={48} className="text-slate-300" />
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Pinned Friends</p>
                             <p className="text-xs text-slate-400">Pin your favorite peers for quick access</p>
@@ -391,7 +385,7 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
                         {pinnedUsers.map((p: any) => (
 
                             <motion.div
@@ -402,7 +396,7 @@ function ChallengeTabs({
                                 className="group relative bg-white dark:bg-muted/50 rounded-2xl border-2 border-amber-500/20 ... cursor-pointer"
                                 style={{ touchAction: 'manipulation' }}
                             >
-                                <div className="p-4">
+                                <div className="px-3 py-4">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="relative">
                                             <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-amber-500 shadow-inner">
@@ -480,11 +474,10 @@ function ChallengeTabs({
                     </div>
                 );
 
-            // ... rest of tabs (incoming, sent, completed) remain similar but with cards
             case "incoming":
                 if (incoming.length === 0) {
                     return (
-                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50">
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
                             <Inbox size={48} className="text-slate-300" />
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Incoming Challenges</p>
                             <p className="text-xs text-slate-400">When someone challenges you, it will appear here</p>
@@ -492,7 +485,7 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
                         {incoming.map((challenge: any) => (
                             <motion.div
                                 key={challenge.id}
@@ -500,7 +493,7 @@ function ChallengeTabs({
                                 animate={{ opacity: 1, y: 0 }}
                                 className="group relative bg-white dark:bg-muted/50 rounded-2xl border-2 border-blue-500/20 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
                             >
-                                <div className="p-4">
+                                <div className="px-3 py-4">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="relative">
                                             <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-blue-500 shadow-inner">
@@ -546,7 +539,7 @@ function ChallengeTabs({
                                         onClick={(e: React.MouseEvent) => {
                                             e.stopPropagation();
                                             e.preventDefault();
-                                            sendChallenge(p.user_id);
+                                            acceptChallenge(challenge);
                                         }}
                                         size="sm"
                                         className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
@@ -565,7 +558,7 @@ function ChallengeTabs({
             case "sent":
                 if (outgoing.length === 0) {
                     return (
-                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50">
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
                             <Send size={48} className="text-slate-300" />
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Sent Challenges</p>
                             <p className="text-xs text-slate-400">Your pending challenges will appear here</p>
@@ -573,7 +566,7 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
                         {outgoing.map((challenge: any) => (
                             <motion.div
                                 key={challenge.id}
@@ -581,7 +574,7 @@ function ChallengeTabs({
                                 animate={{ opacity: 1, y: 0 }}
                                 className="group relative bg-white dark:bg-muted/50 rounded-2xl border-0 hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
                             >
-                                <div className="p-4">
+                                <div className="px-3 py-4">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="relative">
                                             <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">
@@ -642,7 +635,7 @@ function ChallengeTabs({
             case "completed":
                 if (completed.length === 0) {
                     return (
-                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50">
+                        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 px-2">
                             <History size={48} className="text-slate-300" />
                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Battle History</p>
                             <p className="text-xs text-slate-400">Complete challenges to see your history</p>
@@ -650,7 +643,7 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
                         {completed.slice(0, 20).map((challenge: any) => {
                             const isWin = challenge.winner_id === user.id;
                             return (
@@ -661,7 +654,7 @@ function ChallengeTabs({
                                     className={`group relative bg-white dark:bg-muted/80 rounded-2xl border-0 transition-all duration-300 overflow-hidden ${isWin ? "border-0 " : "border-0 "
                                         } hover:shadow-xl`}
                                 >
-                                    <div className="p-4">
+                                    <div className="px-3 py-4">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="relative">
                                                 <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">

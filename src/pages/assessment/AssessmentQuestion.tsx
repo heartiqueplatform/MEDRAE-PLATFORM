@@ -1,7 +1,7 @@
 // src/pages/assessment/AssessmentQuestion.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, AlertCircle, Award, TrendingUp, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Send, AlertCircle, Award, TrendingUp, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
 import { assessmentService } from '@/services/assessmentService';
 import { useAuth } from '@/context/AuthProvider';
 
@@ -580,7 +580,7 @@ export const AssessmentQuestion: React.FC = () => {
                         className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0"
                         aria-label="Go back"
                     >
-                        <ArrowLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-4 h-4" />
                         <span className="text-sm font-medium hidden sm:inline">Back</span>
                     </button>
 

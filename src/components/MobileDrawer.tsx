@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { playSound } from "@/lib/soundManager";
+
 import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDrawer } from "@/contexts/DrawerContext";
@@ -130,8 +130,8 @@ const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
 
 const NATIVE_EASE = [0.32, 0.72, 0, 1];
 const PAGE_VARIANTS = {
-    hidden: { y: "100%", opacity: 0.6, transition: { duration: 0.22, ease: "easeInOut" } },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.38, ease: NATIVE_EASE } }
+    hidden: { y: "100%", opacity: 0.6, transition: { duration: 0.18, ease: "easeInOut" } },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.26, ease: NATIVE_EASE } }
 };
 
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000;
@@ -222,11 +222,9 @@ DrawerRow.displayName = "DrawerRow";
 const DrawerSection = memo(({
     section,
     onNavigate,
-    onClose,
 }: {
     section: { label: string; items: any[] };
     onNavigate: (url: string) => void;
-    onClose: () => void;
 }) => {
     return (
         <div className="space-y-1">
@@ -242,10 +240,7 @@ const DrawerSection = memo(({
                         key={item.title}
                         item={item}
                         tone={item.iconTone || "neutral"}
-                        onPress={() => {
-                            onNavigate(item.url);
-                            onClose();
-                        }}
+                        onPress={() => onNavigate(item.url)}
                     />
                 ))}
             </div>
@@ -310,7 +305,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     /* ---- Load subscription when drawer opens ---- */
     /* ---- Subscription: cache-first, then background refresh ---- */
     useEffect(() => {
-        if (!user?.id) return;
+        if (!isOpen || !user?.id) return;      // ⬅️ added isOpen
         let cancelled = false;
 
         // 1. Synchronous seed from shared cache — offline-safe, no flicker.
@@ -328,11 +323,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 // resolveSubscription already falls back to cache internally,
                 // so nothing to do here.
             });
-
         return () => { cancelled = true; };
-    }, [user?.id]);
+    }, [isOpen, user?.id]);
     useEffect(() => {
-        if (!user?.id) return;
+        if (!isOpen || !user?.id) return;      // ⬅️ added isOpen
         const onOnline = () => {
             resolveSubscription(user.id, { force: true })
                 .then((snap) => setActivePlan(snap.isPremium ? (snap.plan_type || "premium") : null))
@@ -340,7 +334,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         };
         window.addEventListener("online", onOnline);
         return () => window.removeEventListener("online", onOnline);
-    }, [user?.id]);
+    }, [isOpen, user?.id]);
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         try {
             const stored = localStorage.getItem('medrae_dark_mode');
@@ -374,13 +368,11 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
     useEffect(() => {
         if (isOpen) {
-            const timer = setTimeout(() => setContentReady(true), 60);
-            return () => clearTimeout(timer);
+            setContentReady(true);
         } else {
             setContentReady(false);
         }
     }, [isOpen]);
-
     useEffect(() => {
         if (isOpen) {
             const original = document.body.style.overflow;
@@ -390,16 +382,18 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     }, [isOpen]);
 
     const tapFeedback = useCallback((type: "light" | "success" | "warning" = "light") => {
-        playSound("ui-tap");
-        if (navigator.vibrate) {
-            if (type === "success") navigator.vibrate([30, 40, 30]);
-            else if (type === "warning") navigator.vibrate(100);
-            else navigator.vibrate(35);
-        }
+        // Defer so this NEVER blocks the click handler / navigation
+        requestAnimationFrame(() => {
+            if (navigator.vibrate) {
+                if (type === "success") navigator.vibrate([30, 40, 30]);
+                else if (type === "warning") navigator.vibrate(100);
+                else navigator.vibrate(35);
+            }
+        });
     }, []);
 
     useEffect(() => {
-        if (!user?.id) return;
+        if (!isOpen || !user?.id) return;      // ⬅️ only fetch when drawer is OPEN
         let isSubscribed = true;
 
         const fetchUserProfile = async () => {
@@ -460,7 +454,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             fetchUserProfile();
             return () => { isSubscribed = false; };
         }
-    }, [user, userProfile]);
+    }, [isOpen, user?.id]);   // removed `userProfile` → kills infinite loop
 
     const getAvatarUrl = useCallback((url: string | null | undefined): string | undefined => {
         if (!url) {
@@ -489,9 +483,12 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     }, [user?.id]);
 
     const handleNavigate = useCallback((url: string) => {
-        tapFeedback("light");
+        // 1. Kick off navigation FIRST — this is what the user waits for
         navigate(url);
+        // 2. Close drawer in parallel (AnimatePresence exit runs alongside)
         setIsOpen(false);
+        // 3. Sound + haptics last — deferred so they never block the tap
+        requestAnimationFrame(() => tapFeedback("light"));
     }, [navigate, tapFeedback, setIsOpen]);
 
     const handleLogout = useCallback(async () => {
@@ -843,7 +840,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     key={idx}
                                                     section={section}
                                                     onNavigate={handleNavigate}
-                                                    onClose={() => setIsOpen(false)}
                                                 />
                                             ))}
                                         </div>

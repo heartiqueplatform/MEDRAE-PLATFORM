@@ -438,7 +438,7 @@ const HelpCenter = () => {
 
             {/* Sticky Search Bar */}
             <div className="sticky -top-4 z-[100] rounded-xl bg-gray-50/95 dark:bg-[#0d1117]/90 backdrop-blur-lg p-4 md:p-5">
-                <div className="max-w-full mx-auto px-0 md:px-4 lg:px-6">
+                <div className="max-w-full mx-auto px-0 md:px-2 lg:px-6">
                     <div className="relative">
                         <div className="relative">
                             <Search size={20} className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -503,11 +503,11 @@ const HelpCenter = () => {
                 </div>
             </div>
 
-            <div className="max-w-full mx-auto px-0 md:px-4 lg:px-6 space-y-4 md:space-y-6 pt-4 md:pt-6">
+            <div className="max-w-full mx-auto px-0 md:px-2 lg:px-6 space-y-4 md:space-y-6 pt-4 md:pt-6">
 
                 {/* Help Center Header */}
-                <div className="px-4 md:px-0">
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-4 py-5 shadow-sm">
+                <div className="px-2 md:px-0">
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm">
                         {/* Back + label row */}
                         <div className="flex items-center gap-2 mb-3">
                             <button
@@ -552,7 +552,7 @@ const HelpCenter = () => {
                 </div>
 
                 {/* Quick Help Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4 md:px-0">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-2 md:px-0">
                     <div className="bg-white dark:bg-gray-900 p-5 text-center rounded-2xl shadow-sm">
                         <div className="w-12 h-12 bg-gray-100 dark:bg-[#21262d] rounded-xl flex items-center justify-center mx-auto mb-3">
                             <Clock size={24} className="text-gray-500 dark:text-gray-400" />
@@ -570,8 +570,8 @@ const HelpCenter = () => {
                 </div>
 
                 {/* KRCHN Curriculum Section */}
-                <div className="px-4 md:px-0">
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-4 py-5 shadow-sm">
+                <div className="px-2 md:px-0">
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm">
                         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-[#21262d] px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
                             <BookOpen className="h-3.5 w-3.5" />
                             Complete KRCHN Curriculum
@@ -630,7 +630,7 @@ const HelpCenter = () => {
                 {/* FAQ Sections */}
                 {faqCategories.map((category, idx) => {
                     return (
-                        <div key={idx} className="space-y-3 px-4 md:px-0 w-full" data-category={idx}>
+                        <div key={idx} className="space-y-3 px-2 md:px-0 w-full" data-category={idx}>
                             <div className="flex items-center gap-2">
                                 {category.icon}
                                 <h3 className="font-bold text-gray-800 dark:text-gray-200 text-lg">{category.title}</h3>
@@ -641,7 +641,7 @@ const HelpCenter = () => {
                                     <AccordionItem
                                         key={fIdx}
                                         value={`item-${idx}-${fIdx}`}
-                                        className="bg-white dark:bg-[#161b22] rounded-2xl px-4 shadow-sm transition-all hover:shadow-md border-0"
+                                        className="bg-white dark:bg-[#161b22] rounded-2xl px-2 shadow-sm transition-all hover:shadow-md border-0"
                                         data-category={idx}
                                         data-question={fIdx}
                                     >
@@ -662,16 +662,16 @@ const HelpCenter = () => {
                 })}
 
                 {/* Emergency Contact Banner */}
-                <div className="px-4 md:px-0">
-                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-4 py-5 shadow-sm">
+                <div className="px-2 md:px-0">
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl px-2 py-5 shadow-sm">
                         <div className="flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
                             <div className="flex-1">
                                 <h4 className="font-bold text-base text-gray-800 dark:text-gray-200">Urgent technical help?</h4>
                                 <p className="text-base text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">Having trouble with payments, login, or quiz loading? Contact us now.</p>
                                 <div className="flex gap-3 mt-4 flex-wrap">
-                                    <a href="https://wa.me/254704473503" target="_blank" className="text-sm bg-gray-800 hover:bg-gray-900 dark:bg-gray-800 dark:hover:bg-gray-700 text-white px-4 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><MessageCircle size={14} />WhatsApp</a>
-                                    <a href="tel:0717517371" className="text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><Phone size={14} />0717 517 371</a>
+                                    <a href="https://wa.me/254704473503" target="_blank" className="text-sm bg-gray-800 hover:bg-gray-900 dark:bg-gray-800 dark:hover:bg-gray-700 text-white px-2 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><MessageCircle size={14} />WhatsApp</a>
+                                    <a href="tel:0717517371" className="text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-2 rounded-full font-medium transition-colors inline-flex items-center gap-2"><Phone size={14} />0717 517 371</a>
                                 </div>
                             </div>
                         </div>
@@ -679,7 +679,7 @@ const HelpCenter = () => {
                 </div>
 
                 {/* Contact Section */}
-                <section className="space-y-4 pt-4 px-4 md:px-0">
+                <section className="space-y-4 pt-4 px-2 md:px-0">
                     <div className="text-center space-y-1">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white">Still have questions?</h3>
                         <p className="text-base text-gray-500 dark:text-gray-400">Our team is here to help you succeed</p>

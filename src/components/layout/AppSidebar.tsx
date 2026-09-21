@@ -475,7 +475,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
     { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
     { title: "Nurse Duel (N.D)", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
-    { title: "My Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
+    { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
     { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
   ], [userRole, mistakeCount]);
 

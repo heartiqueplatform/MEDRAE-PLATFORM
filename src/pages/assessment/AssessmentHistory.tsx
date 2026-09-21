@@ -1,7 +1,7 @@
 // src/pages/assessment/AssessmentHistory.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Filter, Calendar, ArrowLeft, Clock, Award, Search, X } from 'lucide-react';
+import { Filter, Calendar, ArrowLeft, Clock, Award, Search, X, ChevronLeft } from 'lucide-react';
 import { assessmentService } from '@/services/assessmentService';
 import { AssessmentAttempt } from '@/types/assessmentTypes';
 import { HistoryCard, ErrorState, EmptyState } from '@/components/assessment';
@@ -193,10 +193,10 @@ export const AssessmentHistory: React.FC = () => {
     // ─── Loading skeleton — mirrors real page structure exactly ───
     if (loading && !cache.get(getCacheKey(user?.id || ''))) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-2 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
 
                 {/* Header skeleton */}
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2 animate-pulse">
                             <div className="h-8 w-8 bg-gray-100 dark:bg-[#21262d] rounded-xl" />
@@ -210,12 +210,12 @@ export const AssessmentHistory: React.FC = () => {
                 </div>
 
                 {/* Search skeleton */}
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <div className="h-12 w-full bg-white dark:bg-[#161b22] rounded-2xl shadow-sm animate-pulse" />
                 </div>
 
                 {/* Stats skeleton */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm animate-pulse">
                             <div className="h-3 w-1/2 bg-gray-100 dark:bg-[#21262d] rounded mb-2" />
@@ -225,7 +225,7 @@ export const AssessmentHistory: React.FC = () => {
                 </div>
 
                 {/* Cards grid skeleton — same grid + same card shape (with image) */}
-                <div className="px-4 md:px-0 space-y-3 md:space-y-4">
+                <div className="px-2 md:px-0 space-y-3 md:space-y-4">
                     <div className="h-4 w-56 bg-gray-100 dark:bg-[#21262d] rounded animate-pulse" />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
@@ -277,7 +277,7 @@ export const AssessmentHistory: React.FC = () => {
 
     if (error && !cache.get(getCacheKey(user?.id || ''))) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-4 md:px-4 lg:px-6 py-4 md:py-8">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-2 md:px-2 lg:px-6 py-4 md:py-8">
                 <ErrorState
                     message={error}
                     onRetry={() => {
@@ -290,7 +290,7 @@ export const AssessmentHistory: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-2 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
 
             {showRefreshIndicator && (
                 <div className="fixed top-0 right-0 m-4 z-50">
@@ -301,7 +301,7 @@ export const AssessmentHistory: React.FC = () => {
             )}
 
             {/* Header */}
-            <div className="px-4 md:px-0">
+            <div className="px-2 md:px-0">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <button
@@ -309,7 +309,7 @@ export const AssessmentHistory: React.FC = () => {
                             className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400 flex items-center justify-center -ml-1 transition-colors"
                             aria-label="Go back"
                         >
-                            <ArrowLeft className="w-5 h-5" />
+                            <ChevronLeft className="w-5 h-5" />
                         </button>
                         <div>
                             <h1 className="text-lg md:text-2xl font-bold text-gray-800 dark:text-gray-200">
@@ -338,7 +338,7 @@ export const AssessmentHistory: React.FC = () => {
             </div>
 
             {/* Search */}
-            <div className="px-4 md:px-0">
+            <div className="px-2 md:px-0">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                     <input
@@ -361,7 +361,7 @@ export const AssessmentHistory: React.FC = () => {
 
             {/* Stats summary */}
             {totalAttempts > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0">
                     <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
                         <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
                             <Award className="w-3.5 h-3.5" />
@@ -403,7 +403,7 @@ export const AssessmentHistory: React.FC = () => {
 
             {/* Content */}
             {filtered.length === 0 ? (
-                <div className="px-4 md:px-0">
+                <div className="px-2 md:px-0">
                     <EmptyState
                         title={searchQuery ? 'No matching assessments' : 'No assessments found'}
                         description={
@@ -429,7 +429,7 @@ export const AssessmentHistory: React.FC = () => {
                     />
                 </div>
             ) : (
-                <div className="px-4 md:px-0 space-y-3 md:space-y-4">
+                <div className="px-2 md:px-0 space-y-3 md:space-y-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                         Showing {filtered.length} of {attempts.length} {attempts.length === 1 ? 'attempt' : 'attempts'}
                         {searchQuery && ` matching "${searchQuery}"`}
