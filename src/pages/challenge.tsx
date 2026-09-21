@@ -210,7 +210,7 @@ function ChallengeTabs({
                                             animate={{ opacity: 1, y: 0 }}
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => handleInvite(card.type)}
-                                            className="group relative bg-white dark:bg-muted/30 rounded-2xl  border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
+                                            className="group relative bg-white dark:bg-muted/90 rounded-2xl  border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                                             style={{ touchAction: 'manipulation' }}
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-transparent to-transparent dark:from-blue-900/10 pointer-events-none" />
@@ -271,7 +271,7 @@ function ChallengeTabs({
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             onClick={() => onSelectUser(p.user_id)}
-                                            className="group relative bg-white dark:bg-muted/30 rounded-2xl border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
+                                            className="group relative bg-white dark:bg-muted/80 rounded-2xl border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
                                             style={{ touchAction: 'manipulation' }}
                                         >
                                             {/* Card Content */}
@@ -399,7 +399,7 @@ function ChallengeTabs({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 onClick={() => onSelectUser(p.user_id)}
-                                className="group relative bg-white dark:bg-muted/30 rounded-2xl border-2 border-amber-500/20 ... cursor-pointer"
+                                className="group relative bg-white dark:bg-muted/50 rounded-2xl border-2 border-amber-500/20 ... cursor-pointer"
                                 style={{ touchAction: 'manipulation' }}
                             >
                                 <div className="p-4">
@@ -498,7 +498,7 @@ function ChallengeTabs({
                                 key={challenge.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="group relative bg-white dark:bg-muted/30 rounded-2xl border-2 border-blue-500/20 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                className="group relative bg-white dark:bg-muted/50 rounded-2xl border-2 border-blue-500/20 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
                             >
                                 <div className="p-4">
                                     <div className="flex items-start justify-between mb-3">
@@ -579,7 +579,7 @@ function ChallengeTabs({
                                 key={challenge.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="group relative bg-white dark:bg-muted/30 rounded-2xl border-0 hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                className="group relative bg-white dark:bg-muted/50 rounded-2xl border-0 hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
                             >
                                 <div className="p-4">
                                     <div className="flex items-start justify-between mb-3">
@@ -658,7 +658,7 @@ function ChallengeTabs({
                                     key={challenge.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className={`group relative bg-white dark:bg-muted/30 rounded-2xl border-0 transition-all duration-300 overflow-hidden ${isWin ? "border-0 " : "border-0 "
+                                    className={`group relative bg-white dark:bg-muted/80 rounded-2xl border-0 transition-all duration-300 overflow-hidden ${isWin ? "border-0 " : "border-0 "
                                         } hover:shadow-xl`}
                                 >
                                     <div className="p-4">
@@ -1156,12 +1156,25 @@ export default function ChallengePage() {
                 alert("Complete previous challenge with this player first.");
                 return;
             }
+            // Try prefetched questions first (set by QuickDuelStrip)
+            let questionsData: any[] | null = null;
+            try {
+                const prefetched = sessionStorage.getItem(`prefetched_questions_${targetUserId}`);
+                if (prefetched) {
+                    questionsData = JSON.parse(prefetched);
+                    sessionStorage.removeItem(`prefetched_questions_${targetUserId}`);
+                }
+            } catch { }
 
-            const { data: questionsData, error } = await supabase.rpc(
-                "get_random_questions",
-                { limit_count: 10 }
-            );
-            if (error || !questionsData) return;
+            // Fallback to RPC
+            if (!questionsData || questionsData.length === 0) {
+                const { data, error } = await supabase.rpc(
+                    "get_random_questions",
+                    { limit_count: 10 }
+                );
+                if (error || !data) return;
+                questionsData = data;
+            }
 
             setTempQuestions(questionsData);
             setPendingTargetUser(targetUserId);
@@ -1468,7 +1481,7 @@ export default function ChallengePage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[9999] bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col overflow-hidden"
+                    className="fixed inset-0 z-[9999] bg-slate-50 dark:bg-muted/100 flex flex-col overflow-hidden"
                     style={{ willChange: 'transform' }}
                 >
                     {/* Header - Clean, no border */}

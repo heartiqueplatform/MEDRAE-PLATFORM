@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 function ToastWithSound({ id, title, description, action, variant, ...props }: any) {
   useEffect(() => {
-    if (variant === "destructive") {
+    if (variant === "error") {
       playSound("alert-sound", false);
     } else {
       playSound("toast-sound", false);
@@ -33,7 +33,7 @@ function ToastWithSound({ id, title, description, action, variant, ...props }: a
             className={cn(
               "w-11 h-11 rounded-xl object-cover border-2 shadow-sm transition-all duration-500",
               variant === "success" && "border-emerald-500 shadow-emerald-500/40",
-              variant === "destructive" && "border-rose-500 shadow-rose-500/40",
+              variant === "error" && "border-rose-500 shadow-rose-500/40",
               variant === "achievement" && "border-purple-500 shadow-purple-500/50 animate-pulse",
               (!variant || variant === "default") && "border-zinc-200 dark:border-zinc-700"
             )}
@@ -42,13 +42,15 @@ function ToastWithSound({ id, title, description, action, variant, ...props }: a
 
         {/* TEXT SECTION - PERFECTLY ALIGNED TOP-LEFT */}
         <div className="flex flex-col flex-1 pt-0.5">
-          <span className={cn(
-            "text-[10px] uppercase tracking-[0.1em] font-black mb-0.5",
-            variant === "success" && "text-emerald-600 dark:text-emerald-400",
-            variant === "destructive" && "text-rose-600 dark:text-rose-400",
-            variant === "achievement" && "text-purple-600 dark:text-purple-400",
-            (!variant || variant === "default") && "opacity-40"
-          )}>
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-[0.1em] font-black mb-0.5",
+              variant === "success" && "text-emerald-600 dark:text-emerald-400",
+              variant === "error" && "text-rose-600 dark:text-rose-400",
+              variant === "achievement" && "text-purple-600 dark:text-purple-400",
+              (!variant || variant === "default") && "opacity-40"
+            )}
+          >
             Medrae
           </span>
 

@@ -1082,7 +1082,7 @@ export default function Feed() {
                 className="relative w-full max-w-screen-lg mx-auto mb-5"
                 ref={index === questions.length - 1 ? loaderRef : null}
               >
-                <Card className="relative bg-transparent dark:bg-muted/30 lg:bg-gray-100 lg:dark:bg-muted/30 border-0 shadow-none rounded-xl overflow-visible transition-all">
+                <Card className="relative bg-transparent dark:bg-muted/90 lg:bg-gray-100 lg:dark:bg-muted/90 border-0 shadow-none rounded-xl overflow-visible transition-all">
                   <CardContent className="flex flex-col gap-2 p-2 w-full">
                     <div className="flex justify-between items-center mb-1">
                       <p className="text-sm font-semibold text-blue-500 dark:text-blue-400 tracking-wide">

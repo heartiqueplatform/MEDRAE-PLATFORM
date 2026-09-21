@@ -403,7 +403,7 @@ export function Login() {
         <div className="w-full max-w-md">
           {/* Branding/Logo */}
           <div className="flex flex-col items-center mb-6 md:mb-8">
-            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-3 mb-4">
+            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-xl p-3 mb-4">
               <img
                 src="/pwa-192x192.jpeg"
                 alt="Logo"
@@ -424,7 +424,7 @@ export function Login() {
           </div>
 
           {/* Card with XL rounded corners */}
-          <Card className="w-full bg-white dark:bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-0 rounded-xl overflow-hidden">
+          <Card className="w-full bg-white dark:bg-slate-900 shadow-none border-0 rounded-xl overflow-hidden">
             <CardHeader className="pt-8 px-6 pb-2 text-center">
               <CardTitle className="text-2xl font-bold text-slate-800 dark:text-white">
                 Sign In
@@ -488,7 +488,7 @@ export function Login() {
                 <Button
                   disabled={isLoading}
                   onClick={handleLogin}
-                  className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg shadow-lg shadow-blue-200 dark:shadow-blue-900/30 transition-all active:scale-[0.98] mt-2"
+                  className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg shadow-none dark:shadow-blue-900/30 transition-all active:scale-[0.98] mt-2"
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">

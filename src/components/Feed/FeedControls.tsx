@@ -88,20 +88,21 @@ export default function FeedControls({
     }, [questionCount]);
 
     return (
-        <div className="w-full rounded-2xl bg-gray-50 dark:bg-gray-900 p-4 sm:p-5">
+        <div className="w-full rounded-2xl bg-gray-50 dark:bg-muted/90 p-4 sm:p-5">
             <div className="flex flex-col gap-4">
 
                 {/* ── HEADER: Tier badge + human message ── */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${tierStyle.bg} ring-1 ${tierStyle.ring}`}>
-                            <TierIcon className={tierStyle.text} size={22} />
-                        </div>
                         <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                {message}
+                            <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-snug flex items-start gap-2">
+                                <span className="min-w-0">{message}</span>
+                                <TierIcon
+                                    className={`${tierStyle.text} flex-shrink-0 mt-0.5`}
+                                    size={18}
+                                />
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                 <span className={`font-semibold ${tierStyle.text}`}>{tierStyle.label}</span>
                                 {" · "}
                                 <span className="font-semibold text-gray-700 dark:text-gray-200">{questionCount}</span> tried

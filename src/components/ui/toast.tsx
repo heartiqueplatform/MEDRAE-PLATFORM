@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
-import { X, CheckCircle2, AlertCircle, Sparkles, Info } from "lucide-react"
+import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -16,10 +16,12 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      // 📱 Mobile: top-center (full width, top of screen)
-      // 💻 Desktop (sm+): bottom-right
+      // 📱 MOBILE: pinned to top, full-width, stacks downward
       "fixed top-0 left-0 right-0 z-[110] flex max-h-screen w-full flex-col p-4 gap-3",
-      "sm:top-auto sm:bottom-0 sm:left-auto sm:right-0 sm:flex-col sm:max-w-[400px]",
+      // Safe-area padding so toasts sit below iPhone notch / status bar
+      "pt-[calc(env(safe-area-inset-top)+1rem)]",
+      // 💻 DESKTOP (sm+): pinned to bottom-right
+      "sm:top-auto sm:bottom-0 sm:left-auto sm:right-0 sm:flex-col sm:max-w-[400px] sm:pt-4",
       className
     )}
     {...props}
@@ -28,17 +30,21 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
 const toastVariants = cva(
-  // ❌ Removed: "border", "shadow-2xl", and both shadow-[...] classes
-  // ✅ Kept: layout, animation, background, rounding
+  // No border, no shadow. Slide direction flips by breakpoint.
   "group pointer-events-auto relative flex w-full overflow-hidden rounded-2xl p-4 transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full bg-white/95 dark:bg-muted/80 backdrop-blur-xl text-zinc-900 dark:text-zinc-50 border-0 shadow-none",
   {
     variants: {
       variant: {
-        default: "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-zinc-300 dark:before:bg-zinc-700",
-        success: "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500",
-        error: "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-rose-500",
-        info: "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-blue-500",
-        achievement: "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-gradient-to-b before:from-indigo-500 before:via-purple-500 before:to-pink-500",
+        default:
+          "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-zinc-300 dark:before:bg-zinc-700",
+        success:
+          "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-emerald-500",
+        error:
+          "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-rose-500",
+        info:
+          "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-blue-500",
+        achievement:
+          "pl-5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-gradient-to-b before:from-indigo-500 before:via-purple-500 before:to-pink-500",
       },
     },
     defaultVariants: {
@@ -59,7 +65,6 @@ const Toast = React.forwardRef<
       {...props}
     >
       <div className="flex w-full gap-4 items-start text-left">
-        {/* Content Container - Always pushes to the left edge */}
         <div className="flex flex-col gap-1 flex-1 text-left items-start justify-start pt-0.5">
           {children}
         </div>
@@ -108,7 +113,10 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn("text-[14px] font-bold tracking-tight text-zinc-950 dark:text-white text-left", className)}
+    className={cn(
+      "text-[14px] font-bold tracking-tight text-zinc-950 dark:text-white text-left",
+      className
+    )}
     {...props}
   />
 ))
@@ -120,7 +128,10 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn("text-[13px] leading-snug text-zinc-600 dark:text-zinc-400 font-medium text-left", className)}
+    className={cn(
+      "text-[13px] leading-snug text-zinc-600 dark:text-zinc-400 font-medium text-left",
+      className
+    )}
     {...props}
   />
 ))

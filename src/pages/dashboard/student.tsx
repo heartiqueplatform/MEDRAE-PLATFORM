@@ -214,8 +214,17 @@ const getInitialCache = () => {
   } catch (e) { }
 
   try {
-    const cachedLeaderboard = localStorage.getItem("leaderboard_fast");
-    if (cachedLeaderboard) result.topStudents = JSON.parse(cachedLeaderboard);
+    const raw = localStorage.getItem("leaderboard_fast");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // support both old format (array) and new format ({data, ts})
+      const data = Array.isArray(parsed) ? parsed : parsed?.data;
+      const ts = Array.isArray(parsed) ? 0 : (parsed?.ts ?? 0);
+      const TTL = 60 * 1000; // 60 seconds
+      if (Array.isArray(data) && Date.now() - ts < TTL) {
+        result.topStudents = data;
+      }
+    }
   } catch (e) { }
 
   try {
@@ -260,7 +269,33 @@ const getInitialCache = () => {
 
   return result;
 };
+// ✅ Leaderboard cache helpers (TTL-aware)
+const LEADERBOARD_TTL = 60 * 1000; // 5 minutes
+const LEADERBOARD_KEY = "leaderboard_fast";
 
+const readLeaderboardCache = (): any[] | null => {
+  try {
+    const raw = localStorage.getItem(LEADERBOARD_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const data = Array.isArray(parsed) ? parsed : parsed?.data;
+    const ts = Array.isArray(parsed) ? 0 : (parsed?.ts ?? 0);
+    if (!Array.isArray(data)) return null;
+    if (Date.now() - ts > LEADERBOARD_TTL) return null; // stale
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+const writeLeaderboardCache = (data: any[]) => {
+  try {
+    localStorage.setItem(
+      LEADERBOARD_KEY,
+      JSON.stringify({ data, ts: Date.now() })
+    );
+  } catch { }
+};
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const user = useUser();
@@ -346,6 +381,7 @@ export default function StudentDashboard() {
     initialCache.topStudents ?? []
   );
   const [loadingTopStudents, setLoadingTopStudents] = useState(false);
+  const [leaderboardUpdatedAt, setLeaderboardUpdatedAt] = useState<number | null>(null);
 
   // ===== ALL FETCH FUNCTIONS =====
   const fetchFeedsAttemptCount = useCallback(async () => {
@@ -549,36 +585,30 @@ export default function StudentDashboard() {
   const fetchTopStudents = useCallback(async (forceRefresh = false) => {
     if (!user?.id) return;
 
-    const CACHE_KEY = "leaderboard_fast";
-
-    if (forceRefresh) {
+    // 1. Paint cache instantly (even if stale — better than blank)
+    const cached = readLeaderboardCache();
+    if (cached && cached.length > 0) {
+      setTopStudents(cached);
+    } else if (forceRefresh || topStudents.length === 0) {
       setLoadingTopStudents(true);
     }
 
-    // Try cache first
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed.length > 0) {
-          setTopStudents(parsed);
-          setLoadingTopStudents(false);
-          if (!forceRefresh) return;
-        }
-      }
-    } catch (e) {
-      console.log("Cache read error");
+    // 2. If fresh cache exists and not forced, skip network
+    if (!forceRefresh && cached && cached.length > 0) {
+      setLoadingTopStudents(false);
+      return;
     }
 
-    // Fetch from API
+    // 3. Revalidate in background
     try {
-      const { data, error } = await supabase.rpc('get_leaderboard_v2');
+      const { data, error } = await supabase.rpc("get_leaderboard_v2");
       if (error) throw error;
 
       if (data && data.length > 0) {
         setTopStudents(data);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        writeLeaderboardCache(data);
 
+        // sync into dashboardData blob
         try {
           const dashboardData = localStorage.getItem("dashboardData");
           if (dashboardData) {
@@ -586,9 +616,10 @@ export default function StudentDashboard() {
             parsed.topStudents = data;
             localStorage.setItem("dashboardData", JSON.stringify(parsed));
           }
-        } catch (e) { }
+        } catch { }
 
-        const myIndex = data.findIndex(s => s.userid === user.id);
+        // rank celebration
+        const myIndex = data.findIndex((s: any) => s.userid === user.id);
         const myRank = myIndex !== -1 ? myIndex + 1 : null;
 
         if (myRank && myRank <= 3 && myRank !== userRankPrevious.current) {
@@ -599,39 +630,22 @@ export default function StudentDashboard() {
       }
     } catch (err) {
       console.error("Leaderboard Error:", err);
+      // keep whatever cache we already painted
     } finally {
       setLoadingTopStudents(false);
     }
-  }, [user?.id]);
+  }, [user?.id, topStudents.length]);
 
   // ✅ handleOpenDialog - OPENS INSTANTLY, LOADS DATA IN BACKGROUND
+  // ✅ Opens instantly. Always revalidates in background.
   const handleOpenDialog = useCallback(() => {
     if (!user?.id) return;
 
-    // ✅ 1. OPEN DIALOG IMMEDIATELY - NO WAITING
-    setOverlayOpen(true);
+    setOverlayOpen(true); // open immediately
 
-    // ✅ 2. If we already have data, we're done
-    if (topStudents.length > 0) return;
-
-    // ✅ 3. Try cache instantly
-    try {
-      const cached = localStorage.getItem("leaderboard_fast");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed.length > 0) {
-          setTopStudents(parsed);
-          return;
-        }
-      }
-    } catch (e) { }
-
-    // ✅ 4. No cache? Show skeleton and fetch
-    setLoadingTopStudents(true);
-    fetchTopStudents(true).finally(() => {
-      setLoadingTopStudents(false);
-    });
-  }, [user?.id, topStudents, fetchTopStudents]);
+    // Always refresh when dialog opens (cheap: 1 RPC, ≤20 rows)
+    fetchTopStudents(true);
+  }, [user?.id, fetchTopStudents]);
 
   // ===== LOAD DASHBOARD DATA =====
   const loadDashboardData = useCallback(async () => {
@@ -640,11 +654,11 @@ export default function StudentDashboard() {
 
     try {
       // 1. Run all fetches in parallel
+      // 1. Run all fetches in parallel
+      // NOTE: leaderboard is fetched by its own effect, not here.
       await Promise.allSettled([
         fetchProfile(),
         handleLoginAndStreak(),
-
-        fetchTopStudents(),
         fetchProgress(),
         fetchSimulationPapers(),
         fetchQuizCount(),
@@ -699,22 +713,27 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (!user?.id) return;
-    if (topStudents.length === 0) {
-      fetchTopStudents(true);
-    }
-  }, [user?.id, topStudents.length, fetchTopStudents]);
 
-  useEffect(() => {
-    if (!user?.id) return;
+    // initial load (SWR — paints cache, then revalidates)
+    fetchTopStudents();
 
+    // background refresh every 60s, only when tab is visible
     const intervalId = setInterval(() => {
-      if (!document.hidden) {
-        fetchTopStudents(true);
-      }
-    }, 30 * 60 * 1000);
+      if (!document.hidden) fetchTopStudents(true);
+    }, 60 * 1000);
 
-    return () => clearInterval(intervalId);
-  }, [user?.id, fetchTopStudents]);
+    // refresh when user returns to the tab
+    const onFocus = () => {
+      if (!document.hidden) fetchTopStudents(true);
+    };
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleSmoothNavigate = useCallback((url: string, scrollToTop = true) => {
     if (navigator.vibrate) navigator.vibrate(10);
@@ -773,14 +792,25 @@ export default function StudentDashboard() {
             </CardTitle>
 
             <details className="group mt-4 bg-slate-100/50 dark:bg-white/[0.03] rounded-2xl border-0 dark:border-white/5 overflow-hidden transition-all duration-300">
-              <summary className="cursor-pointer list-none p-4 flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+              <summary className="cursor-pointer list-none p-4 flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 tracking-widest">
                 <span>How winners are chosen?</span>
-                <span className="transition-transform group-open:rotate-180">▼</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 transition-transform duration-300 group-open:rotate-180"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
               </summary>
               <div className="px-5 pb-5 pt-2 text-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <h4 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider">
+                    <h4 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-[11px]   tracking-wider">
                       <div className="h-1 w-3 bg-blue-500 rounded-full" /> 1. Star Calculation
                     </h4>
                     <div className="grid grid-cols-2 gap-2">
@@ -799,7 +829,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <h4 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider">
+                    <h4 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-[11px]   tracking-wider">
                       <div className="h-1 w-3 bg-emerald-500 rounded-full" /> 2. Ranking Tie-Breakers
                     </h4>
                     <ul className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
@@ -813,7 +843,7 @@ export default function StudentDashboard() {
                         <span className="text-emerald-500 font-bold">03.</span> Units Attempted (Tie-breaker)
                       </li>
                     </ul>
-                    <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] uppercase tracking-widest h-9 rounded-xl shadow-none">
+                    <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px]   tracking-widest h-9 rounded-xl shadow-none">
                       <Link to="/Medrae-quizzes">Improve My Rank</Link>
                     </Button>
                   </div>
@@ -823,7 +853,7 @@ export default function StudentDashboard() {
           </CardHeader>
 
           <CardContent className="px-0 relative z-10">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 py-8 px-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-3 py-8 px-4 sm:px-6">
               {topStudents.length > 0 ? (
                 topStudents.map((s, idx) => {
                   const rankMeta = [
@@ -837,16 +867,16 @@ export default function StudentDashboard() {
                     <div
                       key={s.userid}
                       onClick={() => setSelectedUserId(s.userid)}
-                      className={`flex-shrink-0 w-44 snap-center relative group cursor-pointer transition-all duration-500 hover:-translate-y-2`}
+                      className="relative group cursor-pointer transition-all duration-500 hover:-translate-y-2 w-full min-w-0"
                     >
-                      <div className={`h-full p-5 rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-none ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
+                      <div className={`h-full p-3 sm:p-4 rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-none ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
                         <div className={`absolute top-0 inset-x-0 h-24 bg-gradient-to-b ${rankMeta.bg} opacity-50`} />
                         <div className="relative z-10 flex flex-col items-center text-center">
-                          <div className={`relative mb-3`}>
+                          <div className="relative mb-3">
                             <img
                               src={s.avatar_url || "/UsersAvatar.jpg"}
                               alt={s.name}
-                              className={`w-16 h-16 rounded-full object-cover ring-4 ${rankMeta.ring} shadow-none transition-transform duration-500 group-hover:scale-110`}
+                              className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-4 ${rankMeta.ring} shadow-none transition-transform duration-500 group-hover:scale-110`}
                               loading="lazy"
                             />
                             {idx < 3 && (
@@ -855,10 +885,10 @@ export default function StudentDashboard() {
                               </div>
                             )}
                           </div>
-                          <h3 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1 w-full tracking-tight">
+                          <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white line-clamp-1 w-full tracking-tight">
                             {s.name || "Unknown"}
                           </h3>
-                          <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-1 uppercase tracking-tighter truncate w-full">
+                          <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-1   tracking-tighter truncate w-full">
                             {s.institution || "Institution"}
                           </p>
                           <div className="flex justify-center mt-3 gap-0.5">
@@ -869,7 +899,7 @@ export default function StudentDashboard() {
                               />
                             ))}
                           </div>
-                          <div className={`mt-5 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${idx < 3 ? 'bg-slate-900 text-white border-transparent' : 'bg-transparent text-slate-400 border-slate-200 dark:border-white/10'}`}>
+                          <div className={`mt-4 px-3 py-1 rounded-full text-[10px] font-bold   tracking-widest border ${idx < 3 ? 'bg-slate-900 text-white border-transparent' : 'bg-transparent text-slate-400 border-slate-200 dark:border-white/10'}`}>
                             {rankMeta.label}
                           </div>
                         </div>
@@ -878,10 +908,11 @@ export default function StudentDashboard() {
                   );
                 })
               ) : (
-                <div className="w-full text-center py-10">
-                  <p className="text-sm font-bold text-slate-500 uppercase tracking-[2px]">Competition Starting Soon...</p>
+                <div className="col-span-full text-center py-10">
+                  <p className="text-sm font-bold text-slate-500   tracking-[2px]">Competition Starting Soon...</p>
                 </div>
               )}
+
             </div>
           </CardContent>
           <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
@@ -948,14 +979,14 @@ export default function StudentDashboard() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center">
                       <BookOpen className="w-4 h-4 text-slate-400 mb-2" />
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Your Feed Attempts</span>
+                      <span className="text-[10px] font-bold text-slate-500   tracking-wider">Your Feed Attempts</span>
                       <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{feedsAttemptCount}</p>
                     </div>
 
                     {/* ✅ Shows SKELETON while loading, DATA when ready */}
                     <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 flex flex-col items-center text-center">
                       <Trophy className="w-4 h-4 text-amber-500 mb-2" />
-                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Current Leader</span>
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400   tracking-wider">Current Leader</span>
 
                       {loadingTopStudents ? (
                         <div className="mt-2 flex flex-col items-center animate-pulse">
@@ -995,6 +1026,11 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                   ) : null}
+                  {leaderboardUpdatedAt && (
+                    <p className="text-center text-[10px] text-slate-400 font-bold   tracking-widest">
+                      Updated {formatDistanceToNow(leaderboardUpdatedAt)} ago
+                    </p>
+                  )}
 
                   <div className="pt-2">
                     <Button
@@ -1008,10 +1044,10 @@ export default function StudentDashboard() {
                       Start Quizzing
                       <ChevronRight className="w-4 h-4" />
                     </Button>
-                    <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                    <p className="text-center text-[10px] text-slate-400 font-bold   tracking-widest mt-4">
                       Complete Units to Climb the Leaderboard
                     </p>
-                    <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                    <p className="text-center text-[10px] text-slate-400 font-bold   tracking-widest mt-4">
                       Medrae Community Hub
                     </p>
                   </div>
@@ -1107,7 +1143,7 @@ export default function StudentDashboard() {
                     </div>
                     <div className="mt-4">
                       <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Completion</span>
+                        <span className="text-[10px] font-bold   tracking-wider text-slate-400">Completion</span>
                         <span className="text-[10px] font-bold text-blue-600">{simulationProgress[paper.id] || 0}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -1130,7 +1166,7 @@ export default function StudentDashboard() {
               ))
             ) : (
               <div className="col-span-full text-center py-10">
-                <p className="text-sm font-bold text-slate-500 uppercase tracking-[2px]">No simulation papers available</p>
+                <p className="text-sm font-bold text-slate-500   tracking-[2px]">No simulation papers available</p>
               </div>
             )}
           </div>
