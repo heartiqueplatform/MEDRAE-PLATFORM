@@ -23,9 +23,9 @@ import {
     Heart,
     Phone,
 } from "lucide-react";
-import { useSubscription } from "@/hooks/useSubscription";
 import { useSession } from "@supabase/auth-helpers-react";
 import MedraeSocialFooter from "@/components/MedraeSocialFooter";
+import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 
 // ============================================
 // 🎛️ OVERRIDE BUMP SECTION
@@ -111,7 +111,12 @@ const EqualizerBars = ({ active }: { active: boolean }) => (
 const MedraeBot = () => {
     const navigate = useNavigate();
     const session = useSession();
-    const { isPremium } = useSubscription();
+
+    // ─── Premium status — shared cache, offline-safe, synchronous ───
+    const [isPremium, setIsPremium] = useState<boolean>(
+        () => getCachedPremium(session?.user?.id) ?? false
+    );
+
     const [isVisible, setIsVisible] = useState(false);
     const [isDismissing, setIsDismissing] = useState(false);
     const [hasChecked, setHasChecked] = useState(false);
@@ -127,8 +132,29 @@ const MedraeBot = () => {
     const preMuteVolumeRef = useRef<number>(BOT_VOLUME);
     const raf2Ref = useRef<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+
     // ─── Time-aware greeting, computed once on mount ───
     const [greeting] = useState<string>(() => getTimeGreeting());
+
+    // ─── Premium: seed again once auth hydrates (first render may lack id) ───
+    useEffect(() => {
+        if (!session?.user?.id) return;
+        const cached = getCachedPremium(session.user.id);
+        if (cached !== null) setIsPremium(cached);
+    }, [session?.user?.id]);
+
+    // ─── Premium: background refresh — no-op offline, deduped, cache-aware ───
+    useEffect(() => {
+        if (!session?.user?.id) return;
+        let cancelled = false;
+        resolveSubscription(session.user.id)
+            .then((snap) => {
+                if (!cancelled) setIsPremium(snap.isPremium);
+            })
+            .catch(() => { /* resolveSubscription falls back to cache internally */ });
+        return () => { cancelled = true; };
+    }, [session?.user?.id]);
+
     // ─── Track a fresh app open ───
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -171,6 +197,9 @@ const MedraeBot = () => {
         }
 
         try {
+            // Premium users never see the bot (unless explicitly overridden).
+            // isPremium comes from the shared cache synchronously, so this is
+            // correct even offline and before any network request settles.
             if (isPremium && !SHOW_BOT_FOR_PREMIUM) {
                 setHasChecked(true);
                 return;
@@ -204,6 +233,7 @@ const MedraeBot = () => {
             setHasChecked(true);
         }
     }, [session, isPremium, hasChecked]);
+
     // ─── Trigger overlay mount animation (fade + glide in) ───
     useEffect(() => {
         if (!isVisible) {
@@ -490,6 +520,8 @@ const MedraeBot = () => {
     }, [isVisible, isLocked, handleDismiss]);
 
     if (!isVisible && !isDismissing) return null;
+    // Belt-and-braces: never paint for premium users (unless explicitly overridden).
+    if (isPremium && !SHOW_BOT_FOR_PREMIUM) return null;
 
     const LockoutRing = () => (
         <span
@@ -705,6 +737,7 @@ const MedraeBot = () => {
     };
 
     // ─── PREMIUM USER VIEW ───
+    // (Only reachable if SHOW_BOT_FOR_PREMIUM is set to true.)
     if (isPremium) {
         return (
             <div
@@ -715,7 +748,6 @@ const MedraeBot = () => {
                     className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                     onClick={() => !isLocked && handleDismiss()}
                 />
-
 
                 <div
                     className={`relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-emerald-500/20 overflow-hidden max-w-md w-full max-h-[90vh] flex flex-col transition-all duration-500 ease-out ${isMounted && !isDismissing
