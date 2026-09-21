@@ -923,37 +923,72 @@ export default function StudentDashboard() {
         <FeedSeenTop10 />
 
         {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}
-        <div className="fixed bottom-14 right-4 z-40">
+        <div className="fixed bottom-14 right-5 z-30">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
             onClick={() => {
               if (navigator.vibrate) navigator.vibrate(40);
-              handleOpenDialog(); // ✅ Opens instantly!
+              handleOpenDialog();
             }}
-            className="relative h-12 w-12 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-0 shadow-none flex items-center justify-center transition-all p-0 overflow-visible"
-          >
-            {topStudents.length > 0 ? (
-              <>
-                <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-                </span>
-                <div className="w-full h-full rounded-full overflow-hidden">
-                  <img
-                    src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
-                    alt={topStudents[0].name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-1.5 rounded-full shadow-none border-0">
-                  <Crown className="w-3.5 h-3.5 fill-current" />
-                </div>
-              </>
-            ) : (
-              <Trophy className="w-6 h-6 text-slate-400" />
+            aria-label="Open best"
+            className={cn(
+              "group flex items-center gap-2 rounded-full pl-3 pr-4 py-2.5",
+              "min-w-[110px] justify-center",
+              // light mode (default)
+              "bg-white hover:bg-slate-50",
+              "text-slate-800 hover:text-slate-900",
+              "ring-1 ring-slate-200 hover:ring-slate-300",
+              // dark mode override
+              "dark:bg-[#21262d] dark:hover:bg-[#30363d]",
+              "dark:text-white dark:ring-white/10 dark:hover:ring-white/20",
+              // shadow
+              "shadow-lg shadow-slate-900/10",
+              "dark:shadow-none",
+              "transition-colors duration-300 ease-out",
+              "focus:outline-none focus-visible:ring-2",
+              "focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
             )}
+          >
+            {/* Icon chip — same w-7 h-7 as chat */}
+            <span
+              className={cn(
+                "relative flex items-center justify-center w-7 h-7 rounded-full",
+                "bg-slate-100 text-slate-700",
+                "dark:bg-white/10 dark:text-white",
+                "overflow-visible"
+              )}
+            >
+              {topStudents.length > 0 ? (
+                <>
+                  {/* ping dot */}
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3 z-10">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                  </span>
+
+                  {/* avatar fills the chip */}
+                  <span className="w-full h-full rounded-full overflow-hidden block">
+                    <img
+                      src={topStudents[0].avatar_url || "/UsersAvatar.jpg"}
+                      alt={topStudents[0].name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </span>
+
+                  {/* crown badge */}
+                  <span className="absolute -bottom-1.5 -right-1.5 bg-amber-500 text-white p-1 rounded-full">
+                    <Crown className="w-3 h-3 fill-current" />
+                  </span>
+                </>
+              ) : (
+                <Trophy className="w-4 h-4 text-slate-400 dark:text-white/60" />
+              )}
+            </span>
+
+            <span className="text-sm font-semibold hidden sm:inline">Best</span>
           </motion.button>
         </div>
 
