@@ -59,16 +59,26 @@ const IconQuizzes = ({ active }: { active: boolean }) => (
 
 const IconFeed = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect
-            x="3" y="3" width="18" height="18" rx="3"
+        {/* Newspaper / magazine — matches "Feed" icon in MobileDrawer */}
+        <path
+            d="M4 5.5C4 4.67 4.67 4 5.5 4H16.5C17.33 4 18 4.67 18 5.5V19.5C18 20.33 17.33 21 16.5 21H6.5C5.12 21 4 19.88 4 18.5V5.5Z"
             stroke="currentColor"
             strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
             fillOpacity={active ? 0.15 : 0}
         />
-        <line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="7" y1="13" x2="14" y2="13" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="7" y1="17" x2="11" y2="17" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <path
+            d="M18 8H19.5C20.33 8 21 8.67 21 9.5V18.5C21 19.88 19.88 21 18.5 21"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <line x1="7.5" y1="8.5" x2="14.5" y2="8.5" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7.5" y1="12" x2="14.5" y2="12" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7.5" y1="15.5" x2="11.5" y2="15.5" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
     </svg>
 );
 

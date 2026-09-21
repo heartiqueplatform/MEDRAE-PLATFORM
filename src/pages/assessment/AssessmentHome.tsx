@@ -285,10 +285,22 @@ export const AssessmentHome: React.FC = () => {
             {/* Floating History Button — story-style */}
             <button
                 onClick={() => navigate('/assessments/history')}
-                className="fixed bottom-6 right-6 z-40 group flex items-center gap-2 bg-gray-800 dark:bg-[#21262d] hover:bg-gray-900 dark:hover:bg-[#30363d] text-white rounded-full pl-3 pr-4 py-2.5 shadow-lg transition-all active:scale-[0.96]"
                 aria-label="Assessment history"
+                className="fixed bottom-6 right-6 z-40 group flex items-center gap-2
+               rounded-full pl-3 pr-4 py-2.5
+               bg-white hover:bg-slate-50
+               text-slate-800 hover:text-slate-900
+               ring-1 ring-slate-200 hover:ring-slate-300
+               dark:bg-[#21262d] dark:hover:bg-[#30363d]
+               dark:text-white dark:ring-white/10 dark:hover:ring-white/20
+               shadow-lg shadow-slate-900/10 dark:shadow-none
+               transition-all active:scale-[0.96]
+               focus:outline-none focus-visible:ring-2
+               focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
             >
-                <span className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/10">
+                <span className="relative flex items-center justify-center w-7 h-7 rounded-full
+                     bg-slate-100 text-slate-700
+                     dark:bg-white/10 dark:text-white">
                     <BarChart3 className="w-4 h-4" />
                 </span>
                 <span className="text-sm font-semibold hidden sm:inline">History</span>

@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/context/UserRoleContext";
 import { getProfileCache, setProfileCache, clearProfileCache } from "@/lib/profileCache";
-
+import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 interface MobileDrawerProps {
     userRole?: "student" | "tutor" | "staff";
     isOpen: boolean;
@@ -200,17 +200,19 @@ const DrawerRow = memo(({
         <button
             onClick={onPress}
             className="group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left
-                       transition-colors active:bg-[#21262d] hover:bg-[#161b22]"
+                       transition-colors
+                       hover:bg-slate-100 active:bg-slate-200
+                       dark:hover:bg-[#161b22] dark:active:bg-[#21262d]"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
             <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${styles.box}
                              transition-transform group-active:scale-95`}>
                 <item.icon className={`h-[18px] w-[18px] ${styles.icon}`} strokeWidth={2.3} />
             </div>
-            <span className="flex-1 text-[13.5px] font-semibold text-[#c9d1d9] truncate">
+            <span className="flex-1 text-[13.5px] font-semibold text-slate-700 dark:text-[#c9d1d9] truncate">
                 {item.title}
             </span>
-            <ChevronRight className="h-4 w-4 text-[#6e7681] flex-shrink-0" />
+            <ChevronRight className="h-4 w-4 text-slate-300 dark:text-[#6e7681] flex-shrink-0" />
         </button>
     );
 });
@@ -230,7 +232,7 @@ const DrawerSection = memo(({
         <div className="space-y-1">
             <div className="flex items-center gap-2 px-1 py-1">
                 <div className="h-1 w-4 rounded-full bg-[#58a6ff]/70" />
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7681]">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-[#6e7681]">
                     {section.label}
                 </h3>
             </div>
@@ -290,36 +292,55 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(preloadUserRole);
 
     /* ---- Subscription state ---- */
-    const [activePlan, setActivePlan] = useState<string | null>(null);
-
     const session = useSession();
     const user = session?.user || null;
+
+    /* ---- Subscription state ---- */
+    // Seed from the shared cache so offline premium users see "My Plan"
+    // on the very first render — no flash of "Upgrade".
+    const [activePlan, setActivePlan] = useState<string | null>(() => {
+        if (getCachedPremium(user?.id)) return "premium";
+        return null;
+    });
 
     useEffect(() => {
         setDrawerContext(isOpen);
     }, [isOpen, setDrawerContext]);
 
     /* ---- Load subscription when drawer opens ---- */
+    /* ---- Subscription: cache-first, then background refresh ---- */
     useEffect(() => {
-        if (!isOpen || !user?.id) return;
+        if (!user?.id) return;
         let cancelled = false;
-        (async () => {
-            try {
-                const { data } = await supabase
-                    .from("subscriptions")
-                    .select("plan_type, is_active")
-                    .eq("user_id", user.id)
-                    .maybeSingle();
-                if (!cancelled) {
-                    setActivePlan(data?.is_active ? data.plan_type : null);
-                }
-            } catch {
-                if (!cancelled) setActivePlan(null);
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [isOpen, user?.id]);
 
+        // 1. Synchronous seed from shared cache — offline-safe, no flicker.
+        const cached = getCachedPremium(user.id);
+        if (cached !== null && !cancelled) {
+            setActivePlan(cached ? "premium" : null);
+        }
+
+        // 2. Background resolve (no-op offline or if cache is fresh).
+        resolveSubscription(user.id)
+            .then((snap) => {
+                if (!cancelled) setActivePlan(snap.isPremium ? (snap.plan_type || "premium") : null);
+            })
+            .catch(() => {
+                // resolveSubscription already falls back to cache internally,
+                // so nothing to do here.
+            });
+
+        return () => { cancelled = true; };
+    }, [user?.id]);
+    useEffect(() => {
+        if (!user?.id) return;
+        const onOnline = () => {
+            resolveSubscription(user.id, { force: true })
+                .then((snap) => setActivePlan(snap.isPremium ? (snap.plan_type || "premium") : null))
+                .catch(() => { });
+        };
+        window.addEventListener("online", onOnline);
+        return () => window.removeEventListener("online", onOnline);
+    }, [user?.id]);
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         try {
             const stored = localStorage.getItem('medrae_dark_mode');
@@ -534,11 +555,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content" as IconTone },
                     { title: "Resources", url: "/resources", icon: FileText, iconTone: "content" as IconTone },
                     { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone },
-
-                    { title: "Live Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
                     { title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone },
-                    { title: "Create Class", url: "/live-classes/create", icon: Video, iconTone: "learning" as IconTone },
-
                 ],
             },
             {
@@ -589,9 +606,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             );
         }
 
-        // Subscription card always last — state-aware
         if (activePlan) {
-            // Paid user → crowned golden "My Plan" tile
             base.push({
                 title: "My Plan",
                 url: "/subscription",
@@ -600,7 +615,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 highlight: "premium" as const,
             });
         } else {
-            // Free user → encouraging blue "Upgrade" tile
             base.push({
                 title: "Upgrade",
                 url: "/subscription",
@@ -621,7 +635,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        {/* Backdrop — still dims the page */}
+                        {/* Backdrop */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -631,7 +645,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             className="fixed inset-0 z-[9999] bg-black/60 md:hidden"
                         />
 
-                        {/* FULL-SCREEN PAGE — opaque GitHub-style background */}
+                        {/* FULL-SCREEN PAGE — respects light/dark */}
                         <motion.div
                             ref={drawerRef}
                             variants={PAGE_VARIANTS}
@@ -639,12 +653,12 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             animate="visible"
                             exit="hidden"
                             className="fixed inset-0 z-[99999] md:hidden flex flex-col
-                                       bg-[#0d1117] dark:bg-[#0d1117]"
+                                       bg-white dark:bg-[#0d1117]"
                             style={{ willChange: "transform", backfaceVisibility: "hidden" }}
                         >
                             {/* Header */}
-                            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#21262d] flex-shrink-0 bg-[#0d1117]">
-                                <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-[#161b22] ring-1 ring-[#30363d]">
+                            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-200 dark:border-[#21262d] flex-shrink-0 bg-white dark:bg-[#0d1117]">
+                                <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-[#161b22] ring-1 ring-slate-200 dark:ring-[#30363d]">
                                     <svg
                                         viewBox="0 0 192 192"
                                         xmlns="http://www.w3.org/2000/svg"
@@ -690,12 +704,12 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                 <h2 className="flex-1 text-[15px] font-black tracking-tight">
                                     <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">MEDRAE </span>
                                     <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NURSING </span>
-                                    <span className="text-white">HUB</span>
+                                    <span className="text-slate-900 dark:text-white">HUB</span>
                                 </h2>
                                 <button
                                     onClick={() => { tapFeedback(); setIsOpen(false); }}
                                     aria-label="Close menu"
-                                    className="p-2.5 rounded-full bg-[#21262d] text-[#c9d1d9]
+                                    className="p-2.5 rounded-full bg-slate-100 dark:bg-[#21262d] text-slate-600 dark:text-[#c9d1d9]
                                                active:scale-90 transition-transform"
                                     style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                 >
@@ -704,7 +718,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             </div>
 
                             {/* SCROLLABLE CONTENT */}
-                            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-3.5 pb-10 pt-4 bg-[#0d1117]">
+                            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-3.5 pb-10 pt-4 bg-white dark:bg-[#0d1117]">
                                 {!contentReady ? (
                                     <div className="h-40 flex items-center justify-center">
                                         <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent animate-spin rounded-full" />
@@ -716,39 +730,39 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         transition={{ duration: 0.25, ease: "easeOut" }}
                                         className="space-y-5"
                                     >
-                                        {/* USER CARD — solid GitHub surface */}
+                                        {/* USER CARD */}
                                         <button
                                             onClick={() => handleNavigate("/profile")}
                                             className="w-full flex items-center gap-3 rounded-xl p-3.5 text-left
-                                                       bg-[#161b22] border-0
+                                                       bg-slate-50 dark:bg-[#161b22] border-0
                                                        active:scale-[0.98] transition-transform"
                                             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <div className="relative flex-shrink-0">
                                                 <Avatar className="h-12 w-12">
                                                     <AvatarImage src={profile?.avatar_url || avatarUrl || ""} className="object-cover" />
-                                                    <AvatarFallback className="bg-[#21262d] text-[#58a6ff] font-bold">
+                                                    <AvatarFallback className="bg-slate-200 dark:bg-[#21262d] text-blue-600 dark:text-[#58a6ff] font-bold">
                                                         {initials || "U"}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#161b22]
+                                                <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-50 dark:border-[#161b22]
                                                                   ${isOnline ? "bg-green-500" : "bg-gray-500"}`} />
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
                                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <h3 className="font-bold text-[15px] text-[#f0f6fc] truncate">
+                                                    <h3 className="font-bold text-[15px] text-slate-900 dark:text-[#f0f6fc] truncate">
                                                         {userProfile.name || "User"}
                                                     </h3>
                                                     {userProfile.role === "tutor" && (
                                                         <Crown className="h-3.5 w-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
                                                     )}
                                                 </div>
-                                                <p className="text-[11px] text-[#8b949e] truncate mt-0.5">
+                                                <p className="text-[11px] text-slate-500 dark:text-[#8b949e] truncate mt-0.5">
                                                     {userProfile.email || user?.email || ""}
                                                 </p>
                                                 <div className="flex items-center gap-1.5 mt-1.5">
                                                     <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full
-                                                        bg-[#21262d] text-[#58a6ff] border-0">
+                                                        bg-slate-100 dark:bg-[#21262d] text-blue-700 dark:text-[#58a6ff] border-0">
                                                         {userProfile.role || "Student"}
                                                     </Badge>
                                                     {activePlan && (
@@ -762,21 +776,21 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                         <Badge className={`text-[9px] px-1.5 py-0 h-4 rounded-full border-0 flex items-center gap-0.5
                                                             ${userProfile.streak <= 7 ? "bg-red-500 text-white" :
                                                                 userProfile.streak <= 30 ? "bg-purple-600 text-white" :
-                                                                    "bg-[#30363d] text-white"}`}>
+                                                                    "bg-slate-800 dark:bg-[#30363d] text-white"}`}>
                                                             <Flame className="h-2.5 w-2.5" />
                                                             {userProfile.streak}d
                                                         </Badge>
                                                     )}
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4 text-[#6e7681] flex-shrink-0" />
+                                            <ChevronRight className="h-4 w-4 text-slate-400 dark:text-[#6e7681] flex-shrink-0" />
                                         </button>
 
-                                        {/* ============== HORIZONTAL IDENTITY STRIP ============== */}
+                                        {/* HORIZONTAL IDENTITY STRIP */}
                                         <div className="-mx-3.5 px-3.5">
                                             <div className="flex items-center gap-2 px-1 pb-2">
                                                 <div className="h-1 w-4 rounded-full bg-[#58a6ff]/70" />
-                                                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7681]">
+                                                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-[#6e7681]">
                                                     Quick Access
                                                 </h3>
                                             </div>
@@ -802,7 +816,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                                     ${isUpgrade ? "ring-2 ring-[#58a6ff]/50" : ""}`}
                                                             >
                                                                 <item.icon className={`h-5 w-5 ${styles.icon}`} strokeWidth={2.3} />
-                                                                {/* Sparkle accent for premium tile */}
                                                                 {isPremium && (
                                                                     <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full
                                                                                      bg-gradient-to-br from-yellow-200 to-amber-400
@@ -811,9 +824,9 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                             </div>
                                                             <span
                                                                 className={`text-[10px] font-bold truncate w-full text-center
-                                                                    ${isPremium ? "text-amber-300" :
+                                                                    ${isPremium ? "text-amber-500 dark:text-amber-300" :
                                                                         isUpgrade ? "text-[#58a6ff]" :
-                                                                            "text-[#c9d1d9]"}`}
+                                                                            "text-slate-700 dark:text-[#c9d1d9]"}`}
                                                             >
                                                                 {item.title}
                                                             </span>
@@ -840,12 +853,12 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                             onClick={() => setShowLogoutDialog(true)}
                                             disabled={isLoggingOut}
                                             className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl transition-all
-               bg-[#2d1418] text-[#f85149]
+               bg-red-50 dark:bg-[#2d1418] text-red-600 dark:text-[#f85149]
                active:scale-[0.98] disabled:opacity-50"
                                             style={{ touchAction: 'manipulation' }}
                                         >
                                             {isLoggingOut ? (
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#f85149] border-t-transparent" />
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 dark:border-[#f85149] border-t-transparent" />
                                             ) : (
                                                 <LogOut className="h-4 w-4" />
                                             )}
@@ -854,10 +867,10 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                             </span>
                                         </button>
 
-                                        {/* ================= FOOTER ================= */}
-                                        <div className="mt-2 pt-6 pb-2 text-center select-none border-t border-[#21262d]">
+                                        {/* FOOTER */}
+                                        <div className="mt-2 pt-6 pb-2 text-center select-none border-t border-slate-200 dark:border-[#21262d]">
 
-                                            <p className="text-[7px] font-black tracking-[0.2em] text-[#6e7681] opacity-80">
+                                            <p className="text-[7px] font-black tracking-[0.2em] text-slate-400 dark:text-[#6e7681] opacity-80">
                                                 Medrae Nursing All rights reserved
                                             </p>
 
@@ -868,7 +881,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     rel="noopener noreferrer"
                                                     aria-label="MEDRAE Nursing Website"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full overflow-hidden
-                       bg-[#161b22] ring-1 ring-[#30363d]
+                       bg-white dark:bg-[#161b22] ring-1 ring-slate-200 dark:ring-[#30363d]
                        transition-transform hover:scale-110 active:scale-95"
                                                 >
                                                     <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" className="h-full w-full" aria-hidden="true">
@@ -933,7 +946,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                 href="https://instagram.com/medraenursing"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="mt-3 inline-block text-[10px] font-bold text-[#8b949e]
+                                                className="mt-3 inline-block text-[10px] font-bold text-slate-500 dark:text-[#8b949e]
                    hover:text-[#58a6ff] transition-colors tracking-wide"
                                             >
                                                 @medraenursing
@@ -943,22 +956,22 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                 <Link
                                                     to="/privacy"
                                                     onClick={() => setIsOpen(false)}
-                                                    className="text-[8px] font-bold text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
+                                                    className="text-[8px] font-bold text-slate-500 dark:text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
                                                 >
                                                     Privacy
                                                 </Link>
-                                                <span className="h-1 w-1 rounded-full bg-[#30363d]" />
+                                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-[#30363d]" />
                                                 <Link
                                                     to="/terms"
                                                     onClick={() => setIsOpen(false)}
-                                                    className="text-[8px] font-bold text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
+                                                    className="text-[8px] font-bold text-slate-500 dark:text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
                                                 >
                                                     Terms
                                                 </Link>
                                             </div>
 
                                             <div className="mt-3 text-center">
-                                                <p className="text-[8px] font-bold text-[#484f58] tracking-widest">
+                                                <p className="text-[8px] font-bold text-slate-400 dark:text-[#484f58] tracking-widest">
                                                     Version 2026.06 Medrae Learning System
                                                 </p>
                                             </div>
@@ -974,23 +987,23 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
             {/* Logout Dialog */}
             <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-                <AlertDialogContent className="bg-[#161b22] border border-[#30363d] rounded-3xl shadow-2xl max-w-sm">
+                <AlertDialogContent className="bg-white dark:bg-[#161b22] border border-slate-200 dark:border-[#30363d] rounded-3xl shadow-2xl max-w-sm">
                     <AlertDialogHeader className="text-center space-y-3">
-                        <div className="mx-auto w-14 h-14 rounded-full bg-[#2d1418] flex items-center justify-center">
-                            <LogOut className="w-6 h-6 text-[#f85149]" />
+                        <div className="mx-auto w-14 h-14 rounded-full bg-red-100 dark:bg-[#2d1418] flex items-center justify-center">
+                            <LogOut className="w-6 h-6 text-red-600 dark:text-[#f85149]" />
                         </div>
-                        <AlertDialogTitle className="text-xl font-bold text-[#f0f6fc]">
+                        <AlertDialogTitle className="text-xl font-bold text-slate-900 dark:text-[#f0f6fc]">
                             Sign out of Medrae?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="text-[#8b949e] text-sm leading-relaxed">
+                        <AlertDialogDescription className="text-slate-600 dark:text-[#8b949e] text-sm leading-relaxed">
                             You'll need to sign in again to access your dashboard, quizzes, and progress.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex gap-2 mt-5">
                         <AlertDialogCancel
                             onClick={() => tapFeedback()}
-                            className="flex-1 bg-[#21262d] hover:bg-[#30363d]
-                                       border-0 text-[#c9d1d9] rounded-2xl py-5 font-medium"
+                            className="flex-1 bg-slate-100 dark:bg-[#21262d] hover:bg-slate-200 dark:hover:bg-[#30363d]
+                                       border-0 text-slate-700 dark:text-[#c9d1d9] rounded-2xl py-5 font-medium"
                         >
                             Cancel
                         </AlertDialogCancel>

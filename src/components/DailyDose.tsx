@@ -106,7 +106,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                 whileHover={{ scale: 1.008 }}
                 whileTap={{ scale: 0.995 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-                className="relative w-full overflow-hidden rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-4 md:p-5 mb-5 text-left"
+                className="relative w-full overflow-hidden rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none p-4 md:p-5 mb-5 text-left font-sans antialiased"
             >
                 {/* blurred artwork background */}
                 {featured.artwork && (
@@ -212,7 +212,7 @@ function TopPickCard({ track, index, onClick }: { track: Track; index: number; o
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="group w-full text-left rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none overflow-hidden hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow"
+            className="group w-full text-left rounded-xl bg-gh-l-card dark:bg-gh-card shadow-none overflow-hidden hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow font-sans antialiased"
         >
             {/* ── Big artwork on top, edge to edge ── */}
             <div className="relative w-full aspect-square overflow-hidden">
@@ -308,7 +308,7 @@ function ApplePodcastsTile({ onClick }: { onClick: () => void }) {
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="group w-full text-left rounded-xl overflow-hidden shadow-none hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow bg-gh-l-card dark:bg-gh-card"
+            className="group w-full text-left rounded-xl overflow-hidden shadow-none hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/50 transition-shadow bg-gh-l-card dark:bg-gh-card font-sans antialiased"
         >
             {/* Top block — purple gradient with Apple logo, same height as episode artwork */}
             <div className="relative w-full aspect-square bg-gradient-to-br from-[#B150F2] to-[#8927EB] flex items-center justify-center">

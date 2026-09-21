@@ -506,12 +506,9 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
   const learningItems = useMemo(() => [
     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" as IconTone },
     { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content" as IconTone, badge: formatNumber(totalNotes) },
-
     { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone, badge: "New" },
-
-    { title: "Live Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
     { title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone },
-    { title: "Create Class", url: "/live-classes/create", icon: Video, iconTone: "learning" as IconTone },
+
 
   ], [totalNotes, totalEvents, formatNumber]);
 

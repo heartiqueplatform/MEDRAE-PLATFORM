@@ -23,14 +23,14 @@ import {
   FileText, Video, Link, UploadCloud, Download, Eye, X, Search, Heart, Trash2, Sparkles, Lock, CheckCircle2, Info,
   GraduationCap, BookOpen, Tag, Building, Layers, Calendar, CloudCheck
 } from "lucide-react";
-import { saveFile, getFile } from "@/lib/offlineStorage";
+import { saveFile, getFile, getAllFiles } from "@/lib/offlineStorage";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
 import { UnitPics } from "@/components/deco/UnitPics";
 
 // SKELETON LOADER COMPONENT
 const SkeletonCard = () => (
-  <div className="animate-pulse bg-white dark:bg-gray-800 border-0 border-b border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl p-3 md:p-4">
+  <div className="animate-pulse bg-white dark:bg-gray-800 border-0 sm:rounded-xl p-3 md:p-4">
     <div className="space-y-3">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
@@ -48,7 +48,7 @@ const SkeletonCard = () => (
         <div className="w-20 h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
         <div className="w-14 h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
-      <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800">
+      <div className="flex justify-between items-center pt-2 border-0">
         <div className="flex gap-2">
           <div className="w-14 h-7 bg-gray-200 dark:bg-gray-700 rounded"></div>
           <div className="w-14 h-7 bg-gray-200 dark:bg-gray-700 rounded"></div>
@@ -176,7 +176,19 @@ export default function AssessmentNotes() {
   const isFetchingStats = useRef(false);
   const lastStatsFetch = useRef(0);
   const pendingLikeUpdates = useRef<Map<string, boolean>>(new Map());
+  // ============ NETWORK RESILIENCE HELPERS ============
+  const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> =>
+    Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error("Network timeout")), ms)
+      ),
+    ]);
 
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  const [lastSyncFailed, setLastSyncFailed] = useState(false);
   // Get subscription info for display based on role (ONLY FOR DISPLAY)
   const getSubscriptionInfoForDisplay = () => {
     if (isTutor) {
@@ -262,58 +274,56 @@ export default function AssessmentNotes() {
     setLoadingNotes(true);
 
     try {
-      // 🚀 NOW PULLING ALL COLUMNS FOR FULL DISPLAY
-      const { data, error } = await supabase
-        .from("notes")
-        .select(`
-          id,
-          title,
-          description,
-          unit,
-          block,
-          course,
-          institution,
-          file_url,
-          file_type,
-          uploaded_by,
-          created_at,
-          tags,
-          is_featured,
-          is_public,
-          download_count,
-          view_count,
-          approved,
-          category,
-          sub_category,
-          visibility,
-          usage_type
-        `)
-        .eq("is_public", true)
-        .eq("approved", true)
-        .order("created_at", { ascending: false });
+      const { data, error } = await withTimeout(
+        supabase
+          .from("notes")
+          .select(`
+        id, title, description, unit, block, course, institution,
+        file_url, file_type, uploaded_by, created_at, tags,
+        is_featured, is_public, download_count, view_count, approved,
+        category, sub_category, visibility, usage_type
+      `)
+          .eq("is_public", true)
+          .eq("approved", true)
+          .order("created_at", { ascending: false }),
+        8000
+      );
 
       if (error) {
         console.error("Error fetching notes:", error);
+        setLastSyncFailed(true);
         const fallbackCache = localStorage.getItem("cachedAssessmentNotes");
         if (fallbackCache) {
-          const parsed = JSON.parse(fallbackCache);
-          setNotes(Array.isArray(parsed) ? parsed : (parsed.data || []));
-          setLoadingNotes(false);
-          isFetchingNotes.current = false;
-          return;
+          try {
+            const parsed = JSON.parse(fallbackCache);
+            const fallbackData = Array.isArray(parsed) ? parsed : (parsed.data || []);
+            if (isMounted.current && fallbackData.length > 0) setNotes(fallbackData);
+          } catch { }
         }
-        throw error;
+        return; // finally still runs
       }
 
       if (isMounted.current) {
         setNotes(data || []);
+        setLastSyncFailed(false);
         const cacheData = { data: data || [], timestamp: now };
         notesCache.set(cacheKey, cacheData);
         localStorage.setItem("cachedAssessmentNotes", JSON.stringify(cacheData));
       }
     } catch (error) {
       console.error("Error in fetchNotes:", error);
-      if (isMounted.current) setNotes([]);
+      setLastSyncFailed(true);
+      // ❌ DO NOT setNotes([]) — keep cached content visible
+      if (isMounted.current) {
+        const fallbackCache = localStorage.getItem("cachedAssessmentNotes");
+        if (fallbackCache) {
+          try {
+            const parsed = JSON.parse(fallbackCache);
+            const fallbackData = Array.isArray(parsed) ? parsed : (parsed.data || []);
+            if (fallbackData.length > 0) setNotes(fallbackData);
+          } catch { }
+        }
+      }
     } finally {
       if (isMounted.current) setLoadingNotes(false);
       isFetchingNotes.current = false;
@@ -346,50 +356,110 @@ export default function AssessmentNotes() {
       }
     }
 
+    // Hydrate instantly from localStorage cache
+    const localStats = localStorage.getItem(statsKey);
+    if (localStats) {
+      try {
+        const parsed = JSON.parse(localStats);
+        if (isMounted.current) {
+          setLikeCounts(parsed.likes || {});
+          setViewCounts(parsed.views || {});
+          setBookmarkedItems(parsed.bookmarked || []);
+        }
+      } catch { }
+    }
+
     isFetchingStats.current = true;
 
     try {
       const noteIds = notes.map(n => n.id);
 
-      const [likesRes, viewsRes, userLikesRes] = await Promise.all([
-        supabase.from("note_likes").select("note_id").in("note_id", noteIds),
-        supabase.from("note_views").select("note_id").in("note_id", noteIds),
-        session.user ? supabase.from("note_likes").select("note_id").eq("user_id", session.user.id).in("note_id", noteIds) : { data: [] },
-      ]);
+      const [likesRes, viewsRes, userLikesRes] = await withTimeout(
+        Promise.all([
+          supabase.from("note_likes").select("note_id").in("note_id", noteIds),
+          supabase.from("note_views").select("note_id").in("note_id", noteIds),
+          session.user
+            ? supabase.from("note_likes").select("note_id").eq("user_id", session.user.id).in("note_id", noteIds)
+            : Promise.resolve({ data: [] as any[] }),
+        ]),
+        8000
+      );
 
       const likesMap: Record<string, number> = {};
       const viewsMap: Record<string, number> = {};
       const userLiked: string[] = [];
 
-      likesRes.data?.forEach((l: any) => {
+      likesRes?.data?.forEach((l: any) => {
         likesMap[l.note_id] = (likesMap[l.note_id] || 0) + 1;
       });
-
-      viewsRes.data?.forEach((v: any) => {
+      viewsRes?.data?.forEach((v: any) => {
         viewsMap[v.note_id] = (viewsMap[v.note_id] || 0) + 1;
       });
-
       userLikesRes?.data?.forEach((ul: any) => {
         userLiked.push(ul.note_id);
       });
 
       if (isMounted.current) {
-        setLikeCounts(likesMap);
-        setViewCounts(viewsMap);
-        setBookmarkedItems(userLiked);
-        statsCache.set(statsKey, { likes: likesMap, views: viewsMap, bookmarked: userLiked, timestamp: now });
+        // Apply only slices that came back — don't wipe on partial failure
+        if (likesRes?.data) setLikeCounts(likesMap);
+        if (viewsRes?.data) setViewCounts(viewsMap);
+        if (userLikesRes?.data) setBookmarkedItems(userLiked);
+
+        const payload = {
+          likes: likesRes?.data ? likesMap : likeCounts,
+          views: viewsRes?.data ? viewsMap : viewCounts,
+          bookmarked: userLikesRes?.data ? userLiked : bookmarkedItems,
+          timestamp: now,
+        };
+        statsCache.set(statsKey, payload);
+        try {
+          localStorage.setItem(statsKey, JSON.stringify(payload));
+        } catch { }
       }
     } catch (err) {
       console.error("Error fetching stats:", err);
+      setLastSyncFailed(true);
+      // keep the hydrated cache intact
     } finally {
       isFetchingStats.current = false;
     }
   }, [notes, session?.user]);
-
+  // Hydrate offlineFiles from IndexedDB on mount
+  // Hydrate offlineFiles from IndexedDB on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const records = await getAllFiles();
+        if (!cancelled && Array.isArray(records)) {
+          setOfflineFiles(records.map((r: any) => r.id));
+        }
+      } catch (err) {
+        console.warn("Failed to hydrate offline files:", err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+  // ============ ONLINE / OFFLINE AUTO-RECOVERY ============
+  useEffect(() => {
+    const goOnline = () => {
+      setIsOnline(true);
+      setLastSyncFailed(false);
+      fetchNotes();
+      fetchStats();
+    };
+    const goOffline = () => setIsOnline(false);
 
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, [fetchNotes, fetchStats]);
   // Focus-based refresh
   useEffect(() => {
     let focusTimer: NodeJS.Timeout;
@@ -398,6 +468,7 @@ export default function AssessmentNotes() {
     const handleFocus = () => {
       if (focusTimer) clearTimeout(focusTimer);
       focusTimer = setTimeout(() => {
+        if (!navigator.onLine) return;   // ← skip while offline
         const now = Date.now();
         if (now - lastFocusRefresh < 30000) return;
         lastFocusRefresh = now;
@@ -427,35 +498,49 @@ export default function AssessmentNotes() {
 
   // ORIGINAL handleViewNote - ONLY uses isPremium for access check
   const handleViewNote = async (note: any) => {
-    // ONLY isPremium determines access - NO tutor bypass
     if (!isPremium) {
       setSelectedNoteForOverlay(note);
       setShowPremiumOverlay(true);
       return;
     }
 
-    setFullscreenNote(note);
-    if (session?.user?.id) {
-      const { error } = await supabase
-        .from("note_views")
-        .upsert(
-          { note_id: note.id, user_id: session.user.id },
-          { onConflict: ["note_id", "user_id"] }
-        );
+    // ✅ Try IndexedDB first so it works offline
+    let urlToOpen = note.file_url;
+    try {
+      const cached = await getFile(note.id);
+      if (cached) {
+        urlToOpen = URL.createObjectURL(cached);
+      }
+    } catch { }
 
-      if (!error && isMounted.current) {
-        setViewCounts((prev) => ({
-          ...prev,
-          [note.id]: (prev[note.id] || 0) + 1,
-        }));
-        statsCache.delete(`assessment_stats_${session.user.id}`);
+    setFullscreenNote({ ...note, file_url: urlToOpen });
+
+    // Fire-and-forget view count (don't block the viewer)
+    if (session?.user?.id) {
+      try {
+        const { error } = await supabase
+          .from("note_views")
+          .upsert(
+            { note_id: note.id, user_id: session.user.id },
+            { onConflict: ["note_id", "user_id"] }
+          );
+
+        if (!error && isMounted.current) {
+          setViewCounts((prev) => ({
+            ...prev,
+            [note.id]: (prev[note.id] || 0) + 1,
+          }));
+          statsCache.delete(`assessment_stats_${session.user.id}`);
+        }
+      } catch (err) {
+        // Offline — count will sync later if you add a queue
+        console.warn("View count failed (likely offline):", err);
       }
     }
   };
 
   // ORIGINAL handleDownloadNote - ONLY uses isPremium for access check
   const handleDownloadNote = async (noteId: string, url: string) => {
-    // ONLY isPremium determines access - NO tutor bypass
     if (!isPremium) {
       const note = notes.find(n => n.id === noteId);
       setSelectedNoteForOverlay(note);
@@ -465,12 +550,16 @@ export default function AssessmentNotes() {
 
     try {
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       await saveFile(noteId, blob);
-      if (isMounted.current) setOfflineFiles((prev) => [...prev, noteId]);
+      if (isMounted.current) {
+        setOfflineFiles((prev) => prev.includes(noteId) ? prev : [...prev, noteId]);
+      }
       alert("Saved offline!");
     } catch (err) {
       console.error("Failed to save offline:", err);
+      alert(navigator.onLine ? "Couldn't cache this file. Try again." : "You're offline — can't cache right now.");
     }
   };
 
@@ -660,7 +749,22 @@ export default function AssessmentNotes() {
                 Access practical guides, case studies, and research resources
               </div>
             </div>
-
+            {(!isOnline || lastSyncFailed) && (
+              <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border-0 text-amber-800 dark:text-amber-300 text-xs md:text-sm font-semibold px-3 py-2 rounded-xl">
+                <Info className="w-4 h-4 shrink-0" />
+                <span className="flex-1">
+                  {isOnline
+                    ? "Couldn't reach server — showing cached content."
+                    : "You're offline — showing cached content. Will refresh when back online."}
+                </span>
+                <button
+                  onClick={() => { fetchNotes(); fetchStats(); }}
+                  className="underline underline-offset-2 hover:no-underline whitespace-nowrap"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
             <div className="p-3 md:p-6 pt-0 md:pt-0 space-y-3 md:space-y-4">
               <div>
                 <p className="text-muted-foreground text-xs md:text-sm leading-relaxed">
@@ -726,7 +830,7 @@ export default function AssessmentNotes() {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="border-0 md:border rounded-xl md:rounded-xl p-3 md:p-4 space-y-3 md:space-y-4 bg-muted/20 mx-0"
+                className="border-0   rounded-xl md:rounded-xl p-3 md:p-4 space-y-3 md:space-y-4 bg-muted/20 mx-0"
               >
                 <form onSubmit={handleUpload} className="space-y-3 md:space-y-4">
                   <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2">
@@ -737,7 +841,7 @@ export default function AssessmentNotes() {
                     <Input name="unit" placeholder="Unit *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
                     <Input name="category" placeholder="Category *" required className="rounded-xl md:rounded-xl text-sm h-9 md:h-10" />
                     <select
-                      className="border-0 md:border rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
+                      className="border-0   rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
                       value={selectedBlock}
                       onChange={(e) => {
                         setSelectedBlock(e.target.value);
@@ -751,7 +855,7 @@ export default function AssessmentNotes() {
                       ))}
                     </select>
                     <select
-                      className="border-0 md:border rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
+                      className="border-0   rounded-xl md:rounded-xl px-3 py-2 text-sm bg-white text-black dark:bg-gray-800 dark:text-white h-9 md:h-10"
                       value={selectedSubcategory}
                       onChange={(e) => setSelectedSubcategory(e.target.value)}
                       required
@@ -808,7 +912,7 @@ export default function AssessmentNotes() {
               const hasNotes = sectionNotes.length > 0;
 
               return (
-                <div key={i} className="border-0 md:border rounded-xl md:rounded-xl px-0 md:px-3 bg-card">
+                <div key={i} className="border-0   rounded-xl md:rounded-xl px-0 md:px-3 bg-card">
                   <div className="py-3 md:py-4">
                     <div className="flex items-center gap-2 px-[4px] md:px-0">
                       <span className="text-sm md:text-base font-semibold">{section.title}</span>
@@ -855,7 +959,7 @@ export default function AssessmentNotes() {
                               </div>
                             ) : subNotes.length === 0 ? (
                               <p className="text-xs md:text-sm text-muted-foreground text-center py-6 md:py-8">
-                                No notes yet in {sub}. Check back soon!
+                                Check your Internet {sub}. connection!
                               </p>
                             ) : (
                               <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
@@ -1125,7 +1229,7 @@ export default function AssessmentNotes() {
       <AnimatePresence>
         {
           detailsOverlayNote && (
-            <div className="fixed inset-0 z-[250] flex items-center justify-center p-0 md:p-4">
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-0 md:p-4">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1138,10 +1242,10 @@ export default function AssessmentNotes() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0 md:border border-gray-200 dark:border-gray-800 rounded-xl md:rounded-xl"
+                className="relative w-full h-full md:max-w-lg md:max-h-[85vh] md:rounded-xl overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 shadow-2xl border-0   border-gray-200 dark:border-gray-800 rounded-xl md:rounded-xl"
               >
                 {/* Header with gradient bar - sticky on mobile */}
-                <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-0">
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
                   <div className="flex justify-between items-center p-3 md:p-4">
                     <div className="flex items-center gap-1.5 md:gap-2">
@@ -1254,7 +1358,7 @@ export default function AssessmentNotes() {
                   </div>
 
                   {/* Stats row */}
-                  <div className="flex items-center justify-between pt-2 md:pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center justify-between pt-2 md:pt-3 border-0">
                     <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
                       <span className="flex items-center gap-0.5 md:gap-1">
                         <Eye className="h-3 w-3 md:h-4 md:w-4" /> {viewCounts[detailsOverlayNote.id] || 0} views
@@ -1304,7 +1408,7 @@ export default function AssessmentNotes() {
                   </div>
 
                   {!isPremium && (
-                    <div className="mt-1 md:mt-2 p-2 md:p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl md:rounded-xl border-0 md:border border-amber-200 dark:border-amber-800">
+                    <div className="mt-1 md:mt-2 p-2 md:p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl md:rounded-xl border-0">
                       <p className="text-[10px] md:text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
                         <Lock className="h-2.5 w-2.5 md:h-3 md:w-3" />
                         This is a premium resource. Upgrade to view the full document.

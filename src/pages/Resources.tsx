@@ -175,7 +175,19 @@ export function Resources() {
   const channelRef = useRef<any>(null);
   const lastStatsFetch = useRef(0);
   const pendingLikeUpdates = useRef<Map<string, boolean>>(new Map());
+  // ============ NETWORK RESILIENCE HELPERS ============
+  const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> =>
+    Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error("Network timeout")), ms)
+      ),
+    ]);
 
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  const [lastSyncFailed, setLastSyncFailed] = useState(false);
   // Get subscription info for display based on role (ONLY FOR DISPLAY)
   const getSubscriptionInfoForDisplay = () => {
     if (isTutor) {
@@ -264,63 +276,79 @@ export function Resources() {
     setLoadingNotes(true);
 
     try {
-      // 🚀 NOW PULLING ALL COLUMNS FOR FULL DISPLAY
-      const { data, error } = await supabase
-        .from("notes")
-        .select(`
-          id,
-          title,
-          description,
-          unit,
-          block,
-          course,
-          institution,
-          file_url,
-          file_type,
-          uploaded_by,
-          created_at,
-          tags,
-          is_featured,
-          is_public,
-          download_count,
-          view_count,
-          approved,
-          category,
-          sub_category,
-          visibility,
-          usage_type
-        `)
-        .eq("is_public", true)
-        .eq("approved", true)
-        .order("created_at", { ascending: false });
+      const { data, error } = await withTimeout(
+        supabase
+          .from("notes")
+          .select(`
+        id,
+        title,
+        description,
+        unit,
+        block,
+        course,
+        institution,
+        file_url,
+        file_type,
+        uploaded_by,
+        created_at,
+        tags,
+        is_featured,
+        is_public,
+        download_count,
+        view_count,
+        approved,
+        category,
+        sub_category,
+        visibility,
+        usage_type
+      `)
+          .eq("is_public", true)
+          .eq("approved", true)
+          .order("created_at", { ascending: false }),
+        8000
+      );
 
       if (error) {
         console.error("Error fetching notes:", error);
+        setLastSyncFailed(true);
+        // Keep whatever is already in state — don't wipe
         const fallbackCache = localStorage.getItem("cachedNotes");
         if (fallbackCache) {
-          const parsed = JSON.parse(fallbackCache);
-          setNotes(Array.isArray(parsed) ? parsed : (parsed.data || []));
-          setLoadingNotes(false);
-          isFetchingNotes.current = false;
-          return;
+          try {
+            const parsed = JSON.parse(fallbackCache);
+            const fallbackData = Array.isArray(parsed) ? parsed : (parsed.data || []);
+            if (isMounted.current && fallbackData.length > 0) {
+              setNotes(fallbackData);
+            }
+          } catch { }
         }
-        throw error;
+        return; // finally still runs
       }
 
       if (isMounted.current) {
         setNotes(data || []);
+        setLastSyncFailed(false);
         const cacheData = { data: data || [], timestamp: now };
         notesCache.set(cacheKey, cacheData);
         localStorage.setItem("cachedNotes", JSON.stringify(cacheData));
       }
     } catch (error) {
       console.error("Error in fetchNotes:", error);
+      setLastSyncFailed(true);
+      // ❌ DO NOT setNotes([]) — keep cached content visible
       if (isMounted.current) {
-        setNotes([]);
+        const fallbackCache = localStorage.getItem("cachedNotes");
+        if (fallbackCache) {
+          try {
+            const parsed = JSON.parse(fallbackCache);
+            const fallbackData = Array.isArray(parsed) ? parsed : (parsed.data || []);
+            if (fallbackData.length > 0) setNotes(fallbackData);
+          } catch { }
+        }
       }
     } finally {
       if (isMounted.current) setLoadingNotes(false);
-      isFetchingNotes.current = false;
+      isFetchingNotes.current = false; // ← ALWAYS resets now, even on timeout
     }
   }, []);
 
@@ -334,20 +362,25 @@ export function Resources() {
     let lastFocusRefresh = 0;
 
     const handleFocus = () => {
-      const now = Date.now();
-      const cached = localStorage.getItem("cachedNotes");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (now - parsed.timestamp < 600000) return;
-      }
-      fetchNotes();
-      fetchStats();
+      clearTimeout(focusTimer);
+      focusTimer = setTimeout(() => {
+        const now = Date.now();
+        const cached = localStorage.getItem("cachedNotes");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (now - parsed.timestamp < 600000) return;
+          } catch { }
+        }
+        fetchNotes();
+        fetchStats();
+      }, 1500);
     };
 
     window.addEventListener('focus', handleFocus);
     return () => {
       window.removeEventListener('focus', handleFocus);
-      if (focusTimer) clearTimeout(focusTimer);
+      clearTimeout(focusTimer);
     };
   }, [fetchNotes]);
 
@@ -370,25 +403,40 @@ export function Resources() {
       }
     }
 
+    // Try localStorage cache first for instant paint
+    const localStats = localStorage.getItem(statsKey);
+    if (localStats) {
+      try {
+        const parsed = JSON.parse(localStats);
+        if (isMounted.current) {
+          setLikeCounts(parsed.likes || {});
+          setViewCounts(parsed.views || {});
+          setBookmarkedItems(parsed.bookmarked || []);
+        }
+      } catch { }
+    }
+
     isFetchingStats.current = true;
 
     try {
-      const noteIds = notes.map(n => n.id);
+      const [likesRes, viewsRes, userLikesRes] = await withTimeout(
+        Promise.all([
+          supabase.from("note_likes").select("note_id"),
+          supabase.from("note_views").select("note_id"),
+          supabase.from("note_likes").select("note_id").eq("user_id", session.user.id),
+        ]),
+        8000
+      );
 
-      const [likesRes, viewsRes, userLikesRes] = await Promise.all([
-        supabase.from("note_likes").select("note_id"),
-        supabase.from("note_views").select("note_id"),
-        supabase.from("note_likes").select("note_id").eq("user_id", session.user.id),
-      ]);
       const likesMap: Record<string, number> = {};
       const viewsMap: Record<string, number> = {};
       const userLiked: string[] = [];
 
-      likesRes.data?.forEach((l: any) => {
+      likesRes?.data?.forEach((l: any) => {
         likesMap[l.note_id] = (likesMap[l.note_id] || 0) + 1;
       });
 
-      viewsRes.data?.forEach((v: any) => {
+      viewsRes?.data?.forEach((v: any) => {
         viewsMap[v.note_id] = (viewsMap[v.note_id] || 0) + 1;
       });
 
@@ -397,22 +445,52 @@ export function Resources() {
       });
 
       if (isMounted.current) {
-        setLikeCounts(likesMap);
-        setViewCounts(viewsMap);
-        setBookmarkedItems(userLiked);
-        statsCache.set(statsKey, { likes: likesMap, views: viewsMap, bookmarked: userLiked, timestamp: now });
+        // ✅ Only apply slices that actually came back — don't wipe on partial failure
+        if (likesRes?.data) setLikeCounts(likesMap);
+        if (viewsRes?.data) setViewCounts(viewsMap);
+        if (userLikesRes?.data) setBookmarkedItems(userLiked);
+
+        const payload = {
+          likes: likesRes?.data ? likesMap : likeCounts,
+          views: viewsRes?.data ? viewsMap : viewCounts,
+          bookmarked: userLikesRes?.data ? userLiked : bookmarkedItems,
+          timestamp: now,
+        };
+        statsCache.set(statsKey, payload);
+        // ✅ Persist so reload on flaky net still shows counts
+        try {
+          localStorage.setItem(statsKey, JSON.stringify(payload));
+        } catch { }
       }
     } catch (err) {
       console.error("Error fetching stats:", err);
+      setLastSyncFailed(true);
+      // State already hydrated from localStorage above — leave it alone
     } finally {
-      isFetchingStats.current = false;
+      isFetchingStats.current = false; // ← always resets
     }
   }, [notes, session?.user]);
 
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+  // ============ ONLINE / OFFLINE AUTO-RECOVERY ============
+  useEffect(() => {
+    const goOnline = () => {
+      setIsOnline(true);
+      setLastSyncFailed(false);
+      fetchNotes();
+      fetchStats();
+    };
+    const goOffline = () => setIsOnline(false);
 
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, [fetchNotes, fetchStats]);
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setFullscreenNote(null);
@@ -737,7 +815,7 @@ export function Resources() {
   };
 
   if (subscriptionLoading) {
-    return <GlobalLoader message="Verifying subscription..." />;
+    return <GlobalLoader />;
   }
 
   return (
@@ -769,7 +847,25 @@ export function Resources() {
 
               {/* REMOVED PADDING FROM CONTENT ON MOBILE */}
               <CardContent className="space-y-4 md:space-y-6 px-[1px] md:px-6 pb-0 md:pb-6">
-                {/* Description Area - REMOVED PADDING ON MOBILE */}
+                {/* ============ OFFLINE / SYNC-FAILED BANNER ============ */}
+                {(!isOnline || lastSyncFailed) && (
+                  <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border-0 text-amber-800 dark:text-amber-300 text-xs md:text-sm font-semibold px-3 py-2 rounded-xl mx-2 md:mx-0">
+                    <Info className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">
+                      {isOnline
+                        ? "Couldn't reach server — showing cached content."
+                        : "You're offline — showing cached content. Will refresh when back online."}
+                    </span>
+                    <button
+                      onClick={() => { fetchNotes(); fetchStats(); }}
+                      className="underline underline-offset-2 hover:no-underline whitespace-nowrap"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
+                {/* Description Area */}
                 <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-xl md:rounded-xl p-3 md:p-5 border-0 mx-0">
 
                   <motion.div layout>
@@ -1066,7 +1162,7 @@ export function Resources() {
                   </h2>
                   {blockCategories.filter((cat) => cat.id === selectedBlock).map((cat) => (
                     <div key={cat.id}>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-3 lg:gap-4 w-full">
+                      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
                         {loadingNotes ? (
                           // SKELETON LOADERS - 6 cards while loading
                           Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
@@ -1077,8 +1173,8 @@ export function Resources() {
                         ).length === 0 ? (
                           <div className="col-span-full flex flex-col items-center justify-center py-8 md:py-12 px-4 md:px-6 border-0 shadow-md rounded-none md:rounded-xl">
                             <div className="text-center">
-                              <CardTitle className="text-base md:text-lg text-center text-muted-foreground">No notes available</CardTitle>
-                              <CardDescription className="text-center text-muted-foreground text-xs md:text-sm">Check back soon for updates!</CardDescription>
+                              <CardTitle className="text-base md:text-lg text-center text-muted-foreground">Check your Internet</CardTitle>
+                              <CardDescription className="text-center text-muted-foreground text-xs md:text-sm">Connection!</CardDescription>
                             </div>
                           </div>
                         ) : (
@@ -1112,10 +1208,10 @@ export function Resources() {
                                     </div>
 
                                     <div className="space-y-0.5 md:space-y-1">
-                                      <CardTitle className="text-base md:text-lg font-bold leading-tight text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors line-clamp-1">
+                                      <CardTitle className="text-base md:text-lg font-bold leading-snug text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3rem]">
                                         {note.title}
                                       </CardTitle>
-                                      <CardDescription className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 line-clamp-2 md:line-clamp-3 leading-relaxed">
+                                      <CardDescription className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
                                         {note.description || "No description provided"}
                                       </CardDescription>
                                     </div>

@@ -275,7 +275,7 @@ function ProgressCard() {
                 </>
             ) : (
                 <div className="py-4 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No questions attempted yet</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No questions attempted yet Or no Internet connection</p>
                     <button
                         onClick={() => navigate("/Medrae-quizzes")}
                         className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"

@@ -21,7 +21,7 @@ import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from
 import { NotesEvaluationPanel } from "@/components/QuizPage/NotesEvaluationPanel";
 import { useSession } from "@supabase/auth-helpers-react";
 import { cn } from "@/lib/utils";
-
+import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 interface Question {
   id: string;
   quiz_id: string;
@@ -43,15 +43,9 @@ interface Attempt {
   answers_json: Record<string, string>;
 }
 
-interface CachedSubscription {
-  plan_type: string;
-  is_active: boolean;
-  expires_at: string | null;
-  cached_at: number;
-}
 
 const TIMER_DURATION = 300_000; // 3 hours
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache for subscription
+
 const QUESTIONS_PER_BATCH = 20;
 
 // Guard against undefined / "undefined" / null IDs before they hit Supabase.
@@ -96,35 +90,7 @@ async function fetchTotalQuestionCount(supabase: any, quizId: string) {
   return count || 0;
 }
 
-// Cache subscription check
-async function getCachedSubscription(userId: string): Promise<CachedSubscription | null> {
-  try {
-    const cached = localStorage.getItem(`sub_${userId}`);
-    if (!cached) return null;
 
-    const data: CachedSubscription = JSON.parse(cached);
-    const now = Date.now();
-
-    // Check if cache is still valid (5 minutes)
-    if (now - data.cached_at < CACHE_DURATION) {
-      return data;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function cacheSubscription(userId: string, subscription: any) {
-  const cacheData: CachedSubscription = {
-    plan_type: subscription?.plan_type || 'free',
-    is_active: subscription?.is_active || false,
-    expires_at: subscription?.expires_at || null,
-    cached_at: Date.now(),
-  };
-  localStorage.setItem(`sub_${userId}`, JSON.stringify(cacheData));
-}
 
 export default function QuizPage() {
   const session = useSession();
@@ -170,7 +136,9 @@ export default function QuizPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>("All");
   const courseOptions = ["All", "BSN", "KRCHN", "KRN",];
   const [loading, setLoading] = useState(true);
-  const [isPremium, setIsPremium] = useState(false);
+  const [isPremium, setIsPremium] = useState<boolean>(
+    () => getCachedPremium(userId) ?? false
+  );
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [checkpointOverlay, setCheckpointOverlay] = useState<{
@@ -474,62 +442,22 @@ export default function QuizPage() {
       setLoading(true);
 
       // 1. Check user subscription with caching
+
+      // 1. Subscription — seed from cache, refresh in background
       if (userId) {
+        // Synchronous seed: this is what fixes offline premium users
+        const cached = getCachedPremium(userId);
+        if (cached !== null && !cancelled) setIsPremium(cached);
+
         try {
-          // Try to get cached subscription first
-          const cachedSub = await getCachedSubscription(userId);
-
-          if (cachedSub && cachedSub.is_active && (cachedSub.plan_type === 'pro' || cachedSub.plan_type === 'premium')) {
-            // Check if subscription is expired
-            const expiry = cachedSub.expires_at ? new Date(cachedSub.expires_at) : null;
-            const isNotExpired = expiry ? expiry > new Date() : true;
-            if (isNotExpired) {
-              setIsPremium(true);
-            } else {
-              // Cache expired, need to fetch fresh
-              const { data: sub, error: subError } = await supabase
-                .from("subscriptions")
-                .select("plan_type, is_active, expires_at")
-                .eq("user_id", userId)
-                .maybeSingle();
-
-              if (sub && !subError) {
-                const now = new Date();
-                const expiry = sub.expires_at ? new Date(sub.expires_at) : null;
-                const hasActivePlan = sub.is_active === true;
-                const isPaidTier = sub.plan_type === 'pro' || sub.plan_type === 'premium';
-                const isNotExpired = expiry ? expiry > now : true;
-                const premiumStatus = hasActivePlan && isPaidTier && isNotExpired;
-                setIsPremium(premiumStatus);
-                await cacheSubscription(userId, sub);
-              }
-            }
-          } else {
-            // No valid cache, fetch fresh
-            const { data: sub, error: subError } = await supabase
-              .from("subscriptions")
-              .select("plan_type, is_active, expires_at")
-              .eq("user_id", userId)
-              .maybeSingle();
-
-            if (sub && !subError) {
-              const now = new Date();
-              const expiry = sub.expires_at ? new Date(sub.expires_at) : null;
-              const hasActivePlan = sub.is_active === true;
-              const isPaidTier = sub.plan_type === 'pro' || sub.plan_type === 'premium';
-              const isNotExpired = expiry ? expiry > now : true;
-              const premiumStatus = hasActivePlan && isPaidTier && isNotExpired;
-              setIsPremium(premiumStatus);
-              await cacheSubscription(userId, sub);
-            }
-          }
+          const snap = await resolveSubscription(userId);
+          if (!cancelled) setIsPremium(snap.isPremium);
         } catch (err) {
           console.error("Subscription check error:", err);
-          // Fallback: assume not premium
-          setIsPremium(false);
+          // resolveSubscription already falls back to cache internally,
+          // so nothing to do here — do NOT force isPremium=false.
         }
       }
-
       /** STEP 1: Load from Cache (IndexedDB) for INSTANT display **/
       const offlineUnit = await getUnitOffline(unit);
       let currentQuizId = null;
@@ -662,7 +590,17 @@ export default function QuizPage() {
       cancelled = true;
     };
   }, [unit, userId, session]);
-
+  // Refresh premium status when the device comes back online
+  useEffect(() => {
+    if (!userId) return;
+    const onOnline = () => {
+      resolveSubscription(userId, { force: true }).then((snap) => {
+        setIsPremium(snap.isPremium);
+      });
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [userId]);
   // Load more questions function with caching
   const handleLoadMore = useCallback(async () => {
     if (!quizId || isLoadingMore || !hasMoreQuestions || !isPremium) return;

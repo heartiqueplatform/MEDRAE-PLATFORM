@@ -6,7 +6,8 @@ import { liveClassService, registrationService } from '@/services/liveClassServi
 import { toast } from 'sonner';
 import {
     Calendar, Clock, Users, Video, MapPin, Award,
-    Trash2, AlertTriangle, X, Loader2
+    Trash2, AlertTriangle, X, Loader2, ChevronLeft,
+    Plus, LayoutGrid
 } from 'lucide-react';
 
 // Skeleton Loader Component
@@ -15,11 +16,14 @@ const LiveClassesSkeleton = () => {
         <div className="container mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 max-w-full animate-pulse">
             {/* Header Skeleton */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 mb-4 md:mb-8 px-4 md:px-0 pt-4 md:pt-0 pb-3 md:pb-0">
-                <div className="space-y-2">
-                    <div className="h-8 md:h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-48 md:w-64"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 md:w-48"></div>
+                <div className="flex items-start gap-3">
+                    <div className="h-9 w-9 md:h-10 md:w-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    <div className="space-y-2">
+                        <div className="h-8 md:h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-44 md:w-64"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 md:w-48"></div>
+                    </div>
                 </div>
-                <div className="flex gap-1.5 md:gap-2">
+                <div className="flex flex-wrap gap-1.5 md:gap-2">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="h-8 md:h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-16 md:w-20"></div>
                     ))}
@@ -36,21 +40,22 @@ const LiveClassesSkeleton = () => {
                 ))}
             </div>
 
-            {/* Cards Skeleton - Updated grid for full width */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 px-0 md:px-0">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
+            {/* Cards Skeleton - Matches real card grid (1 / 2 / 3 cols) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-0 md:gap-5 lg:gap-6 px-0 md:px-0">
+                {[1, 2, 3].map((i) => (
                     <div key={i} className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl overflow-hidden">
-                        <div className="h-40 md:h-48 bg-gray-200 dark:bg-gray-700"></div>
+                        <div className="h-48 md:h-56 bg-gray-200 dark:bg-gray-700"></div>
                         <div className="p-4 md:p-6 space-y-3">
-                            <div className="flex justify-between items-start">
+                            <div className="flex justify-between items-start gap-2">
                                 <div className="h-5 md:h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                                 <div className="h-5 md:h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                                 <div className="h-3 md:h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                                <div className="h-3 md:h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
                                 <div className="h-3 md:h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-1.5 pt-1">
                                 <div className="h-3 md:h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
                                 <div className="h-3 md:h-4 bg-gray-200 dark:bg-gray-700 rounded w-28"></div>
                                 <div className="h-3 md:h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
@@ -153,7 +158,6 @@ export const LiveClassesDashboard = () => {
     }
 
     return (
-        // ✅ CHANGED: Removed max-w-2xl, added full width
         <div className="container mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 max-w-full">
             {/* Delete Confirmation Modal */}
             {deleteModalOpen && classToDelete && (
@@ -235,11 +239,21 @@ export const LiveClassesDashboard = () => {
                 </div>
             )}
 
-            {/* Header - Mobile Native */}
+            {/* Header - Mobile Native with Back Icon + Action Buttons */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 mb-4 md:mb-8 px-4 md:px-0 pt-4 md:pt-0 pb-3 md:pb-0 border-0">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Live Classes/Sessions</h1>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 md:mt-1">Join live sessions and earn CPD points</p>
+                <div className="flex items-start gap-2 md:gap-3 w-full md:w-auto">
+                    {/* Smart Back Icon - No background, no text */}
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-1.5 md:p-2 -ml-1.5 md:-ml-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0"
+                        aria-label="Go back"
+                    >
+                        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Live Classes/Sessions</h1>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 md:mt-1">Join live sessions and earn CPD points</p>
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5 md:gap-2">
                     {['upcoming', 'live', 'completed', 'all'].map((status) => (
@@ -248,7 +262,7 @@ export const LiveClassesDashboard = () => {
                             onClick={() => setFilter(status)}
                             className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[10px] md:text-sm font-medium transition-all ${filter === status
                                 ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                 }`}
                         >
                             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -281,8 +295,8 @@ export const LiveClassesDashboard = () => {
                 </div>
             </div>
 
-            {/* ✅ CHANGED: Class Cards - Grid with more columns on desktop */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-0 md:gap-4 lg:gap-6 px-0 md:px-0">
+            {/* Class Cards - Wider layout, no text cut-off */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-0 md:gap-5 lg:gap-6 px-0 md:px-0">
                 {filteredClasses.map((cls: any, index: number) => {
                     const isRegistered = registeredIds.has(cls.id);
                     const isFull = cls.registration_count >= cls.max_students;
@@ -310,7 +324,7 @@ export const LiveClassesDashboard = () => {
                             <div className="bg-white dark:bg-muted/30 rounded-none md:rounded-xl shadow-none md:shadow-md hover:md:shadow-xl transition-all duration-300 overflow-hidden border-0">
                                 {/* Cover Image if exists */}
                                 {cls.cover_image_url && (
-                                    <div className="h-40 md:h-48 w-full overflow-hidden">
+                                    <div className="h-48 md:h-56 w-full overflow-hidden">
                                         <img
                                             src={cls.cover_image_url}
                                             alt={cls.title}
@@ -321,38 +335,39 @@ export const LiveClassesDashboard = () => {
 
                                 <div className="p-4 md:p-6">
                                     <div className="flex justify-between items-start gap-2 mb-2 md:mb-3">
-                                        <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
+                                        <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white flex-1">
                                             {cls.title}
                                         </h3>
                                         {getStatusBadge()}
                                     </div>
 
+                                    {/* Truncated Description - full details on class page */}
                                     <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 mb-3 md:mb-4 line-clamp-2">
                                         {cls.description}
                                     </p>
 
                                     <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
                                         <div className="flex items-center gap-1.5 md:gap-2">
-                                            <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                            <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
                                             <span>{new Date(cls.class_date).toLocaleDateString()}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5 md:gap-2">
-                                            <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                            <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
                                             <span>{cls.start_time.slice(0, 5)} - {cls.end_time.slice(0, 5)}</span>
                                         </div>
                                         <div className="flex items-center gap-1.5 md:gap-2">
-                                            <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                            <Users className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
                                             <span>{cls.registration_count} / {cls.max_students}</span>
                                         </div>
                                         {cls.is_cpd_eligible && (
                                             <div className="flex items-center gap-1.5 md:gap-2 text-green-600">
-                                                <Award className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                                <Award className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" />
                                                 <span>{cls.cpd_points} CPD Points</span>
                                             </div>
                                         )}
                                         {isClassOwner && (
                                             <div className="flex items-center gap-1.5 md:gap-2 text-blue-600 text-[10px] md:text-xs">
-                                                <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                                                <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />
                                                 <span>You are the host</span>
                                             </div>
                                         )}
@@ -396,7 +411,7 @@ export const LiveClassesDashboard = () => {
                                         {!isUpcoming && (
                                             <button
                                                 onClick={() => navigate(`/live-classes/${cls.id}`)}
-                                                className="flex-1 px-3 md:px-4 py-1.5 md:py-2 border-0 text-gray-700 rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-50 transition-colors"
+                                                className="flex-1 px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-[10px] md:text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                             >
                                                 Details
                                             </button>

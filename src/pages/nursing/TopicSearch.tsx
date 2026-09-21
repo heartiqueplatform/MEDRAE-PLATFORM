@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    ArrowLeft,
     BookOpen,
     ChevronRight,
     GraduationCap,
     HelpCircle,
     Layers,
-    Loader2,
     Medal,
     Search,
     Sparkles,
@@ -35,7 +33,7 @@ const difficultyStyles: Record<string, string> = {
 
 function TopicCardSkeleton() {
     return (
-        <div className="md:rounded-2xl md:border-0 bg-white/70 p-3 md:p-4 md:shadow-sm backdrop-blur dark:bg-muted/30 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+        <div className="rounded-2xl bg-white/70 p-3 md:p-4 backdrop-blur dark:bg-muted/30">
             <div className="flex items-start justify-between gap-3 md:gap-4">
                 <div className="min-w-0 flex-1">
                     <div className="mb-1.5 md:mb-2 flex flex-wrap items-center gap-1.5 md:gap-2">
@@ -87,10 +85,10 @@ export default function TopicSearch() {
 
     return (
         <div className="min-h-screen bg-transparent text-slate-950 dark:text-white pb-20 md:pb-6">
-            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-0 md:px-4 py-4 md:py-6 lg:px-8">
+            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-2 py-4 md:py-6 lg:px-8">
 
-                {/* Header Card - full width on mobile */}
-                <div className="relative overflow-hidden md:rounded-2xl md:border-0 bg-white/70 p-4 md:p-6 md:shadow-xl backdrop-blur-xl dark:bg-muted/30 sm:p-8 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                {/* Header Card */}
+                <div className="relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-6 backdrop-blur-xl dark:bg-muted/30 sm:p-8">
                     <div className="absolute right-0 top-0 h-24 md:h-32 w-24 md:w-32 rounded-bl-full bg-purple-100/80 dark:bg-purple-400/10" />
                     <div className="absolute bottom-0 left-0 h-20 md:h-24 w-20 md:w-24 rounded-tr-full bg-violet-100/80 dark:bg-violet-400/10" />
 
@@ -99,16 +97,24 @@ export default function TopicSearch() {
                         <div className="mb-3 md:mb-4 flex items-center justify-between">
                             <button
                                 onClick={() => navigate("/nursing")}
-                                className="inline-flex w-fit items-center gap-1.5 md:gap-2 rounded-full border-0 bg-white/70 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:bg-white hover:text-emerald-700 dark:bg-muted/30 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-emerald-300"
+                                aria-label="Go back"
+                                title="Back"
+                                className="inline-flex items-center justify-center h-8 w-8 md:h-9 md:w-9 rounded-full text-slate-700 dark:text-slate-200 transition-colors hover:text-emerald-700 dark:hover:text-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
                             >
-                                <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                Back to Home
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4 md:h-5 md:w-5"
+                                    aria-hidden="true"
+                                >
+                                    <polyline points="15 18 9 12 15 6" />
+                                </svg>
                             </button>
 
-                            <div className="inline-flex items-center gap-1 md:gap-2 rounded-full bg-purple-100 px-2 md:px-3 py-0.5 md:py-1 text-xs md:text-sm font-semibold text-purple-700 ring-1 ring-purple-200 dark:bg-purple-400/10 dark:text-purple-300 dark:ring-purple-400/20">
-                                <Zap className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                                Quick Practice
-                            </div>
                         </div>
 
                         {/* Title + Stats */}
@@ -123,20 +129,20 @@ export default function TopicSearch() {
                             </div>
 
                             {!loading && (
-                                <div className="grid grid-cols-3 gap-2 md:gap-3 md:rounded-2xl md:border-0 bg-white/70 p-2 md:p-3 md:shadow-sm backdrop-blur dark:bg-slate-950/40 rounded-lg md:rounded-2xl">
-                                    <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
+                                <div className="grid grid-cols-3 gap-2 md:gap-3 rounded-2xl bg-white/70 p-2 md:p-3 backdrop-blur dark:bg-slate-950/40">
+                                    <div className="rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
                                         <Target className="mx-auto mb-0.5 md:mb-1 h-3.5 w-3.5 md:h-4 md:w-4 text-purple-600 dark:text-purple-300" />
                                         <p className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300">
                                             {formatNumberWithImpact(topics.length)} Topics
                                         </p>
                                     </div>
-                                    <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
+                                    <div className="rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
                                         <Medal className="mx-auto mb-0.5 md:mb-1 h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600 dark:text-amber-300" />
                                         <p className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300">
                                             {formatNumberWithImpact(totalQuestions)} Qs
                                         </p>
                                     </div>
-                                    <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
+                                    <div className="rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-slate-800/70">
                                         <Layers className="mx-auto mb-0.5 md:mb-1 h-3.5 w-3.5 md:h-4 md:w-4 text-emerald-600 dark:text-emerald-300" />
                                         <p className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300">All Years</p>
                                     </div>
@@ -144,7 +150,7 @@ export default function TopicSearch() {
                             )}
                         </div>
 
-                        {/* Search Bar - phone optimized */}
+                        {/* Search Bar */}
                         <div className="relative mt-4 md:mt-5">
                             <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-slate-400" />
                             <input
@@ -153,7 +159,7 @@ export default function TopicSearch() {
                                 placeholder={`Search ${formatNumberWithImpact(topics.length)} topics...`}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-white/90 py-3 md:py-4 pl-10 md:pl-12 pr-9 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur transition focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-800/90 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-purple-500 dark:focus:ring-purple-500/20"
+                                className="w-full rounded-xl border border-slate-200 bg-white/90 py-3 md:py-4 pl-10 md:pl-12 pr-9 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 backdrop-blur transition focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100 dark:border-slate-700 dark:bg-slate-800/90 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-purple-500 dark:focus:ring-purple-500/20"
                                 autoComplete="off"
                             />
                             {search && (
@@ -173,9 +179,9 @@ export default function TopicSearch() {
                     </div>
                 </div>
 
-                {/* Results - full width on mobile */}
+                {/* Results */}
                 {loading ? (
-                    <div className="grid gap-0 md:gap-3 px-3 md:px-0">
+                    <div className="grid gap-3 px-0">
                         <TopicCardSkeleton />
                         <TopicCardSkeleton />
                         <TopicCardSkeleton />
@@ -183,9 +189,9 @@ export default function TopicSearch() {
                         <TopicCardSkeleton />
                     </div>
                 ) : (
-                    <div className="grid gap-0 md:gap-3 px-3 md:px-0">
+                    <div className="grid gap-3 px-0">
                         {displayedTopics.length === 0 ? (
-                            <div className="md:rounded-2xl md:border-0 bg-white/70 p-6 md:p-8 text-center md:shadow-sm backdrop-blur dark:bg-muted/30">
+                            <div className="rounded-2xl bg-white/70 p-6 md:p-8 text-center backdrop-blur dark:bg-muted/30">
                                 <Search className="mx-auto mb-2 md:mb-3 h-7 w-7 md:h-8 md:w-8 text-slate-400" />
                                 <p className="font-semibold text-sm md:text-base">No topics found</p>
                                 <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-slate-500 dark:text-slate-400">Try a different search term.</p>
@@ -197,7 +203,7 @@ export default function TopicSearch() {
                                     <button
                                         key={topic.id}
                                         onClick={() => navigate(`/nursing/quiz/${topic.id}`)}
-                                        className="group md:rounded-2xl md:border-0 bg-white/70 p-3 md:p-4 text-left md:shadow-sm backdrop-blur transition md:hover:shadow-md md:hover:-translate-y-0.5 dark:bg-muted/30 border-b border-slate-100 dark:border-slate-800 md:border-b-0"
+                                        className="group rounded-2xl bg-white/70 p-3 md:p-4 text-left backdrop-blur transition md:hover:-translate-y-0.5 dark:bg-muted/30"
                                     >
                                         <div className="flex items-start justify-between gap-3 md:gap-4">
                                             <div className="min-w-0 flex-1">
@@ -231,7 +237,7 @@ export default function TopicSearch() {
                                             </div>
 
                                             {/* Quiz Button */}
-                                            <div className="flex shrink-0 items-center gap-1.5 md:gap-2 rounded-full bg-purple-600 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-bold text-white shadow-lg shadow-purple-600/20 transition group-hover:bg-purple-700 group-hover:shadow-xl">
+                                            <div className="flex shrink-0 items-center gap-1.5 md:gap-2 rounded-full bg-purple-600 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-bold text-white transition group-hover:bg-purple-700">
                                                 <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                                 Quiz
                                                 <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -247,7 +253,7 @@ export default function TopicSearch() {
                             <div className="text-center pt-2">
                                 <button
                                     onClick={() => setShowAll(!showAll)}
-                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-full bg-white/70 px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-semibold text-purple-600 shadow-sm backdrop-blur transition hover:bg-white hover:shadow-md dark:bg-muted/30 dark:text-purple-300"
+                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-full bg-white/70 px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-semibold text-purple-600 backdrop-blur transition hover:bg-white dark:bg-muted/30 dark:text-purple-300"
                                 >
                                     {showAll ? "Show Less" : `Show All ${formatNumberWithImpact(topics.length)} Topics`}
                                     <ChevronRight className={`h-3.5 w-3.5 md:h-4 md:w-4 transition-transform ${showAll ? "rotate-90" : ""}`} />

@@ -3,13 +3,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    ArrowLeft,
     Brain,
     CheckCircle2,
     Clock,
     Target,
     Trophy,
-    Award,
     BarChart3,
     BookOpen,
     Sparkles,
@@ -19,17 +17,13 @@ import {
     Wifi,
     WifiOff,
     RefreshCw,
-    TrendingUp,
     TrendingDown,
-    Zap,
-    Calendar,
     Check,
     X,
     SkipForward,
     XCircle,
 } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
-import { supabase } from "@/lib/supabaseClient";
 import { academicProgress } from "@/lib/academicProgress";
 import React from "react";
 
@@ -97,7 +91,7 @@ const StatCard = React.memo(({ icon, label, value, subtitle, color }: StatCardPr
     }), []);
 
     return (
-        <div className={`md:rounded-2xl md:border-0 ${bgClasses[color]} p-3 md:p-5 md:shadow-sm backdrop-blur transition md:hover:shadow-md border-b border-slate-100 dark:border-slate-800 md:border-b-0`}>
+        <div className={`rounded-2xl ${bgClasses[color]} p-3 md:p-5 backdrop-blur transition`}>
             <div className="flex items-start justify-between">
                 <div className="min-w-0">
                     <p className="text-[9px] md:text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">{label}</p>
@@ -135,12 +129,12 @@ const AttemptRow = React.memo(({ attempt, index, onView }: AttemptRowProps) => {
 
     return (
         <div
-            className="flex items-center justify-between p-3 md:p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer group border-b border-slate-100 dark:border-slate-800"
+            className="flex items-center justify-between p-3 md:p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition cursor-pointer group"
             onClick={handleClick}
         >
             <div className="flex items-center gap-3 md:gap-4 min-w-0">
                 <div className={`flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${attempt.is_correct ? 'bg-emerald-500' : 'bg-rose-500'}`}>
-                    {attempt.is_correct ? <Check size={12} className="md:size-14" /> : <X size={12} className="md:size-14" />}
+                    {attempt.is_correct ? <Check size={12} /> : <X size={12} />}
                 </div>
                 <div className="min-w-0">
                     <p className="font-semibold text-xs md:text-sm text-slate-900 dark:text-white truncate max-w-[150px] sm:max-w-[300px] md:max-w-[400px]">
@@ -176,7 +170,7 @@ const WeakAreaRow = React.memo(({ area, index }: { area: WeakArea; index: number
     const accuracy = useMemo(() => Math.round(area.accuracy), [area.accuracy]);
 
     return (
-        <div className="flex items-center justify-between p-2.5 md:p-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition rounded-lg md:rounded-xl">
+        <div className="flex items-center justify-between p-2.5 md:p-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition rounded-xl">
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <span className="text-[10px] md:text-xs font-black text-slate-400 w-4 md:w-5">{index + 1}</span>
                 <div className="min-w-0">
@@ -209,20 +203,20 @@ WeakAreaRow.displayName = 'WeakAreaRow';
 const ProgressSkeleton = React.memo(() => {
     return (
         <div className="min-h-screen bg-transparent text-slate-950 dark:text-white">
-            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-3 md:px-4 py-4 md:py-6 lg:px-8">
+            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-2 py-4 md:py-6 lg:px-8">
                 <div className="flex items-center justify-between">
                     <div className="h-8 md:h-10 w-24 md:w-28 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
                     <div className="h-8 md:h-10 w-8 md:w-10 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse" />
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="md:rounded-2xl bg-white/70 p-4 md:p-5 md:shadow-xl backdrop-blur dark:bg-muted/30 animate-pulse border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                        <div key={i} className="rounded-2xl bg-white/70 p-4 md:p-5 backdrop-blur dark:bg-muted/30 animate-pulse">
                             <div className="h-3 md:h-4 w-16 md:w-20 bg-slate-200 dark:bg-slate-700 rounded mb-1.5 md:mb-2" />
                             <div className="h-6 md:h-8 w-12 md:w-16 bg-slate-200 dark:bg-slate-700 rounded" />
                         </div>
                     ))}
                 </div>
-                <div className="md:rounded-2xl bg-white/70 p-4 md:p-6 md:shadow-xl backdrop-blur dark:bg-muted/30 animate-pulse border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                <div className="rounded-2xl bg-white/70 p-4 md:p-6 backdrop-blur dark:bg-muted/30 animate-pulse">
                     <div className="h-5 md:h-6 w-40 md:w-48 bg-slate-200 dark:bg-slate-700 rounded mb-3 md:mb-4" />
                     <div className="space-y-2 md:space-y-3">
                         {[1, 2, 3, 4].map((i) => (
@@ -496,12 +490,12 @@ export default function ProgressPage() {
     if (error && !hasLoadedFromCache) {
         return (
             <div className="min-h-screen bg-transparent text-slate-950 dark:text-white">
-                <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-3 md:px-4 py-4 md:py-6">
-                    <div className="md:rounded-2xl md:border-0 bg-white/70 p-6 md:p-8 text-center md:shadow-xl backdrop-blur dark:bg-muted/30">
+                <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-2 py-4 md:py-6">
+                    <div className="rounded-2xl bg-white/70 p-6 md:p-8 text-center backdrop-blur dark:bg-muted/30">
                         <AlertCircle className="mx-auto h-10 w-10 md:h-12 md:w-12 text-rose-500 mb-3 md:mb-4" />
                         <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Failed to Load Progress</h3>
                         <p className="text-slate-600 dark:text-slate-400 text-xs md:text-sm">{error}</p>
-                        <button onClick={handleRefresh} className="mt-3 md:mt-4 inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-emerald-600 px-5 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
+                        <button onClick={handleRefresh} className="mt-3 md:mt-4 inline-flex items-center gap-1.5 md:gap-2 rounded-xl bg-emerald-600 px-5 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-bold text-white transition hover:bg-emerald-700">
                             <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4" /> Try Again
                         </button>
                     </div>
@@ -521,21 +515,44 @@ export default function ProgressPage() {
 
     return (
         <div className="min-h-screen bg-transparent text-slate-950 dark:text-white pb-20 md:pb-6">
-            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-0 md:px-4 py-4 md:py-6 lg:px-8">
+            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-3 md:gap-6 px-2 py-4 md:py-6 lg:px-8">
 
                 {/* Header Card */}
-                <div className="relative overflow-hidden md:rounded-2xl md:border-0 bg-white/70 p-4 md:p-6 md:shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-muted/30 sm:p-8 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                <div className="relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-6 backdrop-blur-xl dark:bg-muted/30 sm:p-8">
                     <div className="absolute right-0 top-0 h-24 md:h-32 w-24 md:w-32 rounded-bl-full bg-emerald-100/80 dark:bg-emerald-400/10" />
                     <div className="absolute bottom-0 left-0 h-20 md:h-24 w-20 md:w-24 rounded-tr-full bg-cyan-100/80 dark:bg-cyan-400/10" />
 
                     <div className="relative">
                         <div className="flex items-center justify-between flex-wrap gap-3 md:gap-4">
                             <div className="flex items-center gap-2 md:gap-3">
-                                <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 md:gap-2 rounded-full border border-slate-200 bg-white/70 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-slate-800 dark:bg-muted/30 dark:text-slate-200 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900 dark:hover:text-emerald-300">
-                                    <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" /> Back
+                                <button
+                                    onClick={() => navigate(-1)}
+                                    aria-label="Go back"
+                                    title="Back"
+                                    className="inline-flex items-center justify-center
+                                               h-8 w-8 md:h-9 md:w-9
+                                               rounded-full
+                                               text-slate-700 dark:text-slate-200
+                                               transition-colors
+                                               hover:text-emerald-700 dark:hover:text-emerald-300
+                                               focus:outline-none focus-visible:ring-2
+                                               focus-visible:ring-emerald-500/50"
+                                >
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="h-4 w-4 md:h-5 md:w-5"
+                                        aria-hidden="true"
+                                    >
+                                        <polyline points="15 18 9 12 15 6" />
+                                    </svg>
                                 </button>
                                 <div className="flex items-center gap-2 md:gap-3">
-                                    <div className="p-1.5 md:p-2 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-lg md:rounded-xl shadow-lg shadow-emerald-500/20">
+                                    <div className="p-1.5 md:p-2 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-lg md:rounded-xl">
                                         <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-white" />
                                     </div>
                                     <h1 className="text-xl md:text-2xl lg:text-3xl font-black tracking-tight">Progress Dashboard</h1>
@@ -551,7 +568,7 @@ export default function ProgressPage() {
                                 <button
                                     onClick={handleRefresh}
                                     disabled={refreshing}
-                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-full border border-slate-200 bg-white/70 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-emerald-300 hover:bg-white hover:text-emerald-700 dark:border-slate-800 dark:bg-muted/30 dark:text-slate-200 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900 dark:hover:text-emerald-300 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 md:gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-200 transition hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
                                 >
                                     <RefreshCw className={`h-3.5 w-3.5 md:h-4 md:w-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
                                 </button>
@@ -564,7 +581,7 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-0 md:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     <StatCard
                         icon={<Trophy className="h-4 w-4 md:h-5 md:w-5" />}
                         label="Questions Answered"
@@ -595,22 +612,22 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Breakdown Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-4">
-                    <div className="md:rounded-2xl md:border-0 bg-white/70 p-3 md:p-5 md:shadow-xl backdrop-blur dark:bg-muted/30 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+                    <div className="rounded-2xl bg-white/70 p-3 md:p-5 backdrop-blur dark:bg-muted/30 flex items-center justify-between">
                         <div>
                             <p className="text-[10px] md:text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Correct</p>
                             <p className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-300">{summary?.correct_answers || 0}</p>
                         </div>
                         <CheckCircle2 className="h-6 w-6 md:h-8 md:w-8 text-emerald-500" />
                     </div>
-                    <div className="md:rounded-2xl md:border-0 bg-white/70 p-3 md:p-5 md:shadow-xl backdrop-blur dark:bg-muted/30 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                    <div className="rounded-2xl bg-white/70 p-3 md:p-5 backdrop-blur dark:bg-muted/30 flex items-center justify-between">
                         <div>
                             <p className="text-[10px] md:text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Incorrect</p>
                             <p className="text-xl md:text-2xl font-black text-rose-600 dark:text-rose-300">{summary?.incorrect_answers || 0}</p>
                         </div>
                         <XCircle className="h-6 w-6 md:h-8 md:w-8 text-rose-500" />
                     </div>
-                    <div className="md:rounded-2xl md:border-0 bg-white/70 p-3 md:p-5 md:shadow-xl backdrop-blur dark:bg-muted/30 flex items-center justify-between">
+                    <div className="rounded-2xl bg-white/70 p-3 md:p-5 backdrop-blur dark:bg-muted/30 flex items-center justify-between">
                         <div>
                             <p className="text-[10px] md:text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Skipped</p>
                             <p className="text-xl md:text-2xl font-black text-amber-600 dark:text-amber-300">{summary?.skipped_questions || 0}</p>
@@ -620,10 +637,10 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Two Column Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 md:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6">
                     {/* Recent Attempts */}
-                    <div className="lg:col-span-2 md:rounded-2xl md:border-0 bg-white/70 md:shadow-xl backdrop-blur dark:bg-muted/30 overflow-hidden border-b border-slate-100 dark:border-slate-800 md:border-b-0">
-                        <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800">
+                    <div className="lg:col-span-2 rounded-2xl bg-white/70 backdrop-blur dark:bg-muted/30 overflow-hidden">
+                        <div className="p-4 md:p-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 md:gap-3">
                                     <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-slate-400" />
@@ -636,7 +653,7 @@ export default function ProgressPage() {
                             {recentAttempts.length === 0 ? (
                                 <div className="p-6 md:p-8 text-center">
                                     <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">No questions attempted yet. Start practicing to see your progress!</p>
-                                    <button onClick={() => navigate('/nursing')} className="mt-3 md:mt-4 inline-flex items-center gap-1.5 md:gap-2 rounded-lg md:rounded-xl bg-emerald-600 px-5 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
+                                    <button onClick={() => navigate('/nursing')} className="mt-3 md:mt-4 inline-flex items-center gap-1.5 md:gap-2 rounded-xl bg-emerald-600 px-5 md:px-6 py-2 md:py-2.5 text-xs md:text-sm font-bold text-white transition hover:bg-emerald-700">
                                         Start Practicing <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                     </button>
                                 </div>
@@ -654,8 +671,8 @@ export default function ProgressPage() {
                     </div>
 
                     {/* Weak Areas */}
-                    <div className="md:rounded-2xl md:border-0 bg-white/70 md:shadow-xl backdrop-blur dark:bg-muted/30 overflow-hidden">
-                        <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800">
+                    <div className="rounded-2xl bg-white/70 backdrop-blur dark:bg-muted/30 overflow-hidden">
+                        <div className="p-4 md:p-6">
                             <div className="flex items-center gap-2 md:gap-3">
                                 <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-rose-400" />
                                 <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white">Areas to Improve</h2>
@@ -679,21 +696,21 @@ export default function ProgressPage() {
                 </div>
 
                 {/* Mastery Summary */}
-                <div className="md:rounded-2xl md:border-0 bg-white/70 md:shadow-xl backdrop-blur dark:bg-muted/30 p-4 md:p-6 border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                <div className="rounded-2xl bg-white/70 backdrop-blur dark:bg-muted/30 p-4 md:p-6">
                     <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                         <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-amber-400" />
                         <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white">Mastery Summary</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-                        <div className="rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
+                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
                             <p className="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-300">{summary?.questions_mastered || 0}</p>
                             <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 md:mt-1">Mastered (80%+)</p>
                         </div>
-                        <div className="rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
+                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
                             <p className="text-2xl md:text-3xl font-black text-amber-600 dark:text-amber-300">{summary?.questions_needing_review || 0}</p>
                             <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 md:mt-1">Needs Review (50-79%)</p>
                         </div>
-                        <div className="rounded-lg md:rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
+                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 md:p-4 text-center">
                             <p className="text-2xl md:text-3xl font-black text-rose-600 dark:text-rose-300">{needsPractice}</p>
                             <p className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 md:mt-1">Needs Practice (&lt;50%)</p>
                         </div>

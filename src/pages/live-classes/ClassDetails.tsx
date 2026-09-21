@@ -6,7 +6,7 @@ import { liveClassService, registrationService } from '@/services/liveClassServi
 import { toast } from 'sonner';
 import {
     Calendar, Clock, Users, Video, Award, MapPin, Link as LinkIcon,
-    BookOpen, CheckCircle, XCircle, AlertCircle, ArrowLeft,
+    BookOpen, CheckCircle, XCircle, AlertCircle, ChevronLeft,
     Copy, ExternalLink, FileText, Star, Timer, Lock,
     UserCheck, UserX, CalendarDays
 } from 'lucide-react';
@@ -237,8 +237,8 @@ export const ClassDetails = () => {
                 onClick={() => navigate('/live-classes')}
                 className="flex items-center gap-1.5 md:gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 md:mb-6 transition-colors px-4 md:px-0"
             >
-                <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
-                <span className="text-sm md:text-base">Back to Classes</span>
+                <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
+
             </button>
 
             {/* Cover Image - Mobile Native */}

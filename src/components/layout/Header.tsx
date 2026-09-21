@@ -26,6 +26,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { UserProfileModal } from "@/components/UserProfileModal";
 // ✅ Import shared profile cache
 import { getProfileCache, setProfileCache, clearProfileCache, PROFILE_CACHE_KEY } from "@/lib/profileCache";
+import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { HardResetButton } from "../HardResetButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 // ✅ CACHE VERSION
@@ -58,6 +59,8 @@ const clearOldCache = () => {
     keys.forEach(key => {
       if (key.startsWith('v1_')) localStorage.removeItem(key);
     });
+    // Retire legacy premium flag — shared cache key is now `subscriptionStatus`
+    localStorage.removeItem("medrae_is_premium");
   } catch (e) { /* silent */ }
 };
 clearOldCache();
@@ -71,7 +74,18 @@ const preloadUserData = () => {
       return {
         name: cached.name,
         role: cached.role || "Student",
+        // Preserve the real avatar URL from cache so it renders offline too.
         avatar: cached.avatar_url || "/avatars/default.jpg",
+      };
+    }
+
+    // Fallback: try the Header's own versioned cache (v2_user_profile)
+    const ownCache = getCached('user_profile');
+    if (ownCache?.name && ownCache.name !== "Unknown User") {
+      return {
+        name: ownCache.name,
+        role: ownCache.role || "Student",
+        avatar: ownCache.avatar || "/avatars/default.jpg",
       };
     }
 
@@ -234,32 +248,42 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     }
   }, [propStreak]);
   // ✅ Premium status — light, cached, read-only
-  const [isPremium, setIsPremium] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("medrae_is_premium") === "true";
-    } catch { return false; }
-  });
+  // ✅ Premium status — single source of truth via lib/subscription.ts
+  // Synchronously seeded so it works offline (no flash of "Get Verified").
+  const [isPremium, setIsPremium] = useState<boolean>(
+    () => getCachedPremium(authUser?.id) ?? false
+  );
 
-  // Fetch once on mount (in background)
+  // Seed again when authUser hydrates (first render may have had no id)
   useEffect(() => {
-    if (!authUser?.id || !isOnline) return;
+    if (!authUser?.id) return;
+    const cached = getCachedPremium(authUser.id);
+    if (cached !== null) setIsPremium(cached);
+  }, [authUser?.id]);
+
+  // Background refresh (no-op offline, cache-aware)
+  useEffect(() => {
+    if (!authUser?.id) return;
     let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from("subscriptions")
-          .select("is_active")
-          .eq("user_id", authUser.id)
-          .maybeSingle();
-        if (!cancelled) {
-          const premium = !!data?.is_active;
-          setIsPremium(premium);
-          localStorage.setItem("medrae_is_premium", String(premium));
-        }
-      } catch { /* silent */ }
-    })();
+    resolveSubscription(authUser.id)
+      .then((snap) => {
+        if (!cancelled) setIsPremium(snap.isPremium);
+      })
+      .catch(() => { /* resolveSubscription falls back to cache internally */ });
     return () => { cancelled = true; };
   }, [authUser?.id, isOnline]);
+
+  // Force-refresh the cache the moment we come back online
+  useEffect(() => {
+    if (!authUser?.id) return;
+    const onOnline = () => {
+      resolveSubscription(authUser.id, { force: true })
+        .then((snap) => setIsPremium(snap.isPremium))
+        .catch(() => { });
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [authUser?.id]);
   // ============================================================
   // ✅ Notifications & Total Users - ALWAYS shows cached data
   // ============================================================
@@ -1024,7 +1048,11 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
             <div className="relative">
               <Avatar className="h-9 w-9 sm:h-12 sm:w-12 rounded-full border-0 shadow-none">
                 <AvatarImage
-                  src={user?.avatar && isOnline ? user.avatar : undefined}
+                  src={
+                    user?.avatar ||
+                    getProfileCache()?.avatar_url ||
+                    undefined
+                  }
                   className="object-cover"
                   loading="lazy"
                 />

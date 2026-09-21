@@ -27,42 +27,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TermsButton } from "@/components/ui/TermsButton";
 import { useUnits, Unit, PaperData } from "../hooks/useUnits";
 import { UnitPics } from "@/components/deco/UnitPics";
-
+import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 // Category Types
 type CategoryType = "all" | "paper1" | "paper2" | "practice" | "nclex" | "medical";
 
 // Cache keys and durations
-const SUBSCRIPTION_CACHE_KEY = "subscriptionStatus";
+// Cache keys and durations
 const FREE_UNITS_CACHE_KEY = "freeUnits";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-// Request deduplication
-let subscriptionFetchInProgress = false;
+// Request deduplication (free units only — subscription now lives in lib/subscription.ts)
 let freeUnitsFetchInProgress = false;
-let lastSubscriptionFetch = 0;
 let lastFreeUnitsFetch = 0;
 const MIN_FETCH_INTERVAL = 60 * 60 * 1000; // 1 hour minimum between fetches
 
-// Cache helpers
-const getCachedSubscription = () => {
-  try {
-    const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      const offline = typeof navigator !== "undefined" && !navigator.onLine;
-      if (offline || Date.now() - timestamp < CACHE_DURATION) {
-        return data;
-      }
-    }
-  } catch (e) { }
-  return null;
-};
 
-const setCachedSubscription = (data: any) => {
-  try {
-    localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch (e) { }
-};
 const getCachedFreeUnits = () => {
   try {
     const cached = localStorage.getItem(FREE_UNITS_CACHE_KEY);
@@ -223,11 +202,12 @@ const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
 
 export function MedraeQuizzes() {
   const user = useUser();
-  const [isPremium, setIsPremium] = useState(() => {
-    const cached = getCachedSubscription();
-    return cached?.isPremium || false;
-  });
-  const [subscriptionChecked, setSubscriptionChecked] = useState(() => !!getCachedSubscription());
+  const [isPremium, setIsPremium] = useState<boolean>(
+    () => getCachedPremium(user?.id) ?? false
+  );
+  const [subscriptionChecked, setSubscriptionChecked] = useState(
+    () => getCachedPremium(user?.id) !== null
+  );
   const navigate = useNavigate();
   const [showHelp, setShowHelp] = React.useState(false);
   const [freeUnits, setFreeUnits] = useState<string[]>(() => getCachedFreeUnits() || []);
@@ -251,51 +231,26 @@ export function MedraeQuizzes() {
       isMounted.current = false;
     };
   }, []);
-
   const fetchSubscription = useCallback(async () => {
     if (!user) return;
 
-    const cached = getCachedSubscription();
-    if (cached !== null) {
-      if (isMounted.current) {
-        setIsPremium(cached.isPremium);
-        setSubscriptionChecked(true);
-      }
-      return;
+    // 1. Seed synchronously from cache — works offline, no flash.
+    const cached = getCachedPremium(user.id);
+    if (cached !== null && isMounted.current) {
+      setIsPremium(cached);
+      setSubscriptionChecked(true);
     }
 
-    const now = Date.now();
-    if (now - lastSubscriptionFetch < MIN_FETCH_INTERVAL) return;
-    if (subscriptionFetchInProgress) return;
-
-    subscriptionFetchInProgress = true;
-    lastSubscriptionFetch = now;
-
+    // 2. Background refresh (no-op if offline or cache is fresh).
     try {
-      const { data } = await supabase
-        .from("subscriptions")
-        .select("plan_type, expires_at, is_active")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const premiumStatus = data?.is_active || false;
-
+      const snap = await resolveSubscription(user.id);
       if (isMounted.current) {
-        setIsPremium(premiumStatus);
+        setIsPremium(snap.isPremium);
         setSubscriptionChecked(true);
-        setCachedSubscription({ isPremium: premiumStatus });
       }
     } catch (err) {
+      // resolveSubscription already falls back to cache internally.
       console.log("Offline mode: using cached subscription", err);
-      const cachedSubscription = getCachedSubscription();
-      if (cachedSubscription && isMounted.current) {
-        setIsPremium(cachedSubscription.isPremium);
-        setSubscriptionChecked(true);
-      }
-    } finally {
-      subscriptionFetchInProgress = false;
     }
   }, [user]);
 
@@ -341,7 +296,16 @@ export function MedraeQuizzes() {
     fetchSubscription();
     fetchFreeUnits();
   }, [fetchSubscription, fetchFreeUnits]);
-
+  useEffect(() => {
+    if (!user) return;
+    const onOnline = () => {
+      resolveSubscription(user.id, { force: true }).then((snap) => {
+        if (isMounted.current) setIsPremium(snap.isPremium);
+      });
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [user]);
   const getQuestionCount = (code: string) => {
     const unit = unitCounts?.find((u) => u.unit_code?.trim() === code.trim());
     return unit ? unit.count : 0;
@@ -351,10 +315,21 @@ export function MedraeQuizzes() {
     setRefreshing(true);
     setPopupError(false);
     try {
-      localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
       localStorage.removeItem(FREE_UNITS_CACHE_KEY);
 
-      await Promise.all([refreshCounts(), refreshUnits(), fetchSubscription(), fetchFreeUnits()]);
+      await Promise.all([
+        refreshCounts(),
+        refreshUnits(),
+        user
+          ? resolveSubscription(user.id, { force: true }).then((snap) => {
+            if (isMounted.current) {
+              setIsPremium(snap.isPremium);
+              setSubscriptionChecked(true);
+            }
+          })
+          : Promise.resolve(),
+        fetchFreeUnits(),
+      ]);
       setPopup("All units and question counts have been refreshed successfully!");
     } catch (err) {
       setPopupError(true);
@@ -439,8 +414,7 @@ export function MedraeQuizzes() {
       [unitCode]: !prev[unitCode]
     }));
   };
-
-  const hasSubscriptionCache = !!getCachedSubscription();
+  const hasSubscriptionCache = getCachedPremium(user?.id) !== null;
   if (!subscriptionChecked && !hasSubscriptionCache && navigator.onLine) {
     return <GlobalLoader />;
   }

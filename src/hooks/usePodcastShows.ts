@@ -48,10 +48,12 @@ export function usePodcastShows() {
 
         const { data: userData } = await supabase.auth.getUser();
         const userId = userData?.user?.id ?? null;
-
         const { data: showRows, error: showErr } = await supabase
             .from("podcast_shows")
-            .select("id, apple_id, title, author, artwork_url, description, explicit, is_active")
+            .select(`
+        id, apple_id, title, author, artwork_url, description, explicit, is_active,
+        podcast_episodes!left ( id, is_hidden )
+    `)
             .eq("is_active", true)
             .order("created_at", { ascending: false });
 
@@ -61,14 +63,11 @@ export function usePodcastShows() {
             return;
         }
 
-        const { data: epRows } = await supabase
-            .from("podcast_episodes")
-            .select("show_id, is_hidden")
-            .eq("is_hidden", false);
-
+        // Count unhidden episodes per show from the nested rows
         const epCount = new Map<string, number>();
-        (epRows ?? []).forEach((r: any) => {
-            epCount.set(r.show_id, (epCount.get(r.show_id) ?? 0) + 1);
+        (showRows ?? []).forEach((s: any) => {
+            const eps = (s.podcast_episodes ?? []) as { is_hidden: boolean }[];
+            epCount.set(s.id, eps.filter((e) => !e.is_hidden).length);
         });
 
         const { data: endRows } = await supabase
@@ -90,11 +89,10 @@ export function usePodcastShows() {
             artwork_url: s.artwork_url,
             description: s.description,
             explicit: s.explicit,
-            episode_count: epCount.get(s.id) ?? 0,
+            episode_count: epCount.get(s.id) ?? 0,   // ✅ now accurate
             endorsement_count: endCount.get(s.id) ?? 0,
             user_endorsed: myEndorsements.has(s.id),
         }));
-
         // Persist to Dexie
         await putShows(
             merged.map((s): DbShow => ({

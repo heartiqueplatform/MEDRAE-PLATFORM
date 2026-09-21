@@ -43,13 +43,17 @@ export class StudifyDB extends Dexie {
 export const studifyDb = new StudifyDB();
 
 // ── Helpers ──
-
 export async function getEpisodesForShow(showId: string): Promise<DbEpisode[]> {
-    return studifyDb.episodes
+    const rows = await studifyDb.episodes
         .where("showId")
         .equals(showId)
-        .reverse()
-        .sortBy("publishedAt");
+        .toArray();
+    // Sort newest-first, treating missing dates as oldest
+    return rows.sort((a, b) => {
+        const av = a.publishedAt ?? "";
+        const bv = b.publishedAt ?? "";
+        return bv.localeCompare(av);
+    });
 }
 
 export async function getLatestEpisodes(limit = 200): Promise<DbEpisode[]> {

@@ -6,7 +6,7 @@ import { liveClassService } from '@/services/liveClassService';
 import { toast } from 'sonner';
 import {
     X, Upload, Calendar, Clock, Users, Award, Link as LinkIcon,
-    BookOpen, Video, Loader2, CheckCircle, ArrowLeft
+    BookOpen, Video, Loader2, CheckCircle, ChevronLeft
 } from 'lucide-react';
 
 // Cloudinary configuration
@@ -226,8 +226,8 @@ export const CreateClass = () => {
                 onClick={() => navigate('/live-classes')}
                 className="flex items-center gap-1.5 md:gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 md:mb-6 transition-colors px-4 md:px-0"
             >
-                <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
-                <span className="text-sm md:text-base">Back to Classes</span>
+                <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
+
             </button>
 
             {/* Header - Clean, no emojis */}

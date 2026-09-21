@@ -14,7 +14,7 @@ import { LegalTermsModal } from "@/components/subscription/LegalTermsModal";
 import { SubscriptionInfoModal } from "@/components/subscription/SubscriptionInfoModal";
 import { toast } from "sonner";
 import { GroupPaySubscriptionCard } from "@/components/grouppay/GroupPaySubscriptionCard";
-
+import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 // ✅ UPDATED: 1-month and 2-months pricing
 const PRICES = {
   STUDENT: {
@@ -549,6 +549,11 @@ export function Subscription() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<any>(null);
+  // Cached premium snapshot — instantly available offline, no flash of "locked" UI.
+  const [isPremium, setIsPremium] = useState<boolean>(
+    () => getCachedPremium(session?.user?.id) ?? false
+  );
+
   const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
   const [showTermsWarning, setShowTermsWarning] = useState(false);
   const [otherSubscriptions, setOtherSubscriptions] = useState<any[]>([]);
@@ -620,9 +625,20 @@ export function Subscription() {
           .limit(20);
 
         if (paymentsError) throw paymentsError;
-
         if (payments) {
           setTransactions(payments);
+        }
+
+        // Seed premium from cache first, then refresh in background.
+        const cached = getCachedPremium(session.user.id);
+        if (cached !== null) setIsPremium(cached);
+
+        try {
+          const snap = await resolveSubscription(session.user.id);
+          setIsPremium(snap.isPremium);
+        } catch (subErr) {
+          // resolveSubscription already falls back to cache internally.
+          console.log("Subscription resolve failed, using cache:", subErr);
         }
 
       } catch (err) {
@@ -690,6 +706,12 @@ export function Subscription() {
           .limit(10);
 
         if (payments) setTransactions(payments);
+
+        // Keep premium cache warm — cheap, cache-aware, no-op offline.
+        try {
+          const snap = await resolveSubscription(session.user.id);
+          setIsPremium(snap.isPremium);
+        } catch { /* ignore */ }
       } catch (err) { }
     };
 
@@ -757,6 +779,13 @@ export function Subscription() {
 
             supabase.removeChannel(channel);
             paymentChannelRef.current = null;
+
+            // Force-refresh the shared cache so every page sees premium immediately.
+            if (session?.user?.id) {
+              resolveSubscription(session.user.id, { force: true })
+                .then((snap) => setIsPremium(snap.isPremium))
+                .catch(() => { });
+            }
 
             setTimeout(() => window.location.reload(), 5000);
           }
@@ -916,8 +945,9 @@ export function Subscription() {
     icon: <Users className="h-5 w-5 md:h-6 md:w-6 text-indigo-500" />
   };
 
-  const hasActivePlan = !!activeSub;
-
+  // Combine the DB row with the shared premium cache so offline premium users
+  // don't momentarily see the payment CTA.
+  const hasActivePlan = !!activeSub || isPremium;
   return (
     <div className="md:max-w-full md:px-4 lg:px-6 mx-auto p-0 md:p-4 lg:p-8 space-y-0 md:space-y-6">
       {showConfetti && <Confetti />}
@@ -960,8 +990,29 @@ export function Subscription() {
       </div>
 
       <GroupPaySubscriptionCard />
-
-      {activeSub && (
+      {/* Offline / cache-only premium card — shown when we know the user is premium
+          but don't have the full DB row (e.g. offline). */}
+      {hasActivePlan && !activeSub && (
+        <Card className="md:bg-emerald-50 dark:md:bg-emerald-950/30 overflow-hidden rounded-none md:rounded-xl border-0">
+          <div className="flex items-center gap-3 md:gap-4 p-4 md:p-6">
+            <div className="bg-emerald-600 p-2 md:p-3 rounded-full">
+              <Crown className="h-5 w-5 md:h-6 md:w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-base md:text-lg font-bold flex items-center gap-2 dark:text-white">
+                Premium Access
+                <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] md:text-xs border-0">
+                  Active
+                </Badge>
+              </h3>
+              <p className="text-xs md:text-sm text-muted-foreground dark:text-gray-400">
+                You're offline — showing your last known premium status.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+      {hasActivePlan && activeSub && (
         <Card className="md:bg-primary/5 dark:md:bg-primary/10 overflow-hidden md:shadow-none rounded-none md:rounded-xl border-0">
           <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 gap-3 md:gap-4">
             <div className="flex items-center gap-3 md:gap-4">

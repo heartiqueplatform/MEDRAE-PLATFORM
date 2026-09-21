@@ -43,7 +43,7 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
 
     return (
         <div className="hidden md:block">
-            {/* Trigger button — restyled to match history pill */}
+            {/* Trigger button — light-mode first */}
             <button
                 onClick={handleOpen}
                 aria-label="Open chat"
@@ -51,15 +51,32 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
                     "group fixed bottom-32 right-5 z-30",
                     "flex items-center gap-2 rounded-full pl-3 pr-4 py-2.5",
                     "min-w-[110px] justify-center",
-                    "bg-gray-800 dark:bg-[#21262d] hover:bg-gray-900 dark:hover:bg-[#30363d] text-white",
-                    "shadow-lg",
+                    // light mode (default)
+                    "bg-white hover:bg-slate-50",
+                    "text-slate-800 hover:text-slate-900",
+                    "ring-1 ring-slate-200 hover:ring-slate-300",
+                    // dark mode override
+                    "dark:bg-[#21262d] dark:hover:bg-[#30363d]",
+                    "dark:text-white dark:ring-white/10 dark:hover:ring-white/20",
+                    // shadow
+                    "shadow-lg shadow-slate-900/10",
+                    "dark:shadow-none",
                     "transition-all duration-300 ease-out",
                     "active:scale-[0.96]",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600",
+                    "focus:outline-none focus-visible:ring-2",
+                    "focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400",
                     isOpen && "pointer-events-none scale-0 opacity-0"
                 )}
             >
-                <span className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/10">
+                <span
+                    className={cn(
+                        "relative flex items-center justify-center w-7 h-7 rounded-full",
+                        // light mode icon chip
+                        "bg-slate-100 text-slate-700",
+                        // dark mode icon chip
+                        "dark:bg-white/10 dark:text-white"
+                    )}
+                >
                     <ChatBubbleIcon className="w-4 h-4" strokeWidth={1.75} />
 
                     {unreadCount > 0 && (
@@ -68,7 +85,8 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
                                 "absolute -top-1 -right-1 z-10",
                                 "flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1",
                                 "bg-emerald-500 text-[10px] font-semibold leading-none text-white",
-                                "ring-2 ring-gray-800 dark:ring-[#21262d]"
+                                // ring matches button bg in both themes
+                                "ring-2 ring-white dark:ring-[#21262d]"
                             )}
                         >
                             {unreadCount > 9 ? "9+" : unreadCount}

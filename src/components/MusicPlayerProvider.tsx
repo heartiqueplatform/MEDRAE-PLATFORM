@@ -1,15 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback, ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
     studifyDb,
     putEpisodes,
-    putShows,
     getLatestEpisodes,
     getEpisodesForShow,
     type DbEpisode,
-    type DbShow,
 } from "@/lib/studifyDb";
 
 export interface Track {
@@ -98,6 +96,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const lastRefreshRef = useRef<number>(0);
+    const currentSrcRef = useRef<string | undefined>(undefined);
 
     // ── 1. Hydrate from Dexie INSTANTLY (before any network call) ──
     useEffect(() => {
@@ -119,29 +118,15 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     // ── 2. Fetch fresh from Supabase ──
-    const refreshEpisodes = React.useCallback(async (opts?: { silent?: boolean }) => {
+    const refreshEpisodes = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent ?? false;
         const now = Date.now();
         const stale = now - lastRefreshRef.current > CACHE_TTL_MS;
 
-        // Skip if silent + fresh cache
         if (silent && !stale) return;
 
         if (!silent) setLoading(true);
 
-        // ── Pull shows (small, always refresh) ──
-        const { data: showRows, error: showErr } = await supabase
-            .from("podcast_shows")
-            .select("id, apple_id, title, author, artwork_url, description, is_active")
-            .eq("is_active", true);
-
-        if (showErr) {
-            console.error("Failed to load shows:", showErr);
-            if (!silent) setLoading(false);
-            return;
-        }
-
-        // ── Pull episodes (capped at 200) ──
         const { data: epRows, error: epErr } = await supabase
             .from("podcast_episodes")
             .select(`
@@ -158,30 +143,8 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
 
-        // ── Persist to Dexie (async, off main thread) ──
         await putEpisodes((epRows ?? []).map(rowToDbEpisode));
 
-        // ── Compute episode counts per show ──
-        const counts = new Map<string, number>();
-        (epRows ?? []).forEach((e: any) => {
-            counts.set(e.show_id, (counts.get(e.show_id) ?? 0) + 1);
-        });
-
-        await putShows(
-            (showRows ?? []).map((s: any): DbShow => ({
-                id: s.id,
-                appleId: s.apple_id,
-                title: s.title,
-                author: s.author ?? undefined,
-                artwork: s.artwork_url ?? undefined,
-                description: s.description ?? undefined,
-                episodeCount: counts.get(s.id) ?? 0,
-                endorsementCount: 0, // updated by usePodcastShows separately
-                cachedAt: Date.now(),
-            }))
-        );
-
-        // ── Map to Track[] and set state ──
         const episodeTracks: Track[] = (epRows ?? []).map(rowToDbEpisode).map(dbToTrack);
         setTracks(episodeTracks);
         setCurrentIndex((prev) => (prev < episodeTracks.length ? prev : 0));
@@ -190,15 +153,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     // ── 3. On-demand fetch for a specific show (unlimited) ──
-    const fetchShowEpisodes = React.useCallback(async (showId: string): Promise<Track[]> => {
-        // Check Dexie first — do we have episodes for this show cached?
-        const cached = await getEpisodesForShow(showId);
-        const isFresh = cached.length > 0 &&
-            Date.now() - (cached[0]?.cachedAt ?? 0) < CACHE_TTL_MS;
-
-        if (isFresh) return cached.map(dbToTrack);
-
-        // Otherwise fetch from Supabase
+    const fetchShowEpisodes = useCallback(async (showId: string): Promise<Track[]> => {
         const { data, error } = await supabase
             .from("podcast_episodes")
             .select(`
@@ -211,6 +166,7 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
             console.error("Failed to load show episodes:", error);
+            const cached = await getEpisodesForShow(showId);
             return cached.map(dbToTrack);
         }
 
@@ -219,10 +175,9 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         return dbEps.map(dbToTrack);
     }, []);
 
-    // ── 4. Initial kick: hydrate then refresh silently ──
+    // ── 4. Initial kick ──
     useEffect(() => {
         (async () => {
-            // If Dexie had nothing, do a loud fetch
             const count = await studifyDb.episodes.count();
             if (count === 0) {
                 await refreshEpisodes({ silent: false });
@@ -232,7 +187,23 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         })();
     }, [refreshEpisodes]);
 
-    // Play/Pause & Volume
+    // ═══════════════════════════════════════════════════════════
+    // ── 5. IMPERATIVE AUDIO SRC ──
+    // Only sets `audio.src` when it actually changes → no remount,
+    // no CORS preflight on every track tap, instant playback start.
+    // ═══════════════════════════════════════════════════════════
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        const next = tracks[currentIndex]?.src;
+        if (!next) return;
+        if (currentSrcRef.current === next) return;
+        currentSrcRef.current = next;
+        audio.src = next;
+        audio.load();
+    }, [tracks, currentIndex]);
+
+    // ── 6. Play / pause / volume ──
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
@@ -246,15 +217,60 @@ export const MusicPlayerProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [isPlaying, currentIndex, volume, muted, tracks]);
 
-    const togglePlay = (force?: boolean) => {
+    // ═══════════════════════════════════════════════════════════
+    // ── 7. PREFETCH NEXT TRACK ──
+    // When <10s remain, warm the browser cache for the next episode
+    // so track transitions are gapless.
+    // ═══════════════════════════════════════════════════════════
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        let primedFor: string | undefined;
+
+        const onTime = () => {
+            if (!audio.duration) return;
+            const remaining = audio.duration - audio.currentTime;
+            if (remaining > 10 || remaining < 0) return;
+
+            const next = tracks[currentIndex + 1];
+            if (!next?.src) return;
+            if (next.src === primedFor) return;
+            if (next.src === currentSrcRef.current) return;
+
+            primedFor = next.src;
+            // Silent prefetch — browser caches the bytes, we don't play them.
+            const pre = new Audio();
+            pre.preload = "auto";
+            pre.src = next.src;
+        };
+
+        audio.addEventListener("timeupdate", onTime);
+        return () => audio.removeEventListener("timeupdate", onTime);
+    }, [tracks, currentIndex]);
+
+    // ── 8. Stable action callbacks ──
+    const togglePlay = useCallback((force?: boolean) => {
         setIsPlaying(prev => (force !== undefined ? force : !prev));
-    };
-    const toggleMute = () => setMuted(prev => !prev);
-    const toggleRepeat = () =>
-        setRepeatMode(prev => (prev === "off" ? "all" : prev === "all" ? "one" : "off"));
-    const nextTrack = () => setCurrentIndex(prev => (prev + 1) % Math.max(tracks.length, 1));
-    const prevTrack = () => setCurrentIndex(prev => (prev - 1 + tracks.length) % Math.max(tracks.length, 1));
-    const setVolume = (vol: number) => setVolumeState(vol);
+    }, []);
+
+    const toggleMute = useCallback(() => setMuted(prev => !prev), []);
+
+    const toggleRepeat = useCallback(() =>
+        setRepeatMode(prev => (prev === "off" ? "all" : prev === "all" ? "one" : "off")),
+        []);
+
+    const nextTrack = useCallback(
+        () => setCurrentIndex(prev => (prev + 1) % Math.max(tracks.length, 1)),
+        [tracks.length]
+    );
+
+    const prevTrack = useCallback(
+        () => setCurrentIndex(prev => (prev - 1 + tracks.length) % Math.max(tracks.length, 1)),
+        [tracks.length]
+    );
+
+    const setVolume = useCallback((vol: number) => setVolumeState(vol), []);
 
     return (
         <MusicPlayerContext.Provider

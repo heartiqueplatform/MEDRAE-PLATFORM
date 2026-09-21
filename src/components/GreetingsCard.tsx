@@ -19,7 +19,89 @@ import { useUser } from "@supabase/auth-helpers-react";
 // Format: full URL, must end in .jpg / .png / .webp / .avif
 // Recommended size: 1200×600 or larger (2:1 ratio).
 // ============================================================
+// ============================================
+// MEDRAE VOICE — exam readiness line
+// Reads from Algorithm cache, speaks like Medrae
+// ============================================
+type MedraeLine = {
+    score: number;
+    text: string;
+    tone: "high" | "mid" | "low";
+};
 
+function pickMedraeLine(score: number, firstName: string): MedraeLine {
+    // Sentence is Medrae TALKING to the user — warm, specific, actionable
+    if (score >= 80) {
+        return {
+            score,
+            tone: "high",
+            text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — you're in strong shape. Keep sharp with a timed Proctored full paper this week.`,
+        };
+    }
+    if (score >= 70) {
+        return {
+            score,
+            tone: "high",
+            text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — nearly there. One more Proctored full paper should seal it.`,
+        };
+    }
+    if (score >= 50) {
+        return {
+            score,
+            tone: "mid",
+            text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — on track. Focus on your weakest units and try a Proctored full paper this week.`,
+        };
+    }
+    if (score >= 30) {
+        return {
+            score,
+            tone: "low",
+            text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}% — not yet where we want it. Do more questions from Prep Quizzes and sit one Proctored Readiness full paper.`,
+        };
+    }
+    return {
+        score,
+        tone: "low",
+        text: `Medrae here, ${firstName}. Your exam readiness is at ${Math.round(score)}%  let's change that. Start with Prep Quizzes today, then attempt a Proctored Readiness full paper to measure progress.`,
+    };
+}
+
+function useMedraeReadiness(firstName: string): MedraeLine | null {
+    const [line, setLine] = useState<MedraeLine | null>(null);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const read = () => {
+            try {
+                const raw = localStorage.getItem("medrae_algo_book_cache");
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                const score = Number(parsed?.overall_prediction?.predicted_score);
+                if (!Number.isFinite(score)) return;
+
+                setLine(pickMedraeLine(score, firstName || "there"));
+            } catch {
+                /* silent */
+            }
+        };
+
+        read();
+
+        const onFocus = () => read();
+        const onStorage = (e: StorageEvent) => {
+            if (e.key === "medrae_algo_book_cache") read();
+        };
+        window.addEventListener("focus", onFocus);
+        window.addEventListener("storage", onStorage);
+        return () => {
+            window.removeEventListener("focus", onFocus);
+            window.removeEventListener("storage", onStorage);
+        };
+    }, [firstName]);
+
+    return line;
+}
 const TIME_IMAGES: Record<"sunrise" | "sun" | "sunset" | "moon", string> = {
     // Morning — bright, clinical, warm light
     sunrise: "https://images.pexels.com/photos/3985163/pexels-photo-3985163.jpeg?auto=compress&cs=tinysrgb&w=1200",
@@ -33,6 +115,7 @@ const TIME_IMAGES: Record<"sunrise" | "sun" | "sunset" | "moon", string> = {
     // Night — dark ward / night shift mood
     moon: "https://images.pexels.com/photos/305568/pexels-photo-305568.jpeg?auto=compress&cs=tinysrgb&w=1200",
 };
+// Tone → left accent color for the Medrae line
 
 // ============================================================
 // DAILY TAGS — one smart nudge per day (no emojis)
@@ -407,7 +490,7 @@ export default function GreetingsCard() {
     const theme = useMemo(() => getTimeTheme(now.getHours()), [now]);
     const heroImage = TIME_IMAGES[theme.icon];
     const dailyTag = useMemo(() => getDailyTag(now), [now.getDate()]);
-
+    const medrae = useMedraeReadiness(name);
     useEffect(() => {
         setImageFailed(false);
         setImageLoaded(false);
@@ -450,12 +533,12 @@ export default function GreetingsCard() {
                 relative overflow-hidden
                 rounded-2xl
                 h-[230px] md:h-[250px]
-                bg-slate-900
+                bg-white dark:bg-slate-900
                 isolate
             "
             >
-                {/* ---- LAYER 0: base fallback ---- */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
+                {/* ---- LAYER 0: skeleton mask (neutral, theme-aware) ---- */}
+                <div className="absolute inset-0 bg-white dark:bg-slate-800 animate-pulse" />
 
                 {/* ---- LAYER 1: hero image — SHARP ---- */}
                 {!imageFailed && (
@@ -479,40 +562,48 @@ export default function GreetingsCard() {
                 {/* ---- LAYER 2: dark scrim so text is readable ---- */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
 
-                {/* ---- LAYER 3: subtle theme accent (top-right glow) ---- */}
-                <div
-                    className={`
-                    absolute -top-32 -right-24 w-72 h-72 rounded-full
-                    bg-gradient-to-br ${theme.accent}
-                    opacity-[0.15]
-                    blur-3xl
-                    pointer-events-none
-                `}
-                />
-
-                {/* ---- LAYER 4: red brand line at top ---- */}
+                {/* ---- LAYER 3: red brand line at top ---- */}
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#FF1F1F] to-transparent opacity-80" />
 
-                {/* ---- LAYER 5: content ---- */}
+                {/* ---- LAYER 4: content ---- */}
                 <div className="relative h-full flex flex-col justify-between p-4 md:p-5">
 
-                    {/* TOP — GREETING + NAME */}
+                    {/* TOP — GREETING + MEDRAE LINE */}
                     <div>
                         <h1 className="text-[24px] leading-tight md:text-[30px] font-semibold tracking-tight text-white drop-shadow-md">
                             {theme.greeting}, {name}
                         </h1>
 
-                        <div className="mt-2 flex items-center gap-2 flex-wrap">
-                            <span className="
-                            inline-flex items-center
-                            px-2.5 py-1 rounded-full
-                            text-[11px] md:text-[12px] font-medium
-                            bg-[#FF1F1F]/90 text-white
-                            backdrop-blur-sm
-                        ">
-                                {dailyTag}
-                            </span>
-                        </div>
+                        {/* Medrae speaking — clean, no color shift */}
+                        {medrae ? (
+                            <p className="
+            mt-2
+            max-w-md
+            px-2.5 py-1.5
+            rounded-lg
+            bg-black/50
+            backdrop-blur-[2px]
+            text-[12.5px] md:text-[14px]
+            font-normal
+            leading-snug
+            text-white/90
+            drop-shadow-sm
+        ">
+                                {medrae.text}
+                            </p>
+                        ) : (
+                            <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                <span className="
+                inline-flex items-center
+                px-2.5 py-1 rounded-full
+                text-[11px] md:text-[12px] font-medium
+                bg-[#FF1F1F]/90 text-white
+                backdrop-blur-sm
+            ">
+                                    {dailyTag}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     {/* BOTTOM — DAY, TIME, WEATHER */}
@@ -590,10 +681,6 @@ export default function GreetingsCard() {
                         </div>
                     </div>
                 </div>
-
-                {/* ❌ NO shimmer sweep */}
-                {/* ❌ NO blur on image */}
-                {/* ❌ NO opacity wash on image */}
             </div>
         </section>
     );
