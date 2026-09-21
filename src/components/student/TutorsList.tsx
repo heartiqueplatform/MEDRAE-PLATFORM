@@ -182,7 +182,7 @@ const ClassDetailsModal = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[600px] border-0 bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-none max-h-[100vh] overflow-y-auto hide-scrollbar w-full mx-0">
+            <DialogContent className="sm:max-w-[600px] border-0 bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-xl max-h-[100vh] overflow-y-auto hide-scrollbar w-full mx-0">
                 <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 flex-shrink-0" />
 
                 <div className="p-4 sm:p-6 pb-8 sm:pb-10">
@@ -436,7 +436,7 @@ const SmartTutorCard = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-            className={`relative group cursor-pointer transition-all duration-300 border-0 p-4 w-full ${isJoined
+            className={`relative group cursor-pointer transition-all duration-300 border-0 p-3 md:p-4 w-full ${isJoined
                 ? 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10'
                 : 'bg-white dark:bg-slate-800/30 hover:bg-blue-50/30 dark:hover:bg-blue-500/5'
                 }`}
@@ -1116,9 +1116,9 @@ export default function TutorsList() {
     }, [existingCohorts]);
 
     return (
-        <div className="animate-fade-in max-w-full mx-0 px-0 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <div className="container mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 max-w-full animate-fade-in">
             {error && (
-                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-3 text-red-600 dark:text-red-400 text-sm mx-0">
+                <div className="bg-red-50 dark:bg-red-500/10 border-0 rounded-xl md:rounded-xl p-3 text-red-600 dark:text-red-400 text-sm mx-2 md:mx-0 mb-3">
                     {error}
                     <button
                         onClick={() => window.location.reload()}
@@ -1130,8 +1130,8 @@ export default function TutorsList() {
             )}
 
             {cohortMessages.length > 0 && (
-                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-none rounded-none mb-0">
-                    <CardHeader className="border-b border-slate-200/30 dark:border-white/5 px-4 py-2">
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 backdrop-blur-none rounded-xl md:rounded-xl mb-3 md:mb-4">
+                    <CardHeader className="border-b border-slate-200/30 dark:border-white/5 px-2 md:px-6 py-2">
                         <div className="flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center space-x-3">
                                 <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg">
@@ -1153,7 +1153,7 @@ export default function TutorsList() {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="pt-2 space-y-2 px-4 pb-2" ref={announcementsRef}>
+                    <CardContent className="pt-2 space-y-2 px-2 md:px-6 pb-2" ref={announcementsRef}>
                         {cohortMessages.map((msg) => {
                             const isUnread = !readMessages.includes(msg.id);
                             return (
@@ -1161,7 +1161,7 @@ export default function TutorsList() {
                                     key={msg.id}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className={`group relative p-4 rounded-lg transition-all cursor-pointer border-0 ${isUnread
+                                    className={`group relative p-3 md:p-4 rounded-lg transition-all cursor-pointer border-0 ${isUnread
                                         ? "bg-white dark:bg-slate-900/80"
                                         : "bg-slate-50/80 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10"
                                         }`}
@@ -1208,8 +1208,8 @@ export default function TutorsList() {
             )}
 
             <div>
-                <Card className="relative overflow-hidden border-0 bg-white dark:bg-slate-900/95 backdrop-blur-none rounded-none mb-0">
-                    <CardHeader className="border-b border-slate-200/50 dark:border-white/5 pb-2 px-4">
+                <Card className="relative overflow-hidden border-0 bg-white dark:bg-[#0d1117] backdrop-blur-none rounded-xl md:rounded-xl">
+                    <CardHeader className="border-b border-slate-200/50 dark:border-white/5 pb-2 px-2 md:px-6">
                         <div className="flex items-center justify-between flex-wrap gap-4">
                             <div className="flex items-center space-x-3">
                                 <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
@@ -1240,14 +1240,14 @@ export default function TutorsList() {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="pt-4 px-4">
+                    <CardContent className="pt-4 px-2 md:px-6">
                         {existingCohorts.length > 0 && (
-                            <div className="mb-8">
+                            <div className="mb-6 md:mb-8">
                                 <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 px-1 flex items-center gap-2">
                                     <CheckCircle className="w-3 h-3 text-emerald-500" />
                                     Your Active Classes
                                 </h3>
-                                <div className="grid gap-3">
+                                <div className="grid gap-3 md:gap-4">
                                     {existingCohorts.map((c, index) => {
                                         const tutor = tutors.find(t => t.user_id === c.tutor_id);
                                         const classInfo = tutor?.classes?.find(
@@ -1262,7 +1262,7 @@ export default function TutorsList() {
                                                 key={index}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="flex justify-between items-center p-4 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-500/5 dark:to-teal-500/5 rounded-lg hover:bg-emerald-100/50 transition-all group border-0"
+                                                className="flex justify-between items-center p-3 md:p-4 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-500/5 dark:to-teal-500/5 rounded-lg hover:bg-emerald-100/50 transition-all group border-0"
                                             >
                                                 <div className="flex items-center gap-4 min-w-0 flex-1">
                                                     <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
@@ -1300,7 +1300,7 @@ export default function TutorsList() {
                             </div>
                         )}
 
-                        <div className="space-y-4">
+                        <div className="space-y-3 md:space-y-4">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 flex items-center gap-2">
                                     <Sparkles className="w-3 h-3 text-yellow-500" />
@@ -1310,9 +1310,9 @@ export default function TutorsList() {
                             </div>
 
                             {loading ? (
-                                <div className="grid gap-4">
+                                <div className="grid gap-3 md:gap-4">
                                     {[1, 2, 3].map((i) => (
-                                        <div key={i} className="p-6 border-0 rounded-none animate-pulse bg-white dark:bg-slate-800/30">
+                                        <div key={i} className="p-4 md:p-6 border-0 rounded-xl animate-pulse bg-white dark:bg-slate-800/30">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-16 h-16 bg-slate-200 dark:bg-white/10 rounded-full" />
                                                 <div className="flex-1 space-y-3">
@@ -1343,7 +1343,7 @@ export default function TutorsList() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid gap-1">
+                                <div className="grid gap-2 md:gap-3">
                                     {tutors.map((tutor) => {
                                         const isJoined = hasJoinedClassForTutor(tutor.user_id);
                                         return (
@@ -1367,7 +1367,7 @@ export default function TutorsList() {
                                 id="join-form"
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                                className="mt-1 p-6 border-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-500/10 dark:to-teal-500/10 rounded-lg"
+                                className="mt-3 md:mt-4 p-4 md:p-6 border-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-500/10 dark:to-teal-500/10 rounded-lg"
                             >
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
@@ -1445,7 +1445,7 @@ export default function TutorsList() {
             />
 
             <Dialog open={!!leaveTarget} onOpenChange={() => setLeaveTarget(null)}>
-                <DialogContent className="sm:max-w-[420px] border-0 bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-none w-full mx-0">
+                <DialogContent className="sm:max-w-[420px] border-0 bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-xl w-full mx-0">
                     <div className="h-1 w-full bg-gradient-to-r from-red-500 via-orange-500 to-red-500" />
                     <div className="p-8">
                         <div className="flex flex-col items-center text-center">
@@ -1490,7 +1490,7 @@ export default function TutorsList() {
             </Dialog>
 
             <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
-                <DialogContent className="sm:max-w-[520px] border-0 bg-white dark:bg-slate-900/95 p-0 overflow-hidden rounded-none w-full mx-0">
+                <DialogContent className="sm:max-w-[520px] border-0 bg-white dark:bg-[#0d1117] p-0 overflow-hidden rounded-xl w-full mx-0">
                     <div className="h-1 w-full bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600" />
                     <div className="p-8">
                         <div className="flex flex-col items-center text-center mb-8">
