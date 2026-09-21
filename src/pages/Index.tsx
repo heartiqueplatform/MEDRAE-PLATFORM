@@ -15,8 +15,13 @@ import Header from '@/components/index/Header';
 import ClinicalAssessmentSection from '@/components/index/ClinicalAssessmentSection';
 import GroupPayLandingSection from '@/components/grouppay/GroupPayLandingSection';
 import NursingMeritCupSection from '@/components/index/NursingMeritCupSection';
-
-
+import PodcastShowcaseSection from '@/components/index/PodcastShowcaseSection';
+// Allow the podcast showcase (and other UI) to open the full-screen player
+declare global {
+  interface Window {
+    __studifyOpen?: (screen?: 'player' | 'episodes' | 'admin') => void;
+  }
+}
 // ============================================================
 // ANIMATION UTILITY: Intersection Observer for scroll animations
 // ============================================================
@@ -1002,6 +1007,7 @@ const Index = () => {
           </div>
         </div>
       </section>
+      <PodcastShowcaseSection />
       <section id="clinical-assessment">
         <ClinicalAssessmentSection />
         <GroupPayLandingSection />

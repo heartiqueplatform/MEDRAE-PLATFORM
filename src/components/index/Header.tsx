@@ -6,7 +6,7 @@ import {
     Menu, X, ArrowRight, ChevronDown, MoreHorizontal,
     Home, Sparkles, Users, Trophy, Stethoscope, BookOpen,
     Brain, Info, Mail, FileText, HelpCircle, ClipboardList,
-    GraduationCap, Award, LogIn, UserPlus,
+    GraduationCap, Award, LogIn, UserPlus, Headphones, Mic2,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -110,6 +110,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     const primaryNavItems = [
         { id: 'home', label: 'Home', icon: Home, bg: 'bg-[#1f6feb]' },
         { id: 'features', label: 'Features', icon: Sparkles, bg: 'bg-[#8957e5]' },
+        { id: 'podcasts', label: 'Podcasts', icon: Headphones, bg: 'bg-[#f85149]' }, // ← NEW
         { id: 'grouppay', label: 'GroupPay', icon: Users, bg: 'bg-[#3fb950]' },
         { id: 'merit-cup', label: 'Merit Cup', icon: Trophy, bg: 'bg-[#d29922]' },
     ];

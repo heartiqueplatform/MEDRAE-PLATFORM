@@ -251,7 +251,100 @@
   <!-- ============================================ -->
   <!-- SCHEMA.ORG / JSON-LD - ALL FEATURES -->
   <!-- ============================================ -->
+  <!-- ============================================ -->
+  <!-- 🎧 FEATURE 10: Medrae Podcast Network -->
+  <!-- ============================================ -->
+  <meta name="podcasts:total_shows" content="6+ curated nursing shows" />
+  <meta name="podcasts:total_episodes" content="100+ episodes and growing" />
+  <meta name="podcasts:categories"
+    content="Clinical insights, exam-focused revision (NCK & FQEs), emotional support, nursing comedy, new nurse diaries, global pathways" />
+  <meta name="podcasts:curated" content="Hand-picked nursing podcasts — verified, zero fluff, updated weekly" />
+  <meta name="podcasts:free" content="Free with every Medrae account — no extra subscription" />
+  <meta name="podcasts:audio"
+    content="Real voices from the ward, exam breakdowns, honest talk on burnout, comedy only nurses understand" />
+  <meta name="podcasts:access" content="Available inside the Medrae app for all cadres (DCHN, BSN, KRN)" />
 
+  <!-- Feature 10 keyword variant -->
+  <meta name="keywords_podcasts"
+    content="nursing podcasts Kenya, nursing podcast network, NCK revision podcast, nursing exam podcast, nursing emotional support podcast, nursing comedy podcast, clinical insights podcast, nursing student audio, DCHN podcast, BSN podcast, KRN podcast" />
+
+  <!-- Feature-level meta tag (parallel to your existing feature:* pattern) -->
+  <meta name="feature:podcast_network"
+    content="Medrae Podcast Network — hand-picked nursing podcasts covering clinical insights, exam revision, emotional support, and nursing comedy. Free with every account." />
+
+  <!-- Social proof for podcasts -->
+  <meta name="social:podcasts" content="2,231+ nursing students listening to curated nursing shows on Medrae" />
+
+  <!-- ============================================ -->
+  <!-- FEATURE 10: Podcast Network Schema (JSON-LD) -->
+  <!-- ============================================ -->
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "PodcastSeries",
+        "name": "Medrae Podcast Network",
+        "alternateName": "Medrae Nursing Podcasts",
+        "description": "Hand-picked nursing podcasts inside Medrae — real voices from the ward, exam-focused NCK & FQE breakdowns, honest talk on burnout, and comedy that only nurses understand. Free with every Medrae account. Available for all nursing cadres (DCHN, BSN, KRN).",
+        "url": "https://medrae.com/#podcasts",
+        "inLanguage": "en-KE",
+        "publisher": {
+          "@type": "EducationalOrganization",
+          "name": "Medrae Nursing",
+          "url": "https://medrae.com/",
+          "logo": "https://medrae.com/icon-512.png"
+        },
+        "audience": {
+          "@type": "EducationalAudience",
+          "educationalRole": "nursing student"
+        },
+        "genre": [
+          "Nursing Education",
+          "Clinical Insights",
+          "Exam Preparation",
+          "Mental Wellness",
+          "Comedy"
+        ],
+        "webFeed": "https://medrae.com/#podcasts",
+        "hasPart": [
+          {
+            "@type": "PodcastEpisode",
+            "name": "Clinical Insights",
+            "description": "Real cases and real decisions from practising nurses on the ward."
+          },
+          {
+            "@type": "PodcastEpisode",
+            "name": "Night Shift Stories",
+            "description": "Honest talk on burnout, fear, and resilience in nursing."
+          },
+          {
+            "@type": "PodcastEpisode",
+            "name": "Exam Room",
+            "description": "NCK & FQEs decoded — evidence-based revision breakdowns."
+          },
+          {
+            "@type": "PodcastEpisode",
+            "name": "Nursing Laughs",
+            "description": "Comedy that only nurses understand."
+          },
+          {
+            "@type": "PodcastEpisode",
+            "name": "New Nurse Diaries",
+            "description": "From student to staff — real transition stories."
+          },
+          {
+            "@type": "PodcastEpisode",
+            "name": "Global Pathways",
+            "description": "NCLEX and international nursing licensing pathways."
+          }
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "KES",
+          "description": "Free with every Medrae account — no extra subscription required."
+        }
+      }
+    </script>
   <!-- FEATURE 1: 6k+ NCK Questions by Unit & Condition Schema -->
   <script type="application/ld+json">
     {
