@@ -48,7 +48,7 @@ const InfoRow = ({
 }) => {
   const hasValue = value && value.trim() !== "" && value !== "Not set";
   return (
-    <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+    <div className="flex items-center gap-2 min-w-0">
       <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
       {hasValue ? (
         <span className="text-xs md:text-sm truncate">{value}</span>
@@ -61,50 +61,50 @@ const InfoRow = ({
 
 // Skeleton Components
 const ProfileSkeleton = () => (
-  <div className="space-y-0 md:space-y-2 px-0 md:px-2 border-0 md:max-w-full md:px-4 lg:px-6 mx-auto w-full pb-20 md:pb-6">
-    <Tabs defaultValue="overview" className="space-y-0 md:space-y-2">
+  <div className="space-y-2 px-2 py-2 border-0 md:max-w-full mx-auto w-full pb-20 md:pb-6">
+    <Tabs defaultValue="overview" className="space-y-2">
       <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none">
         <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
         <TabsTrigger value="stats" className="rounded-xl">Statistics</TabsTrigger>
         <TabsTrigger value="settings" className="rounded-xl">Account</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="overview" className="space-y-0 md:space-y-2">
+      <TabsContent value="overview" className="space-y-2">
         {/* Profile Card Skeleton */}
         <Card className="border-0 shadow-none rounded-xl">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-              <Skeleton className="h-5 w-5 md:h-6 md:w-6 rounded" />
-              <Skeleton className="h-6 w-32 md:h-8 md:w-40" />
+          <CardContent className="p-2 md:p-4">
+            <div className="flex items-center gap-2 mb-2 md:mb-4">
+              <Skeleton className="h-5 w-5 md:h-6 md:w-6 rounded-xl" />
+              <Skeleton className="h-6 w-32 md:h-8 md:w-40 rounded-xl" />
             </div>
-            <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+            <div className="flex flex-col md:flex-row items-start gap-2 md:gap-4">
               <div className="relative flex-shrink-0">
-                <Skeleton className="h-20 w-20 md:h-24 md:w-24 rounded-full" />
+                <Skeleton className="h-20 w-20 md:h-24 md:w-24 rounded-xl" />
               </div>
-              <div className="flex-1 space-y-3 md:space-y-4 w-full">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+              <div className="flex-1 space-y-2 w-full">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div className="space-y-2">
-                    <Skeleton className="h-6 w-40 md:h-8 md:w-48" />
-                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-40 md:h-8 md:w-48 rounded-xl" />
+                    <Skeleton className="h-4 w-24 rounded-xl" />
                   </div>
-                  <div className="flex gap-1.5 md:gap-2">
-                    <Skeleton className="h-5 w-16" />
-                    <Skeleton className="h-5 w-12" />
-                  </div>
-                </div>
-                <Skeleton className="h-4 w-full max-w-md" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-                  <div className="space-y-2 md:space-y-3">
-                    <Skeleton className="h-4 w-40" />
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-36" />
-                  </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <Skeleton className="h-4 w-44" />
-                    <Skeleton className="h-4 w-28" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-16 rounded-xl" />
+                    <Skeleton className="h-5 w-12 rounded-xl" />
                   </div>
                 </div>
-                <Skeleton className="h-9 w-40 md:h-10 md:w-48" />
+                <Skeleton className="h-4 w-full max-w-md rounded-xl" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-40 rounded-xl" />
+                    <Skeleton className="h-4 w-32 rounded-xl" />
+                    <Skeleton className="h-4 w-36 rounded-xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-44 rounded-xl" />
+                    <Skeleton className="h-4 w-28 rounded-xl" />
+                  </div>
+                </div>
+                <Skeleton className="h-9 w-40 md:h-10 md:w-48 rounded-xl" />
               </div>
             </div>
           </CardContent>
@@ -112,15 +112,15 @@ const ProfileSkeleton = () => (
 
         {/* Academic Card Skeleton */}
         <Card className="border-0 shadow-none rounded-xl">
-          <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
-            <Skeleton className="h-5 w-48 md:h-6 md:w-56" />
+          <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
+            <Skeleton className="h-5 w-48 md:h-6 md:w-56 rounded-xl" />
           </CardHeader>
-          <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6 pb-4 md:pb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-              <div><Skeleton className="h-4 w-16 mb-1" /><Skeleton className="h-4 w-32" /></div>
-              <div><Skeleton className="h-4 w-20 mb-1" /><Skeleton className="h-4 w-24" /></div>
-              <div><Skeleton className="h-4 w-24 mb-1" /><Skeleton className="h-4 w-36" /></div>
-              <div><Skeleton className="h-4 w-20 mb-1" /><Skeleton className="h-4 w-28" /></div>
+          <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div><Skeleton className="h-4 w-16 mb-1 rounded-xl" /><Skeleton className="h-4 w-32 rounded-xl" /></div>
+              <div><Skeleton className="h-4 w-20 mb-1 rounded-xl" /><Skeleton className="h-4 w-24 rounded-xl" /></div>
+              <div><Skeleton className="h-4 w-24 mb-1 rounded-xl" /><Skeleton className="h-4 w-36 rounded-xl" /></div>
+              <div><Skeleton className="h-4 w-20 mb-1 rounded-xl" /><Skeleton className="h-4 w-28 rounded-xl" /></div>
             </div>
           </CardContent>
         </Card>
@@ -303,11 +303,11 @@ export function Profile() {
 
   if (!profileState) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen w-full text-center p-4 md:p-6">
+      <div className="flex flex-col items-center justify-center h-screen w-full text-center p-2">
         <h2 className="text-lg md:text-xl font-bold">Profile not found</h2>
-        <p className="text-muted-foreground mb-3 md:mb-4 text-xs md:text-sm">We couldn't find your profile data.</p>
-        {isOffline && <Badge variant="destructive" className="text-xs">Offline Mode</Badge>}
-        <Button onClick={() => navigate("/login")} className="mt-3 md:mt-4 text-xs md:text-sm">Go to Login</Button>
+        <p className="text-muted-foreground mb-2 text-xs md:text-sm">We couldn't find your profile data.</p>
+        {isOffline && <Badge variant="destructive" className="text-xs rounded-xl">Offline Mode</Badge>}
+        <Button onClick={() => navigate("/login")} className="mt-2 text-xs md:text-sm rounded-xl">Go to Login</Button>
       </div>
     );
   }
@@ -316,37 +316,37 @@ export function Profile() {
   const initials = profileState?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "ME";
 
   return (
-    <div className="space-y-0 md:space-y-2 px-0 md:px-2 border-0 md:max-w-full md:px-4 lg:px-6 mx-auto w-full pb-20 md:pb-6">
-      <Tabs defaultValue="overview" className="space-y-0 md:space-y-2">
-        <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none mx-0 md:mx-0">
+    <div className="space-y-2 px-2 py-2 border-0 md:max-w-full mx-auto w-full pb-20 md:pb-6">
+      <Tabs defaultValue="overview" className="space-y-2">
+        <TabsList className="grid w-full grid-cols-3 h-10 md:h-11 text-xs md:text-sm rounded-xl border-0 shadow-none">
           <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
           <TabsTrigger value="stats" className="rounded-xl">Statistics</TabsTrigger>
           <TabsTrigger value="settings" className="rounded-xl">Account</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-0 md:space-y-2">
+        <TabsContent value="overview" className="space-y-2">
           {/* Profile Card */}
           <Card className="border-0 shadow-none rounded-xl">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <CardContent className="p-2 md:p-4">
+              <div className="flex items-center gap-2 mb-2 md:mb-4">
                 <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                 <h1 className="text-xl md:text-2xl font-bold">My Profile</h1>
               </div>
-              <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+              <div className="flex flex-col md:flex-row items-start gap-2 md:gap-4">
                 <div className="relative flex-shrink-0">
-                  <Avatar className="h-20 w-20 md:h-24 md:w-24">
-                    <AvatarImage src={profileState?.avatar_url || undefined} className="object-cover" loading="lazy" />
-                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xl md:text-2xl font-semibold">
+                  <Avatar className="h-20 w-20 md:h-24 md:w-24 rounded-xl">
+                    <AvatarImage src={profileState?.avatar_url || undefined} className="object-cover rounded-xl" loading="lazy" />
+                    <AvatarFallback className="bg-primary text-primary-foreground flex items-center justify-center text-xl md:text-2xl font-semibold rounded-xl">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 md:h-8 md:w-8 rounded-full shadow-none border-0" onClick={handleAvatarUpdate}>
+                  <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 h-7 w-7 md:h-8 md:w-8 rounded-xl shadow-none border-0" onClick={handleAvatarUpdate}>
                     <Camera className="h-3.5 w-3.5 md:h-4 md:w-4" />
                   </Button>
                 </div>
 
-                <div className="flex-1 space-y-3 md:space-y-4 w-full">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+                <div className="flex-1 space-y-2 w-full">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div>
                       <h2 className="text-xl md:text-2xl font-bold">{displayName}</h2>
                       {profileState?.username ? (
@@ -357,13 +357,13 @@ export function Profile() {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-1.5 md:gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap">
                       {profileState?.role && (
-                        <Badge variant="secondary" className="capitalize text-[10px] md:text-xs border-0">
+                        <Badge variant="secondary" className="capitalize text-[10px] md:text-xs border-0 rounded-xl">
                           {profileState.role}
                         </Badge>
                       )}
-                      <Badge variant="outline" className="text-[10px] md:text-xs border-0 bg-muted">
+                      <Badge variant="outline" className="text-[10px] md:text-xs border-0 bg-muted rounded-xl">
                         {activePlan || "Free"}
                       </Badge>
                     </div>
@@ -377,15 +377,15 @@ export function Profile() {
                     </p>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-                    <div className="space-y-2 md:space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="space-y-2">
                       <InfoRow icon={Mail} value={profileState?.email} fallback="email" />
                       <InfoRow icon={Phone} value={profileState?.phone} fallback="phone number" />
                       <InfoRow icon={MapPin} value={profileState?.county} fallback="county" />
                     </div>
-                    <div className="space-y-2 md:space-y-3">
+                    <div className="space-y-2">
                       <InfoRow icon={School} value={profileState?.institution} fallback="institution" />
-                      <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
                         {profileState?.joined_date ? (
                           <span className="text-xs md:text-sm">
@@ -400,8 +400,8 @@ export function Profile() {
                     </div>
                   </div>
 
-                  <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 w-full md:w-auto border-0 shadow-none bg-muted hover:bg-muted/80">
-                    <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> Edit My Profile
+                  <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 w-full md:w-auto border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
+                    <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit My Profile
                   </Button>
                 </div>
               </div>
@@ -410,10 +410,10 @@ export function Profile() {
 
           {/* Academic Card */}
           <Card className="border-0 shadow-none rounded-xl">
-            <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
+            <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
               <CardTitle className="text-base md:text-lg">Academic & Professional Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6 pb-4 md:pb-6">
+            <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
               {(() => {
                 const items = [
                   profileState?.course && { label: "Course", value: profileState.course },
@@ -446,23 +446,23 @@ export function Profile() {
 
                 if (items.length === 0) {
                   return (
-                    <div className="text-center py-6 md:py-8">
+                    <div className="text-center py-2 md:py-4">
                       <p className="text-muted-foreground/70 italic text-xs md:text-sm">
                         No academic or professional details added yet.
                       </p>
                       <Button
                         variant="outline"
                         onClick={handleProfileUpdate}
-                        className="mt-3 text-xs md:text-sm border-0 shadow-none bg-muted hover:bg-muted/80"
+                        className="mt-2 text-xs md:text-sm border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
                       >
-                        <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> Add details
+                        <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Add details
                       </Button>
                     </div>
                   );
                 }
 
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {items.map((item) => (
                       <div key={item.label}>
                         <label className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
@@ -481,59 +481,59 @@ export function Profile() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="stats" className="space-y-0 md:space-y-6">
+        <TabsContent value="stats" className="space-y-2">
           <Card className="border-0 shadow-none rounded-xl">
-            <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
+            <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
               <CardTitle className="text-base md:text-lg">Platform Statistics</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6 text-center">
+            <CardContent className="p-2 md:p-4 text-center">
               <p className="text-sm md:text-lg font-medium text-muted-foreground">{getDaysMessage()}</p>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-0 md:space-y-6">
+        <TabsContent value="settings" className="space-y-2">
           <Card className="border-0 shadow-none rounded-xl">
-            <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
+            <CardHeader className="px-2 md:px-4 pt-2 md:pt-4 pb-2">
               <CardTitle className="text-base md:text-lg">Account Settings</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6 pb-4 md:pb-6">
+            <CardContent className="space-y-2 px-2 md:px-4 pb-2 md:pb-4">
               <p className="text-muted-foreground text-xs md:text-sm">Update your account settings and preferences in the Settings page.</p>
-              <div className="flex flex-wrap gap-2 md:gap-3">
-                <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80">
-                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" /> Edit Profile
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
+                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit Profile
                 </Button>
                 <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80">
+                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
                       Logout
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="rounded-xl">
                     <DialogHeader>
                       <DialogTitle>Confirm Logout</DialogTitle>
                       <DialogDescription>Are you sure you want to log out?</DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="mt-4">
-                      <Button variant="secondary" onClick={() => setShowLogoutDialog(false)} className="text-xs md:text-sm">Cancel</Button>
-                      <Button variant="destructive" onClick={handleLogout} className="text-xs md:text-sm">Logout</Button>
+                    <DialogFooter className="mt-2">
+                      <Button variant="secondary" onClick={() => setShowLogoutDialog(false)} className="text-xs md:text-sm rounded-xl">Cancel</Button>
+                      <Button variant="destructive" onClick={handleLogout} className="text-xs md:text-sm rounded-xl">Logout</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
                 <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="destructive" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none">
+                    <Button variant="destructive" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none rounded-xl">
                       Delete My Account
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="rounded-xl">
                     <DialogHeader>
                       <DialogTitle>Confirm Delete</DialogTitle>
                       <DialogDescription>This action cannot be undone.</DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="mt-4">
-                      <Button variant="secondary" onClick={() => setShowDeleteDialog(false)} className="text-xs md:text-sm">Cancel</Button>
-                      <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting} className="text-xs md:text-sm">
+                    <DialogFooter className="mt-2">
+                      <Button variant="secondary" onClick={() => setShowDeleteDialog(false)} className="text-xs md:text-sm rounded-xl">Cancel</Button>
+                      <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting} className="text-xs md:text-sm rounded-xl">
                         {deleting ? "Deleting..." : "Delete"}
                       </Button>
                     </DialogFooter>
@@ -541,20 +541,20 @@ export function Profile() {
                 </Dialog>
                 <Dialog open={showDialog} onOpenChange={setShowDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80">
+                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
                       Change Password
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="rounded-xl">
                     <DialogHeader>
                       <DialogTitle>Change Password</DialogTitle>
                       <DialogDescription>Enter and confirm your new password.</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-3 md:space-y-4 mt-2">
+                    <div className="space-y-2 mt-2">
                       <div>
                         <Label htmlFor="newPassword" className="text-xs md:text-sm">New Password</Label>
                         <div className="relative">
-                          <Input id="newPassword" type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="text-xs md:text-sm h-10 md:h-11" />
+                          <Input id="newPassword" type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="text-xs md:text-sm h-10 md:h-11 rounded-xl" />
                           <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>
                             {showNewPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}
                           </button>
@@ -563,15 +563,15 @@ export function Profile() {
                       <div>
                         <Label htmlFor="confirmPassword" className="text-xs md:text-sm">Confirm Password</Label>
                         <div className="relative">
-                          <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="text-xs md:text-sm h-10 md:h-11" />
+                          <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="text-xs md:text-sm h-10 md:h-11 rounded-xl" />
                           <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                             {showConfirmPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}
                           </button>
                         </div>
                       </div>
                     </div>
-                    <DialogFooter className="mt-4">
-                      <Button onClick={handleChangePassword} disabled={passwordLoading} className="text-xs md:text-sm">
+                    <DialogFooter className="mt-2">
+                      <Button onClick={handleChangePassword} disabled={passwordLoading} className="text-xs md:text-sm rounded-xl">
                         {passwordLoading ? "Updating..." : "Update Password"}
                       </Button>
                     </DialogFooter>

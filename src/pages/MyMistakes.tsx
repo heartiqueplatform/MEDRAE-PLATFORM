@@ -1,4 +1,6 @@
 "use client";
+
+import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -15,9 +17,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
 
-import React from 'react';
-import { Trophy, Sparkles, ArrowRight, Heart } from "lucide-react";
+import { Trophy, Sparkles, ArrowRight, Heart, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { MistakesCard } from "@/components/MistakesCard";
 
 interface Question {
     id: string;
@@ -421,6 +423,7 @@ export default function MyMistakes() {
     if (!mistakes.length) {
         return (
             <div className="flex justify-center items-center min-h-[70vh] p-4 md:p-6 bg-transparent">
+
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -483,23 +486,74 @@ export default function MyMistakes() {
     return (
         <div className="w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 space-y-0 md:space-y-2 pb-4 md:pb-6">
             {/* Header with manual refresh button - NO floating indicators */}
-
+            <MistakesCard />
+            {/* ─── Header ─── */}
             <div className="mb-0 md:mb-1">
-                <div className="relative bg-slate-100 dark:bg-slate-900 md:rounded-2xl p-4 md:p-6 lg:p-8 text-start overflow-hidden rounded-none">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h1 className="text-sm lg:text-xl font-bold mb-2 md:mb-3 text-gray-900 dark:text-white flex items-center gap-2 md:gap-3">
-                                Hello there! You have{" "}
-                                <span className="font-bold text-rose-600 dark:text-rose-400">
-                                    {mistakeCount}
-                                </span>{" "}
-                                unresolved {mistakeCount === 1 ? "mistake" : "mistakes"}.
+                <div className="relative bg-slate-100 dark:bg-[#0d1117] md:rounded-2xl p-4 md:p-6 lg:p-8 text-start overflow-hidden rounded-none">
+                    <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        {/* Left — message */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                                    <Sparkles size={14} className="text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                                    Your learning space
+                                </span>
+                            </div>
+
+                            <h1 className="text-lg lg:text-2xl font-semibold text-gray-900 dark:text-white leading-snug">
+                                {mistakeCount === 0 ? (
+                                    <>Everything's clear. Nothing left to revisit.</>
+                                ) : (
+                                    <>
+                                        You have{" "}
+                                        <span className="font-bold text-rose-600 dark:text-rose-400">
+                                            {mistakeCount}
+                                        </span>{" "}
+                                        {mistakeCount === 1
+                                            ? "question worth revisiting"
+                                            : "questions worth revisiting"}
+                                        .
+                                    </>
+                                )}
                             </h1>
+
+                            <p className="text-sm font-normal text-gray-500 dark:text-gray-500 mt-2 max-w-xl leading-relaxed">
+                                {mistakeCount === 0
+                                    ? "Keep going — you're on top of everything right now."
+                                    : "Each one is a small lesson waiting to be understood. Work through them at your own pace."}
+                            </p>
                         </div>
+
+                        {/* Right — quiet stat card */}
+                        {mistakeCount > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
+                                className="flex items-center gap-4 md:gap-6 bg-white/60 dark:bg-[#161b22]/60 backdrop-blur-sm rounded-2xl px-5 py-4 md:px-6 md:py-5"
+                            >
+                                <div className="flex flex-col">
+                                    <span className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tabular-nums">
+                                        {mistakeCount}
+                                    </span>
+                                    <span className="text-[11px] font-normal text-gray-500 dark:text-gray-500">
+                                        {mistakeCount === 1 ? "lesson" : "lessons"} waiting
+                                    </span>
+                                </div>
+
+                                <div className="w-px h-10 bg-gray-200 dark:bg-gray-800" />
+
+                                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                                    <BookOpen size={16} />
+                                    <span className="text-[11px] font-medium">Revisit anytime</span>
+                                </div>
+                            </motion.div>
+                        )}
                     </div>
                 </div>
             </div>
-
             <AnimatePresence>
                 {mistakes.map((m, i) => (
                     <motion.div
@@ -510,7 +564,7 @@ export default function MyMistakes() {
                         layout
                         className="mb-0 md:mb-4"
                     >
-                        <Card className="overflow-visible md:border-0 md:shadow-md md:rounded-xl bg-white/40 dark:bg-muted/30 rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                        <Card className="overflow-visible md:border-0 md:shadow-md md:rounded-xl bg-white/40 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0">
                             <CardHeader className="p-3 md:p-4">
                                 <CardTitle className="text-sm md:text-base lg:text-lg">
                                     Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}

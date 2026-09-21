@@ -43,46 +43,43 @@ export function FloatingChatButton({ userId }: FloatingChatButtonProps) {
 
     return (
         <div className="hidden md:block">
-            {/* Trigger button */}
+            {/* Trigger button — restyled to match history pill */}
             <button
                 onClick={handleOpen}
                 aria-label="Open chat"
                 className={cn(
                     "group fixed bottom-32 right-5 z-30",
-                    "flex h-12 w-12 items-center justify-center rounded-full",
-                    // white in light, dark in dark
-                    "bg-white text-slate-900",
-                    "dark:bg-slate-900 dark:text-slate-50",
-                    // subtle border so it reads on white/dark backgrounds
-                    "border border-slate-200 dark:border-slate-800",
-                    "shadow-[0_8px_24px_-6px_rgba(15,23,42,0.18)]",
-                    "dark:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.6)]",
+                    "flex items-center gap-2 rounded-full pl-3 pr-4 py-2.5",
+                    "min-w-[110px] justify-center",
+                    "bg-gray-800 dark:bg-[#21262d] hover:bg-gray-900 dark:hover:bg-[#30363d] text-white",
+                    "shadow-lg",
                     "transition-all duration-300 ease-out",
-                    "hover:scale-105",
-                    "hover:bg-slate-50 dark:hover:bg-slate-800",
-                    "active:scale-95",
+                    "active:scale-[0.96]",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 dark:focus-visible:ring-slate-600",
                     isOpen && "pointer-events-none scale-0 opacity-0"
                 )}
             >
-                <ChatBubbleIcon className="h-5 w-5" strokeWidth={1.75} />
+                <span className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/10">
+                    <ChatBubbleIcon className="w-4 h-4" strokeWidth={1.75} />
 
-                {unreadCount > 0 && (
-                    <span
-                        className={cn(
-                            "absolute -top-1 -right-1 z-10",
-                            "flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1",
-                            "bg-slate-900 text-[10px] font-semibold leading-none text-white",
-                            "dark:bg-white dark:text-slate-900",
-                            "ring-2 ring-white dark:ring-slate-900"
-                        )}
-                    >
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                )}
+                    {unreadCount > 0 && (
+                        <span
+                            className={cn(
+                                "absolute -top-1 -right-1 z-10",
+                                "flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1",
+                                "bg-emerald-500 text-[10px] font-semibold leading-none text-white",
+                                "ring-2 ring-gray-800 dark:ring-[#21262d]"
+                            )}
+                        >
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                    )}
+                </span>
+
+                <span className="text-sm font-semibold hidden sm:inline">Chat</span>
             </button>
 
-            {/* Chat panel */}
+            {/* Chat panel — unchanged */}
             <div
                 className={cn(
                     "fixed z-[100] transition-all duration-300 ease-in-out",

@@ -27,7 +27,7 @@ import { UserProfileModal } from "@/components/UserProfileModal";
 // ✅ Import shared profile cache
 import { getProfileCache, setProfileCache, clearProfileCache, PROFILE_CACHE_KEY } from "@/lib/profileCache";
 import { HardResetButton } from "../HardResetButton";
-
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
 const CACHE_DURATION = 30 * 60 * 1000;
@@ -233,7 +233,33 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
       localStorage.setItem('userStreak', String(propStreak));
     }
   }, [propStreak]);
+  // ✅ Premium status — light, cached, read-only
+  const [isPremium, setIsPremium] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("medrae_is_premium") === "true";
+    } catch { return false; }
+  });
 
+  // Fetch once on mount (in background)
+  useEffect(() => {
+    if (!authUser?.id || !isOnline) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("subscriptions")
+          .select("is_active")
+          .eq("user_id", authUser.id)
+          .maybeSingle();
+        if (!cancelled) {
+          const premium = !!data?.is_active;
+          setIsPremium(premium);
+          localStorage.setItem("medrae_is_premium", String(premium));
+        }
+      } catch { /* silent */ }
+    })();
+    return () => { cancelled = true; };
+  }, [authUser?.id, isOnline]);
   // ============================================================
   // ✅ Notifications & Total Users - ALWAYS shows cached data
   // ============================================================
@@ -815,6 +841,51 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                 collisionPadding={10}
                 className="w-[calc(100vw-20px)] sm:w-80 sm:max-w-[420px] p-4 mt-2 rounded-xl border-0 bg-white dark:bg-muted/100 z-[100]"
               >
+                {!isPremium && (
+                  <button
+                    onClick={() => { navigate("/subscription"); setIsSettingsOpen(false); }}
+                    className="w-full mb-3 flex items-center gap-3 px-4 py-3 rounded-xl
+                   bg-gradient-to-r from-amber-50 to-yellow-50
+                   dark:from-amber-950/40 dark:to-yellow-950/40
+
+                   active:scale-[0.98] transition-transform text-left"
+                  >
+                    <span className="relative inline-flex items-center justify-center h-8 w-8 rounded-full
+                         bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-600
+                         shadow-[0_0_0_1px_rgba(255,255,255,0.5)_inset,0_1px_3px_rgba(0,0,0,0.15)]">
+                      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-white">
+                        <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" strokeWidth="3"
+                          strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span className="flex-1">
+                      <span className="block text-sm font-bold text-amber-900 dark:text-amber-100">
+                        Get Verified
+                      </span>
+                      <span className="block text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium">
+                        Unlock the golden badge on your profile
+                      </span>
+                    </span>
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">Upgrade →</span>
+                  </button>
+                )}
+
+                {isPremium && (
+                  <div className="mb-3 flex items-center gap-3 px-4 py-3 rounded-xl
+                    bg-gradient-to-r from-amber-50 to-yellow-50
+                    dark:from-amber-950/40 dark:to-yellow-950/40
+                 ">
+                    <VerifiedBadge isPremium={true} size="lg" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                        Verified Premium Member
+                      </p>
+                      <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium">
+                        Your account is officially recognized
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <StreakWidget streak={streak} isOnline={isOnline} />
 
                 {/* Sound Control */}
@@ -927,10 +998,16 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
           {/* User Info - ALWAYS shows cached data immediately */}
           <div className="flex items-center ml-4 sm:ml-6 gap-2 cursor-pointer active:scale-98 transition-transform" onClick={handleProfileClick}>
             <div className="hidden sm:block text-right">
-              <div className="text-sm font-medium flex items-center gap-2 truncate max-w-[120px] sm:max-w-[150px]">
-                {user?.name && user.name !== "Unknown" && user.name !== "Unknown User"
-                  ? user.name.split(" ")[0]
-                  : (isOnline ? "Student" : "Offline")}
+              <div className="text-sm font-medium flex items-center gap-2 truncate max-w-[140px] sm:max-w-[190px]">
+                <span className="truncate">
+                  {user?.name && user.name !== "Unknown" && user.name !== "Unknown User"
+                    ? user.name.split(" ")[0]
+                    : (isOnline ? "Student" : "Offline")}
+                </span>
+
+                {/* ✅ Premium verification badge */}
+                <VerifiedBadge isPremium={isPremium} size="sm" />
+
                 {streak > 0 && isOnline && (
                   <Badge variant="secondary" className={`text-[10px] sm:text-xs ${streak <= 7 ? "bg-red-700 text-white" :
                     streak <= 30 ? "bg-purple-800 text-white" :
@@ -961,6 +1038,12 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
                   )}
                 </AvatarFallback>
               </Avatar>
+              {/* ✅ Mobile-visible premium dot-check */}
+              {isPremium && (
+                <span className="absolute -bottom-0.5 -left-0.5 sm:hidden">
+                  <VerifiedBadge isPremium={isPremium} size="sm" />
+                </span>
+              )}
               <span className={`absolute top-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-0 ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400"
                 }`} title={isOnline ? "Online" : "Offline"} />
             </div>

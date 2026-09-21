@@ -49,16 +49,16 @@ import { useUserRole } from "@/context/UserRoleContext";
 // Skeleton Components
 function SettingsSkeleton() {
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] p-0 md:p-4 pb-20 md:pb-6">
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-0 md:space-y-6 animate-pulse">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-2 md:px-2 py-1 md:py-2 pb-20 md:pb-4">
+      <div className="w-full md:max-w-full space-y-1 md:space-y-2 animate-pulse">
         {/* Profile Summary Card Skeleton */}
-        <Card className="w-full md:border-0 overflow-hidden p-4 md:p-6 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-          <div className="mt-4 md:mt-6">
-            <div className="space-y-3 md:space-y-4">
+        <Card className="w-full overflow-hidden p-1 md:p-2 rounded-none md:rounded-xl border-0 shadow-none">
+          <div className="mt-1 md:mt-2">
+            <div className="space-y-1 md:space-y-2">
               <div className="h-8 md:h-10 w-32 md:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
               <div className="h-4 md:h-5 w-48 md:w-72 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div className="flex flex-col gap-4 md:gap-6">
-                <div className="flex items-center gap-3 md:gap-4">
+              <div className="flex flex-col gap-2 md:gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                   <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-gray-200 dark:bg-gray-700" />
                   <div className="flex flex-col gap-0.5 md:gap-1">
                     <div className="h-5 md:h-6 w-32 md:w-40 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -67,7 +67,7 @@ function SettingsSkeleton() {
                   </div>
                 </div>
                 <Separator className="bg-gray-200 dark:bg-gray-700" />
-                <div className="grid gap-2 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-1 md:gap-2 md:grid-cols-2">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div key={i} className="h-4 md:h-5 w-32 md:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
                   ))}
@@ -78,24 +78,24 @@ function SettingsSkeleton() {
         </Card>
 
         {/* Edit Form Tabs Skeleton */}
-        <div className="space-y-4 md:space-y-6">
-          <div className="grid w-full grid-cols-2 h-10 md:h-11 gap-1 mx-4 md:mx-0">
+        <div className="space-y-1 md:space-y-2">
+          <div className="grid w-full grid-cols-2 h-10 md:h-11 gap-1">
             <div className="h-10 md:h-11 bg-gray-200 dark:bg-gray-700 rounded-lg md:rounded-xl" />
             <div className="h-10 md:h-11 bg-gray-200 dark:bg-gray-700 rounded-lg md:rounded-xl" />
           </div>
 
-          <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-            <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
+          <Card className="rounded-none md:rounded-xl border-0 shadow-none">
+            <CardHeader className="px-1 md:px-2 pt-1 md:pt-2">
               <div className="h-6 md:h-7 w-48 md:w-64 bg-gray-200 dark:bg-gray-700 rounded" />
               <div className="h-4 md:h-5 w-64 md:w-96 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
             </CardHeader>
-            <CardContent className="space-y-4 md:space-y-6 px-4 md:px-6 pb-4 md:pb-6">
+            <CardContent className="space-y-3 md:space-y-4 px-1 md:px-2 pb-1 md:pb-2">
               {/* Avatar Section Skeleton */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-3">
                 <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-gray-200 dark:bg-gray-700" />
-                <div className="flex flex-col gap-1.5 md:gap-2 w-full sm:w-auto">
+                <div className="flex flex-col gap-1 md:gap-2 w-full sm:w-auto">
                   <div className="h-9 md:h-10 w-full sm:w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="flex gap-1.5 md:gap-2">
+                  <div className="flex gap-1 md:gap-2">
                     <div className="h-8 md:h-9 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
                   </div>
                   <div className="h-3 md:h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -105,13 +105,13 @@ function SettingsSkeleton() {
               <Separator className="bg-gray-200 dark:bg-gray-700" />
 
               {/* Security Section Skeleton */}
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-2 md:space-y-3">
                 <div className="h-5 md:h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1 md:space-y-2">
                   <div className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1 md:space-y-2">
                   <div className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-3 md:h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -121,21 +121,21 @@ function SettingsSkeleton() {
               <Separator className="bg-gray-200 dark:bg-gray-700" />
 
               {/* Personal Info Skeleton */}
-              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+              <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                 {[1, 2].map((i) => (
-                  <div key={i} className="space-y-1.5 md:space-y-2">
+                  <div key={i} className="space-y-1 md:space-y-2">
                     <div className="h-4 md:h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
                     <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                   </div>
                 ))}
               </div>
-              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-                <div className="space-y-1.5 md:space-y-2">
+              <div className="grid gap-2 md:gap-3 md:grid-cols-2">
+                <div className="space-y-1 md:space-y-2">
                   <div className="h-4 md:h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-3 md:h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1 md:space-y-2">
                   <div className="h-4 md:h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                 </div>
@@ -143,25 +143,25 @@ function SettingsSkeleton() {
 
               {/* Academic Info Skeleton */}
               <Separator className="bg-gray-200 dark:bg-gray-700" />
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-2 md:space-y-3">
                 <div className="h-5 md:h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="space-y-1.5 md:space-y-2">
+                    <div key={i} className="space-y-1 md:space-y-2">
                       <div className="h-4 md:h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
                       <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                     </div>
                   ))}
                 </div>
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="space-y-1.5 md:space-y-2">
+                    <div key={i} className="space-y-1 md:space-y-2">
                       <div className="h-4 md:h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
                       <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                     </div>
                   ))}
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1 md:space-y-2">
                   <div className="h-4 md:h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                 </div>
@@ -169,27 +169,27 @@ function SettingsSkeleton() {
 
               {/* Professional Info Skeleton */}
               <Separator className="bg-gray-200 dark:bg-gray-700" />
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-2 md:space-y-3">
                 <div className="h-5 md:h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="space-y-1.5 md:space-y-2">
+                    <div key={i} className="space-y-1 md:space-y-2">
                       <div className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                       <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                     </div>
                   ))}
                 </div>
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-                  <div className="space-y-1.5 md:space-y-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
+                  <div className="space-y-1 md:space-y-2">
                     <div className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                     <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                   </div>
-                  <div className="space-y-1.5 md:space-y-2">
+                  <div className="space-y-1 md:space-y-2">
                     <div className="h-4 md:h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
                     <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                   </div>
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1 md:space-y-2">
                   <div className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                 </div>
@@ -197,17 +197,17 @@ function SettingsSkeleton() {
 
               {/* License Info Skeleton */}
               <Separator className="bg-gray-200 dark:bg-gray-700" />
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-2 md:space-y-3">
                 <div className="h-5 md:h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="space-y-1.5 md:space-y-2">
+                    <div key={i} className="space-y-1 md:space-y-2">
                       <div className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                       <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                     </div>
                   ))}
                 </div>
-                <div className="space-y-1.5 md:space-y-2">
+                <div className="space-y-1 md:space-y-2">
                   <div className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                   <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                 </div>
@@ -215,15 +215,15 @@ function SettingsSkeleton() {
 
               {/* App Info Skeleton */}
               <Separator className="bg-gray-200 dark:bg-gray-700" />
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-2 md:space-y-3">
                 <div className="h-5 md:h-6 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-                  <div className="space-y-1.5 md:space-y-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
+                  <div className="space-y-1 md:space-y-2">
                     <div className="h-4 md:h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
                     <div className="h-10 md:h-11 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                   </div>
                 </div>
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   {[1, 2].map((i) => (
                     <div key={i} className="h-4 md:h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                   ))}
@@ -495,7 +495,7 @@ export function Settings() {
   if (!profile) {
     return (
       <div className="min-h-screen w-full flex justify-center items-center bg-background p-4">
-        <Card className="text-center p-6 md:p-8">
+        <Card className="text-center p-6 md:p-8 border-0 shadow-none">
           <AlertCircle className="h-10 w-10 md:h-12 md:w-12 text-destructive mx-auto mb-3 md:mb-4" />
           <CardTitle className="text-lg md:text-xl">Failed to Load Profile</CardTitle>
           <CardDescription className="text-xs md:text-sm">Could not load your profile data. Please try refreshing the page.</CardDescription>
@@ -506,22 +506,20 @@ export function Settings() {
   }
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] p-0 md:p-4 pb-20 md:pb-6">
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-0 md:space-y-6">
+    <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-2 md:px-2 py-2 md:py-2 pb-20 md:pb-4">
+      <div className="w-full md:max-w-full space-y-1 md:space-y-2">
 
         {/* Profile Summary Card - full width on mobile */}
-        <Card className="w-full md:border-0 overflow-hidden p-4 md:p-6 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-          <div className="mt-4 md:mt-6">
-            <Tabs defaultValue="profile" className="space-y-3 md:space-y-4">
+        <Card className="w-full overflow-hidden p-1 md:p-2 rounded-xl md:rounded-xl border-0 shadow-none">
+          <div className="mt-1 md:mt-2">
+            <Tabs defaultValue="profile" className="space-y-1 md:space-y-2">
               <h2 className="text-2xl md:text-4xl font-bold text-start bg-gradient-medical bg-clip-text text-transparent">
                 Settings
               </h2>
-              <h2 className="text-xs md:text-sm font-bold text-start bg-gradient-medical bg-clip-text text-transparent">
-                Manage your profile information
-              </h2>
+
               <TabsContent value="profile">
-                <div className="flex flex-col gap-4 md:gap-6">
-                  <div className="flex items-center gap-3 md:gap-4">
+                <div className="flex flex-col gap-2 md:gap-3">
+                  <div className="flex items-center gap-2 md:gap-3">
                     <Avatar className="h-16 w-16 md:h-20 md:w-20">
                       <AvatarImage src={avatarPreview || profile.avatar_url || "/placeholder.svg"} className="object-cover" />
                       <AvatarFallback className="text-base md:text-lg">{profile.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
@@ -533,7 +531,7 @@ export function Settings() {
                     </div>
                   </div>
                   <Separator />
-                  <div className="grid gap-2 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-1 md:gap-2 md:grid-cols-2">
                     <p className="text-xs md:text-sm font-medium">Phone: {profile.phone || "Not set"}</p>
                     <p className="text-xs md:text-sm font-medium">Institution: {profile.institution || "Not set"}</p>
                     <p className="text-xs md:text-sm font-medium">Course: {profile.course || "Not set"}</p>
@@ -547,40 +545,38 @@ export function Settings() {
           </div>
         </Card>
 
-        {/* Add RoleSwitch here - after profile summary or before tabs */}
-        <div className="px-4 md:px-0">
-          <RoleSwitch
-            key={profile?.role} // Forces re-render when role changes
-            currentRole={profile?.role}
-            userId={userId}
-            onRoleChange={handleRoleChange}
-          />
-        </div>
+        <RoleSwitch
+          key={profile?.role} // Forces re-render when role changes
+          currentRole={profile?.role}
+          userId={userId}
+          onRoleChange={handleRoleChange}
+        />
+
         {/* Edit Form Tabs - full width on mobile */}
-        <Tabs defaultValue="profile" className="space-y-4 md:space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-10 md:h-11 text-xs md:text-sm mx-4 md:mx-0">
+        <Tabs defaultValue="profile" className="space-y-1 md:space-y-2">
+          <TabsList className="grid w-full grid-cols-2 h-10 md:h-11 text-xs md:text-sm rounded-lg md:rounded-xl">
             <TabsTrigger value="profile" className="rounded-lg md:rounded-xl">Profile</TabsTrigger>
             <TabsTrigger value="professional" className="rounded-lg md:rounded-xl">Professional</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
-            <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-              <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
+            <Card className="rounded-none md:rounded-xl border-0 shadow-none">
+              <CardHeader className="px-1 md:px-2 pt-1 md:pt-2">
                 <CardTitle className="text-lg md:text-xl">Edit Profile Information</CardTitle>
                 <CardDescription className="text-xs md:text-sm">
                   Update your personal and academic details. Fields marked with <span className="text-destructive">*</span> are required.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 md:space-y-6 px-4 md:px-6 pb-4 md:pb-6">
+              <CardContent className="space-y-3 md:space-y-4 px-1 md:px-2 pb-1 md:pb-2">
                 {/* Avatar Section */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-3">
                   <Avatar className="h-16 w-16 md:h-20 md:w-20">
                     <AvatarImage src={avatarPreview || profile.avatar_url || "/placeholder.svg"} className="object-cover" />
                     <AvatarFallback className="text-base md:text-lg">{profile.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col gap-1.5 md:gap-2">
+                  <div className="flex flex-col gap-1 md:gap-2">
                     <Input type="file" accept="image/*" onChange={handleAvatarChange} className="text-xs md:text-sm h-9 md:h-10" />
-                    <div className="flex gap-1.5 md:gap-2">
+                    <div className="flex gap-1 md:gap-2">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" size="sm" className="text-[10px] md:text-xs h-8 md:h-9"><Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Remove</Button>
@@ -598,7 +594,7 @@ export function Settings() {
                 <Separator />
 
                 {/* Security */}
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 md:space-y-3">
                   <h3 className="text-sm md:text-lg font-semibold">Security / Recovery Information</h3>
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="reset_question" className="text-xs md:text-sm">Security Question</Label>
@@ -619,11 +615,11 @@ export function Settings() {
                 <Separator />
 
                 {/* Personal Info */}
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   <FormField label="Full Name" id="name" value={profile.name} onChange={(e: any) => handleChange("name", e.target.value)} onBlur={() => handleBlur("name")} showError={shouldShowError("name")} required placeholder="Enter your full name" />
                   <FormField label="Username" id="username" value={profile.username} onChange={(e: any) => handleChange("username", e.target.value)} onBlur={() => handleBlur("username")} showError={shouldShowError("username")} required placeholder="Choose a username" />
                 </div>
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="email" className="text-xs md:text-sm">Email</Label>
                     <Input id="email" value={profile.email || ""} onChange={(e) => handleChange("email", e.target.value)} disabled className="bg-muted text-xs md:text-sm h-10 md:h-11" />
@@ -634,13 +630,13 @@ export function Settings() {
 
                 {/* Academic Info */}
                 <Separator />
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 md:space-y-3">
                   <h3 className="text-sm md:text-lg font-semibold flex items-center gap-1.5 md:gap-2"><GraduationCap className="h-4 w-4 md:h-5 md:w-5" />Academic Information</h3>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <FormField label="Institution" id="institution" value={profile.institution} onChange={(e: any) => handleChange("institution", e.target.value)} onBlur={() => handleBlur("institution")} showError={shouldShowError("institution")} required placeholder="Your school/university" />
                     <FormField label="Course" id="course" value={profile.course} onChange={(e: any) => handleChange("course", e.target.value)} onBlur={() => handleBlur("course")} showError={shouldShowError("course")} required placeholder="Course name" />
                   </div>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <FormField label="Block" id="block" value={profile.block} onChange={(e: any) => handleChange("block", e.target.value)} onBlur={() => handleBlur("block")} showError={shouldShowError("block")} required placeholder="Your block/year" />
                     <FormField label="County" id="county" value={profile.county} onChange={(e: any) => handleChange("county", e.target.value)} onBlur={() => handleBlur("county")} showError={shouldShowError("county")} required placeholder="Your county" />
                   </div>
@@ -652,13 +648,13 @@ export function Settings() {
 
                 {/* Professional Information */}
                 <Separator />
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 md:space-y-3">
                   <h3 className="text-sm md:text-lg font-semibold">Professional Information</h3>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <FormField label="NCK Number/Exam number" id="nck_number" value={profile.nck_number} onChange={(e: any) => handleChange("nck_number", e.target.value)} onBlur={() => handleBlur("nck_number")} showError={shouldShowError("nck_number")} required placeholder="Your NCK or exam number" />
                     <FormField label="Specialization" id="specialization" value={profile.specialization} onChange={(e: any) => handleChange("specialization", e.target.value)} onBlur={() => handleBlur("specialization")} showError={shouldShowError("specialization")} required placeholder="Your medical specialization" />
                   </div>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="years_experience" className="text-xs md:text-sm">Years of Experience</Label>
                       <Input id="years_experience" type="number" value={profile.years_experience ?? ""} onChange={(e) => handleChange("years_experience", e.target.value === "" ? null : Number(e.target.value))} placeholder="Years of experience" className="text-xs md:text-sm h-10 md:h-11" />
@@ -670,9 +666,9 @@ export function Settings() {
 
                 {/* License Information */}
                 <Separator />
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 md:space-y-3">
                   <h3 className="text-sm md:text-lg font-semibold">License Information</h3>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="license_issue_date" className="text-xs md:text-sm">License Issue Date</Label>
                       <Input id="license_issue_date" type="date" value={profile.license_issue_date || ""} onChange={(e) => handleChange("license_issue_date", e.target.value)} className="text-xs md:text-sm h-10 md:h-11" />
@@ -687,15 +683,15 @@ export function Settings() {
 
                 {/* App Info */}
                 <Separator />
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 md:space-y-3">
                   <h3 className="text-sm md:text-lg font-semibold">App Information</h3>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <div className="space-y-1.5 md:space-y-2">
                       <Label htmlFor="target_score" className="text-xs md:text-sm">Target Score</Label>
                       <Input id="target_score" type="number" value={profile.target_score || 50} onChange={(e) => handleChange("target_score", e.target.value)} className="text-xs md:text-sm h-10 md:h-11" />
                     </div>
                   </div>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <p className="text-xs md:text-sm font-medium">Last Seen: {profile.last_seen || "Never"}</p>
                     <p className="text-xs md:text-sm font-medium">Online: {profile.is_online ? "Yes" : "No"}</p>
                   </div>
@@ -711,17 +707,17 @@ export function Settings() {
           </TabsContent>
 
           <TabsContent value="professional">
-            <Card className="md:border-0 rounded-none md:rounded-xl border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-              <CardHeader className="px-4 md:px-6 pt-4 md:pt-6">
+            <Card className="rounded-none md:rounded-xl border-0 shadow-none">
+              <CardHeader className="px-1 md:px-2 pt-1 md:pt-2">
                 <CardTitle className="text-lg md:text-xl">Professional Information</CardTitle>
                 <CardDescription className="text-xs md:text-sm">Update your professional and license details. Fields marked with <span className="text-destructive">*</span> are required.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 md:space-y-6 px-4 md:px-6 pb-4 md:pb-6">
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+              <CardContent className="space-y-3 md:space-y-4 px-1 md:px-2 pb-1 md:pb-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   <FormField label="NCK Number/Exam number" id="nck_number_pro" value={profile.nck_number} onChange={(e: any) => handleChange("nck_number", e.target.value)} onBlur={() => handleBlur("nck_number")} showError={shouldShowError("nck_number")} required placeholder="Your NCK or exam number" />
                   <FormField label="Specialization" id="specialization_pro" value={profile.specialization} onChange={(e: any) => handleChange("specialization", e.target.value)} onBlur={() => handleBlur("specialization")} showError={shouldShowError("specialization")} required placeholder="Your medical specialization" />
                 </div>
-                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="years_experience_pro" className="text-xs md:text-sm">Years of Experience</Label>
                     <Input id="years_experience_pro" type="number" value={profile.years_experience ?? ""} onChange={(e) => handleChange("years_experience", e.target.value === "" ? null : Number(e.target.value))} placeholder="Years of experience" className="text-xs md:text-sm h-10 md:h-11" />
@@ -730,9 +726,9 @@ export function Settings() {
                 </div>
                 <SelectField label="Employment Type" id="employment_type_pro" value={profile.employment_type} onValueChange={(value: string) => handleChange("employment_type", value)} onBlur={() => handleBlur("employment_type")} showError={shouldShowError("employment_type")} required options={[{ value: "full_time", label: "Full Time" }, { value: "part_time", label: "Part Time" }, { value: "contract", label: "Contract" }, { value: "internship", label: "Internship" }, { value: "volunteer", label: "Volunteer" }, { value: "student", label: "Student" }, { value: "unemployed", label: "Unemployed" }]} placeholder="Select employment type" />
                 <Separator />
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-2 md:space-y-3">
                   <h3 className="text-sm md:text-lg font-semibold">License Information</h3>
-                  <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+                  <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                     <div className="space-y-1.5 md:space-y-2"><Label htmlFor="license_issue_date_pro" className="text-xs md:text-sm">License Issue Date</Label><Input id="license_issue_date_pro" type="date" value={profile.license_issue_date || ""} onChange={(e) => handleChange("license_issue_date", e.target.value)} className="text-xs md:text-sm h-10 md:h-11" /></div>
                     <div className="space-y-1.5 md:space-y-2"><Label htmlFor="license_expiry_date_pro" className="text-xs md:text-sm">License Expiry Date</Label><Input id="license_expiry_date_pro" type="date" value={profile.license_expiry_date || ""} onChange={(e) => handleChange("license_expiry_date", e.target.value)} className="text-xs md:text-sm h-10 md:h-11" /></div>
                   </div>

@@ -37,6 +37,7 @@ import {
     BarChart3,
     BookOpenCheck,
     MessageCircle,
+    Sparkles,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useProfileData } from "@/hooks/useProfileData";
@@ -68,17 +69,10 @@ interface DrawerItem {
     url: string;
     icon: any;
 }
-
 type IconTone =
     | "neutral" | "ai" | "learning" | "progress" | "practice" | "alert"
-    | "communication" | "media" | "finance" | "system" | "people" | "content";
-
-/**
- * Facebook-style tone palette:
- * - Solid gradient circles
- * - White icons inside
- * - Compact size, soft colored shadow
- */
+    | "communication" | "media" | "finance" | "system" | "people" | "content"
+    | "premium";
 const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
     neutral: {
         box: "bg-gradient-to-br from-slate-500 to-slate-700 shadow-sm shadow-slate-500/30",
@@ -126,6 +120,10 @@ const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
     },
     content: {
         box: "bg-gradient-to-br from-fuchsia-500 to-fuchsia-700 shadow-sm shadow-fuchsia-500/30",
+        icon: "text-white"
+    },
+    premium: {
+        box: "bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 shadow-md shadow-amber-500/40",
         icon: "text-white"
     },
 };
@@ -187,7 +185,7 @@ const preloadUserRole = (): "student" | "tutor" | null => {
     } catch { return null; }
 };
 
-/* ---------------- Row Item (Facebook-style compact) ---------------- */
+/* ---------------- Row Item ---------------- */
 const DrawerRow = memo(({
     item,
     tone,
@@ -202,18 +200,17 @@ const DrawerRow = memo(({
         <button
             onClick={onPress}
             className="group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left
-                       transition-colors active:bg-slate-100/80 dark:active:bg-slate-800/60
-                       hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                       transition-colors active:bg-[#21262d] hover:bg-[#161b22]"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
             <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${styles.box}
                              transition-transform group-active:scale-95`}>
                 <item.icon className={`h-[18px] w-[18px] ${styles.icon}`} strokeWidth={2.3} />
             </div>
-            <span className="flex-1 text-[13.5px] font-semibold text-slate-700 dark:text-slate-200 truncate">
+            <span className="flex-1 text-[13.5px] font-semibold text-[#c9d1d9] truncate">
                 {item.title}
             </span>
-            <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />
+            <ChevronRight className="h-4 w-4 text-[#6e7681] flex-shrink-0" />
         </button>
     );
 });
@@ -232,8 +229,8 @@ const DrawerSection = memo(({
     return (
         <div className="space-y-1">
             <div className="flex items-center gap-2 px-1 py-1">
-                <div className="h-1 w-4 rounded-full bg-blue-500/70" />
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                <div className="h-1 w-4 rounded-full bg-[#58a6ff]/70" />
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7681]">
                     {section.label}
                 </h3>
             </div>
@@ -292,12 +289,36 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     const [userProfile, setUserProfile] = useState(preloadUserProfile);
     const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(preloadUserRole);
 
+    /* ---- Subscription state ---- */
+    const [activePlan, setActivePlan] = useState<string | null>(null);
+
     const session = useSession();
     const user = session?.user || null;
 
     useEffect(() => {
         setDrawerContext(isOpen);
     }, [isOpen, setDrawerContext]);
+
+    /* ---- Load subscription when drawer opens ---- */
+    useEffect(() => {
+        if (!isOpen || !user?.id) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { data } = await supabase
+                    .from("subscriptions")
+                    .select("plan_type, is_active")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+                if (!cancelled) {
+                    setActivePlan(data?.is_active ? data.plan_type : null);
+                }
+            } catch {
+                if (!cancelled) setActivePlan(null);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isOpen, user?.id]);
 
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         try {
@@ -513,7 +534,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                     { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content" as IconTone },
                     { title: "Resources", url: "/resources", icon: FileText, iconTone: "content" as IconTone },
                     { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone },
-                    { title: "Assessment History", url: "/assessments/history", icon: BarChart3, iconTone: "progress" as IconTone },
+
                     { title: "Live Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
                     { title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone },
                     { title: "Create Class", url: "/live-classes/create", icon: Video, iconTone: "learning" as IconTone },
@@ -543,6 +564,55 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         return sectionsArray;
     }, [userRole, nckExamPrepItems]);
 
+    /* ---------------- Horizontal identity strip items ---------------- */
+    const identityStrip = useMemo(() => {
+        const base = [
+            { title: "Home", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
+            { title: "Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
+            { title: "Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
+            { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
+            { title: "Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
+            { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
+            { title: "Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
+            { title: "Market", url: "/market", icon: NursMartLogo, iconTone: "neutral" as IconTone },
+        ];
+
+        if (userRole === "student") {
+            base.splice(4, 0,
+                { title: "Exams", url: "/exam/candidate", icon: GraduationCap, iconTone: "learning" as IconTone },
+                { title: "Results", url: "/exam/results", icon: BarChart3, iconTone: "progress" as IconTone },
+            );
+        } else if (userRole === "tutor") {
+            base.splice(4, 0,
+                { title: "Exams", url: "/tutor/exams", icon: GraduationCap, iconTone: "learning" as IconTone },
+                { title: "Results", url: "/tutor/exams/:paper_id/results", icon: BarChart3, iconTone: "progress" as IconTone },
+            );
+        }
+
+        // Subscription card always last — state-aware
+        if (activePlan) {
+            // Paid user → crowned golden "My Plan" tile
+            base.push({
+                title: "My Plan",
+                url: "/subscription",
+                icon: Crown,
+                iconTone: "premium" as IconTone,
+                highlight: "premium" as const,
+            });
+        } else {
+            // Free user → encouraging blue "Upgrade" tile
+            base.push({
+                title: "Upgrade",
+                url: "/subscription",
+                icon: Sparkles,
+                iconTone: "learning" as IconTone,
+                highlight: "upgrade" as const,
+            });
+        }
+
+        return base;
+    }, [userRole, activePlan]);
+
     const avatarUrl = getAvatarUrl(userProfile.avatar_url);
     const initials = userProfile.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -551,17 +621,17 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        {/* Backdrop */}
+                        {/* Backdrop — still dims the page */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
                             onClick={() => setIsOpen(false)}
-                            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-md md:hidden"
+                            className="fixed inset-0 z-[9999] bg-black/60 md:hidden"
                         />
 
-                        {/* FULL-SCREEN PAGE */}
+                        {/* FULL-SCREEN PAGE — opaque GitHub-style background */}
                         <motion.div
                             ref={drawerRef}
                             variants={PAGE_VARIANTS}
@@ -569,37 +639,28 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             animate="visible"
                             exit="hidden"
                             className="fixed inset-0 z-[99999] md:hidden flex flex-col
-                                       bg-white dark:bg-muted/30 backdrop-blur-xl"
+                                       bg-[#0d1117] dark:bg-[#0d1117]"
                             style={{ willChange: "transform", backfaceVisibility: "hidden" }}
                         >
                             {/* Header */}
-                            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100/70 dark:border-slate-800/60 flex-shrink-0">
-                                <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-700">
+                            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#21262d] flex-shrink-0 bg-[#0d1117]">
+                                <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 bg-[#161b22] ring-1 ring-[#30363d]">
                                     <svg
                                         viewBox="0 0 192 192"
                                         xmlns="http://www.w3.org/2000/svg"
                                         className="h-full w-full"
                                         aria-label="MEDRAE Nursing Logo"
                                     >
-                                        {/* White rounded background */}
                                         <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
-
-                                        {/* Red Heart */}
                                         <path
                                             d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
                                             fill="#FF1F1F"
                                         />
-
-                                        {/* Graduation Cap */}
                                         <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
-
-                                        {/* Cap lower body */}
                                         <path
                                             d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
                                             fill="#FFFFFF"
                                         />
-
-                                        {/* Red cap seam */}
                                         <path
                                             d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
                                             fill="none"
@@ -607,22 +668,14 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                             strokeWidth="3"
                                             strokeLinecap="round"
                                         />
-
-                                        {/* Red cap string */}
                                         <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
-
-                                        {/* Red button */}
                                         <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
-
-                                        {/* Tassel */}
                                         <path
                                             d="M94 82 C86 86 75 88 63 89"
                                             fill="none"
                                             stroke="#FF1F1F"
                                             strokeWidth="2"
                                         />
-
-                                        {/* White tassel cord */}
                                         <path
                                             d="M63 89 C61 94 61 98 61 103"
                                             fill="none"
@@ -630,23 +683,19 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                             strokeWidth="2.5"
                                             strokeLinecap="round"
                                         />
-
-                                        {/* Tassel top */}
                                         <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
-
-                                        {/* Tassel */}
                                         <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
                                     </svg>
                                 </div>
                                 <h2 className="flex-1 text-[15px] font-black tracking-tight">
-                                    <span className="bg-gradient-to-r from-red-600 to-red-500 dark:from-red-500 dark:to-red-400 bg-clip-text text-transparent">MEDRAE </span>
-                                    <span className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 bg-clip-text text-transparent">NURSING </span>
-                                    <span className="text-slate-800 dark:text-white">HUB</span>
+                                    <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">MEDRAE </span>
+                                    <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NURSING </span>
+                                    <span className="text-white">HUB</span>
                                 </h2>
                                 <button
                                     onClick={() => { tapFeedback(); setIsOpen(false); }}
                                     aria-label="Close menu"
-                                    className="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300
+                                    className="p-2.5 rounded-full bg-[#21262d] text-[#c9d1d9]
                                                active:scale-90 transition-transform"
                                     style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                 >
@@ -655,7 +704,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                             </div>
 
                             {/* SCROLLABLE CONTENT */}
-                            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-3.5 pb-10 pt-4">
+                            <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-3.5 pb-10 pt-4 bg-[#0d1117]">
                                 {!contentReady ? (
                                     <div className="h-40 flex items-center justify-center">
                                         <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent animate-spin rounded-full" />
@@ -667,55 +716,112 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         transition={{ duration: 0.25, ease: "easeOut" }}
                                         className="space-y-5"
                                     >
-                                        {/* USER CARD */}
+                                        {/* USER CARD — solid GitHub surface */}
                                         <button
                                             onClick={() => handleNavigate("/profile")}
-                                            className="w-full flex items-center gap-3 rounded-3xl p-3.5 text-left
-                                                       bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50
-                                                       dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/30
+                                            className="w-full flex items-center gap-3 rounded-xl p-3.5 text-left
+                                                       bg-[#161b22] border-0
                                                        active:scale-[0.98] transition-transform"
                                             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <div className="relative flex-shrink-0">
                                                 <Avatar className="h-12 w-12">
                                                     <AvatarImage src={profile?.avatar_url || avatarUrl || ""} className="object-cover" />
-                                                    <AvatarFallback className="bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-bold">
+                                                    <AvatarFallback className="bg-[#21262d] text-[#58a6ff] font-bold">
                                                         {initials || "U"}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900
-                                                                  ${isOnline ? "bg-green-500" : "bg-gray-400"}`} />
+                                                <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#161b22]
+                                                                  ${isOnline ? "bg-green-500" : "bg-gray-500"}`} />
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
                                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <h3 className="font-bold text-[15px] text-slate-900 dark:text-white truncate">
+                                                    <h3 className="font-bold text-[15px] text-[#f0f6fc] truncate">
                                                         {userProfile.name || "User"}
                                                     </h3>
                                                     {userProfile.role === "tutor" && (
                                                         <Crown className="h-3.5 w-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
                                                     )}
                                                 </div>
-                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                                <p className="text-[11px] text-[#8b949e] truncate mt-0.5">
                                                     {userProfile.email || user?.email || ""}
                                                 </p>
                                                 <div className="flex items-center gap-1.5 mt-1.5">
                                                     <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 rounded-full
-                                                        bg-white/80 dark:bg-slate-800/80 text-blue-700 dark:text-blue-300 border-0">
+                                                        bg-[#21262d] text-[#58a6ff] border-0">
                                                         {userProfile.role || "Student"}
                                                     </Badge>
+                                                    {activePlan && (
+                                                        <Badge className="text-[9px] px-1.5 py-0 h-4 rounded-full border-0 flex items-center gap-0.5
+                                                            bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-bold">
+                                                            <Crown className="h-2.5 w-2.5" />
+                                                            {activePlan}
+                                                        </Badge>
+                                                    )}
                                                     {userProfile.streak > 0 && isOnline && (
                                                         <Badge className={`text-[9px] px-1.5 py-0 h-4 rounded-full border-0 flex items-center gap-0.5
                                                             ${userProfile.streak <= 7 ? "bg-red-500 text-white" :
                                                                 userProfile.streak <= 30 ? "bg-purple-600 text-white" :
-                                                                    "bg-slate-800 dark:bg-slate-700 text-white"}`}>
+                                                                    "bg-[#30363d] text-white"}`}>
                                                             <Flame className="h-2.5 w-2.5" />
                                                             {userProfile.streak}d
                                                         </Badge>
                                                     )}
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                                            <ChevronRight className="h-4 w-4 text-[#6e7681] flex-shrink-0" />
                                         </button>
+
+                                        {/* ============== HORIZONTAL IDENTITY STRIP ============== */}
+                                        <div className="-mx-3.5 px-3.5">
+                                            <div className="flex items-center gap-2 px-1 pb-2">
+                                                <div className="h-1 w-4 rounded-full bg-[#58a6ff]/70" />
+                                                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6e7681]">
+                                                    Quick Access
+                                                </h3>
+                                            </div>
+                                            <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar"
+                                                style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}
+                                            >
+                                                {identityStrip.map((item: any) => {
+                                                    const styles = ICON_TONE_STYLES[item.iconTone as IconTone];
+                                                    const isPremium = item.highlight === "premium";
+                                                    const isUpgrade = item.highlight === "upgrade";
+
+                                                    return (
+                                                        <button
+                                                            key={item.title}
+                                                            onClick={() => handleNavigate(item.url)}
+                                                            className={`flex-shrink-0 flex flex-col items-center gap-1.5 w-[72px]
+                                                                       active:scale-95 transition-transform`}
+                                                            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                                                        >
+                                                            <div
+                                                                className={`relative flex h-11 w-11 items-center justify-center rounded-2xl ${styles.box}
+                                                                    ${isPremium ? "ring-2 ring-amber-300/60" : ""}
+                                                                    ${isUpgrade ? "ring-2 ring-[#58a6ff]/50" : ""}`}
+                                                            >
+                                                                <item.icon className={`h-5 w-5 ${styles.icon}`} strokeWidth={2.3} />
+                                                                {/* Sparkle accent for premium tile */}
+                                                                {isPremium && (
+                                                                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full
+                                                                                     bg-gradient-to-br from-yellow-200 to-amber-400
+                                                                                     shadow-sm shadow-amber-500/60" />
+                                                                )}
+                                                            </div>
+                                                            <span
+                                                                className={`text-[10px] font-bold truncate w-full text-center
+                                                                    ${isPremium ? "text-amber-300" :
+                                                                        isUpgrade ? "text-[#58a6ff]" :
+                                                                            "text-[#c9d1d9]"}`}
+                                                            >
+                                                                {item.title}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
 
                                         {/* SECTIONS */}
                                         <div className="space-y-4">
@@ -730,17 +836,16 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         </div>
 
                                         {/* LOGOUT */}
-                                        {/* LOGOUT */}
                                         <button
                                             onClick={() => setShowLogoutDialog(true)}
                                             disabled={isLoggingOut}
                                             className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl transition-all
-               bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400
+               bg-[#2d1418] text-[#f85149]
                active:scale-[0.98] disabled:opacity-50"
                                             style={{ touchAction: 'manipulation' }}
                                         >
                                             {isLoggingOut ? (
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#f85149] border-t-transparent" />
                                             ) : (
                                                 <LogOut className="h-4 w-4" />
                                             )}
@@ -750,23 +855,20 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                         </button>
 
                                         {/* ================= FOOTER ================= */}
-                                        <div className="mt-2 pt-6 pb-2 text-center select-none border-t border-slate-100 dark:border-slate-800/60">
+                                        <div className="mt-2 pt-6 pb-2 text-center select-none border-t border-[#21262d]">
 
-                                            {/* Brand + Tagline */}
-                                            <p className="text-[7px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
+                                            <p className="text-[7px] font-black tracking-[0.2em] text-[#6e7681] opacity-80">
                                                 Medrae Nursing All rights reserved
                                             </p>
 
-                                            {/* Social Icons Row */}
                                             <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
-                                                {/* MEDRAE Logo */}
                                                 <a
                                                     href="https://medrae-nursing.vercel.app/"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     aria-label="MEDRAE Nursing Website"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full overflow-hidden
-                       bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-700
+                       bg-[#161b22] ring-1 ring-[#30363d]
                        transition-transform hover:scale-110 active:scale-95"
                                                 >
                                                     <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" className="h-full w-full" aria-hidden="true">
@@ -784,7 +886,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     </svg>
                                                 </a>
 
-                                                {/* WhatsApp */}
                                                 <a href="https://wa.me/254704473503" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 transition-transform hover:scale-110 active:scale-95">
                                                     <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
@@ -792,7 +893,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     </svg>
                                                 </a>
 
-                                                {/* TikTok */}
                                                 <a href="https://tiktok.com/@medraenursing" target="_blank" rel="noopener noreferrer" aria-label="TikTok"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-950 transition-transform hover:scale-110 active:scale-95">
                                                     <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
@@ -800,7 +900,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     </svg>
                                                 </a>
 
-                                                {/* Instagram */}
                                                 <a href="https://instagram.com/medraenursing" target="_blank" rel="noopener noreferrer" aria-label="Instagram"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 via-fuchsia-500 to-amber-400 transition-transform hover:scale-110 active:scale-95">
                                                     <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
@@ -808,7 +907,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     </svg>
                                                 </a>
 
-                                                {/* X */}
                                                 <a href="https://x.com/medraenursing" target="_blank" rel="noopener noreferrer" aria-label="X"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-black transition-transform hover:scale-110 active:scale-95">
                                                     <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 text-white">
@@ -816,7 +914,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     </svg>
                                                 </a>
 
-                                                {/* YouTube */}
                                                 <a href="https://youtube.com/@medraenursing" target="_blank" rel="noopener noreferrer" aria-label="YouTube"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-700 transition-transform hover:scale-110 active:scale-95">
                                                     <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
@@ -824,7 +921,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                     </svg>
                                                 </a>
 
-                                                {/* Facebook */}
                                                 <a href="https://facebook.com/medraenursing" target="_blank" rel="noopener noreferrer" aria-label="Facebook"
                                                     className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 transition-transform hover:scale-110 active:scale-95">
                                                     <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-white">
@@ -833,39 +929,36 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                                 </a>
                                             </div>
 
-                                            {/* Handle */}
                                             <a
                                                 href="https://instagram.com/medraenursing"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="mt-3 inline-block text-[10px] font-bold text-slate-500 dark:text-slate-400
-                   hover:text-blue-600 dark:hover:text-blue-400 transition-colors tracking-wide"
+                                                className="mt-3 inline-block text-[10px] font-bold text-[#8b949e]
+                   hover:text-[#58a6ff] transition-colors tracking-wide"
                                             >
                                                 @medraenursing
                                             </a>
 
-                                            {/* Legal Links */}
                                             <div className="mt-2 flex items-center justify-center gap-3">
                                                 <Link
                                                     to="/privacy"
                                                     onClick={() => setIsOpen(false)}
-                                                    className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors tracking-widest"
+                                                    className="text-[8px] font-bold text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
                                                 >
                                                     Privacy
                                                 </Link>
-                                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                                <span className="h-1 w-1 rounded-full bg-[#30363d]" />
                                                 <Link
                                                     to="/terms"
                                                     onClick={() => setIsOpen(false)}
-                                                    className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors tracking-widest"
+                                                    className="text-[8px] font-bold text-[#8b949e] hover:text-[#58a6ff] transition-colors tracking-widest"
                                                 >
                                                     Terms
                                                 </Link>
                                             </div>
 
-                                            {/* Version */}
                                             <div className="mt-3 text-center">
-                                                <p className="text-[8px] font-bold text-slate-300 dark:text-slate-700  tracking-widest">
+                                                <p className="text-[8px] font-bold text-[#484f58] tracking-widest">
                                                     Version 2026.06 Medrae Learning System
                                                 </p>
                                             </div>
@@ -881,23 +974,23 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
             {/* Logout Dialog */}
             <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-                <AlertDialogContent className="bg-white dark:bg-muted/40 rounded-3xl border-0 shadow-2xl max-w-sm">
+                <AlertDialogContent className="bg-[#161b22] border border-[#30363d] rounded-3xl shadow-2xl max-w-sm">
                     <AlertDialogHeader className="text-center space-y-3">
-                        <div className="mx-auto w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                            <LogOut className="w-6 h-6 text-red-600 dark:text-red-400" />
+                        <div className="mx-auto w-14 h-14 rounded-full bg-[#2d1418] flex items-center justify-center">
+                            <LogOut className="w-6 h-6 text-[#f85149]" />
                         </div>
-                        <AlertDialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                        <AlertDialogTitle className="text-xl font-bold text-[#f0f6fc]">
                             Sign out of Medrae?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                        <AlertDialogDescription className="text-[#8b949e] text-sm leading-relaxed">
                             You'll need to sign in again to access your dashboard, quizzes, and progress.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex gap-2 mt-5">
                         <AlertDialogCancel
                             onClick={() => tapFeedback()}
-                            className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700
-                                       border-0 text-slate-700 dark:text-slate-300 rounded-2xl py-5 font-medium"
+                            className="flex-1 bg-[#21262d] hover:bg-[#30363d]
+                                       border-0 text-[#c9d1d9] rounded-2xl py-5 font-medium"
                         >
                             Cancel
                         </AlertDialogCancel>

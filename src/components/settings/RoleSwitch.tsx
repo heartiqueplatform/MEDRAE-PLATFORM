@@ -286,7 +286,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
 
     return (
         <>
-            <Card className="border-0 shadow-none bg-transparent">
+            <Card className="border-0 mt-2 shadow-none bg-white dark:bg-[#161b22] rounded-2xl">
                 <CardHeader className="px-0">
                     <CardTitle className="flex items-center gap-2 text-lg text-foreground">
                         <Shield className="w-5 h-5 text-yellow-500" />
@@ -301,7 +301,7 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                 </CardHeader>
                 <CardContent className="px-0">
                     {currentRole && (
-                        <div className="mb-4 p-3 bg-muted/50 dark:bg-muted/30 rounded-lg border-0">
+                        <div className="mb-4 p-3 bg-gray-50 dark:bg-[#21262d] rounded-xl border-0">
                             <p className="text-sm text-foreground">
                                 <span className="font-medium text-muted-foreground">Current Role:</span>{" "}
                                 <span className="capitalize font-semibold text-primary">
@@ -319,30 +319,25 @@ export function RoleSwitch({ currentRole, userId, onRoleChange }: RoleSwitchProp
                             return (
                                 <Button
                                     key={role.id}
-                                    variant={isActive ? "default" : "outline"}
+                                    variant="ghost"
                                     className={`
-                                        h-auto py-4 px-4 flex flex-col items-center gap-2
-                                        transition-all duration-200
-                                        ${!isActive && !role.disabled ? role.bgColor : ''}
-                                        ${isActive ? `${role.activeBg} hover:${role.activeBg}/90 text-white` : ''}
-                                        ${role.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                                        border-0 shadow-none
-                                        dark:bg-transparent dark:hover:bg-transparent
-                                        ${!isActive && !role.disabled ? 'bg-transparent hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent' : ''}
-                                    `}
+        h-auto py-4 px-4 flex flex-col items-center gap-2 rounded-2xl
+        transition-all duration-200
+        border-0 shadow-none
+        ${isActive
+                                            ? 'bg-gray-800 dark:bg-[#21262d] text-white hover:bg-gray-800 dark:hover:bg-[#21262d]'
+                                            : 'bg-gray-50 dark:bg-[#21262d] hover:bg-gray-100 dark:hover:bg-[#30363d] text-gray-800 dark:text-gray-200'
+                                        }
+        ${role.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+    `}
                                     onClick={() => !role.disabled && handleRoleClick(role.id)}
                                     disabled={isLoading || role.disabled || isActive}
                                 >
-                                    <Icon className={`
-                                        w-6 h-6 md:w-8 md:h-8
-                                        ${isActive ? "text-white" : role.iconColor}
-                                        ${!isActive && !role.disabled ? 'dark:text-white/70' : ''}
-                                    `} />
-                                    <span className={`font-semibold ${isActive ? "text-white" : "text-foreground"}`}>
+                                    <Icon className={`w-6 h-6 md:w-8 md:h-8 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
+                                    <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                                         {role.label}
                                     </span>
-                                    <span className={`text-[10px] text-center leading-tight ${isActive ? "text-white/80" : "text-muted-foreground"
-                                        }`}>
+                                    <span className={`text-[10px] text-center leading-tight ${isActive ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}`}>
                                         {role.description}
                                     </span>
                                     {isActive && (

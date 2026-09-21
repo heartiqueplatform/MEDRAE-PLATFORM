@@ -1,54 +1,42 @@
 // src/pages/assessment/AssessmentHistory.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Filter, Calendar, ArrowLeft, Clock, Award, RefreshCw, Search, X } from 'lucide-react';
+import { Filter, Calendar, ArrowLeft, Clock, Award, Search, X } from 'lucide-react';
 import { assessmentService } from '@/services/assessmentService';
 import { AssessmentAttempt } from '@/types/assessmentTypes';
-import { HistoryCard, LoadingSkeleton, ErrorState, EmptyState } from '@/components/assessment';
+import { HistoryCard, ErrorState, EmptyState } from '@/components/assessment';
 import { useAuth } from '@/context/AuthProvider';
 
-// Cache configuration - 5 minutes for history
 const CACHE_CONFIG = {
-    TTL: 5 * 60 * 1000, // 5 minutes
+    TTL: 5 * 60 * 1000,
     STALE_WHILE_REVALIDATE: true,
 };
 
-// Simple in-memory cache
 class DataCache {
     private cache: Map<string, { data: any; timestamp: number }> = new Map();
 
     set(key: string, data: any) {
-        this.cache.set(key, {
-            data,
-            timestamp: Date.now()
-        });
+        this.cache.set(key, { data, timestamp: Date.now() });
     }
-
     get(key: string) {
         const entry = this.cache.get(key);
         if (!entry) return null;
         return entry.data;
     }
-
     getAge(key: string): number {
         const entry = this.cache.get(key);
         if (!entry) return Infinity;
         return Date.now() - entry.timestamp;
     }
-
     isStale(key: string, ttl: number): boolean {
         return this.getAge(key) > ttl;
     }
-
     clear() {
         this.cache.clear();
     }
 }
 
-// Singleton cache instance
 const cache = new DataCache();
-
-// Cache key generator
 const getCacheKey = (userId: string) => `history_${userId}`;
 
 export const AssessmentHistory: React.FC = () => {
@@ -72,7 +60,6 @@ export const AssessmentHistory: React.FC = () => {
     const isLoadingRef = useRef(false);
     const initialLoadDoneRef = useRef(false);
 
-    // Apply filters whenever attempts, filter, or searchQuery changes
     useEffect(() => {
         applyFilters();
     }, [attempts, filter, searchQuery]);
@@ -103,36 +90,26 @@ export const AssessmentHistory: React.FC = () => {
         const cacheKey = getCacheKey(user.id);
         const cachedData = cache.get(cacheKey);
 
-        // If we have cached data and not forcing refresh, use it
         if (!forceRefresh && cachedData && !cache.isStale(cacheKey, CACHE_CONFIG.TTL)) {
-            console.log('✅ Using cached history data');
             setAttempts(cachedData);
             setLoading(false);
             initialLoadDoneRef.current = true;
             return;
         }
 
-        // Set loading state only if we don't have cached data
-        if (!cachedData) {
-            setLoading(true);
-        } else {
-            setRefreshing(true);
-        }
+        if (!cachedData) setLoading(true);
+        else setRefreshing(true);
 
         setError(null);
         isLoadingRef.current = true;
 
         try {
-            console.log('🟡 Loading history data...', forceRefresh ? '(force refresh)' : '');
             const data = await assessmentService.getAttempts(user.id);
-            console.log('✅ History loaded:', data.length);
-
             setAttempts(data);
             cache.set(cacheKey, data);
             initialLoadDoneRef.current = true;
-
         } catch (err) {
-            console.error('❌ Failed to load history:', err);
+            console.error('Failed to load history:', err);
             if (!cache.get(cacheKey)) {
                 setError(err instanceof Error ? err.message : 'Failed to load history');
             }
@@ -143,66 +120,42 @@ export const AssessmentHistory: React.FC = () => {
         }
     }, [user]);
 
-    // Initial load with cache check
     useEffect(() => {
         if (user) {
             const cacheKey = getCacheKey(user.id);
             const cachedData = cache.get(cacheKey);
 
             if (cachedData && !cache.isStale(cacheKey, CACHE_CONFIG.TTL)) {
-                console.log('📦 Loading history from cache');
                 setAttempts(cachedData);
                 setLoading(false);
                 initialLoadDoneRef.current = true;
             } else {
-                console.log('🔄 No cache or stale, loading fresh');
                 loadHistory(true);
             }
         }
     }, [user, loadHistory]);
 
-    // Handle visibility change (user comes back to tab)
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && user) {
                 const cacheKey = getCacheKey(user.id);
-                const isStale = cache.isStale(cacheKey, CACHE_CONFIG.TTL);
-                if (isStale) {
-                    console.log('👁️ Page visible, cache stale, refreshing...');
-                    loadHistory(true);
-                }
+                if (cache.isStale(cacheKey, CACHE_CONFIG.TTL)) loadHistory(true);
             }
         };
-
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [user, loadHistory]);
 
-    // Handle pageshow (user navigates back)
     useEffect(() => {
         const handlePageShow = (event: PageTransitionEvent) => {
             if (event.persisted && user) {
                 const cacheKey = getCacheKey(user.id);
-                const isStale = cache.isStale(cacheKey, CACHE_CONFIG.TTL);
-                if (isStale) {
-                    console.log('🔄 Page restored from bfcache, refreshing...');
-                    loadHistory(true);
-                }
+                if (cache.isStale(cacheKey, CACHE_CONFIG.TTL)) loadHistory(true);
             }
         };
-
         window.addEventListener('pageshow', handlePageShow);
-        return () => {
-            window.removeEventListener('pageshow', handlePageShow);
-        };
+        return () => window.removeEventListener('pageshow', handlePageShow);
     }, [user, loadHistory]);
-
-    const refreshHistory = async () => {
-        if (!user) return;
-        await loadHistory(true);
-    };
 
     const handleViewReport = (attempt: AssessmentAttempt) => {
         if (attempt.assessment?.slug) {
@@ -222,52 +175,112 @@ export const AssessmentHistory: React.FC = () => {
         }
     };
 
-    const handleBack = () => {
-        navigate('/assessments');
-    };
+    const handleBack = () => navigate('/assessments');
+    const clearSearch = () => setSearchQuery('');
 
-    const clearSearch = () => {
-        setSearchQuery('');
-    };
-
-    // Calculate stats
     const totalAttempts = attempts.length;
     const completedAttempts = attempts.filter(a => a.status === 'completed').length;
     const inProgressAttempts = attempts.filter(a => a.status === 'in_progress').length;
-    const abandonedAttempts = attempts.filter(a => a.status === 'abandoned').length;
 
     const completedScores = attempts.filter(a => a.status === 'completed' && a.score > 0);
     const averageScore = completedScores.length > 0
         ? completedScores.reduce((sum, a) => sum + a.score, 0) / completedScores.length
         : 0;
 
-    const bestScore = completedScores.length > 0
-        ? Math.max(...completedScores.map(a => a.score))
-        : 0;
-
     const totalTimeSpent = attempts.reduce((sum, a) => sum + a.time_spent_seconds, 0);
     const totalMinutes = Math.round(totalTimeSpent / 60);
 
-    // Show skeleton on first load with no cache
+    // ─── Loading skeleton — mirrors real page structure exactly ───
     if (loading && !cache.get(getCacheKey(user?.id || ''))) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-muted/30 w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8">
-                <LoadingSkeleton count={3} type="card" />
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
+
+                {/* Header skeleton */}
+                <div className="px-4 md:px-0">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 animate-pulse">
+                            <div className="h-8 w-8 bg-gray-100 dark:bg-[#21262d] rounded-xl" />
+                            <div>
+                                <div className="h-6 w-48 bg-gray-200 dark:bg-[#21262d] rounded mb-1.5" />
+                                <div className="h-3 w-28 bg-gray-100 dark:bg-[#21262d] rounded" />
+                            </div>
+                        </div>
+                        <div className="h-9 w-32 bg-gray-200 dark:bg-[#21262d] rounded-xl animate-pulse" />
+                    </div>
+                </div>
+
+                {/* Search skeleton */}
+                <div className="px-4 md:px-0">
+                    <div className="h-12 w-full bg-white dark:bg-[#161b22] rounded-2xl shadow-sm animate-pulse" />
+                </div>
+
+                {/* Stats skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm animate-pulse">
+                            <div className="h-3 w-1/2 bg-gray-100 dark:bg-[#21262d] rounded mb-2" />
+                            <div className="h-5 w-1/3 bg-gray-200 dark:bg-[#30363d] rounded" />
+                        </div>
+                    ))}
+                </div>
+
+                {/* Cards grid skeleton — same grid + same card shape (with image) */}
+                <div className="px-4 md:px-0 space-y-3 md:space-y-4">
+                    <div className="h-4 w-56 bg-gray-100 dark:bg-[#21262d] rounded animate-pulse" />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="bg-white dark:bg-[#161b22] rounded-2xl shadow-sm overflow-hidden flex flex-col h-full animate-pulse"
+                            >
+                                {/* Cover image — exact same height as real HistoryCard */}
+                                <div className="h-40 md:h-44 bg-gray-200 dark:bg-[#21262d] shrink-0" />
+
+                                <div className="p-4 flex flex-col flex-1">
+                                    {/* Title + status pill */}
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 space-y-1.5">
+                                            <div className="h-3.5 w-full bg-gray-200 dark:bg-[#30363d] rounded" />
+                                            <div className="h-3.5 w-2/3 bg-gray-200 dark:bg-[#30363d] rounded" />
+                                        </div>
+                                        <div className="h-4 w-14 bg-gray-100 dark:bg-[#30363d] rounded-full shrink-0" />
+                                    </div>
+
+                                    {/* Date row */}
+                                    <div className="mt-2">
+                                        <div className="h-3 w-32 bg-gray-100 dark:bg-[#30363d] rounded" />
+                                    </div>
+
+                                    {/* Stats pills */}
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        <div className="h-5 w-12 bg-gray-50 dark:bg-[#30363d] rounded-lg" />
+                                        <div className="h-5 w-16 bg-gray-50 dark:bg-[#30363d] rounded-lg" />
+                                        <div className="h-5 w-20 bg-gray-50 dark:bg-[#30363d] rounded-lg" />
+                                    </div>
+
+                                    {/* Actions row */}
+                                    <div className="flex items-center gap-2 mt-auto pt-3">
+                                        <div className="flex-1 h-8 bg-gray-100 dark:bg-[#30363d] rounded-xl" />
+                                        <div className="h-8 w-10 bg-gray-50 dark:bg-[#30363d] rounded-xl" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
     }
 
-    // Background refresh indicator
     const showRefreshIndicator = refreshing && cache.get(getCacheKey(user?.id || ''));
 
     if (error && !cache.get(getCacheKey(user?.id || ''))) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-muted/30 w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-4 md:px-4 lg:px-6 py-4 md:py-8">
                 <ErrorState
                     message={error}
                     onRetry={() => {
-                        console.log('🔄 Retrying load...');
-                        const cacheKey = getCacheKey(user?.id || '');
                         cache.clear();
                         loadHistory(true);
                     }}
@@ -277,63 +290,63 @@ export const AssessmentHistory: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-muted/30 w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
-            {/* Background refresh indicator */}
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 py-4 md:py-8 space-y-4 md:space-y-6">
+
             {showRefreshIndicator && (
                 <div className="fixed top-0 right-0 m-4 z-50">
-                    <div className="bg-blue-500 text-white text-xs px-3 py-1 rounded-full shadow-lg animate-pulse">
-                        Refreshing...
+                    <div className="bg-gray-800 dark:bg-[#21262d] text-white text-xs px-3 py-1 rounded-full animate-pulse">
+                        Refreshing…
                     </div>
                 </div>
             )}
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleBack}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                        aria-label="Go back"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Assessment History</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {totalAttempts} total {totalAttempts === 1 ? 'attempt' : 'attempts'}
-                        </p>
+            <div className="px-4 md:px-0">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleBack}
+                            className="h-8 w-8 rounded-xl hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400 flex items-center justify-center -ml-1 transition-colors"
+                            aria-label="Go back"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-lg md:text-2xl font-bold text-gray-800 dark:text-gray-200">
+                                Assessment history
+                            </h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {totalAttempts} total {totalAttempts === 1 ? 'attempt' : 'attempts'}
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-
-
-                    <div className="flex items-center gap-2 flex-1 sm:flex-initial">
-                        <Filter className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Filter className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                         <select
                             value={filter}
                             onChange={(e) => setFilter(e.target.value as any)}
-                            className="text-sm border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-auto"
+                            className="text-sm bg-white dark:bg-[#161b22] text-gray-800 dark:text-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#30363d] w-full sm:w-auto transition-all"
                         >
                             <option value="all">All</option>
                             <option value="completed">Completed</option>
-                            <option value="in_progress">In Progress</option>
+                            <option value="in_progress">In progress</option>
                             <option value="abandoned">Abandoned</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div>
+            {/* Search */}
+            <div className="px-4 md:px-0">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by assessment title or category..."
-                        className="w-full pl-10 pr-10 py-2 border-0 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Search by assessment title or category…"
+                        className="w-full pl-10 pr-10 py-3 border-0 bg-white dark:bg-[#161b22] text-gray-800 dark:text-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#30363d] shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all"
                     />
                     {searchQuery && (
                         <button
@@ -346,78 +359,83 @@ export const AssessmentHistory: React.FC = () => {
                 </div>
             </div>
 
-            {/* Stats Summary - Full width on desktop */}
+            {/* Stats summary */}
             {totalAttempts > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                    <div className="bg-white/40 dark:bg-muted/30 backdrop-blur-md rounded-xl p-3 md:p-4 shadow-sm border-0">
-                        <div className="flex items-center gap-1.5 md:gap-2 text-gray-500 dark:text-gray-400 text-xs md:text-sm mb-0.5 md:mb-1">
-                            <Award className="w-3 h-3 md:w-4 md:h-4 text-blue-500" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-0">
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
+                            <Award className="w-3.5 h-3.5" />
                             <span>Completed</span>
                         </div>
-                        <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{completedAttempts}</div>
-                    </div>
-                    <div className="bg-white/40 dark:bg-muted/30 backdrop-blur-md rounded-xl p-3 md:p-4 shadow-sm border-0">
-                        <div className="flex items-center gap-1.5 md:gap-2 text-gray-500 dark:text-gray-400 text-xs md:text-sm mb-0.5 md:mb-1">
-                            <Clock className="w-3 h-3 md:w-4 md:h-4 text-purple-500" />
-                            <span>In Progress</span>
-                        </div>
-                        <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{inProgressAttempts}</div>
-                    </div>
-                    <div className="bg-white/40 dark:bg-muted/30 backdrop-blur-md rounded-xl p-3 md:p-4 shadow-sm border-0">
-                        <div className="flex items-center gap-1.5 md:gap-2 text-gray-500 dark:text-gray-400 text-xs md:text-sm mb-0.5 md:mb-1">
-                            <Award className="w-3 h-3 md:w-4 md:h-4 text-green-500" />
-                            <span>Avg Score</span>
-                        </div>
-                        <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                            {completedAttempts > 0 ? Math.round(averageScore) + '%' : 'N/A'}
+                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
+                            {completedAttempts}
                         </div>
                     </div>
-                    <div className="bg-white/40 dark:bg-muted/30 backdrop-blur-md rounded-xl p-3 md:p-4 shadow-sm border-0">
-                        <div className="flex items-center gap-1.5 md:gap-2 text-gray-500 dark:text-gray-400 text-xs md:text-sm mb-0.5 md:mb-1">
-                            <Clock className="w-3 h-3 md:w-4 md:h-4 text-orange-500" />
-                            <span>Total Time</span>
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>In progress</span>
                         </div>
-                        <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                            {totalMinutes > 0 ? `${totalMinutes}m` : 'N/A'}
+                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
+                            {inProgressAttempts}
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
+                            <Award className="w-3.5 h-3.5" />
+                            <span>Avg score</span>
+                        </div>
+                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
+                            {completedAttempts > 0 ? Math.round(averageScore) + '%' : '—'}
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-[#161b22] rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs mb-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Total time</span>
+                        </div>
+                        <div className="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 tabular-nums">
+                            {totalMinutes > 0 ? `${totalMinutes}m` : '—'}
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Content - Full width grid */}
+            {/* Content */}
             {filtered.length === 0 ? (
-                <EmptyState
-                    title={searchQuery ? "No matching assessments" : "No assessments found"}
-                    description={
-                        searchQuery
-                            ? `No assessments match "${searchQuery}". Try a different search term.`
-                            : filter !== 'all'
-                                ? `You don't have any ${filter} assessments.`
-                                : "You haven't taken any assessments yet. Start your first assessment today!"
-                    }
-                    icon={<Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600" />}
-                    action={
-                        searchQuery ? {
-                            label: 'Clear Search',
-                            onClick: clearSearch
-                        } : filter !== 'all' ? {
-                            label: 'View all assessments',
-                            onClick: () => setFilter('all')
-                        } : {
-                            label: 'Browse Assessments',
-                            onClick: () => navigate('/assessments')
+                <div className="px-4 md:px-0">
+                    <EmptyState
+                        title={searchQuery ? 'No matching assessments' : 'No assessments found'}
+                        description={
+                            searchQuery
+                                ? `No assessments match "${searchQuery}". Try a different search term.`
+                                : filter !== 'all'
+                                    ? `You don't have any ${filter} assessments.`
+                                    : "You haven't taken any assessments yet. Start your first assessment today!"
                         }
-                    }
-                />
+                        icon={<Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600" />}
+                        action={
+                            searchQuery ? {
+                                label: 'Clear search',
+                                onClick: clearSearch
+                            } : filter !== 'all' ? {
+                                label: 'View all assessments',
+                                onClick: () => setFilter('all')
+                            } : {
+                                label: 'Browse assessments',
+                                onClick: () => navigate('/assessments')
+                            }
+                        }
+                    />
+                </div>
             ) : (
-                <div className="space-y-3 md:space-y-4">
+                <div className="px-4 md:px-0 space-y-3 md:space-y-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                         Showing {filtered.length} of {attempts.length} {attempts.length === 1 ? 'attempt' : 'attempts'}
                         {searchQuery && ` matching "${searchQuery}"`}
                     </div>
 
-                    {/* Grid layout for history cards - 2 columns on desktop */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
                         {filtered.map((attempt) => (
                             <HistoryCard
                                 key={attempt.id}

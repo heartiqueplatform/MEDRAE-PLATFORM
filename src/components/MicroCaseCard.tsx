@@ -445,7 +445,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
 
     if (noCard || !card) {
         return (
-            <Card className="mt-4 bg-white dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
+            <Card className="mt-4 bg-white dark:bg-gray-900/50 rounded-xl border-0">
                 <CardContent className="py-8">
                     <p className="text-center text-gray-500 dark:text-gray-400 font-semibold text-sm">
                         Micro-case unavailable — try again in a moment
@@ -644,7 +644,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                     onClick={() => setShowReportDialog(false)}
                 >
                     <div
-                        className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl border border-gray-200 dark:border-gray-800"
+                        className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-2xl border-0"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-4">
@@ -699,7 +699,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                                     value={customReasonText}
                                     onChange={(e) => setCustomReasonText(e.target.value)}
                                     placeholder="Please provide more context about your report..."
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+                                    className="w-full px-3 py-2 border-0 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-transparent resize-none"
                                     rows={4}
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -739,7 +739,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                     onClick={() => setViewReportReason({ show: false, reason: "" })}
                 >
                     <div
-                        className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-gray-200 dark:border-gray-800"
+                        className="bg-white dark:bg-gray-900 rounded-xl max-w-md w-full p-5 sm:p-6 shadow-2xl border-0"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-4">
@@ -759,7 +759,7 @@ export function MicroCaseCard({ cardId }: { cardId?: string }) {
                             </button>
                         </div>
 
-                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                        <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border-0">
                             <p className="text-gray-700 dark:text-gray-300 font-medium whitespace-pre-wrap">
                                 {viewReportReason.reason}
                             </p>

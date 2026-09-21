@@ -323,12 +323,12 @@ export const MusicPlayer = () => {
             episodeCount={tracks.length}
         />
     );
-
     const listEl = (
         <EpisodesContent
             visibleTracks={visibleTracks}
             currentTrackSrc={currentTrack?.src}
             isPlaying={isPlaying}
+            progress={progress}
             loading={loading || showTracksLoading}
             selectedShowId={selectedShowId}
             onSelectShow={handleSelectShow}
@@ -344,7 +344,6 @@ export const MusicPlayer = () => {
             onHideEpisode={(id) => setConfirmHide(id)}
         />
     );
-
     return (
         <>
             <audio ref={audioRef} src={currentTrack?.src} crossOrigin="anonymous" />
@@ -669,6 +668,7 @@ export const MusicPlayer = () => {
 };
 
 /* ═══════════ PLAYER CONTENT ═══════════ */
+/* ═══════════ PLAYER CONTENT ═══════════ */
 function PlayerContent(props: any) {
     const {
         artworkSrc, isPlaying, currentTrack, progress, currentTime, totalDuration,
@@ -678,6 +678,52 @@ function PlayerContent(props: any) {
     } = props;
 
     const showSkeleton = loading && !currentTrack;
+
+    /* ── Volume popover state ── */
+    const [volOpen, setVolOpen] = useState(false);
+    const volWrapRef = React.useRef<HTMLDivElement>(null);
+    const hideTimerRef = React.useRef<number | null>(null);
+
+    const openVol = () => {
+        if (hideTimerRef.current) {
+            window.clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = null;
+        }
+        setVolOpen(true);
+    };
+    const scheduleClose = () => {
+        if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = window.setTimeout(() => setVolOpen(false), 700);
+    };
+    const closeNow = () => {
+        if (hideTimerRef.current) {
+            window.clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = null;
+        }
+        setVolOpen(false);
+    };
+
+    /* Close when tapping/clicking outside */
+    useEffect(() => {
+        if (!volOpen) return;
+        const onDocClick = (e: MouseEvent | TouchEvent) => {
+            if (!volWrapRef.current) return;
+            if (!volWrapRef.current.contains(e.target as Node)) closeNow();
+        };
+        document.addEventListener("mousedown", onDocClick);
+        document.addEventListener("touchstart", onDocClick);
+        return () => {
+            document.removeEventListener("mousedown", onDocClick);
+            document.removeEventListener("touchstart", onDocClick);
+        };
+    }, [volOpen]);
+
+    useEffect(() => () => {
+        if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    }, []);
+
+    const effectiveVolume = muted ? 0 : volume;
+    const volPct = Math.round(effectiveVolume * 100);
 
     if (showSkeleton) {
         return (
@@ -749,25 +795,10 @@ function PlayerContent(props: any) {
                 </div>
 
                 {/* Progress — full width */}
-                <div className="w-full mt-5">
-                    <div
-                        className="relative h-1.5 bg-slate-300/70 dark:bg-gh-border rounded-full cursor-pointer group"
-                        onClick={onProgressClick}
-                    >
-                        <div className="absolute h-full bg-blue-600 rounded-full" style={{ width: `${progress * 100}%` }} />
-                        <div
-                            className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-blue-600 shadow-none opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ left: `calc(${progress * 100}% - 6px)` }}
-                        />
-                    </div>
-                    <div className="mt-2 flex justify-between text-[10px] md:text-xs font-semibold text-gh-l-muted dark:text-gh-muted">
-                        <span>{fmtTime(currentTime)}</span>
-                        <span>{fmtTime(totalDuration || currentTrack?.duration)}</span>
-                    </div>
-                </div>
-
-                {/* Controls — full width */}
+                {/* ── Controls — big circular play button with progress ring ── */}
                 <div className="w-full mt-5 flex items-center justify-between">
+
+                    {/* Repeat */}
                     <button
                         onClick={onCycleRepeat}
                         className={`p-2.5 rounded-full transition-colors ${repeatActive
@@ -777,22 +808,105 @@ function PlayerContent(props: any) {
                         <Repeat size={18} />
                     </button>
 
-                    <div className="flex items-center gap-3 md:gap-4">
-                        <button onClick={onPrev} className="p-3 rounded-full text-gh-l-text dark:text-gh-text hover:bg-black/5 dark:hover:bg-gh-hover">
-                            <SkipBack fill="currentColor" size={22} />
+                    {/* Center group — prev · BIG play · next */}
+                    {/* Center group — prev · heart play · next */}
+                    <div className="flex items-center gap-4 md:gap-5">
+                        <button
+                            onClick={onPrev}
+                            className="p-3 rounded-full text-gh-l-text dark:text-gh-text hover:bg-black/5 dark:hover:bg-gh-hover"
+                        >
+                            <SkipBack fill="currentColor" size={26} />
                         </button>
+
+                        {/* BIG heart play button with progress ring */}
                         <button
                             onClick={onTogglePlay}
-                            className="bg-blue-600 hover:bg-blue-500 text-white rounded-full flex items-center justify-center shadow-none active:scale-95 transition-transform"
-                            style={{ height: 64, width: 64 }}
+                            aria-label={isPlaying ? "Pause" : "Play"}
+                            className="relative active:scale-95 transition-transform"
+                            style={{ height: 128, width: 128 }}
                         >
-                            {isPlaying ? <Pause fill="white" size={28} /> : <Play fill="white" size={28} className="ml-0.5" />}
+                            {/* Progress ring */}
+                            <svg
+                                viewBox="0 0 100 100"
+                                className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
+                                aria-hidden="true"
+                            >
+                                <defs>
+                                    <linearGradient id="playbtn-ring" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stopColor="#FCA5A5" />
+                                        <stop offset="100%" stopColor="#DC2626" />
+                                    </linearGradient>
+                                </defs>
+
+                                {/* Track */}
+                                <circle
+                                    cx="50" cy="50" r="44"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="5"
+                                    className="text-slate-300/70 dark:text-gh-border"
+                                />
+                                {/* Progress */}
+                                <circle
+                                    cx="50" cy="50" r="44"
+                                    fill="none"
+                                    stroke="url(#playbtn-ring)"
+                                    strokeWidth="5"
+                                    strokeLinecap="round"
+                                    strokeDasharray={2 * Math.PI * 44}
+                                    strokeDashoffset={(2 * Math.PI * 44) * (1 - Math.max(0, Math.min(1, progress)))}
+                                    style={{ transition: "stroke-dashoffset 0.25s linear" }}
+                                />
+                            </svg>
+
+                            {/* Red heart fill + play/pause icon inside */}
+                            <svg
+                                viewBox="0 0 100 100"
+                                className="absolute inset-0 w-full h-full pointer-events-none"
+                                aria-hidden="true"
+                            >
+                                <defs>
+                                    <linearGradient id="heart-fill" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#FF2E2E" />
+                                        <stop offset="100%" stopColor="#D10000" />
+                                    </linearGradient>
+                                    <filter id="heart-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#8B0000" floodOpacity="0.45" />
+                                    </filter>
+                                </defs>
+
+                                {/* Medrae red heart — inset from the ring */}
+                                <path
+                                    transform="translate(50 52) scale(0.72) translate(-50 -50)"
+                                    d="M50 88
+                   C47 85 14 60 8 42
+                   C3 26 15 12 28 9
+                   C38 7 46 12 50 20
+                   C54 12 62 7 72 9
+                   C85 12 97 26 92 42
+                   C86 60 53 85 50 88 Z"
+                                    fill="url(#heart-fill)"
+                                    filter="url(#heart-shadow)"
+                                />
+                            </svg>
+
+                            {/* Play / Pause icon inside the heart */}
+                            <span className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
+                                {isPlaying
+                                    ? <Pause fill="white" size={30} className="mt-1" />
+                                    : <Play fill="white" size={30} className="ml-1 mt-1" />}
+                            </span>
                         </button>
-                        <button onClick={onNext} className="p-3 rounded-full text-gh-l-text dark:text-gh-text hover:bg-black/5 dark:hover:bg-gh-hover">
-                            <SkipForward fill="currentColor" size={22} />
+
+                        <button
+                            onClick={onNext}
+                            className="p-3 rounded-full text-gh-l-text dark:text-gh-text hover:bg-black/5 dark:hover:bg-gh-hover"
+                        >
+                            <SkipForward fill="currentColor" size={26} />
                         </button>
                     </div>
 
+                    {/* Volume */}
                     <button
                         onClick={onToggleMute}
                         className="p-2.5 rounded-full text-gh-l-muted dark:text-gh-muted hover:bg-black/5 dark:hover:bg-gh-hover"
@@ -801,14 +915,17 @@ function PlayerContent(props: any) {
                     </button>
                 </div>
 
-                {/* Volume + Upload — full width */}
-                <div className="w-full mt-4 flex items-center justify-between gap-4">
-                    <input
-                        type="range" min={0} max={1} step={0.01} value={volume}
-                        onChange={(e) => onVolume(parseFloat(e.target.value))}
-                        className="accent-blue-600 flex-1 h-1 cursor-pointer"
-                    />
-                    <label className="flex items-center gap-1.5 text-gh-l-muted dark:text-gh-muted hover:text-blue-600 cursor-pointer transition-colors text-[10px] font-bold uppercase tracking-widest shrink-0">
+                {/* ── Time readout below the button row ── */}
+                <div className="w-full mt-3 flex justify-between text-[10px] md:text-xs font-semibold text-gh-l-muted dark:text-gh-muted">
+                    <span>{fmtTime(currentTime)}</span>
+                    <span>{fmtTime(totalDuration || currentTrack?.duration)}</span>
+                </div>
+                {/* Controls — full width */}
+
+
+                {/* Add-to-player — full width, right-aligned */}
+                <div className="w-full mt-4 flex items-center justify-end">
+                    <label className="flex items-center gap-1.5 text-gh-l-muted dark:text-gh-muted hover:text-blue-600 cursor-pointer transition-colors text-[10px] font-bold uppercase tracking-widest">
                         <FilePlus size={14} />
                         <span className="hidden sm:inline">Add</span>
                         <input type="file" accept="audio/*" multiple onChange={onUpload} className="hidden" />
@@ -835,12 +952,117 @@ function PlayerContent(props: any) {
     );
 }
 
+/* ═══════════ VLC-STYLE VERTICAL VOLUME SLIDER ═══════════ */
+function VlcVolumeSlider({
+    value,
+    onChange,
+    onInteract,
+}: {
+    value: number;
+    onChange: (v: number) => void;
+    onInteract?: () => void;
+}) {
+    const trackRef = React.useRef<HTMLDivElement>(null);
+    const [dragging, setDragging] = React.useState(false);
+
+    const clamp = (n: number) => Math.max(0, Math.min(1, n));
+
+    const setFromClientY = (clientY: number) => {
+        const el = trackRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const ratio = 1 - (clientY - rect.top) / rect.height; // top = max
+        onChange(clamp(ratio));
+    };
+
+    const onPointerDown = (e: React.PointerEvent) => {
+        e.preventDefault();
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+        setDragging(true);
+        onInteract?.();
+        setFromClientY(e.clientY);
+    };
+
+    const onPointerMove = (e: React.PointerEvent) => {
+        if (!dragging) return;
+        setFromClientY(e.clientY);
+    };
+
+    const onPointerUp = (e: React.PointerEvent) => {
+        setDragging(false);
+        (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    };
+
+    // Arrow keys for a11y
+    const onKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+            e.preventDefault();
+            onChange(clamp(value + 0.05));
+            onInteract?.();
+        } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            onChange(clamp(value - 0.05));
+            onInteract?.();
+        }
+    };
+
+    const pct = Math.round(value * 100);
+
+    return (
+        <div
+            ref={trackRef}
+            role="slider"
+            aria-label="Volume"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+            tabIndex={0}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onKeyDown={onKeyDown}
+            className="relative w-2.5 h-32 rounded-full cursor-pointer select-none
+                       bg-gradient-to-b from-slate-300 to-slate-200
+                       dark:from-gh-border dark:to-gh-hover
+                       touch-none outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+            {/* Filled portion (bottom-up) */}
+            <div
+                className="absolute bottom-0 left-0 right-0 rounded-full
+                           bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400"
+                style={{ height: `${value * 100}%` }}
+            />
+
+            {/* Subtle tick marks every 25% */}
+            {[25, 50, 75].map((t) => (
+                <span
+                    key={t}
+                    className="absolute left-1/2 -translate-x-1/2 h-px w-1.5 bg-black/20 dark:bg-white/20"
+                    style={{ bottom: `${t}%` }}
+                />
+            ))}
+
+            {/* Thumb */}
+            <div
+                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2
+                           w-3.5 h-3.5 rounded-full bg-white
+                           ring-2 ring-blue-600
+                           shadow-[0_2px_6px_rgba(0,0,0,0.25)]
+                           transition-transform"
+                style={{ bottom: `calc(${value * 100}% - 0px)`, transform: "translate(-50%, 50%)" }}
+            />
+        </div>
+    );
+}
+
 /* ═══════════ EPISODES LIST ═══════════ */
 function EpisodesContent(props: any) {
     const {
         visibleTracks, currentTrackSrc, isPlaying, selectedShowId, loading,
         onSelectShow, onSelectTrack, shows, onToggleEndorse, isAdmin, onManage,
         onHideEpisode,
+        progress = 0,
     } = props;
 
     const chips = useMemo(() => ([
@@ -998,18 +1220,23 @@ function EpisodesContent(props: any) {
                 </div>
             )}
 
-            {!showSkeleton && visibleTracks.map((t: any, i: number) => (
-                <EpisodeRow
-                    key={t.id || i}
-                    track={t}
-                    index={i}
-                    isActive={currentTrackSrc === t.src}
-                    isPlaying={isPlaying && currentTrackSrc === t.src}
-                    onSelect={() => onSelectTrack(i)}
-                    isAdmin={isAdmin}
-                    onHide={() => t.id && onHideEpisode(t.id)}
-                />
-            ))}
+            {!showSkeleton && visibleTracks.map((t: any, i: number) => {
+                const isThisActive = currentTrackSrc === t.src;
+                return (
+                    <EpisodeRow
+                        key={t.id || i}
+                        track={t}
+                        index={i}
+                        isActive={isThisActive}
+                        isPlaying={isPlaying && isThisActive}
+                        progress={isThisActive ? progress : 0}
+                        downloaded={!!t.downloaded}
+                        onSelect={() => onSelectTrack(i)}
+                        isAdmin={isAdmin}
+                        onHide={() => t.id && onHideEpisode(t.id)}
+                    />
+                );
+            })}
         </>
     );
 
@@ -1193,8 +1420,9 @@ function EndorseButton({ endorsed, count, onClick }: { endorsed: boolean; count:
 }
 
 /* ═══════════ EPISODE ROW ═══════════ */
+/* ═══════════ EPISODE ROW ═══════════ */
 function EpisodeRow({
-    track, index, isActive, isPlaying, onSelect, isAdmin, onHide,
+    track, index, isActive, isPlaying, onSelect, isAdmin, onHide, progress = 0, downloaded = false,
 }: {
     track: Track;
     index: number;
@@ -1203,7 +1431,17 @@ function EpisodeRow({
     onSelect: () => void;
     isAdmin?: boolean;
     onHide?: () => void;
+    /** 0..1 — only used when isActive */
+    progress?: number;
+    /** Show download-complete pill */
+    downloaded?: boolean;
 }) {
+    // Circular ring maths
+    const R = 22;                          // radius in px
+    const C = 2 * Math.PI * R;             // circumference
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+    const dashOffset = C * (1 - clampedProgress);
+
     return (
         <div
             className={`group w-full rounded-2xl px-3 py-3 mb-1 flex items-center gap-3 transition-all ${isActive
@@ -1212,7 +1450,10 @@ function EpisodeRow({
                 }`}
         >
             <button onClick={onSelect} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+
+                {/* ── Cover + smart overlay ── */}
                 <div className="relative shrink-0 w-12 h-12 rounded-full overflow-hidden bg-gh-l-hover dark:bg-gh-hover">
+
                     {track.artwork ? (
                         <img src={track.artwork} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -1220,18 +1461,50 @@ function EpisodeRow({
                             {index + 1}
                         </div>
                     )}
-                    {isPlaying && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="flex items-end gap-[2px] h-3">
-                                {[0, 1, 2].map((i) => (
-                                    <motion.span
-                                        key={i}
-                                        animate={{ height: [3, 10, 5, 9, 3] }}
-                                        transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.12 }}
-                                        className="w-[2px] rounded-full bg-white"
-                                    />
-                                ))}
-                            </div>
+
+                    {/* Overlay when ACTIVE — progress ring + play/pause */}
+                    {isActive && (
+                        <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
+                            {/* Circular progress ring */}
+                            <svg
+                                className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none"
+                                viewBox="0 0 48 48"
+                            >
+                                {/* Track */}
+                                <circle
+                                    cx="24" cy="24" r={R}
+                                    fill="none"
+                                    stroke="rgba(255,255,255,0.25)"
+                                    strokeWidth="2.5"
+                                />
+                                {/* Progress */}
+                                <circle
+                                    cx="24" cy="24" r={R}
+                                    fill="none"
+                                    stroke="#60A5FA"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeDasharray={C}
+                                    strokeDashoffset={dashOffset}
+                                    style={{ transition: "stroke-dashoffset 0.25s linear" }}
+                                />
+                            </svg>
+
+                            {/* Center: animated bars when playing, play icon when paused */}
+                            {isPlaying ? (
+                                <div className="flex items-end gap-[2px] h-3 z-10">
+                                    {[0, 1, 2].map((i) => (
+                                        <motion.span
+                                            key={i}
+                                            animate={{ height: [3, 10, 5, 9, 3] }}
+                                            transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.12 }}
+                                            className="w-[2px] rounded-full bg-white"
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <Play size={14} fill="white" className="text-white z-10 ml-0.5" />
+                            )}
                         </div>
                     )}
                 </div>
@@ -1240,18 +1513,36 @@ function EpisodeRow({
                     <p className={`text-[13px] font-bold truncate ${isActive ? "text-blue-700 dark:text-blue-300" : "text-gh-l-text dark:text-gh-text"}`}>
                         {track.name}
                     </p>
-                    <p className="text-[10px] truncate text-gh-l-muted dark:text-gh-muted">
-                        {track.showTitle ? `${track.showTitle} · ` : ""}
-                        {track.duration ? fmtTime(track.duration) : "—"}
-                        {track.publishedAt ? ` · ${fmtDate(track.publishedAt)}` : ""}
-                    </p>
+
+                    {/* Meta line with download pill */}
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-[10px] truncate text-gh-l-muted dark:text-gh-muted">
+                            {track.showTitle ? `${track.showTitle} · ` : ""}
+                            {track.duration ? fmtTime(track.duration) : "—"}
+                            {track.publishedAt ? ` · ${fmtDate(track.publishedAt)}` : ""}
+                        </p>
+
+                        {downloaded && (
+                            <span
+                                className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full
+                                           bg-emerald-100 dark:bg-emerald-950/50
+                                           text-emerald-700 dark:text-emerald-400
+                                           text-[8px] font-black uppercase tracking-wider"
+                                title="Downloaded for offline playback"
+                            >
+                                <CheckCircle2 size={8} />
+                                Downloaded
+                            </span>
+                        )}
+                    </div>
                 </div>
 
-                <div className={`shrink-0 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-gh-l-muted dark:text-gh-muted"}`}>
-                    {isActive && isPlaying
-                        ? <Pause size={18} fill="currentColor" />
-                        : <Play size={18} fill="currentColor" />}
-                </div>
+                {/* Right-side indicator for INACTIVE rows only */}
+                {!isActive && (
+                    <div className="shrink-0 text-gh-l-muted dark:text-gh-muted">
+                        <Play size={18} fill="currentColor" />
+                    </div>
+                )}
             </button>
 
             {isAdmin && onHide && (

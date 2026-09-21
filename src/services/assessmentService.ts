@@ -176,7 +176,6 @@ export const assessmentService = {
         if (error) throw error;
         return data;
     },
-
     async getAttempts(userId: string, assessmentId?: string): Promise<AssessmentAttempt[]> {
         let query = supabase
             .from('mm_assessment_attempts')
@@ -190,6 +189,7 @@ export const assessmentService = {
                     difficulty,
                     estimated_minutes,
                     passing_score,
+                    cover_image,
                     total_steps,
                     is_featured,
                     is_active,
@@ -219,7 +219,6 @@ export const assessmentService = {
         console.log('✅ Attempts loaded:', data?.length || 0);
         return data || [];
     },
-
     async getLatestAttempt(userId: string, assessmentId: string): Promise<AssessmentAttempt | null> {
         const { data, error } = await supabase
             .from('mm_assessment_attempts')
@@ -262,7 +261,7 @@ export const assessmentService = {
             .from('mm_assessment_attempts')
             .select(`
                 *,
-                assessment:mm_assessments(
+                                assessment:mm_assessments(
                     id,
                     title,
                     slug,
@@ -270,6 +269,7 @@ export const assessmentService = {
                     difficulty,
                     estimated_minutes,
                     passing_score,
+                    cover_image,
                     total_steps,
                     is_featured,
                     is_active,

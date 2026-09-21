@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, CreditCard, Smartphone, Users, Crown, Loader2, AlertCircle, X, HelpCircle, Info, Shield, FileText, Gavel, Briefcase, ArrowLeft, Settings as SettingsIcon } from "lucide-react";
+import { Check, CreditCard, Smartphone, Users, Crown, Loader2, AlertCircle, X, HelpCircle, Info, Shield, FileText, Gavel, Briefcase, ArrowLeft, Settings as SettingsIcon, ChevronDown, CheckCircle2, XCircle, Clock, Receipt, Copy } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { LegalTermsModal } from "@/components/subscription/LegalTermsModal";
 import { SubscriptionInfoModal } from "@/components/subscription/SubscriptionInfoModal";
 import { toast } from "sonner";
@@ -294,7 +295,244 @@ const Confetti = () => {
 
   return null;
 };
+// ═══════════════════════════════════════════════════════════════
+// PAYMENT ROW — expandable row using real DB columns
+// ═══════════════════════════════════════════════════════════════
+function PaymentRow({ payment }: { payment: any }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
+  const status = (payment.status || "pending").toLowerCase();
+  const isSuccess = status === "completed" || status === "success";
+  const isFailed = status === "failed" || status === "cancelled" || status === "rejected";
+
+  const statusConfig = isSuccess
+    ? {
+      label: "Completed",
+      icon: CheckCircle2,
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    }
+    : isFailed
+      ? {
+        label: status === "cancelled" ? "Cancelled" : status === "rejected" ? "Rejected" : "Failed",
+        icon: XCircle,
+        color: "text-rose-600 dark:text-rose-400",
+        bg: "bg-rose-50 dark:bg-rose-900/20",
+      }
+      : {
+        label: "Pending",
+        icon: Clock,
+        color: "text-amber-600 dark:text-amber-400",
+        bg: "bg-amber-50 dark:bg-amber-900/20",
+      };
+
+  const StatusIcon = statusConfig.icon;
+
+  const formatDate = (d: string | null) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleString("en-KE", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const planLabel = payment.plan_type
+    ? payment.plan_type
+      .replace(/_premium$/i, "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c: string) => c.toUpperCase()) + " Premium"
+    : "Premium";
+
+  const durationLabel = (() => {
+    const d = (payment.duration_type || "").toLowerCase();
+    if (!d) return "—";
+    if (d === "monthly") return "Monthly";
+    if (d === "1-month" || d === "1month" || d === "1_month") return "1 Month";
+    if (d === "2-months" || d === "2months" || d === "2_months") return "2 Months";
+    return d.charAt(0).toUpperCase() + d.slice(1);
+  })();
+
+  const methodLabel = (() => {
+    const m = (payment.method || "").toLowerCase();
+    if (m === "mpesa" || m === "m-pesa") return "M-Pesa";
+    if (!m) return "—";
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  })();
+
+  const roleLabel = payment.role_at_payment
+    ? payment.role_at_payment.charAt(0).toUpperCase() + payment.role_at_payment.slice(1)
+    : "—";
+
+  const currencyPrefix =
+    (payment.currency || "KES").toUpperCase() === "KES" ? "KSh" : payment.currency;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card dark:bg-gray-800 rounded-lg md:rounded-xl overflow-hidden"
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 p-3 md:p-4 text-left hover:bg-muted/50 dark:hover:bg-gray-700/40 transition-colors"
+      >
+        <div className={`p-2 rounded-lg shrink-0 ${statusConfig.bg}`}>
+          <StatusIcon className={`h-4 w-4 md:h-5 md:w-5 ${statusConfig.color}`} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs md:text-sm font-bold dark:text-white">
+              {planLabel} · {durationLabel}
+            </span>
+            <span className={`text-[10px] font-medium ${statusConfig.color}`}>
+              {statusConfig.label}
+            </span>
+          </div>
+          <p className="text-[10px] md:text-xs text-muted-foreground dark:text-gray-500 mt-0.5">
+            {formatDate(payment.created_at)}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm md:text-base font-bold text-foreground dark:text-white tabular-nums">
+            {currencyPrefix} {Number(payment.amount).toLocaleString()}
+          </span>
+          <ChevronDown
+            size={16}
+            className={`text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          />
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="details"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 md:px-4 pb-3 md:pb-4 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                <DetailRow
+                  label="Transaction ID"
+                  value={payment.transaction_id || "Not yet assigned"}
+                  mono={!!payment.transaction_id}
+                  copyable={!!payment.transaction_id}
+                  onCopy={copyToClipboard}
+                  copied={copied}
+                />
+                <DetailRow label="Payment Method" value={methodLabel} />
+                <DetailRow label="Plan" value={planLabel} />
+                <DetailRow label="Duration" value={durationLabel} />
+                <DetailRow label="Role" value={roleLabel} />
+                <DetailRow label="Currency" value={(payment.currency || "KES").toUpperCase()} />
+                <DetailRow label="Initiated" value={formatDate(payment.created_at)} />
+                <DetailRow
+                  label={isSuccess ? "Completed" : "Paid at"}
+                  value={formatDate(payment.paid_at)}
+                />
+
+                {payment.description && payment.description !== "System generated" && (
+                  <DetailRow label="Description" value={payment.description} span />
+                )}
+
+                {payment.notes && (
+                  <div className="sm:col-span-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                    <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 tracking-wider mb-1">
+                      Notes
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                      {payment.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {isSuccess && (
+                <p className="mt-3 text-[10px] text-muted-foreground dark:text-gray-500 italic">
+                  Keep this record for your reference. All payments are final and non-refundable.
+                </p>
+              )}
+              {isFailed && (
+                <p className="mt-3 text-[10px] text-rose-600 dark:text-rose-400 italic">
+                  This payment did not go through. No amount was charged.
+                </p>
+              )}
+              {!isSuccess && !isFailed && (
+                <p className="mt-3 text-[10px] text-amber-600 dark:text-amber-400 italic">
+                  Waiting for confirmation. This usually takes under a minute.
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  mono,
+  span,
+  copyable,
+  onCopy,
+  copied,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  span?: boolean;
+  copyable?: boolean;
+  onCopy?: (text: string) => void;
+  copied?: boolean;
+}) {
+  return (
+    <div className={span ? "sm:col-span-2" : ""}>
+      <p className="text-[10px] font-medium text-muted-foreground dark:text-gray-500 mb-0.5">
+        {label}
+      </p>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <p
+          className={`text-xs md:text-sm text-foreground dark:text-gray-200 break-all ${mono ? "font-mono" : "font-medium"
+            }`}
+        >
+          {value}
+        </p>
+        {copyable && value !== "—" && onCopy && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopy(value);
+            }}
+            className="p-1 rounded hover:bg-muted dark:hover:bg-gray-700 transition-colors shrink-0"
+            title="Copy"
+          >
+            <Copy size={12} className={copied ? "text-emerald-500" : "text-muted-foreground"} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 export function Subscription() {
   const session = useSession();
   const supabase = useSupabaseClient();
@@ -362,10 +600,24 @@ export function Subscription() {
 
         const { data: payments, error: paymentsError } = await supabase
           .from("payments")
-          .select("*")
+          .select(`
+            id,
+            amount,
+            currency,
+            plan_type,
+            method,
+            transaction_id,
+            status,
+            created_at,
+            paid_at,
+            duration_type,
+            role_at_payment,
+            description,
+            notes
+          `)
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: false })
-          .limit(10);
+          .limit(20);
 
         if (paymentsError) throw paymentsError;
 
@@ -420,10 +672,22 @@ export function Subscription() {
 
         const { data: payments } = await supabase
           .from("payments")
-          .select("transaction_id, amount, created_at, status")
+          .select(`
+            id,
+            amount,
+            currency,
+            plan_type,
+            method,
+            transaction_id,
+            status,
+            created_at,
+            paid_at,
+            duration_type,
+            role_at_payment
+          `)
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: false })
-          .limit(5);
+          .limit(10);
 
         if (payments) setTransactions(payments);
       } catch (err) { }
@@ -1016,42 +1280,32 @@ export function Subscription() {
 
         <Card className="md:border-none md:bg-muted/30 dark:md:bg-gray-800/30 md:shadow-none md:rounded-2xl rounded-none border-0 shadow-none">
           <CardHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-bold uppercase tracking-widest text-muted-foreground dark:text-gray-400 flex items-center gap-1.5 md:gap-2">
-              <Smartphone className="h-3.5 w-3.5 md:h-4 md:w-4" /> Payment History
+            <CardTitle className="text-xs md:text-sm font-bold tracking-widest text-muted-foreground dark:text-gray-400 flex items-center gap-1.5 md:gap-2 uppercase">
+              <Receipt className="h-3.5 w-3.5 md:h-4 md:w-4" /> Payment History
             </CardTitle>
             <CardDescription className="text-[10px] md:text-xs dark:text-gray-500">
-              Your recent payment transactions
+              {transactions.length === 0
+                ? "Your payment transactions will appear here"
+                : `${transactions.length} transaction${transactions.length === 1 ? "" : "s"}`}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 md:px-6 pb-4 md:pb-6">
             {transactions.length === 0 ? (
-              <div className="text-center py-8 md:py-10 space-y-1.5 md:space-y-2">
-                <div className="bg-muted dark:bg-gray-800 p-2 md:p-3 inline-block rounded-full">
-                  <Smartphone className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground/50 dark:text-gray-600" />
+              <div className="text-center py-8 md:py-10 space-y-2">
+                <div className="bg-muted dark:bg-gray-800 p-3 inline-block rounded-full">
+                  <Receipt className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground/50 dark:text-gray-600" />
                 </div>
-                <p className="text-[10px] md:text-xs text-muted-foreground italic dark:text-gray-500">No payment history found.</p>
-                <p className="text-[9px] md:text-[10px] text-muted-foreground dark:text-gray-500">Complete a payment to see it here</p>
+                <p className="text-xs md:text-sm text-muted-foreground italic dark:text-gray-500">
+                  No payment history found.
+                </p>
+                <p className="text-[10px] md:text-[11px] text-muted-foreground dark:text-gray-500">
+                  Complete a payment to see it here
+                </p>
               </div>
             ) : (
               <div className="space-y-2 md:space-y-3">
-                {transactions.slice(0, 5).map((payment, i) => (
-                  <div key={i} className="p-3 md:p-4 bg-card dark:bg-gray-800 rounded-lg md:rounded-xl border-0 md:shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 md:gap-3">
-                    <div className="space-y-0.5 md:space-y-1">
-                      <p className="text-[9px] md:text-[10px] font-mono text-muted-foreground dark:text-gray-500 break-all">
-                        ID: {payment.transaction_id?.slice(-8) || "pending"}
-                      </p>
-                      <p className="text-[11px] md:text-xs font-medium dark:text-white">
-                        KSh {payment.amount}
-                      </p>
-                      <p className="text-[9px] md:text-[10px] text-muted-foreground dark:text-gray-500">
-                        {new Date(payment.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Badge variant={payment.status === "completed" ? "default" : "outline"}
-                      className={payment.status === "completed" ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 text-[10px] md:text-xs border-0" : "dark:border-gray-600 dark:text-gray-400 text-[10px] md:text-xs border-0"}>
-                      {payment.status === "completed" ? "Success" : payment.status}
-                    </Badge>
-                  </div>
+                {transactions.map((payment) => (
+                  <PaymentRow key={payment.id} payment={payment} />
                 ))}
               </div>
             )}
