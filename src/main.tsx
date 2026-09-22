@@ -12,7 +12,7 @@ import "@fontsource/poppins";
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "2.0.12";
+const APP_VERSION = "2.0.2";
 
 
 const CACHE_NAMES = {
