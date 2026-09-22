@@ -26,7 +26,33 @@ import {
 import { useSession } from "@supabase/auth-helpers-react";
 import { academicProgress } from "@/lib/academicProgress";
 import React from "react";
+const withTimeout = <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
+    let settled = false;
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error("Network timeout"));
+        }, ms);
+        promise
+            .then((res) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve(res);
+            })
+            .catch((err) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                reject(err);
+            });
+    });
+};
 
+// =============================================
+// TYPES
+// =============================================
 // =============================================
 // TYPES
 // =============================================
@@ -353,7 +379,6 @@ export default function ProgressPage() {
     // =============================================
     // DATA LOADING
     // =============================================
-
     const loadProgressData = useCallback(async (forceRefresh = false) => {
         if (!userId) return;
 
@@ -362,42 +387,49 @@ export default function ProgressPage() {
         isLoadingRef.current = true;
 
         try {
-            // Only show loading if no cached data or force refresh
             if (!hasLoadedFromCache || forceRefresh) {
                 setIsLoading(true);
             }
             setError(null);
 
-            // Load all data in parallel
-            const [summaryData, recentData, weakData] = await Promise.all([
-                academicProgress.getProgressSummary(userId),
-                academicProgress.getRecentAttempts(userId, 15),
-                academicProgress.getWeakAreas(userId, 5)
+            // ✅ Fetch all three in parallel, but tolerate partial failures
+            const [summaryRes, recentRes, weakRes] = await Promise.allSettled([
+                withTimeout(academicProgress.getProgressSummary(userId), 12000),
+                withTimeout(academicProgress.getRecentAttempts(userId, 15), 12000),
+                withTimeout(academicProgress.getWeakAreas(userId, 5), 12000),
             ]);
 
-            if (isMountedRef.current) {
-                // Only update if data changed
-                const summaryChanged = JSON.stringify(summaryData) !== JSON.stringify(summary);
-                if (summaryChanged || forceRefresh) {
-                    setSummary(summaryData);
-                }
+            if (!isMountedRef.current) return;
 
-                const recentChanged = JSON.stringify(recentData) !== JSON.stringify(recentAttempts);
-                if (recentChanged || forceRefresh) {
-                    setRecentAttempts(recentData);
-                }
+            let anySuccess = false;
 
-                const weakChanged = JSON.stringify(weakData) !== JSON.stringify(weakAreas);
-                if (weakChanged || forceRefresh) {
-                    setWeakAreas(weakData);
-                }
+            if (summaryRes.status === "fulfilled" && summaryRes.value) {
+                setSummary(summaryRes.value);
+                anySuccess = true;
+            } else {
+                console.warn("Summary fetch failed:", summaryRes.status);
+            }
 
+            if (recentRes.status === "fulfilled" && recentRes.value) {
+                setRecentAttempts(recentRes.value);
+                anySuccess = true;
+            }
+
+            if (weakRes.status === "fulfilled" && weakRes.value) {
+                setWeakAreas(weakRes.value);
+                anySuccess = true;
+            }
+
+            if (anySuccess) {
                 setHasLoadedFromCache(true);
+                setError(null);
+            } else if (!hasLoadedFromCache) {
+                setError("Failed to load progress data. Please try again.");
             }
         } catch (err) {
-            console.error('Error loading progress data:', err);
+            console.error("Error loading progress data:", err);
             if (isMountedRef.current && !hasLoadedFromCache) {
-                setError('Failed to load progress data. Please try again.');
+                setError("Failed to load progress data. Please try again.");
             }
         } finally {
             if (isMountedRef.current) {
@@ -405,8 +437,7 @@ export default function ProgressPage() {
                 isLoadingRef.current = false;
             }
         }
-    }, [userId, hasLoadedFromCache, summary, recentAttempts, weakAreas]);
-
+    }, [userId, hasLoadedFromCache]);
     // =============================================
     // HANDLERS
     // =============================================
@@ -450,11 +481,12 @@ export default function ProgressPage() {
         }, 100);
 
         // Background refresh every 30 seconds
+        // Background refresh every 2 minutes (was 30s — way too aggressive)
         const refreshInterval = setInterval(() => {
             if (isMountedRef.current && isOnline) {
                 loadProgressData(true);
             }
-        }, 30000);
+        }, 120000);
 
         return () => {
             isMountedRef.current = false;
@@ -485,12 +517,28 @@ export default function ProgressPage() {
     if (isLoading && !hasLoadedFromCache) {
         return <ProgressSkeleton />;
     }
-
-    // Error state
-    if (error && !hasLoadedFromCache) {
+    // Error state — only if we have NOTHING to display
+    if (error && !hasLoadedFromCache && !summary) {
         return (
             <div className="min-h-screen bg-transparent text-slate-950 dark:text-white">
-                <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-2 py-4 md:py-6">
+                <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-3 md:gap-6 px-2 py-4 md:py-6 lg:px-8">
+
+                    {/* Offline / stale banner */}
+                    {(!isOnline || error) && summary && (
+                        <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs md:text-sm font-semibold px-3 py-2 rounded-xl">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span className="flex-1">
+                                {isOnline
+                                    ? "Couldn't refresh — showing your last saved progress."
+                                    : "You're offline — showing your last saved progress."}
+                            </span>
+                            <button onClick={handleRefresh} className="underline underline-offset-2 hover:no-underline whitespace-nowrap">
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Header Card */}
                     <div className="rounded-2xl bg-white/70 p-6 md:p-8 text-center backdrop-blur dark:bg-muted/30">
                         <AlertCircle className="mx-auto h-10 w-10 md:h-12 md:w-12 text-rose-500 mb-3 md:mb-4" />
                         <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Failed to Load Progress</h3>

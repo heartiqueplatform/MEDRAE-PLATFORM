@@ -19,7 +19,29 @@ import { useSession } from "@supabase/auth-helpers-react";
 import { academicProgress } from "@/lib/academicProgress";
 import { playSound } from "@/lib/soundManager"; // Import sound manager
 import { TermsButton } from "@/components/ui/TermsButton";
-
+const withTimeout = <T,>(promise: Promise<T>, ms = 12000): Promise<T> => {
+    let settled = false;
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error("Network timeout"));
+        }, ms);
+        promise
+            .then((res) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve(res);
+            })
+            .catch((err) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                reject(err);
+            });
+    });
+};
 
 const vibrate = (pattern: number | number[] = 35) => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -97,25 +119,33 @@ function ProgressCard() {
     const CACHE_KEY = `progress_summary_${userId}`;
 
     // Load from cache on mount
+    // Load from cache on mount — works even before userId resolves
     useEffect(() => {
-        if (userId) {
-            // Check cache first
-            const cached = localStorage.getItem(CACHE_KEY);
-            if (cached) {
-                try {
-                    const parsed = JSON.parse(cached);
-                    if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+        // 1. Try cache FIRST regardless of userId (cache key already includes userId)
+        const cached = localStorage.getItem(CACHE_KEY);
+        let paintedFromCache = false;
+
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (parsed?.data) {
+                    if (isMounted.current) {
                         setSummary(parsed.data);
                         setLoading(false);
-                        return;
                     }
-                } catch (e) {
-                    localStorage.removeItem(CACHE_KEY);
+                    paintedFromCache = true;
                 }
+            } catch (e) {
+                localStorage.removeItem(CACHE_KEY);
             }
-            loadProgressSummary();
-        } else {
-            setLoading(false);
+        }
+
+        // 2. Only fetch if we have a user
+        if (userId) {
+            loadProgressSummary(paintedFromCache); // pass silent flag = paintedFromCache
+        } else if (!paintedFromCache) {
+            // No user AND no cache — we can stop loading
+            if (isMounted.current) setLoading(false);
         }
 
         return () => {
@@ -170,18 +200,24 @@ function ProgressCard() {
         }
 
         try {
-            const data = await academicProgress.getProgressSummary(userId);
+            const data = await withTimeout(
+                academicProgress.getProgressSummary(userId),
+                12000
+            );
             if (isMounted.current) {
-                setSummary(data);
+                // Only overwrite if we actually got data — never wipe a painted cache
+                if (data) {
+                    setSummary(data);
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        data: data,
+                        timestamp: Date.now()
+                    }));
+                }
                 setLoading(false);
-                // Cache the data
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    data: data,
-                    timestamp: Date.now()
-                }));
             }
         } catch (error) {
             console.error("Error loading progress:", error);
+            // ✅ DO NOT clear summary — keep whatever cache painted
             if (isMounted.current) {
                 setLoading(false);
             }
@@ -275,7 +311,11 @@ function ProgressCard() {
                 </>
             ) : (
                 <div className="py-4 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No questions attempted yet Or no Internet connection</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {typeof navigator !== "undefined" && !navigator.onLine
+                            ? "You're offline — cached progress will show when available."
+                            : "No questions attempted yet. Start a quiz to see your progress."}
+                    </p>
                     <button
                         onClick={() => navigate("/Medrae-quizzes")}
                         className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
@@ -292,9 +332,38 @@ export default function NursingHome() {
     const [years, setYears] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-
     useEffect(() => {
-        getYears().then(data => { setYears(data); setLoading(false); }).catch(() => setLoading(false));
+        let cancelled = false;
+
+        // Paint cache instantly
+        const cached = localStorage.getItem("nursing_years_cache");
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (parsed?.data?.length) {
+                    setYears(parsed.data);
+                    setLoading(false);
+                }
+            } catch { }
+        }
+
+        withTimeout(getYears(), 12000)
+            .then((data) => {
+                if (cancelled) return;
+                if (Array.isArray(data) && data.length > 0) {
+                    setYears(data);
+                    localStorage.setItem(
+                        "nursing_years_cache",
+                        JSON.stringify({ data, timestamp: Date.now() })
+                    );
+                }
+                setLoading(false);
+            })
+            .catch(() => {
+                if (!cancelled) setLoading(false);
+            });
+
+        return () => { cancelled = true; };
     }, []);
 
     const totalQuestions = years.reduce((sum, y) => sum + (y.total_questions || 0), 0);
@@ -354,21 +423,73 @@ export default function NursingHome() {
                 </div>
 
                 {/* Quick Practice Button */}
+                {/* Quick Action Cards */}
                 {!loading && (
-                    <div className="px-3 md:px-0 flex justify-center">
+                    <div className="px-3 md:px-0 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+
+                        {/* Quick Practice */}
                         <button
                             onClick={() => {
                                 tapFeedback("success");
                                 navigate("/nursing/search");
                             }}
-                            className="inline-flex items-center gap-1.5 md:gap-2 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-bold text-white shadow-lg shadow-purple-200 hover:shadow-xl hover:scale-105 transition-all dark:shadow-purple-900/30"
+                            className="group relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-2 hover:border-purple-300 hover:bg-white hover:shadow-xl dark:bg-muted/30 dark:hover:border-purple-500/60 dark:hover:bg-slate-900"
                         >
-                            <Zap className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                            Quick Practice — Jump to Any Topic in Any Year
+                            <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-purple-50 transition group-hover:bg-purple-100 dark:bg-purple-400/10 dark:group-hover:bg-purple-400/20" />
+
+                            <div className="relative flex flex-col items-center text-center gap-2 md:gap-3">
+                                <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-purple-600 text-white shadow-lg shadow-purple-600/20">
+                                    <Zap className="h-5 w-5 md:h-6 md:w-6" />
+                                </div>
+
+                                <div>
+                                    <h3 className="text-base md:text-lg font-bold text-slate-950 dark:text-white">
+                                        Quick Practice
+                                    </h3>
+                                    <p className="mt-1 text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                        Jump to any topic in any year
+                                    </p>
+                                </div>
+
+                                <div className="mt-1 inline-flex items-center gap-1 text-xs md:text-sm font-semibold text-purple-600 dark:text-purple-300 transition group-hover:gap-2">
+                                    Start now
+                                    <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                </div>
+                            </div>
+                        </button>
+
+                        {/* Full Progress */}
+                        <button
+                            onClick={() => {
+                                tapFeedback("success");
+                                navigate("/nursing/progress");
+                            }}
+                            className="group relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-2 hover:border-emerald-300 hover:bg-white hover:shadow-xl dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
+                        >
+                            <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-emerald-50 transition group-hover:bg-emerald-100 dark:bg-emerald-400/10 dark:group-hover:bg-emerald-400/20" />
+
+                            <div className="relative flex flex-col items-center text-center gap-2 md:gap-3">
+                                <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
+                                    <BarChart3 className="h-5 w-5 md:h-6 md:w-6" />
+                                </div>
+
+                                <div>
+                                    <h3 className="text-base md:text-lg font-bold text-slate-950 dark:text-white">
+                                        Full Progress
+                                    </h3>
+                                    <p className="mt-1 text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                        Deep dive into your analytics
+                                    </p>
+                                </div>
+
+                                <div className="mt-1 inline-flex items-center gap-1 text-xs md:text-sm font-semibold text-emerald-600 dark:text-emerald-300 transition group-hover:gap-2">
+                                    View dashboard
+                                    <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                </div>
+                            </div>
                         </button>
                     </div>
                 )}
-
                 {/* Year Cards Section */}
                 <div>
                     <div className="mb-3 md:mb-4 flex items-center justify-between gap-2 md:gap-3 px-3 md:px-0">

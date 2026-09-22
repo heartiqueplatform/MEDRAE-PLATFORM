@@ -701,7 +701,9 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                                 <h2 className="flex-1 text-[15px] font-black tracking-tight">
                                     <span className="bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">MEDRAE </span>
                                     <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NURSING </span>
-                                    <span className="text-slate-900 dark:text-white">HUB</span>
+                                    <span className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 ml-1 align-middle">
+                                        2.0
+                                    </span>
                                 </h2>
                                 <button
                                     onClick={() => { tapFeedback(); setIsOpen(false); }}
@@ -968,7 +970,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
                                             <div className="mt-3 text-center">
                                                 <p className="text-[8px] font-bold text-slate-400 dark:text-[#484f58] tracking-widest">
-                                                    Version 2026.06 Medrae Learning System
+                                                    Version 2.0 Medrae Learning System
                                                 </p>
                                             </div>
                                         </div>

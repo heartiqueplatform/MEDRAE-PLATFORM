@@ -630,6 +630,9 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
               <div className="text-[14px] font-extrabold tracking-tight flex items-center gap-1">
                 <span className="text-red-500">MEDRAE</span>
                 <span className="text-gray-900 dark:text-white">NURSING</span>
+                <span className="text-[10px] font-bold text-red-500/80 dark:text-red-400/80 ml-0.5">
+                  2.0
+                </span>
               </div>
               <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium truncate">
                 Kenya Nursing Network (KNN)

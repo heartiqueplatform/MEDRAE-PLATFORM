@@ -176,13 +176,31 @@ export function Resources() {
   const lastStatsFetch = useRef(0);
   const pendingLikeUpdates = useRef<Map<string, boolean>>(new Map());
   // ============ NETWORK RESILIENCE HELPERS ============
-  const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> =>
-    Promise.race([
-      promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error("Network timeout")), ms)
-      ),
-    ]);
+  // Replace your withTimeout with this
+  const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> => {
+    let settled = false;
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error("Network timeout"));
+      }, ms);
+
+      promise
+        .then((res) => {
+          if (settled) return; // late resolve — discard
+          settled = true;
+          clearTimeout(timer);
+          resolve(res);
+        })
+        .catch((err) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(err);
+        });
+    });
+  };
 
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
@@ -242,113 +260,83 @@ export function Resources() {
     const cacheKey = `notes_public`;
     const now = Date.now();
 
+    // 1. Memory cache (fastest)
     if (notesCache.has(cacheKey)) {
       const cached = notesCache.get(cacheKey);
       if (now - cached.timestamp < CACHE_DURATION && isMounted.current) {
         setNotes(cached.data);
         setLoadingNotes(false);
-        return;
+        return; // fresh enough — no network needed
       }
     }
 
+    // 2. localStorage cache — ALWAYS paint this first so user never sees empty
+    let paintedFromCache = false;
     const cachedNotes = localStorage.getItem("cachedNotes");
     if (cachedNotes) {
       try {
         const parsed = JSON.parse(cachedNotes);
-        if (parsed.timestamp && now - parsed.timestamp < CACHE_DURATION) {
-          setNotes(parsed.data);
-          setLoadingNotes(false);
-          notesCache.set(cacheKey, { data: parsed.data, timestamp: parsed.timestamp });
-          return;
+        const cachedArray = Array.isArray(parsed) ? parsed : parsed.data;
+        const cachedTs = Array.isArray(parsed) ? 0 : (parsed.timestamp || 0);
+        if (Array.isArray(cachedArray) && cachedArray.length > 0) {
+          if (isMounted.current) {
+            setNotes(cachedArray);
+            setLoadingNotes(false);
+          }
+          paintedFromCache = true;
+          notesCache.set(cacheKey, { data: cachedArray, timestamp: cachedTs || now });
         }
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setNotes(parsed);
-          setLoadingNotes(false);
-          return;
-        }
-      } catch (e) {
-        console.warn("Failed to parse cached notes");
+      } catch {
         localStorage.removeItem("cachedNotes");
       }
     }
 
     isFetchingNotes.current = true;
-    setLoadingNotes(true);
+    // Only show skeleton if we have nothing to paint
+    if (!paintedFromCache) setLoadingNotes(true);
 
     try {
       const { data, error } = await withTimeout(
         supabase
           .from("notes")
-          .select(`
-        id,
-        title,
-        description,
-        unit,
-        block,
-        course,
-        institution,
-        file_url,
-        file_type,
-        uploaded_by,
-        created_at,
-        tags,
-        is_featured,
-        is_public,
-        download_count,
-        view_count,
-        approved,
-        category,
-        sub_category,
-        visibility,
-        usage_type
-      `)
+          .select(`id, title, description, unit, block, course, institution,
+                 file_url, file_type, uploaded_by, created_at, tags,
+                 is_featured, is_public, download_count, view_count,
+                 approved, category, sub_category, visibility, usage_type`)
           .eq("is_public", true)
           .eq("approved", true)
           .order("created_at", { ascending: false }),
-        8000
+        15000 // bumped to 15s — 8s was too aggressive for cold starts
       );
 
       if (error) {
         console.error("Error fetching notes:", error);
         setLastSyncFailed(true);
-        // Keep whatever is already in state — don't wipe
-        const fallbackCache = localStorage.getItem("cachedNotes");
-        if (fallbackCache) {
-          try {
-            const parsed = JSON.parse(fallbackCache);
-            const fallbackData = Array.isArray(parsed) ? parsed : (parsed.data || []);
-            if (isMounted.current && fallbackData.length > 0) {
-              setNotes(fallbackData);
-            }
-          } catch { }
-        }
-        return; // finally still runs
+        return; // keep whatever's painted
       }
 
       if (isMounted.current) {
-        setNotes(data || []);
-        setLastSyncFailed(false);
-        const cacheData = { data: data || [], timestamp: now };
-        notesCache.set(cacheKey, cacheData);
-        localStorage.setItem("cachedNotes", JSON.stringify(cacheData));
+        // ✅ Only trust a *non-empty* result to overwrite cache.
+        // If server legitimately returns 0 rows, keep it (user truly has no notes),
+        // but only if we had no cache to begin with.
+        if (data && data.length > 0) {
+          setNotes(data);
+          notesCache.set(cacheKey, { data, timestamp: now });
+          localStorage.setItem("cachedNotes", JSON.stringify({ data, timestamp: now }));
+          setLastSyncFailed(false);
+        } else if (!paintedFromCache) {
+          setNotes([]);
+          setLastSyncFailed(false);
+        }
+        // If data is [] but we painted from cache → leave cache on screen
       }
     } catch (error) {
       console.error("Error in fetchNotes:", error);
       setLastSyncFailed(true);
-      // ❌ DO NOT setNotes([]) — keep cached content visible
-      if (isMounted.current) {
-        const fallbackCache = localStorage.getItem("cachedNotes");
-        if (fallbackCache) {
-          try {
-            const parsed = JSON.parse(fallbackCache);
-            const fallbackData = Array.isArray(parsed) ? parsed : (parsed.data || []);
-            if (fallbackData.length > 0) setNotes(fallbackData);
-          } catch { }
-        }
-      }
+      // State already painted from cache — do nothing
     } finally {
       if (isMounted.current) setLoadingNotes(false);
-      isFetchingNotes.current = false; // ← ALWAYS resets now, even on timeout
+      isFetchingNotes.current = false;
     }
   }, []);
 
@@ -507,7 +495,10 @@ export function Resources() {
         (note.unit || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (note.institution || "").toLowerCase().includes(searchTerm.toLowerCase()))
       &&
-      (uploadForm.course ? (note.course || "").toUpperCase() === uploadForm.course.toUpperCase() : true)
+      // Only apply course filter while the upload form is actually open
+      (!showUploadForm || !uploadForm.course
+        ? true
+        : (note.course || "").toUpperCase() === uploadForm.course.toUpperCase())
   );
 
   const toggleLike = useCallback(async (noteId: string) => {
@@ -1166,142 +1157,212 @@ export function Resources() {
                         {loadingNotes ? (
                           // SKELETON LOADERS - 6 cards while loading
                           Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-                        ) : filteredResources.filter((note) =>
-                          cat.id === "OTHER"
-                            ? !blockCategories.slice(0, 7).some((b) => (note.block || "").toUpperCase() === b.id)
-                            : (note.block || "").toUpperCase() === cat.id
-                        ).length === 0 ? (
-                          <div className="col-span-full flex flex-col items-center justify-center py-8 md:py-12 px-4 md:px-6 border-0 shadow-md rounded-none md:rounded-xl">
-                            <div className="text-center">
-                              <CardTitle className="text-base md:text-lg text-center text-muted-foreground">Check your Internet</CardTitle>
-                              <CardDescription className="text-center text-muted-foreground text-xs md:text-sm">Connection!</CardDescription>
-                            </div>
-                          </div>
-                        ) : (
-                          filteredResources.filter((note) =>
+                        ) : (() => {
+                          const blockNotes = filteredResources.filter((note) =>
                             cat.id === "OTHER"
                               ? !blockCategories.slice(0, 7).some((b) => (note.block || "").toUpperCase() === b.id)
                               : (note.block || "").toUpperCase() === cat.id
-                          ).map((note, index) => (
-                            <React.Fragment key={note.id}>
-                              {/* CARD - COMPLETELY EDGE-TO-EDGE ON MOBILE */}
-                              <div
-                                className="group flex flex-col justify-between transition-all duration-300 border-0 border-b border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer"
-                                onClick={() => setDetailsOverlayNote(note)}
-                              >
-                                <div className="p-3 md:p-5 pb-1 md:pb-2">
-                                  <div className="space-y-2 md:space-y-3">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex items-center gap-1.5 md:gap-2">
-                                        <div className="p-1.5 md:p-2 bg-gray-50 dark:bg-gray-900 rounded-lg md:rounded-xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
-                                          {getTypeIcon(note.file_type)}
+                          );
+
+                          if (blockNotes.length > 0) {
+                            return blockNotes.map((note, index) => (
+                              <React.Fragment key={note.id}>
+                                {/* CARD - COMPLETELY EDGE-TO-EDGE ON MOBILE */}
+                                <div
+                                  className="group flex flex-col justify-between transition-all duration-300 border-0 border-b border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl hover:border-blue-500/50 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl overflow-hidden cursor-pointer"
+                                  onClick={() => setDetailsOverlayNote(note)}
+                                >
+                                  <div className="p-3 md:p-5 pb-1 md:pb-2">
+                                    <div className="space-y-2 md:space-y-3">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-1.5 md:gap-2">
+                                          <div className="p-1.5 md:p-2 bg-gray-50 dark:bg-gray-900 rounded-lg md:rounded-xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
+                                            {getTypeIcon(note.file_type)}
+                                          </div>
+                                          <Badge className={`${getTypeColor(note.file_type)} border-none font-bold text-[8px] md:text-[10px] tracking-widest px-1.5 md:px-2`}>
+                                            {note.file_type?.toUpperCase() || "PDF"}
+                                          </Badge>
                                         </div>
-                                        <Badge className={`${getTypeColor(note.file_type)} border-none font-bold text-[8px] md:text-[10px] tracking-widest px-1.5 md:px-2`}>
-                                          {note.file_type?.toUpperCase() || "PDF"}
-                                        </Badge>
+                                        {offlineFiles.includes(note.id) && (
+                                          <div className="flex items-center gap-1 text-[8px] md:text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">
+                                            <CloudCheck className="w-2 h-2 md:w-3 md:h-3" /> PRESERVED
+                                          </div>
+                                        )}
                                       </div>
-                                      {offlineFiles.includes(note.id) && (
-                                        <div className="flex items-center gap-1 text-[8px] md:text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">
-                                          <CloudCheck className="w-2 h-2 md:w-3 md:h-3" /> PRESERVED
-                                        </div>
-                                      )}
-                                    </div>
 
-                                    <div className="space-y-0.5 md:space-y-1">
-                                      <CardTitle className="text-base md:text-lg font-bold leading-snug text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3rem]">
-                                        {note.title}
-                                      </CardTitle>
-                                      <CardDescription className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                                        {note.description || "No description provided"}
-                                      </CardDescription>
-                                    </div>
+                                      <div className="space-y-0.5 md:space-y-1">
+                                        <CardTitle className="text-base md:text-lg font-bold leading-snug text-gray-900 dark:text-gray-100 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3rem]">
+                                          {note.title}
+                                        </CardTitle>
+                                        <CardDescription className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                                          {note.description || "No description provided"}
+                                        </CardDescription>
+                                      </div>
 
 
-                                    <div className="flex flex-wrap gap-1.5 md:gap-2 pt-0.5 md:pt-1">
-                                      <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter flex items-center gap-0.5 md:gap-1">
-                                        <Calendar className="w-2 h-2 md:w-3 md:h-3" />
-                                        {new Date(note.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                      </span>
-                                      {note.is_featured && (
-                                        <span className="text-[7px] md:text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1 md:px-2 py-0.5 rounded-md flex items-center gap-0.5 md:gap-1">
-                                          <Sparkles className="w-2 h-2 md:w-3 md:h-3" /> Featured
+                                      <div className="flex flex-wrap gap-1.5 md:gap-2 pt-0.5 md:pt-1">
+                                        <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter flex items-center gap-0.5 md:gap-1">
+                                          <Calendar className="w-2 h-2 md:w-3 md:h-3" />
+                                          {new Date(note.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </span>
-                                      )}
-                                      {note.download_count > 0 && (
-                                        <span className="text-[8px] md:text-[10px] font-bold text-gray-400 flex items-center gap-0.5 md:gap-1">
-                                          <Download className="w-2 h-2 md:w-3 md:h-3" /> {note.download_count}
-                                        </span>
-                                      )}
+                                        {note.is_featured && (
+                                          <span className="text-[7px] md:text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1 md:px-2 py-0.5 rounded-md flex items-center gap-0.5 md:gap-1">
+                                            <Sparkles className="w-2 h-2 md:w-3 md:h-3" /> Featured
+                                          </span>
+                                        )}
+                                        {note.download_count > 0 && (
+                                          <span className="text-[8px] md:text-[10px] font-bold text-gray-400 flex items-center gap-0.5 md:gap-1">
+                                            <Download className="w-2 h-2 md:w-3 md:h-3" /> {note.download_count}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
 
-                                <div className="p-3 md:p-5 pt-1 md:pt-2 space-y-3 md:space-y-5">
+                                  <div className="p-3 md:p-5 pt-1 md:pt-2 space-y-3 md:space-y-5">
 
 
-                                  <div className="flex flex-wrap items-center gap-1.5 md:gap-2 border-t border-gray-50 dark:border-gray-900 pt-2 md:pt-4">
-                                    {note.file_type === "pdf" && (
-                                      <>
-                                        <Button size="sm" variant="secondary" className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3"
-                                          onClick={(e) => {
+                                    <div className="flex flex-wrap items-center gap-1.5 md:gap-2 border-t border-gray-50 dark:border-gray-900 pt-2 md:pt-4">
+                                      {note.file_type === "pdf" && (
+                                        <>
+                                          <Button size="sm" variant="secondary" className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleViewNote(note);
+                                            }}>
+                                            {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<Eye className="h-3 w-3 md:h-4 md:w-4" /> View
+                                          </Button>
+                                          <Button size="sm" variant="secondary" onClick={(e) => {
                                             e.stopPropagation();
-                                            handleViewNote(note);
+                                            handleDownloadNote(note);
+                                          }}
+                                            className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3">
+                                            {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<DownloadCloud className="h-3 w-3 md:h-4 md:w-4" /> Cache
+                                          </Button>
+                                        </>
+                                      )}
+                                      {session?.user?.id === note.uploaded_by && (
+                                        <Button size="sm" variant="ghost" className="rounded-md md:rounded-xl p-1.5 md:p-2 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-all ml-auto h-7 md:h-9"
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (!confirm("Delete this resource forever?")) return;
+                                            try {
+                                              const storagePath = note.file_url.split("/notes/")[1];
+                                              if (storagePath) await supabase.storage.from("notes").remove([storagePath]);
+                                              await supabase.from("notes").delete().eq("id", note.id);
+                                              if (isMounted.current) setNotes(prev => prev.filter(n => n.id !== note.id));
+                                            } catch (err) { alert("Failed to delete resource"); }
                                           }}>
-                                          {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<Eye className="h-3 w-3 md:h-4 md:w-4" /> View
+                                          <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                                         </Button>
-                                        <Button size="sm" variant="secondary" onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDownloadNote(note);
-                                        }}
-                                          className="rounded-md md:rounded-xl font-bold gap-1 md:gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 transition-all active:scale-95 border-none text-[10px] md:text-sm h-7 md:h-9 px-2 md:px-3">
-                                          {!isPremium && <Lock className="h-2 w-2 md:h-3 md:w-3" />}<DownloadCloud className="h-3 w-3 md:h-4 md:w-4" /> Cache
-                                        </Button>
-                                      </>
-                                    )}
-                                    {session?.user?.id === note.uploaded_by && (
-                                      <Button size="sm" variant="ghost" className="rounded-md md:rounded-xl p-1.5 md:p-2 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-all ml-auto h-7 md:h-9"
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          if (!confirm("Delete this resource forever?")) return;
-                                          try {
-                                            const storagePath = note.file_url.split("/notes/")[1];
-                                            if (storagePath) await supabase.storage.from("notes").remove([storagePath]);
-                                            await supabase.from("notes").delete().eq("id", note.id);
-                                            if (isMounted.current) setNotes(prev => prev.filter(n => n.id !== note.id));
-                                          } catch (err) { alert("Failed to delete resource"); }
-                                        }}>
-                                        <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50 p-2 md:p-3 rounded-lg md:rounded-2xl border border-gray-100 dark:border-gray-800">
-                                    <div className="flex items-center gap-2 md:gap-4">
-                                      <div className="flex items-center gap-1 group/stat">
-                                        <div className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm"><Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-blue-500" /></div>
-                                        <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300">{viewCounts[note.id] || 0}</span>
-                                      </div>
-                                      <button onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleLike(note.id);
-                                      }} className="flex items-center gap-1 group/like transition-transform active:scale-125">
-                                        <div className={`p-1 rounded shadow-sm transition-colors ${bookmarkedItems.includes(note.id) ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white dark:bg-gray-800'}`}>
-                                          <Heart className={`h-2.5 w-2.5 md:h-3.5 md:w-3.5 ${bookmarkedItems.includes(note.id) ? "text-red-500 fill-current" : "text-gray-400"}`} />
-                                        </div>
-                                        <span className={`text-[10px] md:text-xs font-bold ${bookmarkedItems.includes(note.id) ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                                          {likeCounts[note.id] || 0}
-                                        </span>
-                                      </button>
+                                      )}
                                     </div>
-                                    <div className="text-[7px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">Library</div>
+                                    <div className="flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50 p-2 md:p-3 rounded-lg md:rounded-2xl border border-gray-100 dark:border-gray-800">
+                                      <div className="flex items-center gap-2 md:gap-4">
+                                        <div className="flex items-center gap-1 group/stat">
+                                          <div className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm"><Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-blue-500" /></div>
+                                          <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300">{viewCounts[note.id] || 0}</span>
+                                        </div>
+                                        <button onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleLike(note.id);
+                                        }} className="flex items-center gap-1 group/like transition-transform active:scale-125">
+                                          <div className={`p-1 rounded shadow-sm transition-colors ${bookmarkedItems.includes(note.id) ? 'bg-red-50 dark:bg-red-900/30' : 'bg-white dark:bg-gray-800'}`}>
+                                            <Heart className={`h-2.5 w-2.5 md:h-3.5 md:w-3.5 ${bookmarkedItems.includes(note.id) ? "text-red-500 fill-current" : "text-gray-400"}`} />
+                                          </div>
+                                          <span className={`text-[10px] md:text-xs font-bold ${bookmarkedItems.includes(note.id) ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                            {likeCounts[note.id] || 0}
+                                          </span>
+                                        </button>
+                                      </div>
+                                      <div className="text-[7px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">Library</div>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              {/* UnitPics image after every 4 cards */}
-                              <UnitPics position={index + 1} />
-                            </React.Fragment>
-                          ))
-                        )}
+                                {/* UnitPics image after every 4 cards */}
+
+                                <UnitPics position={index + 1} />
+                              </React.Fragment>
+                            ));
+                          }
+
+                          // Truly empty — figure out WHY
+                          const hasAnyNotes = notes.length > 0;
+                          const isFiltered = searchTerm.trim().length > 0;
+
+                          if (!isOnline) {
+                            return (
+                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                                <Info className="w-8 h-8 text-amber-500 mb-3" />
+                                <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                  You're offline
+                                </CardTitle>
+                                <CardDescription className="text-xs md:text-sm">
+                                  Cached notes will appear here once you're back online.
+                                </CardDescription>
+                              </div>
+                            );
+                          }
+
+                          if (lastSyncFailed) {
+                            return (
+                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                                <Info className="w-8 h-8 text-amber-500 mb-3" />
+                                <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                  Couldn't reach the server
+                                </CardTitle>
+                                <CardDescription className="text-xs md:text-sm mb-3">
+                                  Showing what we have cached.
+                                </CardDescription>
+                                <Button size="sm" onClick={() => { fetchNotes(); fetchStats(); }}>
+                                  Retry
+                                </Button>
+                              </div>
+                            );
+                          }
+
+                          if (isFiltered) {
+                            return (
+                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                                <Search className="w-8 h-8 text-gray-400 mb-3" />
+                                <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                  No matches for "{searchTerm}"
+                                </CardTitle>
+                                <CardDescription className="text-xs md:text-sm">
+                                  Try a different keyword or clear the search.
+                                </CardDescription>
+                              </div>
+                            );
+                          }
+
+                          if (!hasAnyNotes) {
+                            return (
+                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                                <FileText className="w-8 h-8 text-gray-400 mb-3" />
+                                <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                  No resources yet
+                                </CardTitle>
+                                <CardDescription className="text-xs md:text-sm">
+                                  Be the first to upload study material for this block.
+                                </CardDescription>
+                              </div>
+                            );
+                          }
+
+                          // Has notes but none in this block
+                          return (
+                            <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                              <Layers className="w-8 h-8 text-gray-400 mb-3" />
+                              <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                Nothing in this block yet
+                              </CardTitle>
+                              <CardDescription className="text-xs md:text-sm">
+                                Try a different category or upload something.
+                              </CardDescription>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <TermsButton />
                     </div>

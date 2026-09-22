@@ -583,8 +583,8 @@ export const MusicPlayer = () => {
                                     </button>
                                 )}
                                 <div className="flex flex-col items-center">
-                                    <span className="text-[10px] font-black tracking-[0.3em] text-blue-600 dark:text-blue-400 uppercase">
-                                        {screen === "player" && "Studify"}
+                                    <span className="text-[15px] font-black tracking-[-0.02em] text-blue-black dark:text-white">
+                                        {screen === "player" && "Medrae Studify"}
                                         {screen === "episodes" && "Episodes"}
                                         {screen === "admin" && "Manage Podcasts"}
                                     </span>
@@ -608,7 +608,7 @@ export const MusicPlayer = () => {
                                 </button>
 
                                 <div className="flex items-center gap-3">
-                                    <span className="text-[11px] font-bold tracking-[0.3em] text-blue-600 dark:text-blue-400 ">
+                                    <span className="text-[15px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
                                         Medrae Studify
                                     </span>
                                     <span className="text-[10px] text-gh-l-muted dark:text-gh-muted font-semibold">

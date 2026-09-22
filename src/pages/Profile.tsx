@@ -1,5 +1,6 @@
 import {
-  User, Mail, Phone, MapPin, School, Calendar, Edit, Camera, Eye, EyeOff, Briefcase, Building2
+  User, Mail, Phone, MapPin, School, Calendar, Edit, Camera, Eye, EyeOff, Briefcase, Building2,
+  Wifi, WifiOff, RefreshCw
 } from "lucide-react";
 import {
   Card, CardContent, CardHeader, CardTitle
@@ -260,7 +261,17 @@ export function Profile() {
   }, [user]);
 
   useEffect(() => { isMounted.current = true; if (user) { fetchProfile(); fetchSubscription(); } return () => { isMounted.current = false; }; }, [user, fetchProfile, fetchSubscription]);
-
+  // Auto-retry when connection is restored
+  useEffect(() => {
+    const handleOnline = () => {
+      if (user && isMounted.current) {
+        fetchProfile();
+        fetchSubscription();
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [user, fetchProfile, fetchSubscription]);
   useEffect(() => {
     let focusTimer: NodeJS.Timeout; let lastFocusRefresh = 0;
     const handleFocus = () => { if (focusTimer) clearTimeout(focusTimer); focusTimer = setTimeout(() => { const now = Date.now(); if (now - lastFocusRefresh < 30000) return; lastFocusRefresh = now; if (user && isMounted.current) { fetchProfile(); fetchSubscription(); } }, 500); };
@@ -302,12 +313,115 @@ export function Profile() {
   }
 
   if (!profileState) {
+    // Determine which empty state to show
+    const hasCachedProfile = !!localStorage.getItem("userProfile");
+    const isNetworkIssue = isOffline || (!hasCachedProfile && user);
+
     return (
-      <div className="flex flex-col items-center justify-center h-screen w-full text-center p-2">
-        <h2 className="text-lg md:text-xl font-bold">Profile not found</h2>
-        <p className="text-muted-foreground mb-2 text-xs md:text-sm">We couldn't find your profile data.</p>
-        {isOffline && <Badge variant="destructive" className="text-xs rounded-xl">Offline Mode</Badge>}
-        <Button onClick={() => navigate("/login")} className="mt-2 text-xs md:text-sm rounded-xl">Go to Login</Button>
+      <div className="min-h-screen w-full flex items-center justify-center px-4 py-8">
+        <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
+
+          {/* Decorative corner accents — same family as other cards */}
+          <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
+          <div className="absolute bottom-0 left-0 h-16 w-16 rounded-tr-full bg-slate-100 dark:bg-slate-800" />
+
+          <div className="relative flex flex-col items-center">
+            {/* Icon badge — offline vs online */}
+            <div
+              className={`flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 ${isOffline
+                ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300"
+                : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                }`}
+            >
+              {isOffline ? (
+                <WifiOff className="h-6 w-6 md:h-7 md:w-7" />
+              ) : (
+                <User className="h-6 w-6 md:h-7 md:w-7" />
+              )}
+            </div>
+
+            {/* Title */}
+            <h2 className="text-lg md:text-xl font-bold text-slate-950 dark:text-white">
+              {isOffline
+                ? "You're offline"
+                : hasCachedProfile
+                  ? "Couldn't load your profile"
+                  : "Profile not set up yet"}
+            </h2>
+
+            {/* Subtitle */}
+            <p className="mt-2 max-w-sm text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
+              {isOffline
+                ? "Your profile data isn't cached on this device yet. Reconnect to the internet to load it."
+                : hasCachedProfile
+                  ? "We couldn't reach the server. Check your connection and try again."
+                  : "Head to Settings to complete your profile and unlock the full experience."}
+            </p>
+
+            {/* Status pill */}
+            <div
+              className={`mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold ${isOffline
+                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+            >
+              {isOffline ? (
+                <>
+                  <WifiOff className="h-3 w-3" />
+                  No connection
+                </>
+              ) : (
+                <>
+                  <Wifi className="h-3 w-3" />
+                  Online
+                </>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="mt-5 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {isOffline ? (
+                <Button
+                  onClick={() => {
+                    // Just re-check online status — the online event listener will refetch
+                    if (navigator.onLine) {
+                      fetchProfile();
+                      fetchSubscription();
+                    } else {
+                      toast({
+                        title: "Still offline",
+                        description: "Reconnect to the internet and try again.",
+                      });
+                    }
+                  }}
+                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                  Retry
+                </Button>
+              ) : hasCachedProfile ? (
+                <Button
+                  onClick={() => {
+                    fetchProfile();
+                    fetchSubscription();
+                  }}
+                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                  Try again
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => navigate("/settings")}
+                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
+                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                  Complete Profile
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

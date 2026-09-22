@@ -205,7 +205,7 @@ export function MedraeSocialFooter({
             {/* Version */}
             <div className="mt-3 text-center">
                 <p className="text-[8px] font-bold text-slate-300 dark:text-slate-700 tracking-widest">
-                    Version 2026.06 Medrae Learning System
+                    Version 2.0 Medrae Learning System
                 </p>
             </div>
         </div>

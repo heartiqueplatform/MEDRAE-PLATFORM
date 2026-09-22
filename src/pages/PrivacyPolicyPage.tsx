@@ -200,7 +200,7 @@ export default function PrivacyPolicyPage() {
                                         Effective Date: Feb 2026
                                     </p>
                                     <span className="text-slate-300">•</span>
-                                    <p>v1.0.2</p>
+                                    <p>v2.0.0</p>
                                 </div>
                             </div>
                         </div>
