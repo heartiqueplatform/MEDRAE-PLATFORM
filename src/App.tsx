@@ -137,6 +137,8 @@ import NursingRevisionKenyaPage from "./pages/seo/NursingRevisionKenyaPage";
 import MedraeNursingMeritCupPage from "./pages/seo/MedraeNursingMeritCupPage";
 import AdminPodcastTest from "./pages/AdminPodcastTest";
 
+
+
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
@@ -233,16 +235,26 @@ const BottomBarWrapper = () => {
 const AppContent = () => {
   const { user } = useAuth();
   const [forceLogout, setForceLogout] = useState(false);
-  const realtimeChannelRef = useRef<any>(null);
-  const badgeChannelRef = useRef<any>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
+
+  // 🔔 Global security notice — shows on ANY page (/, /login, /dashboard, etc.)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("kicked_out") === "true") {
+      localStorage.removeItem("kicked_out");
+      toast.error("Session ended for security", {
+        description:
+          "For your privacy and account safety, you were signed out because this account is now active on 2 other devices. To use it here, please log in again — this will sign out the oldest device. If this wasn't you, reset your password immediately.",
+        duration: 10000,
+      });
+    }
+  }, []);
+
   const [profile, setProfile] = useState<any>(() => {
     if (typeof window !== "undefined") {
       return getCachedProfile();
     }
     return null;
   });
-  const theme = (localStorage.getItem("theme") as "light" | "dark") || "light";
 
   const fetchUserProfile = useCallback(async () => {
     if (!user) return;
@@ -293,6 +305,7 @@ const AppContent = () => {
     initSound();
   }, []);
 
+  // 🔒 Heartbeat only — eviction is handled by token expiry (server-side)
   useEffect(() => {
     if (!user) return;
 
@@ -309,7 +322,7 @@ const AppContent = () => {
 
     performHeartbeat();
 
-    const interval = setInterval(performHeartbeat, 600000);
+    const interval = setInterval(performHeartbeat, 600000); // every 10 min
     const handleVisibility = () => {
       if (!document.hidden) performHeartbeat();
     };
@@ -351,9 +364,10 @@ const AppContent = () => {
   }, [user]);
 
   return (
-
     <>
       <DrawerProvider>
+        {/* 🔧 forceLogout overlay is now driven by the same `kicked_out` flag as the toast.
+             Keeping the state so `setForceLogout` doesn't break other code that references it. */}
         {forceLogout && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
             <div className="max-w-md w-full bg-white dark:bg-gray-900 shadow-lg rounded-2xl p-6 text-center mx-4">

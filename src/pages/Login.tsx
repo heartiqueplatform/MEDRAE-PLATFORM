@@ -23,7 +23,12 @@ import {
   Users
 } from 'lucide-react';
 
-// Role configuration for display
+// ==========================================
+// 🔒 DEVICE LIMIT POLICY
+// Maximum concurrent devices allowed per user.
+// ==========================================
+const MAX_DEVICES = 2;
+
 const ROLE_CONFIG = {
   student: {
     label: 'Student',
@@ -44,6 +49,7 @@ const ROLE_CONFIG = {
     color: 'text-purple-600 dark:text-purple-400'
   }
 };
+
 function getOrCreateDeviceId(): string {
   let id = localStorage.getItem("device_id");
   if (!id) {
@@ -52,6 +58,7 @@ function getOrCreateDeviceId(): string {
   }
   return id;
 }
+
 export function Login() {
   useEffect(() => {
     document.documentElement.classList.remove("dark");
@@ -63,12 +70,8 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const backgroundImages = useMemo(() => [
-    "high1.png",
-    "high2.png",
-    "high3.png",
-    "high4.png",
-    "high5.png",
-    "high6.png",
+    "high1.png", "high2.png", "high3.png",
+    "high4.png", "high5.png", "high6.png",
   ], []);
 
   const [bgIndex, setBgIndex] = useState(0);
@@ -76,15 +79,12 @@ export function Login() {
   const [showExitOverlay, setShowExitOverlay] = useState(false);
   const isMounted = useRef(true);
 
-  // Cleanup on unmount
   useEffect(() => {
     isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
+    return () => { isMounted.current = false; };
   }, []);
 
-  // Check for role change message from navigation state
+  // Role change message from navigation state
   useEffect(() => {
     const state = location.state as { message?: string; isFreshStart?: boolean };
     if (state?.message) {
@@ -96,19 +96,16 @@ export function Login() {
     }
   }, [location]);
 
-  // Slideshow for background images - optimized with useCallback
+  // Background slideshow
   useEffect(() => {
     document.documentElement.classList.remove("dark");
-
     const interval = setInterval(() => {
       setFade(false);
-
       setTimeout(() => {
         setBgIndex((prev) => (prev + 1) % backgroundImages.length);
         setFade(true);
       }, 1000);
     }, 6000);
-
     return () => clearInterval(interval);
   }, [backgroundImages]);
 
@@ -124,11 +121,50 @@ export function Login() {
     navigate(`/reset-password?email=${encodeURIComponent(email)}`);
   }, [email, navigate]);
 
+  // ============================================================
+  // 🔒 ENFORCE DEVICE LIMIT (MAX_DEVICES)
+  // Keeps the N newest devices; evicts the oldest beyond N.
+  // Does NOT call signOut(others) — eviction is DB-driven, and each
+  // device self-logs-out on its next heartbeat (see sessionGuard).
+  // ============================================================
+  const enforceDeviceLimit = useCallback(async (userId: string, deviceId: string) => {
+    try {
+      // 1. Register / refresh THIS device's row
+      await supabase.from("user_sessions").upsert(
+        {
+          user_id: userId,
+          device_id: deviceId,
+          device_info: navigator.userAgent,
+          last_seen: new Date().toISOString(),
+          last_active: new Date().toISOString(),
+        },
+        { onConflict: "user_id,device_id" }
+      );
+
+      // 2. Fetch all sessions for this user, newest first
+      const { data: sessions, error } = await supabase
+        .from("user_sessions")
+        .select("id, device_id, last_seen")
+        .eq("user_id", userId)
+        .order("last_seen", { ascending: false });
+
+      if (error) {
+        console.warn("enforceDeviceLimit: fetch failed (non-fatal):", error.message);
+        return;
+      }
+      if (!sessions || sessions.length <= MAX_DEVICES) return;
+
+      // 3. Anything past the first MAX_DEVICES rows is stale → delete
+      const toEvict = sessions.slice(MAX_DEVICES).map((s) => s.id);
+      await supabase.from("user_sessions").delete().in("id", toEvict);
+    } catch (err) {
+      console.error("🔒 enforceDeviceLimit error:", err);
+    }
+  }, []);
+
   const handleLogin = useCallback(async () => {
-    // Prevent multiple submissions
     if (isLoading) return;
 
-    // Validate inputs
     if (!email || !password) {
       toast({
         title: "Missing Fields",
@@ -143,9 +179,9 @@ export function Login() {
 
     try {
       if (navigator.onLine) {
-        // 1. Authenticate user
+        // 1. Authenticate
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim().toLowerCase(),
           password,
         });
 
@@ -154,42 +190,12 @@ export function Login() {
         }
 
         const userId = data.user.id;
-
-        // 2. Get or create device ID
-        // 2. Get or create device ID (stable across logins)
         const deviceId = getOrCreateDeviceId();
 
-        // 3. Handle sessions — idempotent, scoped per device, never fatal
-        try {
-          const { data: existing } = await supabase
-            .from("user_sessions")
-            .select("id")
-            .eq("user_id", userId)
-            .eq("device_id", deviceId)
-            .maybeSingle();
+        // 2. 🔒 Enforce device limit (keeps this device + up to N-1 others)
+        await enforceDeviceLimit(userId, deviceId);
 
-          if (!existing) {
-            await supabase.from("user_sessions").upsert(
-              {
-                user_id: userId,
-                device_id: deviceId,
-                device_info: navigator.userAgent,
-                last_seen: new Date().toISOString(),
-              },
-              { onConflict: "user_id,device_id" }
-            );
-          } else {
-            await supabase
-              .from("user_sessions")
-              .update({ last_seen: new Date().toISOString() })
-              .eq("id", existing.id);
-          }
-        } catch (sessionErr) {
-          console.warn("Session tracking failed (non-fatal):", sessionErr);
-          // Never throw — login already succeeded.
-        }
-
-        // 4. Heartbeat (non-blocking)
+        // 3. Heartbeat (non-blocking)
         try {
           await supabase.rpc('handle_user_heartbeat', {
             p_user_id: userId,
@@ -197,10 +203,9 @@ export function Login() {
           });
         } catch (heartbeatErr) {
           console.error("Heartbeat error:", heartbeatErr);
-          // Continue - non-critical
         }
 
-        // 5. Get user profile
+        // 4. Get profile
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
@@ -211,25 +216,24 @@ export function Login() {
           throw new Error("Profile not found. Please contact support.");
         }
 
-        // 6. Save role to localStorage
+        // 5. Save role
         const userRole = profileData.role || 'student';
         localStorage.setItem(`userRole_${userId}`, userRole);
         localStorage.setItem("last_known_role", userRole);
 
-        // 7. Save login info for offline mode
+        // 6. Save for offline mode
         await saveLoginInfo(
-          email,
+          email.trim().toLowerCase(),
           data.session?.access_token || "",
           passwordHash
         );
 
-        // 8. Get role config for display
         const roleConfig = ROLE_CONFIG[userRole as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.student;
         const roleIcon = roleConfig.icon;
         const roleLabel = roleConfig.label;
         const roleColor = roleConfig.color;
 
-        // 9. Show detailed success toast
+        // 7. Success toast
         toast({
           title: `Welcome back, ${profileData.name || 'Nurse'}!`,
           description: (
@@ -253,9 +257,10 @@ export function Login() {
               )}
             </div>
           ),
-          duration: 5000,
+          duration: 6000,
         });
-        // 9b. Persist the full session so the app can boot offline next time
+
+        // 8. Persist session for offline boot
         try {
           localStorage.setItem("supabaseUser", JSON.stringify(data.user));
           localStorage.setItem(
@@ -268,11 +273,8 @@ export function Login() {
           );
         } catch { /* ignore quota */ }
 
-        // 10. Clear loading state BEFORE navigation
         setIsLoading(false);
 
-
-        // 11. Navigate with delay to ensure toast is seen
         setTimeout(() => {
           navigate(`/dashboard/${userRole}`, { replace: true });
         }, 400);
@@ -282,31 +284,23 @@ export function Login() {
       } else {
         // Offline mode
         const saved = await getLoginInfo();
-
         if (saved && saved.username === email && saved.passwordHash === passwordHash) {
           const lastRole = localStorage.getItem("last_known_role");
-
           toast({
             title: "Offline Mode",
             description: "You are logged in with cached credentials.",
             duration: 4000,
           });
-
           setIsLoading(false);
-
           const targetRole = lastRole && ['student', 'tutor', 'staff'].includes(lastRole)
             ? lastRole
             : 'student';
-
           setTimeout(() => {
             navigate(`/dashboard/${targetRole}`, { replace: true });
           }, 300);
-
           return;
         } else {
-          throw new Error(
-            "Offline login failed: no cached credentials or wrong password"
-          );
+          throw new Error("Offline login failed: no cached credentials or wrong password");
         }
       }
     } catch (err: any) {
@@ -317,15 +311,11 @@ export function Login() {
         variant: "destructive",
         duration: 5000,
       });
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
+      if (isMounted.current) setIsLoading(false);
     }
-  }, [isLoading, email, password, navigate]);
+  }, [isLoading, email, password, navigate, enforceDeviceLimit]);
 
-  const handleExitApp = useCallback(() => {
-    setShowExitOverlay(true);
-  }, []);
+  const handleExitApp = useCallback(() => setShowExitOverlay(true), []);
 
   const finalExitAction = useCallback(() => {
     if ((window as any).electronAPI) {
@@ -336,11 +326,10 @@ export function Login() {
     }
   }, []);
 
-  const state = location.state as { message?: string; isFreshStart?: boolean };
+  const state = location.state as { message?: string };
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-muted/100 dark:bg-muted/100">
-      {/* FLOATING EXIT BUTTON */}
       <button
         onClick={handleExitApp}
         className="hidden md:flex fixed top-6 left-6 z-[9999]
@@ -357,12 +346,8 @@ export function Login() {
         </span>
       </button>
 
-      <ExitOverlay
-        isOpen={showExitOverlay}
-        onExit={finalExitAction}
-      />
+      <ExitOverlay isOpen={showExitOverlay} onExit={finalExitAction} />
 
-      {/* LEFT SIDE - Background Images (Desktop Only) */}
       <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
         {backgroundImages.map((img, index) => (
           <div
@@ -398,17 +383,11 @@ export function Login() {
         </div>
       </div>
 
-      {/* RIGHT SIDE - Content (Full width on mobile) */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8 lg:p-12 bg-muted/100 dark:bg-muted/100">
         <div className="w-full max-w-md">
-          {/* Branding/Logo */}
           <div className="flex flex-col items-center mb-6 md:mb-8">
             <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-xl p-3 mb-4">
-              <img
-                src="/pwa-192x192.jpeg"
-                alt="Logo"
-                className="w-full h-full object-contain"
-              />
+              <img src="/pwa-192x192.jpeg" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-slate-800 dark:text-white text-3xl font-black tracking-tight">
               Welcome Back
@@ -423,7 +402,6 @@ export function Login() {
             )}
           </div>
 
-          {/* Card with XL rounded corners */}
           <Card className="w-full bg-white dark:bg-slate-900 shadow-none border-0 rounded-xl overflow-hidden">
             <CardHeader className="pt-8 px-6 pb-2 text-center">
               <CardTitle className="text-2xl font-bold text-slate-800 dark:text-white">
@@ -436,7 +414,6 @@ export function Login() {
 
             <CardContent className="p-6">
               <div className="space-y-5">
-                {/* Email Field */}
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">
                     Email Address
@@ -453,7 +430,6 @@ export function Login() {
                   </div>
                 </div>
 
-                {/* Password Field */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center ml-1">
                     <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400">
@@ -484,7 +460,6 @@ export function Login() {
                   <GoogleAuthButton />
                 </div>
 
-                {/* Login Button */}
                 <Button
                   disabled={isLoading}
                   onClick={handleLogin}
@@ -502,7 +477,6 @@ export function Login() {
                   )}
                 </Button>
 
-                {/* Registration Link */}
                 <div className="pt-4 text-center">
                   <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                     New to the platform?{" "}
@@ -515,7 +489,6 @@ export function Login() {
             </CardContent>
           </Card>
 
-          {/* Support Footer */}
           <div className="mt-6 flex justify-center gap-3">
             <span
               className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer transition-colors"

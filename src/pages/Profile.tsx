@@ -161,17 +161,42 @@ export function Profile() {
   const handleLogout = useCallback(async () => {
     try {
       if (user) {
-        await supabase.from("user_sessions").delete().eq("user_id", user.id);
-        await supabase.from("profiles").update({ active_session_id: null }).eq("user_id", user.id);
-        await supabase.auth.signOut();
+        const deviceId = localStorage.getItem("device_id");
+
+        // ✅ Only delete THIS device's session row
+        if (deviceId) {
+          await supabase
+            .from("user_sessions")
+            .delete()
+            .eq("user_id", user.id)
+            .eq("device_id", deviceId);
+        }
+
+        // Sign out this device's auth session only
+        await supabase.auth.signOut({ scope: "local" });
+
+        // ✅ Remove only auth-related keys — keep device_id
+        localStorage.removeItem("supabaseUser");
+        localStorage.removeItem("supabaseUserTokens");
+        localStorage.removeItem("medrae_auth");
         localStorage.removeItem(`userRole_${user.id}`);
         localStorage.removeItem("last_known_role");
-        localStorage.clear(); sessionStorage.clear();
-        if (isMounted.current) { setProfileState(null); setActivePlan(null); }
+        localStorage.removeItem("userProfile");
+        localStorage.removeItem("app_user_profile_cache");
+        sessionStorage.clear();
+        // device_id intentionally kept
+
+        if (isMounted.current) {
+          setProfileState(null);
+          setActivePlan(null);
+        }
+
         navigate("/", { replace: true });
-        toast({ title: "Logged out", description: "You have been logged out." });
+        toast({ title: "Logged out", description: "You have been logged out on this device." });
       }
-    } catch (err: any) { toast({ title: "Error", description: err.message }); }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message });
+    }
   }, [user, navigate]);
 
   const handleDeleteAccount = useCallback(async () => {
@@ -179,7 +204,10 @@ export function Profile() {
     try {
       const sessionData = session;
       if (!sessionData?.access_token) { toast({ title: "Error", description: "No active session found." }); return; }
-      await supabase.from("user_sessions").delete().eq("user_id", user.id);
+      const deviceId = localStorage.getItem("device_id");
+      await supabase.from("user_sessions").delete()
+        .eq("user_id", user.id)
+        .eq("device_id", deviceId);
       await supabase.from("profiles").update({ active_session_id: null }).eq("user_id", user.id);
       const res = await fetch("https://ypgkpecnfziptpmwsdud.supabase.co/functions/v1/delete-user", {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionData.access_token}` },
@@ -188,7 +216,14 @@ export function Profile() {
       const data = await res.json();
       if (!res.ok) { toast({ title: "Error", description: data.error || "Something went wrong." }); return; }
       toast({ title: "Deleted", description: "Your account has been permanently deleted." });
-      setShowDeleteDialog(false); localStorage.clear(); sessionStorage.clear();
+      setShowDeleteDialog(false); localStorage.removeItem("supabaseUser");
+      localStorage.removeItem("supabaseUserTokens");
+      localStorage.removeItem("medrae_auth");
+      localStorage.removeItem(`userRole_${user.id}`);
+      localStorage.removeItem("last_known_role");
+      localStorage.removeItem("userProfile");
+      sessionStorage.clear();
+      // Keep device_id — it must persist
       if (isMounted.current) { setProfileState(null); setActivePlan(null); }
       await supabase.auth.signOut(); navigate("/", { replace: true });
     } catch (err: any) { toast({ title: "Error", description: err.message }); }

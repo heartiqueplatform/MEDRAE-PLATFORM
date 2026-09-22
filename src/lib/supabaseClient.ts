@@ -104,7 +104,7 @@ export const getSupabase = () => {
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
-        autoRefreshToken: false,
+        autoRefreshToken: true,
         detectSessionInUrl: true,
         storageKey: 'medrae_auth',
         flowType: 'pkce',

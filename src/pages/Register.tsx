@@ -17,6 +17,56 @@ import { useEffect } from "react";
 import ExitOverlay from "@/components/ExitOverlay";
 import sha256 from "crypto-js/sha256";
 import GoogleAuthButton from "@/components/google/GoogleAuthButton";
+// ==========================================
+// 🔒 DEVICE LIMIT POLICY
+// Maximum concurrent devices allowed per user.
+// MUST MATCH Login.tsx
+// ==========================================
+const MAX_DEVICES = 2;
+
+function getOrCreateDeviceId(): string {
+  let id = localStorage.getItem("device_id");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("device_id", id);
+  }
+  return id;
+}
+
+async function enforceDeviceLimit(userId: string, deviceId: string) {
+  try {
+    // 1. Register / refresh THIS device's row
+    await supabase.from("user_sessions").upsert(
+      {
+        user_id: userId,
+        device_id: deviceId,
+        device_info: navigator.userAgent,
+        last_seen: new Date().toISOString(),
+        last_active: new Date().toISOString(),
+      },
+      { onConflict: "user_id,device_id" }
+    );
+
+    // 2. Fetch all sessions for this user, newest first
+    const { data: sessions, error } = await supabase
+      .from("user_sessions")
+      .select("id, device_id, last_seen")
+      .eq("user_id", userId)
+      .order("last_seen", { ascending: false });
+
+    if (error) {
+      console.warn("enforceDeviceLimit: fetch failed (non-fatal):", error.message);
+      return;
+    }
+    if (!sessions || sessions.length <= MAX_DEVICES) return;
+
+    // 3. Anything past the first MAX_DEVICES rows is stale → delete
+    const toEvict = sessions.slice(MAX_DEVICES).map((s) => s.id);
+    await supabase.from("user_sessions").delete().in("id", toEvict);
+  } catch (err) {
+    console.error("🔒 enforceDeviceLimit error:", err);
+  }
+}
 const backgroundImages = [
   "high1.png",
   "high2.png",
@@ -134,25 +184,19 @@ export function Register() {
 
       if (loginError || !loginData.user) throw new Error(loginError?.message || "Login after registration failed.");
 
-      let deviceId = localStorage.getItem("device_id");
-      if (!deviceId) {
-        deviceId = crypto.randomUUID();
-        localStorage.setItem("device_id", deviceId);
+      const deviceId = getOrCreateDeviceId();
+      // 🔒 Enforce device limit (max 2 devices)
+      await enforceDeviceLimit(loginData.user.id, deviceId);
+
+      // Non-blocking heartbeat
+      try {
+        await supabase.rpc('handle_user_heartbeat', {
+          p_user_id: loginData.user.id,
+          p_device_id: deviceId
+        });
+      } catch (err) {
+        console.warn("Heartbeat failed (non-fatal):", err);
       }
-
-      const { count: sessionCount } = await supabase
-        .from("user_sessions")
-        .select("*", { count: 'exact', head: true })
-        .eq("user_id", loginData.user.id);
-
-      if ((sessionCount || 0) >= 3) {
-        throw new Error("Maximum devices reached. Log out from another device first.");
-      }
-
-      await supabase.rpc('handle_user_heartbeat', {
-        p_user_id: loginData.user.id,
-        p_device_id: deviceId
-      });
 
       // ✅ FIXED: Renamed this variable to avoid the "already declared" error
       const loggedInUserId = loginData.user.id;

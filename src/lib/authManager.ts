@@ -40,6 +40,11 @@ class AuthManager {
   private listeners: Set<(state: AuthState) => void> = new Set();
   private subscriptionInitialized = false;
 
+  // 🔧 NEW: Tracks whether the current SIGNED_OUT was triggered by
+  // the user clicking "Logout" (vs. being kicked by another device).
+  // When true, clearPersistedState will NOT set the "kicked_out" flag.
+  private manualLogoutInProgress = false;
+
   private constructor() {
     // HYDRATION: read cached user synchronously, offline or online.
     // If we have a cached user, loading starts FALSE so PrivateRoute
@@ -66,6 +71,14 @@ class AuthManager {
       AuthManager.instance = new AuthManager();
     }
     return AuthManager.instance;
+  }
+
+  // 🔧 NEW: Call this immediately before a user-initiated signOut()
+  // (e.g. from Profile.tsx "Logout" button) so that the resulting
+  // SIGNED_OUT event is treated as "manual" and does NOT trigger
+  // the security "kicked out" toast.
+  public markManualLogout(): void {
+    this.manualLogoutInProgress = true;
   }
 
   async initialize(): Promise<void> {
@@ -142,14 +155,27 @@ class AuthManager {
 
   private clearPersistedState() {
     try {
+      // 🔧 Check if a user WAS cached before we clear.
+      // Only someone who was previously logged in can be "kicked out".
+      const hadCachedUser = !!localStorage.getItem(USER_KEY);
+
       localStorage.removeItem(USER_KEY);
       localStorage.removeItem(TOKENS_KEY);
+
+      // 🔔 Only flag "kicked out" when:
+      //   1. There WAS a cached user (not a fresh visitor), AND
+      //   2. This was NOT a user-initiated logout.
+      if (hadCachedUser && !this.manualLogoutInProgress) {
+        localStorage.setItem("kicked_out", "true");
+      }
     } catch {
       /* ignore */
     }
+
+    this.manualLogoutInProgress = false;
+
     this.setState({ session: null, user: null, loading: false });
   }
-
   getState(): AuthState {
     return { ...this.state };
   }
