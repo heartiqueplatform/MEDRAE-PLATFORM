@@ -1,9 +1,11 @@
 // SettingsSheet.tsx - Full-screen native-like settings overlay
 // Matches app-wide palette: gray-50/white (light) + #0d1117/#161b22/#21262d (dark)
+
+import { ConnectTelegram } from "@/components/ConnectTelegram";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Moon, Sun, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume, X } from "lucide-react";
+import { Moon, Sun, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { playSound, isSoundMuted, toggleSoundMute } from "@/lib/soundManager";
@@ -38,7 +40,24 @@ const secondaryLabel =
     "text-[10px] font-medium truncate";
 
 /* ----------------------------------------- */
-
+/* ---------- Official Telegram logo (inline SVG) ---------- */
+function TelegramLogo({ className = "w-4 h-4" }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 240 240" className={className} aria-hidden="true">
+            <defs>
+                <linearGradient id="tgGradSettings" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2AABEE" />
+                    <stop offset="100%" stopColor="#229ED9" />
+                </linearGradient>
+            </defs>
+            <circle cx="120" cy="120" r="120" fill="url(#tgGradSettings)" />
+            <path
+                fill="#FFFFFF"
+                d="M54.3 118.3l139.1-53.6c6.5-2.4 12.2 1.6 10.1 11.5l-23.7 111.6c-1.8 8.1-6.6 10.1-13.4 6.3l-37-27.3-17.8 17.2c-2 2-3.6 3.6-7.4 3.6l2.7-37.7 68.7-62c3-2.7-.7-4.2-4.6-1.6l-84.9 53.5-36.6-11.4c-7.9-2.5-8.1-7.9 1.8-11.1z"
+            />
+        </svg>
+    );
+}
 const StreakWidget = ({ streak, isOnline }: { streak: number; isOnline: boolean }) => {
     if (streak === 0 || !isOnline) return null;
     return (
@@ -74,7 +93,7 @@ export function SettingsSheet({
     const [rotating, setRotating] = useState(false);
     const [isMuted, setIsMuted] = useState(isSoundMuted);
     const [mounted, setMounted] = useState(false);
-
+    const [showTelegram, setShowTelegram] = useState(false);
     useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
@@ -291,7 +310,17 @@ export function SettingsSheet({
                             </div>
                             <span className={primaryLabel}>Invite Colleagues</span>
                         </button>
-
+                        <button onClick={() => setShowTelegram(true)} className={rowBase}>
+                            <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
+                                <TelegramLogo className="w-4 h-4" />
+                            </div>
+                            <div className={labelStack}>
+                                <span className={primaryLabel}>Connect Telegram</span>
+                                <span className={`${secondaryLabel} text-[#229ED9]/80 dark:text-[#2AABEE]/70`}>
+                                    Practice & progress in Telegram
+                                </span>
+                            </div>
+                        </button>
                         <button onClick={() => goToPage("/share")} className={rowBase}>
                             <div className={`${iconTile} bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400`}>
                                 <Share2 className="w-4 h-4" />
@@ -346,7 +375,9 @@ export function SettingsSheet({
                     </div>
                 </div>
             </div>
+            <ConnectTelegram open={showTelegram} onClose={() => setShowTelegram(false)} />
         </div>,
+
         document.body
     );
 }
