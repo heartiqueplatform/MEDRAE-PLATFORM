@@ -2,16 +2,18 @@
 // Matches app-wide palette: gray-50/white (light) + #0d1117/#161b22/#21262d (dark)
 
 import { ConnectTelegram } from "@/components/ConnectTelegram";
+import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Moon, Sun, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume, X, Send } from "lucide-react";
+import { Moon, Sun, RefreshCcw, Share2, Flame, Volume2, VolumeX, VolumeOff, Volume, X, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { playSound, isSoundMuted, toggleSoundMute } from "@/lib/soundManager";
 import { useToast } from "@/components/ui/use-toast";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { HardResetButton } from "@/components/HardResetButton";
+
 interface SettingsSheetProps {
     open: boolean;
     onClose: () => void;
@@ -40,6 +42,7 @@ const secondaryLabel =
     "text-[10px] font-medium truncate";
 
 /* ----------------------------------------- */
+
 /* ---------- Official Telegram logo (inline SVG) ---------- */
 function TelegramLogo({ className = "w-4 h-4" }: { className?: string }) {
     return (
@@ -58,6 +61,7 @@ function TelegramLogo({ className = "w-4 h-4" }: { className?: string }) {
         </svg>
     );
 }
+
 const StreakWidget = ({ streak, isOnline }: { streak: number; isOnline: boolean }) => {
     if (streak === 0 || !isOnline) return null;
     return (
@@ -94,6 +98,8 @@ export function SettingsSheet({
     const [isMuted, setIsMuted] = useState(isSoundMuted);
     const [mounted, setMounted] = useState(false);
     const [showTelegram, setShowTelegram] = useState(false);
+    const [showNotifPrefs, setShowNotifPrefs] = useState(false);
+
     useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
@@ -152,10 +158,8 @@ export function SettingsSheet({
         });
     }, [toast]);
 
-    // ✅ Close sheet first, then route to dedicated page
     const goToPage = useCallback((path: string) => {
         onClose();
-        // Small defer so the close animation/scroll-unlock runs before navigation
         setTimeout(() => navigate(path), 0);
     }, [navigate, onClose]);
 
@@ -173,7 +177,7 @@ export function SettingsSheet({
                 onClick={onClose}
             />
 
-            {/* Panel — outer wrapper handles position + animation, inner handles scroll */}
+            {/* Panel */}
             <div
                 className="
                     relative z-10 flex flex-col
@@ -302,7 +306,7 @@ export function SettingsSheet({
                         </div>
                     </div>
 
-                    {/* ===== Group 1: Sharing + Theme ===== */}
+                    {/* ===== Group 1: Sharing + Theme + Telegram ===== */}
                     <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#161b22] sm:bg-transparent dark:sm:bg-transparent">
                         <button onClick={handleShare} className={rowBase}>
                             <div className={`${iconTile} bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400`}>
@@ -310,6 +314,7 @@ export function SettingsSheet({
                             </div>
                             <span className={primaryLabel}>Invite Colleagues</span>
                         </button>
+
                         <button onClick={() => setShowTelegram(true)} className={rowBase}>
                             <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
                                 <TelegramLogo className="w-4 h-4" />
@@ -321,6 +326,19 @@ export function SettingsSheet({
                                 </span>
                             </div>
                         </button>
+
+                        <button onClick={() => setShowNotifPrefs(true)} className={rowBase}>
+                            <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
+                                <Bell className="w-4 h-4 text-white" />
+                            </div>
+                            <div className={labelStack}>
+                                <span className={primaryLabel}>Notification Preferences</span>
+                                <span className={`${secondaryLabel} text-[#229ED9]/80 dark:text-[#2AABEE]/70`}>
+                                    Choose what Telegram sends you
+                                </span>
+                            </div>
+                        </button>
+
                         <button onClick={() => goToPage("/share")} className={rowBase}>
                             <div className={`${iconTile} bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400`}>
                                 <Share2 className="w-4 h-4" />
@@ -375,7 +393,9 @@ export function SettingsSheet({
                     </div>
                 </div>
             </div>
+
             <ConnectTelegram open={showTelegram} onClose={() => setShowTelegram(false)} />
+            <NotificationPreferences open={showNotifPrefs} onClose={() => setShowNotifPrefs(false)} />
         </div>,
 
         document.body

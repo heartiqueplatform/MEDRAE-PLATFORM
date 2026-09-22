@@ -1,7 +1,7 @@
 // src/components/ConnectTelegram.tsx
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Copy, Check, Loader2, X, ExternalLink } from "lucide-react";
+import { Copy, Check, Loader2, X, ExternalLink, Unlink } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,6 +40,7 @@ export function ConnectTelegram({ open, onClose }: ConnectTelegramProps) {
     const { toast } = useToast();
     const [state, setState] = useState<LinkState>({ status: "loading" });
     const [copied, setCopied] = useState(false);
+    const [unlinking, setUnlinking] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => setMounted(true), []);
@@ -49,6 +50,7 @@ export function ConnectTelegram({ open, onClose }: ConnectTelegramProps) {
         try {
             const { data, error } = await supabase.functions.invoke("telegram-link", {
                 method: "POST",
+                body: { action: "generate" },
             });
 
             if (error) throw error;
@@ -111,6 +113,40 @@ export function ConnectTelegram({ open, onClose }: ConnectTelegramProps) {
             toast({ title: "Copy failed", variant: "destructive" });
         }
     }, [state, toast]);
+
+    const handleUnlink = useCallback(async () => {
+        if (
+            !window.confirm(
+                "Unlink Telegram from your Medrae account?\n\nYou will stop receiving notifications on Telegram until you re-link.",
+            )
+        )
+            return;
+
+        setUnlinking(true);
+        try {
+            const { data, error } = await supabase.functions.invoke("telegram-link", {
+                method: "POST",
+                body: { action: "unlink" },
+            });
+            if (error) throw error;
+            if (!data?.ok) throw new Error(data?.error ?? "Unlink failed");
+
+            toast({
+                title: "Unlinked",
+                description: "Your Telegram has been disconnected.",
+            });
+            onClose();
+        } catch (err) {
+            console.error(err);
+            toast({
+                title: "Unlink failed",
+                description: err instanceof Error ? err.message : "Unknown error",
+                variant: "destructive",
+            });
+        } finally {
+            setUnlinking(false);
+        }
+    }, [toast, onClose]);
 
     if (!mounted || !open) return null;
 
@@ -180,17 +216,42 @@ export function ConnectTelegram({ open, onClose }: ConnectTelegramProps) {
                 )}
 
                 {state.status === "linked" && (
-                    <div className="py-10 text-center">
-                        <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-emerald-50 dark:bg-emerald-900/30 mb-4">
-                            <Check className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                    <div className="space-y-5">
+                        <div className="py-6 text-center">
+                            <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-emerald-50 dark:bg-emerald-900/30 mb-4">
+                                <Check className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                                Already connected
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {state.username
+                                    ? `Linked to @${state.username}`
+                                    : "Your Telegram is linked to this account."}
+                            </p>
                         </div>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                            Already connected
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {state.username
-                                ? `Linked to @${state.username}`
-                                : "Your Telegram is linked to this account."}
+
+                        <Button
+                            onClick={handleUnlink}
+                            disabled={unlinking}
+                            variant="outline"
+                            className="w-full h-12 rounded-xl border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold"
+                        >
+                            {unlinking ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Unlinking…
+                                </>
+                            ) : (
+                                <>
+                                    <Unlink className="w-4 h-4 mr-2" />
+                                    Unlink Telegram
+                                </>
+                            )}
+                        </Button>
+
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center">
+                            You can re-link anytime by generating a new code.
                         </p>
                     </div>
                 )}
