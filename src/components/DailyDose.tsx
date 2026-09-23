@@ -194,7 +194,7 @@ export const DailyDose: React.FC<DailyDoseProps> = ({ onOpenPlayer }) => {
                     Shuffled daily
                 </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 px-1">
                 {topPicks.map((t, i) => (
                     <TopPickCard key={t.id || i} track={t} index={i} onClick={() => handlePlay(t)} />
                 ))}

@@ -201,7 +201,10 @@ const getInitialCache = () => {
   try {
     const savedData = localStorage.getItem("dashboardData");
     if (savedData) {
-      return JSON.parse(savedData);
+      const parsed = JSON.parse(savedData);
+      // Never trust cached simulation papers — always refetch fresh
+      delete parsed.simulationPapers;
+      return parsed;
     }
   } catch (e) { }
 
@@ -521,7 +524,7 @@ export default function StudentDashboard() {
   }, [user?.id]);
 
   const fetchSimulationPapers = useCallback(async () => {
-    const CACHE_KEY = 'simulation_papers_v2';
+    const CACHE_KEY = 'simulation_papers_v3';
     const CACHE_DURATION = 15 * 60 * 1000;
 
     const cached = localStorage.getItem(CACHE_KEY);
@@ -539,7 +542,7 @@ export default function StudentDashboard() {
     try {
       const { data: papers, error: paperError } = await supabase
         .from("simulation_papers")
-        .select("id, title, description, course, block, is_free, created_at, duration")
+        .select("id, title, description, course, block, is_free, created_at, duration, image_url")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
       if (paperError) throw paperError;
@@ -677,8 +680,9 @@ export default function StudentDashboard() {
         simulationPapers: cachedSimulationPapers,
         profileState
       };
-
-      localStorage.setItem("dashboardData", JSON.stringify(dashboardData));
+      // Don't persist simulation papers in the blob — they have their own cache
+      const { simulationPapers: _drop, ...dashboardDataLight } = dashboardData;
+      localStorage.setItem("dashboardData", JSON.stringify(dashboardDataLight));
       localStorage.setItem("last_dashboard_fetch", Date.now().toString());
 
     } catch (err) {
@@ -1092,7 +1096,7 @@ export default function StudentDashboard() {
           </DialogContent>
         </Dialog>
 
-        <DailyStatus />
+
 
         {/* --- SIMULATION PAPERS SECTION --- */}
         <section className="mt-1 space-y-2">
@@ -1125,7 +1129,7 @@ export default function StudentDashboard() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 px-2 sm:px-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-2 gap-3 px-2 sm:px-0">
             {cachedSimulationPapers.length > 0 ? (
               cachedSimulationPapers.map((paper) => (
                 <Card
@@ -1133,20 +1137,34 @@ export default function StudentDashboard() {
                   className="group relative flex flex-col justify-between overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-none hover:-translate-y-1 border-0 bg-white dark:bg-muted/30 rounded-2xl"
                   onClick={() => handleSmoothNavigate(`/simulation/${paper.id}`)}
                 >
-                  <CardHeader className="p-5 pb-2">
-                    <div className="flex justify-between items-start gap-2 mb-2">
+                  {/* ✅ NEW: Cover image */}
+                  <div className="relative h-60 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                    <img
+                      src={paper.image_url || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80"}
+                      alt={paper.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    {/* gradient overlay for readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                    {/* Badges moved on top of image */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
                       <Badge variant={paper.is_free ? "default" : "secondary"} className={paper.is_free ? "bg-emerald-500 hover:bg-emerald-600" : "bg-blue-600 text-white"}>
                         {paper.is_free ? "Free" : "Premium"}
                       </Badge>
                       <div className="flex gap-1">
                         {paper.difficulty && (
-                          <Badge variant="outline" className="capitalize text-[10px]">{paper.difficulty}</Badge>
+                          <Badge variant="outline" className="capitalize text-[10px] bg-white/90">{paper.difficulty}</Badge>
                         )}
                         {new Date(paper.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
                           <Badge className="bg-orange-500 text-[10px]">New</Badge>
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  <CardHeader className="p-5 pb-2">
+
                     <CardTitle className="text-lg font-bold leading-tight group-hover:text-blue-600 transition-colors line-clamp-2">
                       {paper.title}
                     </CardTitle>
@@ -1212,7 +1230,7 @@ export default function StudentDashboard() {
             </p>
           </div>
         </section>
-
+        <DailyStatus />
         <UnitBreakdown />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 w-full mt-2 px-2 sm:px-0">

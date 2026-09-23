@@ -862,52 +862,45 @@ export function MedraeQuizzes() {
               )}
             </>
           )}
-
-          {/* Progress & Sync Footer — GitHub themed */}
-          <Card className="mt-12 mb-8 overflow-hidden rounded-xl border-0 bg-transparent dark:bg-transparent shadow-none mx-4 md:mx-0">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                  <Trophy className="w-5 h-5 text-amber-500" />
+        </Card>
+        {/* Progress & Sync Footer */}
+        <Card className="mt-10 mb-8 overflow-hidden rounded-2xl border-0 bg-transparent dark:bg-transparent shadow-none px-[4px] md:px-[4px] mx-0">
+          <CardHeader className="pb-2 px-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <CardTitle className="text-base md:text-lg font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
                   Your Journey
                 </CardTitle>
-
-                {/* GitHub-style status badge */}
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#dafbe1] dark:bg-[#1f6feb]/15">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2da44e] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2da44e]"></span>
-                  </span>
-                  <span className="text-[10px] font-bold text-[#1a7f37] dark:text-[#3fb950] uppercase tracking-widest">
-                    Cloud Synced
-                  </span>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-6">
-              {/* GitHub subtle card surface — no border, uses bg only */}
-              <div className="bg-[#f6f8fa] dark:bg-[#161b22] p-5 rounded-2xl">
-                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                  You are securely connected to{" "}
-                  <span className="font-bold text-gray-900 dark:text-white">Supabase Cloud</span>.
-                  Your quiz progress, scores, and custom notes are being tracked in real-time.
+                <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Progress synced in real time
                 </p>
-
-                <div className="mt-4 pt-4 flex items-center justify-between border-t border-[#d0d7de] dark:border-[#30363d]">
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                    Ready to see your results?
-                  </span>
-                  <Link
-                    to="/progress"
-                    className="text-xs font-bold text-[#0969da] dark:text-[#58a6ff] hover:underline flex items-center gap-1"
-                  >
-                    View Study Progress <ChevronRight className="w-3 h-3" />
-                  </Link>
-                </div>
               </div>
-            </CardContent>
-          </Card>
+
+
+
+            </div>
+          </CardHeader>
+
+          <CardContent className="px-0 pt-3">
+            <div className="rounded-2xl bg-white dark:bg-gray-900/60 border-0 p-4 md:p-5">
+              <p className="text-[13px] md:text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                Your progress, scores, and notes are securely stored and synced in real time.
+              </p>
+
+              <div className="mt-4 pt-4 flex items-center justify-between gap-3 border-0">
+                <span className="text-[11px] md:text-xs font-medium text-gray-400 dark:text-gray-500">
+                  See how far you've come
+                </span>
+                <Link
+                  to="/progress"
+                  className="inline-flex items-center gap-1 text-[11px] md:text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors shadow-sm shadow-blue-500/20"
+                >
+                  View Progress
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
