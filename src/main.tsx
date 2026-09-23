@@ -7,12 +7,15 @@ import "./index.css";
 import AuthGate from "@/auth/AuthGate";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthProvider";
-import "@fontsource/poppins";
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
+import "@fontsource/poppins/800.css";
 
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "2.0.2";
+const APP_VERSION = "2.0.21";
 
 
 const CACHE_NAMES = {
@@ -109,77 +112,65 @@ const precacheAssets = async () => {
  */
 const originalFetch = window.fetch;
 window.fetch = async function (...args) {
-    const request = args[0] instanceof Request ? args[0] : new Request(args[0] as string);
-    const url = request.url;
-    const isStaticAsset = url.includes('/static/') ||
-        url.match(/\.(css|js|jpg|png|svg|webp|woff|woff2|ttf)$/i);
+    const url =
+        typeof args[0] === 'string'
+            ? args[0]
+            : args[0] instanceof Request
+                ? args[0].url
+                : String(args[0]);
+
+    const isStaticAsset =
+        url.includes('/static/') ||
+        /\.(css|js|jpg|png|svg|webp|woff2?|ttf)(\?|$)/i.test(url);
     const isSupabase = url.includes('supabase.co');
 
     if (isStaticAsset && !isSupabase) {
         try {
             const cache = await caches.open(CACHE_NAMES.assets);
-            const cachedResponse = await cache.match(request);
-
+            const cachedResponse = await cache.match(url);
             if (cachedResponse) {
-                fetchAndCache(request, cache);
+                fetchAndCache(url, cache); // background refresh
                 return cachedResponse;
             }
-
-            const response = await originalFetch.apply(this, args);
-            if (response.ok) {
-                const clone = response.clone();
-                cache.put(request, clone);
-            }
-            return response;
-        } catch (error) {
-            // Fall through to normal fetch
+        } catch {
+            // fall through
         }
+
+        const response = await originalFetch.apply(this, args);
+        if (response.ok) {
+            try {
+                const cache = await caches.open(CACHE_NAMES.assets);
+                cache.put(url, response.clone());
+            } catch { }
+        }
+        return response;
     }
 
     if (isSupabase) {
-        // Supabase is user-specific and real-time — never cache.
-        // Just pass through, but track performance in the background.
         try {
-            const response = await originalFetch.apply(this, args);
-
-            if (response && response.ok) {
-                // Fire-and-forget size tracking, no caching
-                response
-                    .clone()
-                    .blob()
-                    .then((blob) => PerformanceMonitor.trackCall(url, blob.size))
-                    .catch(() => { });
-            }
-
-            return response;
-        } catch (error) {
-            // Network failed. Return a safe empty response so UI doesn't crash.
-            const isListRequest = url.includes("?") || url.includes("select=");
-            return new Response(isListRequest ? "[]" : "{}", {
+            return await originalFetch.apply(this, args);
+        } catch {
+            const isListRequest = url.includes('?') || url.includes('select=');
+            return new Response(isListRequest ? '[]' : '{}', {
                 status: 200,
-                statusText: "OK (Offline Fallback)",
+                statusText: 'OK (Offline Fallback)',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-Offline": "true",
+                    'Content-Type': 'application/json',
+                    'X-Offline': 'true',
                 },
             });
         }
     }
+
     return originalFetch.apply(this, args);
 };
 
-/**
- * Helper: Fetch and cache in background
- */
-const fetchAndCache = async (request: Request, cache: Cache) => {
+const fetchAndCache = async (url: string, cache: Cache) => {
     try {
-        const response = await fetch(request);
-        if (response.ok) {
-            const clone = response.clone();
-            cache.put(request, clone);
-        }
-    } catch (error) {
-        // Silent fail
+        const response = await fetch(url);
+        if (response.ok) cache.put(url, response.clone());
+    } catch {
+        // silent
     }
 };
 
@@ -206,10 +197,8 @@ const initPWA = () => {
         cleanupOldCaches();
         localStorage.setItem("appVersion", APP_VERSION);
         console.log('App version updated to:', APP_VERSION);
-
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        // No reload — caches are already namespaced by APP_VERSION,
+        // so old caches get evicted without tearing down the page.
     }
 };
 
@@ -328,16 +317,7 @@ window.addEventListener('error', (e) => {
 const initApp = async () => {
     initPWA();
 
-    if ('serviceWorker' in navigator) {
-        await setupPWA();
-
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                precacheAssets();
-            }, 3000);
-        });
-    }
-
+    // Render immediately — do NOT wait for the service worker.
     const root = createRoot(document.getElementById("root")!);
 
     root.render(
@@ -349,6 +329,22 @@ const initApp = async () => {
             </AuthProvider>
         </BrowserRouter>
     );
+
+    // Hide the HTML splash as soon as React commits.
+    requestAnimationFrame(() => {
+        (window as any).hideMedraeLoader?.();
+    });
+
+    // PWA setup in the background — never blocks first paint.
+    if ('serviceWorker' in navigator) {
+        setupPWA().catch(console.error);
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                precacheAssets();
+            }, 3000);
+        });
+    }
 };
 
 initApp().catch(console.error);

@@ -157,7 +157,6 @@ const AnimatedCard = ({ children, index }: { children: React.ReactNode; index: n
 // ============================================================
 const Index = () => {
   const [joyrideReady, setJoyrideReady] = useState(false);
-  const [ready, setReady] = useState(false);
   const [videoVisible, setVideoVisible] = useState(false);
   const [heroMediaLoaded, setHeroMediaLoaded] = useState<Record<number, boolean>>({});
   const [activeHeroStory, setActiveHeroStory] = useState(0);
@@ -165,9 +164,6 @@ const Index = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [notificationAudioReady, setNotificationAudioReady] = useState(false);
-  const [totalMedia, setTotalMedia] = useState(0);
-  const [loadedMedia, setLoadedMedia] = useState(0);
-  const [allMediaReady, setAllMediaReady] = useState(false);
   const currentYear = new Date().getFullYear();
   const [showExitOverlay, setShowExitOverlay] = useState(false);
   const navigate = useNavigate();
@@ -182,45 +178,47 @@ const Index = () => {
   const [questionCount, setQuestionCount] = useState(0);
   const [successRate, setSuccessRate] = useState(0);
 
+  // Hide the HTML splash as soon as this page paints
+  useEffect(() => {
+    (window as any).hideMedraeLoader?.();
+  }, []);
+
   useEffect(() => {
     if (statsVisible) {
       // Animate student count
-      let start = 0;
       const end = 2231;
       const duration = 2500;
+      const startTime = performance.now();
       const step = (timestamp: number) => {
         const progress = Math.min((timestamp - startTime) / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
         setStudentCount(Math.floor(eased * end));
         if (progress < 1) requestAnimationFrame(step);
       };
-      const startTime = performance.now();
       requestAnimationFrame(step);
 
       // Animate question count
-      let qStart = 0;
       const qEnd = 15400;
       const qDuration = 2000;
+      const qStartTime = performance.now();
       const qStep = (timestamp: number) => {
         const progress = Math.min((timestamp - qStartTime) / qDuration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
         setQuestionCount(Math.floor(eased * qEnd));
         if (progress < 1) requestAnimationFrame(qStep);
       };
-      const qStartTime = performance.now();
       requestAnimationFrame(qStep);
 
       // Animate success rate
-      let sStart = 0;
       const sEnd = 78;
       const sDuration = 1800;
+      const sStartTime = performance.now();
       const sStep = (timestamp: number) => {
         const progress = Math.min((timestamp - sStartTime) / sDuration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
         setSuccessRate(Math.floor(eased * sEnd));
         if (progress < 1) requestAnimationFrame(sStep);
       };
-      const sStartTime = performance.now();
       requestAnimationFrame(sStep);
     }
   }, [statsVisible]);
@@ -244,98 +242,22 @@ const Index = () => {
     setIsAutoPlaying(!isHovering);
   }, []);
 
-  const handleMediaLoad = () => {
-    setLoadedMedia(prev => prev + 1);
-  };
-
-  useEffect(() => {
-    if (totalMedia > 0 && loadedMedia >= totalMedia) {
-      setAllMediaReady(true);
-    }
-  }, [loadedMedia, totalMedia]);
-
-  useEffect(() => {
-    const mediaUrls = [
-      ...heroStorySlides.flatMap(s => [s.bg]),
-      "/sounds/notification.mp3",
-    ];
-    setTotalMedia(mediaUrls.length);
-    mediaUrls.forEach(url => {
-      if (url.endsWith(".mp3")) {
-        const audio = new Audio(url);
-        audio.oncanplaythrough = handleMediaLoad;
-        audio.onerror = handleMediaLoad;
-      } else if (url.endsWith(".mp4")) {
-        const video = document.createElement("video");
-        video.src = url;
-        video.onloadeddata = handleMediaLoad;
-        video.onerror = handleMediaLoad;
-      } else {
-        const img = new Image();
-        img.src = url;
-        img.onload = handleMediaLoad;
-        img.onerror = handleMediaLoad;
-      }
-    });
-  }, []);
-
   useEffect(() => {
     setIsMobile(window.innerWidth < 768);
   }, []);
 
+  // Fire-and-forget session check — never blocks render
   useEffect(() => {
-    const preloadMedia = async () => {
-      if (!heroStorySlides?.length) return;
-      const mediaUrls = heroStorySlides.flatMap(slide => [slide.bg]);
-      const loadPromises = mediaUrls.map(url => {
-        return new Promise<void>((resolve) => {
-          if (url.endsWith('.mp4')) {
-            const video = document.createElement('video');
-            video.src = url;
-            video.onloadeddata = () => resolve();
-            video.onerror = () => resolve();
-          } else {
-            const img = new Image();
-            img.src = url;
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          }
-        });
-      });
-
-      await Promise.all(loadPromises);
-      setHeroMediaLoaded(heroStorySlides.reduce((acc, _, idx) => ({ ...acc, [idx]: true }), {}));
-    };
-
-    preloadMedia();
-  }, []);
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!navigate) return;
-        if (session?.user) {
-          navigate("/redirect", { replace: true });
-          return;
-        }
-      } catch (error) {
-        console.error("Session check failed:", error);
-      }
-      setReady(true);
-    };
-    checkSession();
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (session?.user) navigate("/redirect", { replace: true });
+      })
+      .catch((err) => console.error("Session check failed:", err));
   }, [navigate]);
 
   useEffect(() => {
     setVideoVisible(true);
   }, []);
-
-  useEffect(() => {
-    if (allMediaReady) {
-      setJoyrideReady(true);
-    }
-  }, [allMediaReady]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -454,6 +376,32 @@ const Index = () => {
       ),
     },
   ];
+
+  // Lazy media preload — first slide ASAP, rest on idle
+  useEffect(() => {
+    if (!heroStorySlides?.length) return;
+
+    const firstImg = new Image();
+    firstImg.src = heroStorySlides[0].bg;
+    firstImg.onload = () => setHeroMediaLoaded(prev => ({ ...prev, 0: true }));
+    firstImg.onerror = () => setHeroMediaLoaded(prev => ({ ...prev, 0: true }));
+
+    const idle = (window as any).requestIdleCallback
+      || ((cb: any) => setTimeout(cb, 2000));
+
+    idle(() => {
+      heroStorySlides.slice(1).forEach((slide, i) => {
+        const idx = i + 1;
+        const img = new Image();
+        img.src = slide.bg;
+        img.onload = () => setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }));
+        img.onerror = () => setHeroMediaLoaded(prev => ({ ...prev, [idx]: true }));
+      });
+
+      const audio = new Audio("/sounds/notification.mp3");
+      audio.preload = "auto";
+    });
+  }, []);
 
   const [spring, api] = useSpring(() => ({ x: 0 }));
   const bind = useDrag(
@@ -586,8 +534,6 @@ const Index = () => {
       window.location.href = "https://google.com";
     }
   };
-
-  if (!ready) return null;
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden hide-scrollbar relative bg-slate-50">
@@ -902,7 +848,7 @@ const Index = () => {
                     muted
                     loop
                     playsInline
-                    preload="auto"
+                    preload="metadata"
                     controls
                   >
                     <source src="/videos/Medrae1.mp4" type="video/mp4" />
@@ -1370,7 +1316,7 @@ const Index = () => {
                         muted
                         loop
                         playsInline
-                        preload="auto"
+                        preload="metadata"
                         controls
                       >
                         <source src="/videos/Medrae2.mp4" type="video/mp4" />
