@@ -692,7 +692,7 @@ export function MedraeQuizzes() {
                     </div>
 
                     {/* MOBILE EDGE-TO-EDGE GRID */}
-                    <div className="grid gap-[1px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
+                    <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
                       {filteredUnits.map((unit, index) => {
                         const questionCount = getQuestionCount(unit.code);
                         const isUnitFree = freeUnits.includes((unit.code ?? "").trim()) || unit.is_free;

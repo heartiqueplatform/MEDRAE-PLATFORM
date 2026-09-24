@@ -174,7 +174,7 @@ export default function NursingUnit() {
 
     return (
         <div className="min-h-screen bg-transparent text-slate-950 dark:text-white pb-20 md:pb-6">
-            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-0 md:px-4 py-4 md:py-6 lg:px-8">
+            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-1 md:px-4 py-4 md:py-6 lg:px-8">
 
                 {/* Header Card - full width on mobile */}
                 <div className="relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-6 shadow-xl backdrop-blur-xl dark:bg-muted/30 sm:p-8">
@@ -214,13 +214,13 @@ export default function NursingUnit() {
                                 <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="🔍 Search units, topics, or keywords..."
+                                    placeholder="units, topics, or keywords..."
                                     value={searchQuery}
                                     onChange={(e) => {
                                         tapFeedback("light");
                                         setSearchQuery(e.target.value);
                                     }}
-                                    className="w-full rounded-lg md:rounded-xl border border-slate-200 bg-white/90 py-2.5 md:py-3 pl-10 md:pl-12 pr-10 md:pr-12 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur transition focus:border-emerald-400 focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800/90 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/20"
+                                    className="w-full rounded-lg md:rounded-xl border-0 bg-white/90 py-2.5 md:py-3 pl-10 md:pl-12 pr-10 md:pr-12 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur transition focus:border-emerald-400 focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800/90 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/20"
                                     autoComplete="off"
                                 />
                                 {searchQuery && (

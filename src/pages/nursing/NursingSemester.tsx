@@ -52,7 +52,7 @@ function SemesterCardSkeleton() {
 
 function StatsSkeleton() {
     return (
-        <div className="grid grid-cols-2 gap-2 md:gap-3 rounded-2xl border border-slate-200 bg-white/70 p-2 md:p-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-white/5">
+        <div className="grid grid-cols-2 gap-2 md:gap-3 rounded-xl border-0 bg-white/70 p-2 md:p-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-white/5">
             {[1, 2].map((i) => (
                 <div key={i} className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-white/5">
                     <div className="mx-auto mb-0.5 md:mb-1 h-4 w-4 md:h-5 md:w-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
@@ -89,10 +89,10 @@ export default function NursingSemester() {
 
     return (
         <div className="min-h-screen bg-transparent text-slate-950 dark:text-white pb-20 md:pb-6">
-            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-0 md:px-4 py-4 md:py-6 lg:px-8">
+            <section className="mx-auto flex w-full md:max-w-full md:px-4 lg:px-6 flex-col gap-4 md:gap-6 px-1 md:px-4 py-4 md:py-6 lg:px-8">
 
                 {/* Header Card - full width on mobile */}
-                <div className="relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-6 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-muted/30 sm:p-8">
+                <div className="relative overflow-hidden rounded-xl bg-white/70 p-4 md:p-6 shadow-none backdrop-blur-xl  dark:bg-muted/30 sm:p-8">
                     <div className="absolute right-0 top-0 h-24 md:h-32 w-24 md:w-32 rounded-bl-full bg-emerald-100/80 dark:bg-emerald-400/10" />
                     <div className="absolute bottom-0 left-0 h-20 md:h-24 w-20 md:w-24 rounded-tr-full bg-cyan-100/80 dark:bg-cyan-400/10" />
 
@@ -125,7 +125,7 @@ export default function NursingSemester() {
                             {loading ? (
                                 <StatsSkeleton />
                             ) : (
-                                <div className="grid grid-cols-2 gap-2 md:gap-3 rounded-2xl border border-slate-200 bg-white/70 p-2 md:p-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-white/5">
+                                <div className="grid grid-cols-2 gap-2 md:gap-3 rounded-xl border-0 bg-white/70 p-2 md:p-3 shadow-sm backdrop-blur dark:bg-white/5">
                                     <div className="rounded-lg md:rounded-xl bg-slate-50 p-1.5 md:p-2 text-center dark:bg-white/5">
                                         <CalendarDays className="mx-auto mb-0.5 md:mb-1 h-4 w-4 md:h-5 md:w-5 text-emerald-600 dark:text-emerald-300" />
                                         <p className="text-[10px] md:text-xs font-semibold text-slate-600 dark:text-slate-300">
@@ -158,7 +158,7 @@ export default function NursingSemester() {
                             <button
                                 key={sem.id}
                                 onClick={() => navigate(`/nursing/${yearId}/${sem.id}`)}
-                                className="group relative overflow-hidden rounded-2xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1 hover:border-2 hover:border-emerald-300 hover:bg-white hover:shadow-xl dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
+                                className="group relative overflow-hidden rounded-xl bg-white/70 p-4 md:p-5 text-left shadow-sm backdrop-blur transition duration-200 hover:-translate-y-1   dark:bg-muted/30 dark:hover:border-emerald-500/60 dark:hover:bg-slate-900"
                             >
                                 <div className="absolute right-0 top-0 h-20 md:h-24 w-20 md:w-24 rounded-bl-full bg-emerald-50/80 transition group-hover:bg-emerald-100 dark:bg-emerald-400/10 dark:group-hover:bg-emerald-400/20" />
 
