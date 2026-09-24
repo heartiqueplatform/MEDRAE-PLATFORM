@@ -28,11 +28,6 @@ interface AppSidebarProps {
 type IconTone = "neutral" | "ai" | "learning" | "progress" | "practice" | "alert"
   | "communication" | "media" | "finance" | "system" | "people" | "content";
 
-/**
- * Facebook-style tone palette:
- * - Solid gradient circular backgrounds
- * - White icons inside
- */
 const ICON_TONE_STYLES: Record<IconTone, { box: string; icon: string }> = {
   neutral: {
     box: "bg-gradient-to-br from-slate-500 to-slate-700 shadow-sm shadow-slate-500/30",
@@ -113,13 +108,6 @@ const setCached = (key: string, data: any) => {
   } catch (e) { }
 };
 
-/**
- * Compact Facebook-style MenuItem:
- * - Circular gradient icon: h-8 w-8 (32px) expanded, h-10 w-10 collapsed
- * - Icon inside: h-4 w-4 (16px) expanded, h-5 w-5 collapsed
- * - Text: text-[14px] font-medium (normal weight, readable)
- * - Tight padding: py-2
- */
 const MenuItem = memo(({
   item,
   isActive,
@@ -285,6 +273,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
 
   const isMounted = useRef(true);
   const resizeDebounce = useRef<NodeJS.Timeout>();
+
+  // ✅ Role flags — single source of truth used everywhere below
+  const isStudent = userRole === 'student';
+  const isTutor = userRole === 'tutor';
+  const isStaff = userRole === 'staff';
 
   const isCollapsed = state === 'collapsed' || (windowWidth >= 1024 && state === 'collapsed');
   const isFooterMounted = windowWidth < 768;
@@ -470,48 +463,81 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     handleNavigate("/announcements");
   }, [handleNavigate]);
 
-  const mainItems = useMemo(() => [
-    { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: (props: any) => <HomeFilledIcon {...props} />, iconTone: "neutral" as IconTone },
-    { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
-    { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
-    { title: "Nurse Duel (N.D)", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
-    { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
-    { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
-  ], [userRole, mistakeCount]);
+  // ✅ MAIN — student-only items hidden for tutor & staff
+  const mainItems = useMemo(() => {
+    const base = [
+      { title: "My Dashboard", url: `/dashboard/${userRole}`, icon: (props: any) => <HomeFilledIcon {...props} />, iconTone: "neutral" as IconTone },
+    ];
 
-  const nckExamPrepItems = useMemo(() => [
-    {
-      title: "Prep Quizzes Bank",
-      url: "/Medrae-quizzes",
-      icon: QuizzesHeartIcon,
-      iconTone: "practice" as IconTone,
-      badge: formatNumber(totalQuestions)
-    },
-    {
-      title: "NCK Progress",
-      url: "/progress",
-      icon: TrendingUp,
-      iconTone: "progress" as IconTone,
-      badge: `${totalStars}★`
-    },
-    {
-      title: "Proctorium Lite",
-      url: "/simulation/candidate",
-      icon: PlayFilledIcon,
-      iconTone: "practice" as IconTone,
-      badge: formatNumber(totalSimulationPapers)
-    },
-  ], [totalQuestions, totalStars, totalSimulationPapers, formatNumber]);
+    if (isStudent) {
+      base.push(
+        { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+        { title: "Feed Page", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
+        { title: "Nurse Duel (N.D)", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
+        { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone, badge: mistakeCount > 0 ? mistakeCount : undefined },
+      );
+    }
 
-  const learningItems = useMemo(() => [
-    { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" as IconTone },
-    { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content" as IconTone, badge: formatNumber(totalNotes) },
-    { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone, badge: "New" },
-    { title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone },
+    // Survival Hub is shared across every role
+    base.push(
+      { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
+    );
 
+    return base;
+  }, [userRole, mistakeCount, isStudent]);
 
-  ], [totalNotes, totalEvents, formatNumber]);
+  // ✅ NCK EXAM PREP — students only
+  const nckExamPrepItems = useMemo(() => {
+    if (!isStudent) return [];
+    return [
+      {
+        title: "Prep Quizzes Bank",
+        url: "/Medrae-quizzes",
+        icon: QuizzesHeartIcon,
+        iconTone: "practice" as IconTone,
+        badge: formatNumber(totalQuestions)
+      },
+      {
+        title: "NCK Progress",
+        url: "/progress",
+        icon: TrendingUp,
+        iconTone: "progress" as IconTone,
+        badge: `${totalStars}★`
+      },
+      {
+        title: "Proctorium Lite",
+        url: "/simulation/candidate",
+        icon: PlayFilledIcon,
+        iconTone: "practice" as IconTone,
+        badge: formatNumber(totalSimulationPapers)
+      },
+    ];
+  }, [isStudent, totalQuestions, totalStars, totalSimulationPapers, formatNumber]);
 
+  // ✅ LEARNING — Clinical Assessments hidden for tutor & staff
+  const learningItems = useMemo(() => {
+    const base = [
+      { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "learning" as IconTone },
+      { title: "Resources Bank", url: "/resources", icon: FileText, iconTone: "content" as IconTone, badge: formatNumber(totalNotes) },
+    ];
+
+    if (isStudent) {
+      base.push({
+        title: "Clinical Assessments",
+        url: "/assessments",
+        icon: Brain,
+        iconTone: "practice" as IconTone,
+        badge: "New"
+      });
+    }
+
+    base.push({ title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone });
+
+    return base;
+  }, [isStudent, totalNotes, totalEvents, formatNumber]);
+
+  // ✅ INSTITUTIONAL EXAMS
+  // Student → student pages. Tutor → tutor pages. Staff → none (CPD coming).
   const institutionalExamItems = useMemo(() => {
     if (userRole === "student") {
       return [
@@ -525,7 +551,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         { title: "Exam Results", url: "/tutor/exams/:paper_id/results", icon: BarChart3, iconTone: "progress" as IconTone },
       ];
     }
-    return [];
+    return []; // staff — nothing yet
   }, [userRole]);
 
   const mediaItems = useMemo(() => [
@@ -536,21 +562,43 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
   ] : [], [userRole]);
 
-  const staffItems = useMemo(() => userRole === "staff" ? [
-    { title: "Events & Seminars", url: "/events", icon: CalendarDays, iconTone: "learning" as IconTone },
-    { title: "Job Board", url: "/jobs", icon: Briefcase, iconTone: "people" as IconTone },
-    { title: "Write Articles", url: "/articles", icon: PenTool, iconTone: "content" as IconTone },
-  ] : [], [userRole]);
+  // ✅ STAFF TOOLS — placeholder until CPD tables/route exist
+  const staffItems = useMemo(() => {
+    if (userRole !== "staff") return [];
+    // ─────────────── STAFF CPD PLACEHOLDER ───────────────
+    // When you build CPD, drop items here, e.g.:
+    //
+    // return [
+    //   { title: "My CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+    //   { title: "CPD Certificates", url: "/cpd/certificates", icon: GraduationCap, iconTone: "progress" as IconTone },
+    // ];
+    // ─────────────────────────────────────────────────────
+    return [];
+  }, [userRole]);
 
-  const otherItems = useMemo(() => [
-    { title: "NursMartt", url: "/market", icon: (props: any) => <img src="/Nurvia_logo.png" alt="Nurvia Logo" className={`${props.className} object-contain bg-transparent`} loading="lazy" />, iconTone: "neutral" as IconTone },
-    { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone, onClick: handleAnnouncementsClick },
-    { title: "Help Center", url: "/help", icon: MessageCircle, iconTone: "communication" as IconTone },
-    { title: "Feedback Box", url: "/feedback", icon: MessageSquareX, iconTone: "communication" as IconTone },
-    { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" as IconTone },
-    { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" as IconTone },
-    { title: "GroupPay", url: "/grouppay", icon: Users, iconTone: "practice" as IconTone, badge: "New" },
-  ], [handleAnnouncementsClick]);
+  // ✅ MORE — Help Center removed entirely, GroupPay student-only
+  const otherItems = useMemo(() => {
+    const base = [
+      { title: "NursMartt", url: "/market", icon: (props: any) => <img src="/Nurvia_logo.png" alt="Nurvia Logo" className={`${props.className} object-contain bg-transparent`} loading="lazy" />, iconTone: "neutral" as IconTone },
+      { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone, onClick: handleAnnouncementsClick },
+      // ❌ Help Center intentionally removed — new one for tutors/staff coming soon
+      { title: "Feedback Box", url: "/feedback", icon: MessageSquareX, iconTone: "communication" as IconTone },
+      { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" as IconTone },
+      { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" as IconTone },
+    ];
+
+    if (isStudent) {
+      base.push({
+        title: "GroupPay",
+        url: "/grouppay",
+        icon: Users,
+        iconTone: "practice" as IconTone,
+        badge: "New",
+      });
+    }
+
+    return base;
+  }, [handleAnnouncementsClick, isStudent]);
 
   const visibleMainItems = isFooterMounted ? mainItems.filter(item => !footerRoutes.includes(item.url)) : mainItems;
   const visibleLearningItems = isFooterMounted ? learningItems.filter(item => !footerRoutes.includes(item.url)) : learningItems;
@@ -568,25 +616,16 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
               className="h-full w-full"
               aria-label="MEDRAE Nursing Logo"
             >
-              {/* White rounded background */}
               <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
-
-              {/* Red Heart */}
               <path
                 d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
                 fill="#FF1F1F"
               />
-
-              {/* Graduation Cap */}
               <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
-
-              {/* Cap lower body */}
               <path
                 d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
                 fill="#FFFFFF"
               />
-
-              {/* Red cap seam */}
               <path
                 d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
                 fill="none"
@@ -594,22 +633,14 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
                 strokeWidth="3"
                 strokeLinecap="round"
               />
-
-              {/* Red cap string */}
               <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
-
-              {/* Red button */}
               <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
-
-              {/* Tassel */}
               <path
                 d="M94 82 C86 86 75 88 63 89"
                 fill="none"
                 stroke="#FF1F1F"
                 strokeWidth="2"
               />
-
-              {/* White tassel cord */}
               <path
                 d="M63 89 C61 94 61 98 61 103"
                 fill="none"
@@ -617,11 +648,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
-
-              {/* Tassel top */}
               <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
-
-              {/* Tassel */}
               <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
             </svg>
           </div>
@@ -702,7 +729,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           groupId="learning"
         />
 
-        {/* Media Section */}
         <SidebarGroup className="py-0.5">
           <SidebarGroupLabel
             className="flex items-center gap-2 rounded-md px-3 py-1.5 mx-1
@@ -741,7 +767,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           />
         )}
 
-        {/* Other Section */}
         <SidebarGroup className="py-0.5">
           <SidebarGroupLabel
             className="flex items-center gap-2 rounded-md px-3 py-1.5 mx-1
@@ -810,14 +835,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
       {/* Footer */}
       <div className="mt-auto py-5 px-4 text-center select-none border-0">
 
-        {/* Brand + Tagline */}
         <p className="text-[7px] font-black tracking-[0.2em] text-slate-400 dark:text-slate-500 opacity-60">
           Medrae Nursing All right reserved
         </p>
 
-        {/* Social Icons Row */}
         <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
-          {/* MEDRAE Logo — links to landing page */}
           <a
             href="https://medrae-nursing.vercel.app/"
             target="_blank"
@@ -836,25 +858,16 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
               className="h-full w-full"
               aria-hidden="true"
             >
-              {/* White rounded background */}
               <rect x="0" y="0" width="192" height="192" rx="35" fill="#FFFFFF" />
-
-              {/* Red Heart */}
               <path
                 d="M96 169 C91 165 31 116 20 91 C8 64 23 38 48 32 C67 27 84 35 96 50 C108 35 125 27 144 32 C169 38 184 64 172 91 C161 116 101 165 96 169 Z"
                 fill="#FF1F1F"
               />
-
-              {/* Graduation Cap */}
               <path d="M44 82 L96 63 L150 82 L96 101 Z" fill="#FFFFFF" />
-
-              {/* Cap lower body */}
               <path
                 d="M62 88 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V88 L96 101 Z"
                 fill="#FFFFFF"
               />
-
-              {/* Red cap seam */}
               <path
                 d="M62 91 V105 C62 111 77 119 96 122 C115 119 130 111 130 105 V91"
                 fill="none"
@@ -862,22 +875,14 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
                 strokeWidth="3"
                 strokeLinecap="round"
               />
-
-              {/* Red cap string */}
               <path d="M96 82 V101" stroke="#FF1F1F" strokeWidth="2.5" />
-
-              {/* Red button */}
               <circle cx="94" cy="82" r="3.5" fill="#FF1F1F" />
-
-              {/* Tassel */}
               <path
                 d="M94 82 C86 86 75 88 63 89"
                 fill="none"
                 stroke="#FF1F1F"
                 strokeWidth="2"
               />
-
-              {/* White tassel cord */}
               <path
                 d="M63 89 C61 94 61 98 61 103"
                 fill="none"
@@ -885,16 +890,11 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
-
-              {/* Tassel top */}
               <circle cx="61" cy="105" r="4" fill="#FFFFFF" />
-
-              {/* Tassel */}
               <path d="M57 108 L65 108 L67 122 C63 124 59 124 55 122 Z" fill="#FFFFFF" />
             </svg>
           </a>
 
-          {/* WhatsApp */}
           <a
             href="https://wa.me/254704473503"
             target="_blank"
@@ -910,7 +910,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
             </svg>
           </a>
 
-          {/* TikTok */}
           <a
             href="https://tiktok.com/@medraenursing"
             target="_blank"
@@ -926,7 +925,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
             </svg>
           </a>
 
-          {/* Instagram */}
           <a
             href="https://instagram.com/medraenursing"
             target="_blank"
@@ -942,7 +940,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
             </svg>
           </a>
 
-          {/* X (Twitter) */}
           <a
             href="https://x.com/medraenursing"
             target="_blank"
@@ -958,7 +955,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
             </svg>
           </a>
 
-          {/* YouTube */}
           <a
             href="https://youtube.com/@medraenursing"
             target="_blank"
@@ -974,7 +970,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
             </svg>
           </a>
 
-          {/* Facebook */}
           <a
             href="https://facebook.com/medraenursing"
             target="_blank"
@@ -991,7 +986,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           </a>
         </div>
 
-        {/* Handle */}
         <a
           href="https://instagram.com/medraenursing"
           target="_blank"
@@ -1002,7 +996,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           @medraenursing
         </a>
 
-        {/* Legal Links */}
         <div className="mt-0 flex items-center justify-center gap-3">
           <Link to="/privacy" className="text-[8px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-600 dark:hover:text-blue-400 transition-colors tracking-widest">
             Privacy

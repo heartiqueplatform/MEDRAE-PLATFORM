@@ -37,7 +37,7 @@ const SurvivalHubDashboard = () => {
             </header>
 
             {/* 2. Main Navigation Grid */}
-            <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-4 px-3 md:px-0">
+            <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-2 px-3 md:px-0">
                 <HubCard
                     title="Exam Centers"
                     description="Official venues, maps, and important center notes."
@@ -77,7 +77,7 @@ const SurvivalHubDashboard = () => {
 
             {/* 3. Pro-Tip Section */}
             {loading ? (
-                <section className="mt-4 md:mt-6 rounded-2xl bg-white dark:bg-muted/30 p-4 md:p-6 mx-3 md:mx-0 shadow-sm animate-pulse">
+                <section className="mt-4 md:mt-6 rounded-xl bg-white dark:bg-muted/30 p-4 md:p-6 mx-3 md:mx-0 shadow-none animate-pulse">
                     <div className="flex items-start gap-3 md:gap-4">
                         <div className="rounded-full bg-slate-200 dark:bg-slate-700 p-2 md:p-3 flex-shrink-0">
                             <div className="h-4 w-4 md:h-5 md:w-5 rounded bg-slate-300 dark:bg-slate-600" />
@@ -93,7 +93,7 @@ const SurvivalHubDashboard = () => {
                     </div>
                 </section>
             ) : (
-                <section className="mt-4 md:mt-6 rounded-2xl bg-white dark:bg-muted/30 p-4 md:p-6 mx-3 md:mx-0 shadow-sm">
+                <section className="mt-4 md:mt-6 rounded-2xl bg-white dark:bg-muted/30 p-4 md:p-6 mx-3 md:mx-0 shadow-none">
                     <div className="flex items-start gap-3 md:gap-4">
                         <div className="rounded-full bg-amber-100 p-2 md:p-3 dark:bg-amber-900/30 flex-shrink-0">
                             <Star className="text-amber-600 dark:text-amber-400 md:w-5 md:h-5" size={18} />

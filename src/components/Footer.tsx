@@ -227,6 +227,11 @@ export function Footer() {
     const { user } = useAuth();
     const { role } = useUserRole();
 
+    // ✅ Single source of truth for role gating
+    const isStudent = role === "student";
+    const isTutor = role === "tutor";
+    const isStaff = role === "staff";
+
     const [mistakeCount, setMistakeCount] = useState<number>(0);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [safeAreaBottom, setSafeAreaBottom] = useState(0);
@@ -264,6 +269,8 @@ export function Footer() {
     }, []);
 
     const fetchMistakeCount = useCallback(async () => {
+        // ✅ Only students need the mistakes badge
+        if (!isStudent) return;
         if (!user?.id) return;
         try {
             const { count, error } = await supabase
@@ -277,7 +284,7 @@ export function Footer() {
                 localStorage.setItem(MISTAKE_COUNT_CACHE_KEY, JSON.stringify({ count: count || 0, timestamp: Date.now() }));
             }
         } catch (err) { }
-    }, [user?.id]);
+    }, [user?.id, isStudent]);
 
     useEffect(() => { fetchMistakeCount(); }, [fetchMistakeCount]);
 
@@ -372,7 +379,7 @@ export function Footer() {
         return () => window.removeEventListener('resize', updateSafeArea);
     }, []);
 
-    // ⚡ Scroll container detection — MutationObserver REMOVED (was firing on every DOM change)
+    // ⚡ Scroll container detection
     useEffect(() => {
         const findScrollContainer = () => {
             if (location.pathname === '/feed') {
@@ -447,10 +454,6 @@ export function Footer() {
             container.addEventListener('scroll', handleScrollStop, { passive: true });
         }
 
-        // ❌ MutationObserver removed — it re-fired on every DOM change (drawer mount,
-        // route change, etc.), causing hundreds of wasted re-renders per navigation.
-        // The effect already re-runs on location.pathname change, which is enough.
-
         return () => {
             if (container === document.documentElement || container === document.body || !container) {
                 window.removeEventListener('scroll', handleScroll);
@@ -494,22 +497,33 @@ export function Footer() {
                     backfaceVisibility: 'hidden',
                 }}
             >
-                <NavItem
-                    icon={IconQuizzes}
-                    label="Quizzes"
-                    isActive={isActive("/Medrae-quizzes")}
-                    onPress={(e) => handleNavigate(e, "/Medrae-quizzes")}
-                    isDark={theme === 'dark'}
-                />
+                {/* ═══════════════════════════════════════════════════
+                    STUDENT-ONLY TABS
+                    Tutors & Staff never see these.
+                   ═══════════════════════════════════════════════════ */}
+                {isStudent && (
+                    <>
+                        <NavItem
+                            icon={IconQuizzes}
+                            label="Quizzes"
+                            isActive={isActive("/Medrae-quizzes")}
+                            onPress={(e) => handleNavigate(e, "/Medrae-quizzes")}
+                            isDark={theme === 'dark'}
+                        />
 
-                <NavItem
-                    icon={IconFeed}
-                    label="Feed"
-                    isActive={isActive("/feed")}
-                    onPress={(e) => handleNavigate(e, "/feed")}
-                    isDark={theme === 'dark'}
-                />
+                        <NavItem
+                            icon={IconFeed}
+                            label="Feed"
+                            isActive={isActive("/feed")}
+                            onPress={(e) => handleNavigate(e, "/feed")}
+                            isDark={theme === 'dark'}
+                        />
+                    </>
+                )}
 
+                {/* ═══════════════════════════════════════════════════
+                    HOME — visible to everyone (all roles)
+                   ═══════════════════════════════════════════════════ */}
                 <NavItem
                     icon={IconHome}
                     label="Home"
@@ -518,15 +532,63 @@ export function Footer() {
                     isDark={theme === 'dark'}
                 />
 
-                <NavItem
-                    icon={IconMistakes}
-                    label="Mistakes"
-                    isActive={isActive("/my-mistakes")}
-                    onPress={(e) => handleNavigate(e, "/my-mistakes")}
-                    isDark={theme === 'dark'}
-                    badge={mistakeCount > 0 ? mistakeCount : undefined}
-                />
+                {/* ═══════════════════════════════════════════════════
+                    STUDENT-ONLY TAB: MISTAKES
+                    Tutors & Staff never see this.
+                   ═══════════════════════════════════════════════════ */}
+                {isStudent && (
+                    <NavItem
+                        icon={IconMistakes}
+                        label="Mistakes"
+                        isActive={isActive("/my-mistakes")}
+                        onPress={(e) => handleNavigate(e, "/my-mistakes")}
+                        isDark={theme === 'dark'}
+                        badge={mistakeCount > 0 ? mistakeCount : undefined}
+                    />
+                )}
 
+                {/* ═══════════════════════════════════════════════════
+                    STAFF-ONLY TAB SLOT — placeholder, ready for CPD
+
+                    When you build staff CPD pages, uncomment the block
+                    below and point it to the new CPD route. Everything
+                    (icon, badge, active state, haptics) is already wired.
+
+                    Example:
+                    {isStaff && (
+                        <NavItem
+                            icon={IconCpd}
+                            label="My CPD"
+                            isActive={isActive("/cpd")}
+                            onPress={(e) => handleNavigate(e, "/cpd")}
+                            isDark={theme === 'dark'}
+                        />
+                    )}
+
+                    You can stack multiple staff-only NavItems here — the
+                    footer is flex with justify-around, so it self-balances
+                    whether there are 2, 3, 4, or 5 tabs.
+                   ═══════════════════════════════════════════════════ */}
+                {isStaff && (
+                    <>
+                        {/* 👇 Add future CPD NavItems here */}
+                        {/* Example placeholder commented out: */}
+                        {/* <NavItem icon={IconCpd} label="CPD" ... /> */}
+                    </>
+                )}
+
+                {/* ═══════════════════════════════════════════════════
+                    TUTOR-ONLY TAB SLOT — ready for future tutor tabs
+                   ═══════════════════════════════════════════════════ */}
+                {isTutor && (
+                    <>
+                        {/* 👇 Add future tutor NavItems here */}
+                    </>
+                )}
+
+                {/* ═══════════════════════════════════════════════════
+                    MENU — visible to everyone, opens MobileDrawer
+                   ═══════════════════════════════════════════════════ */}
                 <NavItem
                     icon={IconMenu}
                     label="Menu"

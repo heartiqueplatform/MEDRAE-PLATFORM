@@ -169,16 +169,21 @@ const preloadUserProfile = () => {
     }
 };
 
-const preloadUserRole = (): "student" | "tutor" | null => {
+// ✅ Now supports staff in the preload path so cold render doesn't flash student
+const preloadUserRole = (): "student" | "tutor" | "staff" | null => {
     try {
         const sharedCache = getProfileCache();
         if (sharedCache?.role === "tutor") return "tutor";
         if (sharedCache?.role === "student") return "student";
+        if (sharedCache?.role === "staff") return "staff";
         const cached = localStorage.getItem('userProfile');
         if (cached) {
             try {
                 const { role } = JSON.parse(cached);
-                return role === "tutor" ? "tutor" : role === "student" ? "student" : null;
+                if (role === "tutor") return "tutor";
+                if (role === "student") return "student";
+                if (role === "staff") return "staff";
+                return null;
             } catch { return null; }
         }
         return null;
@@ -283,6 +288,11 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
 
     const userRole = (contextRole || propUserRole || preloadUserRole() || 'student') as 'student' | 'tutor' | 'staff';
 
+    // ✅ Single source of truth for role-gating
+    const isStudent = userRole === 'student';
+    const isTutor = userRole === 'tutor';
+    const isStaff = userRole === 'staff';
+
     const [userProfile, setUserProfile] = useState(preloadUserProfile);
     const [userRoleState, setUserRoleState] = useState<"student" | "tutor" | null>(preloadUserRole);
 
@@ -290,7 +300,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     const session = useSession();
     const user = session?.user || null;
 
-    /* ---- Subscription state ---- */
     // Seed from the shared cache so offline premium users see "My Plan"
     // on the very first render — no flash of "Upgrade".
     const [activePlan, setActivePlan] = useState<string | null>(() => {
@@ -302,31 +311,26 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         setDrawerContext(isOpen);
     }, [isOpen, setDrawerContext]);
 
-    /* ---- Load subscription when drawer opens ---- */
     /* ---- Subscription: cache-first, then background refresh ---- */
     useEffect(() => {
-        if (!isOpen || !user?.id) return;      // ⬅️ added isOpen
+        if (!isOpen || !user?.id) return;
         let cancelled = false;
 
-        // 1. Synchronous seed from shared cache — offline-safe, no flicker.
         const cached = getCachedPremium(user.id);
         if (cached !== null && !cancelled) {
             setActivePlan(cached ? "premium" : null);
         }
 
-        // 2. Background resolve (no-op offline or if cache is fresh).
         resolveSubscription(user.id)
             .then((snap) => {
                 if (!cancelled) setActivePlan(snap.isPremium ? (snap.plan_type || "premium") : null);
             })
-            .catch(() => {
-                // resolveSubscription already falls back to cache internally,
-                // so nothing to do here.
-            });
+            .catch(() => { });
         return () => { cancelled = true; };
     }, [isOpen, user?.id]);
+
     useEffect(() => {
-        if (!isOpen || !user?.id) return;      // ⬅️ added isOpen
+        if (!isOpen || !user?.id) return;
         const onOnline = () => {
             resolveSubscription(user.id, { force: true })
                 .then((snap) => setActivePlan(snap.isPremium ? (snap.plan_type || "premium") : null))
@@ -335,6 +339,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         window.addEventListener("online", onOnline);
         return () => window.removeEventListener("online", onOnline);
     }, [isOpen, user?.id]);
+
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         try {
             const stored = localStorage.getItem('medrae_dark_mode');
@@ -373,6 +378,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             setContentReady(false);
         }
     }, [isOpen]);
+
     useEffect(() => {
         if (isOpen) {
             const original = document.body.style.overflow;
@@ -382,7 +388,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     }, [isOpen]);
 
     const tapFeedback = useCallback((type: "light" | "success" | "warning" = "light") => {
-        // Defer so this NEVER blocks the click handler / navigation
         requestAnimationFrame(() => {
             if (navigator.vibrate) {
                 if (type === "success") navigator.vibrate([30, 40, 30]);
@@ -393,7 +398,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     }, []);
 
     useEffect(() => {
-        if (!isOpen || !user?.id) return;      // ⬅️ only fetch when drawer is OPEN
+        if (!isOpen || !user?.id) return;
         let isSubscribed = true;
 
         const fetchUserProfile = async () => {
@@ -454,7 +459,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             fetchUserProfile();
             return () => { isSubscribed = false; };
         }
-    }, [isOpen, user?.id]);   // removed `userProfile` → kills infinite loop
+    }, [isOpen, user?.id]);
 
     const getAvatarUrl = useCallback((url: string | null | undefined): string | undefined => {
         if (!url) {
@@ -483,11 +488,8 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
     }, [user?.id]);
 
     const handleNavigate = useCallback((url: string) => {
-        // 1. Kick off navigation FIRST — this is what the user waits for
         navigate(url);
-        // 2. Close drawer in parallel (AnimatePresence exit runs alongside)
         setIsOpen(false);
-        // 3. Sound + haptics last — deferred so they never block the tap
         requestAnimationFrame(() => tapFeedback("light"));
     }, [navigate, tapFeedback, setIsOpen]);
 
@@ -505,28 +507,46 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         setIsLoggingOut(false);
     }, [navigate, tapFeedback, setIsOpen, user?.id]);
 
-    const nckExamPrepItems = useMemo(() => [
-        { title: "Prep Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
-        { title: "NCK Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
-        { title: "Proctorium", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice" as IconTone },
-    ], []);
+    /* ---------------- NCK EXAM PREP — students only ---------------- */
+    const nckExamPrepItems = useMemo(() => {
+        if (!isStudent) return [];
+        return [
+            { title: "Prep Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
+            { title: "NCK Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
+            { title: "Proctorium", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice" as IconTone },
+        ];
+    }, [isStudent]);
 
+    /* ---------------- SECTIONS ---------------- */
     const sections = useMemo(() => {
+        // ---------- MAIN ----------
+        const mainItems: any[] = [
+            { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
+        ];
+
+        if (isStudent) {
+            mainItems.push(
+                { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+                { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
+                { title: "Nurse Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
+                { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone },
+            );
+        }
+
+        // Survival Hub stays for everyone
+        mainItems.push(
+            { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
+        );
+
         const sectionsArray: { label: string; items: any[] }[] = [
-            {
-                label: "Main",
-                items: [
-                    { title: "Dashboard", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
-                    { title: "Nursing Compass", url: "/nursing", icon: BookOpenCheck, iconTone: "learning" as IconTone },
-                    { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
-                    { title: "Nurse Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
-                    { title: "Mistakes", url: "/my-mistakes", icon: AlertCircle, iconTone: "alert" as IconTone },
-                    { title: "Survival Hub", url: "/survival-hub", icon: Compass, iconTone: "learning" as IconTone },
-                ],
-            },
+            { label: "Main", items: mainItems },
             { label: "NCK Exam Prep", items: nckExamPrepItems },
         ];
 
+        // ---------- INSTITUTIONAL EXAMS ----------
+        // Student → student pages.
+        // Tutor   → tutor pages.
+        // Staff   → none for now (CPD section will replace this later).
         if (userRole === "student") {
             sectionsArray.push({
                 label: "Institutional Exams",
@@ -544,64 +564,119 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 ],
             });
         }
+        // ─────────────── STAFF CPD PLACEHOLDER ───────────────
+        // When you build the staff CPD pages, add a section here:
+        //
+        // if (isStaff) {
+        //     sectionsArray.push({
+        //         label: "CPD",
+        //         items: [
+        //             { title: "My CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+        //             { title: "CPD Certificates", url: "/cpd/certificates", icon: GraduationCap, iconTone: "progress" as IconTone },
+        //         ],
+        //     });
+        // }
+        // ──────────────────────────────────────────────────────
 
-        sectionsArray.push(
-            {
-                label: "Learning",
-                items: [
-                    { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content" as IconTone },
-                    { title: "Resources", url: "/resources", icon: FileText, iconTone: "content" as IconTone },
-                    { title: "Clinical Assessments", url: "/assessments", icon: Brain, iconTone: "practice" as IconTone },
-                    { title: "My Classes", url: "/my-classes", icon: Calendar, iconTone: "learning" as IconTone },
-                ],
-            },
-            {
-                label: "Media",
-                items: [
-                    { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
-                ],
-            },
-            {
-                label: "Other",
-                items: [
-                    { title: "NursMart", url: "/market", icon: NursMartLogo, iconTone: "neutral" as IconTone },
-                    { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone },
-                    { title: "Help Center", url: "/help", icon: MessageCircle, iconTone: "communication" as IconTone },
-                    { title: "Feedback", url: "/feedback", icon: MessageSquareX, iconTone: "communication" as IconTone },
-                    { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" as IconTone },
-                    { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" as IconTone },
-                    { title: "GroupPay", url: "/grouppay", icon: Users, iconTone: "practice" as IconTone },
-                ],
-            }
-        );
+        // ---------- LEARNING ----------
+        const learningItems: any[] = [
+            { title: "Assessment Notes", url: "/assessment-notes", icon: BookOpen, iconTone: "content" as IconTone },
+            { title: "Resources", url: "/resources", icon: FileText, iconTone: "content" as IconTone },
+        ];
+
+        if (isStudent) {
+            learningItems.push({
+                title: "Clinical Assessments",
+                url: "/assessments",
+                icon: Brain,
+                iconTone: "practice" as IconTone,
+            });
+        }
+
+        learningItems.push({
+            title: "My Classes",
+            url: "/my-classes",
+            icon: Calendar,
+            iconTone: "learning" as IconTone,
+        });
+
+        sectionsArray.push({ label: "Learning", items: learningItems });
+
+        // ---------- MEDIA ----------
+        sectionsArray.push({
+            label: "Media",
+            items: [
+                { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
+            ],
+        });
+
+        // ---------- OTHER ----------
+        const otherItems: any[] = [
+            { title: "NursMart", url: "/market", icon: NursMartLogo, iconTone: "neutral" as IconTone },
+            { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone },
+            // ❌ Help Center removed — new one coming for tutors/staff
+            { title: "Feedback", url: "/feedback", icon: MessageSquareX, iconTone: "communication" as IconTone },
+            { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" as IconTone },
+            { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" as IconTone },
+        ];
+
+        if (isStudent) {
+            otherItems.push({
+                title: "GroupPay",
+                url: "/grouppay",
+                icon: Users,
+                iconTone: "practice" as IconTone,
+            });
+        }
+
+        sectionsArray.push({ label: "Other", items: otherItems });
 
         return sectionsArray;
-    }, [userRole, nckExamPrepItems]);
+    }, [userRole, isStudent, nckExamPrepItems]);
 
     /* ---------------- Horizontal identity strip items ---------------- */
     const identityStrip = useMemo(() => {
-        const base = [
+        const base: any[] = [
             { title: "Home", url: `/dashboard/${userRole}`, icon: Home, iconTone: "neutral" as IconTone },
-            { title: "Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
-            { title: "Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
-            { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
-            { title: "Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
+        ];
+
+        if (isStudent) {
+            base.push(
+                { title: "Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
+                { title: "Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
+                { title: "Feed", url: "/feed", icon: Newspaper, iconTone: "content" as IconTone },
+                { title: "Duel", url: "/challenge", icon: Swords, iconTone: "practice" as IconTone },
+            );
+        }
+
+        base.push(
             { title: "MedTube", url: "/medtube", icon: Play, iconTone: "media" as IconTone },
             { title: "Classes", url: "/live-classes", icon: Video, iconTone: "learning" as IconTone },
             { title: "Market", url: "/market", icon: NursMartLogo, iconTone: "neutral" as IconTone },
-        ];
+        );
 
+        // Exams/Results chips — only for student & tutor, NOT staff
         if (userRole === "student") {
-            base.splice(4, 0,
+            base.push(
                 { title: "Exams", url: "/exam/candidate", icon: GraduationCap, iconTone: "learning" as IconTone },
                 { title: "Results", url: "/exam/results", icon: BarChart3, iconTone: "progress" as IconTone },
             );
         } else if (userRole === "tutor") {
-            base.splice(4, 0,
+            base.push(
                 { title: "Exams", url: "/tutor/exams", icon: GraduationCap, iconTone: "learning" as IconTone },
                 { title: "Results", url: "/tutor/exams/:paper_id/results", icon: BarChart3, iconTone: "progress" as IconTone },
             );
         }
+        // ─────────────── STAFF CPD QUICK-ACCESS PLACEHOLDER ───────────────
+        // When you build CPD, add quick-access chips here:
+        //
+        // if (isStaff) {
+        //     base.push(
+        //         { title: "CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+        //         { title: "Certs", url: "/cpd/certificates", icon: GraduationCap, iconTone: "progress" as IconTone },
+        //     );
+        // }
+        // ────────────────────────────────────────────────────────────────
 
         if (activePlan) {
             base.push({
@@ -622,7 +697,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         }
 
         return base;
-    }, [userRole, activePlan]);
+    }, [userRole, isStudent, activePlan]);
 
     const avatarUrl = getAvatarUrl(userProfile.avatar_url);
     const initials = userProfile.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);

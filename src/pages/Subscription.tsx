@@ -989,7 +989,7 @@ export function Subscription() {
         </p>
       </div>
 
-      <GroupPaySubscriptionCard />
+      {!isTutor && !isStaff && <GroupPaySubscriptionCard />}
       {/* Offline / cache-only premium card — shown when we know the user is premium
           but don't have the full DB row (e.g. offline). */}
       {hasActivePlan && !activeSub && (

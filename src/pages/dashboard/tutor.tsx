@@ -900,7 +900,7 @@ export default function TutorDashboard() {
   }, [showStudentOverlay, overlayOpened, allStudents.length, fetchAllStudents]);
 
   return (
-    <div className="min-h-screen max-w-2xl mx-auto flex justify-center bg-transparent py-0 md:py-1 pt-0 px-0 md:px-2">
+    <div className="min-h-screen max-w-4xl mx-auto flex justify-center bg-transparent py-0 md:py-1 pt-0 px-0 md:px-2">
       <div className="w-full max-w-none sm:max-w-4xl space-y-0 md:space-y-2">
 
         {/* Welcome Banner */}
@@ -1445,7 +1445,7 @@ export default function TutorDashboard() {
             )}
           </CardContent>
         </Card>
-        <DailyStatus />
+
 
         {/* Rest of the component remains the same */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full mt-2 px-2 sm:px-0">
