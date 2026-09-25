@@ -100,9 +100,10 @@ const SECTIONS = [
 ];
 
 // Cache helpers
+// Cache helpers
 const notesCache = new Map();
 const statsCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours — catalog rarely changes
 
 // Role-based subscription pricing - FOR DISPLAY ONLY in the upgrade overlay
 const TUTOR_SUBSCRIPTION = {
@@ -176,6 +177,9 @@ export default function AssessmentNotes() {
   const isFetchingStats = useRef(false);
   const lastStatsFetch = useRef(0);
   const pendingLikeUpdates = useRef<Map<string, boolean>>(new Map());
+  // NEW: dedupes concurrent downloads of the same file
+  const inflightDownloads = useRef<Map<string, Promise<Blob>>>(new Map());
+
   // ============ NETWORK RESILIENCE HELPERS ============
   const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> =>
     Promise.race([
@@ -339,16 +343,15 @@ export default function AssessmentNotes() {
   // OPTIMIZED: Fetch stats with caching
   const fetchStats = useCallback(async () => {
     if (!notes.length || !session?.user || isFetchingStats.current) return;
-
     const now = Date.now();
-    if (now - lastStatsFetch.current < 30000) return;
+    if (now - lastStatsFetch.current < 30 * 60 * 1000) return; // 30 min
     lastStatsFetch.current = now;
 
     const statsKey = `assessment_stats_${session.user.id}`;
 
     if (statsCache.has(statsKey)) {
       const cached = statsCache.get(statsKey);
-      if (now - cached.timestamp < 30000 && isMounted.current) {
+      if (now - cached.timestamp < 30 * 60 * 1000 && isMounted.current) {
         setLikeCounts(cached.likes);
         setViewCounts(cached.views);
         setBookmarkedItems(cached.bookmarked);
@@ -460,6 +463,45 @@ export default function AssessmentNotes() {
       window.removeEventListener("offline", goOffline);
     };
   }, [fetchNotes, fetchStats]);
+  // ============ CACHE-FIRST FILE RESOLVER (MovieBox pattern) ============
+  // - 1st view: downloads once, saves to IndexedDB, returns blob URL
+  // - Every next view: reads from IndexedDB → zero network calls
+  // - Dedupes concurrent requests for the same file
+  const resolveFileUrl = useCallback(async (note: any): Promise<string> => {
+    // 1. IndexedDB first — survives reloads/offline forever
+    const cached = await getFile(note.id);
+    if (cached) return URL.createObjectURL(cached);
+
+    // 2. If a download for this note is already in progress, wait on it
+    if (inflightDownloads.current.has(note.id)) {
+      const blob = await inflightDownloads.current.get(note.id)!;
+      return URL.createObjectURL(blob);
+    }
+
+    // 3. Download ONCE, persist silently
+    const task = (async () => {
+      const res = await fetch(note.file_url);
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const blob = await res.blob();
+      await saveFile(note.id, blob);
+      return blob;
+    })();
+
+    inflightDownloads.current.set(note.id, task);
+    try {
+      const blob = await task;
+      return URL.createObjectURL(blob);
+    } finally {
+      inflightDownloads.current.delete(note.id);
+    }
+  }, []);
+
+  // Ask the browser for persistent storage so it doesn't evict our cache
+  useEffect(() => {
+    if (navigator.storage?.persist) {
+      navigator.storage.persist().catch(() => { });
+    }
+  }, []);
   // Focus-based refresh
   useEffect(() => {
     let focusTimer: NodeJS.Timeout;
@@ -470,7 +512,8 @@ export default function AssessmentNotes() {
       focusTimer = setTimeout(() => {
         if (!navigator.onLine) return;   // ← skip while offline
         const now = Date.now();
-        if (now - lastFocusRefresh < 30000) return;
+        // Skip if we refreshed in the last 30 minutes — catalog doesn't change that often
+        if (now - lastFocusRefresh < 30 * 60 * 1000) return;
         lastFocusRefresh = now;
         if (isMounted.current) {
           fetchNotes();
@@ -496,7 +539,7 @@ export default function AssessmentNotes() {
     window.open(fileUrl, "_blank");
   };
 
-  // ORIGINAL handleViewNote - ONLY uses isPremium for access check
+  // CACHE-FIRST handleViewNote — downloads once, then always reads from device
   const handleViewNote = async (note: any) => {
     if (!isPremium) {
       setSelectedNoteForOverlay(note);
@@ -504,42 +547,41 @@ export default function AssessmentNotes() {
       return;
     }
 
-    // ✅ Try IndexedDB first so it works offline
-    let urlToOpen = note.file_url;
     try {
-      const cached = await getFile(note.id);
-      if (cached) {
-        urlToOpen = URL.createObjectURL(cached);
-      }
-    } catch { }
+      // Cache-first: 1st time downloads + saves silently; afterwards reads from IndexedDB
+      const url = await resolveFileUrl(note);
+      if (isMounted.current) setFullscreenNote({ ...note, file_url: url });
 
-    setFullscreenNote({ ...note, file_url: urlToOpen });
-
-    // Fire-and-forget view count (don't block the viewer)
-    if (session?.user?.id) {
-      try {
-        const { error } = await supabase
-          .from("note_views")
-          .upsert(
-            { note_id: note.id, user_id: session.user.id },
-            { onConflict: ["note_id", "user_id"] }
-          );
-
-        if (!error && isMounted.current) {
-          setViewCounts((prev) => ({
-            ...prev,
-            [note.id]: (prev[note.id] || 0) + 1,
-          }));
-          statsCache.delete(`assessment_stats_${session.user.id}`);
+      // Only log a view ONCE per user per note, ever (kills DB write egress on re-opens)
+      if (session?.user?.id) {
+        const seenKey = `seen_${session.user.id}_${note.id}`;
+        if (!localStorage.getItem(seenKey)) {
+          localStorage.setItem(seenKey, "1");
+          supabase
+            .from("note_views")
+            .upsert(
+              { note_id: note.id, user_id: session.user.id },
+              { onConflict: ["note_id", "user_id"] }
+            )
+            .then(({ error }) => {
+              if (!error && isMounted.current) {
+                setViewCounts((prev) => ({
+                  ...prev,
+                  [note.id]: (prev[note.id] || 0) + 1,
+                }));
+                statsCache.delete(`assessment_stats_${session.user.id}`);
+              }
+            });
         }
-      } catch (err) {
-        // Offline — count will sync later if you add a queue
-        console.warn("View count failed (likely offline):", err);
       }
+    } catch (err) {
+      console.error("View error:", err);
+      alert("Failed to load file. Check your connection.");
     }
   };
 
   // ORIGINAL handleDownloadNote - ONLY uses isPremium for access check
+  // handleDownloadNote — now uses the same cache-first resolver
   const handleDownloadNote = async (noteId: string, url: string) => {
     if (!isPremium) {
       const note = notes.find(n => n.id === noteId);
@@ -548,11 +590,12 @@ export default function AssessmentNotes() {
       return;
     }
 
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      await saveFile(noteId, blob);
+      // resolveFileUrl already saves silently — cached = instant, uncached = 1 download
+      await resolveFileUrl(note);
       if (isMounted.current) {
         setOfflineFiles((prev) => prev.includes(noteId) ? prev : [...prev, noteId]);
       }
@@ -562,7 +605,6 @@ export default function AssessmentNotes() {
       alert(navigator.onLine ? "Couldn't cache this file. Try again." : "You're offline — can't cache right now.");
     }
   };
-
   const handleDelete = async (note: any) => {
     if (!session?.user?.id) return alert("Login required");
     if (note.uploaded_by !== session.user.id) return alert("You can only delete your own uploads");
@@ -711,17 +753,38 @@ export default function AssessmentNotes() {
     }
   };
 
-  const filteredNotes = notes.filter(
-    (note) =>
-      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (note.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (note.course || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (note.unit || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (note.institution || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredNotes = notes.filter((note) => {
+    const q = searchTerm.trim().toLowerCase();
+
+    // No search → show everything (block/subcategory filtering happens later)
+    if (q.length === 0) return true;
+
+    // Tokenized global search — matches across ALL relevant fields.
+    // "anatomy block 1" will match any note where those words appear
+    // anywhere, regardless of order.
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    const haystack = [
+      note.title,
+      note.description,
+      note.course,
+      note.unit,
+      note.institution,
+      note.block,
+      note.category,
+      note.sub_category,
+      note.usage_type,
+      Array.isArray(note.tags) ? note.tags.join(" ") : "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return tokens.every((t) => haystack.includes(t));
+  });
 
   if (subscriptionLoading) {
-    return <GlobalLoader message="Verifying subscription..." />;
+    return <GlobalLoader />;
   }
 
   return (
@@ -906,211 +969,375 @@ export default function AssessmentNotes() {
           </AnimatePresence>
 
           {/* Accordion Sections - NO BORDER ON MOBILE */}
+          {/* Accordion Sections OR Global Search Results */}
           <div className="space-y-3 md:space-y-4 px-0">
-            {SECTIONS.map((section, i) => {
-              const sectionNotes = filteredNotes.filter((n) => n.block === section.title);
-              const hasNotes = sectionNotes.length > 0;
+            {(() => {
+              // 🚀 GLOBAL SEARCH MODE: when user types, search ALL notes across
+              // every block + subcategory, ignoring the accordion entirely.
+              const isSearching = searchTerm.trim().length > 0;
 
-              return (
-                <div key={i} className="border-0   rounded-xl md:rounded-xl px-0 md:px-3 bg-card">
-                  <div className="py-3 md:py-4">
-                    <div className="flex items-center gap-2 px-[4px] md:px-0">
-                      <span className="text-sm md:text-base font-semibold">{section.title}</span>
-                      {hasNotes && (
+              if (isSearching) {
+                return (
+                  <div className="border-0 rounded-xl md:rounded-xl px-0 md:px-3 bg-card">
+                    <div className="py-3 md:py-4">
+                      <div className="flex items-center gap-2 px-[4px] md:px-0">
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm md:text-base font-semibold">
+                          Search results for "{searchTerm}"
+                        </span>
                         <Badge variant="secondary" className="text-[10px] md:text-xs">
-                          {sectionNotes.length}
+                          {filteredNotes.length}
                         </Badge>
+                      </div>
+                    </div>
+
+                    <div className="pb-3 md:pb-4">
+                      {loadingNotes ? (
+                        <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                          {Array.from({ length: 6 }).map((_, idx) => <SkeletonCard key={idx} />)}
+                        </div>
+                      ) : filteredNotes.length === 0 ? (
+                        <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                          <Search className="w-8 h-8 text-gray-400 mb-3" />
+                          <CardTitle className="text-base md:text-lg text-muted-foreground">
+                            No matches for "{searchTerm}"
+                          </CardTitle>
+                          <CardDescription className="text-xs md:text-sm">
+                            Try a different keyword or clear the search.
+                          </CardDescription>
+                        </div>
+                      ) : (
+                        <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
+                          {filteredNotes.map((note, index) => (
+                            <React.Fragment key={note.id}>
+                              <div
+                                className="flex flex-col overflow-hidden hover:shadow-md transition-all cursor-pointer border border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4"
+                                onClick={() => setDetailsOverlayNote(note)}
+                              >
+                                <div className="pb-1 md:pb-2">
+                                  <div className="flex items-start justify-between gap-1 md:gap-2">
+                                    <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+                                      <div className="p-1 md:p-1.5 bg-gray-50 dark:bg-gray-900 rounded">
+                                        {getTypeIcon(note.file_type)}
+                                      </div>
+                                      <div className="text-sm md:text-base font-semibold line-clamp-1">
+                                        {note.title}
+                                      </div>
+                                    </div>
+                                    <Badge className={`${getTypeColor(note.file_type)} text-[8px] md:text-[10px] px-1.5 md:px-2`}>
+                                      {note.file_type?.toUpperCase() || "PDF"}
+                                    </Badge>
+                                  </div>
+
+                                  {/* Block + subcategory badges so users see WHERE the result lives */}
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {note.block && (
+                                      <Badge variant="outline" className="text-[7px] md:text-[9px]">
+                                        <Layers className="h-2 w-2 mr-0.5" /> {note.block}
+                                      </Badge>
+                                    )}
+                                    {note.sub_category && (
+                                      <Badge variant="outline" className="text-[7px] md:text-[9px]">
+                                        <Tag className="h-2 w-2 mr-0.5" /> {note.sub_category}
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {note.description && (
+                                    <div className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 md:line-clamp-3 mt-0.5 md:mt-1 leading-relaxed">
+                                      {note.description}
+                                    </div>
+                                  )}
+
+                                  <div className="flex items-center justify-between mt-1 md:mt-2">
+                                    <span className="text-[8px] md:text-xs text-muted-foreground flex items-center gap-0.5 md:gap-1">
+                                      <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                                      {new Date(note.created_at).toLocaleDateString()}
+                                    </span>
+                                    <div className="flex items-center gap-0.5 md:gap-1">
+                                      {offlineFiles.includes(note.id) && (
+                                        <Badge variant="outline" className="text-[7px] md:text-[9px] flex items-center gap-0.5">
+                                          <CloudCheck className="h-2 w-2 md:h-2.5 md:w-2.5" /> Offline
+                                        </Badge>
+                                      )}
+                                      {!isPremium && (
+                                        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-[7px] md:text-[9px] flex items-center gap-0.5 px-1 md:px-1.5">
+                                          <Lock className="h-2 w-2 md:h-2.5 md:w-2.5" /> Premium
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-1 md:pt-0 space-y-2 md:space-y-3">
+                                  <div className="flex gap-1 md:gap-2 flex-wrap">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDownloadNote(note.id, note.file_url);
+                                      }}
+                                    >
+                                      <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                      Cache
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewNote(note);
+                                      }}
+                                    >
+                                      <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                      View
+                                    </Button>
+                                    {session?.user?.id === note.uploaded_by && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 md:h-8 px-1.5 md:px-2 rounded text-red-500 hover:text-red-600 text-[9px] md:text-xs"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDelete(note);
+                                        }}
+                                      >
+                                        <Trash2 className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
+                                      </Button>
+                                    )}
+                                  </div>
+
+                                  <div className="flex justify-between items-center pt-1 md:pt-2 border-t border-gray-100 dark:border-gray-800">
+                                    <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-muted-foreground">
+                                      <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
+                                      <span>{viewCounts[note.id] || 0}</span>
+                                    </div>
+                                    <button
+                                      className={`flex items-center gap-1 text-[9px] md:text-xs transition-colors ${bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleLike(note.id);
+                                      }}
+                                    >
+                                      <Heart className={`h-2.5 w-2.5 md:h-3.5 md:w-3.5 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
+                                      <span>{likeCounts[note.id] || 0}</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <UnitPics position={index + 1} />
+                            </React.Fragment>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
-                  <div className="pb-3 md:pb-4">
-                    <Tabs defaultValue={section.subcategories[0]} className="w-full">
-                      <TabsList className="flex flex-wrap gap-1.5 md:gap-2 w-full h-auto bg-transparent px-3 md:px-0 py-1 md:py-0">
+                );
+              }
+
+              // ── Normal (non-search) accordion view ─────────────────────
+              return SECTIONS.map((section, i) => {
+                const sectionNotes = filteredNotes.filter((n) => n.block === section.title);
+                const hasNotes = sectionNotes.length > 0;
+
+                return (
+                  <div key={i} className="border-0 rounded-xl md:rounded-xl px-0 md:px-3 bg-card">
+                    <div className="py-3 md:py-4">
+                      <div className="flex items-center gap-2 px-[4px] md:px-0">
+                        <span className="text-sm md:text-base font-semibold">{section.title}</span>
+                        {hasNotes && (
+                          <Badge variant="secondary" className="text-[10px] md:text-xs">
+                            {sectionNotes.length}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="pb-3 md:pb-4">
+                      <Tabs defaultValue={section.subcategories[0]} className="w-full">
+                        <TabsList className="flex flex-wrap gap-1.5 md:gap-2 w-full h-auto bg-transparent px-3 md:px-0 py-1 md:py-0">
+                          {section.subcategories.map((sub) => {
+                            const subNotesCount = filteredNotes.filter(
+                              (n) => n.sub_category === sub && n.block === section.title
+                            ).length;
+                            return (
+                              <TabsTrigger
+                                key={sub}
+                                value={sub}
+                                className="text-[10px] md:text-xs whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg md:rounded-lg px-2 md:px-3 py-1 h-7 md:h-8"
+                              >
+                                {sub}
+                                {subNotesCount > 0 && (
+                                  <span className="ml-0.5 md:ml-1 text-[8px] md:text-xs opacity-70">({subNotesCount})</span>
+                                )}
+                              </TabsTrigger>
+                            );
+                          })}
+                        </TabsList>
+
                         {section.subcategories.map((sub) => {
-                          const subNotesCount = filteredNotes.filter(
+                          const subNotes = filteredNotes.filter(
                             (n) => n.sub_category === sub && n.block === section.title
-                          ).length;
+                          );
+
                           return (
-                            <TabsTrigger
-                              key={sub}
-                              value={sub}
-                              className="text-[10px] md:text-xs whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg md:rounded-lg px-2 md:px-3 py-1 h-7 md:h-8"
-                            >
-                              {sub}
-                              {subNotesCount > 0 && (
-                                <span className="ml-0.5 md:ml-1 text-[8px] md:text-xs opacity-70">({subNotesCount})</span>
+                            <TabsContent key={sub} value={sub} className="mt-3 md:mt-4">
+                              {loadingNotes ? (
+                                <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:3">
+                                  {Array.from({ length: 4 }).map((_, idx) => <SkeletonCard key={idx} />)}
+                                </div>
+                              ) : subNotes.length === 0 ? (
+                                <p className="text-xs md:text-sm text-muted-foreground text-center py-6 md:py-8">
+                                  No notes yet in {sub}. Check back soon!
+                                </p>
+                              ) : (
+                                <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
+                                  {subNotes.map((note, index) => (
+                                    <React.Fragment key={note.id}>
+                                      <div
+                                        className="flex flex-col overflow-hidden hover:shadow-md transition-all cursor-pointer border border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4"
+                                        onClick={() => setDetailsOverlayNote(note)}
+                                      >
+                                        <div className="pb-1 md:pb-2">
+                                          <div className="flex items-start justify-between gap-1 md:gap-2">
+                                            <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+                                              <div className="p-1 md:p-1.5 bg-gray-50 dark:bg-gray-900 rounded">
+                                                {getTypeIcon(note.file_type)}
+                                              </div>
+                                              <div className="text-sm md:text-base font-semibold line-clamp-1">
+                                                {note.title}
+                                              </div>
+                                            </div>
+                                            <Badge className={`${getTypeColor(note.file_type)} text-[8px] md:text-[10px] px-1.5 md:px-2`}>
+                                              {note.file_type?.toUpperCase() || "PDF"}
+                                            </Badge>
+                                          </div>
+
+                                          {note.description && (
+                                            <div className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 md:line-clamp-3 mt-0.5 md:mt-1 leading-relaxed">
+                                              {note.description}
+                                            </div>
+                                          )}
+
+                                          <div className="flex items-center justify-between mt-1 md:mt-2">
+                                            <span className="text-[8px] md:text-xs text-muted-foreground flex items-center gap-0.5 md:gap-1">
+                                              <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                                              {new Date(note.created_at).toLocaleDateString()}
+                                            </span>
+                                            <div className="flex items-center gap-0.5 md:gap-1">
+                                              {offlineFiles.includes(note.id) && (
+                                                <Badge variant="outline" className="text-[7px] md:text-[9px] flex items-center gap-0.5">
+                                                  <CloudCheck className="h-2 w-2 md:h-2.5 md:w-2.5" /> Offline
+                                                </Badge>
+                                              )}
+                                              {!isPremium && (
+                                                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-[7px] md:text-[9px] flex items-center gap-0.5 px-1 md:px-1.5">
+                                                  <Lock className="h-2 w-2 md:h-2.5 md:w-2.5" /> Premium
+                                                </Badge>
+                                              )}
+                                              {note.download_count > 0 && (
+                                                <span className="text-[7px] md:text-[9px] text-gray-400 flex items-center gap-0.5">
+                                                  <Download className="h-2 w-2 md:h-2.5 md:w-2.5" /> {note.download_count}
+                                                </span>
+                                              )}
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-5 w-5 md:h-6 md:w-6 p-0 rounded-full"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setDetailsOverlayNote(note);
+                                                }}
+                                              >
+                                                <Info className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="pt-1 md:pt-0 space-y-2 md:space-y-3">
+                                          <div className="flex gap-1 md:gap-2 flex-wrap">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDownloadNote(note.id, note.file_url);
+                                              }}
+                                            >
+                                              <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                              Cache
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleViewNote(note);
+                                              }}
+                                            >
+                                              <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
+                                              View
+                                            </Button>
+                                            {session?.user?.id === note.uploaded_by && (
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 md:h-8 px-1.5 md:px-2 rounded text-red-500 hover:text-red-600 text-[9px] md:text-xs"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDelete(note);
+                                                }}
+                                              >
+                                                <Trash2 className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
+                                              </Button>
+                                            )}
+                                          </div>
+
+                                          <div className="flex justify-between items-center pt-1 md:pt-2 border-t border-gray-100 dark:border-gray-800">
+                                            <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-muted-foreground">
+                                              <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
+                                              <span>{viewCounts[note.id] || 0}</span>
+                                              {note.download_count > 0 && (
+                                                <>
+                                                  <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 ml-0.5 md:ml-1" />
+                                                  <span>{note.download_count}</span>
+                                                </>
+                                              )}
+                                            </div>
+                                            <button
+                                              className={`flex items-center gap-1 text-[9px] md:text-xs transition-colors ${bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"}`}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleLike(note.id);
+                                              }}
+                                            >
+                                              <Heart className={`h-2.5 w-2.5 md:h-3.5 md:w-3.5 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
+                                              <span>{likeCounts[note.id] || 0}</span>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <UnitPics position={index + 1} />
+                                    </React.Fragment>
+                                  ))}
+                                </div>
                               )}
-                            </TabsTrigger>
+                            </TabsContent>
                           );
                         })}
-                      </TabsList>
-
-                      {section.subcategories.map((sub) => {
-                        const subNotes = filteredNotes.filter(
-                          (n) => n.sub_category === sub && n.block === section.title
-                        );
-
-                        return (
-                          <TabsContent key={sub} value={sub} className="mt-3 md:mt-4">
-                            {loadingNotes ? (
-                              // SKELETON LOADERS
-                              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:3">
-                                {Array.from({ length: 4 }).map((_, idx) => <SkeletonCard key={idx} />)}
-                              </div>
-                            ) : subNotes.length === 0 ? (
-                              <p className="text-xs md:text-sm text-muted-foreground text-center py-6 md:py-8">
-                                No notes yet in {sub}. Check back soon!
-                              </p>
-                            ) : (
-                              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-                                {subNotes.map((note, index) => (
-                                  <React.Fragment key={note.id}>
-                                    {/* CARD - NO BORDER ON MOBILE */}
-                                    <div
-                                      className="flex flex-col overflow-hidden hover:shadow-md transition-all cursor-pointer border border-gray-100 dark:border-gray-800 sm:border sm:rounded-xl bg-white dark:bg-gray-800 rounded-xl p-3 md:p-4"
-                                      onClick={() => setDetailsOverlayNote(note)}
-                                    >
-                                      <div className="pb-1 md:pb-2">
-                                        <div className="flex items-start justify-between gap-1 md:gap-2">
-                                          <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-                                            <div className="p-1 md:p-1.5 bg-gray-50 dark:bg-gray-900 rounded">
-                                              {getTypeIcon(note.file_type)}
-                                            </div>
-                                            <div className="text-sm md:text-base font-semibold line-clamp-1">
-                                              {note.title}
-                                            </div>
-                                          </div>
-                                          <Badge className={`${getTypeColor(note.file_type)} text-[8px] md:text-[10px] px-1.5 md:px-2`}>
-                                            {note.file_type?.toUpperCase() || "PDF"}
-                                          </Badge>
-                                        </div>
-
-                                        {note.description && (
-                                          <div className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 md:line-clamp-3 mt-0.5 md:mt-1 leading-relaxed">
-                                            {note.description}
-                                          </div>
-                                        )}
-
-                                        <div className="flex items-center justify-between mt-1 md:mt-2">
-                                          <span className="text-[8px] md:text-xs text-muted-foreground flex items-center gap-0.5 md:gap-1">
-                                            <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                                            {new Date(note.created_at).toLocaleDateString()}
-                                          </span>
-                                          <div className="flex items-center gap-0.5 md:gap-1">
-                                            {offlineFiles.includes(note.id) && (
-                                              <Badge variant="outline" className="text-[7px] md:text-[9px] flex items-center gap-0.5">
-                                                <CloudCheck className="h-2 w-2 md:h-2.5 md:w-2.5" /> Offline
-                                              </Badge>
-                                            )}
-                                            {!isPremium && (
-                                              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-[7px] md:text-[9px] flex items-center gap-0.5 px-1 md:px-1.5">
-                                                <Lock className="h-2 w-2 md:h-2.5 md:w-2.5" /> Premium
-                                              </Badge>
-                                            )}
-                                            {note.download_count > 0 && (
-                                              <span className="text-[7px] md:text-[9px] text-gray-400 flex items-center gap-0.5">
-                                                <Download className="h-2 w-2 md:h-2.5 md:w-2.5" /> {note.download_count}
-                                              </span>
-                                            )}
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-5 w-5 md:h-6 md:w-6 p-0 rounded-full"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDetailsOverlayNote(note);
-                                              }}
-                                            >
-                                              <Info className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      <div className="pt-1 md:pt-0 space-y-2 md:space-y-3">
-
-
-                                        <div className="flex gap-1 md:gap-2 flex-wrap">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDownloadNote(note.id, note.file_url);
-                                            }}
-                                          >
-                                            <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
-                                            Cache
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-6 md:h-8 px-1.5 md:px-2 rounded-lg md:rounded-lg text-[9px] md:text-xs"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleViewNote(note);
-                                            }}
-                                          >
-                                            <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 mr-0.5 md:mr-1" />
-                                            View
-                                          </Button>
-                                          {session?.user?.id === note.uploaded_by && (
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-6 md:h-8 px-1.5 md:px-2 rounded text-red-500 hover:text-red-600 text-[9px] md:text-xs"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(note);
-                                              }}
-                                            >
-                                              <Trash2 className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
-                                            </Button>
-                                          )}
-                                        </div>
-
-                                        <div className="flex justify-between items-center pt-1 md:pt-2 border-t border-gray-100 dark:border-gray-800">
-                                          <div className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs text-muted-foreground">
-                                            <Eye className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
-                                            <span>{viewCounts[note.id] || 0}</span>
-                                            {note.download_count > 0 && (
-                                              <>
-                                                <Download className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 ml-0.5 md:ml-1" />
-                                                <span>{note.download_count}</span>
-                                              </>
-                                            )}
-                                          </div>
-                                          <button
-                                            className={`flex items-center gap-1 text-[9px] md:text-xs transition-colors ${bookmarkedItems.includes(note.id) ? "text-red-500" : "text-muted-foreground"
-                                              }`}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              toggleLike(note.id);
-                                            }}
-                                          >
-                                            <Heart className={`h-2.5 w-2.5 md:h-3.5 md:w-3.5 ${bookmarkedItems.includes(note.id) ? "fill-current" : ""}`} />
-                                            <span>{likeCounts[note.id] || 0}</span>
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* UnitPics image after every 4 cards */}
-                                    < UnitPics position={index + 1} />
-                                  </React.Fragment>
-                                ))}
-                              </div>
-                            )
-                            }
-                          </TabsContent>
-                        );
-                      })}
-                    </Tabs>
+                      </Tabs>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
       </div >

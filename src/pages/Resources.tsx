@@ -60,9 +60,10 @@ import { useNavigate } from "react-router-dom";
 import { UnitPics } from "@/components/deco/UnitPics";
 
 // Cache helpers
+// Cache helpers
 const notesCache = new Map();
 const statsCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours — catalog rarely changes
 
 // Role-based subscription pricing - FOR DISPLAY ONLY in the upgrade overlay
 const TUTOR_SUBSCRIPTION = {
@@ -175,6 +176,9 @@ export function Resources() {
   const channelRef = useRef<any>(null);
   const lastStatsFetch = useRef(0);
   const pendingLikeUpdates = useRef<Map<string, boolean>>(new Map());
+  // NEW: dedupes concurrent downloads of the same file
+  const inflightDownloads = useRef<Map<string, Promise<Blob>>>(new Map());
+
   // ============ NETWORK RESILIENCE HELPERS ============
   // Replace your withTimeout with this
   const withTimeout = <T,>(promise: Promise<T>, ms = 8000): Promise<T> => {
@@ -357,7 +361,8 @@ export function Resources() {
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
-            if (now - parsed.timestamp < 600000) return;
+            // Skip refetch if catalog is less than 2h old
+            if (now - parsed.timestamp < 2 * 60 * 60 * 1000) return;
           } catch { }
         }
         fetchNotes();
@@ -376,14 +381,14 @@ export function Resources() {
     if (!notes.length || !session?.user || isFetchingStats.current) return;
 
     const now = Date.now();
-    if (now - lastStatsFetch.current < 30000) return;
+    if (now - lastStatsFetch.current < 30 * 60 * 1000) return; // 30 min
     lastStatsFetch.current = now;
 
     const statsKey = `stats_${session.user.id}`;
 
     if (statsCache.has(statsKey)) {
       const cached = statsCache.get(statsKey);
-      if (now - cached.timestamp < 30000 && isMounted.current) {
+      if (now - cached.timestamp < 30 * 60 * 1000 && isMounted.current) {
         setLikeCounts(cached.likes);
         setViewCounts(cached.views);
         setBookmarkedItems(cached.bookmarked);
@@ -486,20 +491,85 @@ export function Resources() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+  // ============ CACHE-FIRST FILE RESOLVER (MovieBox pattern) ============
+  // - 1st view of a note: downloads once, saves to IndexedDB, returns blob URL
+  // - Every next view: reads from IndexedDB → zero network
+  // - Dedupes concurrent requests for the same file
+  const resolveFileUrl = useCallback(async (note: any): Promise<string> => {
+    // 1. IndexedDB first
+    const cached = await getFile(note.id);
+    if (cached) return URL.createObjectURL(cached);
 
-  const filteredResources = notes.filter(
-    (note) =>
-      (note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (note.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (note.course || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (note.unit || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (note.institution || "").toLowerCase().includes(searchTerm.toLowerCase()))
-      &&
-      // Only apply course filter while the upload form is actually open
-      (!showUploadForm || !uploadForm.course
-        ? true
-        : (note.course || "").toUpperCase() === uploadForm.course.toUpperCase())
-  );
+    // 2. If a download for this note is already in progress, wait on it
+    if (inflightDownloads.current.has(note.id)) {
+      const blob = await inflightDownloads.current.get(note.id)!;
+      return URL.createObjectURL(blob);
+    }
+
+    // 3. Download ONCE, persist silently
+    const task = (async () => {
+      const res = await fetch(note.file_url);
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const blob = await res.blob();
+      await saveFile(note.id, blob);
+      return blob;
+    })();
+
+    inflightDownloads.current.set(note.id, task);
+    try {
+      const blob = await task;
+      return URL.createObjectURL(blob);
+    } finally {
+      inflightDownloads.current.delete(note.id);
+    }
+  }, []);
+
+  // Ask the browser for persistent storage so it doesn't evict our cache
+  useEffect(() => {
+    if (navigator.storage?.persist) {
+      navigator.storage.persist().catch(() => { });
+    }
+  }, []);
+  const filteredResources = notes.filter((note) => {
+    const q = searchTerm.trim().toLowerCase();
+
+    // ── 1. GLOBAL SEARCH: match across ALL relevant fields ────────────────
+    // Tokenized so "anatomy block 1" matches notes where those words
+    // appear anywhere across the fields (order doesn't matter).
+    if (q.length > 0) {
+      const tokens = q.split(/\s+/).filter(Boolean);
+
+      const haystack = [
+        note.title,
+        note.description,
+        note.course,
+        note.unit,
+        note.institution,
+        note.block,
+        note.category,
+        note.sub_category,
+        note.usage_type,
+        Array.isArray(note.tags) ? note.tags.join(" ") : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      // Every token must appear somewhere in the haystack
+      const matchesSearch = tokens.every((t) => haystack.includes(t));
+      if (!matchesSearch) return false;
+
+      // ⚠️ IMPORTANT: skip the course filter while searching.
+      // Otherwise a user searching globally would be silently scoped
+      // to whatever course they last typed in the upload form.
+      return true;
+    }
+
+    // ── 2. NO SEARCH: keep the existing course filter while uploading ────
+    // Only apply course filter while the upload form is actually open
+    if (!showUploadForm || !uploadForm.course) return true;
+    return (note.course || "").toUpperCase() === uploadForm.course.toUpperCase();
+  });
 
   const toggleLike = useCallback(async (noteId: string) => {
     if (!session?.user?.id) return alert("Please login to like resources");
@@ -720,8 +790,8 @@ export function Resources() {
   };
 
   // ORIGINAL handleViewNote - ONLY uses isPremium for access check
+  // CACHE-FIRST handleViewNote — downloads once, then always reads from device
   const handleViewNote = useCallback(async (note: any) => {
-    // ONLY isPremium determines access - NO tutor bypass
     if (!isPremium) {
       setSelectedNoteForOverlay(note);
       setShowPremiumOverlay(true);
@@ -729,26 +799,45 @@ export function Resources() {
     }
 
     try {
-      const cachedFile = await getFile(note.id);
-      const url = cachedFile ? URL.createObjectURL(cachedFile) : note.file_url;
+      // Cache-first: 1st time downloads + saves; afterwards reads from IndexedDB
+      const url = await resolveFileUrl(note);
       if (isMounted.current) setFullscreenNote({ ...note, file_url: url });
 
-      const { error } = await supabase.from("note_views").upsert(
-        { note_id: note.id, user_id: session?.user?.id || null },
-        { onConflict: ['note_id', 'user_id'] }
-      );
-
-      if (!error && isMounted.current) {
-        setViewCounts(prev => ({ ...prev, [note.id]: (prev[note.id] || 0) + 1 }));
+      // Only log a view ONCE per user per note, ever (kills DB write egress)
+      const seenKey = `seen_${note.id}`;
+      if (!localStorage.getItem(seenKey)) {
+        localStorage.setItem(seenKey, "1");
+        supabase
+          .from("note_views")
+          .upsert(
+            { note_id: note.id, user_id: session?.user?.id || null },
+            { onConflict: ["note_id", "user_id"] }
+          )
+          .then(({ error }) => {
+            if (!error && isMounted.current) {
+              setViewCounts(prev => ({
+                ...prev,
+                [note.id]: (prev[note.id] || 0) + 1,
+              }));
+            }
+          });
+      } else {
+        // Still bump the local counter optimistically for the UI
+        if (isMounted.current) {
+          setViewCounts(prev => ({
+            ...prev,
+            [note.id]: (prev[note.id] || 0) + 1,
+          }));
+        }
       }
     } catch (err) {
       console.error("View error:", err);
+      alert("Failed to load file. Check your connection.");
     }
-  }, [isPremium, session?.user?.id]);
-
+  }, [isPremium, session?.user?.id, resolveFileUrl]);
   // ORIGINAL handleDownloadNote - ONLY uses isPremium for access check
+  // handleDownloadNote — now uses the same cache-first resolver
   const handleDownloadNote = useCallback(async (note: any) => {
-    // ONLY isPremium determines access - NO tutor bypass
     if (!isPremium) {
       setSelectedNoteForOverlay(note);
       setShowPremiumOverlay(true);
@@ -756,15 +845,19 @@ export function Resources() {
     }
 
     try {
-      const res = await fetch(note.file_url);
-      const blob = await res.blob();
-      await saveFile(note.id, blob);
-      if (isMounted.current) setOfflineFiles((prev) => [...prev, note.id]);
+      // resolveFileUrl already saves silently — if cached, instant; if not, downloads once
+      await resolveFileUrl(note);
+      if (isMounted.current) {
+        setOfflineFiles((prev) =>
+          prev.includes(note.id) ? prev : [...prev, note.id]
+        );
+      }
       alert("Saved offline!");
     } catch (err) {
       console.error("Failed to save offline:", err);
+      alert("Failed to save offline.");
     }
-  }, [isPremium]);
+  }, [isPremium, resolveFileUrl]);
 
   const blockCategories = [
     { id: "PTS", name: "YR 1.O/PTS" },
@@ -1147,25 +1240,40 @@ export function Resources() {
                 </div>
 
                 {/* RESOURCES GRID - NO PADDING, NO MARGIN ON MOBILE */}
+                {/* RESOURCES GRID - NO PADDING, NO MARGIN ON MOBILE */}
                 <div className="space-y-3 md:space-y-4 mt-2 md:mt-4 px-0 sm:px-0">
-                  <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4 text-center px-2 md:px-0">
-                    {blockCategories.find((cat) => cat.id === selectedBlock)?.name?.split("/").pop()}
-                  </h2>
-                  {blockCategories.filter((cat) => cat.id === selectedBlock).map((cat) => (
-                    <div key={cat.id}>
-                      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
-                        {loadingNotes ? (
-                          // SKELETON LOADERS - 6 cards while loading
-                          Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-                        ) : (() => {
-                          const blockNotes = filteredResources.filter((note) =>
-                            cat.id === "OTHER"
-                              ? !blockCategories.slice(0, 7).some((b) => (note.block || "").toUpperCase() === b.id)
-                              : (note.block || "").toUpperCase() === cat.id
-                          );
+                  {(() => {
+                    // 🚀 GLOBAL SEARCH MODE:
+                    // If user typed something, ignore block scoping and search ALL notes.
+                    const isSearching = searchTerm.trim().length > 0;
 
-                          if (blockNotes.length > 0) {
-                            return blockNotes.map((note, index) => (
+                    // Which notes do we display?
+                    const notesToShow = isSearching
+                      ? filteredResources
+                      : filteredResources.filter((note) =>
+                        selectedBlock === "OTHER"
+                          ? !blockCategories
+                            .slice(0, 7)
+                            .some((b) => (note.block || "").toUpperCase() === b.id)
+                          : (note.block || "").toUpperCase() === selectedBlock
+                      );
+
+                    // Header text
+                    const headerLabel = isSearching
+                      ? `Search results for "${searchTerm}"`
+                      : blockCategories.find((c) => c.id === selectedBlock)?.name?.split("/").pop();
+
+                    return (
+                      <>
+                        <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-4 text-center px-2 md:px-0">
+                          {headerLabel}
+                        </h2>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full">
+                          {loadingNotes ? (
+                            Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+                          ) : notesToShow.length > 0 ? (
+                            notesToShow.map((note, index) => (
                               <React.Fragment key={note.id}>
                                 {/* CARD - COMPLETELY EDGE-TO-EDGE ON MOBILE */}
                                 <div
@@ -1182,6 +1290,11 @@ export function Resources() {
                                           <Badge className={`${getTypeColor(note.file_type)} border-none font-bold text-[8px] md:text-[10px] tracking-widest px-1.5 md:px-2`}>
                                             {note.file_type?.toUpperCase() || "PDF"}
                                           </Badge>
+                                          {isSearching && note.block && (
+                                            <Badge variant="outline" className="text-[8px] md:text-[10px]">
+                                              {note.block}
+                                            </Badge>
+                                          )}
                                         </div>
                                         {offlineFiles.includes(note.id) && (
                                           <div className="flex items-center gap-1 text-[8px] md:text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">
@@ -1198,7 +1311,6 @@ export function Resources() {
                                           {note.description || "No description provided"}
                                         </CardDescription>
                                       </div>
-
 
                                       <div className="flex flex-wrap gap-1.5 md:gap-2 pt-0.5 md:pt-1">
                                         <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter flex items-center gap-0.5 md:gap-1">
@@ -1220,8 +1332,6 @@ export function Resources() {
                                   </div>
 
                                   <div className="p-3 md:p-5 pt-1 md:pt-2 space-y-3 md:space-y-5">
-
-
                                     <div className="flex flex-wrap items-center gap-1.5 md:gap-2 border-t border-gray-50 dark:border-gray-900 pt-2 md:pt-4">
                                       {note.file_type === "pdf" && (
                                         <>
@@ -1275,98 +1385,77 @@ export function Resources() {
                                           </span>
                                         </button>
                                       </div>
-                                      <div className="text-[7px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">Library</div>
+                                      <div className="text-[7px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                        {isSearching && note.course ? note.course : "Library"}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* UnitPics image after every 4 cards */}
-
                                 <UnitPics position={index + 1} />
                               </React.Fragment>
-                            ));
-                          }
-
-                          // Truly empty — figure out WHY
-                          const hasAnyNotes = notes.length > 0;
-                          const isFiltered = searchTerm.trim().length > 0;
-
-                          if (!isOnline) {
-                            return (
-                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
-                                <Info className="w-8 h-8 text-amber-500 mb-3" />
-                                <CardTitle className="text-base md:text-lg text-muted-foreground">
-                                  You're offline
-                                </CardTitle>
-                                <CardDescription className="text-xs md:text-sm">
-                                  Cached notes will appear here once you're back online.
-                                </CardDescription>
-                              </div>
-                            );
-                          }
-
-                          if (lastSyncFailed) {
-                            return (
-                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
-                                <Info className="w-8 h-8 text-amber-500 mb-3" />
-                                <CardTitle className="text-base md:text-lg text-muted-foreground">
-                                  Couldn't reach the server
-                                </CardTitle>
-                                <CardDescription className="text-xs md:text-sm mb-3">
-                                  Showing what we have cached.
-                                </CardDescription>
-                                <Button size="sm" onClick={() => { fetchNotes(); fetchStats(); }}>
-                                  Retry
-                                </Button>
-                              </div>
-                            );
-                          }
-
-                          if (isFiltered) {
-                            return (
-                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
-                                <Search className="w-8 h-8 text-gray-400 mb-3" />
-                                <CardTitle className="text-base md:text-lg text-muted-foreground">
-                                  No matches for "{searchTerm}"
-                                </CardTitle>
-                                <CardDescription className="text-xs md:text-sm">
-                                  Try a different keyword or clear the search.
-                                </CardDescription>
-                              </div>
-                            );
-                          }
-
-                          if (!hasAnyNotes) {
-                            return (
-                              <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
-                                <FileText className="w-8 h-8 text-gray-400 mb-3" />
-                                <CardTitle className="text-base md:text-lg text-muted-foreground">
-                                  No resources yet
-                                </CardTitle>
-                                <CardDescription className="text-xs md:text-sm">
-                                  Be the first to upload study material for this block.
-                                </CardDescription>
-                              </div>
-                            );
-                          }
-
-                          // Has notes but none in this block
-                          return (
+                            ))
+                          ) : isSearching ? (
+                            // No matches for search
+                            <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                              <Search className="w-8 h-8 text-gray-400 mb-3" />
+                              <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                No matches for "{searchTerm}"
+                              </CardTitle>
+                              <CardDescription className="text-xs md:text-sm">
+                                Try a different keyword or clear the search.
+                              </CardDescription>
+                            </div>
+                          ) : !isOnline ? (
+                            <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                              <Info className="w-8 h-8 text-amber-500 mb-3" />
+                              <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                You're offline
+                              </CardTitle>
+                              <CardDescription className="text-xs md:text-sm">
+                                Cached notes will appear here once you're back online.
+                              </CardDescription>
+                            </div>
+                          ) : lastSyncFailed ? (
+                            <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                              <Info className="w-8 h-8 text-amber-500 mb-3" />
+                              <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                Couldn't reach the server
+                              </CardTitle>
+                              <CardDescription className="text-xs md:text-sm mb-3">
+                                Showing what we have cached.
+                              </CardDescription>
+                              <Button size="sm" onClick={() => { fetchNotes(); fetchStats(); }}>
+                                Retry
+                              </Button>
+                            </div>
+                          ) : notes.length === 0 ? (
+                            <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
+                              <FileText className="w-8 h-8 text-gray-400 mb-3" />
+                              <CardTitle className="text-base md:text-lg text-muted-foreground">
+                                No resources yet
+                              </CardTitle>
+                              <CardDescription className="text-xs md:text-sm">
+                                Be the first to upload study material for this block.
+                              </CardDescription>
+                            </div>
+                          ) : (
+                            // Has notes globally but none in this specific block
                             <div className="col-span-full flex flex-col items-center justify-center py-12 px-6">
                               <Layers className="w-8 h-8 text-gray-400 mb-3" />
                               <CardTitle className="text-base md:text-lg text-muted-foreground">
                                 Nothing in this block yet
                               </CardTitle>
                               <CardDescription className="text-xs md:text-sm">
-                                Try a different category or upload something.
+                                Try a different category or use the search bar above to search across all blocks.
                               </CardDescription>
                             </div>
-                          );
-                        })()}
-                      </div>
-                      <TermsButton />
-                    </div>
-                  ))}
+                          )}
+                        </div>
+                        <TermsButton />
+                      </>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </div>
