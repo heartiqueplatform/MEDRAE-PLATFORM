@@ -614,11 +614,32 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         const otherItems: any[] = [
             { title: "NursMart", url: "/market", icon: NursMartLogo, iconTone: "neutral" as IconTone },
             { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone },
-            // ❌ Help Center removed — new one coming for tutors/staff
+        ];
+
+        // Help Center — students only (new one for tutors/staff coming soon)
+        if (isStudent) {
+            otherItems.push({
+                title: "Help Center",
+                url: "/help",
+                icon: MessageCircle,
+                iconTone: "communication" as IconTone,
+            });
+        }
+
+        otherItems.push(
             { title: "Feedback", url: "/feedback", icon: MessageSquareX, iconTone: "communication" as IconTone },
             { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" as IconTone },
             { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" as IconTone },
-        ];
+        );
+
+        if (isStudent) {
+            otherItems.push({
+                title: "GroupPay",
+                url: "/grouppay",
+                icon: Users,
+                iconTone: "practice" as IconTone,
+            });
+        }
 
         if (isStudent) {
             otherItems.push({

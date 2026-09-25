@@ -581,7 +581,10 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     const base = [
       { title: "NursMartt", url: "/market", icon: (props: any) => <img src="/Nurvia_logo.png" alt="Nurvia Logo" className={`${props.className} object-contain bg-transparent`} loading="lazy" />, iconTone: "neutral" as IconTone },
       { title: "Announcements", url: "/announcements", icon: Bell, iconTone: "alert" as IconTone, onClick: handleAnnouncementsClick },
-      // ❌ Help Center intentionally removed — new one for tutors/staff coming soon
+      // Help Center — students only (new one for tutors/staff coming soon)
+      ...(isStudent
+        ? [{ title: "Help Center", url: "/help", icon: MessageCircle, iconTone: "communication" as IconTone }]
+        : []),
       { title: "Feedback Box", url: "/feedback", icon: MessageSquareX, iconTone: "communication" as IconTone },
       { title: "Settings", url: "/settings", icon: Settings, iconTone: "system" as IconTone },
       { title: "Subscription", url: "/subscription", icon: CreditCard, iconTone: "finance" as IconTone },

@@ -1,7 +1,7 @@
 // src/components/MedraeBot.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     X,
@@ -11,12 +11,6 @@ import {
     Lock,
     Crown,
     ArrowRight,
-    Volume2,
-    VolumeX,
-    Play,
-    Pause,
-    SkipBack,
-    SkipForward,
     BookOpen,
     Brain,
     Home,
@@ -41,16 +35,9 @@ const FORCE_SHOW_ON_REFRESH = false;
 // ============================================
 
 // ============================================
-// 🎵 AUDIO + LOCKOUT SETTINGS
+// 🔒 LOCKOUT SETTINGS
 // ============================================
-const BOT_OPEN_SOUND = "/sounds/medrae-bot-open.mp3";
-const BOT_TRACK_TITLE = "Medrae Nursing Theme";
-const BOT_TRACK_ARTIST = "Medrae Original";
-
 const LOCKOUT_SECONDS = 7;
-const BOT_VOLUME = 0.3; // ← softer, medium background level
-const FADE_IN_MS = 1400;
-const FADE_OUT_MS = 1000;
 // ============================================
 
 // ─── Support number (shown on the card) ───
@@ -75,38 +62,6 @@ const getTimeGreeting = (): string => {
     return "Good night!";
 };
 
-// ─── Format seconds as mm:ss ───
-const fmt = (s: number) => {
-    if (!isFinite(s) || s < 0) return "0:00";
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-};
-
-// ─── Tiny animated equalizer bars ───
-const EqualizerBars = ({ active }: { active: boolean }) => (
-    <div className="flex items-end gap-[2px] h-3">
-        <span
-            className={`w-[2px] rounded-full bg-current ${active ? "animate-[eq_0.8s_ease-in-out_infinite]" : ""}`}
-            style={{ height: active ? "100%" : "20%", animationDelay: "0ms" }}
-        />
-        <span
-            className={`w-[2px] rounded-full bg-current ${active ? "animate-[eq_0.7s_ease-in-out_infinite]" : ""}`}
-            style={{ height: active ? "100%" : "35%", animationDelay: "120ms" }}
-        />
-        <span
-            className={`w-[2px] rounded-full bg-current ${active ? "animate-[eq_0.9s_ease-in-out_infinite]" : ""}`}
-            style={{ height: active ? "100%" : "25%", animationDelay: "240ms" }}
-        />
-        <style>{`
-            @keyframes eq {
-                0%, 100% { height: 25%; }
-                50% { height: 100%; }
-            }
-        `}</style>
-    </div>
-);
-
 const MedraeBot = () => {
     const navigate = useNavigate();
     const session = useSession();
@@ -123,16 +78,6 @@ const MedraeBot = () => {
     const [isDismissing, setIsDismissing] = useState(false);
     const [hasChecked, setHasChecked] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(LOCKOUT_SECONDS);
-    const [soundPlayed, setSoundPlayed] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const fadeIntervalRef = useRef<number | null>(null);
-    const tickIntervalRef = useRef<number | null>(null);
-    const preMuteVolumeRef = useRef<number>(BOT_VOLUME);
-    const raf2Ref = useRef<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
 
     // ─── Time-aware greeting, computed once on mount ───
@@ -250,7 +195,6 @@ const MedraeBot = () => {
         let raf2: number | null = null;
         const raf1 = requestAnimationFrame(() => {
             raf2 = requestAnimationFrame(() => setIsMounted(true));
-            raf2Ref.current = raf2;
         });
 
         return () => {
@@ -258,92 +202,6 @@ const MedraeBot = () => {
             if (raf2 !== null) cancelAnimationFrame(raf2);
         };
     }, [isVisible]);
-
-    // ─── Fade-in helper ───
-    const fadeIn = useCallback((audio: HTMLAudioElement, targetVolume: number) => {
-        if (fadeIntervalRef.current) {
-            clearInterval(fadeIntervalRef.current);
-            fadeIntervalRef.current = null;
-        }
-
-        audio.volume = 0;
-        const stepMs = 40;
-        const steps = Math.max(1, Math.floor(FADE_IN_MS / stepMs));
-        let step = 0;
-
-        fadeIntervalRef.current = window.setInterval(() => {
-            step += 1;
-            const next = targetVolume * (step / steps);
-            if (step >= steps) {
-                audio.volume = targetVolume;
-                if (fadeIntervalRef.current) {
-                    clearInterval(fadeIntervalRef.current);
-                    fadeIntervalRef.current = null;
-                }
-            } else {
-                audio.volume = next;
-            }
-        }, stepMs);
-    }, []);
-
-    // ─── Play audio (looped + fade-in) ───
-    useEffect(() => {
-        if (!isVisible) return;
-        if (soundPlayed) return;
-
-        try {
-            const audio = new Audio(BOT_OPEN_SOUND);
-            audio.volume = 0;
-            audio.loop = true;
-            audio.preload = "auto";
-            audioRef.current = audio;
-
-            const playPromise = audio.play();
-            if (playPromise && typeof playPromise.catch === "function") {
-                playPromise
-                    .then(() => {
-                        setIsPlaying(true);
-                        fadeIn(audio, BOT_VOLUME);
-                    })
-                    .catch(() => {
-                        // Autoplay blocked — will retry on first gesture.
-                    });
-            }
-            setSoundPlayed(true);
-        } catch {
-            setSoundPlayed(true);
-        }
-    }, [isVisible, soundPlayed, fadeIn]);
-
-    // ─── Retry on first gesture ───
-    useEffect(() => {
-        if (!isVisible || !soundPlayed) return;
-
-        const tryPlay = () => {
-            const audio = audioRef.current;
-            if (audio && audio.paused) {
-                audio.play()
-                    .then(() => {
-                        setIsPlaying(true);
-                        fadeIn(audio, isMuted ? 0 : BOT_VOLUME);
-                    })
-                    .catch(() => { });
-            }
-            window.removeEventListener("pointerdown", tryPlay);
-            window.removeEventListener("keydown", tryPlay);
-            window.removeEventListener("touchstart", tryPlay);
-        };
-
-        window.addEventListener("pointerdown", tryPlay, { once: true });
-        window.addEventListener("keydown", tryPlay, { once: true });
-        window.addEventListener("touchstart", tryPlay, { once: true });
-
-        return () => {
-            window.removeEventListener("pointerdown", tryPlay);
-            window.removeEventListener("keydown", tryPlay);
-            window.removeEventListener("touchstart", tryPlay);
-        };
-    }, [isVisible, soundPlayed, isMuted, fadeIn]);
 
     // ─── Countdown timer (lockout) ───
     useEffect(() => {
@@ -357,133 +215,7 @@ const MedraeBot = () => {
         return () => clearTimeout(timer);
     }, [isVisible, secondsLeft]);
 
-    // ─── Progress ticker (only runs while audio plays) ───
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        const startTicker = () => {
-            if (tickIntervalRef.current) return;
-            tickIntervalRef.current = window.setInterval(() => {
-                if (!audioRef.current) return;
-                setCurrentTime(audioRef.current.currentTime);
-                setDuration(audioRef.current.duration || 0);
-            }, 1000);
-        };
-
-        const stopTicker = () => {
-            if (tickIntervalRef.current) {
-                clearInterval(tickIntervalRef.current);
-                tickIntervalRef.current = null;
-            }
-        };
-
-        const onLoadedMeta = () => {
-            if (audioRef.current) {
-                setDuration(audioRef.current.duration || 0);
-            }
-        };
-
-        const onPlay = () => { setIsPlaying(true); startTicker(); };
-        const onPause = () => { setIsPlaying(false); stopTicker(); };
-
-        audio.addEventListener("loadedmetadata", onLoadedMeta);
-        audio.addEventListener("play", onPlay);
-        audio.addEventListener("pause", onPause);
-
-        if (!audio.paused) {
-            setIsPlaying(true);
-            startTicker();
-        }
-
-        return () => {
-            audio.removeEventListener("loadedmetadata", onLoadedMeta);
-            audio.removeEventListener("play", onPlay);
-            audio.removeEventListener("pause", onPause);
-            stopTicker();
-        };
-    }, [soundPlayed]);
-
     const isLocked = secondsLeft > 0;
-
-    // ─── Fade out and stop ───
-    const fadeOutAndStop = useCallback(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        if (fadeIntervalRef.current) {
-            clearInterval(fadeIntervalRef.current);
-            fadeIntervalRef.current = null;
-        }
-
-        const stepMs = 40;
-        const steps = Math.max(1, Math.floor(FADE_OUT_MS / stepMs));
-        const startVolume = audio.volume;
-        let step = 0;
-
-        fadeIntervalRef.current = window.setInterval(() => {
-            step += 1;
-            const next = startVolume * (1 - step / steps);
-            if (next <= 0.02 || step >= steps) {
-                audio.pause();
-                audio.currentTime = 0;
-                audio.volume = BOT_VOLUME;
-                setIsPlaying(false);
-                if (fadeIntervalRef.current) {
-                    clearInterval(fadeIntervalRef.current);
-                    fadeIntervalRef.current = null;
-                }
-            } else {
-                audio.volume = next;
-            }
-        }, stepMs);
-    }, []);
-
-    // ─── Play / Pause toggle ───
-    const togglePlayPause = useCallback(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        if (audio.paused) {
-            audio.play()
-                .then(() => {
-                    setIsPlaying(true);
-                    fadeIn(audio, isMuted ? 0 : BOT_VOLUME);
-                })
-                .catch(() => { });
-        } else {
-            audio.pause();
-            setIsPlaying(false);
-        }
-    }, [isMuted, fadeIn]);
-
-    // ─── Toggle mute ───
-    const toggleMute = useCallback(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        if (isMuted) {
-            const target = preMuteVolumeRef.current || BOT_VOLUME;
-            fadeIn(audio, target);
-            setIsMuted(false);
-        } else {
-            preMuteVolumeRef.current = audio.volume;
-            audio.volume = 0;
-            setIsMuted(true);
-        }
-    }, [isMuted, fadeIn]);
-
-    // ─── Cleanup on unmount ───
-    useEffect(() => {
-        return () => {
-            if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-            if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-        };
-    }, []);
 
     const markDismissed = useCallback(() => {
         try {
@@ -500,7 +232,6 @@ const MedraeBot = () => {
 
         markDismissed();
         setIsDismissing(true);
-        fadeOutAndStop();
 
         setTimeout(() => {
             setIsVisible(false);
@@ -508,42 +239,22 @@ const MedraeBot = () => {
             setIsMounted(false);
             if (action) action();
         }, 500);
-    }, [isLocked, markDismissed, fadeOutAndStop]);
+    }, [isLocked, markDismissed]);
 
     const handleDismiss = useCallback(() => closeAndThen(), [closeAndThen]);
     const handleUpgrade = useCallback(() => closeAndThen(() => navigate("/subscription")), [closeAndThen, navigate]);
     const handleSuggestion = useCallback(() => closeAndThen(() => navigate("/feedback")), [closeAndThen, navigate]);
-
-    // ─── Stop & dispose audio the moment the bot stops being visible ───
-    useEffect(() => {
-        if (isVisible) return;
-        if (!audioRef.current && !tickIntervalRef.current && !fadeIntervalRef.current) return;
-
-        if (fadeIntervalRef.current) { clearInterval(fadeIntervalRef.current); fadeIntervalRef.current = null; }
-        if (tickIntervalRef.current) { clearInterval(tickIntervalRef.current); tickIntervalRef.current = null; }
-
-        const audio = audioRef.current;
-        if (audio) {
-            audio.pause();
-            audio.removeAttribute("src");
-            audio.load();
-            audioRef.current = null;
-        }
-        setIsPlaying(false);
-    }, [isVisible]);
 
     // ─── If premium resolves mid-session, hide the bot gracefully ───
     useEffect(() => {
         if (!isPremium || SHOW_BOT_FOR_PREMIUM) return;
         if (!isVisible) return;
 
-        fadeOutAndStop();
         setIsVisible(false);
         setIsDismissing(false);
         setIsMounted(false);
         setSecondsLeft(LOCKOUT_SECONDS);
-        setSoundPlayed(false);
-    }, [isPremium, isVisible, fadeOutAndStop]);
+    }, [isPremium, isVisible]);
 
     // ─── Escape key ───
     useEffect(() => {
@@ -569,86 +280,6 @@ const MedraeBot = () => {
             }}
         />
     );
-
-    const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-    // ─── Audio Player ───
-    const AudioPlayer = ({ accent }: { accent: "emerald" | "blue" }) => {
-        const accentBg = accent === "emerald"
-            ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300"
-            : "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300";
-        const dotColor = accent === "emerald" ? "bg-emerald-500" : "bg-blue-500";
-        const progressFill = accent === "emerald" ? "bg-emerald-500" : "bg-blue-500";
-        const playing = isPlaying && !isMuted;
-
-        return (
-            <div className={`rounded-2xl px-3 py-3 ${accentBg}`}>
-                <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-white/70 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
-                        <EqualizerBars active={playing} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor} ${playing ? "animate-pulse" : ""}`} />
-                            <p className="text-[10px] font-medium tracking-wider truncate">
-                                Now Playing
-                            </p>
-                        </div>
-                        <p className="text-xs font-bold truncate">
-                            {BOT_TRACK_TITLE}
-                        </p>
-                        <p className="text-[10px] opacity-70 truncate">
-                            {BOT_TRACK_ARTIST}
-                        </p>
-                    </div>
-                    <button
-                        onClick={toggleMute}
-                        className="flex-shrink-0 p-1.5 rounded-full hover:bg-white/60 dark:hover:bg-white/10 transition-colors"
-                        aria-label={isMuted ? "Unmute" : "Mute"}
-                    >
-                        {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                    </button>
-                </div>
-
-                <div className="mt-2.5">
-                    <div className="relative h-1 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
-                        <div
-                            className={`absolute left-0 top-0 h-full ${progressFill} transition-[width] duration-300 ease-linear`}
-                            style={{ width: `${progressPercent}%` }}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between mt-1 text-[10px] font-mono opacity-70">
-                        <span>{fmt(currentTime)}</span>
-                        <span>-{fmt(Math.max(0, duration - currentTime))}</span>
-                    </div>
-                </div>
-
-                <div className="mt-1 flex items-center justify-center gap-4">
-                    <button
-                        disabled
-                        aria-label="Previous (disabled)"
-                        className="p-1.5 rounded-full opacity-30 cursor-not-allowed"
-                    >
-                        <SkipBack size={16} />
-                    </button>
-                    <button
-                        onClick={togglePlayPause}
-                        aria-label={isPlaying ? "Pause" : "Play"}
-                        className="p-2 rounded-full bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 transition-colors shadow-sm"
-                    >
-                        {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
-                    </button>
-                    <button
-                        disabled
-                        aria-label="Next (disabled)"
-                        className="p-1.5 rounded-full opacity-30 cursor-not-allowed"
-                    >
-                        <SkipForward size={16} />
-                    </button>
-                </div>
-            </div>
-        );
-    };
 
     // ─── Top 3 Features ───
     const TopFeatures = ({ accent }: { accent: "emerald" | "blue" }) => {
@@ -811,8 +442,6 @@ const MedraeBot = () => {
                     </div>
 
                     <div className="p-5 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-                        <AudioPlayer accent="emerald" />
-
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                             Hey! Just checking in. If you ever have trouble loading pages, try{" "}
                             <strong className="text-emerald-600 dark:text-emerald-400">logging out and logging back in</strong>{" "}
@@ -906,8 +535,6 @@ const MedraeBot = () => {
                 </div>
 
                 <div className="p-5 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-                    <AudioPlayer accent="blue" />
-
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                         Hey! Just checking in. If you ever have trouble loading pages, try{" "}
                         <strong className="text-blue-600 dark:text-blue-400">logging out and logging back in</strong>{" "}
