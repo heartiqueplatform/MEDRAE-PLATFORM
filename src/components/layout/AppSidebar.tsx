@@ -7,7 +7,7 @@ import {
   MessageCircle, MessageSquare, Play, Settings, Star, TrendingUp,
   Users, Video, CreditCard, Bell, MessageSquareX, BookOpen, GraduationCap,
   Briefcase, CalendarDays, PenTool, Network, AlertCircle, Newspaper,
-  BarChart3, Swords, ShoppingBag, Share2,
+  BarChart3, Swords, ShoppingBag, Share2, Award,
   BookOpenCheck,
   Upload
 } from "lucide-react";
@@ -170,7 +170,6 @@ const MenuItem = memo(({
 });
 
 MenuItem.displayName = "MenuItem";
-
 const SidebarSection = memo(({
   label,
   items,
@@ -179,7 +178,8 @@ const SidebarSection = memo(({
   isCollapsed,
   isActiveFn,
   onNavigate,
-  groupId
+  groupId,
+  lockedOpen = false,
 }: {
   label: string;
   items: any[];
@@ -189,21 +189,29 @@ const SidebarSection = memo(({
   isActiveFn: (url: string) => boolean;
   onNavigate: (url: string) => void;
   groupId: string;
+  lockedOpen?: boolean;
 }) => {
   if (items.length === 0) return null;
 
+  const isOpen = lockedOpen || openGroups.includes(groupId);
+  const handleToggle = () => {
+    if (lockedOpen) return;
+    toggleGroup(groupId);
+  };
+
   return (
     <SidebarGroup className="py-0.5">
-      <Collapsible open={openGroups.includes(groupId)} onOpenChange={() => toggleGroup(groupId)}>
-        <CollapsibleTrigger asChild>
+      <Collapsible open={isOpen} onOpenChange={handleToggle}>
+        <CollapsibleTrigger asChild disabled={lockedOpen}>
           <SidebarGroupLabel
-            className="group/label flex items-center gap-2 rounded-md px-3 py-1.5 mx-1
+            className={`group/label flex items-center gap-2 rounded-md px-3 py-1.5 mx-1
               text-[10px] font-bold uppercase tracking-[0.12em]
               text-muted-foreground/70 hover:text-foreground
-              hover:bg-muted/50 cursor-pointer transition-colors"
+              transition-colors
+              ${lockedOpen ? "cursor-default" : "hover:bg-muted/50 cursor-pointer"}`}
           >
             {label}
-            {!isCollapsed && (
+            {!isCollapsed && !lockedOpen && (
               <ChevronDown className="ml-auto h-3.5 w-3.5 transition-transform duration-200 group-data-[state=open]/label:rotate-180" />
             )}
           </SidebarGroupLabel>
@@ -485,7 +493,43 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
 
     return base;
   }, [userRole, mistakeCount, isStudent]);
+  // ✅ STAFF TOOLS — CPD module (staff only, students/tutors never see these)
+  const staffItems = useMemo(() => {
+    if (userRole !== "staff") return [];
 
+    return [
+      {
+        title: "CPD Dashboard",
+        url: "/cpd",
+        icon: BookOpenCheck,
+        iconTone: "learning" as IconTone,
+      },
+      {
+        title: "CPD Catalog",
+        url: "/cpd/catalog",
+        icon: GraduationCap,
+        iconTone: "learning" as IconTone,
+      },
+      {
+        title: "My CPD Progress",
+        url: "/cpd/progress",
+        icon: TrendingUp,
+        iconTone: "progress" as IconTone,
+      },
+      {
+        title: "My Certificates",
+        url: "/cpd/certificates",
+        icon: Award,
+        iconTone: "practice" as IconTone,
+      },
+      {
+        title: "CPD Admin",
+        url: "/cpd/admin",
+        icon: PenTool,
+        iconTone: "system" as IconTone,
+      },
+    ];
+  }, [userRole]);
   // ✅ NCK EXAM PREP — students only
   const nckExamPrepItems = useMemo(() => {
     if (!isStudent) return [];
@@ -562,19 +606,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
     { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
   ] : [], [userRole]);
 
-  // ✅ STAFF TOOLS — placeholder until CPD tables/route exist
-  const staffItems = useMemo(() => {
-    if (userRole !== "staff") return [];
-    // ─────────────── STAFF CPD PLACEHOLDER ───────────────
-    // When you build CPD, drop items here, e.g.:
-    //
-    // return [
-    //   { title: "My CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
-    //   { title: "CPD Certificates", url: "/cpd/certificates", icon: GraduationCap, iconTone: "progress" as IconTone },
-    // ];
-    // ─────────────────────────────────────────────────────
-    return [];
-  }, [userRole]);
+
 
   // ✅ MORE — Help Center removed entirely, GroupPay student-only
   const otherItems = useMemo(() => {
@@ -686,6 +718,20 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
           groupId="main"
         />
 
+        {staffItems.length > 0 && (
+          <SidebarSection
+            label="Staff Tools"
+            items={staffItems}
+            openGroups={openGroups}
+            toggleGroup={toggleGroup}
+            isCollapsed={isCollapsed}
+            isActiveFn={isActive}
+            onNavigate={handleNavigate}
+            groupId="staff"
+            lockedOpen
+          />
+        )}
+
         <SidebarSection
           label="Institutional Exams"
           items={institutionalExamItems}
@@ -756,19 +802,6 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {staffItems.length > 0 && (
-          <SidebarSection
-            label="Staff Tools"
-            items={staffItems}
-            openGroups={openGroups}
-            toggleGroup={toggleGroup}
-            isCollapsed={isCollapsed}
-            isActiveFn={isActive}
-            onNavigate={handleNavigate}
-            groupId="staff"
-          />
-        )}
 
         <SidebarGroup className="py-0.5">
           <SidebarGroupLabel

@@ -137,8 +137,32 @@ import NursingRevisionKenyaPage from "./pages/seo/NursingRevisionKenyaPage";
 import MedraeNursingMeritCupPage from "./pages/seo/MedraeNursingMeritCupPage";
 import AdminPodcastTest from "./pages/AdminPodcastTest";
 
-
-
+// ═══════════════════════════════════════════════════════════════
+// STAFF CPD MODULE (self-contained — nothing else imports from here)
+// ═══════════════════════════════════════════════════════════════
+import StaffOnlyRoute from "@/auth/StaffOnlyRoute";
+import {
+  CpdDashboard,
+  CpdCatalogPage,
+  CpdActivityDetailPage,
+  CpdPlayerPage,
+  CpdAssessmentPage,
+  CpdAssessmentResultsPage,
+  CpdMyProgressPage,
+  CpdCertificatesPage,
+  CpdCertificateViewPage,
+  CpdVerifyPage,
+} from "@/staff-cpd/pages";
+// ─── CPD ADMIN (folder-based, replaces the old admin.tsx) ───
+import {
+  AdminLayout,
+  AdminHomePage,
+  ActivitiesListPage,
+  ActivityEditorPage,
+  QuestionsPage,
+  CompletionsPage,
+  PeriodsPage,
+} from "@/staff-cpd/admin/index";
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
@@ -495,6 +519,33 @@ const AppContent = () => {
                           <Route path="/nursing/search" element={<TopicSearch />} />
                           <Route path="/nursing/progress" element={<ProgressPage />} />
 
+                          {/* ═══════════════════════════════════════════════════════════
+                              STAFF CPD MODULE (all routes guarded by StaffOnlyRoute)
+                              Students / tutors hitting these get redirected to their dashboard
+                              ═══════════════════════════════════════════════════════════ */}
+
+                          {/* Nurse-facing CPD */}
+                          <Route path="/cpd" element={<StaffOnlyRoute><CpdDashboard /></StaffOnlyRoute>} />
+                          <Route path="/cpd/catalog" element={<StaffOnlyRoute><CpdCatalogPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/activity/:id" element={<StaffOnlyRoute><CpdActivityDetailPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/activity/:id/module/:moduleId" element={<StaffOnlyRoute><CpdPlayerPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/activity/:id/assessment" element={<StaffOnlyRoute><CpdAssessmentPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/activity/:id/assessment/:attemptId/results" element={<StaffOnlyRoute><CpdAssessmentResultsPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/progress" element={<StaffOnlyRoute><CpdMyProgressPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/certificates" element={<StaffOnlyRoute><CpdCertificatesPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/certificates/:id" element={<StaffOnlyRoute><CpdCertificateViewPage /></StaffOnlyRoute>} />
+                          <Route path="/cpd/verify/:code" element={<StaffOnlyRoute><CpdVerifyPage /></StaffOnlyRoute>} />
+
+                          {/* Staff authoring (still staff-only) */}
+                          {/* CPD Admin (staff-only, nested under admin layout) */}
+                          <Route path="/cpd/admin" element={<StaffOnlyRoute><AdminLayout /></StaffOnlyRoute>}>
+                            <Route index element={<AdminHomePage />} />
+                            <Route path="activities" element={<ActivitiesListPage />} />
+                            <Route path="activities/:id" element={<ActivityEditorPage />} />
+                            <Route path="questions" element={<QuestionsPage />} />
+                            <Route path="completions" element={<CompletionsPage />} />
+                            <Route path="periods" element={<PeriodsPage />} />
+                          </Route>
                           {/* Quiz Simulation */}
                           <Route path="/simulation/candidate" element={<CandidateInfo />} />
                           <Route path="/quiz-simulation/instructions" element={<InstructionPage />} />

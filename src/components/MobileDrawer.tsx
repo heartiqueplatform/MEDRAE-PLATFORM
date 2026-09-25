@@ -557,26 +557,28 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             });
         } else if (userRole === "tutor") {
             sectionsArray.push({
-                label: "Institutional Exams",
+                label: "Tutor Tools",
                 items: [
                     { title: "Tutor Exams", url: "/tutor/exams", icon: GraduationCap, iconTone: "learning" as IconTone },
-                    { title: "Exam Results", url: "/tutor/exams/:paper_id/results", icon: BarChart3, iconTone: "progress" as IconTone },
+                    { title: "Exam Results", url: "/tutor/exams/results", icon: BarChart3, iconTone: "progress" as IconTone },
+                    { title: "Student Analytics", url: "/analytics", icon: Users, iconTone: "people" as IconTone },
                 ],
             });
         }
-        // ─────────────── STAFF CPD PLACEHOLDER ───────────────
-        // When you build the staff CPD pages, add a section here:
-        //
-        // if (isStaff) {
-        //     sectionsArray.push({
-        //         label: "CPD",
-        //         items: [
-        //             { title: "My CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
-        //             { title: "CPD Certificates", url: "/cpd/certificates", icon: GraduationCap, iconTone: "progress" as IconTone },
-        //         ],
-        //     });
-        // }
-        // ──────────────────────────────────────────────────────
+        // ─────────────── STAFF CPD ───────────────
+        if (isStaff) {
+            sectionsArray.push({
+                label: "CPD",
+                items: [
+                    { title: "CPD Dashboard", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+                    { title: "CPD Catalog", url: "/cpd/catalog", icon: GraduationCap, iconTone: "learning" as IconTone },
+                    { title: "My CPD Progress", url: "/cpd/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
+                    { title: "My Certificates", url: "/cpd/certificates", icon: Crown, iconTone: "premium" as IconTone },
+                    { title: "CPD Admin", url: "/cpd/admin", icon: PenTool, iconTone: "system" as IconTone },
+                ],
+            });
+        }
+        // ───────────────────────────────────────────
 
         // ---------- LEARNING ----------
         const learningItems: any[] = [
@@ -641,15 +643,6 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
             });
         }
 
-        if (isStudent) {
-            otherItems.push({
-                title: "GroupPay",
-                url: "/grouppay",
-                icon: Users,
-                iconTone: "practice" as IconTone,
-            });
-        }
-
         sectionsArray.push({ label: "Other", items: otherItems });
 
         return sectionsArray;
@@ -688,16 +681,15 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
                 { title: "Results", url: "/tutor/exams/:paper_id/results", icon: BarChart3, iconTone: "progress" as IconTone },
             );
         }
-        // ─────────────── STAFF CPD QUICK-ACCESS PLACEHOLDER ───────────────
-        // When you build CPD, add quick-access chips here:
-        //
-        // if (isStaff) {
-        //     base.push(
-        //         { title: "CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
-        //         { title: "Certs", url: "/cpd/certificates", icon: GraduationCap, iconTone: "progress" as IconTone },
-        //     );
-        // }
-        // ────────────────────────────────────────────────────────────────
+        // ─────────────── STAFF CPD QUICK-ACCESS ───────────────
+        if (isStaff) {
+            base.push(
+                { title: "CPD", url: "/cpd", icon: BookOpenCheck, iconTone: "learning" as IconTone },
+                { title: "Catalog", url: "/cpd/catalog", icon: GraduationCap, iconTone: "learning" as IconTone },
+                { title: "Certs", url: "/cpd/certificates", icon: Crown, iconTone: "premium" as IconTone },
+            );
+        }
+        // ──────────────────────────────────────────────────────
 
         if (activePlan) {
             base.push({

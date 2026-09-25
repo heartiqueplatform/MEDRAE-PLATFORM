@@ -28,8 +28,7 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
 };
 
 /* ============================================================
-   PROFESSIONAL SVG ICONS (Facebook / Instagram / WhatsApp style)
-   Clean, uniform stroke width, 24x24 viewBox, no decorative bumps
+   PROFESSIONAL SVG ICONS
    ============================================================ */
 const IconHome = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -44,6 +43,7 @@ const IconHome = ({ active }: { active: boolean }) => (
         />
     </svg>
 );
+
 const IconQuizzes = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -85,11 +85,7 @@ const IconFeed = ({ active }: { active: boolean }) => (
 const IconMistakes = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
-            d="M11.5 6.8
-               L10 9.2 L11.5 11 L10 13 L11.5 15 L11.5 20.6
-               C11.5 20.6 3.4 15.6 3.4 9.5
-               C3.4 6.46 5.86 4 8.9 4
-               C10 4 11 4.5 11.5 5.2"
+            d="M11.5 6.8 L10 9.2 L11.5 11 L10 13 L11.5 15 L11.5 20.6 C11.5 20.6 3.4 15.6 3.4 9.5 C3.4 6.46 5.86 4 8.9 4 C10 4 11 4.5 11.5 5.2"
             stroke="currentColor"
             strokeWidth={active ? 2.2 : 1.8}
             strokeLinecap="round"
@@ -99,11 +95,7 @@ const IconMistakes = ({ active }: { active: boolean }) => (
         />
         <g transform="rotate(18 16 12) translate(1.2 0.6)">
             <path
-                d="M12.5 5.2
-                   C13 4.5 14 4 15.1 4
-                   C18.14 4 20.6 6.46 20.6 9.5
-                   C20.6 15.6 12.5 20.6 12.5 20.6
-                   L12.5 15 L14 13 L12.5 11 L14 9.2 L12.5 6.8"
+                d="M12.5 5.2 C13 4.5 14 4 15.1 4 C18.14 4 20.6 6.46 20.6 9.5 C20.6 15.6 12.5 20.6 12.5 20.6 L12.5 15 L14 13 L12.5 11 L14 9.2 L12.5 6.8"
                 stroke="currentColor"
                 strokeWidth={active ? 2.2 : 1.8}
                 strokeLinecap="round"
@@ -115,6 +107,61 @@ const IconMistakes = ({ active }: { active: boolean }) => (
     </svg>
 );
 
+const IconCpd = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M12 3.5L13.85 7.25L18 7.85L14.95 10.75L15.7 14.85L12 12.9L8.3 14.85L9.05 10.75L6 7.85L10.15 7.25L12 3.5Z"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
+        />
+        <path
+            d="M8.6 15.6L7.6 20.2L12 18.2L16.4 20.2L15.4 15.6"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+const IconCatalog = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M4 5.5C4 4.67 4.67 4 5.5 4H18.5C19.33 4 20 4.67 20 5.5V18.5C20 19.33 19.33 20 18.5 20H5.5C4.67 20 4 19.33 4 18.5V5.5Z"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.15 : 0}
+        />
+        <line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7" y1="13" x2="17" y2="13" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7" y1="17" x2="13" y2="17" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+    </svg>
+);
+
+const IconProgress = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M4 20V13M10 20V8M16 20V4M20 20H4"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        {active && (
+            <>
+                <circle cx="4" cy="13" r="1.5" fill="currentColor" />
+                <circle cx="10" cy="8" r="1.5" fill="currentColor" />
+                <circle cx="16" cy="4" r="1.5" fill="currentColor" />
+            </>
+        )}
+    </svg>
+);
+
 const IconMenu = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
@@ -123,10 +170,104 @@ const IconMenu = ({ active }: { active: boolean }) => (
     </svg>
 );
 
-/* ============================================================
-   NAV ITEM — uniform, no bumps, Instagram-style
-   ============================================================ */
+/* ✅ NEW — Tutor icons */
 
+// Tutor Exams — clipboard with a check, matches the "set exam" idea
+const IconTutorExams = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M8 4.5H6.5C5.67 4.5 5 5.17 5 6V19.5C5 20.33 5.67 21 6.5 21H17.5C18.33 21 19 20.33 19 19.5V6C19 5.17 18.33 4.5 17.5 4.5H16"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.15 : 0}
+        />
+        <path
+            d="M9 3H15C15.55 3 16 3.45 16 4V5.5C16 6.05 15.55 6.5 15 6.5H9C8.45 6.5 8 6.05 8 5.5V4C8 3.45 8.45 3 9 3Z"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M9 13.5L11 15.5L15 11.5"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+// Exam Results — document with a check + small chart bar accent
+const IconExamResults = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M6 3.5H14.5L19 8V19.5C19 20.33 18.33 21 17.5 21H6.5C5.67 21 5 20.33 5 19.5V4.5C5 3.67 5.67 3.5 6.5 3.5H6Z"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.15 : 0}
+        />
+        <path
+            d="M14.5 3.5V8H19"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M8.5 13.5L10.75 15.75L15 11.5"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <line x1="8.5" y1="18" x2="15.5" y2="18" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+    </svg>
+);
+// Student Analytics — bar chart with a small user accent
+const IconAnalytics = ({ active }: { active: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M4 19.5H20"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinecap="round"
+        />
+        <rect
+            x="5.5" y="12" width="3" height="6" rx="1"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
+        />
+        <rect
+            x="10.5" y="8" width="3" height="10" rx="1"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
+        />
+        <rect
+            x="15.5" y="4.5" width="3" height="13.5" rx="1"
+            stroke="currentColor"
+            strokeWidth={active ? 2.2 : 1.8}
+            strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"}
+            fillOpacity={active ? 0.18 : 0}
+        />
+    </svg>
+);
+
+/* ============================================================
+   NAV ITEM
+   ============================================================ */
 const NavItem = memo(({
     icon: Icon,
     label,
@@ -220,14 +361,12 @@ NavItem.displayName = "NavItem";
 /* ============================================================
    FOOTER
    ============================================================ */
-
 export function Footer() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
     const { role } = useUserRole();
 
-    // ✅ Single source of truth for role gating
     const isStudent = role === "student";
     const isTutor = role === "tutor";
     const isStaff = role === "staff";
@@ -269,7 +408,6 @@ export function Footer() {
     }, []);
 
     const fetchMistakeCount = useCallback(async () => {
-        // ✅ Only students need the mistakes badge
         if (!isStudent) return;
         if (!user?.id) return;
         try {
@@ -338,14 +476,12 @@ export function Footer() {
         };
     }, [theme]);
 
-    // ⚡ Navigate FIRST, feedback LAST — no startTransition blocking
     const handleNavigate = useCallback((e: React.PointerEvent, url: string) => {
         e.preventDefault();
         navigate(url);
         superFastTap("light");
     }, [navigate]);
 
-    // ⚡ Open drawer FIRST, feedback LAST
     const handleMenuPress = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -379,7 +515,6 @@ export function Footer() {
         return () => window.removeEventListener('resize', updateSafeArea);
     }, []);
 
-    // ⚡ Scroll container detection
     useEffect(() => {
         const findScrollContainer = () => {
             if (location.pathname === '/feed') {
@@ -499,7 +634,6 @@ export function Footer() {
             >
                 {/* ═══════════════════════════════════════════════════
                     STUDENT-ONLY TABS
-                    Tutors & Staff never see these.
                    ═══════════════════════════════════════════════════ */}
                 {isStudent && (
                     <>
@@ -522,7 +656,34 @@ export function Footer() {
                 )}
 
                 {/* ═══════════════════════════════════════════════════
-                    HOME — visible to everyone (all roles)
+                    TUTOR-ONLY TAB SLOT
+                    Tutors now get 3 tabs left of Home + 1 right + Menu.
+                    Total = 5 tabs (Exams · Analytics · Home · Feed · Menu)
+                   ═══════════════════════════════════════════════════ */}
+                {isTutor && (
+                    <>
+                        <NavItem
+                            icon={IconTutorExams}
+                            label="Tutor Exams"
+                            isActive={isActive("/tutor/exams")}
+                            onPress={(e) => handleNavigate(e, "/tutor/exams")}
+                            isDark={theme === 'dark'}
+                        />
+
+
+
+                        <NavItem
+                            icon={IconAnalytics}
+                            label="Analytics"
+                            isActive={isActive("/analytics")}
+                            onPress={(e) => handleNavigate(e, "/analytics")}
+                            isDark={theme === 'dark'}
+                        />
+                    </>
+                )}
+
+                {/* ═══════════════════════════════════════════════════
+                    HOME — visible to everyone
                    ═══════════════════════════════════════════════════ */}
                 <NavItem
                     icon={IconHome}
@@ -532,9 +693,18 @@ export function Footer() {
                     isDark={theme === 'dark'}
                 />
 
+                {/* 👇 Add the tutor's Results tab AFTER Home */}
+                {isTutor && (
+                    <NavItem
+                        icon={IconExamResults}
+                        label="Exam Results"
+                        isActive={isActive("/tutor/exams/:paper_id/results")}
+                        onPress={(e) => handleNavigate(e, "/tutor/exams/:paper_id/results")}
+                        isDark={theme === 'dark'}
+                    />
+                )}
                 {/* ═══════════════════════════════════════════════════
-                    STUDENT-ONLY TAB: MISTAKES
-                    Tutors & Staff never see this.
+                    STUDENT-ONLY: MISTAKES
                    ═══════════════════════════════════════════════════ */}
                 {isStudent && (
                     <NavItem
@@ -548,46 +718,38 @@ export function Footer() {
                 )}
 
                 {/* ═══════════════════════════════════════════════════
-                    STAFF-ONLY TAB SLOT — placeholder, ready for CPD
-
-                    When you build staff CPD pages, uncomment the block
-                    below and point it to the new CPD route. Everything
-                    (icon, badge, active state, haptics) is already wired.
-
-                    Example:
-                    {isStaff && (
+                    STAFF-ONLY TABS — CPD module
+                   ═══════════════════════════════════════════════════ */}
+                {isStaff && (
+                    <>
                         <NavItem
                             icon={IconCpd}
-                            label="My CPD"
+                            label="CPD"
                             isActive={isActive("/cpd")}
                             onPress={(e) => handleNavigate(e, "/cpd")}
                             isDark={theme === 'dark'}
                         />
-                    )}
 
-                    You can stack multiple staff-only NavItems here — the
-                    footer is flex with justify-around, so it self-balances
-                    whether there are 2, 3, 4, or 5 tabs.
-                   ═══════════════════════════════════════════════════ */}
-                {isStaff && (
-                    <>
-                        {/* 👇 Add future CPD NavItems here */}
-                        {/* Example placeholder commented out: */}
-                        {/* <NavItem icon={IconCpd} label="CPD" ... /> */}
+                        <NavItem
+                            icon={IconCatalog}
+                            label="Catalog"
+                            isActive={isActive("/cpd/catalog")}
+                            onPress={(e) => handleNavigate(e, "/cpd/catalog")}
+                            isDark={theme === 'dark'}
+                        />
+
+                        <NavItem
+                            icon={IconProgress}
+                            label="Progress"
+                            isActive={isActive("/cpd/progress")}
+                            onPress={(e) => handleNavigate(e, "/cpd/progress")}
+                            isDark={theme === 'dark'}
+                        />
                     </>
                 )}
 
                 {/* ═══════════════════════════════════════════════════
-                    TUTOR-ONLY TAB SLOT — ready for future tutor tabs
-                   ═══════════════════════════════════════════════════ */}
-                {isTutor && (
-                    <>
-                        {/* 👇 Add future tutor NavItems here */}
-                    </>
-                )}
-
-                {/* ═══════════════════════════════════════════════════
-                    MENU — visible to everyone, opens MobileDrawer
+                    MENU — visible to everyone
                    ═══════════════════════════════════════════════════ */}
                 <NavItem
                     icon={IconMenu}
