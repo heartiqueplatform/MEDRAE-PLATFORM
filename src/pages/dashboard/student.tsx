@@ -53,6 +53,11 @@ import { TermsButton } from "@/components/ui/TermsButton";
 import Algorithm from "@/components/Algorithm/Algorithm";
 import { QuickDuelStrip } from "@/components/QuickDuelStrip";
 import DailyDose from "@/components/DailyDose";
+import Short from "@/components/Short";
+import ShortPaper1 from "@/components/ShortPaper1";
+import ShortPaper2 from "@/components/ShortPaper2";
+import ShortMedical from "@/components/ShortMedical";
+import ShortPractice from "@/components/ShortPractice";
 
 
 
@@ -775,15 +780,23 @@ export default function StudentDashboard() {
       </AnimatePresence>
       <div className="w-full space-y-2 md:px-4 lg:px-6">
         <GreetingsCard />
-
         <QuickDuelStrip
           userId={user?.id ?? ""}
           initialHistory={initialCache.quickDuelHistory ?? []}
           initialPlayers={initialCache.quickDuelPlayers ?? []}
         />
+        <ShortMedical
+          limit={5}
+          title="Medical Conditions"
+          subtitle="Hypertension, Heart Failure & more"
+        />
+
+
         <DailyDose onOpenPlayer={() => window.__studifyOpen?.()} />
         <DailyTriviaCard />
+        <ShortPaper1 limit={5} />
         <CountdownFloating />
+        <ShortPaper2 limit={5} />
         <Algorithm />
         <Referral />
         {/* Top Students Leaderboard */}
@@ -922,6 +935,7 @@ export default function StudentDashboard() {
           <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
         </Card>
 
+        <ShortPractice limit={5} />
 
 
         <FeedSeenTop10 />
