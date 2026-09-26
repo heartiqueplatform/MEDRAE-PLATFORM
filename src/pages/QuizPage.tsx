@@ -58,22 +58,6 @@ function isValidId(id: unknown): id is string {
   );
 }
 
-// Helper to fetch more questions (paginated)
-// Helper to fetch more questions (paginated)
-async function fetchMoreQuestions(supabase: any, quizId: string, offset: number, limit: number = 20) {
-  if (!isValidId(quizId)) {
-    console.warn("[QuizPage] fetchMoreQuestions: invalid quizId, skipping", quizId);
-    return [];
-  }
-  const { data, error } = await supabase
-    .from("quiz_questions")
-    .select("*")
-    .eq("quiz_id", quizId)
-    .range(offset, offset + limit - 1);
-
-  if (error) return [];
-  return data;
-}
 
 // Get total question count for a unit
 async function fetchTotalQuestionCount(supabase: any, quizId: string) {
@@ -148,11 +132,8 @@ export default function QuizPage() {
   } | null>(null);
   const circleRefs = useRef([]);
 
-  // State for Load More functionality
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  // Total question count (used by premium badge + upgrade banner)
   const [totalQuestions, setTotalQuestions] = useState(0);
-  const [hasMoreQuestions, setHasMoreQuestions] = useState(false);
-
   // Memoized filtered questions for performance
   const filteredQuestions = useMemo(() => {
     return questions.filter(q => {
@@ -479,8 +460,6 @@ export default function QuizPage() {
           // Get total count from cache if available
           if (offlineUnit.totalCount) {
             setTotalQuestions(offlineUnit.totalCount);
-            const hasMore = offlineUnit.totalCount > allQuestions.length;
-            setHasMoreQuestions(hasMore);
           }
         }
       }
@@ -503,8 +482,6 @@ export default function QuizPage() {
           const total = await fetchTotalQuestionCount(supabase, quiz.id);
           if (!cancelled) {
             setTotalQuestions(total);
-            const hasMore = total > QUESTIONS_PER_BATCH;
-            setHasMoreQuestions(hasMore);
           }
 
           const { data: quizQuestions, error: qError } = await supabase
@@ -602,42 +579,7 @@ export default function QuizPage() {
     return () => window.removeEventListener("online", onOnline);
   }, [userId]);
   // Load more questions function with caching
-  const handleLoadMore = useCallback(async () => {
-    if (!quizId || isLoadingMore || !hasMoreQuestions || !isPremium) return;
 
-    setIsLoadingMore(true);
-    const currentOffset = questions.length;
-
-    try {
-      const newQuestions = await fetchMoreQuestions(supabase, quizId, currentOffset, QUESTIONS_PER_BATCH);
-
-      if (newQuestions && newQuestions.length > 0) {
-        const enrichedNew = newQuestions.map((q: any) => ({
-          ...q,
-          quiz_id: quizId,
-        }));
-
-        const updatedQuestions = [...questions, ...enrichedNew];
-        setQuestions(updatedQuestions);
-        setHasMoreQuestions(newQuestions.length === QUESTIONS_PER_BATCH);
-
-        // Update offline cache
-        await saveUnitOffline({
-          unitId: unit,
-          quizId: quizId,
-          questions: updatedQuestions,
-          savedAt: Date.now(),
-          totalCount: totalQuestions,
-        });
-      } else {
-        setHasMoreQuestions(false);
-      }
-    } catch (error) {
-      console.error("Error loading more questions:", error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [quizId, isLoadingMore, hasMoreQuestions, isPremium, questions, unit, totalQuestions]);
 
   useEffect(() => {
     const saved = localStorage.getItem("confidenceLevels");
@@ -1453,31 +1395,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
             </div>
           )}
 
-          {/* LOAD MORE BUTTON - Only for Premium Users */}
-          {isPremium && hasMoreQuestions && (
-            <div className="flex justify-center mt-8 mb-4">
-              <button
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50"
-              >
-                {isLoadingMore ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle size={20} />
-                    Load More Questions ({questions.length} / {totalQuestions})
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+
 
           {/* Premium Badge - Only show for premium users */}
           {isPremium && (
