@@ -635,20 +635,37 @@ export function MedraeQuizzes() {
 
           {/* Dynamic Papers Rendering */}
           {isLoading ? (
-            <div className="space-y-8">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="space-y-4">
-                  <div className="flex items-end justify-between px-2 sm:px-0">
-                    <div className="h-12 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
-                    <div className="h-8 w-32 bg-gray-200 dark:bg-gray-800 rounded-full animate-pulse" />
+            <div className="space-y-4 px-2 sm:px-0">
+              <div className="flex items-end justify-between">
+                <div className="h-12 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+                <div className="h-8 w-32 bg-gray-200 dark:bg-gray-800 rounded-full animate-pulse" />
+              </div>
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map(j => (
+                  <div
+                    key={j}
+                    className="rounded-xl overflow-hidden bg-white dark:bg-muted/70 shadow-sm animate-pulse"
+                  >
+                    {/* cover image placeholder */}
+                    <div className="h-60 sm:h-64 w-full bg-gray-200 dark:bg-gray-800" />
+
+                    {/* header + body placeholders */}
+                    <div className="p-4 space-y-3">
+                      <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-800 rounded-lg" />
+                      <div className="h-4 w-full bg-gray-200 dark:bg-gray-800 rounded-lg" />
+                      <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-800 rounded-lg" />
+
+                      <div className="flex gap-2 pt-2">
+                        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full" />
+                        <div className="h-6 w-16 bg-gray-200 dark:bg-gray-800 rounded-full" />
+                      </div>
+
+                      <div className="h-12 w-full bg-gray-200 dark:bg-gray-800 rounded-2xl mt-2" />
+                    </div>
                   </div>
-                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                    {[1, 2].map(j => (
-                      <div key={j} className="h-72 rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+
+              </div>
             </div>
           ) : (
             <>

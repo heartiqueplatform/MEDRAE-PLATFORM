@@ -31,6 +31,43 @@ const profileCache = new Map();
 const subscriptionCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000;
 
+// ─────────────────────────────────────────────────────────────
+// Safe localStorage helpers (Safari private mode can throw)
+// ─────────────────────────────────────────────────────────────
+const safeGetCachedProfile = (): any => {
+  try {
+    return JSON.parse(localStorage.getItem("userProfile") || "null");
+  } catch {
+    return null;
+  }
+};
+
+const safeHasCachedProfile = (): boolean => {
+  try {
+    return !!localStorage.getItem("userProfile");
+  } catch {
+    return false;
+  }
+};
+
+const safeSetItem = (key: string, value: string) => {
+  try { localStorage.setItem(key, value); } catch { /* ignore */ }
+};
+
+// ─────────────────────────────────────────────────────────────
+// A profile is only "ready" when it has the minimum fields
+// needed for the UI to be truthful. Anything less (e.g. a stray
+// `{ role: "student" }` event, or a partial cache write) must be
+// rejected — otherwise the shell renders with "No username yet"
+// and every field as "Add your …", which is exactly the flash
+// we're eliminating.
+// ─────────────────────────────────────────────────────────────
+const isProfileReady = (p: any): boolean =>
+  !!p &&
+  typeof p === "object" &&
+  (!!p.user_id || !!p.id) &&
+  (!!p.name || !!p.username);
+
 // ---------------------------------------------------------
 // Small reusable helper for empty values
 // ---------------------------------------------------------
@@ -133,15 +170,21 @@ const ProfileSkeleton = () => (
   </div>
 );
 
-export function Profile() {
-  const getCachedProfile = () => {
-    try { return JSON.parse(localStorage.getItem("userProfile") || "null"); }
-    catch { return null; }
-  };
+// ─────────────────────────────────────────────────────────────
+// Read the initial cache ONCE, synchronously, before first render.
+// Only a *ready* profile is allowed to seed state — otherwise we
+// start in a loading state and render the skeleton.
+// ─────────────────────────────────────────────────────────────
+const initialCacheRaw =
+  typeof window !== "undefined" ? safeGetCachedProfile() : null;
+const initialCache = isProfileReady(initialCacheRaw) ? initialCacheRaw : null;
 
-  const [profileState, setProfileState] = useState(getCachedProfile());
+export function Profile() {
+  const [profileState, setProfileState] = useState<any>(initialCache);
   const [activePlan, setActivePlan] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(!getCachedProfile());
+  const [isLoading, setIsLoading] = useState(!initialCache);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(!!initialCache);
+
   const session = useSession();
   const supabaseClient = useSupabaseClient();
   const user = session?.user || null;
@@ -246,88 +289,269 @@ export function Profile() {
     else { toast({ title: "Success", description: "Password updated successfully." }); setNewPassword(""); setConfirmPassword(""); setShowDialog(false); }
   }, [newPassword, confirmPassword]);
 
+  // ─────────────────────────────────────────────────────────────
+  // fetchProfile
+  // ─────────────────────────────────────────────────────────────
   const fetchProfile = useCallback(async () => {
     if (!user || isFetchingProfile.current) return;
-    const now = Date.now(); const cacheKey = `profile_${user.id}`;
+
+    // 🔑 Wait for a real auth token. Otherwise Supabase may return
+    //    `{ data: null, error: null }` because RLS rejected the
+    //    request (stale/no JWT), which we'd misread as "user has
+    //    no profile row" and flash the wrong empty state.
+    if (!session?.access_token) return;
+
+    // ── Offline guard ────────────────────────────────────────
+    const offlineNow =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+
+    if (offlineNow) {
+      const fallback = profileState || safeGetCachedProfile();
+      if (isProfileReady(fallback) && isMounted.current) {
+        setProfileState((prev: any) => prev ?? fallback);
+        setIsLoading(false);
+      }
+      if (isMounted.current) setHasLoadedOnce(true);
+      return;
+    }
+
+    const now = Date.now();
+    const cacheKey = `profile_${user.id}`;
+
+    // ── In-memory cache hit ──────────────────────────────────
     if (profileCache.has(cacheKey)) {
       const cached = profileCache.get(cacheKey);
       if (now - cached.timestamp < CACHE_DURATION && isMounted.current) {
-        setProfileState(cached.data);
-        setIsLoading(false);
-        return;
+        if (isProfileReady(cached.data)) {
+          setProfileState(cached.data);
+          setIsLoading(false);
+          setHasLoadedOnce(true);
+          return;
+        }
+        // partial → fall through and refetch
       }
     }
-    const cachedProfile = getCachedProfile();
-    if (cachedProfile && now - (cachedProfile._timestamp || 0) < CACHE_DURATION) {
-      setProfileState(cachedProfile);
-      setIsLoading(false);
-      if (cachedProfile.role) { localStorage.setItem(`userRole_${user.id}`, cachedProfile.role); localStorage.setItem("last_known_role", cachedProfile.role); }
-      profileCache.set(cacheKey, { data: cachedProfile, timestamp: now }); return;
+
+    // ── localStorage cache hit ───────────────────────────────
+    const cachedProfile = safeGetCachedProfile();
+    if (
+      isProfileReady(cachedProfile) &&
+      now - (cachedProfile._timestamp || 0) < CACHE_DURATION
+    ) {
+      if (isMounted.current) {
+        setProfileState(cachedProfile);
+        setIsLoading(false);
+        setHasLoadedOnce(true);
+      }
+      if (cachedProfile.role) {
+        safeSetItem(`userRole_${user.id}`, cachedProfile.role);
+        safeSetItem("last_known_role", cachedProfile.role);
+      }
+      profileCache.set(cacheKey, { data: cachedProfile, timestamp: now });
+      return;
     }
+
+    // ── Network fetch ────────────────────────────────────────
+    // Only show the skeleton if we have nothing usable on screen.
+    // A stale-but-usable cache stays rendered while we refresh.
+    const usableCached = isProfileReady(cachedProfile) ? cachedProfile : null;
+    const hasSomethingToShow = isProfileReady(profileState) || !!usableCached;
+    if (usableCached && isMounted.current) {
+      setProfileState(usableCached);
+    }
+    if (!hasSomethingToShow && isMounted.current) {
+      setIsLoading(true);
+    }
+
     isFetchingProfile.current = true;
-    setIsLoading(true);
     try {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
       if (error) throw error;
-      if (data && isMounted.current) {
+
+      if (data && isProfileReady(data) && isMounted.current) {
         const profileWithTimestamp = { ...data, _timestamp: now };
         setProfileState(profileWithTimestamp);
         setIsLoading(false);
-        localStorage.setItem("userProfile", JSON.stringify(profileWithTimestamp));
-        if (data.role) { localStorage.setItem(`userRole_${user.id}`, data.role); localStorage.setItem("last_known_role", data.role); }
-        profileCache.set(cacheKey, { data: profileWithTimestamp, timestamp: now });
-        setTimeout(() => { if (profileCache.has(cacheKey)) profileCache.delete(cacheKey); }, 600000);
-      } else {
+        setHasLoadedOnce(true);
+
+        safeSetItem("userProfile", JSON.stringify(profileWithTimestamp));
+        if (data.role) {
+          safeSetItem(`userRole_${user.id}`, data.role);
+          safeSetItem("last_known_role", data.role);
+        }
+
+        profileCache.set(cacheKey, {
+          data: profileWithTimestamp,
+          timestamp: now,
+        });
+        setTimeout(() => {
+          if (profileCache.has(cacheKey)) profileCache.delete(cacheKey);
+        }, 600000);
+      } else if (isMounted.current) {
+        // Genuine empty row (or a partial response we refuse to use).
+        // Mark loaded so we stop showing the skeleton, but only after
+        // a real token-authenticated attempt.
         setIsLoading(false);
+        setHasLoadedOnce(true);
       }
     } catch (err) {
       console.error("Failed to fetch profile:", err);
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+        setHasLoadedOnce(true);
+      }
+    } finally {
+      isFetchingProfile.current = false;
     }
-    finally { isFetchingProfile.current = false; }
-  }, [user]);
+  }, [user, profileState, session?.access_token]);
 
+  // ─────────────────────────────────────────────────────────────
+  // fetchSubscription
+  // ─────────────────────────────────────────────────────────────
   const fetchSubscription = useCallback(async () => {
     if (!user) return;
-    const now = Date.now(); const cacheKey = `subscription_${user.id}`;
-    if (subscriptionCache.has(cacheKey)) { const cached = subscriptionCache.get(cacheKey); if (now - cached.timestamp < CACHE_DURATION && isMounted.current) { setActivePlan(cached.data?.plan_type || null); return; } }
-    try {
-      const { data, error } = await supabase.from("subscriptions").select("plan_type, is_active, expires_at").eq("user_id", user.id).maybeSingle();
-      if (error) throw error;
-      if (isMounted.current) { const plan = data?.is_active ? data.plan_type : null; setActivePlan(plan); subscriptionCache.set(cacheKey, { data, timestamp: now }); setTimeout(() => { if (subscriptionCache.has(cacheKey)) subscriptionCache.delete(cacheKey); }, 600000); }
-    } catch (err) { console.error("Failed to fetch subscription:", err); }
-  }, [user]);
+    if (!session?.access_token) return;
 
-  useEffect(() => { isMounted.current = true; if (user) { fetchProfile(); fetchSubscription(); } return () => { isMounted.current = false; }; }, [user, fetchProfile, fetchSubscription]);
-  // Auto-retry when connection is restored
+    const offlineNow =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+    if (offlineNow) {
+      if (activePlan === null) {
+        const cacheKey = `subscription_${user.id}`;
+        if (subscriptionCache.has(cacheKey)) {
+          const cached = subscriptionCache.get(cacheKey);
+          if (isMounted.current) {
+            setActivePlan(cached.data?.plan_type || null);
+          }
+        }
+      }
+      return;
+    }
+
+    const now = Date.now();
+    const cacheKey = `subscription_${user.id}`;
+
+    if (subscriptionCache.has(cacheKey)) {
+      const cached = subscriptionCache.get(cacheKey);
+      if (now - cached.timestamp < CACHE_DURATION && isMounted.current) {
+        setActivePlan(cached.data?.plan_type || null);
+        return;
+      }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("plan_type, is_active, expires_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (isMounted.current) {
+        const plan = data?.is_active ? data.plan_type : null;
+        setActivePlan(plan);
+        subscriptionCache.set(cacheKey, { data, timestamp: now });
+        setTimeout(() => {
+          if (subscriptionCache.has(cacheKey)) subscriptionCache.delete(cacheKey);
+        }, 600000);
+      }
+    } catch (err) {
+      console.error("Failed to fetch subscription:", err);
+      // Don't clear activePlan on error — keep showing the last known plan
+    }
+  }, [user, activePlan, session?.access_token]);
+
+  // ─────────────────────────────────────────────────────────────
+  // Stable callback refs — effects use these so they don't
+  // re-fire whenever the callbacks are recreated.
+  // ─────────────────────────────────────────────────────────────
+  const fetchProfileRef = useRef(fetchProfile);
+  const fetchSubscriptionRef = useRef(fetchSubscription);
+  useEffect(() => { fetchProfileRef.current = fetchProfile; }, [fetchProfile]);
+  useEffect(() => { fetchSubscriptionRef.current = fetchSubscription; }, [fetchSubscription]);
+
+  // ── Mount + user + auth-token hydration ──
+  useEffect(() => {
+    isMounted.current = true;
+    if (user && session?.access_token) {
+      fetchProfileRef.current();
+      fetchSubscriptionRef.current();
+    }
+    return () => { isMounted.current = false; };
+  }, [user?.id, session?.access_token]);
+
+  // ── Back online ──
   useEffect(() => {
     const handleOnline = () => {
       if (user && isMounted.current) {
-        fetchProfile();
-        fetchSubscription();
+        fetchProfileRef.current();
+        fetchSubscriptionRef.current();
       }
     };
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
-  }, [user, fetchProfile, fetchSubscription]);
-  useEffect(() => {
-    let focusTimer: NodeJS.Timeout; let lastFocusRefresh = 0;
-    const handleFocus = () => { if (focusTimer) clearTimeout(focusTimer); focusTimer = setTimeout(() => { const now = Date.now(); if (now - lastFocusRefresh < 30000) return; lastFocusRefresh = now; if (user && isMounted.current) { fetchProfile(); fetchSubscription(); } }, 500); };
-    window.addEventListener('focus', handleFocus);
-    return () => { window.removeEventListener('focus', handleFocus); if (focusTimer) clearTimeout(focusTimer); };
-  }, [user, fetchProfile, fetchSubscription]);
+  }, [user?.id]);
 
+  // ── Window focus (throttled) ──
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => { if (e.key === 'userProfile' && user && isMounted.current) fetchProfile(); };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user, fetchProfile]);
+    let focusTimer: NodeJS.Timeout;
+    let lastFocusRefresh = 0;
+    const handleFocus = () => {
+      if (focusTimer) clearTimeout(focusTimer);
+      focusTimer = setTimeout(() => {
+        const now = Date.now();
+        if (now - lastFocusRefresh < 30000) return;
+        lastFocusRefresh = now;
+        if (user && isMounted.current) {
+          fetchProfileRef.current();
+          fetchSubscriptionRef.current();
+        }
+      }, 500);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      if (focusTimer) clearTimeout(focusTimer);
+    };
+  }, [user?.id]);
 
+  // ── Cross-tab storage sync ──
   useEffect(() => {
-    const handleProfileUpdated = (event: CustomEvent) => { if (user && isMounted.current) { setProfileState(event.detail); setIsLoading(false); if (event.detail.role) { localStorage.setItem(`userRole_${user.id}`, event.detail.role); localStorage.setItem("last_known_role", event.detail.role); } } };
-    window.addEventListener('profileUpdated', handleProfileUpdated as EventListener);
-    return () => window.removeEventListener('profileUpdated', handleProfileUpdated as EventListener);
-  }, [user]);
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "userProfile" && user && isMounted.current) {
+        fetchProfileRef.current();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [user?.id]);
+
+  // ── profileUpdated custom event ──
+  useEffect(() => {
+    const handleProfileUpdated = (event: CustomEvent) => {
+      if (user && isMounted.current) {
+        // 🛡️ Reject partial events — they'd blank out good fields.
+        if (!isProfileReady(event.detail)) {
+          console.warn("[Profile] Ignored partial profileUpdated event:", event.detail);
+          return;
+        }
+        setProfileState(event.detail);
+        setIsLoading(false);
+        setHasLoadedOnce(true);
+        if (event.detail.role) {
+          safeSetItem(`userRole_${user.id}`, event.detail.role);
+          safeSetItem("last_known_role", event.detail.role);
+        }
+      }
+    };
+    window.addEventListener("profileUpdated", handleProfileUpdated as EventListener);
+    return () => window.removeEventListener("profileUpdated", handleProfileUpdated as EventListener);
+  }, [user?.id]);
 
   const getDaysMessage = useCallback(() => {
     if (!profileState?.joined_date) return "No join date available.";
@@ -343,120 +567,64 @@ export function Profile() {
 
   const { isLoading: sessionLoading } = useSessionContext();
   const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+  const hasCachedProfile = safeHasCachedProfile();
 
-  useEffect(() => { if (!sessionLoading && !user && !isOffline && isMounted.current) navigate("/login", { replace: true }); }, [user, sessionLoading, isOffline, navigate]);
+  useEffect(() => {
+    if (!sessionLoading && !user && !isOffline && isMounted.current) {
+      navigate("/login", { replace: true });
+    }
+  }, [user, sessionLoading, isOffline, navigate]);
 
-  if (isLoading || (sessionLoading && !profileState)) {
-    return <ProfileSkeleton />;
-  }
+  // ─────────────────────────────────────────────────────────────
+  // RENDER GATES
+  // ─────────────────────────────────────────────────────────────
 
-  if (!profileState) {
-    // Determine which empty state to show
-    const hasCachedProfile = !!localStorage.getItem("userProfile");
-    const isNetworkIssue = isOffline || (!hasCachedProfile && user);
-
+  // 1. OFFLINE + NO USABLE CACHE → hard stop
+  if (isOffline && !isProfileReady(profileState) && !hasCachedProfile) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center px-4 py-8">
         <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
-
-          {/* Decorative corner accents — same family as other cards */}
           <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
           <div className="absolute bottom-0 left-0 h-16 w-16 rounded-tr-full bg-slate-100 dark:bg-slate-800" />
 
           <div className="relative flex flex-col items-center">
-            {/* Icon badge — offline vs online */}
-            <div
-              className={`flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 ${isOffline
-                ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300"
-                : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                }`}
-            >
-              {isOffline ? (
-                <WifiOff className="h-6 w-6 md:h-7 md:w-7" />
-              ) : (
-                <User className="h-6 w-6 md:h-7 md:w-7" />
-              )}
+            <div className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+              <WifiOff className="h-6 w-6 md:h-7 md:w-7" />
             </div>
 
-            {/* Title */}
             <h2 className="text-lg md:text-xl font-bold text-slate-950 dark:text-white">
-              {isOffline
-                ? "You're offline"
-                : hasCachedProfile
-                  ? "Couldn't load your profile"
-                  : "Profile not set up yet"}
+              You're offline
             </h2>
 
-            {/* Subtitle */}
             <p className="mt-2 max-w-sm text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
-              {isOffline
-                ? "Your profile data isn't cached on this device yet. Reconnect to the internet to load it."
-                : hasCachedProfile
-                  ? "We couldn't reach the server. Check your connection and try again."
-                  : "Head to Settings to complete your profile and unlock the full experience."}
+              We can't load your profile without a connection, and there's
+              nothing cached on this device yet. Reconnect to the internet and
+              your details will appear here automatically.
             </p>
 
-            {/* Status pill */}
-            <div
-              className={`mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold ${isOffline
-                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                }`}
-            >
-              {isOffline ? (
-                <>
-                  <WifiOff className="h-3 w-3" />
-                  No connection
-                </>
-              ) : (
-                <>
-                  <Wifi className="h-3 w-3" />
-                  Online
-                </>
-              )}
+            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              <WifiOff className="h-3 w-3" />
+              No connection
             </div>
 
-            {/* Actions */}
             <div className="mt-5 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              {isOffline ? (
-                <Button
-                  onClick={() => {
-                    // Just re-check online status — the online event listener will refetch
-                    if (navigator.onLine) {
-                      fetchProfile();
-                      fetchSubscription();
-                    } else {
-                      toast({
-                        title: "Still offline",
-                        description: "Reconnect to the internet and try again.",
-                      });
-                    }
-                  }}
-                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                  Retry
-                </Button>
-              ) : hasCachedProfile ? (
-                <Button
-                  onClick={() => {
+              <Button
+                onClick={() => {
+                  if (navigator.onLine) {
                     fetchProfile();
                     fetchSubscription();
-                  }}
-                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                  Try again
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => navigate("/settings")}
-                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                >
-                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
-                  Complete Profile
-                </Button>
-              )}
+                  } else {
+                    toast({
+                      title: "Still offline",
+                      description: "Reconnect to the internet and try again.",
+                    });
+                  }
+                }}
+                className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
+                <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                Check connection
+              </Button>
             </div>
           </div>
         </div>
@@ -464,6 +632,61 @@ export function Profile() {
     );
   }
 
+  // 2. Skeleton — the ONE gate that matters.
+  //    Until we have a *ready* profile, show the skeleton.
+  //    This kills the "No username yet / Add your phone" flash
+  //    entirely: nothing partial ever reaches the profile shell.
+  if (!isProfileReady(profileState)) {
+    // Only fall through to "not set up yet" after a real,
+    // token-authenticated load attempt finished and returned empty.
+    if (hasLoadedOnce && !isLoading && user && !isOffline) {
+      return (
+        <div className="min-h-screen w-full flex items-center justify-center px-4 py-8">
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white/70 p-6 md:p-8 text-center shadow-sm backdrop-blur dark:bg-muted/30">
+            <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-slate-100 dark:bg-slate-800" />
+            <div className="absolute bottom-0 left-0 h-16 w-16 rounded-tr-full bg-slate-100 dark:bg-slate-800" />
+
+            <div className="relative flex flex-col items-center">
+              <div className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl mb-4 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <User className="h-6 w-6 md:h-7 md:w-7" />
+              </div>
+
+              <h2 className="text-lg md:text-xl font-bold text-slate-950 dark:text-white">
+                Profile not set up yet
+              </h2>
+
+              <p className="mt-2 max-w-sm text-xs md:text-sm leading-6 text-slate-500 dark:text-slate-400">
+                Head to Settings to complete your profile and unlock the full
+                experience.
+              </p>
+
+              <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] md:text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <Wifi className="h-3 w-3" />
+                Online
+              </div>
+
+              <div className="mt-5 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={() => navigate("/settings")}
+                  className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
+                  <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" />
+                  Complete Profile
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Otherwise — still loading. Skeleton.
+    return <ProfileSkeleton />;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // FULL PROFILE
+  // ─────────────────────────────────────────────────────────────
   const displayName = profileState?.name?.trim() || profileState?.username || "Your Profile";
   const initials = profileState?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "ME";
 
@@ -668,7 +891,7 @@ export function Profile() {
                   onOpenChange={setShowLogoutDialog}
                   onConfirm={handleLogout}
                   userName={profileState?.name || profileState?.username}
-                  streakDays={profileState?.streak_days}  // optional — omit if not in profile
+                  streakDays={profileState?.streak_days}
                 />
                 <Button
                   variant="destructive"
@@ -697,9 +920,6 @@ export function Profile() {
                   open={showDialog}
                   onOpenChange={setShowDialog}
                   onSubmit={async (newPassword) => {
-                    // Reuse your existing handler logic, but only for the actual submit.
-                    // Your original handleChangePassword validates length + match — we've
-                    // already done that in the dialog, so here we just call Supabase.
                     const { error } = await supabase.auth.updateUser({ password: newPassword });
                     if (error) {
                       toast({ title: "Error", description: error.message });
