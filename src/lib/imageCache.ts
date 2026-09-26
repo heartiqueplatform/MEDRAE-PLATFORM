@@ -140,3 +140,25 @@ export async function clearImageCache(): Promise<void> {
     tx.objectStore(STORE_NAME).clear();
     tx.objectStore(META_STORE).clear();
 }
+// ─────────────────────────────────────────────────────────────
+// Delete a single image from the cache (by URL or cache key)
+// Used by UnitPics when a user removes an uploaded picture so
+// we don't keep orphaned blobs around after deletion.
+// ─────────────────────────────────────────────────────────────
+export async function deleteCachedImage(url: string): Promise<void> {
+    try {
+        const db = await getDB();
+        const key = urlToKey(url);
+
+        return new Promise((resolve) => {
+            const tx = db.transaction([STORE_NAME, META_STORE], 'readwrite');
+            tx.objectStore(STORE_NAME).delete(key);
+            tx.objectStore(META_STORE).delete(key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+            tx.onabort = () => resolve();
+        });
+    } catch {
+        // Silent fail — cache is best-effort
+    }
+}
