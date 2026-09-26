@@ -15,7 +15,7 @@ import "@fontsource/poppins/800.css";
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "2.0.02323332212333";
+const APP_VERSION = "2.0.0232333221233322";
 
 
 const CACHE_NAMES = {
