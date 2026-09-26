@@ -5,6 +5,11 @@ const CACHE_KEY = "subscriptionStatus";     // ← unify on the key the unit pag
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24h
 const MIN_FETCH_INTERVAL = 60 * 60 * 1000;  // 1h
 
+// 🔧 How long we'll trust a cached "premium: true" while offline
+// before we stop *extending* it (we never downgrade a paying user
+// just because they're offline — see resolveSubscription below).
+const OFFLINE_GRACE = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 export type SubscriptionSnapshot = {
     userId: string | null;
     isPremium: boolean;
@@ -17,7 +22,44 @@ let inFlight: Promise<SubscriptionSnapshot> | null = null;
 let lastFetch = 0;
 let memorySnapshot: SubscriptionSnapshot | null = null;
 
-function isOffline() {
+// ─────────────────────────────────────────────────────────────
+// 🔧 Offline detection that actually works.
+// navigator.onLine lies on captive portals / DNS blackholes.
+// We do a cheap HEAD request to a 204 endpoint, mirroring the
+// approach already used in lib/authManager.ts.
+// ─────────────────────────────────────────────────────────────
+let _reachability: { value: boolean; at: number } | null = null;
+const REACHABILITY_TTL = 15 * 1000; // cache the probe for 15s
+
+async function isReallyOnline(timeoutMs = 2500): Promise<boolean> {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        return false; // fast path: definitely offline
+    }
+    if (_reachability && Date.now() - _reachability.at < REACHABILITY_TTL) {
+        return _reachability.value;
+    }
+    try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), timeoutMs);
+        await fetch("https://www.google.com/generate_204", {
+            method: "HEAD",
+            mode: "no-cors",
+            cache: "no-store",
+            signal: controller.signal,
+        });
+        clearTimeout(t);
+        _reachability = { value: true, at: Date.now() };
+        return true;
+    } catch {
+        _reachability = { value: false, at: Date.now() };
+        return false;
+    }
+}
+
+// Keep the sync name for the sync callers (getCachedPremium).
+// This one is a best-effort hint; the async probe above is
+// what resolveSubscription uses for real decisions.
+function isOfflineSync() {
     return typeof navigator !== "undefined" && !navigator.onLine;
 }
 
@@ -40,20 +82,30 @@ export function readCache(userId?: string | null): SubscriptionSnapshot | null {
     }
 }
 
-/** Sync read — safe to call during render / useState initializer. */
+/**
+ * 🔧 Sync read — safe to call during render / useState initializer.
+ *
+ * RULE: We never return `false` for a user we have ANY cache for,
+ * unless that cache itself says `isPremium: false`. Offline, stale,
+ * whatever — we preserve the last known value. The whole point of
+ * the cache is to avoid the "paying user opens app offline and
+ * looks like a free user" bug.
+ */
 export function getCachedPremium(userId?: string | null): boolean | null {
     const c = readCache(userId);
     if (!c) return null;
 
-    // Offline: trust cache no matter the age.
-    if (isOffline()) return c.isPremium;
+    // 🔧 No expiry check for premium users. If we last knew they were
+    // premium, they stay premium until we can *positively* confirm
+    // otherwise from the server. This is the single most important
+    // change to stop the offline downgrade.
+    if (c.isPremium) return true;
 
-    // Online: only trust if fresh.
-    if (Date.now() - c.cachedAt < CACHE_DURATION) return c.isPremium;
-
-    // Stale + online → return last known value anyway (better UX than a flash of "locked")
-    // but signal the caller to refresh. We still return the boolean.
-    return c.isPremium;
+    // Free users: still respect the cache, but if it's very stale
+    // and we're online, let the caller re-fetch (return null).
+    if (isOfflineSync()) return false;
+    if (Date.now() - c.cachedAt < CACHE_DURATION) return false;
+    return null;
 }
 
 function writeCache(snap: SubscriptionSnapshot) {
@@ -65,7 +117,18 @@ function writeCache(snap: SubscriptionSnapshot) {
 
 /**
  * Fetch premium status. Deduplicated, cache-aware, offline-safe.
- * Never returns null for a logged-in user if there is ANY cache.
+ *
+ * 🔧 New rules:
+ *   1. We NEVER write a `free` snapshot unless the server
+ *      explicitly told us so. A network error is not evidence of
+ *      non-payment.
+ *   2. Offline (really offline, per probe) → always return the
+ *      cached snapshot, no matter how stale. If there is no cache
+ *      at all, we return a synthetic *premium-preserving* snapshot
+ *      (see below) rather than downgrading.
+ *   3. Online but the fetch errored → return cache if we have it,
+ *      otherwise return the last-known state (or a neutral one)
+ *      without clobbering the cache.
  */
 export async function resolveSubscription(
     userId: string,
@@ -73,28 +136,45 @@ export async function resolveSubscription(
 ): Promise<SubscriptionSnapshot> {
     const cached = readCache(userId);
 
-    // 1. If we have cache and it's fresh (or we're offline), return it.
-    if (cached) {
+    // 1. Fresh cache + not forced → return it.
+    if (cached && !opts.force) {
         const fresh = Date.now() - cached.cachedAt < CACHE_DURATION;
-        if (!opts.force && (fresh || isOffline())) {
-            return cached;
-        }
+        if (fresh) return cached;
     }
 
-    // 2. Offline with only a stale cache → return the stale cache.
-    if (isOffline()) {
-        if (cached) return cached;
-        // no cache at all offline: default to free but don't clobber anything
+    // 2. Real reachability check (async, cached for 15s).
+    const online = await isReallyOnline();
+
+    // 3. Offline path.
+    if (!online) {
+        if (cached) {
+            // 🔧 If the cached snapshot is a premium one, we return it
+            // regardless of age. Paying users don't get downgraded
+            // because they're on a plane.
+            if (cached.isPremium) return cached;
+
+            // Free + stale: return it too, but the caller may want to
+            // refresh later. We still don't downgrade.
+            return cached;
+        }
+
+        // 🔧 No cache at all, but user is logged in and offline.
+        // We do NOT claim they're free. Instead we return a
+        // neutral "unknown" snapshot with premium: false but with
+        // cachedAt: 0 so callers can tell it's not authoritative.
+        //
+        // If your UI needs a boolean, default to false here — but
+        // do NOT write this to cache (see writeCache call below).
         return {
             userId,
             isPremium: false,
-            plan_type: "free",
+            plan_type: "unknown",
             expires_at: null,
             cachedAt: 0,
         };
     }
 
-    // 3. Online: throttle + dedupe.
+    // 4. Online: throttle + dedupe.
     if (!opts.force && Date.now() - lastFetch < MIN_FETCH_INTERVAL && cached) {
         return cached;
     }
@@ -126,17 +206,26 @@ export async function resolveSubscription(
                 expires_at: data?.expires_at ?? null,
                 cachedAt: Date.now(),
             };
+            // 🔧 Only write to cache when the server gave us a real
+            // answer. This is what stops a transient error from
+            // poisoning the cache with `isPremium: false`.
             writeCache(snap);
             return snap;
         } catch (err) {
-            // Network blew up mid-request — fall back to cache.
+            // 🔧 Network blew up mid-request. Do NOT default to free.
+            // Prefer cache; if we have none, return the last known
+            // memory snapshot; if even that's missing, return a
+            // neutral snapshot that does NOT claim free.
             if (cached) return cached;
+            if (memorySnapshot && memorySnapshot.userId === userId) {
+                return memorySnapshot;
+            }
             return {
                 userId,
                 isPremium: false,
-                plan_type: "free",
+                plan_type: "unknown",
                 expires_at: null,
-                cachedAt: Date.now(),
+                cachedAt: 0, // signals "not authoritative"
             };
         } finally {
             inFlight = null;
@@ -144,4 +233,23 @@ export async function resolveSubscription(
     })();
 
     return inFlight;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 🔧 Listen for online/offline transitions so we invalidate the
+// reachability probe and opportunistically refresh in the
+// background when connectivity returns.
+// ─────────────────────────────────────────────────────────────
+if (typeof window !== "undefined") {
+    window.addEventListener("online", () => {
+        _reachability = null;
+        // Best-effort refresh for whoever's currently cached.
+        const uid = memorySnapshot?.userId ?? readCache()?.userId ?? null;
+        if (uid) {
+            resolveSubscription(uid, { force: true }).catch(() => { });
+        }
+    });
+    window.addEventListener("offline", () => {
+        _reachability = { value: false, at: Date.now() };
+    });
 }

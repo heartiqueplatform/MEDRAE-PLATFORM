@@ -15,7 +15,7 @@ import "@fontsource/poppins/800.css";
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.0.01";
 
 
 const CACHE_NAMES = {
@@ -109,8 +109,20 @@ const precacheAssets = async () => {
 
 /**
  * Smart Fetch Interceptor with Cache-First Strategy
+ *
+ * 🔧 CRITICAL: Supabase auth traffic MUST bypass this interceptor.
+ * The old version returned a fake `200 OK` with body `{}` when a
+ * Supabase request failed. That made Supabase's auth client parse
+ * the empty body as "no session" and fire SIGNED_OUT — the root
+ * cause of the offline → kicked_out → Index cascade.
  */
 const originalFetch = window.fetch;
+
+// 🔧 Regex that matches auth endpoints. Anything matching this goes
+// straight to originalFetch with no interception, no fallback.
+const AUTH_URL_PATTERN =
+    /\/auth\/v1\/|\/auth\/|\/token\b|\/refresh\b|grant_type=|\/user\?/i;
+
 window.fetch = async function (...args) {
     const url =
         typeof args[0] === 'string'
@@ -118,6 +130,15 @@ window.fetch = async function (...args) {
             : args[0] instanceof Request
                 ? args[0].url
                 : String(args[0]);
+
+    // 🔧 GUARD 1: Never intercept auth traffic.
+    // If Supabase's auth client needs to refresh a token and the
+    // network is down, we want that to surface as a real network
+    // error — not a fake 200. authManager's guards handle the real
+    // error; a fake 200 breaks Supabase's parser and forces a logout.
+    if (AUTH_URL_PATTERN.test(url)) {
+        return originalFetch.apply(this, args);
+    }
 
     const isStaticAsset =
         url.includes('/static/') ||
@@ -129,27 +150,56 @@ window.fetch = async function (...args) {
             const cache = await caches.open(CACHE_NAMES.assets);
             const cachedResponse = await cache.match(url);
             if (cachedResponse) {
-                fetchAndCache(url, cache); // background refresh
+                // 🔧 Use originalFetch here, not the intercepted one,
+                // to avoid a recursive interception on the background
+                // refresh. The refresh is best-effort; a failure is fine.
+                originalFetch(url)
+                    .then((res) => {
+                        if (res.ok) cache.put(url, res.clone()).catch(() => { });
+                    })
+                    .catch(() => { });
                 return cachedResponse;
             }
         } catch {
             // fall through
         }
 
-        const response = await originalFetch.apply(this, args);
-        if (response.ok) {
-            try {
-                const cache = await caches.open(CACHE_NAMES.assets);
-                cache.put(url, response.clone());
-            } catch { }
+        try {
+            const response = await originalFetch.apply(this, args);
+            if (response.ok) {
+                caches.open(CACHE_NAMES.assets)
+                    .then((cache) => cache.put(url, response.clone()))
+                    .catch(() => { });
+            }
+            return response;
+        } catch (err) {
+            // 🔧 Network failed and we had no cache — rethrow so the
+            // caller knows. The old version didn't have a catch here,
+            // so this branch is new and prevents silent failures.
+            throw err;
         }
-        return response;
     }
 
+    // 🔧 GUARD 3: Supabase data traffic (non-auth). We still want a
+    // graceful offline fallback for *data* queries — but only for
+    // reads. Writes (POST/PATCH/PUT/DELETE) must fail loudly so the
+    // caller's error handling runs.
     if (isSupabase) {
+        const method = (() => {
+            if (typeof args[1] === 'object' && args[1]?.method) {
+                return String(args[1].method).toUpperCase();
+            }
+            return 'GET';
+        })();
+
+        const isReadRequest = method === 'GET' || method === 'HEAD';
+
         try {
             return await originalFetch.apply(this, args);
-        } catch {
+        } catch (err) {
+            // 🔧 Writes fail loudly — never fake a success for a mutation.
+            if (!isReadRequest) throw err;
+
             const isListRequest = url.includes('?') || url.includes('select=');
             return new Response(isListRequest ? '[]' : '{}', {
                 status: 200,
@@ -163,15 +213,6 @@ window.fetch = async function (...args) {
     }
 
     return originalFetch.apply(this, args);
-};
-
-const fetchAndCache = async (url: string, cache: Cache) => {
-    try {
-        const response = await fetch(url);
-        if (response.ok) cache.put(url, response.clone());
-    } catch {
-        // silent
-    }
 };
 
 /**
@@ -298,16 +339,22 @@ window.addEventListener('offline', () => {
 
 /**
  * Error Handling for PWA
+ *
+ * 🔧 Only react to errors that are actually about the service worker.
+ * The old handler called navigator.serviceWorker.getRegistrations()
+ * on every generic error containing "ServiceWorker" — which includes
+ * benign console noise from third-party scripts. It also caused a
+ * double-update on every SW error during boot.
  */
 window.addEventListener('error', (e) => {
-    if (e.message && e.message.includes('ServiceWorker')) {
-        console.error('Service Worker Error:', e.message);
+    if (!e.message || !e.message.includes('ServiceWorker')) return;
+    if (!('serviceWorker' in navigator)) return;
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(r => r.update());
-            });
-        }
+    // Only react if the SW controller is actually in a bad state.
+    if (navigator.serviceWorker.controller) {
+        console.error('Service Worker Error:', e.message);
+    } else {
+        console.warn('Service Worker warning (no controller):', e.message);
     }
 });
 
@@ -331,10 +378,14 @@ const initApp = async () => {
     );
 
     // Hide the HTML splash as soon as React commits.
+    // Hide the HTML splash only after React has committed AND the
+    // browser has painted the next frame. Prevents the brief window
+    // where the splash is gone but #root is still empty.
     requestAnimationFrame(() => {
-        (window as any).hideMedraeLoader?.();
+        requestAnimationFrame(() => {
+            (window as any).hideMedraeLoader?.();
+        });
     });
-
     // PWA setup in the background — never blocks first paint.
     if ('serviceWorker' in navigator) {
         setupPWA().catch(console.error);

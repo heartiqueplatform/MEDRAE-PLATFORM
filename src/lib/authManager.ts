@@ -45,6 +45,18 @@ class AuthManager {
   // When true, clearPersistedState will NOT set the "kicked_out" flag.
   private manualLogoutInProgress = false;
 
+  // 🔧 NEW: Set true while we're deliberately suppressing a
+  // SIGNED_OUT that we believe was caused by a failed token refresh
+  // (offline, captive portal, transient network). Prevents the
+  // cascade: token refresh fails → SIGNED_OUT → clear cache →
+  // "kicked_out" toast → user bounced to Index as a stranger.
+  private suppressingSignOut = false;
+
+  // 🔧 NEW: Tracks the last time we saw a *successful* online
+  // session validation. Used to decide whether a SIGNED_OUT event
+  // is suspicious (happened while we couldn't reach the server).
+  private lastValidatedAt = 0;
+
   private constructor() {
     // HYDRATION: read cached user synchronously, offline or online.
     // If we have a cached user, loading starts FALSE so PrivateRoute
@@ -73,7 +85,7 @@ class AuthManager {
     return AuthManager.instance;
   }
 
-  // 🔧 NEW: Call this immediately before a user-initiated signOut()
+  // 🔧 Call this immediately before a user-initiated signOut()
   // (e.g. from Profile.tsx "Logout" button) so that the resulting
   // SIGNED_OUT event is treated as "manual" and does NOT trigger
   // the security "kicked out" toast.
@@ -85,14 +97,71 @@ class AuthManager {
     if (this.subscriptionInitialized) return;
     this.subscriptionInitialized = true;
 
-    // Only an EXPLICIT logout clears the cached user.
-    supabase.auth.onAuthStateChange((event, newSession) => {
+    // 🔧 SIGNED_OUT handling — now guarded against offline / transient
+    // refresh failures. Only a SIGNED_OUT we can *trust* clears the cache.
+    supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (event === "SIGNED_OUT") {
+        // ── Guard 1: user clicked logout → expected, clear quietly.
+        if (this.manualLogoutInProgress) {
+          this.clearPersistedState();
+          return;
+        }
+
+        // ── Guard 2: we are being suppressed (already handling one).
+        if (this.suppressingSignOut) return;
+
+        // ── Guard 3: are we actually able to reach the server?
+        // If not, this SIGNED_OUT is almost certainly a failed
+        // token refresh, not a real sign-out. Ignore it and keep
+        // the cached user so the app stays usable offline.
+        const hadCachedUser = !!this.getUser();
+        const online = await isReallyOnline(1500);
+
+        if (!online) {
+          console.warn(
+            "[AuthManager] SIGNED_OUT received while offline — preserving cached session."
+          );
+          // Ensure our state still reflects the cached user.
+          this.setState({
+            user: this.state.user,
+            session: null,
+            loading: false,
+          });
+          return;
+        }
+
+        // ── Guard 4: we're online but the sign-out happened
+        // suspiciously fast after our last successful validation
+        // (e.g. Supabase refresh raced a flaky network). Give the
+        // server one more chance before nuking the cache.
+        if (hadCachedUser && Date.now() - this.lastValidatedAt < 5000) {
+          try {
+            const { data } = await supabase.auth.getSession();
+            if (data?.session?.user) {
+              // Still valid — treat this SIGNED_OUT as spurious.
+              this.persistSession(data.session);
+              this.lastValidatedAt = Date.now();
+              return;
+            }
+          } catch {
+            // Couldn't verify — be conservative, keep the cache.
+            this.setState({
+              user: this.state.user,
+              session: null,
+              loading: false,
+            });
+            return;
+          }
+        }
+
+        // ── All guards passed: this is a real sign-out.
         this.clearPersistedState();
         return;
       }
+
       if (newSession?.user) {
         this.persistSession(newSession);
+        this.lastValidatedAt = Date.now();
       }
       // INITIAL_SESSION with null, TOKEN_REFRESH_FAILED, offline errors → IGNORE.
     });
@@ -118,8 +187,14 @@ class AuthManager {
       if (data?.session?.user) {
         // Supabase has a real session — persist and let the app through.
         this.persistSession(data.session);
+        this.lastValidatedAt = Date.now();
       } else {
-        // Genuinely online AND Supabase says no session → truly logged out.
+        // Genuinely online AND Supabase says no session.
+        // 🔧 But only clear if we don't already have a cached user
+        // AND we actually reached the server. `getSession()` returning
+        // null with no error, while online, is the legit "logged out"
+        // case. If we had a cached user, this is Supabase telling us
+        // the refresh token is dead → that IS a real logout.
         this.clearPersistedState();
       }
     } catch {
@@ -173,9 +248,11 @@ class AuthManager {
     }
 
     this.manualLogoutInProgress = false;
+    this.lastValidatedAt = 0;
 
     this.setState({ session: null, user: null, loading: false });
   }
+
   getState(): AuthState {
     return { ...this.state };
   }

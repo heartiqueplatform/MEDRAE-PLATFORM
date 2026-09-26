@@ -18,16 +18,35 @@
     content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
   <style>
-    /* This stops the white flash by making the page background
-       match your app theme immediately */
+    /* ============================================ */
+    /* THEME VARIABLES — light is the DEFAULT.      */
+    /* Dark overrides only when <html class="dark"> */
+    /* ============================================ */
     :root {
       --bg-color: #ffffff;
-      /* Default light */
+      --pattern-dot: rgba(255, 31, 31, 0.14);
+      --screen-fade: rgba(255, 255, 255, 0.85);
+      --loader-bg: #ffffff;
+      --loader-text: #111111;
     }
 
-    /* If the user has dark mode, make it black immediately */
-    .dark {
+    html.dark {
       --bg-color: #0d1117;
+      --pattern-dot: rgba(255, 31, 31, 0.22);
+      --screen-fade: rgba(13, 17, 23, 0.85);
+      --loader-bg: #0d1117;
+      --loader-text: #ffffff;
+    }
+
+    /* 🔧 Belt-and-suspenders: if <html> has class "light" (explicit),
+     force the light variables even if the OS prefers dark. This
+     overrides any UA-level "prefers-color-scheme: dark" leakage. */
+    html.light {
+      --bg-color: #ffffff;
+      --pattern-dot: rgba(255, 31, 31, 0.14);
+      --screen-fade: rgba(255, 255, 255, 0.85);
+      --loader-bg: #ffffff;
+      --loader-text: #111111;
     }
 
     html,
@@ -35,8 +54,6 @@
       background-color: var(--bg-color);
       margin: 0;
       padding: 0;
-
-      /* Stops scrolling while loading */
     }
 
     #initial-loader {
@@ -827,23 +844,23 @@
         content: '';
         position: absolute;
         inset: 0;
-        background-image: radial-gradient(circle, var(--pattern-dot, rgba(255, 31, 31, 0.14)) 1.2px, transparent 1.4px);
+        background-image: radial-gradient(circle, var(--pattern-dot) 1.2px, transparent 1.4px);
         background-size: 18px 18px;
         opacity: 0.9;
         z-index: 0;
         pointer-events: none;
       }
 
-      .dark #initial-loader::before {
-        background-image: radial-gradient(circle, rgba(255, 31, 31, 0.22) 1.2px, transparent 1.4px);
-      }
+      /* 🔧 No .dark override needed — --pattern-dot switches
+         automatically via the html.light / html.dark rules above.
+         Same for --screen-fade below. */
 
       /* Radial fade */
       #initial-loader::after {
         content: '';
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 50% 50%, var(--screen-fade, rgba(255, 255, 255, 0.85)) 0%, transparent 70%);
+        background: radial-gradient(circle at 50% 50%, var(--screen-fade) 0%, transparent 70%);
         z-index: 1;
         pointer-events: none;
       }
@@ -971,6 +988,7 @@
       }
 
       .dark #initial-loader .splash-wordmark::after {
+        /* Dimmer slash on dark backgrounds so it doesn't blow out */
         background: linear-gradient(115deg,
             transparent 0%,
             rgba(255, 255, 255, 0) 30%,
@@ -979,17 +997,15 @@
             transparent 100%);
       }
 
+      /* 🔧 Light mode already has its own ::after defined above.
+         No change needed there — the default slash is fine on white. */
       #initial-loader .splash-wordmark .brand {
         color: #FF1F1F;
       }
 
       #initial-loader .splash-wordmark .suffix {
-        color: #111111;
+        color: var(--loader-text);
         margin-left: 4px;
-      }
-
-      .dark #initial-loader .splash-wordmark .suffix {
-        color: #ffffff;
       }
 
       @keyframes medrae-fade-up {
@@ -1049,15 +1065,40 @@
   <!-- ============================================ -->
   <script>
     (function () {
-      // ---------- Theme bootstrap (runs before paint) ----------
       try {
-        var userTheme = localStorage.getItem('theme');
-        var systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (!userTheme) userTheme = systemPrefersDark ? 'dark' : 'light';
+        // 🔧 Check multiple keys — pick whichever your app actually writes.
+        // If your Settings page uses a different key, add it here.
+        var userTheme =
+          localStorage.getItem('theme') ||
+          localStorage.getItem('medrae-theme') ||
+          localStorage.getItem('darkMode') ||
+          localStorage.getItem('app_theme') ||
+          null;
+
+        // Normalize: some code paths store "true"/"false" or "0"/"1".
+        if (userTheme === 'true' || userTheme === '1') userTheme = 'dark';
+        if (userTheme === 'false' || userTheme === '0') userTheme = 'light';
+
+        // If nothing is stored, follow the OS preference.
+        if (userTheme !== 'dark' && userTheme !== 'light') {
+          var systemPrefersDark =
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+          userTheme = systemPrefersDark ? 'dark' : 'light';
+        }
+
+        // 🔧 Remove both classes first, then add exactly one.
+        // This guarantees we never end up with both "light" and "dark"
+        // on the html element at the same time (which would make the
+        // CSS cascade non-deterministic).
+        document.documentElement.classList.remove('light', 'dark');
         document.documentElement.classList.add(userTheme);
+
         var bg = userTheme === 'dark' ? '#0d1117' : '#ffffff';
         document.documentElement.style.setProperty('--bg-color', bg);
-        document.body.style.backgroundColor = bg;
+        // body may not exist yet when this runs in the document head,
+        // but set a fallback on documentElement so the loader reads correctly.
+        if (document.body) document.body.style.backgroundColor = bg;
       } catch (e) { /* never block paint */ }
 
       if (typeof window.performance !== 'undefined') {
@@ -1093,7 +1134,6 @@
       }, 800);
     });
   </script>
-
 </body>
 
 </html>

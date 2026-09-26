@@ -793,7 +793,7 @@ export default function AssessmentNotes() {
       <div className="min-h-screen w-full flex justify-center bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] px-[3px] md:px-4 lg:px-6">
         <div className="w-full max-w-full mx-auto space-y-0 md:space-y-6 py-0 md:py-6 px-0 md:px-0">
           {/* Header Card - NO BORDER ON MOBILE */}
-          <div className="shadow-md hover:shadow-lg transition-all rounded-xl md:rounded-2xl border-0 overflow-hidden bg-white dark:bg-muted/30 mx-0">
+          <div className="shadow-none transition-all rounded-xl md:rounded-xl border-0 overflow-hidden bg-white dark:bg-muted/30 mx-0">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-green-500 to-emerald-500" />
             <div className="p-3 md:p-6 pb-2 md:pb-3">
               <div className="flex items-center justify-between flex-wrap gap-2">

@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useDrag } from '@use-gesture/react';
 import { useSpring, animated, config } from '@react-spring/web';
 import { supabase } from "@/lib/supabaseClient";
+import { authManager } from "@/lib/authManager";
 import HeroMobileCard from "@/components/HeroMobileCard";
 import ExitOverlay from '@/components/ExitOverlay';
 import KRCHNCurriculum from '@/components/index/KRCHNCurriculum';
@@ -247,12 +248,53 @@ const Index = () => {
   }, []);
 
   // Fire-and-forget session check — never blocks render
+  // 🔧 Fire-and-forget session check — never blocks render.
+  //
+  // Two-source check, in order:
+  //   1. supabase.auth.getSession()  → source of truth when online
+  //   2. authManager.getUser()       → cached user, used when offline
+  //
+  // Previously, offline `getSession()` returns `{ session: null }`
+  // even though the user is logged in (their cached user is intact in
+  // localStorage via authManager). Result: a logged-in user opening
+  // the app offline at `/` would stay stuck on the public landing
+  // page — the exact "lands back on Index" symptom.
   useEffect(() => {
+    let cancelled = false;
+
+    // 1. Sync check against the cached authManager state.
+    //    If a user is already hydrated there, redirect immediately.
+    const cachedUser = authManager.getUser();
+    if (cachedUser) {
+      navigate("/redirect", { replace: true });
+      return;
+    }
+
+    // 2. Async check against Supabase (works when online).
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        if (session?.user) navigate("/redirect", { replace: true });
+        if (cancelled) return;
+        if (session?.user) {
+          navigate("/redirect", { replace: true });
+          return;
+        }
+        // 3. Fallback: even if getSession returned nothing (offline
+        //    or Supabase hiccup), double-check authManager one more
+        //    time — it may have hydrated a tick later.
+        if (authManager.getUser()) {
+          navigate("/redirect", { replace: true });
+        }
       })
-      .catch((err) => console.error("Session check failed:", err));
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn("[Index] session check failed:", err);
+        // 4. Network failed — trust the cached user if we have one.
+        if (authManager.getUser()) {
+          navigate("/redirect", { replace: true });
+        }
+      });
+
+    return () => { cancelled = true; };
   }, [navigate]);
 
   useEffect(() => {

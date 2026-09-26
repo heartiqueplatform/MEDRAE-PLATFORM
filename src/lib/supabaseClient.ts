@@ -23,6 +23,36 @@ const LONG_CACHE_TTL = 60 * 60 * 1000; // 1 hour for static data
 const isOffline = (): boolean =>
   typeof navigator !== 'undefined' && navigator.onLine === false;
 
+// 🔧 Shared reachability probe. Cheap, cached for 10s, and — crucially —
+// used to decide whether we should even attempt a token refresh.
+let _reachability: { value: boolean; at: number } | null = null;
+const REACHABILITY_TTL = 10 * 1000;
+
+async function isReallyOnline(timeoutMs = 2500): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return false;
+  }
+  if (_reachability && Date.now() - _reachability.at < REACHABILITY_TTL) {
+    return _reachability.value;
+  }
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    await fetch('https://www.google.com/generate_204', {
+      method: 'HEAD',
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    clearTimeout(t);
+    _reachability = { value: true, at: Date.now() };
+    return true;
+  } catch {
+    _reachability = { value: false, at: Date.now() };
+    return false;
+  }
+}
+
 const getCacheTTL = (query: string): number => {
   if (query.includes('profiles') && query.includes('user_id')) return LONG_CACHE_TTL;
   if (query.includes('courses') || query.includes('units')) return LONG_CACHE_TTL;
@@ -99,19 +129,29 @@ export const invalidateCache = (pattern?: string) => {
   }
 };
 
+// 🔧 Auth URL detection. We use this to *never* intercept auth traffic
+// with our fake-response fallback, and to give auth requests a much
+// shorter timeout than data requests.
+const AUTH_URL_PATTERN = /\/(auth|token|refresh)\b|grant_type=/i;
+
 export const getSupabase = () => {
   if (!supabaseInstance) {
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
-        autoRefreshToken: true,
+        // 🔧 CRITICAL FIX: Disable automatic token refresh.
+        // The auto-refresher fires SIGNED_OUT when it can't reach the
+        // server (offline, captive portal, sleeping device), which
+        // nukes the cached session. We drive refresh manually below,
+        // only when we've confirmed we're actually online.
+        autoRefreshToken: false,
         detectSessionInUrl: true,
         storageKey: 'medrae_auth',
         flowType: 'pkce',
       },
       // 🚀 COMPLETELY DISABLE REALTIME - NO WEBSOCKETS AT ALL
       realtime: {
-        enabled: false, // This kills all WebSocket connections
+        enabled: false,
       },
       global: {
         headers: {
@@ -119,28 +159,63 @@ export const getSupabase = () => {
           'X-Client-Version': '1.0.16',
         },
         fetch: (url, options) => {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          // 🔧 Respect the caller's signal. Supabase's auth client
+          // passes its own AbortSignal for refresh timeouts; if we
+          // ignore it, we can hang a refresh for 15s when it should
+          // give up in 5s, and we'll retry it — which makes things worse.
+          const callerSignal = (options as any)?.signal as AbortSignal | undefined;
 
-          const fetchWithRetry = async (retries = 2): Promise<Response> => {
+          const isAuthRequest = AUTH_URL_PATTERN.test(String(url));
+
+          // 🔧 Auth requests: short timeout, no retry, honor caller abort.
+          // Data requests: longer timeout, one retry on real network errors.
+          const timeoutMs = isAuthRequest ? 6000 : 15000;
+          const maxRetries = isAuthRequest ? 0 : 1;
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+          // If the caller aborts, abort us too.
+          const onCallerAbort = () => controller.abort();
+          if (callerSignal) {
+            if (callerSignal.aborted) controller.abort();
+            else callerSignal.addEventListener('abort', onCallerAbort, { once: true });
+          }
+
+          const cleanup = () => {
+            clearTimeout(timeoutId);
+            if (callerSignal) {
+              callerSignal.removeEventListener('abort', onCallerAbort);
+            }
+          };
+
+          const fetchWithRetry = async (retries: number): Promise<Response> => {
             try {
               const response = await fetch(url, {
                 ...options,
                 signal: controller.signal,
               });
-              clearTimeout(timeoutId);
+              cleanup();
               return response;
             } catch (error) {
-              if (retries > 0 && (error as Error).name === 'AbortError') {
-                clearTimeout(timeoutId);
+              const name = (error as Error).name;
+
+              // 🔧 Never retry an abort — it's either our timeout or the
+              // caller's, and retrying just delays the failure.
+              if (name === 'AbortError') {
+                cleanup();
+                throw error;
+              }
+
+              if (retries > 0) {
                 return fetchWithRetry(retries - 1);
               }
-              clearTimeout(timeoutId);
+              cleanup();
               throw error;
             }
           };
 
-          return fetchWithRetry();
+          return fetchWithRetry(maxRetries);
         },
       },
     });
@@ -149,6 +224,89 @@ export const getSupabase = () => {
 };
 
 export const supabase = getSupabase();
+
+// ─────────────────────────────────────────────────────────────
+// 🔧 MANUAL TOKEN REFRESH
+// Only runs when we've confirmed we're really online. Never runs
+// while offline. Never throws — logs and lets the app continue
+// with the cached session.
+// ─────────────────────────────────────────────────────────────
+let _refreshing: Promise<void> | null = null;
+
+export async function refreshSessionIfOnline(): Promise<void> {
+  if (_refreshing) return _refreshing;
+
+  _refreshing = (async () => {
+    try {
+      const online = await isReallyOnline();
+      if (!online) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Refresh if expiring within the next 5 minutes.
+      const expiresAt = session.expires_at ?? 0;
+      const now = Math.floor(Date.now() / 1000);
+      if (expiresAt - now < 300) {
+        const { error } = await supabase.auth.refreshSession();
+        if (error) {
+          // 🔧 Do NOT propagate. A failed refresh while we *think* we're
+          // online is almost always a transient network issue. Supabase
+          // will fire SIGNED_OUT; authManager's guards will suppress it
+          // if we're actually offline.
+          console.warn('[supabase] refreshSession failed:', error.message);
+        }
+      }
+    } catch (err) {
+      console.warn('[supabase] refreshSessionIfOnline threw:', err);
+    } finally {
+      _refreshing = null;
+    }
+  })();
+
+  return _refreshing;
+}
+
+// 🔧 Refresh cadence: check every 4 minutes, and immediately on
+// network recovery. Skipped entirely while offline.
+if (typeof window !== 'undefined') {
+  const REFRESH_INTERVAL = 4 * 60 * 1000;
+  let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+  const startRefreshLoop = () => {
+    if (refreshTimer) return;
+    refreshTimer = setInterval(() => {
+      refreshSessionIfOnline().catch(() => { });
+    }, REFRESH_INTERVAL);
+  };
+
+  const stopRefreshLoop = () => {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+  };
+
+  window.addEventListener('online', () => {
+    _reachability = null;
+    refreshSessionIfOnline().catch(() => { });
+    startRefreshLoop();
+  });
+
+  window.addEventListener('offline', () => {
+    _reachability = { value: false, at: Date.now() };
+    stopRefreshLoop();
+  });
+
+  // Only start the loop if we're plausibly online at boot.
+  if (typeof navigator === 'undefined' || navigator.onLine) {
+    startRefreshLoop();
+    // Do one refresh attempt shortly after boot — but don't block.
+    setTimeout(() => {
+      refreshSessionIfOnline().catch(() => { });
+    }, 3000);
+  }
+}
 
 // ============================================
 // QUERY HELPERS (No realtime)
@@ -276,9 +434,7 @@ export function getCachedData<T>(key: string): CachedData<T> | null {
     const cached = localStorage.getItem(key);
     if (!cached) return null;
     const parsed: CachedData<T> = JSON.parse(cached);
-    // Offline → ignore TTL, always return the entry.
     if (isOffline()) return parsed;
-    // Online → return as-is; the caller decides via isCacheExpired().
     return parsed;
   } catch {
     return null;
@@ -299,7 +455,6 @@ export function saveCachedData<T>(key: string, data: T): void {
 
 export function isCacheExpired(cached: CachedData<any> | null): boolean {
   if (!cached) return true;
-  // Offline → never "expired" from the caller's point of view.
   if (isOffline()) return false;
   return Date.now() - cached.timestamp >= CACHE_DURATION;
 }

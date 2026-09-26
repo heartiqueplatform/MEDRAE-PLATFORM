@@ -163,17 +163,27 @@ import {
   CompletionsPage,
   PeriodsPage,
 } from "@/staff-cpd/admin/index";
+
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
 const PROFILE_CACHE_KEY = "app_user_profile_cache";
 const CACHE_DURATION = 24 * 60 * 60 * 1000;
 
+// 🔧 Sync offline hint — cheaper than the async probe and good
+// enough for cache-read decisions.
+const isOfflineHint = () =>
+  typeof navigator !== "undefined" && navigator.onLine === false;
+
 const getCachedProfile = () => {
   try {
     const cached = localStorage.getItem(PROFILE_CACHE_KEY);
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
+      // 🔧 Offline: return the cached profile no matter how old.
+      // The whole point of the cache is to keep the app usable
+      // offline — expiring it offline defeats that.
+      if (isOfflineHint()) return data;
       if (Date.now() - timestamp < CACHE_DURATION) {
         return data;
       }
@@ -286,18 +296,38 @@ const AppContent = () => {
     const cached = getCachedProfile();
     if (cached) {
       setProfile(cached);
+      // 🔧 Offline: don't even try the network. Return early
+      // so we never overwrite the cache with a null result.
+      if (isOfflineHint()) return;
+      // If the cached entry is still fresh, don't hit the network either.
+      // (getCachedProfile already returns stale entries offline; online
+      // it returns null for stale entries, so reaching this point online
+      // means the cache was fresh.)
       return;
     }
 
-    const { data: profileData, error } = await supabase
-      .from("profiles")
-      .select("user_id, name, username, role, avatar_url, institution")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // 🔧 Offline + no cache: there's nothing to fetch. Leave the
+    // profile as-is (null) and let the UI render its empty state.
+    // Don't attempt a network call that's guaranteed to fail.
+    if (isOfflineHint()) return;
 
-    if (!error && profileData) {
-      setProfile(profileData);
-      setCachedProfile(profileData);
+    try {
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("user_id, name, username, role, avatar_url, institution")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      // 🔧 Only set/cache on a real success. The old code did the
+      // same check, but without the surrounding try/catch a thrown
+      // error would surface as an unhandled rejection.
+      if (!error && profileData) {
+        setProfile(profileData);
+        setCachedProfile(profileData);
+      }
+    } catch (err) {
+      // Network error — cache already handled above; nothing to do.
+      console.warn("[App] fetchUserProfile failed:", err);
     }
   }, [user]);
 
@@ -335,13 +365,23 @@ const AppContent = () => {
 
     const performHeartbeat = async () => {
       if (document.hidden) return;
+      // 🔧 Skip heartbeat when offline. Otherwise the interceptor
+      // catches the failed RPC and returns `{}`, which Supabase
+      // parses as a successful call with no body — useless, and it
+      // pollutes logs with fake successes.
+      if (isOfflineHint()) return;
 
       const deviceId = localStorage.getItem("device_id");
 
-      await supabase.rpc('handle_user_heartbeat', {
-        p_user_id: user.id,
-        p_device_id: deviceId || ""
-      });
+      try {
+        await supabase.rpc('handle_user_heartbeat', {
+          p_user_id: user.id,
+          p_device_id: deviceId || ""
+        });
+      } catch (err) {
+        // Non-fatal — a missed heartbeat just delays eviction checks.
+        console.warn("[App] heartbeat failed:", err);
+      }
     };
 
     performHeartbeat();
@@ -364,17 +404,25 @@ const AppContent = () => {
 
     const updateBadge = async () => {
       if (document.hidden) return;
+      // 🔧 Skip when offline — the query would return `{ count: null }`
+      // via the interceptor, which would clear the badge incorrectly.
+      if (isOfflineHint()) return;
 
-      const { count } = await supabase
-        .from("user_mistakes")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("resolved", false);
+      try {
+        const { count } = await supabase
+          .from("user_mistakes")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("resolved", false);
 
-      if (count > 0) {
-        navigator.setAppBadge(count).catch(() => { });
-      } else {
-        navigator.clearAppBadge?.();
+        if (count && count > 0) {
+          navigator.setAppBadge(count).catch(() => { });
+        } else {
+          navigator.clearAppBadge?.();
+        }
+      } catch (err) {
+        // Non-fatal.
+        console.warn("[App] badge update failed:", err);
       }
     };
 

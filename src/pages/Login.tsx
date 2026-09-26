@@ -329,7 +329,8 @@ export function Login() {
   const state = location.state as { message?: string };
 
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-muted/100 dark:bg-muted/100">
+    <div className="min-h-[100dvh] w-full flex flex-col md:flex-row bg-muted/100 dark:bg-muted/100">
+      {/* Exit button — desktop only */}
       <button
         onClick={handleExitApp}
         className="hidden md:flex fixed top-6 left-6 z-[9999]
@@ -348,6 +349,7 @@ export function Login() {
 
       <ExitOverlay isOpen={showExitOverlay} onExit={finalExitAction} />
 
+      {/* LEFT: hero (desktop only) */}
       <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
         {backgroundImages.map((img, index) => (
           <div
@@ -356,7 +358,7 @@ export function Login() {
               }`}
             style={{
               backgroundImage: `url(/${img})`,
-              transition: 'opacity 1s ease-in-out, transform 10s linear'
+              transition: "opacity 1s ease-in-out, transform 10s linear",
             }}
           />
         ))}
@@ -372,7 +374,9 @@ export function Login() {
             <h1 className="text-5xl font-bold leading-tight">
               Welcome Back to <br />
               <span>
-                <span className="text-red-500 font-black drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">MedRae</span>
+                <span className="text-red-500 font-black drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                  MedRae
+                </span>
                 <span className="text-white font-bold"> Nursing</span>
               </span>
             </h1>
@@ -383,36 +387,43 @@ export function Login() {
         </div>
       </div>
 
-      <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8 lg:p-12 bg-muted/100 dark:bg-muted/100">
-        <div className="w-full max-w-md">
-          <div className="flex flex-col items-center mb-6 md:mb-8">
-            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-xl p-3 mb-4">
-              <img src="/pwa-192x192.jpeg" alt="Logo" className="w-full h-full object-contain" />
+      {/* RIGHT: form — edge-to-edge on mobile, centered on desktop */}
+      <div className="w-full md:w-1/2 flex flex-1 md:flex-none items-stretch md:items-center justify-center bg-muted/100 dark:bg-muted/100">
+        <div className="w-full md:max-w-md flex flex-col">
+          {/* Mobile header */}
+          <div className="flex flex-col items-center pt-8 pb-4 md:pt-0 md:pb-0 px-5 md:px-0">
+            <div className="w-14 h-14 md:w-16 md:h-16 bg-white dark:bg-slate-800 rounded-xl p-3 mb-3 md:mb-4">
+              <img
+                src="/pwa-192x192.jpeg"
+                alt="Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
-            <h1 className="text-slate-800 dark:text-white text-3xl font-black tracking-tight">
+            <h1 className="text-slate-800 dark:text-white text-2xl md:text-3xl font-black tracking-tight">
               Welcome Back
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               Sign in to continue your learning
             </p>
             {state?.message && (
-              <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-xs text-yellow-700 dark:text-yellow-400 text-center max-w-sm">
+              <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-xs text-yellow-700 dark:text-yellow-400 text-center max-w-sm w-full">
                 {state.message}
               </div>
             )}
           </div>
 
-          <Card className="w-full bg-white dark:bg-slate-900 shadow-none border-0 rounded-xl overflow-hidden">
-            <CardHeader className="pt-8 px-6 pb-2 text-center">
-              <CardTitle className="text-2xl font-bold text-slate-800 dark:text-white">
+          {/* Card — flat & full-bleed on mobile, rounded card on desktop */}
+          <Card className="w-full bg-white dark:bg-slate-900 border-0 md:border md:border-slate-200 md:dark:border-slate-800 shadow-none rounded-none md:rounded-xl overflow-hidden flex-1 md:flex-none">
+            <CardHeader className="pt-4 md:pt-8 px-5 md:px-6 pb-2 text-center">
+              <CardTitle className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">
                 Sign In
               </CardTitle>
-              <CardDescription className="text-slate-500 dark:text-slate-400 font-medium pt-1">
+              <CardDescription className="text-slate-500 dark:text-slate-400 font-medium pt-1 text-sm">
                 Enter your credentials to continue
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="p-6">
+            <CardContent className="p-5 md:p-6">
               <div className="space-y-5">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-widest font-bold text-slate-500 dark:text-slate-400 ml-1">
@@ -421,7 +432,7 @@ export function Login() {
                   <div className="relative group">
                     <Mail className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input
-                      className="pl-12 h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="pl-12 h-12 w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
@@ -447,7 +458,7 @@ export function Login() {
                     <Lock className="absolute left-4 top-3 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input
                       type="password"
-                      className="pl-12 h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="pl-12 h-12 w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
@@ -480,8 +491,12 @@ export function Login() {
                 <div className="pt-4 text-center">
                   <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                     New to the platform?{" "}
-                    <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-bold inline-flex items-center gap-1 group">
-                      Create account <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    <Link
+                      to="/register"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-bold inline-flex items-center gap-1 group"
+                    >
+                      Create account{" "}
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </p>
                 </div>
@@ -489,19 +504,20 @@ export function Login() {
             </CardContent>
           </Card>
 
-          <div className="mt-6 flex justify-center gap-3">
+          {/* Footer links */}
+          <div className="mt-6 md:mt-6 pb-8 md:pb-0 flex justify-center gap-3 px-5">
             <span
               className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer transition-colors"
               onClick={() => navigate("/privacy")}
             >
-              Privacy & Policy
+              Privacy &amp; Policy
             </span>
             <span className="text-[10px] text-slate-300 dark:text-slate-600">•</span>
             <span
               className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer transition-colors"
               onClick={() => navigate("/terms")}
             >
-              Terms & Conditions
+              Terms &amp; Conditions
             </span>
           </div>
         </div>
