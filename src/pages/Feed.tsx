@@ -913,19 +913,22 @@ export default function Feed() {
   };
 
   // Load more images when scrolling near bottom
+  // Load more images when scrolling near bottom
   useEffect(() => {
     const handleScroll = () => {
-      if (!scrollContainerRef.current) return;
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const container = document.querySelector('[data-scroll-container]') as HTMLElement | null;
+      if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
       if (scrollHeight - scrollTop - clientHeight < 500 && hasMoreImages && !isLoadingImages) {
         setImagePage(prev => prev + 1);
       }
     };
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
-    }
+
+    const container = document.querySelector('[data-scroll-container]');
+    if (!container) return;
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [hasMoreImages, isLoadingImages]);
 
   return (
@@ -985,9 +988,7 @@ export default function Feed() {
       >
         <div
           ref={scrollContainerRef}
-          className="p-0 max-w-4xl mx-auto space-y-4
-     h-[80vh] overflow-y-auto overflow-x-hidden
-     hide-scrollbar"
+          className="p-0 max-w-4xl mx-auto space-y-4 hide-scrollbar"
         >
           <AnimatePresence>
             {feedbackMessage && (

@@ -28,18 +28,18 @@ const superFastTap = (type: "light" | "success" | "warning" = "light") => {
 };
 
 /* ============================================================
-   PROFESSIONAL SVG ICONS
+   PROFESSIONAL SVG ICONS — v2 (thicker, weightier)
    ============================================================ */
 const IconHome = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
             d="M4 10.8L11.3 3.9C11.69 3.53 12.31 3.53 12.7 3.9L20 10.8V19.5C20 20.33 19.33 21 18.5 21H15.5C14.67 21 14 20.33 14 19.5V16C14 14.9 13.1 14 12 14C10.9 14 10 14.9 10 16V19.5C10 20.33 9.33 21 8.5 21H5.5C4.67 21 4 20.33 4 19.5V10.8Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.15 : 0}
+            fillOpacity={active ? 0.20 : 0}
         />
     </svg>
 );
@@ -49,11 +49,11 @@ const IconQuizzes = ({ active }: { active: boolean }) => (
         <path
             d="M12 20.5C12 20.5 3.5 15.5 3.5 9.5C3.5 6.46 5.96 4 9 4C10.6 4 12 4.8 12 4.8C12 4.8 13.4 4 15 4C18.04 4 20.5 6.46 20.5 9.5C20.5 15.5 12 20.5 12 20.5Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
     </svg>
 );
@@ -63,22 +63,22 @@ const IconFeed = ({ active }: { active: boolean }) => (
         <path
             d="M4 5.5C4 4.67 4.67 4 5.5 4H16.5C17.33 4 18 4.67 18 5.5V19.5C18 20.33 17.33 21 16.5 21H6.5C5.12 21 4 19.88 4 18.5V5.5Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.15 : 0}
+            fillOpacity={active ? 0.20 : 0}
         />
         <path
             d="M18 8H19.5C20.33 8 21 8.67 21 9.5V18.5C21 19.88 19.88 21 18.5 21"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
         />
-        <line x1="7.5" y1="8.5" x2="14.5" y2="8.5" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="7.5" y1="12" x2="14.5" y2="12" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="7.5" y1="15.5" x2="11.5" y2="15.5" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7.5" y1="8.5" x2="14.5" y2="8.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
+        <line x1="7.5" y1="12" x2="14.5" y2="12" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
+        <line x1="7.5" y1="15.5" x2="11.5" y2="15.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
     </svg>
 );
 
@@ -87,21 +87,21 @@ const IconMistakes = ({ active }: { active: boolean }) => (
         <path
             d="M11.5 6.8 L10 9.2 L11.5 11 L10 13 L11.5 15 L11.5 20.6 C11.5 20.6 3.4 15.6 3.4 9.5 C3.4 6.46 5.86 4 8.9 4 C10 4 11 4.5 11.5 5.2"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <g transform="rotate(18 16 12) translate(1.2 0.6)">
             <path
                 d="M12.5 5.2 C13 4.5 14 4 15.1 4 C18.14 4 20.6 6.46 20.6 9.5 C20.6 15.6 12.5 20.6 12.5 20.6 L12.5 15 L14 13 L12.5 11 L14 9.2 L12.5 6.8"
                 stroke="currentColor"
-                strokeWidth={active ? 2.2 : 1.8}
+                strokeWidth={active ? 2.4 : 2.0}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 fill={active ? "currentColor" : "none"}
-                fillOpacity={active ? 0.18 : 0}
+                fillOpacity={active ? 0.22 : 0}
             />
         </g>
     </svg>
@@ -112,15 +112,15 @@ const IconCpd = ({ active }: { active: boolean }) => (
         <path
             d="M12 3.5L13.85 7.25L18 7.85L14.95 10.75L15.7 14.85L12 12.9L8.3 14.85L9.05 10.75L6 7.85L10.15 7.25L12 3.5Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
+            fillOpacity={active ? 0.22 : 0}
         />
         <path
             d="M8.6 15.6L7.6 20.2L12 18.2L16.4 20.2L15.4 15.6"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
         />
@@ -132,14 +132,14 @@ const IconCatalog = ({ active }: { active: boolean }) => (
         <path
             d="M4 5.5C4 4.67 4.67 4 5.5 4H18.5C19.33 4 20 4.67 20 5.5V18.5C20 19.33 19.33 20 18.5 20H5.5C4.67 20 4 19.33 4 18.5V5.5Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.15 : 0}
+            fillOpacity={active ? 0.20 : 0}
         />
-        <line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="7" y1="13" x2="17" y2="13" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="7" y1="17" x2="13" y2="17" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
+        <line x1="7" y1="13" x2="17" y2="13" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
+        <line x1="7" y1="17" x2="13" y2="17" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
     </svg>
 );
 
@@ -148,15 +148,15 @@ const IconProgress = ({ active }: { active: boolean }) => (
         <path
             d="M4 20V13M10 20V8M16 20V4M20 20H4"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
         />
         {active && (
             <>
-                <circle cx="4" cy="13" r="1.5" fill="currentColor" />
-                <circle cx="10" cy="8" r="1.5" fill="currentColor" />
-                <circle cx="16" cy="4" r="1.5" fill="currentColor" />
+                <circle cx="4" cy="13" r="1.6" fill="currentColor" />
+                <circle cx="10" cy="8" r="1.6" fill="currentColor" />
+                <circle cx="16" cy="4" r="1.6" fill="currentColor" />
             </>
         )}
     </svg>
@@ -164,109 +164,69 @@ const IconProgress = ({ active }: { active: boolean }) => (
 
 const IconMenu = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
-        <line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
+        <line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
+        <line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" strokeWidth={active ? 2.6 : 2.2} strokeLinecap="round" />
     </svg>
 );
 
-/* ✅ NEW — Tutor icons */
-
-// Tutor Exams — clipboard with a check, matches the "set exam" idea
+/* ✅ Tutor icons — same weight system */
 const IconTutorExams = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
             d="M8 4.5H6.5C5.67 4.5 5 5.17 5 6V19.5C5 20.33 5.67 21 6.5 21H17.5C18.33 21 19 20.33 19 19.5V6C19 5.17 18.33 4.5 17.5 4.5H16"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.15 : 0}
+            fillOpacity={active ? 0.20 : 0}
         />
         <path
             d="M9 3H15C15.55 3 16 3.45 16 4V5.5C16 6.05 15.55 6.5 15 6.5H9C8.45 6.5 8 6.05 8 5.5V4C8 3.45 8.45 3 9 3Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
         />
-        <path
-            d="M9 13.5L11 15.5L15 11.5"
-            stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
+        <path d="M9 13.5L11 15.5L15 11.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
-// Exam Results — document with a check + small chart bar accent
+
 const IconExamResults = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
             d="M6 3.5H14.5L19 8V19.5C19 20.33 18.33 21 17.5 21H6.5C5.67 21 5 20.33 5 19.5V4.5C5 3.67 5.67 3.5 6.5 3.5H6Z"
             stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
+            strokeWidth={active ? 2.4 : 2.0}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.15 : 0}
+            fillOpacity={active ? 0.20 : 0}
         />
-        <path
-            d="M14.5 3.5V8H19"
-            stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <path
-            d="M8.5 13.5L10.75 15.75L15 11.5"
-            stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-        <line x1="8.5" y1="18" x2="15.5" y2="18" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" />
+        <path d="M14.5 3.5V8H19" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8.5 13.5L10.75 15.75L15 11.5" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" strokeLinejoin="round" />
+        <line x1="8.5" y1="18" x2="15.5" y2="18" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
     </svg>
 );
-// Student Analytics — bar chart with a small user accent
+
 const IconAnalytics = ({ active }: { active: boolean }) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M4 19.5H20"
-            stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
-            strokeLinecap="round"
-        />
-        <rect
-            x="5.5" y="12" width="3" height="6" rx="1"
-            stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
-        />
-        <rect
-            x="10.5" y="8" width="3" height="10" rx="1"
-            stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
-        />
-        <rect
-            x="15.5" y="4.5" width="3" height="13.5" rx="1"
-            stroke="currentColor"
-            strokeWidth={active ? 2.2 : 1.8}
-            strokeLinejoin="round"
-            fill={active ? "currentColor" : "none"}
-            fillOpacity={active ? 0.18 : 0}
-        />
+        <path d="M4 19.5H20" stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinecap="round" />
+        <rect x="5.5" y="12" width="3" height="6" rx="1"
+            stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="10.5" y="8" width="3" height="10" rx="1"
+            stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
+        <rect x="15.5" y="4.5" width="3" height="13.5" rx="1"
+            stroke="currentColor" strokeWidth={active ? 2.4 : 2.0} strokeLinejoin="round"
+            fill={active ? "currentColor" : "none"} fillOpacity={active ? 0.22 : 0} />
     </svg>
 );
 
 /* ============================================================
-   NAV ITEM
+   NAV ITEM — v2 (unified premium language)
    ============================================================ */
 const NavItem = memo(({
     icon: Icon,
@@ -285,13 +245,14 @@ const NavItem = memo(({
 }) => {
     const [pressed, setPressed] = useState(false);
 
+    // Active → strong contrast. Inactive → muted but still readable.
     const labelColor = isActive
-        ? isDark ? "text-white" : "text-gray-900"
-        : isDark ? "text-gray-400" : "text-gray-500";
+        ? (isDark ? "text-white" : "text-gray-900")
+        : (isDark ? "text-gray-400" : "text-gray-500");
 
     const iconColor = isActive
-        ? isDark ? "text-white" : "text-blue-600"
-        : isDark ? "text-gray-400" : "text-gray-500";
+        ? (isDark ? "text-white" : "text-blue-600")
+        : (isDark ? "text-gray-400" : "text-gray-500");
 
     const handlePointerDown = (e: React.PointerEvent) => {
         setPressed(true);
@@ -316,26 +277,41 @@ const NavItem = memo(({
                 WebkitTapHighlightColor: 'transparent',
                 transform: pressed ? 'scale(0.94)' : 'scale(1)',
             }}
+            aria-label={label}
         >
+            {/* ── Press ripple ── */}
             <div
                 className="absolute top-1 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full pointer-events-none
                     transition-all duration-300 ease-out"
                 style={{
-                    background: 'radial-gradient(circle, rgba(59,130,246,0.45) 0%, rgba(59,130,246,0.15) 45%, transparent 75%)',
+                    background: 'radial-gradient(circle, rgba(59,130,246,0.50) 0%, rgba(59,130,246,0.18) 45%, transparent 75%)',
                     opacity: pressed ? 1 : 0,
-                    transform: `translateX(-50%) scale(${pressed ? 1.35 : 1})`,
+                    transform: `translateX(-50%) scale(${pressed ? 1.4 : 1})`,
                 }}
             />
 
-            {isActive && (
-                <div
-                    className="absolute top-1 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full pointer-events-none
-                        transition-opacity duration-300"
-                    style={{
-                        background: 'radial-gradient(circle, rgba(59,130,246,0.28) 0%, transparent 70%)',
-                    }}
-                />
-            )}
+            {/* ── Always-on active tile ── */}
+            <div
+                className="absolute top-0.5 left-1/2 -translate-x-1/2 w-9 h-9 rounded-xl pointer-events-none
+                    transition-all duration-300 ease-out"
+                style={{
+                    background: isDark
+                        ? 'linear-gradient(145deg, rgba(59,130,246,0.22) 0%, rgba(37,99,235,0.12) 100%)'
+                        : 'linear-gradient(145deg, rgba(59,130,246,0.14) 0%, rgba(37,99,235,0.08) 100%)',
+                    border: isActive
+                        ? (isDark
+                            ? '1px solid rgba(96,165,250,0.35)'
+                            : '1px solid rgba(59,130,246,0.28)')
+                        : '1px solid transparent',
+                    boxShadow: isActive
+                        ? (isDark
+                            ? '0 2px 10px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.04)'
+                            : '0 2px 10px rgba(59,130,246,0.14), inset 0 1px 0 rgba(255,255,255,0.6)')
+                        : 'none',
+                    opacity: isActive ? 1 : 0,
+                    transform: `translateX(-50%) scale(${isActive ? 1 : 0.85})`,
+                }}
+            />
 
             <div className="relative flex items-center justify-center w-6 h-6 z-10">
                 <span className={`transition-colors duration-200 ${iconColor}`}>
@@ -350,7 +326,12 @@ const NavItem = memo(({
                     </span>
                 )}
             </div>
-            <span className={`text-[10px] font-semibold leading-none mt-1 transition-colors duration-200 z-10 ${labelColor}`}>
+            <span
+                className={`leading-none mt-1 transition-all duration-200 z-10
+                    text-[10px] tracking-tight
+                    ${isActive ? 'font-bold' : 'font-medium'}
+                    ${labelColor}`}
+            >
                 {label}
             </span>
         </button>
@@ -608,7 +589,14 @@ export function Footer() {
     const FOOTER_CONTENT_HEIGHT = 56;
     const footerHeight = FOOTER_CONTENT_HEIGHT + safeAreaBottom;
 
-    const footerBgClass = 'bg-background/95 backdrop-blur-xl border-0';
+    // ── Premium shelf edge: subtle top hairline that fades in from the sides ──
+    const footerBgClass =
+        'bg-background/95 backdrop-blur-xl border-0 ' +
+        'before:content-[""] before:absolute before:top-0 before:left-0 before:right-0 before:h-px ' +
+        'before:bg-gradient-to-r before:from-transparent ' +
+        (theme === 'dark'
+            ? 'before:via-white/10 before:to-transparent '
+            : 'before:via-black/5 before:to-transparent');
 
     const footerShadow = theme === 'dark'
         ? 'shadow-[0_-4px_30px_rgba(0,0,0,0.5)]'
@@ -670,8 +658,6 @@ export function Footer() {
                             isDark={theme === 'dark'}
                         />
 
-
-
                         <NavItem
                             icon={IconAnalytics}
                             label="Analytics"
@@ -703,12 +689,12 @@ export function Footer() {
                         isDark={theme === 'dark'}
                     />
                 )}
+
                 {/* ═══════════════════════════════════════════════════
                     STUDENT-ONLY: MISTAKES
                    ═══════════════════════════════════════════════════ */}
                 {isStudent && (
-                    <NavItem
-                        icon={IconMistakes}
+                    <NavItem icon={IconMistakes}
                         label="Mistakes"
                         isActive={isActive("/my-mistakes")}
                         onPress={(e) => handleNavigate(e, "/my-mistakes")}

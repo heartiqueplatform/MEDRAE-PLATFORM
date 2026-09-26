@@ -16,7 +16,7 @@ import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 
-import { Trophy, Sparkles, ArrowRight, Heart, BookOpen, RefreshCw } from "lucide-react";
+import { Trophy, Sparkles, ArrowRight, Heart, BookOpen, RefreshCw, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MistakesCard } from "@/components/MistakesCard";
 
@@ -798,11 +798,46 @@ export default function MyMistakes() {
                                 )}
                             </h1>
 
+
                             <p className="text-sm font-normal text-gray-500 dark:text-gray-500 mt-2 max-w-xl leading-relaxed">
                                 {mistakeCount === 0
-                                    ? "Keep going — you're on top of everything right now."
+                                    ? "Keep going  you're on top of everything right now."
                                     : "Each one is a small lesson waiting to be understood. Work through them at your own pace."}
                             </p>
+
+                            {mistakeCount === 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.15, type: "spring", stiffness: 300 }}
+                                    className="mt-6 flex flex-col items-center justify-center text-center w-full"
+                                >
+                                    <Button
+                                        onClick={() => {
+                                            vibrateTap(40);
+                                            try { playSound("medrae", false); } catch { }
+                                            navigate("/Medrae-quizzes");
+                                        }}
+                                        className="h-11 md:h-12 px-5 md:px-6 rounded-2xl
+                bg-gradient-to-r from-emerald-500 to-teal-600
+                hover:from-emerald-600 hover:to-teal-700
+                dark:from-emerald-500 dark:to-teal-600
+                dark:hover:from-emerald-600 dark:hover:to-teal-700
+                text-white font-bold text-sm md:text-base
+                shadow-lg shadow-emerald-500/25
+                transition-all group"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:rotate-12" />
+                                            Take a New Quiz
+                                            <ChevronRight className="w-4 h-4 text-white/70 group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                    </Button>
+                                    <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                        You're on a clean slate ~ keep the streak alive.
+                                    </p>
+                                </motion.div>
+                            )}
                         </div>
 
                         {mistakeCount > 0 && (

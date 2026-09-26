@@ -14,14 +14,38 @@ const PROMO_STORAGE_KEY = "medrae_nd_promo_stats";
 const INITIAL_DELAY = 5 * 60 * 1000; // 5 Minutes until first show
 const RECURRING_DELAY = 30 * 60 * 1000; // Repeat every 30 Minutes
 
-const backgroundImages = [
-    "high1.png",
-    "high2.png",
-    "high3.png",
-    "high4.png",
-    "high5.png",
-    "high6.png",
+// ⚡ TEST MODE — set to true to show the promo on every refresh (bypasses timer + daily limit)
+const TEST_MODE_SHOW_ON_REFRESH = false;
+
+// ═══════════════════════════════════════════════════════════════
+// 🖥️ DESKTOP IMAGES — local files from /public (high quality)
+// ═══════════════════════════════════════════════════════════════
+const desktopImages = [
+    "/high1.png",
+    "/high2.png",
+    "/high3.png",
+    "/high4.png",
+    "/high5.png",
+    "/high6.png",
 ];
+
+// ═══════════════════════════════════════════════════════════════
+// 📱 MOBILE IMAGES — remote iStock URLs (portrait-friendly)
+// ═══════════════════════════════════════════════════════════════
+const mobileImages = [
+    "https://media.istockphoto.com/id/2233499062/photo/happy-young-nurse-celebrating-outside-hospital-after-work.webp?a=1&b=1&s=612x612&w=0&k=20&c=nqc1WBRmF9162fHe9F9l-Ad6T8xyEqLVHsw2ttKsaTQ=",
+    "https://media.istockphoto.com/id/1324292384/photo/shot-of-a-set-of-hands-high-fiving-in-victory.webp?a=1&b=1&s=612x612&w=0&k=20&c=cj-xKiNoV4HtxIsAxdyetr89tIHNexHFbpkSBRkRZf8=",
+    "https://media.istockphoto.com/id/1270569606/photo/modern-medical-practitioner-woman-rejoicing.webp?a=1&b=1&s=612x612&w=0&k=20&c=Th8HlNzz6En6KiEGtieeY5KqcMAGNdbDxg68v5A4Olw=",
+];
+
+// Preload every image once so the first slide never flickers.
+const preloadImages = () => {
+    if (typeof window === "undefined") return;
+    [...desktopImages, ...mobileImages].forEach((src) => {
+        const img = new Image();
+        img.src = src;
+    });
+};
 
 export function GlobalDuelManager() {
     const session = useSession();
@@ -31,17 +55,32 @@ export function GlobalDuelManager() {
 
     const [incomingDuel, setIncomingDuel] = useState<any>(null);
     const [showPromo, setShowPromo] = useState(false);
-    const [bgIndex, setBgIndex] = useState(0);
+    const [desktopBgIndex, setDesktopBgIndex] = useState(0);
+    const [mobileBgIndex, setMobileBgIndex] = useState(0);
 
-    // Timer refs to prevent overlaps and memory leaks
     const timersRef = useRef<{ initial?: NodeJS.Timeout; recurring?: NodeJS.Timeout }>({});
 
-    // Background image slideshow
+    useEffect(() => {
+        preloadImages();
+    }, []);
+
+    // Desktop slideshow — cycles local /public images
     useEffect(() => {
         if (!showPromo && !incomingDuel) return;
 
         const interval = setInterval(() => {
-            setBgIndex((prev) => (prev + 1) % backgroundImages.length);
+            setDesktopBgIndex((prev) => (prev + 1) % desktopImages.length);
+        }, 6000);
+
+        return () => clearInterval(interval);
+    }, [showPromo, incomingDuel]);
+
+    // Mobile slideshow — cycles remote iStock images
+    useEffect(() => {
+        if (!showPromo && !incomingDuel) return;
+
+        const interval = setInterval(() => {
+            setMobileBgIndex((prev) => (prev + 1) % mobileImages.length);
         }, 6000);
 
         return () => clearInterval(interval);
@@ -79,9 +118,8 @@ export function GlobalDuelManager() {
     }, [checkIncomingDuels]);
 
 
-    // --- 2. SMART PROMO LOGIC (Original timing restored) ---
+    // --- 2. SMART PROMO LOGIC ---
     useEffect(() => {
-        // Only show on dashboard/home
         const isDashboard = location.pathname.includes('dashboard') || location.pathname === '/';
         if (!user || !isDashboard) {
             clearTimeout(timersRef.current.initial);
@@ -90,32 +128,34 @@ export function GlobalDuelManager() {
         }
 
         const triggerPromo = () => {
-            // Check Daily Limit
             const today = new Date().toISOString().split('T')[0];
             const statsRaw = localStorage.getItem(PROMO_STORAGE_KEY);
             let stats = statsRaw ? JSON.parse(statsRaw) : { date: today, count: 0 };
             if (stats.date !== today) stats = { date: today, count: 0 };
 
-            // Only trigger if under limit AND no incoming duel is currently blocking the screen
-            if (stats.count < DAILY_LIMIT && !incomingDuel) {
+            if ((TEST_MODE_SHOW_ON_REFRESH || stats.count < DAILY_LIMIT) && !incomingDuel) {
                 setShowPromo(true);
                 playSound("medrae");
 
-                stats.count += 1;
-                localStorage.setItem(PROMO_STORAGE_KEY, JSON.stringify(stats));
+                if (!TEST_MODE_SHOW_ON_REFRESH) {
+                    stats.count += 1;
+                    localStorage.setItem(PROMO_STORAGE_KEY, JSON.stringify(stats));
+                }
             }
         };
 
-        // Start the 5-minute initial wait
-        timersRef.current.initial = setTimeout(() => {
-            triggerPromo();
-
-            // After the first one, set up the 30-minute interval
-            timersRef.current.recurring = setInterval(() => {
+        if (TEST_MODE_SHOW_ON_REFRESH) {
+            timersRef.current.initial = setTimeout(triggerPromo, 1200);
+        } else {
+            timersRef.current.initial = setTimeout(() => {
                 triggerPromo();
-            }, RECURRING_DELAY);
 
-        }, INITIAL_DELAY);
+                timersRef.current.recurring = setInterval(() => {
+                    triggerPromo();
+                }, RECURRING_DELAY);
+
+            }, INITIAL_DELAY);
+        }
 
         return () => {
             clearTimeout(timersRef.current.initial);
@@ -134,28 +174,30 @@ export function GlobalDuelManager() {
     return (
         <div className="fixed inset-0 pointer-events-none z-[99999]">
             <AnimatePresence>
-                {/* --- INCOMING DUEL OVERLAY (Split-screen Desktop, Fullscreen Mobile) --- */}
+                {/* ═══════════════════════════════════════════════════
+                    INCOMING DUEL OVERLAY
+                   ═══════════════════════════════════════════════════ */}
                 {incomingDuel && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="pointer-events-auto fixed inset-0 flex flex-col md:flex-row bg-muted/100 dark:bg-muted/100"
+                        className="pointer-events-auto fixed inset-0 flex flex-col md:flex-row bg-background"
                     >
-                        {/* LEFT SIDE - Background Images (Desktop Only) */}
-                        <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
-                            {backgroundImages.map((img, index) => (
+                        {/* LEFT SIDE — Desktop only */}
+                        <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen">
+                            {desktopImages.map((img, index) => (
                                 <div
                                     key={index}
-                                    className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
+                                    className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === desktopBgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
                                         }`}
                                     style={{
-                                        backgroundImage: `url(/${img})`,
+                                        backgroundImage: `url(${img})`,
                                         transition: 'opacity 1s ease-in-out, transform 10s linear'
                                     }}
                                 />
                             ))}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/50">
                                 <div className="absolute bottom-16 left-12 right-12 text-white space-y-4">
                                     <div className="inline-flex items-center gap-2 bg-blue-600/30 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">
                                         <span className="relative flex h-2 w-2">
@@ -174,46 +216,82 @@ export function GlobalDuelManager() {
                             </div>
                         </div>
 
-                        {/* RIGHT SIDE - Content (Full width on mobile) */}
-                        <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-muted/100 dark:bg-muted/100">
-                            <div className="flex-1 flex items-center justify-center p-6">
-                                <motion.div
-                                    initial={{ y: 50, scale: 0.95 }}
-                                    animate={{ y: 0, scale: 1 }}
-                                    className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-md w-full relative overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.3)]"
+                        {/* RIGHT SIDE — Content */}
+                        <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-background">
+                            {/* 📱 MOBILE-ONLY HERO */}
+                            <div className="md:hidden relative w-full h-[38vh] overflow-hidden">
+                                {mobileImages.map((img, index) => (
+                                    <div
+                                        key={index}
+                                        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === mobileBgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
+                                            }`}
+                                        style={{
+                                            backgroundImage: `url(${img})`,
+                                            transition: 'opacity 1s ease-in-out, transform 10s linear'
+                                        }}
+                                    />
+                                ))}
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-background" />
+                                <div className="absolute bottom-4 left-5 right-5 text-white space-y-1.5">
+                                    <div className="inline-flex items-center gap-2 bg-blue-600/40 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase">
+                                        <span className="relative flex h-1.5 w-1.5">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                                        </span>
+                                        Duel Request
+                                    </div>
+                                    <h1 className="text-2xl font-black leading-tight italic">
+                                        Battle Ready! ⚔️
+                                    </h1>
+                                </div>
+                            </div>
+
+                            {/* CONTENT — tightened spacing, no scroll on phones */}
+                            <div className="flex-1 flex flex-col items-center justify-center px-5 py-4 relative">
+                                <button
+                                    onClick={() => setIncomingDuel(null)}
+                                    className="absolute top-3 right-3 p-2 text-muted-foreground hover:text-foreground transition-colors z-20"
+                                    aria-label="Close"
                                 >
-                                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-600/20 blur-3xl rounded-full animate-pulse" />
+                                    <X size={20} />
+                                </button>
 
-                                    <button
-                                        onClick={() => setIncomingDuel(null)}
-                                        className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-20"
-                                    >
-                                        <X size={20} />
-                                    </button>
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="w-full max-w-md flex flex-col items-center text-center"
+                                >
+                                    <div className="bg-blue-500 p-3 rounded-2xl mb-3">
+                                        <Swords size={30} className="text-white animate-bounce" />
+                                    </div>
 
-                                    <div className="relative z-10 flex flex-col items-center text-center">
-                                        <div className="bg-blue-500 p-3 rounded-2xl mb-4 shadow-lg shadow-blue-500/40">
-                                            <Swords size={32} className="text-white animate-bounce" />
-                                        </div>
-                                        <h3 className="text-slate-900 dark:text-white font-black text-xl uppercase tracking-tighter italic leading-none">Duel Request!</h3>
-                                        <p className="text-slate-600 dark:text-blue-200 text-sm mt-2">
-                                            <span className="font-bold text-slate-900 dark:text-white">{incomingDuel.sender?.name || "A peer"}</span> just sent you an <span className="text-blue-500 dark:text-blue-400 font-black">N.D.</span>
-                                        </p>
-                                        <div className="mt-6 flex gap-3 w-full">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setIncomingDuel(null)}
-                                                className="flex-1 bg-transparent border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
-                                            >
-                                                Ignore
-                                            </Button>
-                                            <Button
-                                                onClick={handleAccept}
-                                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/30 rounded-xl"
-                                            >
-                                                Accept Duel
-                                            </Button>
-                                        </div>
+                                    <h3 className="text-foreground font-black text-xl uppercase tracking-tighter italic leading-none">
+                                        Duel Request!
+                                    </h3>
+
+                                    <p className="text-muted-foreground text-sm mt-2 max-w-xs">
+                                        <span className="font-bold text-foreground">
+                                            {incomingDuel.sender?.name || "A peer"}
+                                        </span>{" "}
+                                        just sent you an{" "}
+                                        <span className="text-blue-500 font-black">N.D.</span>
+                                    </p>
+
+                                    <div className="mt-5 flex flex-col sm:flex-row gap-2.5 w-full">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setIncomingDuel(null)}
+                                            className="flex-1 h-11 rounded-2xl"
+                                        >
+                                            Ignore
+                                        </Button>
+                                        <Button
+                                            onClick={handleAccept}
+                                            className="flex-1 h-11 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl"
+                                        >
+                                            Accept Duel
+                                        </Button>
                                     </div>
                                 </motion.div>
                             </div>
@@ -221,97 +299,122 @@ export function GlobalDuelManager() {
                     </motion.div>
                 )}
 
-                {/* --- PROMOTIONAL NUDGE OVERLAY (Split-screen Desktop, Fullscreen Mobile) --- */}
+                {/* ═══════════════════════════════════════════════════
+                    PROMOTIONAL NUDGE OVERLAY
+                   ═══════════════════════════════════════════════════ */}
                 {showPromo && !incomingDuel && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="pointer-events-auto fixed inset-0 flex flex-col md:flex-row bg-muted/100 dark:bg-muted/100"
+                        className="pointer-events-auto fixed inset-0 flex flex-col md:flex-row bg-background"
                     >
-                        {/* LEFT SIDE - Background Images (Desktop Only) */}
-                        <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
-                            {backgroundImages.map((img, index) => (
+                        {/* LEFT SIDE — Desktop only */}
+                        <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen">
+                            {desktopImages.map((img, index) => (
                                 <div
                                     key={index}
-                                    className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
+                                    className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === desktopBgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
                                         }`}
                                     style={{
-                                        backgroundImage: `url(/${img})`,
+                                        backgroundImage: `url(${img})`,
                                         transition: 'opacity 1s ease-in-out, transform 10s linear'
                                     }}
                                 />
                             ))}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/50">
                                 <div className="absolute bottom-16 left-12 right-12 text-white space-y-4">
-                                    <div className="inline-flex items-center gap-2 bg-indigo-600/30 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">
-                                        <span className="relative flex h-2 w-2">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                                        </span>
-                                        Challenge Accepted
-                                    </div>
                                     <h1 className="text-5xl font-bold leading-tight">
-                                        Rise to the Challenge 🚀
+                                        Rise to the Challenge
                                     </h1>
                                     <p className="text-gray-300 text-lg max-w-md">
-                                        Send an N.D. and prove your clinical expertise!
+                                        Challenge a Friend and prove your clinical expertise!
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* RIGHT SIDE - Content (Full width on mobile) */}
-                        <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-muted/100 dark:bg-muted/100">
-                            <div className="flex-1 flex items-center justify-center p-6">
-                                <motion.div
-                                    initial={{ y: 50, scale: 0.95 }}
-                                    animate={{ y: 0, scale: 1 }}
-                                    className="bg-white dark:bg-slate-900 rounded-xl p-8 max-w-sm w-full relative overflow-hidden shadow-none]"
-                                >
-                                    <button
-                                        onClick={() => setShowPromo(false)}
-                                        className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors z-20"
-                                    >
-                                        <X size={20} />
-                                    </button>
+                        {/* RIGHT SIDE — Content */}
+                        <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-background">
+                            {/* 📱 MOBILE-ONLY HERO */}
+                            <div className="md:hidden relative w-full h-[38vh] overflow-hidden">
+                                {mobileImages.map((img, index) => (
+                                    <div
+                                        key={index}
+                                        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === mobileBgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
+                                            }`}
+                                        style={{
+                                            backgroundImage: `url(${img})`,
+                                            transition: 'opacity 1s ease-in-out, transform 10s linear'
+                                        }}
+                                    />
+                                ))}
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-background" />
+                                <div className="absolute bottom-4 left-5 right-5 text-white">
+                                    <h1 className="text-2xl font-black leading-tight italic">
+                                        Rise to the Challenge
+                                    </h1>
+                                </div>
+                            </div>
 
-                                    <div className="flex flex-col items-center text-center space-y-4 relative z-10">
-                                        <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl rotate-3">
-                                            <Zap size={40} className="text-white fill-current" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <h2 className="text-2xl font-black text-slate-900 dark:text-white  tracking-tight italic">
-                                                Prove Them Wrong.
-                                            </h2>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                                                Don't just study solo. Send an <span className="font-black text-indigo-500 dark:text-indigo-400 underline underline-offset-4 uppercase">N.D. (Nurse Duel)</span> to a peer and see if they can beat your clinical score!
-                                            </p>
-                                        </div>
-                                        <div className="bg-indigo-50 dark:bg-indigo-500/10 p-4 rounded-2xl w-full flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold shrink-0">
-                                                VS
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400  tracking-tighter">
-                                                    Community Battle
-                                                </p>
-                                                <p className="text-xs font-bold dark:text-white">
-                                                    N.D. Your Friends in the DMs
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            onClick={() => { setShowPromo(false); navigate("/challenge"); }}
-                                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-lg shadow-none group active:scale-95 transition-all"
-                                        >
-                                            Send an N.D.
-                                            <Send size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                                        </Button>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500  tracking-widest animate-pulse">
-                                            Humble your friends today
+                            {/* CONTENT — tightened spacing, no scroll on phones */}
+                            <div className="flex-1 flex flex-col items-center justify-center px-5 py-4 relative">
+                                <button
+                                    onClick={() => setShowPromo(false)}
+                                    className="absolute top-3 right-3 p-2 text-muted-foreground hover:text-foreground transition-colors z-20"
+                                    aria-label="Close"
+                                >
+                                    <X size={20} />
+                                </button>
+
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="w-full max-w-sm flex flex-col items-center text-center space-y-3"
+                                >
+                                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[1.25rem] flex items-center justify-center rotate-3">
+                                        <Zap size={32} className="text-white fill-current" />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <h2 className="text-xl font-black text-foreground tracking-tight italic">
+                                            Prove Them Wrong.
+                                        </h2>
+                                        <p className="text-[13px] text-muted-foreground leading-snug">
+                                            Don't just study solo. Send an{" "}
+                                            <span className="font-black text-indigo-500 underline underline-offset-4 uppercase">
+                                                N.D. (Nurse Duel)
+                                            </span>{" "}
+                                            to a peer and beat their clinical score!
                                         </p>
                                     </div>
+
+                                    <div className="bg-indigo-50 dark:bg-indigo-500/10 p-3 rounded-2xl w-full flex items-center gap-3">
+                                        <div className="h-9 w-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold shrink-0 text-sm">
+                                            VS
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 tracking-tighter">
+                                                Community Battle
+                                            </p>
+                                            <p className="text-xs font-bold text-foreground">
+                                                N.D. Your Friends in the DMs
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        onClick={() => { setShowPromo(false); navigate("/challenge"); }}
+                                        className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl text-base group active:scale-95 transition-all"
+                                    >
+                                        Challenge a Friend
+                                        <Send size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                                    </Button>
+
+                                    <p className="text-[10px] font-bold text-muted-foreground tracking-widest animate-pulse">
+                                        Humble your friends today
+                                    </p>
                                 </motion.div>
                             </div>
                         </div>

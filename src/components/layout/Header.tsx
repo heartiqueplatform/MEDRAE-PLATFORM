@@ -24,6 +24,7 @@ import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { HardResetButton } from "../HardResetButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { SettingsSheet } from "@/components/SettingsSheet";
+import { HeaderCountdown } from "../HeaderCountdown";
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
 const CACHE_DURATION = 30 * 60 * 1000;
@@ -687,12 +688,17 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   transition-all duration-300 ease-in-out
 `}>
         {/* Mobile Logo */}
-        <div className="flex items-center gap-2 md:hidden shrink-0">  {/* 👈 Increased gap from 1.5 to 2 */}
-          <div className="text-xl sm:text-xl font-black tracking-tight leading-none">  {/* 👈 Increased text size */}
+        {/* Mobile Logo + live countdown (mobile only) */}
+        <div className="flex flex-col md:hidden shrink-0 gap-0.5">
+          <div className="text-[27px] sm:text-[28px] font-black tracking-tight leading-none">
             <span className="text-red-500">Medrae</span>{' '}
             <span className="text-gray-900 dark:text-white">Nursing</span>
           </div>
+          <HeaderCountdown isDark={isDarkMode} />
         </div>
+
+        {/* Desktop — countdown intentionally hidden. NCK message lives below. */}
+
         <OnlineStatusToast />
 
         <div className="flex items-center flex-1">
