@@ -12,21 +12,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
-interface UnitImage {
-    id: string;
-    unit_code: string;
-    image_url: string;
-    caption: string;
-    user_id?: string;
-    created_at?: string;
-    cloudinary_public_id?: string;
-}
+// 🔥 Cache helpers
+import {
+    getCachedImage,
+    cacheImage,
+    pruneCache,
+    deleteCachedImage,
+} from "@/lib/imageCache";
+import {
+    fetchUnitImages,
+    getCachedList,
+    invalidateListCache,
+    UnitImage,
+} from "@/lib/unitImagesCache";
+
+// 🔥 Global event bus — keeps all UnitPics instances in sync
+import { onImagesChanged, emitImagesChanged } from "@/lib/imageEvents";
 
 interface UnitPicsProps {
     position: number;
 }
 
-// Progressive image component with skeleton that fades into the actual image
+/* ============================================================
+   PROGRESSIVE IMAGE — IndexedDB-backed
+   ============================================================ */
 const ProgressiveImage = ({
     src,
     alt,
@@ -40,11 +49,12 @@ const ProgressiveImage = ({
     style?: React.CSSProperties;
     onClick?: () => void;
 }) => {
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [objectUrl, setObjectUrl] = useState<string | null>(null);
     const [isInView, setIsInView] = useState(false);
     const [lowQualitySrc, setLowQualitySrc] = useState<string>('');
     const [highQualityLoaded, setHighQualityLoaded] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const objectUrlRef = useRef<string | null>(null);
 
     const getLowQualityUrl = useCallback((originalUrl: string) => {
         if (!originalUrl) return '';
@@ -54,6 +64,7 @@ const ProgressiveImage = ({
         return originalUrl;
     }, []);
 
+    // Intersection Observer — lazy load when near viewport
     useEffect(() => {
         if (!containerRef.current) return;
 
@@ -66,46 +77,73 @@ const ProgressiveImage = ({
                     }
                 });
             },
-            {
-                rootMargin: '200px',
-                threshold: 0.1
-            }
+            { rootMargin: '200px', threshold: 0.1 }
         );
 
         observer.observe(containerRef.current);
 
         return () => {
-            if (containerRef.current) {
-                observer.unobserve(containerRef.current);
-            }
+            observer.disconnect();
         };
     }, []);
 
+    // 🔥 Cache-aware image loading: IndexedDB → network → fallback
     useEffect(() => {
         if (!isInView || !src) return;
+        let cancelled = false;
 
-        const lowQualityUrl = getLowQualityUrl(src);
-        setLowQualitySrc(lowQualityUrl);
+        setLowQualitySrc(getLowQualityUrl(src));
+        setHighQualityLoaded(false);
+        setObjectUrl(null);
 
-        const img = new window.Image();
-        img.src = src;
+        (async () => {
+            // 1. Try IndexedDB blob cache
+            const cached = await getCachedImage(src);
+            if (cancelled) return;
 
-        img.onload = () => {
-            setHighQualityLoaded(true);
-            setIsLoaded(true);
-        };
+            if (cached) {
+                const url = URL.createObjectURL(cached);
+                objectUrlRef.current = url;
+                setObjectUrl(url);
+                setHighQualityLoaded(true);
+                return;
+            }
 
-        img.onerror = () => {
-            setIsLoaded(true);
-        };
+            // 2. Cache miss → fetch once, then store
+            try {
+                const res = await fetch(src, { cache: 'force-cache' });
+                if (!res.ok) throw new Error('Fetch failed');
+                const blob = await res.blob();
+                if (cancelled) return;
+
+                const url = URL.createObjectURL(blob);
+                objectUrlRef.current = url;
+                setObjectUrl(url);
+                setHighQualityLoaded(true);
+
+                // Store in background
+                cacheImage(src, blob).catch(() => { });
+            } catch {
+                // Fallback: raw URL (browser HTTP cache handles it)
+                if (!cancelled) {
+                    setObjectUrl(src);
+                    setHighQualityLoaded(true);
+                }
+            }
+        })();
 
         return () => {
-            img.onload = null;
-            img.onerror = null;
+            cancelled = true;
+            if (objectUrlRef.current && objectUrlRef.current.startsWith('blob:')) {
+                URL.revokeObjectURL(objectUrlRef.current);
+                objectUrlRef.current = null;
+            }
         };
     }, [isInView, src, getLowQualityUrl]);
 
     if (!src) return null;
+
+    const displaySrc = objectUrl || lowQualitySrc || src;
 
     return (
         <div
@@ -117,37 +155,37 @@ const ProgressiveImage = ({
                 <div className="w-full h-full bg-gray-200 dark:bg-muted/20" />
             ) : (
                 <>
-                    <img
-                        src={lowQualitySrc || src}
-                        alt={alt}
-                        className={`${className || ''} absolute inset-0 w-full h-full transition-opacity duration-1000 ${highQualityLoaded ? 'opacity-0' : 'opacity-100'
-                            }`}
-                        style={{
-                            ...style,
-                            objectFit: 'cover',
-                            filter: highQualityLoaded ? 'none' : 'blur(20px)',
-                            transform: highQualityLoaded ? 'scale(1)' : 'scale(1.02)',
-                            transition: 'filter 0.8s ease-out, transform 0.8s ease-out, opacity 0.8s ease-out',
-                            width: '100%',
-                            height: '100%',
-                            backgroundColor: 'transparent'
-                        }}
-                        onClick={onClick}
-                        loading="lazy"
-                        decoding="async"
-                    />
+                    {/* Blurred low-quality placeholder */}
+                    {!highQualityLoaded && (
+                        <img
+                            src={lowQualitySrc || src}
+                            alt={alt}
+                            className={`${className || ''} absolute inset-0 w-full h-full`}
+                            style={{
+                                ...style,
+                                objectFit: 'cover',
+                                filter: 'blur(20px)',
+                                transform: 'scale(1.02)',
+                                transition: 'filter 0.8s ease-out, transform 0.8s ease-out',
+                                width: '100%',
+                                height: '100%',
+                            }}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    )}
 
+                    {/* High quality (cached blob or direct URL) */}
                     <img
-                        src={src}
+                        src={displaySrc}
                         alt={alt}
-                        className={`${className || ''} absolute inset-0 w-full h-full transition-opacity duration-1000 ${highQualityLoaded ? 'opacity-100' : 'opacity-0'
+                        className={`${className || ''} absolute inset-0 w-full h-full transition-opacity duration-700 ${highQualityLoaded ? 'opacity-100' : 'opacity-0'
                             }`}
                         style={{
                             ...style,
                             objectFit: 'cover',
                             width: '100%',
                             height: '100%',
-                            backgroundColor: 'transparent'
                         }}
                         onClick={onClick}
                         loading="lazy"
@@ -159,6 +197,9 @@ const ProgressiveImage = ({
     );
 };
 
+/* ============================================================
+   MAIN COMPONENT
+   ============================================================ */
 export function UnitPics({ position }: UnitPicsProps) {
     const user = useUser();
     const { isPremium } = usePremiumFeature();
@@ -175,81 +216,138 @@ export function UnitPics({ position }: UnitPicsProps) {
     const [uploadQueue, setUploadQueue] = useState<File[]>([]);
     const [isUploadingMultiple, setIsUploadingMultiple] = useState(false);
 
+    // Ref mirror of usedIndices so fetchAllImages can read fresh value
+    const usedIndicesRef = useRef<number[]>([]);
+    useEffect(() => {
+        usedIndicesRef.current = usedIndices;
+    }, [usedIndices]);
+
     const shouldShow = position % 4 === 0;
     const canUpload = isPremium && user;
 
+    /* ============================================================
+       RANDOM IMAGE PICKER — pure function on given list + used set
+       ============================================================ */
+    const pickRandomFrom = useCallback(
+        (images: UnitImage[], used: number[]): { image: UnitImage | null; used: number[] } => {
+            if (images.length === 0) {
+                return { image: null, used: [] };
+            }
+
+            const availableIndices = images
+                .map((_, i) => i)
+                .filter((i) => !used.includes(i));
+
+            if (availableIndices.length === 0) {
+                // Cycle complete → reset and pick fresh
+                const idx = Math.floor(Math.random() * images.length);
+                return { image: images[idx], used: [idx] };
+            }
+
+            const idx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            return { image: images[idx], used: [...used, idx] };
+        },
+        []
+    );
+
+    /* ============================================================
+       FETCH — cache-aware, event-driven
+       - Instant paint from localStorage
+       - Background staleness check (only if >6h old)
+       - Full refetch only when data actually changed or forced
+       ============================================================ */
+    const fetchAllImages = useCallback(
+        async (forceRefresh = false) => {
+            // ⚡ 1. Instant paint from localStorage
+            const cached = getCachedList();
+            if (cached && cached.length > 0) {
+                setAllImages(cached);
+                const { image: picked, used } = pickRandomFrom(cached, usedIndicesRef.current);
+                setImage(picked);
+                setUsedIndices(used);
+                setLoading(false);
+            } else {
+                setLoading(true);
+            }
+
+            try {
+                // ⚡ 2. Smart fetch — cache / minimal-check / full-fetch
+                const data = await fetchUnitImages(forceRefresh);
+
+                if (data.length > 0) {
+                    setAllImages(data);
+                    // Re-pick whenever data changes (upload/delete/refresh)
+                    const { image: picked, used } = pickRandomFrom(data, []);
+                    setImage(picked);
+                    setUsedIndices(used);
+                } else if (!cached || cached.length === 0) {
+                    setAllImages([]);
+                    setImage(null);
+                }
+            } catch (error) {
+                console.error("Error fetching images:", error);
+                if (!cached || cached.length === 0) {
+                    setAllImages([]);
+                    setImage(null);
+                }
+            } finally {
+                setLoading(false);
+            }
+        },
+        [pickRandomFrom]
+    );
+
+    /* ============================================================
+       INITIAL MOUNT + LRU prune
+       ============================================================ */
     useEffect(() => {
-        if (shouldShow) {
-            fetchAllImages();
-        }
+        if (!shouldShow) return;
+        fetchAllImages();
+        pruneCache().catch(() => { });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shouldShow]);
 
-    const fetchAllImages = async () => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('unit_images')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (!error && data && data.length > 0) {
-                setAllImages(data);
-                pickRandomImage(data);
-            } else {
-                setAllImages([]);
-                setImage(null);
-            }
-        } catch (error) {
-            console.error("Error fetching images:", error);
-            setAllImages([]);
-            setImage(null);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const pickRandomImage = (images: UnitImage[]) => {
-        if (images.length === 0) {
-            setImage(null);
-            return;
-        }
-
-        const availableIndices = images
-            .map((_, index) => index)
-            .filter(index => !usedIndices.includes(index));
-
-        if (availableIndices.length === 0) {
-            setUsedIndices([]);
-            const randomIndex = Math.floor(Math.random() * images.length);
-            setImage(images[randomIndex]);
-            setUsedIndices([randomIndex]);
-        } else {
-            const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-            setImage(images[randomIndex]);
-            setUsedIndices(prev => [...prev, randomIndex]);
-        }
-    };
-
+    /* ============================================================
+       🌐 GLOBAL SYNC — listen for changes from OTHER UnitPics
+       When position 0 uploads → position 4 & 8 get notified → refetch
+       ============================================================ */
     useEffect(() => {
-        if (allImages.length > 0 && usedIndices.length === allImages.length) {
-            setUsedIndices([]);
-        }
-    }, [usedIndices, allImages]);
+        if (!shouldShow) return;
 
+        const unsubscribe = onImagesChanged(() => {
+            // Reset usedIndices so the new/removed image can surface
+            usedIndicesRef.current = [];
+            setUsedIndices([]);
+            fetchAllImages(true);
+        });
+
+        return () => {
+            unsubscribe();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shouldShow, fetchAllImages]);
+
+    /* ============================================================
+       Re-pick when `position` changes (new slot scrolled into view)
+       ============================================================ */
     useEffect(() => {
         if (shouldShow && allImages.length > 0) {
-            pickRandomImage(allImages);
+            const { image: picked, used } = pickRandomFrom(allImages, usedIndicesRef.current);
+            setImage(picked);
+            setUsedIndices(used);
         }
-    }, [position, shouldShow, allImages]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [position, shouldShow]);
 
+    /* ============================================================
+       FULLSCREEN body lock + ESC handler
+       ============================================================ */
     useEffect(() => {
         if (!showFullscreen) return;
 
         const originalOverflow = document.body.style.overflow;
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                setShowFullscreen(false);
-            }
+            if (event.key === 'Escape') setShowFullscreen(false);
         };
 
         document.body.style.overflow = 'hidden';
@@ -261,7 +359,9 @@ export function UnitPics({ position }: UnitPicsProps) {
         };
     }, [showFullscreen]);
 
-    // Upload multiple images
+    /* ============================================================
+       MULTIPLE UPLOAD — invalidate list, notify global bus
+       ============================================================ */
     const handleMultipleUpload = async (files: File[]) => {
         if (files.length === 0) {
             toast({ title: "Error", description: "Please select images" });
@@ -283,10 +383,10 @@ export function UnitPics({ position }: UnitPicsProps) {
         const cloudName = 'dpj5vprwf';
         const uploadPreset = 'medrae_uploads';
 
-        for (const file of files) {
+        for (const f of files) {
             try {
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file', f);
                 formData.append('upload_preset', uploadPreset);
                 formData.append('folder', 'unit_images');
 
@@ -322,18 +422,28 @@ export function UnitPics({ position }: UnitPicsProps) {
         setUploadQueue([]);
 
         if (successCount > 0) {
+            // 🔥 1. Wipe localStorage list
+            invalidateListCache();
+            // 🔥 2. Notify ALL UnitPics instances
+            emitImagesChanged();
+            // 🔥 3. Reset local picker
+            usedIndicesRef.current = [];
+            setUsedIndices([]);
+
             toast({
                 title: "Success",
                 description: `${successCount} image${successCount > 1 ? 's' : ''} uploaded successfully${failCount > 0 ? `, ${failCount} failed` : ''}`
             });
             setShowUpload(false);
-            fetchAllImages();
+            await fetchAllImages(true);
         } else {
             toast({ title: "Error", description: "All uploads failed" });
         }
     };
 
-    // Single upload
+    /* ============================================================
+       SINGLE UPLOAD — invalidate list, notify global bus
+       ============================================================ */
     const handleUpload = async () => {
         if (!file) {
             toast({ title: "Error", description: "Please select an image" });
@@ -382,12 +492,18 @@ export function UnitPics({ position }: UnitPicsProps) {
 
             if (error) throw error;
 
+            // 🔥 Invalidate + broadcast + reset picker
+            invalidateListCache();
+            emitImagesChanged();
+            usedIndicesRef.current = [];
+            setUsedIndices([]);
+
             toast({ title: "Success", description: "Image uploaded!" });
             setFile(null);
             setCaption('');
             setShowUpload(false);
             setUploadQueue([]);
-            fetchAllImages();
+            await fetchAllImages(true);
 
         } catch (error: any) {
             toast({ title: "Error", description: error?.message || "Upload failed" });
@@ -396,7 +512,9 @@ export function UnitPics({ position }: UnitPicsProps) {
         }
     };
 
-    // Handle file selection
+    /* ============================================================
+       FILE SELECTION
+       ============================================================ */
     const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
@@ -411,11 +529,17 @@ export function UnitPics({ position }: UnitPicsProps) {
         e.target.value = '';
     };
 
+    /* ============================================================
+       DELETE — invalidate + broadcast + eager blob cleanup
+       ============================================================ */
     const handleDelete = async (imageId: string) => {
         if (!confirm('Delete this image?')) return;
 
         setDeleting(true);
         try {
+            // Find the image we're about to delete (for blob cleanup)
+            const deleted = allImages.find(img => img.id === imageId);
+
             const { error } = await supabase
                 .from('unit_images')
                 .delete()
@@ -423,12 +547,28 @@ export function UnitPics({ position }: UnitPicsProps) {
 
             if (error) throw error;
 
+            // 🔥 1. Eagerly drop the blob from IndexedDB (free space instantly)
+            if (deleted?.image_url) {
+                deleteCachedImage(deleted.image_url).catch(() => { });
+            }
+
+            // 🔥 2. Wipe list cache
+            invalidateListCache();
+            // 🔥 3. Notify all UnitPics instances
+            emitImagesChanged();
+            // 🔥 4. Reset local picker
+            usedIndicesRef.current = [];
+            setUsedIndices([]);
+
             toast({ title: "Deleted", description: "Image removed" });
+
             const remaining = allImages.filter(img => img.id !== imageId);
             setAllImages(remaining);
 
             if (remaining.length > 0) {
-                pickRandomImage(remaining);
+                const { image: picked, used } = pickRandomFrom(remaining, []);
+                setImage(picked);
+                setUsedIndices(used);
             } else {
                 setImage(null);
             }
@@ -551,10 +691,10 @@ export function UnitPics({ position }: UnitPicsProps) {
 
                             {uploadQueue.length > 0 && (
                                 <div className="mt-3 grid grid-cols-3 gap-2">
-                                    {uploadQueue.map((file, index) => (
+                                    {uploadQueue.map((f, index) => (
                                         <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                                             <img
-                                                src={URL.createObjectURL(file)}
+                                                src={URL.createObjectURL(f)}
                                                 alt={`Preview ${index + 1}`}
                                                 className="w-full h-full object-cover"
                                             />
@@ -637,10 +777,9 @@ export function UnitPics({ position }: UnitPicsProps) {
                 )}
             </AnimatePresence>
 
-            {/* Professional Card Style Image Display - WITH FLEX-1 TO FILL REMAINING SPACE */}
+            {/* Professional Card Style Image Display */}
             {image ? (
                 <Card className="overflow-hidden border-0 bg-white dark:bg-muted/30 shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer flex-1 flex flex-col">
-                    {/* Image Container - Fixed aspect ratio */}
                     <div className="relative overflow-hidden flex-shrink-0 w-full" style={{ aspectRatio: '4/3' }}>
                         <button
                             className="block w-full h-full cursor-zoom-in"
@@ -691,7 +830,6 @@ export function UnitPics({ position }: UnitPicsProps) {
                         </div>
                     </div>
 
-                    {/* Caption - Flexible */}
                     {image.caption && (
                         <CardContent className="p-3 flex-1">
                             <p className="text-sm text-gray-800 dark:text-gray-200 font-medium line-clamp-2">
@@ -700,7 +838,6 @@ export function UnitPics({ position }: UnitPicsProps) {
                         </CardContent>
                     )}
 
-                    {/* Footer - Always at bottom */}
                     <CardFooter className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center mt-auto">
                         <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-[9px] font-medium">
@@ -714,7 +851,6 @@ export function UnitPics({ position }: UnitPicsProps) {
                     </CardFooter>
                 </Card>
             ) : (
-                // Empty state - matching original design with flex-1
                 <Card className="overflow-hidden border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-muted/20 shadow-sm hover:shadow-md transition-all duration-300 group flex-1 flex flex-col">
                     <div className="flex flex-col items-center justify-center flex-1 p-8" style={{ aspectRatio: '4/3' }}>
                         <Image className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-3" />
