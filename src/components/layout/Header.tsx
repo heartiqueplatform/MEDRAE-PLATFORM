@@ -690,7 +690,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
         {/* Mobile Logo */}
         {/* Mobile Logo + live countdown (mobile only) */}
         <div className="flex flex-col md:hidden shrink-0 gap-0.5">
-          <div className="text-[27px] sm:text-[28px] font-black tracking-tight leading-none">
+          <div className="text-[25px] sm:text-[28px] font-black tracking-tight leading-none">
             <span className="text-red-500">Medrae</span>{' '}
             <span className="text-gray-900 dark:text-white">Nursing</span>
           </div>
