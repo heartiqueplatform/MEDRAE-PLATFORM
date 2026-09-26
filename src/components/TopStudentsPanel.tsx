@@ -936,7 +936,7 @@ export const DailyTriviaCard = () => {
                             <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 flex-1 min-w-0">
 
                                 <span className="align-middle">
-                                    Ready for today's MindRush? Sharpen your mind and earn your bragging rights.
+                                    Ready for today's MindRush?
                                 </span>
                             </p>
                             <Badge variant="secondary" className="flex-shrink-0 h-6">
