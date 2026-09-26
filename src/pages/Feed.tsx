@@ -18,6 +18,7 @@ import { clearMediaPanelCaches } from "@/components/Feed/FeedMediaPanel";
 import ShareButtonsGroup from "@/components/Share/ShareButtonsGroup";
 import confetti from "canvas-confetti";
 import { createPortal } from 'react-dom';
+import { GlobalLoader } from "@/components/GlobalLoader";
 
 // Enhanced request deduplication cache with longer TTLs
 // Enhanced request deduplication cache with longer TTLs
@@ -1371,9 +1372,16 @@ export default function Feed() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[99999] bg-black/90 flex flex-col items-center justify-center backdrop-blur-md"
+                  className="fixed inset-0 z-[99999] bg-black flex items-center justify-center"
                   onClick={closeViewer}
                 >
+                  {/* Loading spinner (visible until image loads) */}
+                  {!loadedImages[activeImage.id] && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <GlobalLoader />
+                    </div>
+                  )}
+
                   <motion.img
                     key={activeImage.id}
                     src={
@@ -1382,25 +1390,34 @@ export default function Feed() {
                         : activeImage.image_url
                     }
                     alt={activeImage.title || "Image"}
-                    initial={{ scale: 0.9, opacity: 0 }}
+                    initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="max-w-[90%] max-h-[80vh] object-contain rounded-xl shadow-lg"
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    onLoad={() =>
+                      setLoadedImages((prev) => ({ ...prev, [activeImage.id]: true }))
+                    }
                     onError={(e) => {
                       console.error("Failed to load image:", activeImage.image_url);
                       e.currentTarget.src = "/fallback-image.jpg";
+                      setLoadedImages((prev) => ({ ...prev, [activeImage.id]: true }));
                     }}
+                    className="w-full h-full object-contain select-none"
+                    draggable={false}
                   />
+
+                  {/* Description overlay */}
                   {activeImage.description && (
                     <motion.p
                       initial={{ y: 10, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="text-gray-200 text-sm mt-4 text-center max-w-xl px-4"
+                      className="absolute bottom-6 left-0 right-0 text-gray-200 text-sm text-center max-w-xl mx-auto px-4 pointer-events-none"
                     >
                       {activeImage.description}
                     </motion.p>
                   )}
+
+                  {/* Delete button — top-left so it doesn't overlap the close X */}
                   {activeImage.added_by === user?.id && (
                     <motion.button
                       onClick={(e) => {
@@ -1408,21 +1425,28 @@ export default function Feed() {
                         handleDeleteImage(activeImage);
                         closeViewer();
                       }}
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      className="mt-3 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute top-5 left-5 text-white bg-black/50 hover:bg-red-600 p-3 rounded-full backdrop-blur-sm"
+                      aria-label="Delete image"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </motion.button>
                   )}
+
+                  {/* Close button — top-right */}
                   <motion.button
-                    onClick={closeViewer}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeViewer();
+                    }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute top-5 right-5 text-white bg-black/40 hover:bg-black/70 p-3 rounded-full"
+                    className="absolute top-5 right-5 text-white bg-black/50 hover:bg-black/80 p-3 rounded-full backdrop-blur-sm"
+                    aria-label="Close"
                   >
-                    <X size={24} />
+                    <X size={20} />
                   </motion.button>
                 </motion.div>
               )}
