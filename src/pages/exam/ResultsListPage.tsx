@@ -26,31 +26,32 @@ type Result = {
 
 // Skeleton Loader Component
 const ResultsSkeleton = () => (
-    <div className="min-h-screen bg-white dark:bg-background p-0 md:p-4 lg:p-8 transition-colors duration-200 pb-20 md:pb-6">
-        <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto bg-white dark:bg-muted/30 rounded-none md:rounded-2xl border-0 shadow-none md:shadow-sm overflow-hidden border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+    <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
+        <div className="max-w-4xl mx-auto space-y-4">
             {/* Header Skeleton */}
-            <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800">
+            <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
-                    <div className="flex items-center gap-2 md:gap-3">
-                        <div className="h-9 w-9 md:h-11 md:w-11 bg-slate-200 dark:bg-slate-700 rounded-lg md:rounded-xl animate-pulse" />
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 md:h-11 md:w-11 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
                         <div>
                             <div className="h-5 md:h-6 w-48 md:w-56 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-1.5" />
                             <div className="h-3 md:h-4 w-36 md:w-44 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="h-8 w-20 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
-                        <div className="h-8 w-28 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
+                        <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
+                        <div className="h-9 w-28 bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse" />
                     </div>
                 </div>
             </div>
-            {/* Content Skeleton */}
-            <div className="p-4 md:p-6 space-y-0 md:space-y-3">
+
+            {/* Rows Skeleton */}
+            <div className="space-y-2.5 md:space-y-3">
                 {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="p-3 md:p-4 border-b border-slate-100 dark:border-slate-800 md:border-b md:border-slate-200 md:dark:border-slate-700 md:rounded-xl">
+                    <div key={i} className="bg-white dark:bg-muted/30 rounded-2xl p-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <div className="flex gap-2 md:gap-3 items-start">
-                                <div className="h-8 w-8 md:h-9 md:w-9 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse mt-0.5" />
+                            <div className="flex gap-3 items-start">
+                                <div className="h-9 w-9 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse mt-0.5" />
                                 <div className="space-y-1.5">
                                     <div className="h-4 md:h-5 w-40 md:w-52 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
                                     <div className="h-3 w-32 md:w-44 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
@@ -63,10 +64,6 @@ const ResultsSkeleton = () => (
                         </div>
                     </div>
                 ))}
-            </div>
-            {/* Footer Skeleton */}
-            <div className="bg-slate-50/50 dark:bg-slate-900/30 p-2.5 md:p-3 border-t border-slate-100 dark:border-slate-800 text-center">
-                <div className="h-3 w-64 mx-auto bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
             </div>
         </div>
     </div>
@@ -88,12 +85,10 @@ const ResultsListPage = () => {
             const { data: { user }, error: userErr } = await supabase.auth.getUser();
 
             if (userErr) {
-                // Network error - can't reach Supabase
                 if (userErr.message?.includes("fetch") || userErr.message?.includes("network") || !navigator.onLine) {
                     setErrorMessage("Oops! Looks like you're offline. Check your connection and try again.");
                     setErrorType("network");
                 } else {
-                    // Server/database error
                     setErrorMessage("Having trouble reaching our servers. Pull down to refresh!");
                     setErrorType("server");
                 }
@@ -102,7 +97,6 @@ const ResultsListPage = () => {
             }
 
             if (!user) {
-                // User session expired or not found - still a server/auth issue, not user's fault
                 setErrorMessage("Your session needs a quick refresh. Pull down to reload!");
                 setErrorType("server");
                 setLoading(false);
@@ -218,7 +212,6 @@ const ResultsListPage = () => {
             setLoading(false);
 
         } catch (err) {
-            // Catch-all for unexpected errors
             if (!navigator.onLine) {
                 setErrorMessage("Oops! Looks like you're offline. Check your connection and try again.");
                 setErrorType("network");
@@ -244,20 +237,29 @@ const ResultsListPage = () => {
         const ErrorIcon = errorIcons[errorType] || errorIcons.general;
 
         return (
-            <div className="min-h-screen flex items-center justify-center p-4 md:p-8 bg-white dark:bg-background">
+            <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background flex items-center justify-center px-4 py-8">
                 <div className="text-center max-w-sm">
                     <div className={`w-16 h-16 md:w-20 md:h-20 ${errorBgs[errorType]} rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6`}>
                         <ErrorIcon className={`w-8 h-8 md:w-10 md:h-10 ${errorColors[errorType]}`} />
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">
+                    <h3 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white mb-2">
                         {errorTitles[errorType]}
                     </h3>
-                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">{errorMessage}</p>
+                    <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                        {errorMessage}
+                    </p>
                     <div className="flex gap-2 justify-center flex-wrap">
-                        <Button onClick={refreshResults} className="text-xs md:text-sm gap-1.5">
+                        <Button
+                            onClick={refreshResults}
+                            className="text-xs md:text-sm gap-1.5 border-0 bg-blue-600 hover:bg-blue-700 text-white"
+                        >
                             <RefreshCw className="w-3.5 h-3.5" /> Try Again
                         </Button>
-                        <Button variant="outline" onClick={() => window.location.reload()} className="text-xs md:text-sm">
+                        <Button
+                            variant="outline"
+                            onClick={() => window.location.reload()}
+                            className="text-xs md:text-sm border-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                        >
                             Refresh Page
                         </Button>
                     </div>
@@ -265,21 +267,20 @@ const ResultsListPage = () => {
             </div>
         );
     }
+
     return (
-        <div className="min-h-screen bg-white dark:bg-background p-0 md:p-4 lg:p-8 transition-colors duration-200 pb-20 md:pb-6">
+        <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
+            <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
 
-            {/* Main Container */}
-            <div className="w-full md:max-w-full md:px-4 lg:px-6 mx-auto bg-white dark:bg-muted/30 rounded-none md:rounded-2xl border-0 shadow-none md:shadow-sm overflow-hidden border-b border-slate-100 dark:border-slate-800 md:border-b-0">
-
-                {/* Header Section */}
-                <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800">
+                {/* HEADER */}
+                <div className="bg-white dark:bg-muted/30 rounded-2xl p-4 md:p-5">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
-                        <div className="flex items-center gap-2 md:gap-3">
-                            <div className="h-9 w-9 md:h-11 md:w-11 bg-slate-100 dark:bg-slate-800 rounded-lg md:rounded-xl flex items-center justify-center shadow-inner">
-                                <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-slate-700 dark:text-slate-300" />
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 md:h-11 md:w-11 bg-blue-50 dark:bg-blue-950/30 rounded-xl flex items-center justify-center shrink-0">
+                                <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <div>
-                                <h1 className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                            <div className="min-w-0">
+                                <h1 className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                                     Official Results Portal
                                 </h1>
                                 <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -288,16 +289,21 @@ const ResultsListPage = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 md:gap-2">
-                            <Button onClick={refreshResults} disabled={refreshing} variant="outline" size="sm" className="gap-1 md:gap-1.5 text-[10px] md:text-xs h-8 md:h-9">
-                                <RefreshCw className={`h-3 w-3 md:h-3.5 md:w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Button
+                                onClick={refreshResults}
+                                disabled={refreshing}
+                                size="sm"
+                                className="gap-1.5 text-[10px] md:text-xs h-9 border-0 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                            >
+                                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                                 <span className="hidden sm:inline">Refresh</span>
                             </Button>
 
                             {results.length > 0 && (
-                                <div className="flex items-center gap-1.5 md:gap-2 bg-slate-50 dark:bg-slate-900/50 px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
-                                    <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-slate-400" />
-                                    <span className="text-[9px] md:text-xs font-bold text-slate-700 dark:text-slate-300">
+                                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
+                                    <GraduationCap className="h-3.5 w-3.5 text-slate-400" />
+                                    <span className="text-[10px] md:text-xs font-bold text-slate-700 dark:text-slate-300">
                                         {results.length} Assessment{results.length > 1 ? 's' : ''}
                                     </span>
                                 </div>
@@ -306,80 +312,97 @@ const ResultsListPage = () => {
                     </div>
                 </div>
 
-                {/* Content Section */}
-                <div className="p-4 md:p-6">
-                    {results.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center text-center py-10 md:py-12 px-2">
-                            <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-3 md:mb-4">
-                                <ClipboardList className="h-7 w-7 md:h-8 md:w-8 text-slate-300 dark:text-slate-600" />
-                            </div>
-                            <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-200 mb-1 md:mb-1.5">No Records Found</h3>
-                            <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
-                                You haven't completed any exams yet, or your results are still being processed.
-                                Results will appear here automatically once your tutor releases them.
-                            </p>
+                {/* CONTENT */}
+                {results.length === 0 ? (
+                    <div className="bg-white dark:bg-muted/30 rounded-2xl py-12 md:py-16 px-6 text-center">
+                        <div className="w-16 h-16 mx-auto bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                            <ClipboardList className="h-7 w-7 md:h-8 md:w-8 text-slate-400 dark:text-slate-500" />
                         </div>
-                    ) : (
-                        <div className="space-y-0 md:space-y-3">
-                            {results.map((res, index) => {
-                                const isReleased = res.exam_papers?.is_released && res.is_released;
-                                const percentage = res.total_questions > 0 ? ((res.score / res.total_questions) * 100).toFixed(1) : "0.0";
+                        <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-white mb-1.5">
+                            No Records Found
+                        </h3>
+                        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                            You haven't completed any exams yet, or your results are still
+                            being processed. Results will appear here automatically once
+                            your tutor releases them.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-2.5 md:space-y-3">
+                        {results.map((res) => {
+                            const isReleased = res.exam_papers?.is_released && res.is_released;
+                            const percentage = res.total_questions > 0
+                                ? ((res.score / res.total_questions) * 100).toFixed(1)
+                                : "0.0";
 
-                                return (
-                                    <div key={res.id}>
-                                        <div
-                                            onClick={() => isReleased && navigate(`/exam/${res.paper_id}/results`)}
-                                            className={`group relative flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 md:rounded-xl md:border transition-all duration-200
-                                                ${isReleased
-                                                    ? "bg-white dark:bg-muted/30 hover:md:border-slate-400 dark:hover:md:border-slate-600 hover:md:shadow-md cursor-pointer"
-                                                    : "bg-slate-50/50 dark:bg-slate-900/20 opacity-70 cursor-not-allowed"
-                                                } border-b border-slate-100 dark:border-slate-800 md:border-b md:border-slate-200 dark:border-slate-800
-                                            `}
-                                        >
-                                            <div className="flex gap-2 md:gap-3 items-start">
-                                                <div className={`mt-0.5 p-1.5 rounded-lg ${isReleased ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-slate-100 dark:bg-slate-800'}`}>
-                                                    <BookOpen className={`h-3.5 w-3.5 md:h-4 md:w-4 ${isReleased ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
-                                                </div>
-                                                <div className="space-y-0.5">
-                                                    <h2 className="text-sm md:text-base font-bold text-slate-900 dark:text-slate-100">{res.exam_papers.title || "Untitled Exam"}</h2>
-                                                    <div className="flex items-center gap-1.5 md:gap-2">
-                                                        <span className="text-[9px] md:text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{res.exam_papers.course || "General Assessment"}</span>
-                                                        <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                                        <span className="text-[9px] md:text-[10px] text-slate-400">ID: {res.paper_id.slice(0, 8)}</span>
-                                                        <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                                        <span className="text-[9px] md:text-[10px] text-slate-400">{new Date(res.submitted_at).toLocaleDateString()}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-2 md:mt-0 flex items-center justify-between md:justify-end gap-3 md:gap-4 border-t md:border-0 pt-2 md:pt-0 border-slate-100 dark:border-slate-800">
-                                                {isReleased ? (
-                                                    <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-between">
-                                                        <div className="text-right">
-                                                            <div className="flex items-center justify-end gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-sm md:text-lg">
-                                                                <Trophy className="h-3.5 w-3.5 md:h-4 md:w-4" />{res.score}/{res.total_questions}
-                                                            </div>
-                                                            <div className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Score: {percentage}%</div>
-                                                        </div>
-                                                        <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4 text-slate-300 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform group-hover:md:translate-x-1" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-0.5 md:py-1 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 rounded-full border border-amber-100 dark:border-amber-900/30 text-[9px] md:text-[10px] font-bold uppercase tracking-wide">
-                                                        <Lock className="h-2.5 w-2.5 md:h-3 md:w-3" /> Pending Release
-                                                    </div>
-                                                )}
+                            return (
+                                <div
+                                    key={res.id}
+                                    onClick={() => isReleased && navigate(`/exam/${res.paper_id}/results`)}
+                                    className={`group relative flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl transition-all duration-200 ${isReleased
+                                        ? "bg-white dark:bg-muted/30 hover:-translate-y-0.5 cursor-pointer"
+                                        : "bg-slate-100/70 dark:bg-slate-900/20 opacity-75 cursor-not-allowed"
+                                        }`}
+                                >
+                                    <div className="flex gap-3 items-start min-w-0">
+                                        <div className={`mt-0.5 p-2 rounded-lg shrink-0 ${isReleased
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                                            : 'bg-slate-200 dark:bg-slate-800'
+                                            }`}>
+                                            <BookOpen className={`h-4 w-4 ${isReleased
+                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                : 'text-slate-400'
+                                                }`} />
+                                        </div>
+                                        <div className="space-y-1 min-w-0">
+                                            <h2 className="text-sm md:text-base font-bold text-slate-900 dark:text-white truncate">
+                                                {res.exam_papers.title || "Untitled Exam"}
+                                            </h2>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                    {res.exam_papers.course || "General Assessment"}
+                                                </span>
+                                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                                <span className="text-[10px] text-slate-400">
+                                                    ID: {res.paper_id.slice(0, 8)}
+                                                </span>
+                                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                                <span className="text-[10px] text-slate-400">
+                                                    {new Date(res.submitted_at).toLocaleDateString()}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
 
-                {/* Footer Disclaimer */}
-                <div className="bg-slate-50/50 dark:bg-slate-900/30 p-2.5 md:p-3 border-t border-slate-100 dark:border-slate-800 text-center">
-                    <p className="text-[8px] md:text-[10px] text-slate-400 uppercase tracking-[0.2em] font-medium">
+                                    <div className="mt-3 md:mt-0 flex items-center justify-end gap-3 md:gap-4">
+                                        {isReleased ? (
+                                            <>
+                                                <div className="text-right">
+                                                    <div className="flex items-center justify-end gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-base md:text-lg">
+                                                        <Trophy className="h-4 w-4" />
+                                                        {res.score}/{res.total_questions}
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                        Score: {percentage}%
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform group-hover:translate-x-1" />
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold uppercase tracking-wide">
+                                                <Lock className="h-3 w-3" /> Pending Release
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* FOOTER */}
+                <div className="text-center pt-2">
+                    <p className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-semibold">
                         Official Academic Transcript • Generated via Institutional Gateway
                     </p>
                 </div>

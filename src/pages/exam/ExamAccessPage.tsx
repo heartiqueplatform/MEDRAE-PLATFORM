@@ -50,7 +50,7 @@ const ConnectivityOverlay = () => (
     >
         <div className="relative mb-8">
             <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping" />
-            <div className="relative bg-slate-900 border border-slate-800 p-8 rounded-full shadow-2xl">
+            <div className="relative bg-slate-900 border-0 p-8 rounded-full shadow-2xl">
                 <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
                 <WifiOff className="absolute -top-2 -right-2 w-8 h-8 text-rose-500 animate-bounce" />
             </div>
@@ -88,8 +88,6 @@ export default function ExamAccessPage() {
 
     const navigate = useNavigate();
     const [dismissed, setDismissed] = useState(false);
-
-    // ✅ REMOVED: Laptop restriction - phone users can now access
 
     const [totalDuration, setTotalDuration] = useState(0);
     const [timerReady, setTimerReady] = useState(false);
@@ -146,14 +144,33 @@ export default function ExamAccessPage() {
 
         const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData?.user?.id;
+
         await supabase.from("simulation_results").insert({
             paper_id: selectedPaper.id,
-            user_id: (await supabase.auth.getUser()).data.user?.id,
+            user_id: userId,
             score: correctCount,
             total_questions: questions.length,
         });
 
-        generatePDF();
+        // Fresh profile fetch right before PDF
+        let freshProfile: any = profile;
+        if (userId && !freshProfile?.name) {
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("name, email, institution, course, county, phone, subscription, role")
+                .eq("user_id", userId)
+                .single();
+
+            if (!error && data) {
+                freshProfile = data;
+                localStorage.setItem("profile", JSON.stringify(data));
+                setProfile(data);
+            }
+        }
+
+        await generatePDF(freshProfile);
 
         resetNow();
         setSelectedPaper(null);
@@ -566,138 +583,294 @@ export default function ExamAccessPage() {
         setPendingAction(null);
     };
 
-    const generatePDF = async () => {
-        const doc = new jsPDF({ unit: "pt", format: "a4" });
+    // ============================================================
+    // BRANDED PDF — no borders, professional look, logo, brand colors
+    // ============================================================
+    const generatePDF = async (profileOverride?: any) => {
+        const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
+        const pageWidth = doc.internal.pageSize.getWidth();   // ~210
+        const pageHeight = doc.internal.pageSize.getHeight(); // ~297
 
-        const margin = 40;
-        let y = margin;
-        const lineHeight = 16;
-
-        doc.setTextColor(230, 230, 230);
-        doc.setFontSize(70);
-        doc.setFont(undefined, "bold");
-        doc.text("MEDRAE", pageWidth / 2, pageHeight / 2, {
-            align: "center",
-            angle: 45,
-        });
-        doc.setTextColor(0, 0, 0);
-
-        doc.setLineWidth(1);
-        doc.rect(margin / 2, margin / 2, pageWidth - margin, pageHeight - margin);
-
-        doc.setFillColor(245, 245, 245);
-        doc.rect(margin, y, pageWidth - margin * 2, 70, "F");
-
-        doc.setFontSize(18);
-        doc.setFont(undefined, "bold");
-        doc.text("MEDRAE Kenya Nursing Platform", pageWidth / 2, y + 28, { align: "center" });
-
-        doc.setFontSize(12);
-        doc.setFont(undefined, "normal");
-        doc.text("Official Exam Participation Receipt", pageWidth / 2, y + 48, { align: "center" });
-
-        y += 90;
-
-        const profileData = profile || (typeof window !== "undefined" ? JSON.parse(localStorage.getItem("profile") || "null") : null);
-
-        const drawRow = (label: string, value: string) => {
-            doc.setFont(undefined, "bold");
-            doc.text(label, margin, y);
-            doc.setFont(undefined, "normal");
-            doc.text(value || "N/A", margin + 160, y);
-            y += lineHeight;
-        };
+        const brandBlue: [number, number, number] = [37, 99, 235];   // #2563EB
+        const brandRed: [number, number, number] = [220, 38, 38];    // #DC2626
+        const slateDark: [number, number, number] = [15, 23, 42];    // #0F172A
+        const slateMid: [number, number, number] = [100, 116, 139];  // #64748B
+        const slateLight: [number, number, number] = [241, 245, 249]; // #F1F5F9
+        const greenAccent: [number, number, number] = [22, 163, 74];  // #16A34A
 
         const receiptNumber = `MED-${Date.now().toString().slice(-8)}`;
+        const generatedAt = new Date().toLocaleString();
 
-        doc.setFontSize(11);
-        drawRow("Receipt Number:", receiptNumber);
-        drawRow("Exam Date:", new Date().toLocaleString());
-        y += 8;
+        const correctCount = questions.reduce((count, q) => {
+            const userAnswer = answers[q.id];
+            if (!userAnswer) return count;
+            return userAnswer === q.correct_answer ? count + 1 : count;
+        }, 0);
 
-        doc.setDrawColor(200);
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 20;
+        const totalQuestions = questions.length;
+        const percentageScore =
+            totalQuestions > 0
+                ? ((correctCount / totalQuestions) * 100).toFixed(2)
+                : "0.00";
 
-        doc.setFontSize(13);
-        doc.setFont(undefined, "bold");
-        doc.text("Candidate Information", margin, y);
-        y += 20;
+        const profileData =
+            profileOverride ||
+            profile ||
+            (typeof window !== "undefined"
+                ? JSON.parse(localStorage.getItem("profile") || "null")
+                : null);
 
-        doc.setFontSize(11);
+        // ============================================================
+        // HEADER
+        // ============================================================
+        doc.setFillColor(...brandBlue);
+        doc.rect(0, 0, pageWidth, 32, "F");
 
-        if (profileData) {
-            drawRow("Full Name:", profileData.name);
-            drawRow("Email Address:", profileData.email);
-            drawRow("Institution:", profileData.institution);
-            drawRow("Course / Program:", profileData.course);
-            drawRow("County:", profileData.county);
-            drawRow("Phone Number:", profileData.phone);
-            drawRow("Subscription Type:", profileData.subscription);
-            drawRow("Role:", profileData.role);
-        } else {
-            drawRow("Candidate Profile:", "Not Available");
+        try {
+            doc.addImage("/pwa-512x512.png", "PNG", 14, 9, 14, 14);
+        } catch (e) {
+            console.warn("Logo not embedded in PDF:", e);
         }
 
-        y += 10;
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 20;
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("MEDRAE", 32, 17);
 
-        doc.setFontSize(13);
-        doc.setFont(undefined, "bold");
-        doc.text("Exam Information", margin, y);
-        y += 20;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text("Kenya Nursing Platform", 32, 23);
 
-        doc.setFontSize(11);
-        drawRow("Exam Paper Title:", selectedPaper?.title || "N/A");
-        drawRow("Session:", selectedSession || "N/A");
-        drawRow("Platform:", "Medrae Self-Test Proctorium Lite");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(`Receipt No: ${receiptNumber}`, pageWidth - 14, 15, { align: "right" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(`Generated: ${generatedAt}`, pageWidth - 14, 21, { align: "right" });
 
-        y += 10;
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 20;
+        // ============================================================
+        // TITLE BLOCK (Medrae red + Nursing black)
+        // ============================================================
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...brandRed);
+        const medraeWidth = doc.getTextWidth("Medrae ");
 
-        doc.setFontSize(11);
-        const statement = `This document certifies that the above candidate accessed and participated in the listed examination session on the Medrae Kenya Nursing Platform (MKN). This receipt confirms exam participation only and does not represent the final exam result or academic grading.`;
+        doc.setTextColor(...slateDark);
+        const nursingWidth = doc.getTextWidth("Nursing");
 
-        const splitStatement = doc.splitTextToSize(statement.trim(), pageWidth - margin * 2);
+        const totalTitleWidth = medraeWidth + nursingWidth;
+        const titleStartX = (pageWidth - totalTitleWidth) / 2;
+        const titleY = 46;
 
-        splitStatement.forEach((line: string) => {
-            doc.text(line, margin, y);
-            y += lineHeight;
+        doc.setTextColor(...brandRed);
+        doc.text("Medrae ", titleStartX, titleY);
+        doc.setTextColor(...slateDark);
+        doc.text("Nursing", titleStartX + medraeWidth, titleY);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(...slateMid);
+        doc.text(
+            "Official Exam Participation Receipt",
+            pageWidth / 2,
+            titleY + 6,
+            { align: "center" }
+        );
+
+        doc.setDrawColor(...slateLight);
+        doc.setLineWidth(0.5);
+        doc.line(20, titleY + 10, pageWidth - 20, titleY + 10);
+
+        // ============================================================
+        // CANDIDATE INFO — two-column label / value table
+        // ============================================================
+        autoTable(doc, {
+            startY: titleY + 16,
+            theme: "plain",
+            margin: { left: 20, right: 20 },
+            styles: {
+                font: "helvetica",
+                fontSize: 9,
+                cellPadding: 2.2,
+                textColor: slateDark,
+                lineColor: [255, 255, 255],
+                lineWidth: 0,
+            },
+            columnStyles: {
+                0: { cellWidth: 45, textColor: slateMid, fontStyle: "bold" },
+                1: { cellWidth: "auto" },
+            },
+            body: [
+                ["Candidate Name", profileData?.name || "N/A"],
+                ["Email", profileData?.email || "N/A"],
+                ["Institution", profileData?.institution || "N/A"],
+                ["Course", profileData?.course || "N/A"],
+                ["County", profileData?.county || "N/A"],
+                ["Phone", profileData?.phone || "N/A"],
+                ["Subscription", profileData?.subscription || "N/A"],
+                ["Role", profileData?.role || "N/A"],
+            ],
         });
 
-        y += 40;
-        doc.line(margin, y, margin + 200, y);
-        doc.text("Authorized Platform Verification", margin, y + 14);
+        // @ts-ignore
+        let afterInfoY = (doc as any).lastAutoTable?.finalY || titleY + 60;
+        afterInfoY += 6;
 
-        doc.line(pageWidth - margin - 200, y, pageWidth - margin, y);
-        doc.text("Digital System Stamp", pageWidth - margin - 200, y + 14);
+        // ============================================================
+        // EXAM SUMMARY CARD
+        // ============================================================
+        const cardX = 20;
+        const cardW = pageWidth - 40;
+        const cardH = 32;
 
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(cardX, afterInfoY, cardW, cardH, 2, 2, "F");
+
+        doc.setFillColor(...brandBlue);
+        doc.rect(cardX, afterInfoY, 2.5, cardH, "F");
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(...slateMid);
+        doc.text("PAPER", cardX + 8, afterInfoY + 7);
+        doc.text("SESSION", cardX + 8, afterInfoY + 14);
+        doc.text("SCORE", cardX + 8, afterInfoY + 21);
+        doc.text("PERCENTAGE", cardX + 8, afterInfoY + 28);
+
+        doc.setFontSize(9);
+        doc.setTextColor(...slateDark);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${selectedPaper?.title || "N/A"}`, cardX + 40, afterInfoY + 7);
+        doc.text(`${selectedSession || "N/A"}`, cardX + 40, afterInfoY + 14);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${correctCount} / ${totalQuestions}`, cardX + 40, afterInfoY + 21);
+
+        // Percentage badge
+        const pctColor =
+            parseFloat(percentageScore) >= 50 ? greenAccent : brandRed;
+
+        doc.setFillColor(...pctColor);
+        doc.roundedRect(cardX + cardW - 38, afterInfoY + 15, 30, 12, 2, 2, "F");
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text(
+            `${percentageScore}%`,
+            cardX + cardW - 23,
+            afterInfoY + 23,
+            { align: "center" }
+        );
+
+        let yPos = afterInfoY + cardH + 8;
+
+        // ============================================================
+        // CERTIFICATION STATEMENT
+        // ============================================================
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...slateDark);
+        doc.text("Certification of Participation", 20, yPos);
+        yPos += 2;
+
+        doc.setDrawColor(...slateLight);
+        doc.setLineWidth(0.4);
+        doc.line(20, yPos, pageWidth - 20, yPos);
+        yPos += 6;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...slateDark);
+
+        const statement = `This document certifies that the above candidate accessed and participated in the listed examination session on the Medrae Kenya Nursing Platform (MKN). This receipt confirms exam participation only and does not represent the final exam result or academic grading.
+
+For more detailed resources, practice questions, and interactive learning, visit MEDRAE at https://medrae.vercel.app or call us at 0704473503 or 0717517371.
+
+Keep striving — each step you take strengthens your nursing expertise and prepares you for success!`;
+
+        const splitStatement = doc.splitTextToSize(statement, pageWidth - 40);
+        const lineHeight = 4.6;
+
+        for (let i = 0; i < splitStatement.length; i++) {
+            if (yPos > pageHeight - 40) {
+                doc.addPage();
+                doc.setFillColor(...brandBlue);
+                doc.rect(0, 0, pageWidth, 8, "F");
+                yPos = 20;
+            }
+            doc.text(splitStatement[i], 20, yPos);
+            yPos += lineHeight;
+        }
+
+        // ============================================================
+        // SIGNATURE BLOCK
+        // ============================================================
+        yPos += 14;
+        if (yPos > pageHeight - 40) {
+            doc.addPage();
+            doc.setFillColor(...brandBlue);
+            doc.rect(0, 0, pageWidth, 8, "F");
+            yPos = 30;
+        }
+
+        doc.setDrawColor(...slateMid);
+        doc.setLineWidth(0.3);
+
+        // Left signature
+        doc.line(20, yPos, 90, yPos);
+        doc.setFontSize(8);
+        doc.setTextColor(...slateMid);
+        doc.text("Authorized Platform Verification", 20, yPos + 4);
+
+        // Right signature
+        doc.line(pageWidth - 90, yPos, pageWidth - 20, yPos);
+        doc.text("Digital System Stamp", pageWidth - 90, yPos + 4);
+
+        // ============================================================
+        // FOOTER (every page)
+        // ============================================================
         const pageCount = doc.internal.getNumberOfPages();
 
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
+
+            doc.setDrawColor(...slateLight);
+            doc.setLineWidth(0.4);
+            doc.line(20, pageHeight - 16, pageWidth - 20, pageHeight - 16);
+
+            doc.setFont("helvetica", "bold");
             doc.setFontSize(9);
-            doc.setTextColor(120);
+            doc.setTextColor(...brandRed);
+            doc.text("Medrae", 20, pageHeight - 10);
 
-            const footerText1 = "MEDRAE • Advancing nursing education and student success.";
-            const footerText2 = `Page ${i} of ${pageCount}`;
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...slateDark);
+            doc.text(" Nursing", 20 + doc.getTextWidth("Medrae"), pageHeight - 10);
 
-            const textWidth1 = doc.getTextWidth(footerText1);
-            doc.text(footerText1, (pageWidth - textWidth1) / 2, pageHeight - 40);
-
-            const textWidth2 = doc.getTextWidth(footerText2);
-            doc.text(footerText2, (pageWidth - textWidth2) / 2, pageHeight - 28);
+            doc.setTextColor(...slateMid);
+            doc.setFontSize(8);
+            doc.text(
+                `Page ${i} of ${pageCount}`,
+                pageWidth - 20,
+                pageHeight - 10,
+                { align: "right" }
+            );
+            doc.text(
+                "medrae.vercel.app",
+                pageWidth / 2,
+                pageHeight - 10,
+                { align: "center" }
+            );
         }
 
-        doc.save("MEDRAE_Exam_Receipt.pdf");
+        doc.save("Medrae_Nursing_Exam_Receipt.pdf");
     };
 
-    // Render Review Panel
+    // ============================================================
+    // DONE PANEL — flat, no borders, working submit button
+    // ============================================================
     if (showDonePanel) {
         const answered = questions.filter((q) => answers[q.id]);
         const unanswered = questions.filter((q) => !answers[q.id]);
@@ -714,164 +887,225 @@ export default function ExamAccessPage() {
         const percentageScore = totalQuestions > 0 ? ((correctCount / totalQuestions) * 100).toFixed(2) : "0";
 
         return (
-            <div className="min-h-screen w-full bg-slate-50 dark:bg-[#18191a] text-slate-900 dark:text-slate-100 p-4 md:p-8">
-                <div className="max-w-6xl mx-auto space-y-8">
+            <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
+                <div className="max-w-4xl mx-auto space-y-5 md:space-y-8">
 
-                    {/* Header Section */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
-                        <div className="space-y-1">
-                            <h2 className="text-3xl font-extrabold tracking-tight">
-                                {pendingAction === "submit" ? "Final Submission Review" : "Reset Session Request"}
+                    {/* HEADER */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest uppercase text-[10px] mb-1">
+                                <FileCheck className="w-4 h-4" /> Final Audit Phase
+                            </div>
+                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                                Review Before You{" "}
+                                <span className={pendingAction === "submit" ? "text-green-600" : "text-rose-600"}>
+                                    {pendingAction === "submit" ? "Submit" : "Reset"}
+                                </span>
                             </h2>
-                            <p className="text-slate-500 dark:text-slate-400 max-w-2xl text-sm leading-relaxed">
+                            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-2xl">
                                 {pendingAction === "submit"
-                                    ? "Please conduct a final review of your responses. Once submitted, your attempts are timestamped and locked for grading. Changes cannot be made after this point."
-                                    : "You are about to clear all progress. This action is recorded and cannot be undone."
-                                }
+                                    ? "Review your responses. Once submitted, your attempt is timestamped and locked."
+                                    : "You are about to clear all progress. This action is recorded and cannot be undone."}
                             </p>
                         </div>
 
-                        <div className="hidden lg:flex items-center gap-2 bg-white dark:bg-muted/30 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-full shadow-sm">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Secure Session Active</span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={isSubmitting}
+                            className="rounded-xl border-0 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                            onClick={() => {
+                                if (isSubmitting) return;
+                                setShowDonePanel(false);
+                                setPendingAction(null);
+                            }}
+                        >
+                            <X className="w-4 h-4 mr-2" /> Cancel
+                        </Button>
+                    </div>
+
+                    {/* SCORE PREVIEW (submit only) */}
+                    {pendingAction === "submit" && (
+                        <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-blue-500 flex items-center justify-center font-black text-blue-600 text-sm md:text-base">
+                                    {percentageScore}%
+                                </div>
+                                <div>
+                                    <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
+                                        Score Preview
+                                    </h3>
+                                    <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+                                        Based on your current responses
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tighter">
+                                {correctCount}{" "}
+                                <span className="text-slate-300 dark:text-slate-600">/</span>{" "}
+                                {totalQuestions} Questions
+                            </div>
                         </div>
+                    )}
+
+                    {/* AUDIT GRID */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+                        <AuditCard
+                            title="Answered"
+                            count={answered.length}
+                            icon={<CheckCircle2 className="w-4 h-4" />}
+                            color="green"
+                            list={answered}
+                            answers={answers}
+                        />
+                        <AuditCard
+                            title="Remaining"
+                            count={unanswered.length}
+                            icon={<HelpCircle className="w-4 h-4" />}
+                            color="rose"
+                            list={unanswered}
+                        />
+                        <AuditCard
+                            title="Flagged"
+                            count={flaggedQs.length}
+                            icon={<Flag className="w-4 h-4" />}
+                            color="amber"
+                            list={flaggedQs}
+                        />
+                        <AuditCard
+                            title="Skipped"
+                            count={skippedQs.length}
+                            icon={<SkipForward className="w-4 h-4" />}
+                            color="blue"
+                            list={skippedQs}
+                        />
                     </div>
 
-                    {/* Status Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                        {/* Answered */}
-                        <Card className="border-0 border-l-4 border-l-emerald-500 shadow-sm bg-white dark:bg-[#242526]">
-                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Answered</CardTitle>
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                                <div className="text-2xl font-bold mb-3">{answered.length}</div>
-                                <div className="h-48 overflow-y-auto pr-2 space-y-2 scrollbar-thin">
-                                    {answered.map((q, i) => (
-                                        <div key={q.id} className="text-xs p-2 bg-slate-50 dark:bg-slate-800/50 rounded border border-slate-100 dark:border-slate-700">
-                                            <span className="font-bold text-slate-400 mr-2">Q{i + 1}</span>
-                                            <span className="text-slate-600 dark:text-slate-300 italic">Choice: {answers[q.id]}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Unanswered */}
-                        <Card className="border-0 border-l-4 border-l-rose-500 shadow-sm bg-white dark:bg-[#242526]">
-                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Remaining</CardTitle>
-                                <HelpCircle className="h-4 w-4 text-rose-500" />
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                                <div className="text-2xl font-bold mb-3 text-rose-600">{unanswered.length}</div>
-                                <div className="h-48 overflow-y-auto pr-2 space-y-2">
-                                    {unanswered.length > 0 ? unanswered.map((q, i) => (
-                                        <div key={q.id} className="text-xs p-2 border border-dashed border-slate-200 dark:border-slate-700 rounded text-slate-400">
-                                            Question {i + 1} requires attention
-                                        </div>
-                                    )) : (
-                                        <div className="text-xs text-slate-400 italic">All questions answered.</div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Flagged */}
-                        <Card className="border-0 border-l-4 border-l-amber-500 shadow-sm bg-white dark:bg-[#242526]">
-                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Review Later</CardTitle>
-                                <Flag className="h-4 w-4 text-amber-500" />
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                                <div className="text-2xl font-bold mb-3">{flaggedQs.length}</div>
-                                <div className="h-48 overflow-y-auto pr-2 space-y-2">
-                                    {flaggedQs.map((q, i) => (
-                                        <div key={q.id} className="text-xs p-2 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-100 dark:border-amber-900/30">
-                                            Question {i + 1} marked for review
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Skipped */}
-                        <Card className="border-0 border-l-4 border-l-blue-500 shadow-sm bg-white dark:bg-[#242526]">
-                            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Skipped</CardTitle>
-                                <SkipForward className="h-4 w-4 text-blue-500" />
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                                <div className="text-2xl font-bold mb-3">{skippedQs.length}</div>
-                                <div className="h-48 overflow-y-auto pr-2 space-y-2">
-                                    {skippedQs.map((q, i) => (
-                                        <div key={q.id} className="text-xs p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-100 dark:border-blue-900/30">
-                                            Question {i + 1} skipped
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Actions Section */}
-                    <div className="bg-white dark:bg-[#242526] rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl">
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
-                            <Button
-                                size="lg"
-                                className={`flex-[2] h-14 text-base font-bold shadow-lg transition-all ${pendingAction === "submit"
-                                    ? "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                    {/* ACTION BUTTON — centered, spinner while submitting */}
+                    <div className="flex justify-center pt-2">
+                        <Button
+                            size="lg"
+                            disabled={isSubmitting}
+                            className={`w-full md:w-auto md:min-w-[320px] h-14 md:h-16 px-8 rounded-2xl text-base md:text-lg font-bold transition-all border-0 ${isSubmitting
+                                ? "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
+                                : pendingAction === "submit"
+                                    ? "bg-blue-600 hover:bg-green-600 text-white"
                                     : "bg-rose-600 hover:bg-rose-700 text-white"
-                                    }`}
-                                onClick={() => {
-                                    if (pendingAction === "submit") confirmSubmit();
-                                    if (pendingAction === "reset") resetNow();
-                                }}
-                            >
-                                {pendingAction === "submit" ? (
-                                    <span className="flex items-center gap-2">
-                                        <FileCheck className="w-5 h-5" /> Confirm Final Submission & Generate PDF
-                                    </span>
-                                ) : (
-                                    <span className="flex items-center gap-2">
-                                        <RotateCcw className="w-5 h-5" /> Confirm Permanent Reset
-                                    </span>
-                                )}
-                            </Button>
+                                }`}
+                            onClick={() => {
+                                if (isSubmitting) return;
+                                if (pendingAction === "submit") confirmSubmit();
+                                if (pendingAction === "reset") resetNow();
+                            }}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <RefreshCw className="mr-2 w-5 h-5 animate-spin" />
+                                    {pendingAction === "submit"
+                                        ? "Submitting & Generating PDF..."
+                                        : "Resetting..."}
+                                </>
+                            ) : pendingAction === "submit" ? (
+                                <>
+                                    <FileCheck className="mr-2 w-5 h-5" />
+                                    Confirm Final Submission
+                                </>
+                            ) : (
+                                <>
+                                    <RotateCcw className="mr-2 w-5 h-5" />
+                                    Confirm Permanent Reset
+                                </>
+                            )}
+                        </Button>
+                    </div>
 
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                className="flex-1 h-14 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold"
-                                onClick={() => {
-                                    setShowDonePanel(false);
-                                    setPendingAction(null);
-                                }}
-                            >
-                                <X className="w-4 h-4 mr-2" /> Return to Questions
-                            </Button>
-                        </div>
-
-                        <div className="mt-6 flex items-center justify-center gap-4 text-slate-400">
-                            <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-bold">End of Assessment Summary</span>
-                            <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                    {/* MARQUEE */}
+                    <div className="relative mt-6 md:mt-10 py-4 md:py-6 overflow-hidden">
+                        <div className="flex justify-center">
+                            <div className="flex items-center gap-6 whitespace-nowrap animate-marquee-slow">
+                                {[1, 2, 3].map((i) => (
+                                    <span
+                                        key={i}
+                                        className="flex items-center gap-2 text-slate-400 text-xs md:text-sm font-medium"
+                                    >
+                                        🌟 Your commitment to academic integrity is appreciated. Good luck. 🌟
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="text-center pb-10">
-                        <p className="text-xs text-slate-400 font-medium italic">
-                            "Your commitment to academic integrity is appreciated. Good luck with your results."
-                        </p>
-                    </div>
                 </div>
             </div>
         );
     }
 
-    // No questions found / Loading
+    // Sub-component for audit cards (flat, no borders)
+    function AuditCard({ title, count, icon, color, list, answers }: any) {
+        const colorMap: any = {
+            green: {
+                header: "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400",
+                badge: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300",
+            },
+            rose: {
+                header: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400",
+                badge: "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300",
+            },
+            amber: {
+                header: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
+                badge: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
+            },
+            blue: {
+                header: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400",
+                badge: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
+            },
+        };
+
+        return (
+            <Card className="border-0 shadow-none rounded-2xl overflow-hidden bg-white dark:bg-muted/30 flex flex-col">
+                <CardHeader className={`${colorMap[color].header} py-3 px-4 rounded-t-2xl`}>
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider">
+                            {icon} {title}
+                        </div>
+                        <span
+                            className={`${colorMap[color].badge} px-2 py-0.5 rounded-full text-xs font-bold`}
+                        >
+                            {count}
+                        </span>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0 flex-1">
+                    <ScrollArea className="h-40 md:h-48 p-3 custom-scrollbar">
+                        <ul className="space-y-2.5">
+                            {list.map((q: any, i: number) => (
+                                <li key={q.id} className="text-[11px] leading-tight group">
+                                    <span className="font-bold text-slate-400 mr-1">
+                                        Q{i + 1}
+                                    </span>
+                                    <span className="text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                                        {q.question_text.slice(0, 45)}...
+                                    </span>
+                                    {answers && answers[q.id] && (
+                                        <div className="mt-1 text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded px-1.5 py-0.5 inline-block">
+                                            {answers[q.id]}
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                            {list.length === 0 && (
+                                <div className="flex flex-col items-center justify-center h-24 md:h-32 opacity-30 italic text-xs text-slate-400">
+                                    No items recorded
+                                </div>
+                            )}
+                        </ul>
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Loading
     if (loading) {
         return (
             <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">
@@ -888,20 +1122,17 @@ export default function ExamAccessPage() {
         );
     }
 
-    // Main question view - Desktop preserved exactly as is, Phone optimized
+    // Main question view
     return (
         <>
             <AnimatePresence>
                 {showConnectionOverlay && <ConnectivityOverlay />}
             </AnimatePresence>
-            {/* Desktop: grid layout preserved exactly as is */}
-            {/* Phone: single column with optimized padding */}
-            <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-4 md:gap-6 p-3 md:p-8">
+            <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-4 md:gap-6 px-2 py-4 md:p-8 hide-scrollbar">
 
                 {/* LEFT COLUMN - Question and Controls */}
                 <div className="md:col-span-2 space-y-3 md:space-y-4">
-                    {/* Question Card - Full width on phone */}
-                    <Card className="min-h-[300px] md:min-h-[400px] bg-white dark:bg-gray-900 border-0 shadow-sm rounded-xl">
+                    <Card className="min-h-[300px] md:min-h-[400px] bg-white dark:bg-gray-900 border-0 shadow-none rounded-2xl">
                         <CardHeader className="p-3 md:p-6">
                             <CardTitle className="text-sm md:text-base">
                                 Question {currentIndex + 1} of {questions.length}
@@ -923,7 +1154,6 @@ export default function ExamAccessPage() {
                                                     w-4 h-4 md:w-5 md:h-5 flex-shrink-0 rounded-full border-2 mt-0.5
                                                     transition-colors duration-200
                                                     ${isSelected ? "bg-blue-500 border-blue-500" : "bg-white border-gray-400 dark:bg-black dark:border-gray-500"}
-                                                    hover:${!isSelected ? "bg-gray-200 dark:bg-gray-700" : ""}
                                                 `}
                                             ></div>
                                             <span className="whitespace-normal font-barlow text-sm md:text-base leading-relaxed">
@@ -936,41 +1166,41 @@ export default function ExamAccessPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Navigation Buttons - Full width on phone */}
+                    {/* Navigation Buttons */}
                     <div className="flex flex-wrap justify-center gap-1.5 md:gap-2">
-                        <Button onClick={goPrev} disabled={currentIndex === 0} size="sm" className="text-xs md:text-sm px-3 md:px-4">
+                        <Button onClick={goPrev} disabled={currentIndex === 0} size="sm" className="text-xs md:text-sm px-3 md:px-4 border-0">
                             <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" /> Previous
                         </Button>
-                        <Button variant="outline" onClick={handleFlag} size="sm" className="text-xs md:text-sm px-3 md:px-4">
+                        <Button variant="outline" onClick={handleFlag} size="sm" className="text-xs md:text-sm px-3 md:px-4 border-0 bg-slate-100 dark:bg-slate-800">
                             <Flag className="w-4 h-4 md:w-5 md:h-5" /> Flag
                         </Button>
-                        <Button variant="ghost" onClick={handleSkip} size="sm" className="text-xs md:text-sm px-3 md:px-4">
+                        <Button variant="ghost" onClick={handleSkip} size="sm" className="text-xs md:text-sm px-3 md:px-4 border-0">
                             Skip <CornerRightDown className="w-4 h-4 md:w-5 md:h-5" />
                         </Button>
-                        <Button onClick={goNext} disabled={currentIndex === questions.length - 1} size="sm" className="text-xs md:text-sm px-3 md:px-4">
+                        <Button onClick={goNext} disabled={currentIndex === questions.length - 1} size="sm" className="text-xs md:text-sm px-3 md:px-4 border-0">
                             Next <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
                         </Button>
-                        <Button variant="default" onClick={handleSubmit} disabled={currentIndex !== questions.length - 1 || isSubmitting || isNavigating} size="sm" className="text-xs md:text-sm px-3 md:px-4">
+                        <Button variant="default" onClick={handleSubmit} disabled={currentIndex !== questions.length - 1 || isSubmitting || isNavigating} size="sm" className="text-xs md:text-sm px-3 md:px-4 border-0">
                             {isSubmitting ? "Submitting..." : "Submit"}
                         </Button>
                     </div>
 
                     {/* Skipped/Flagged Quick Jump */}
                     <div className="flex justify-center gap-2 md:gap-4">
-                        <Button size="sm" variant="secondary" disabled={skipped.length === 0} onClick={() => { if (skipped.length > 0) jumpTo(questions.findIndex((q) => q.id === skipped[0])); }} className="text-[10px] md:text-xs">
+                        <Button size="sm" variant="secondary" disabled={skipped.length === 0} onClick={() => { if (skipped.length > 0) jumpTo(questions.findIndex((q) => q.id === skipped[0])); }} className="text-[10px] md:text-xs border-0">
                             Skipped ({skipped.length})
                         </Button>
-                        <Button size="sm" variant="destructive" disabled={flags.length === 0} onClick={() => { if (flags.length > 0) jumpTo(questions.findIndex((q) => q.id === flags[0])); }} className="text-[10px] md:text-xs">
+                        <Button size="sm" variant="destructive" disabled={flags.length === 0} onClick={() => { if (flags.length > 0) jumpTo(questions.findIndex((q) => q.id === flags[0])); }} className="text-[10px] md:text-xs border-0">
                             Flagged ({flags.length})
                         </Button>
                     </div>
 
-                    {/* Media Controls - Full width on phone */}
+                    {/* Media Controls */}
                     <div className="flex flex-wrap items-center gap-2 md:gap-3">
                         <div className="flex-1 min-w-[100px] md:min-w-[150px]">
                             <ExamProctor videoStream={cameraStream} sessionId={examSession?.id ?? null} paperId={paper_id} />
                         </div>
-                        <div className="w-20 h-16 md:w-32 md:h-28 border border-gray-300 rounded-lg overflow-hidden relative flex items-center justify-center">
+                        <div className="w-20 h-16 md:w-32 md:h-28 rounded-lg overflow-hidden relative flex items-center justify-center bg-slate-100 dark:bg-slate-800">
                             <canvas ref={canvasRef} width={128} height={96} className="w-full h-full" />
                             {loudWarning && (
                                 <span className="absolute top-0.5 left-0.5 text-[6px] md:text-xs text-red-600 font-bold bg-white px-1 rounded">
@@ -978,13 +1208,13 @@ export default function ExamAccessPage() {
                                 </span>
                             )}
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => initMedia(true)} className="text-[10px] md:text-xs px-2 md:px-3">
+                        <Button size="sm" variant="outline" onClick={() => initMedia(true)} className="text-[10px] md:text-xs px-2 md:px-3 border-0 bg-slate-100 dark:bg-slate-800">
                             <RefreshCw className="w-3 h-3 md:w-4 md:h-4 mr-1" /> Reset
                         </Button>
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN - Timer, Questions Grid, Info */}
+                {/* RIGHT COLUMN */}
                 <div className="space-y-2 md:space-y-3">
                     {/* Timer Card */}
                     <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-0 rounded-none p-1 md:p-2">
@@ -1009,7 +1239,7 @@ export default function ExamAccessPage() {
                     <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-0">
                         <div className="flex items-center justify-between mb-1 md:mb-2">
                             <span className="text-[10px] md:text-sm font-bold">Questions</span>
-                            <Button size="sm" variant="ghost" onClick={resetAnswers} className="text-[8px] md:text-xs">
+                            <Button size="sm" variant="ghost" onClick={resetAnswers} className="text-[8px] md:text-xs border-0">
                                 Reset
                             </Button>
                         </div>
@@ -1020,7 +1250,7 @@ export default function ExamAccessPage() {
                                     size="sm"
                                     variant={currentIndex === i ? "default" : answers[q.id] ? "secondary" : flags.includes(q.id) ? "destructive" : "outline"}
                                     onClick={() => jumpTo(i)}
-                                    className="h-7 w-7 md:h-10 md:w-10 text-[10px] md:text-sm p-0"
+                                    className="h-7 w-7 md:h-10 md:w-10 text-[10px] md:text-sm p-0 border-0"
                                 >
                                     {i + 1}
                                 </Button>
@@ -1028,20 +1258,20 @@ export default function ExamAccessPage() {
                         </div>
                     </Card>
 
-                    {/* Exam Mode Banner */}
-                    <div className="w-full overflow-hidden border-t border-border pt-1 md:pt-3">
+                    {/* Marquee */}
+                    <div className="w-full overflow-hidden pt-1 md:pt-3 border-0">
                         <div className="flex w-max animate-marquee-slow">
                             <span className="whitespace-nowrap text-[10px] md:text-lg font-semibold tracking-wide text-foreground pr-4 md:pr-12">
-                                📝 Exam Mode • Stay Focused • Good Luck!
+                                Exam Mode • Stay Focused • Good Luck!
                             </span>
                             <span className="whitespace-nowrap text-[10px] md:text-lg font-semibold tracking-wide text-foreground pr-4 md:pr-12">
-                                📝 Exam Mode • Stay Focused • Good Luck!
+                                Exam Mode • Stay Focused • Good Luck!
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Media Permission Overlay - Mobile Friendly */}
+                {/* Media Permission Overlay */}
                 <AnimatePresence>
                     {!mediaAllowed && (
                         <motion.div
@@ -1053,14 +1283,14 @@ export default function ExamAccessPage() {
                             <div className="w-full max-w-md space-y-3 md:space-y-4">
                                 <div className="flex justify-start">
                                     <Link to="/dashboard">
-                                        <Button variant="outline" size="sm" className="text-xs">
+                                        <Button variant="outline" size="sm" className="text-xs border-0 bg-slate-100 dark:bg-slate-800">
                                             <Home className="w-3 h-3 mr-1" /> Exit
                                         </Button>
                                     </Link>
                                 </div>
 
                                 <div className="text-center space-y-2">
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[8px] md:text-[10px] font-black uppercase tracking-widest">
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[8px] md:text-[10px] font-black uppercase tracking-widest border-0">
                                         <ShieldAlert className="w-3 h-3" /> Security Protocol
                                     </div>
                                     <h2 className="text-xl md:text-3xl font-extrabold tracking-tight">
@@ -1072,17 +1302,17 @@ export default function ExamAccessPage() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2 md:gap-3">
-                                    <Button onClick={async () => { try { const cam = await navigator.mediaDevices.getUserMedia({ video: true }); setCameraStream(cam); if (videoRef.current) videoRef.current.srcObject = cam; } catch (err) { console.log("Camera not available"); } }} className={`h-10 md:h-14 text-xs md:text-sm ${cameraStream ? 'bg-green-600' : 'bg-blue-600'}`}>
+                                    <Button onClick={async () => { try { const cam = await navigator.mediaDevices.getUserMedia({ video: true }); setCameraStream(cam); if (videoRef.current) videoRef.current.srcObject = cam; } catch (err) { console.log("Camera not available"); } }} className={`h-10 md:h-14 text-xs md:text-sm border-0 ${cameraStream ? 'bg-green-600' : 'bg-blue-600'}`}>
                                         <Video className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                                         {cameraStream ? "Camera On" : "Camera"}
                                     </Button>
-                                    <Button onClick={async () => { try { const mic = await navigator.mediaDevices.getUserMedia({ audio: true }); setAudioStream(mic); } catch (err) { console.log("Mic not available"); } }} className={`h-10 md:h-14 text-xs md:text-sm ${audioStream ? 'bg-green-600' : 'bg-blue-600'}`}>
+                                    <Button onClick={async () => { try { const mic = await navigator.mediaDevices.getUserMedia({ audio: true }); setAudioStream(mic); } catch (err) { console.log("Mic not available"); } }} className={`h-10 md:h-14 text-xs md:text-sm border-0 ${audioStream ? 'bg-green-600' : 'bg-blue-600'}`}>
                                         <Mic className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                                         {audioStream ? "Mic On" : "Microphone"}
                                     </Button>
                                 </div>
 
-                                <Button className="w-full h-10 md:h-14 bg-slate-900 hover:bg-black text-white font-bold text-xs md:text-sm" onClick={() => { enterFullscreen(); setMediaAllowed(true); }}>
+                                <Button className="w-full h-10 md:h-14 bg-slate-900 hover:bg-black text-white font-bold text-xs md:text-sm border-0" onClick={() => { enterFullscreen(); setMediaAllowed(true); }}>
                                     <Unlock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" /> Start Exam
                                 </Button>
 

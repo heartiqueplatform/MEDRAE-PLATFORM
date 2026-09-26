@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   ArrowRight,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 
 export default function CandidateInfo() {
@@ -63,114 +63,104 @@ export default function CandidateInfo() {
 
   if (loading && !userData) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl border-none shadow-xl">
-          <CardContent className="p-8 space-y-6">
-            <Skeleton className="h-12 w-3/4 mx-auto" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className={`h-16 w-full ${i === 1 ? 'md:col-span-2' : ''}`} />
-              ))}
-            </div>
-            <Skeleton className="h-12 w-full mt-4" />
-          </CardContent>
-        </Card>
+      <div className="min-h-[100svh] w-full bg-[#F8FAFC] dark:bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-3">
+          <Skeleton className="h-10 w-2/3 mx-auto" />
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+          <Skeleton className="h-11 w-full mt-3" />
+        </div>
       </div>
     );
   }
 
   if (!userData) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-2">
-        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-semibold text-slate-800">Data Synchronization Failed</h2>
-        <p className="text-slate-500 mb-6">Could not load your candidate profile.</p>
-        <Button onClick={() => window.location.reload()} variant="outline">Retry Sync</Button>
+      <div className="min-h-[100svh] w-full flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-background p-4">
+        <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
+          Data Synchronization Failed
+        </h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-5 text-center text-sm">
+          Could not load your candidate profile.
+        </p>
+        <Button onClick={() => window.location.reload()} variant="outline">
+          Retry Sync
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-background flex items-center justify-center p-4 font-sans">
-      <Card className="w-full max-w-2xl border-0 shadow-none bg-white dark:bg-muted/30 overflow-hidden">
-        {/* Decorative Progress/Security Bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-400" />
-
-        <CardHeader className="pt-2 pb-2 text-center">
-          <div className="mx-auto bg-blue-50 dark:bg-blue-950/40 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transform rotate-3">
-            <ShieldCheck className="w-8 h-8 text-blue-600 -rotate-3" />
+    <div className="min-h-[100svh] w-full bg-[#F8FAFC] dark:bg-background flex flex-col">
+      <Card className="w-full max-w-2xl mx-auto md:my-6 rounded-none border-0 shadow-none bg-transparent flex flex-col">
+        <CardHeader className="pt-6 pb-2 px-5 md:px-6 text-center flex-shrink-0">
+          <div className="mx-auto bg-blue-50 dark:bg-blue-950/40 w-12 h-12 rounded-xl flex items-center justify-center mb-2">
+            <ShieldCheck className="w-6 h-6 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          <CardTitle className="text-lg md:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Identity Verification
           </CardTitle>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
-            Confirm your candidate profile to initiate the secure session.
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
+            Confirm your profile to begin.
           </p>
         </CardHeader>
 
-        <CardContent className="px-2 md:px-2 pb-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 dark:bg-slate-800/50 p-6 rounded-xl border-0">
-
-            {/* Detail Item: Name */}
+        <CardContent className="px-4 md:px-6 pb-2 flex-1">
+          <div className="space-y-2">
             <InfoField
-              icon={<User className="w-4 h-4 text-blue-500" />}
+              icon={<User className="w-3.5 h-3.5 text-blue-500" />}
               label="Candidate Name"
               value={userData.name}
-              fullWidth
             />
-
-            {/* Detail Item: Institution */}
             <InfoField
-              icon={<School className="w-4 h-4 text-slate-400" />}
+              icon={<School className="w-3.5 h-3.5 text-slate-400" />}
               label="Institution"
               value={userData.institution}
             />
-
-            {/* Detail Item: Course */}
             <InfoField
-              icon={<BookOpen className="w-4 h-4 text-slate-400" />}
+              icon={<BookOpen className="w-3.5 h-3.5 text-slate-400" />}
               label="Program / Course"
               value={userData.course}
             />
-
-            {/* Detail Item: Class */}
-            {/* Detail Item: Class */}
             <InfoField
-              icon={<Fingerprint className="w-4 h-4 text-slate-400" />}
+              icon={<Fingerprint className="w-3.5 h-3.5 text-slate-400" />}
               label="Block / Class"
-              value={userData.block} // Changed from block_class to block
+              value={userData.block}
             />
-
-            {/* Detail Item: NCK Number */}
             <InfoField
-              icon={<CheckCircle2 className="w-4 h-4 text-green-500" />}
+              icon={<CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
               label="NCK Number"
               value={userData.nck_number}
               highlight
             />
           </div>
 
-          <div className="mt-2 flex justify-center">
-            <Badge variant="secondary" className="bg-green-50 text-green-700 border-0 px-4 py-1.5 rounded-full flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          <div className="mt-3 flex justify-center">
+            <Badge
+              variant="secondary"
+              className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-0 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 text-[10px] font-medium"
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
               </span>
-              Identity Confirmed • Ready for Examination
+              Identity Confirmed • Ready
             </Badge>
           </div>
         </CardContent>
 
-        <CardFooter className="bg-slate-50/80 dark:bg-slate-800/50 border-0 p-8 flex flex-col gap-4">
+        <CardFooter className="bg-transparent border-0 px-4 md:px-6 py-3 flex flex-col gap-2 flex-shrink-0">
           <Button
-            className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 transition-all duration-200 group"
+            className="w-full h-11 md:h-12 text-sm md:text-base font-bold bg-blue-600 hover:bg-blue-700 transition-all duration-200 group rounded-lg"
             onClick={handleStart}
           >
             Confirm
-            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Button>
-          <p className="text-center text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-semibold">
-            Secure Exam Environment Powered by proctorium
+          <p className="text-center text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em] font-semibold">
+            Secure Exam Environment
           </p>
         </CardFooter>
       </Card>
@@ -178,18 +168,22 @@ export default function CandidateInfo() {
   );
 }
 
-// Sub-component for clean organization
-function InfoField({ icon, label, value, fullWidth = false, highlight = false }: any) {
+function InfoField({ icon, label, value, highlight = false }: any) {
   return (
-    <div className={`${fullWidth ? 'md:col-span-2' : ''} flex flex-col gap-1.5`}>
-      <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3 px-1">
+      <div className="flex items-center gap-1.5 w-[110px] flex-shrink-0">
         {icon}
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{label}</span>
+        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 leading-tight">
+          {label}
+        </span>
       </div>
-      <div className={`px-4 py-3 rounded-xl border font-semibold text-sm transition-all
-        ${highlight
-          ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 shadow-sm'
-          : 'bg-white dark:bg-muted/30 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}`}>
+      <div
+        className={`flex-1 min-w-0 px-2.5 py-1.5 rounded-md text-xs font-semibold truncate
+          ${highlight
+            ? "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+            : "bg-slate-100/70 dark:bg-muted/40 text-slate-700 dark:text-slate-200"
+          }`}
+      >
         {value || "Not Recorded"}
       </div>
     </div>

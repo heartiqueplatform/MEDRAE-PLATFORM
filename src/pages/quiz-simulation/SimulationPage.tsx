@@ -18,19 +18,15 @@ import React from 'react';
 import {
   CheckCircle2,
   XCircle,
-
   FastForward,
   AlertCircle,
   FileCheck,
-
   X,
   Trophy,
   ArrowRight
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-
-
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -43,20 +39,19 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AnimatePresence, motion } from "framer-motion";
 
-
 const getStatusVariant = (status: string) => {
   switch (status.toLowerCase()) {
     case "done":
-      return "secondary"; // grey/blue
+      return "secondary";
     case "active":
-      return "default"; // normal
+      return "default";
     case "locked":
-      return "destructive"; // red
+      return "destructive";
     default:
       return "outline";
   }
 };
-// Fisher-Yates shuffle algorithm - truly random every time
+
 const shuffleArray = (array) => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -67,7 +62,6 @@ const shuffleArray = (array) => {
 };
 
 export default function SimulationPage() {
-  // ===== Fullscreen helpers =====
   const enterFullscreen = () => {
     const el = document.documentElement;
     if (el.requestFullscreen) {
@@ -83,34 +77,20 @@ export default function SimulationPage() {
 
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
-  // 🚫 Block mobile screens completely
-  if (typeof window !== "undefined") {
-    const isLaptop = window.innerWidth >= 1000; // adjust size if needed
 
-    if (!isLaptop && !dismissed) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-black text-white p-6 text-center">
-          <h1 className="text-3xl font-bold mb-4">Laptop Required</h1>
-          <p className="text-lg mb-6">
-            This simulation is only available on laptops or desktops for
-            proctoring (camera + mic + full interface).
-          </p>
-          <button
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
-            onClick={() => navigate("/dashboard")}
-          >
-            OK
-          </button>
+  // ── Mobile gate: now only fires when a paper is actually started ──
+  const [isLaptop, setIsLaptop] = useState(true);
+  const [showMobileBlock, setShowMobileBlock] = useState(false);
 
-        </div>
-      );
-    }
-  }
-
-  // will hold paper id being reset
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => setIsLaptop(window.innerWidth >= 1000);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const [paperList, setPaperList] = useState<any[]>(() => {
-    //  Load from localStorage first for instant display
     if (typeof window !== "undefined") {
       const cached = localStorage.getItem("sim-papers");
       if (cached) return JSON.parse(cached);
@@ -143,7 +123,7 @@ export default function SimulationPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [loudWarning, setLoudWarning] = useState(false);
   const [mediaAllowed, setMediaAllowed] = useState(false);
-  // Role-based subscription pricing - FOR DISPLAY ONLY
+
   const TUTOR_SIMULATION_SUBSCRIPTION = {
     price: 1999,
     duration: "2 months",
@@ -172,7 +152,7 @@ export default function SimulationPage() {
       "Progress tracking"
     ]
   };
-  // State
+
   const [profile, setProfile] = useState<any>(() => {
     if (typeof window !== "undefined") {
       const cachedProfile = localStorage.getItem("profile");
@@ -180,15 +160,15 @@ export default function SimulationPage() {
     }
     return null;
   });
-  const [loading, setLoading] = useState(true); // new
+  const [loading, setLoading] = useState(true);
+
   const confirmSubmit = async () => {
     if (!selectedPaper || isSubmitting) return;
 
-    // END EXAM MODE before submitting
     if ((window as any).electronAPI) {
       (window as any).electronAPI.endExam();
     }
-    setIsSubmitting(true); // 🔒 lock
+    setIsSubmitting(true);
 
     const correctCount = questions.reduce((count, q) => {
       const userAnswer = answers[q.id];
@@ -197,14 +177,37 @@ export default function SimulationPage() {
 
     const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id;
+
     await supabase.from("simulation_results").insert({
       paper_id: selectedPaper.id,
-      user_id: (await supabase.auth.getUser()).data.user?.id,
+      user_id: userId,
       score: correctCount,
       total_questions: questions.length,
     });
 
-    generatePDF();
+    // ── Fetch the real profile right before generating the PDF ──
+    let freshProfile: any = null;
+    if (userId) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("name, email, institution, course, county, phone, subscription, role")
+        .eq("user_id", userId)
+        .single();
+
+      if (!error && data) {
+        freshProfile = data;
+        // Cache it under BOTH keys so nothing else in the app goes stale
+        localStorage.setItem("profile", JSON.stringify(data));
+        localStorage.setItem("userProfile", JSON.stringify(data));
+        setProfile(data);
+      }
+    }
+
+    // 🔑 CRITICAL: wait for the PDF to actually generate before navigating away,
+    // otherwise the browser cancels the download and you get a blank/null PDF.
+    await generatePDF(freshProfile);
 
     resetNow();
     setSelectedPaper(null);
@@ -212,12 +215,11 @@ export default function SimulationPage() {
     setPendingAction(null);
     localStorage.removeItem(timerKey);
 
-    exitFullscreen(); // 👈 explicitly exit fullscreen
+    exitFullscreen();
     navigate("/dashboard");
 
-    setIsSubmitting(false); // optional cleanup
+    setIsSubmitting(false);
   };
-  // 1️⃣ Add this state at the top of your component
   const [resettingPaper, setResettingPaper] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
 
@@ -228,7 +230,6 @@ export default function SimulationPage() {
         audioStream?.getTracks().forEach((t) => t.stop());
       }
 
-      // Request video separately
       const cam = await navigator.mediaDevices.getUserMedia({ video: true });
       setCameraStream(cam);
 
@@ -242,13 +243,10 @@ export default function SimulationPage() {
         );
       }
 
-      // Request audio separately
       const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioStream(mic);
       setMediaAllowed(true);
 
-
-      // ---- Audio analyser setup ----
       const audioCtx = new (window.AudioContext ||
         (window as any).webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(mic);
@@ -299,13 +297,10 @@ export default function SimulationPage() {
     }
   }, [cameraStream, audioStream]);
 
-
-
-  // Fetch full profile of logged-in user
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")  // fetch ALL columns
+      .select("*")
       .eq("user_id", userId)
       .single();
 
@@ -317,12 +312,9 @@ export default function SimulationPage() {
     return data;
   };
 
-  // Fetch active papers and mark which ones are already done
-
   const fetchPapers = async () => {
     setLoading(true);
 
-    // 1. Fetch only necessary paper info (Egress saved!)
     const { data: papers } = await supabase
       .from("simulation_papers")
       .select("id, title, description, duration, is_free")
@@ -333,7 +325,6 @@ export default function SimulationPage() {
       return;
     }
 
-    // 2. Get the User ID
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData?.user?.id;
     if (!userId) {
@@ -341,32 +332,32 @@ export default function SimulationPage() {
       return;
     }
 
-    // 3. Fetch Subscription Status + Expiry Date (The VIP check 🎟️)
     const { data: subData } = await supabase
       .from("subscriptions")
       .select("plan_type, is_active, expires_at")
       .eq("user_id", userId)
-      .eq("is_active", true) // Only look for active ones
+      .eq("is_active", true)
       .maybeSingle();
 
-    // 🚀 MAMA'S SMART LOGIC:
-    // Is the subscription active AND is today's date before the expiry date?
     const now = new Date();
     const isSubValid = subData && subData.is_active && new Date(subData.expires_at) > now;
 
-    // 4. Update the profile state with this fresh info
-    const cachedProfile = localStorage.getItem("userProfile");
+    // Prefer the full profile from state; fall back to localStorage.
+    // Never overwrite good fields with an empty object.
+    const cachedProfile = localStorage.getItem("profile");
     const profileObj = cachedProfile ? JSON.parse(cachedProfile) : {};
 
     const fullProfile = {
       ...profileObj,
+      ...(profile || {}),
       subscription_active: !!isSubValid,
       plan_type: subData?.plan_type || "Free"
     };
 
     setProfile(fullProfile);
 
-    // 5. Check which papers this user has already finished
+    setProfile(fullProfile);
+
     const { data: results } = await supabase
       .from("simulation_results")
       .select("paper_id")
@@ -374,7 +365,6 @@ export default function SimulationPage() {
 
     const donePaperIds = results?.map((r) => r.paper_id) || [];
 
-    // 6. Finalize the list
     const papersWithStatus = papers.map((p) => ({
       ...p,
       is_done: donePaperIds.includes(p.id),
@@ -384,7 +374,7 @@ export default function SimulationPage() {
     localStorage.setItem("sim-papers", JSON.stringify(papersWithStatus));
     setLoading(false);
   };
-  // Fetch user role - add this after your existing useEffect hooks
+
   useEffect(() => {
     const getUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -403,16 +393,33 @@ export default function SimulationPage() {
     getUserRole();
   }, []);
   useEffect(() => {
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error || !data) return;
+
+      setProfile(data);
+      localStorage.setItem("profile", JSON.stringify(data));
+      localStorage.setItem("userProfile", JSON.stringify(data));
+    };
+
+    loadProfile();
+  }, []);
+  useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
-    ;
   }, [isDark]);
 
-
-  // ===== Auto-submit if fullscreen is exited (ESC, swipe, system) =====
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (selectedPaper && !document.fullscreenElement && !isSubmitting) {
@@ -426,10 +433,11 @@ export default function SimulationPage() {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, [selectedPaper, isSubmitting]);
+
   useEffect(() => {
     fetchPapers();
   }, []);
-  // Confirm before leaving if user is in the middle of a simulation
+
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (selectedPaper) {
@@ -443,29 +451,18 @@ export default function SimulationPage() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [selectedPaper]);
-  // Add this new useEffect in your SimulationPage component
-  // Put it near your other useEffects (around line 200-300)
-
-  // Replace your existing Electron security useEffect with this:
 
   useEffect(() => {
-    // Only when simulation is active and media is allowed
     if (!selectedPaper || !mediaAllowed) return;
 
     const isElectron = !!(window as any).electronAPI;
 
     if (isElectron) {
       console.log('🔒 Starting exam mode with full lockdown');
-
-      // START EXAM MODE - This enables all the blocking
       (window as any).electronAPI.startExam();
-
-      // Listen for ESC key (now just shows warning, doesn't submit)
       (window as any).electronAPI.onEscapePressed(() => {
         alert('⚠️ ESC key is disabled during exam. Please continue with your assessment.');
       });
-
-      // Listen for blocked close attempts
       (window as any).electronAPI.onBlockedClose(() => {
         alert('⚠️ Cannot close during active exam. Please submit your answers first.');
       });
@@ -473,19 +470,12 @@ export default function SimulationPage() {
 
     return () => {
       if (isElectron && (window as any).electronAPI) {
-        // END EXAM MODE when component unmounts or exam ends
         (window as any).electronAPI.endExam();
         (window as any).electronAPI.removeListeners();
       }
     };
-  }, [selectedPaper, mediaAllowed]); // Only run when exam starts
+  }, [selectedPaper, mediaAllowed]);
 
-  //  Realtime subscription for simulation (papers, results, subscription)
-  // 🚀 MAMA'S FIX: Delete the whole 'simulation_realtime' useEffect!
-  // Why? Because papers don't change every 5 seconds.
-  // If a user finishes an exam, YOU already call fetchPapers() manually in confirmSubmit.
-  // We don't need a live socket burning egress 24/7 for this.
-  // Fetch questions for selected paper
   useEffect(() => {
     if (!selectedPaper) return;
 
@@ -498,7 +488,6 @@ export default function SimulationPage() {
           .select("id, question_text, option_a, option_b, option_c, option_d, correct_answer")
           .eq("paper_id", selectedPaper.id);
 
-        // 🔀 SHUFFLE QUESTIONS RANDOMLY - Different order for every user/session
         const shuffledData = data ? shuffleArray([...data]) : [];
 
         const saved = JSON.parse(localStorage.getItem(localKey) || "{}");
@@ -526,7 +515,6 @@ export default function SimulationPage() {
     fetchQuestions();
   }, [selectedPaper]);
 
-  // Timer
   useEffect(() => {
     if (!selectedPaper || totalDuration === 0) return;
 
@@ -547,7 +535,6 @@ export default function SimulationPage() {
     return () => clearInterval(interval);
   }, [selectedPaper, totalDuration]);
 
-  // Inside your component, replace the two existing camera/audio useEffects
   useEffect(() => {
     return () => {
       cameraStream?.getTracks().forEach((t) => t.stop());
@@ -556,14 +543,12 @@ export default function SimulationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600).toString().padStart(2, "0");
     const m = Math.floor((s % 3600) / 60).toString().padStart(2, "0");
     const sec = (s % 60).toString().padStart(2, "0");
     return `${h}:${m}:${sec}`;
   };
-
 
   const handleSelect = (option: string) => {
     if (!currentQuestion) return;
@@ -625,164 +610,315 @@ export default function SimulationPage() {
     setShowDonePanel(false);
     setPendingAction(null);
   };
+  const generatePDF = async (profileOverride?: any) => {
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-  const generatePDF = async () => {
-    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();   // ~210
+    const pageHeight = doc.internal.pageSize.getHeight(); // ~297
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+    const brandBlue: [number, number, number] = [37, 99, 235];   // #2563EB
+    const brandRed: [number, number, number] = [220, 38, 38];    // #DC2626
+    const slateDark: [number, number, number] = [15, 23, 42];    // #0F172A
+    const slateMid: [number, number, number] = [100, 116, 139];  // #64748B
+    const slateLight: [number, number, number] = [241, 245, 249]; // #F1F5F9
+    const greenAccent: [number, number, number] = [22, 163, 74];  // #16A34A
 
-    // 🧾 Generate Receipt Number
     const receiptNumber = "MED-" + Date.now();
+    const generatedAt = new Date().toLocaleString();
 
-
-    doc.setFontSize(16);
-    doc.setFont(undefined, "bold");
-    doc.text("MEDRAE KENYA NURSING PLATFORM (MKN)", pageWidth / 2, 18, { align: "center" });
-
-    doc.setFontSize(12);
-    doc.setFont(undefined, "normal");
-    doc.text("Proctorium Revision Results", pageWidth / 2, 24, { align: "center" });
-
-    doc.setFontSize(10);
-    doc.text(`Receipt No: ${receiptNumber}`, pageWidth - 60, 32);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 60, 38);
-
-    // NEW: Candidate Details Section
-
+    // ── Score calc (kept identical) ─────────────────────────────
     const correctCount = questions.reduce((count, q) => {
       const userAnswer = answers[q.id];
       return userAnswer === q.correct_answer ? count + 1 : count;
     }, 0);
-    const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
+    const percentageScore =
+      questions.length > 0
+        ? ((correctCount / questions.length) * 100).toFixed(2)
+        : "0.00";
 
-    doc.setFontSize(12);
-    doc.setFont(undefined, "bold");
-    doc.text("Candidate Details", 14, 45);
-
-    // Candidate Profile Details
-    doc.setFont(undefined, "normal");
-    let y = 53;
-
-    //  Fetch from state or fallback to localStorage
+    // ── Profile (kept identical priority) ───────────────────────
     const profileData =
+      profileOverride ||
       profile ||
       (typeof window !== "undefined"
         ? JSON.parse(localStorage.getItem("profile") || "null")
         : null);
 
-    if (profileData) {
-      doc.text(`Name: ${profileData.name || "N/A"}`, 14, y); y += 6;
-      doc.text(`Email: ${profileData.email || "N/A"}`, 14, y); y += 6;
-      doc.text(`Institution: ${profileData.institution || "N/A"}`, 14, y); y += 6;
-      doc.text(`Course: ${profileData.course || "N/A"}`, 14, y); y += 6;
-      doc.text(`County: ${profileData.county || "N/A"}`, 14, y); y += 6;
-      doc.text(`Phone: ${profileData.phone || "N/A"}`, 14, y); y += 6;
-      doc.text(`Subscription: ${profileData.subscription || "N/A"}`, 14, y); y += 6;
-      doc.text(`Role: ${profileData.role || "N/A"}`, 14, y); y += 6;
-    } else {
-      doc.text("Candidate Profile: Not Available", 14, y);
-      y += 6;
+    // ============================================================
+    // HEADER
+    // ============================================================
+    // Brand blue band
+    doc.setFillColor(...brandBlue);
+    doc.rect(0, 0, pageWidth, 32, "F");
+
+    // Logo (left side) — swap the filename if yours differs
+    try {
+      // 12x12 mm logo at 14,10
+      doc.addImage("/pwa-512x512.png", "PNG", 14, 9, 14, 14);
+    } catch (e) {
+      // If logo fails to load (e.g. CORS or wrong path), just skip it
+      console.warn("Logo not embedded in PDF:", e);
     }
 
-    // Paper details
-    doc.text(`Paper Title: ${selectedPaper?.title || "N/A"}`, 14, y); y += 6;
-    doc.text(`Score: ${correctCount}/${questions.length} (${percentageScore}%)`, 14, y); y += 6;
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, y); y += 10;
+    // Title: "Medrae" red + "Nursing" black — drawn on the white part below
+    // But we put a small wordmark on the blue band too, in white, for identity.
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("MEDRAE", 32, 17);
 
-    let yPos = y; // continue after candidate + paper info
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Kenya Nursing Platform", 32, 23);
 
-    // Add advisory paragraph
+    // Right side: receipt + generated date
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(`Receipt No: ${receiptNumber}`, pageWidth - 14, 15, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(`Generated: ${generatedAt}`, pageWidth - 14, 21, { align: "right" });
+
+    // ============================================================
+    // TITLE BLOCK (Medrae red + Nursing black)
+    // ============================================================
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...brandRed);
+    const medraeWidth = doc.getTextWidth("Medrae ");
+
+    doc.setTextColor(...slateDark);
+    const nursingWidth = doc.getTextWidth("Nursing");
+
+    const totalTitleWidth = medraeWidth + nursingWidth;
+    const titleStartX = (pageWidth - totalTitleWidth) / 2;
+    const titleY = 46;
+
+    doc.setTextColor(...brandRed);
+    doc.text("Medrae ", titleStartX, titleY);
+    doc.setTextColor(...slateDark);
+    doc.text("Nursing", titleStartX + medraeWidth, titleY);
+
+    // Subtitle
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...slateMid);
+    doc.text(
+      "Proctorium Revision Results",
+      pageWidth / 2,
+      titleY + 6,
+      { align: "center" }
+    );
+
+    // Thin divider
+    doc.setDrawColor(...slateLight);
+    doc.setLineWidth(0.5);
+    doc.line(20, titleY + 10, pageWidth - 20, titleY + 10);
+
+    // ============================================================
+    // CANDIDATE INFO — two-column label / value table via autoTable
+    // ============================================================
+    autoTable(doc, {
+      startY: titleY + 16,
+      theme: "plain",
+      margin: { left: 20, right: 20 },
+      styles: {
+        font: "helvetica",
+        fontSize: 9,
+        cellPadding: 2.2,
+        textColor: slateDark,
+        lineColor: [255, 255, 255],
+        lineWidth: 0,
+      },
+      columnStyles: {
+        0: { cellWidth: 38, textColor: slateMid, fontStyle: "bold" },
+        1: { cellWidth: "auto" },
+      },
+      body: [
+        ["Candidate Name", profileData?.name || "N/A"],
+        ["Email", profileData?.email || "N/A"],
+        ["Institution", profileData?.institution || "N/A"],
+        ["Course", profileData?.course || "N/A"],
+        ["County", profileData?.county || "N/A"],
+        ["Phone", profileData?.phone || "N/A"],
+        ["Subscription", profileData?.subscription || "N/A"],
+        ["Role", profileData?.role || "N/A"],
+      ],
+    });
+
+    // @ts-ignore — autoTable attaches lastAutoTable to doc
+    let afterInfoY = (doc as any).lastAutoTable?.finalY || titleY + 60;
+    afterInfoY += 6;
+
+    // ============================================================
+    // SCORE SUMMARY CARD
+    // ============================================================
+    const cardX = 20;
+    const cardW = pageWidth - 40;
+    const cardH = 26;
+
+    // Background
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(cardX, afterInfoY, cardW, cardH, 2, 2, "F");
+
+    // Left accent strip
+    doc.setFillColor(...brandBlue);
+    doc.rect(cardX, afterInfoY, 2.5, cardH, "F");
+
+    // Labels
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...slateMid);
+    doc.text("PAPER", cardX + 8, afterInfoY + 7);
+    doc.text("SCORE", cardX + 8, afterInfoY + 15);
+    doc.text("PERCENTAGE", cardX + 8, afterInfoY + 22);
+
+    // Values
+    doc.setFontSize(9);
+    doc.setTextColor(...slateDark);
+    doc.text(
+      `${selectedPaper?.title || "N/A"}`,
+      cardX + 40,
+      afterInfoY + 7
+    );
+    doc.text(
+      `${correctCount} / ${questions.length}`,
+      cardX + 40,
+      afterInfoY + 15
+    );
+
+    // Percentage badge on right
+    const pctColor =
+      parseFloat(percentageScore) >= 50 ? greenAccent : brandRed;
+
+    doc.setFillColor(...pctColor);
+    doc.roundedRect(cardX + cardW - 38, afterInfoY + 6, 30, 14, 2, 2, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text(
+      `${percentageScore}%`,
+      cardX + cardW - 23,
+      afterInfoY + 15,
+      { align: "center" }
+    );
+
+    let yPos = afterInfoY + cardH + 8;
+
+    // ============================================================
+    // ADVISORY SECTION
+    // ============================================================
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
+    doc.setTextColor(...slateDark);
+    doc.text("Personalized Study Advisory", 20, yPos);
+    yPos += 2;
+
+    doc.setDrawColor(...slateLight);
+    doc.setLineWidth(0.4);
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 6;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...slateDark);
+
     const advisoryText = `Dear Student,
 
 These results are for your personal review and learning. To maximize your nursing exam preparation and improve clinical knowledge, consider the following tips:
 
-• Review your answers carefully – Cross-check with your lecture notes, textbooks, and clinical guidelines.
-• Identify weak areas – Focus on topics where mistakes were made or answers were skipped.
-• Practice consistently – Regular self-testing improves retention and builds confidence for real exams.
-• Use active recall & spaced repetition – Quiz yourself repeatedly over intervals to reinforce learning.
-• Simulate exam conditions – Practice under timed conditions to improve time management skills.
-• Seek clarification – Ask peers, instructors, or online resources when uncertain about a topic.
-• Apply clinical reasoning – Relate theoretical knowledge to real patient scenarios for deeper understanding.
-• Take care of yourself – Rest, hydrate, and maintain focus; a healthy mind improves performance.
-• Join study groups – Collaborate with classmates to discuss cases and share insights.
-• Review NCK/NCLEX-style questions – Familiarize yourself with exam formats and tricky scenarios.
+• Review your answers carefully - Cross-check with your lecture notes, textbooks, and clinical guidelines.
+• Identify weak areas - Focus on topics where mistakes were made or answers were skipped.
+• Practice consistently - Regular self-testing improves retention and builds confidence for real exams.
+• Use active recall & spaced repetition - Quiz yourself repeatedly over intervals to reinforce learning.
+• Simulate exam conditions - Practice under timed conditions to improve time management skills.
+• Seek clarification - Ask peers, instructors, or online resources when uncertain about a topic.
+• Apply clinical reasoning - Relate theoretical knowledge to real patient scenarios for deeper understanding.
+• Take care of yourself - Rest, hydrate, and maintain focus; a healthy mind improves performance.
+• Join study groups - Collaborate with classmates to discuss cases and share insights.
+• Review NCK/NCLEX-style questions - Familiarize yourself with exam formats and tricky scenarios.
 
-For more detailed resources, practice questions, and interactive learning, visit MEDRAE : https://medrae.vercel.app/ or call us at 0704473503 or 0717517371.
+For more detailed resources, practice questions, and interactive learning call us at 0704473503.
 
-Keep striving each step you take strengthens your nursing expertise and prepares you for success!`;
+Keep striving - each step you take strengthens your nursing expertise and prepares you for success!`;
 
-    // Wrap text to fit PDF width
-    doc.setFont(undefined, "normal");
-    const splitText = doc.splitTextToSize(advisoryText, pageWidth - 28);
+    const splitAdvisory = doc.splitTextToSize(advisoryText, pageWidth - 40);
 
-    // Use yPos (after details), not 30
-    doc.text(splitText, 14, yPos);
+    // Manual line-by-line rendering so we can paginate if needed
+    const lineHeight = 4.6;
+    for (let i = 0; i < splitAdvisory.length; i++) {
+      if (yPos > pageHeight - 25) {
+        doc.addPage();
+        // Redraw the top band on new pages (lightweight)
+        doc.setFillColor(...brandBlue);
+        doc.rect(0, 0, pageWidth, 8, "F");
+        yPos = 20;
+      }
+      doc.text(splitAdvisory[i], 20, yPos);
+      yPos += lineHeight;
+    }
 
-    yPos = yPos + splitText.length * 6 + 4;
-
-
-    /*
-
-        questions.forEach((q, i) => {
-          if (yPos > 260) {
-            doc.addPage();
-            yPos = 20;
-          }
-
-          doc.setFont(undefined, "bold");
-          doc.text(`Q${i + 1}: ${q.question_text}`, 14, yPos);
-
-          yPos += 6;
-          ["A", "B", "C", "D"].forEach((opt) => {
-            const text = `${opt}. ${q[\`option_${opt.toLowerCase()}\`]}`;
-            if (q.correct_answer === opt) {
-              doc.setTextColor(0, 128, 0);
-              doc.setFont(undefined, "bold");
-            } else {
-              doc.setTextColor(0, 0, 0);
-              doc.setFont(undefined, "normal");
-            }
-            doc.text(text, 20, yPos);
-            yPos += 6;
-          });
-
-          yPos += 4;
-          doc.setTextColor(0, 0, 0);
-          doc.setFont(undefined, "normal");
-        });
-    */
-
-    // Footer + page numbers AFTER all content
+    // ============================================================
+    // FOOTER (on every page)
+    // ============================================================
     const pageCount = doc.internal.getNumberOfPages();
-    const footerLine1 = "MEDRAE";
-    const footerLine2 = "S";
 
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(10);
-      doc.setTextColor(100);
 
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
+      // Footer thin line
+      doc.setDrawColor(...slateLight);
+      doc.setLineWidth(0.4);
+      doc.line(20, pageHeight - 16, pageWidth - 20, pageHeight - 16);
 
-      const textWidth1 = doc.getTextWidth(footerLine1);
-      doc.text(footerLine1, (pageWidth - textWidth1) / 2, pageHeight - 20);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...brandRed);
+      doc.text("Medrae", 20, pageHeight - 10);
 
-      const textWidth2 = doc.getTextWidth(footerLine2);
-      doc.text(footerLine2, (pageWidth - textWidth2) / 2, pageHeight - 14);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...slateDark);
+      doc.text(" Nursing", 20 + doc.getTextWidth("Medrae"), pageHeight - 10);
 
-      const pageText = `Page ${i} of ${pageCount}`;
-      const textWidthPage = doc.getTextWidth(pageText);
-      doc.text(pageText, (pageWidth - textWidthPage) / 2, pageHeight - 8);
+      doc.setTextColor(...slateMid);
+      doc.setFontSize(8);
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        pageWidth - 20,
+        pageHeight - 10,
+        { align: "right" }
+      );
+
+      doc.text(
+        "medrae.vercel.app",
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: "center" }
+      );
     }
 
-    doc.save("MEDRAE_Revision_Proctorium.pdf");
+    doc.save("Medrae_Nursing_Revision_Proctorium.pdf");
   };
+  // ── Mobile block screen — only shown after tapping Begin ──────
+  if (showMobileBlock && !dismissed) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black text-white p-6 text-center">
+        <h1 className="text-3xl font-bold mb-4">Laptop Required</h1>
+        <p className="text-lg mb-6">
+          This simulation is only available on laptops or desktops for
+          proctoring (camera + mic + full interface).
+        </p>
+        <button
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white transition-colors"
+          onClick={() => navigate("/dashboard")}
+        >
+          OK
+        </button>
+      </div>
+    );
+  }
 
-
-  // Render Review Panel with percentage score
   if (showDonePanel) {
     const answered = questions.filter((q) => answers[q.id]);
     const unanswered = questions.filter((q) => !answers[q.id]);
@@ -796,30 +932,30 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
     const percentageScore = ((correctCount / questions.length) * 100).toFixed(2);
 
-
-
-
     return (
-      <div className="min-h-screen w-full   bg-[#F8FAFC] p-4 md:p-8 font-sans">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* TOP NAVIGATION & TITLE */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="min-h-screen w-full bg-[#F8FAFC] dark:bg-background px-2 py-4 md:px-4 md:py-8 font-sans">
+        <div className="max-w-4xl mx-auto space-y-5 md:space-y-8">
+
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
             <div>
               <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest uppercase text-[10px] mb-1">
                 <FileCheck className="w-4 h-4" /> Final Audit Phase
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                Review Before You <span className={pendingAction === "submit" ? "text-green-600" : "text-rose-600"}>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Review Before You{" "}
+                <span className={pendingAction === "submit" ? "text-green-600" : "text-rose-600"}>
                   {pendingAction === "submit" ? "Submit" : "Reset"}
                 </span>
               </h2>
             </div>
-
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100"
+              disabled={isSubmitting}
+              className="rounded-xl border-0 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
               onClick={() => {
+                if (isSubmitting) return;
                 setShowDonePanel(false);
                 setPendingAction(null);
               }}
@@ -829,46 +965,52 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           </div>
 
           {/* MOTIVATIONAL BOX */}
-          <Card className="border border-slate-200 shadow-sm bg-gradient-to-br from-white to-slate-100 text-slate-700 overflow-hidden rounded-3xl">
-            <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
-              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-                <Trophy className="w-10 h-10 text-amber-500" />
+          <Card className="border-0 shadow-none bg-white dark:bg-muted/30 rounded-2xl">
+            <CardContent className="p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+              <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-2xl shrink-0">
+                <Trophy className="w-7 h-7 text-amber-500" />
               </div>
 
-              <div className="space-y-2">
-                <h4 className="text-slate-900 font-bold text-lg">
+              <div className="space-y-1.5">
+                <h4 className="text-slate-900 dark:text-white font-bold text-base md:text-lg">
                   Knowledge Refinement
                 </h4>
-
-                <p className="text-sm leading-relaxed text-slate-600 md:max-w-full md:px-4 lg:px-6">
-                  Every challenge you face is an opportunity to grow. Take a moment to reflect on your progress.
-                  Remember, true learning is not only about the final score but the effort, perseverance, and insight gained along the way.
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  Every challenge you face is an opportunity to grow. Take a moment
+                  to reflect on your progress. Remember, true learning is not only
+                  about the final score but the effort, perseverance, and insight
+                  gained along the way.
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* SCORE PREVIEW (Only for Submit) */}
+          {/* SCORE PREVIEW */}
           {pendingAction === "submit" && (
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="bg-white dark:bg-muted/30 rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full border-4 border-blue-500 flex items-center justify-center font-black text-blue-600">
+                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-blue-500 flex items-center justify-center font-black text-blue-600 text-sm md:text-base">
                   {percentageScore}%
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">Score Preview</h3>
-                  <p className="text-sm text-slate-500">Based on your current responses</p>
+                  <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
+                    Score Preview
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+                    Based on your current responses
+                  </p>
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900 tracking-tighter">
-                {correctCount} <span className="text-slate-300">/</span> {questions.length} Questions
+              <div className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tighter">
+                {correctCount}{" "}
+                <span className="text-slate-300 dark:text-slate-600">/</span>{" "}
+                {questions.length} Questions
               </div>
             </div>
           )}
 
           {/* AUDIT GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
             <AuditCard
               title="Answered"
               count={answered.length}
@@ -877,7 +1019,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
               list={answered}
               answers={answers}
             />
-
             <AuditCard
               title="Unanswered"
               count={unanswered.length}
@@ -885,7 +1026,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
               color="rose"
               list={unanswered}
             />
-
             <AuditCard
               title="Flagged"
               count={flaggedQs.length}
@@ -893,7 +1033,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
               color="amber"
               list={flaggedQs}
             />
-
             <AuditCard
               title="Skipped"
               count={skippedQs.length}
@@ -903,35 +1042,55 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             />
           </div>
 
-          {/* ACTION BUTTONS */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          {/* ACTION BUTTON — centered, not full laptop width */}
+          {/* ACTION BUTTON — centered, not full laptop width */}
+          <div className="flex justify-center pt-2">
             <Button
               size="lg"
-              className={`flex-1 h-16 rounded-2xl text-lg font-bold transition-all shadow-xl ${pendingAction === "submit"
-                ? "bg-blue-600 hover:bg-green-600 shadow-blue-100"
-                : "bg-rose-600 hover:bg-rose-700 shadow-rose-100"
+              disabled={isSubmitting}
+              className={`w-full md:w-auto md:min-w-[320px] h-14 md:h-16 px-8 rounded-2xl text-base md:text-lg font-bold transition-all border-0 ${isSubmitting
+                ? "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
+                : pendingAction === "submit"
+                  ? "bg-blue-600 hover:bg-green-600 text-white"
+                  : "bg-rose-600 hover:bg-rose-700 text-white"
                 }`}
               onClick={() => {
+                if (isSubmitting) return;
                 if (pendingAction === "submit") confirmSubmit();
                 if (pendingAction === "reset") resetNow();
               }}
             >
-              {pendingAction === "submit" ? (
-                <>Confirm Final Submission <ArrowRight className="ml-2 w-5 h-5" /></>
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="ml-0 mr-2 w-5 h-5 animate-spin" />
+                  {pendingAction === "submit"
+                    ? "Submitting & Generating PDF..."
+                    : "Resetting..."}
+                </>
+              ) : pendingAction === "submit" ? (
+                <>
+                  Confirm Final Submission{" "}
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </>
               ) : (
-                <>Reset All Progress <RotateCcw className="ml-2 w-5 h-5" /></>
+                <>
+                  Reset All Progress <RotateCcw className="ml-2 w-5 h-5" />
+                </>
               )}
             </Button>
           </div>
 
-          {/* MODERN MARQUEE */}
-          <div className="relative mt-12 py-6 overflow-hidden">
-            <Separator className="absolute top-0 opacity-50" />
+          {/* MARQUEE — no top separator */}
+          <div className="relative mt-6 md:mt-10 py-4 md:py-6 overflow-hidden">
             <div className="flex justify-center">
-              <div className="flex items-center gap-8 whitespace-nowrap animate-marquee-slow">
+              <div className="flex items-center gap-6 whitespace-nowrap animate-marquee-slow">
                 {[1, 2, 3].map((i) => (
-                  <span key={i} className="flex items-center gap-2 text-slate-400 text-sm font-medium">
-                    🌟 Thank you for choosing our platform. We appreciate your trust and commitment to excellence! 🌟
+                  <span
+                    key={i}
+                    className="flex items-center gap-2 text-slate-400 text-xs md:text-sm font-medium"
+                  >
+                    🌟 Thank you for choosing our platform. We appreciate your trust
+                    and commitment to excellence! 🌟
                   </span>
                 ))}
               </div>
@@ -943,43 +1102,60 @@ Keep striving each step you take strengthens your nursing expertise and prepares
     );
   }
 
-  // Sub-component for individual audit categories
   function AuditCard({ title, count, icon, color, list, answers }: any) {
     const colorMap: any = {
-      green: "text-green-600 bg-green-50 border-green-100",
-      rose: "text-rose-600 bg-rose-50 border-rose-100",
-      amber: "text-amber-600 bg-amber-50 border-amber-100",
-      blue: "text-blue-600 bg-blue-50 border-blue-100",
+      green: {
+        header: "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400",
+        badge: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300",
+      },
+      rose: {
+        header: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400",
+        badge: "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300",
+      },
+      amber: {
+        header: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
+        badge: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
+      },
+      blue: {
+        header: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400",
+        badge: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
+      },
     };
 
     return (
-      <Card className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
-        <CardHeader className={`${colorMap[color]} border-b py-4`}>
+      <Card className="border-0 shadow-none rounded-2xl overflow-hidden bg-white dark:bg-muted/30 flex flex-col">
+        <CardHeader className={`${colorMap[color].header} py-3 px-4 rounded-t-2xl`}>
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+            <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider">
               {icon} {title}
             </div>
-            <Badge className={`${colorMap[color]} border shadow-none px-2 py-0`}>{count}</Badge>
+            <span
+              className={`${colorMap[color].badge} px-2 py-0.5 rounded-full text-xs font-bold`}
+            >
+              {count}
+            </span>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="h-48 p-4">
-            <ul className="space-y-3">
+        <CardContent className="p-0 flex-1">
+          <ScrollArea className="h-40 md:h-48 p-3 custom-scrollbar">
+            <ul className="space-y-2.5">
               {list.map((q: any, i: number) => (
                 <li key={q.id} className="text-[11px] leading-tight group">
-                  <span className="font-bold text-slate-400 mr-1">Q{i + 1}</span>
-                  <span className="text-slate-600 group-hover:text-slate-900 transition-colors">
+                  <span className="font-bold text-slate-400 mr-1">
+                    Q{i + 1}
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                     {q.question_text.slice(0, 45)}...
                   </span>
                   {answers && answers[q.id] && (
-                    <div className="mt-1 text-[10px] font-black text-blue-600 bg-blue-50/50 rounded px-1.5 py-0.5 inline-block">
+                    <div className="mt-1 text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded px-1.5 py-0.5 inline-block">
                       {answers[q.id]}
                     </div>
                   )}
                 </li>
               ))}
               {list.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-32 opacity-20 italic text-xs">
+                <div className="flex flex-col items-center justify-center h-24 md:h-32 opacity-30 italic text-xs text-slate-400">
                   No items recorded
                 </div>
               )}
@@ -990,10 +1166,8 @@ Keep striving each step you take strengthens your nursing expertise and prepares
     );
   }
 
-  // Show s are being fetched
   if (!selectedPaper) {
     if (loading && paperList.length === 0) {
-      // Only show loader if no cached papers
       return (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">
           <GlobalLoader />
@@ -1001,20 +1175,18 @@ Keep striving each step you take strengthens your nursing expertise and prepares
       );
     }
 
-    // Note: I'm assuming getStatusVariant, supabase, setSelectedPaper,
-    // setPaperList, resettingPaper, etc. are available in your scope.
     return (
-      <div className="min-h-screen w-full bg-[#F8FAFC] p-6 lg:p-10 font-sans">
+      <div className="h-screen w-full bg-[#F8FAFC] px-2 py-4 md:p-6 lg:p-10 font-sans overflow-y-auto hide-scrollbar">
         {/* Header Section */}
-        <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="max-w-7xl mx-auto mb-6 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
           <div>
             <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest uppercase text-xs mb-2">
               <Zap className="w-4 h-4 fill-current" /> Examination Portal
             </div>
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
               Available <span className="text-blue-600">Papers</span>
             </h1>
-            <p className="text-slate-500 mt-2 font-medium">
+            <p className="text-slate-500 mt-2 font-medium text-sm md:text-base">
               Select an assessment module to begin your simulation session.
             </p>
           </div>
@@ -1032,7 +1204,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
         </div>
 
         {/* Grid Section */}
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {paperList.map((paper: any) => {
             const canAccess = profile?.subscription_active ? true : paper.is_free;
             const isLocked = !canAccess && !paper.is_done;
@@ -1045,10 +1217,10 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                 layout
               >
                 <Card
-                  className={`group relative h-full flex flex-col border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-white ${paper.is_done ? "bg-slate-50/50" : isLocked ? "bg-slate-50" : "hover:-translate-y-1"
+                  className={`group relative h-full flex flex-col border-0 shadow-none transition-all duration-300 rounded-2xl md:rounded-3xl overflow-hidden bg-white ${paper.is_done ? "bg-slate-50/50" : isLocked ? "bg-slate-50" : "hover:-translate-y-1"
                     }`}
                 >
-                  {/* Status Bar */}
+                  {/* Status Bar — color strip, not a border */}
                   <div className={`h-1.5 w-full ${paper.is_done ? "bg-green-500" : isLocked ? "bg-slate-300" : "bg-blue-600"
                     }`} />
 
@@ -1059,18 +1231,17 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                         <FileText className="w-6 h-6" />
                       </div>
 
-                      {/* Dynamic Badge Logic */}
                       <div className="flex flex-col items-end gap-2">
                         {paper.is_done ? (
-                          <Badge className="bg-green-100 text-green-700 border-green-200 uppercase text-[10px] font-bold">Completed</Badge>
+                          <Badge className="bg-green-100 text-green-700 border-0 uppercase text-[10px] font-bold">Completed</Badge>
                         ) : profile?.subscription_active ? (
-                          <Badge className="bg-blue-100 text-blue-700 border-blue-200 uppercase text-[10px] font-bold flex gap-1 items-center">
+                          <Badge className="bg-blue-100 text-blue-700 border-0 uppercase text-[10px] font-bold flex gap-1 items-center">
                             <Crown className="w-3 h-3" /> Premium Access
                           </Badge>
                         ) : paper.is_free ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 uppercase text-[10px] font-bold">Standard Free</Badge>
+                          <Badge className="bg-emerald-100 text-emerald-700 border-0 uppercase text-[10px] font-bold">Standard Free</Badge>
                         ) : (
-                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 uppercase text-[10px] font-bold flex gap-1 items-center">
+                          <Badge className="bg-amber-100 text-amber-700 border-0 uppercase text-[10px] font-bold flex gap-1 items-center">
                             <Lock className="w-3 h-3" /> Pro Required
                           </Badge>
                         )}
@@ -1086,11 +1257,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                     <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
                       {paper.description || "Comprehensive NCK-aligned simulation paper covering core nursing competencies and clinical reasoning."}
                     </p>
-                  </CardContent>
-                  <CardContent className="flex-1">
-                    <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">
-                      {paper.description || "Comprehensive NCK-aligned simulation paper covering core nursing competencies and clinical reasoning."}
-                    </p>
                     {paper.duration && (
                       <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
                         <Clock className="w-3 h-3" />
@@ -1098,17 +1264,18 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                       </div>
                     )}
                   </CardContent>
+
                   <CardFooter className="pt-0 pb-6 px-6">
                     {paper.is_done ? (
                       <div className="w-full space-y-3">
-                        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-xl border border-green-100">
+                        <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-xl">
                           <CheckCircle className="w-4 h-4 flex-shrink-0" />
                           <span className="text-xs font-bold uppercase tracking-tight">Record on file</span>
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-bold group"
+                          className="w-full border-0 bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all font-bold group"
                           onClick={async (e) => {
                             e.stopPropagation();
                             setResettingPaper(paper.id);
@@ -1125,27 +1292,23 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                           <RotateCcw className={`w-4 h-4 mr-2 ${resettingPaper === paper.id ? "animate-spin" : "group-hover:-rotate-45 transition-transform"}`} />
                           {resettingPaper === paper.id ? "Wiping Data..." : "Reset Submission"}
                         </Button>
-
-
                       </div>
                     ) : (
-                      // --- NEW CODE (CLICKABLE & SMOOTH) ---
-                      // --- NEW CODE - Add these states at the top of your component (around line 60-70) ---
-                      // Add these state declarations with your other useState hooks:
-
-                      // --- NEW BUTTON CODE (Replace the Button section) ---
                       <Button
-                        className={`w-full h-12 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98] ${canAccess
-                          ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100 group"
-                          : "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-100"
+                        className={`w-full h-12 rounded-xl font-bold transition-all active:scale-[0.98] border-0 ${canAccess
+                          ? "bg-blue-600 hover:bg-blue-700 text-white group"
+                          : "bg-amber-500 hover:bg-amber-600 text-white"
                           }`}
                         onClick={() => {
+                          // ✅ Mobile gate — only blocks the exam, not browsing
+                          if (!isLaptop) {
+                            setShowMobileBlock(true);
+                            return;
+                          }
                           if (canAccess) {
-                            // Start the simulation
                             setQuestionsLoading(true);
                             setSelectedPaper(paper);
                           } else {
-                            // Show premium upgrade overlay
                             setSelectedPaperForOverlay(paper);
                             setShowPremiumOverlay(true);
                           }
@@ -1168,8 +1331,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             );
           })}
         </div>
-        {/* PREMIUM UPGRADE OVERLAY - Add this before the final closing </> */}
-        {/* PREMIUM UPGRADE OVERLAY - Role-aware pricing */}
+
         <AnimatePresence>
           {showPremiumOverlay && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -1216,7 +1378,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                     ))}
                   </div>
 
-                  {/* Pricing Display - Role-based */}
                   <div className="text-center mb-6">
                     <span className="text-3xl font-bold">
                       {isTutor ? TUTOR_SIMULATION_SUBSCRIPTION.currency : STUDENT_SIMULATION_SUBSCRIPTION.currency}
@@ -1232,7 +1393,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                       setShowPremiumOverlay(false);
                       navigate("/subscription", { state: { role: isTutor ? "tutor" : "student" } });
                     }}
-                    className={`w-full font-bold py-4 px-6 rounded-2xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group mb-3 ${isTutor
+                    className={`w-full font-bold py-4 px-6 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 group mb-3 border-0 ${isTutor
                       ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white'
                       : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
                       }`}
@@ -1260,8 +1421,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
       </div>
     );
   }
-  // No questions found / Loading questions
-  //  NEW CODE - Check if questions are currently loading
+
   if (questionsLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50 bg-background text-foreground">
@@ -1270,24 +1430,20 @@ Keep striving each step you take strengthens your nursing expertise and prepares
     );
   }
 
-  //  NEW CODE - Check if no questions exist after loading complete
-  //  NEW CODE - Check if no questions exist after loading complete
   if (!currentQuestion && questions.length === 0) {
     return (
       <div className="fixed inset-0 w-screen h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-950 flex flex-col items-center justify-center p-8 z-50">
         <div className="max-w-md w-full text-center space-y-6">
-          {/* Icon with background */}
           <div className="mx-auto w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
             <FileText className="w-10 h-10 text-amber-500 dark:text-amber-400" />
           </div>
 
-          {/* Main message */}
           <div className="space-y-3">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
               No Questions Available
             </h2>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border-0 p-5 shadow-sm">
               <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
                 This assessment paper is currently being prepared by our content team.
                 Questions are carefully curated to align with NCK examination standards
@@ -1304,10 +1460,9 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="space-y-3">
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-6 text-base"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-6 text-base border-0"
               onClick={() => {
                 setSelectedPaper(null);
                 setQuestionsLoading(false);
@@ -1325,12 +1480,13 @@ Keep striving each step you take strengthens your nursing expertise and prepares
       </div>
     );
   }
+
   // Main question view
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-6 p-8">
+    <div className="min-h-screen w-full overflow-x-hidden bg-background text-foreground grid md:grid-cols-3 grid-cols-1 gap-4 md:gap-6 px-2 py-4 md:p-8 hide-scrollbar">
       <div className="md:col-span-2 space-y-4">
 
-        <Card className="min-h-[400px] bg-white dark:bg-gray-900 border border-0 shadow-sm rounded-xl">
+        <Card className="min-h-[400px] bg-white dark:bg-gray-900 border-0 shadow-none rounded-2xl">
           <CardHeader>
             <CardTitle>
               Question {currentIndex + 1} of {questions.length}
@@ -1350,17 +1506,14 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                     onClick={() => handleSelect(opt)}
                     className="flex items-start gap-3 cursor-pointer"
                   >
-                    {/* Empty circle */}
                     <div
                       className={`
             w-5 h-5 flex-shrink-0 rounded-full border-2 mt-1
             transition-colors duration-200
             ${isSelected ? "bg-blue-500 border-blue-500" : "bg-white border-gray-400 dark:bg-black dark:border-gray-500"}
-            hover:${!isSelected ? "bg-gray-200 dark:bg-gray-700" : ""}
           `}
                     ></div>
 
-                    {/* Answer text */}
                     <span className="whitespace-normal font-barlow text-sm leading-relaxed">{currentQuestion[`option_${opt.toLowerCase()}`]}</span>
                   </div>
                 );
@@ -1370,12 +1523,11 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           </CardContent>
         </Card>
 
-        {/* Centered navigation buttons */}
         <div className="flex flex-wrap justify-center gap-2 mt-4">
           <Button
             onClick={goPrev}
             disabled={currentIndex === 0}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-0"
           >
             <ChevronLeft className="w-5 h-5" />
             Previous
@@ -1383,7 +1535,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           <Button
             variant="outline"
             onClick={handleFlag}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-0 bg-slate-100"
           >
             <Flag className="w-5 h-5" />
             Flag
@@ -1391,7 +1543,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           <Button
             variant="ghost"
             onClick={handleSkip}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-0"
           >
             Skip
             <CornerRightDown className="w-5 h-5" />
@@ -1400,7 +1552,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           <Button
             onClick={goNext}
             disabled={currentIndex === questions.length - 1}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-0"
           >
             Next
             <ChevronRight className="w-5 h-5" />
@@ -1409,24 +1561,25 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           <Button
             variant="default"
             onClick={handleSubmit}
-            disabled={currentIndex !== questions.length - 1} // disable until last question
+            disabled={currentIndex !== questions.length - 1}
             title={
               currentIndex !== questions.length - 1
                 ? `You must reach the last question to submit`
                 : `Submit your answers`
             }
+            className="border-0"
           >
             Submit & Generate PDF
           </Button>
 
         </div>
 
-        {/* Skipped / Flagged question tabs */}
         <div className="flex justify-center gap-4 mt-2">
           <Button
             size="sm"
             variant="secondary"
             disabled={skipped.length === 0}
+            className="border-0"
             onClick={() => {
               if (skipped.length > 0) {
                 jumpTo(questions.findIndex((q) => q.id === skipped[0]));
@@ -1440,6 +1593,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             size="sm"
             variant="destructive"
             disabled={flags.length === 0}
+            className="border-0"
             onClick={() => {
               if (flags.length > 0) {
                 jumpTo(questions.findIndex((q) => q.id === flags[0]));
@@ -1451,8 +1605,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
         </div>
 
         <div className="flex gap-4 mt-6 items-start">
-          {/* Camera Panel */}
-          <div className="border border-gray-300 rounded-lg overflow-hidden w-24 h-16">
+          <div className="rounded-lg overflow-hidden w-24 h-16 bg-slate-900">
             {cameraStream ? (
               <video
                 ref={videoRef}
@@ -1461,16 +1614,15 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                 autoPlay
               />
             ) : (
-              <p className="text-center text-sm text-gray-500">Camera not available</p>
+              <p className="text-center text-xs text-gray-400 p-2">Camera not available</p>
             )}
           </div>
 
-          {/* Sound Wave Panel (Right side) */}
-          <div className="border border-gray-300 rounded-lg overflow-hidden w-24 h-16 relative flex items-center justify-center">
+          <div className="rounded-lg overflow-hidden w-24 h-16 relative flex items-center justify-center bg-slate-100 dark:bg-slate-800">
             <canvas ref={canvasRef} width={256} height={192} className="w-full h-full" />
             {loudWarning && (
-              <span className="absolute top-1 left-1 text-xs text-red-600 font-bold bg-white px-1 rounded">
-                Loud noise detected
+              <span className="absolute top-1 left-1 text-[10px] text-red-600 font-bold bg-white px-1 rounded">
+                Loud noise
               </span>
             )}
           </div>
@@ -1478,7 +1630,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             size="sm"
             variant="outline"
             onClick={() => initMedia(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-0 bg-slate-100"
           >
             <RefreshCw className="w-4 h-4" />
             Reset Cam & Mic
@@ -1490,9 +1642,8 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
       <div className="space-y-2">
 
-        <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none p-2">
+        <Card className="bg-transparent text-foreground dark:text-gray-100 shadow-none border-0 rounded-none p-2">
 
-          {/* App Title inside the card with logo */}
           <div className="flex items-center justify-center gap-2 mb-2">
             <img
               src="/pwa-192x192.jpeg"
@@ -1507,8 +1658,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           <CardHeader className="flex justify-between items-center">
             <CardTitle>Time Left</CardTitle>
 
-
-            <button className="p-1 rounded hover:bg-green-100 transition">
+            <button className="p-1 rounded hover:bg-green-100 transition border-0">
               <Clock className="w-5 h-5 text-green-600" />
             </button>
           </CardHeader>
@@ -1526,11 +1676,11 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           </CardContent>
         </Card>
 
-        <Card className="max-h-[400px] overflow-y-auto pr-2 bg-transparent text-foreground dark:text-gray-100 shadow-none border-none rounded-none overflow-y-auto custom-scrollbar">
+        <Card className="max-h-[400px] overflow-y-auto pr-2 bg-transparent text-foreground dark:text-gray-100 shadow-none border-0 rounded-none custom-scrollbar">
 
           <CardHeader className="flex justify-between items-center sticky top-0 bg-background z-10">
             <CardTitle>Questions</CardTitle>
-            <Button size="sm" variant="ghost" onClick={resetAnswers}>
+            <Button size="sm" variant="ghost" onClick={resetAnswers} className="border-0">
               Reset
             </Button>
           </CardHeader>
@@ -1539,6 +1689,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
               <Button
                 key={q.id}
                 size="sm"
+                className="border-0"
                 variant={
                   currentIndex === i
                     ? "default"
@@ -1556,8 +1707,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           </CardContent>
         </Card>
 
-        {/* Encouragement Marquee — Endless Loop */}
-        <div className="w-full overflow-hidden border-t border-border pt-4">
+        <div className="w-full overflow-hidden pt-4 border-0">
           <div className="flex w-max animate-marquee-slow">
             <div
               dir="rtl"
@@ -1584,12 +1734,11 @@ Keep striving each step you take strengthens your nursing expertise and prepares
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-4"
           >
-            {/* TOP NAVIGATION */}
             <div className="text-center space-y-4">
               <Link to="/dashboard">
                 <motion.button
                   whileHover={{ x: -5 }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-2xl text-gray-700 hover:bg-gray-50 transition-all font-semibold text-sm shadow-sm"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white border-0 rounded-2xl text-gray-700 hover:bg-gray-50 transition-all font-semibold text-sm shadow-sm"
                 >
                   <Home className="w-4 h-4" />
                   Exit to Dashboard
@@ -1599,10 +1748,9 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
             <div className="max-w-4xl w-full space-y-8">
 
-              {/* HEADER SECTION */}
               <div className="text-center space-y-4">
 
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 border-0 text-gray-700 text-[10px] font-black uppercase tracking-widest">
                   <ShieldAlert className="w-3.5 h-3.5" /> Security Protocol Active
                 </div>
 
@@ -1610,7 +1758,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                   Device <span className="text-gray-800">Authorization</span>
                 </h2>
 
-                <div className="bg-white border border-gray-200 rounded-2xl p-4 max-w-2xl mx-auto shadow-sm">
+                <div className="bg-white border-0 rounded-2xl p-4 max-w-2xl mx-auto shadow-sm">
                   <p className="text-gray-600 text-sm leading-relaxed">
                     To ensure examination integrity, we require access to your camera and microphone.
                     <span className="text-gray-700 block mt-2 font-bold uppercase text-[11px] tracking-wider">
@@ -1621,14 +1769,12 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
               </div>
 
-              {/* INTERACTIVE TILES */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-w-full md:px-4 lg:px-6 mx-auto">
 
-                {/* CAMERA CARD */}
                 <div className="relative group">
                   <div className={`absolute -inset-0.5 rounded-3xl blur opacity-20 transition duration-1000 group-hover:opacity-40 ${cameraStream ? 'bg-green-200' : 'bg-blue-200'}`}></div>
 
-                  <motion.div className="relative bg-white rounded-3xl p-6 border border-gray-200 h-full flex flex-col items-center shadow-sm">
+                  <motion.div className="relative bg-white rounded-3xl p-6 border-0 h-full flex flex-col items-center shadow-sm">
 
                     <div className={`mb-4 p-4 rounded-2xl ${cameraStream ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                       <Video className="w-8 h-8" />
@@ -1652,10 +1798,10 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                           console.error("Camera blocked", err);
                         }
                       }}
-                      className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border
+                      className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border-0
                 ${cameraStream
-                          ? 'bg-green-600 text-white border-green-600 cursor-default'
-                          : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+                          ? 'bg-green-600 text-white cursor-default'
+                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                         }`}
                     >
                       {cameraStream ? "Camera Synced" : "Enable Camera"}
@@ -1664,14 +1810,12 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                   </motion.div>
                 </div>
 
-                {/* MICROPHONE CARD */}
                 <div className="relative group">
                   <div className={`absolute -inset-0.5 rounded-3xl blur opacity-20 transition duration-1000 group-hover:opacity-40 ${audioStream ? 'bg-green-200' : 'bg-gray-200'}`}></div>
 
-                  <motion.div className="relative bg-white rounded-3xl p-6 border border-gray-200 h-full flex flex-col items-center shadow-sm">
+                  <motion.div className="relative bg-white rounded-3xl p-6 border-0 h-full flex flex-col items-center shadow-sm">
 
-                    {/* VISUALIZER */}
-                    <div className="relative w-full h-24 mb-4 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                    <div className="relative w-full h-24 mb-4 rounded-xl overflow-hidden bg-gray-100 border-0">
                       <canvas ref={canvasRef} className="w-full h-full" />
 
                       {!audioStream && (
@@ -1751,10 +1895,10 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                           console.error("Mic blocked", err);
                         }
                       }}
-                      className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border
+                      className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all border-0
                 ${audioStream
-                          ? 'bg-green-600 text-white border-green-600 cursor-default'
-                          : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'
+                          ? 'bg-green-600 text-white cursor-default'
+                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                         }`}
                     >
                       {audioStream ? "Mic Calibrated" : "Enable Microphone"}
@@ -1765,7 +1909,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
 
               </div>
 
-              {/* FINAL BUTTON */}
               <div className="flex flex-col items-center pt-6">
 
                 <motion.button
@@ -1778,7 +1921,7 @@ Keep striving each step you take strengthens your nursing expertise and prepares
                   }}
                   whileHover={cameraStream && audioStream ? { scale: 1.05 } : {}}
                   whileTap={{ scale: 0.95 }}
-                  className={`relative group px-12 py-5 rounded-full font-black text-sm uppercase tracking-[0.3em] transition-all border
+                  className={`relative group px-12 py-5 rounded-full font-black text-sm uppercase tracking-[0.3em] transition-all border-0
             ${cameraStream && audioStream
                       ? 'bg-gray-900 text-white shadow-md hover:bg-black'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -1818,7 +1961,6 @@ Keep striving each step you take strengthens your nursing expertise and prepares
           </motion.div>
         )}
       </AnimatePresence>
-
 
     </div>
 
