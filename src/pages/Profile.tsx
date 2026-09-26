@@ -22,6 +22,9 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LogoutDialog } from "@/components/LogoutDialog";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 // Cache helpers
 const profileCache = new Map();
@@ -652,80 +655,63 @@ export function Profile() {
                 <Button variant="outline" onClick={handleProfileUpdate} className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
                   <Edit className="h-3.5 w-3.5 md:h-4 md:w-4 mr-2" /> Edit Profile
                 </Button>
-                <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
-                      Logout
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="rounded-xl">
-                    <DialogHeader>
-                      <DialogTitle>Confirm Logout</DialogTitle>
-                      <DialogDescription>Are you sure you want to log out?</DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="mt-2">
-                      <Button variant="secondary" onClick={() => setShowLogoutDialog(false)} className="text-xs md:text-sm rounded-xl">Cancel</Button>
-                      <Button variant="destructive" onClick={handleLogout} className="text-xs md:text-sm rounded-xl">Logout</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none rounded-xl">
-                      Delete My Account
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="rounded-xl">
-                    <DialogHeader>
-                      <DialogTitle>Confirm Delete</DialogTitle>
-                      <DialogDescription>This action cannot be undone.</DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="mt-2">
-                      <Button variant="secondary" onClick={() => setShowDeleteDialog(false)} className="text-xs md:text-sm rounded-xl">Cancel</Button>
-                      <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting} className="text-xs md:text-sm rounded-xl">
-                        {deleting ? "Deleting..." : "Delete"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Dialog open={showDialog} onOpenChange={setShowDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl">
-                      Change Password
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="rounded-xl">
-                    <DialogHeader>
-                      <DialogTitle>Change Password</DialogTitle>
-                      <DialogDescription>Enter and confirm your new password.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-2 mt-2">
-                      <div>
-                        <Label htmlFor="newPassword" className="text-xs md:text-sm">New Password</Label>
-                        <div className="relative">
-                          <Input id="newPassword" type={showNewPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="text-xs md:text-sm h-10 md:h-11 rounded-xl" />
-                          <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>
-                            {showNewPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="confirmPassword" className="text-xs md:text-sm">Confirm Password</Label>
-                        <div className="relative">
-                          <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="text-xs md:text-sm h-10 md:h-11 rounded-xl" />
-                          <button type="button" className="absolute inset-y-0 right-3 flex items-center text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                            {showConfirmPassword ? <EyeOff className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <DialogFooter className="mt-2">
-                      <Button onClick={handleChangePassword} disabled={passwordLoading} className="text-xs md:text-sm rounded-xl">
-                        {passwordLoading ? "Updating..." : "Update Password"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLogoutDialog(true)}
+                  className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
+                >
+                  Logout
+                </Button>
+
+                <LogoutDialog
+                  open={showLogoutDialog}
+                  onOpenChange={setShowLogoutDialog}
+                  onConfirm={handleLogout}
+                  userName={profileState?.name || profileState?.username}
+                  streakDays={profileState?.streak_days}  // optional — omit if not in profile
+                />
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none rounded-xl"
+                >
+                  Delete My Account
+                </Button>
+
+                <DeleteAccountDialog
+                  open={showDeleteDialog}
+                  onOpenChange={setShowDeleteDialog}
+                  onConfirm={handleDeleteAccount}
+                  userName={profileState?.name}
+                  username={profileState?.username}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDialog(true)}
+                  className="text-xs md:text-sm h-9 md:h-10 border-0 shadow-none bg-muted hover:bg-muted/80 rounded-xl"
+                >
+                  Change Password
+                </Button>
+
+                <ChangePasswordDialog
+                  open={showDialog}
+                  onOpenChange={setShowDialog}
+                  onSubmit={async (newPassword) => {
+                    // Reuse your existing handler logic, but only for the actual submit.
+                    // Your original handleChangePassword validates length + match — we've
+                    // already done that in the dialog, so here we just call Supabase.
+                    const { error } = await supabase.auth.updateUser({ password: newPassword });
+                    if (error) {
+                      toast({ title: "Error", description: error.message });
+                    } else {
+                      toast({
+                        title: "Password updated",
+                        description: "Your new password is now active.",
+                      });
+                      setShowDialog(false);
+                    }
+                  }}
+                />
               </div>
             </CardContent>
           </Card>
