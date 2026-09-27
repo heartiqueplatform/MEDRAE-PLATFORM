@@ -33,7 +33,7 @@ const NOTICE = {
         "In the meantime, keep learning with Nursing Compass questions — same NCK style, ready now.",
     ctaLabel: "Continue with Nursing Compass",
     ctaHref: "/nursing",
-    etaLabel: "Expected back by",
+    etaLabel: "Expected back by Monday 28-9-2026",
 };
 
 // ---- Compute ETA string (2 hours from mount) ----
