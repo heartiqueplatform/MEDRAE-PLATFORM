@@ -163,6 +163,7 @@ import {
   CompletionsPage,
   PeriodsPage,
 } from "@/staff-cpd/admin/index";
+import MaintenanceNotice from "./components/MaintenanceNotice";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -479,6 +480,8 @@ const AppContent = () => {
                     <AIWrapper>
                       <FirstTimeGuide />
                       <RouteScrollManager />
+                      {/* 🆕 MAINTENANCE OVERLAY — shows when ENABLED or ?maintenance=1 */}
+                      <MaintenanceNotice />
                       <Routes>
                         <Route path="/go/:code" element={<RedirectHandler />} />
 

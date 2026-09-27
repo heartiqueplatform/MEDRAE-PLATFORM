@@ -941,7 +941,7 @@ export default function StudentDashboard() {
         <FeedSeenTop10 />
 
         {/* ✅ FLOATING LEADERBOARD INDICATOR - OPENS INSTANTLY */}
-        <div className="fixed bottom-14 right-5 z-30">
+        <div className="fixed z-30 bottom-20 right-4 md:bottom-14 md:right-5">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -952,30 +952,46 @@ export default function StudentDashboard() {
             }}
             aria-label="Open best"
             className={cn(
-              "group flex items-center gap-2 rounded-full pl-3 pr-4 py-2.5",
-              "min-w-[110px] justify-center",
-              // light mode (default)
+              "group flex items-center justify-center rounded-full",
+              // ---- SHAPE & SIZE ----
+              // Mobile: perfect circle 56x56
+              "w-14 h-14 p-0",
+              // Desktop: pill with label
+              "md:w-auto md:h-auto md:min-w-[110px] md:pl-3 md:pr-4 md:py-2.5",
+
+              // ---- LAYOUT ----
+              "gap-0 md:gap-2",
+
+              // ---- COLORS: LIGHT ----
               "bg-white hover:bg-slate-50",
               "text-slate-800 hover:text-slate-900",
               "ring-1 ring-slate-200 hover:ring-slate-300",
-              // dark mode override
+
+              // ---- COLORS: DARK ----
               "dark:bg-[#21262d] dark:hover:bg-[#30363d]",
               "dark:text-white dark:ring-white/10 dark:hover:ring-white/20",
-              // shadow
+
+              // ---- SHADOW ----
               "shadow-lg shadow-slate-900/10",
               "dark:shadow-none",
+
+              // ---- MOTION ----
               "transition-colors duration-300 ease-out",
               "focus:outline-none focus-visible:ring-2",
               "focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
             )}
           >
-            {/* Icon chip — same w-7 h-7 as chat */}
+            {/* Icon chip — full-size on mobile, small chip on desktop */}
             <span
               className={cn(
-                "relative flex items-center justify-center w-7 h-7 rounded-full",
-                "bg-slate-100 text-slate-700",
-                "dark:bg-white/10 dark:text-white",
-                "overflow-visible"
+                "relative flex items-center justify-center rounded-full overflow-visible",
+                // Mobile: full-size, no visible chip bg
+                "w-full h-full bg-transparent text-slate-700",
+                // Desktop: small 28px chip
+                "md:w-7 md:h-7 md:bg-slate-100 md:text-slate-700",
+                // Dark overrides
+                "dark:text-white",
+                "md:dark:bg-white/10 md:dark:text-white"
               )}
             >
               {topStudents.length > 0 ? (
@@ -1002,14 +1018,16 @@ export default function StudentDashboard() {
                   </span>
                 </>
               ) : (
-                <Trophy className="w-4 h-4 text-slate-400 dark:text-white/60" />
+                <Trophy
+                  className="w-6 h-6 md:w-4 md:h-4 text-slate-400 dark:text-white/60"
+                />
               )}
             </span>
 
-            <span className="text-sm font-semibold hidden sm:inline">Best</span>
+            {/* Label — desktop only */}
+            <span className="hidden md:inline text-sm font-semibold">Best</span>
           </motion.button>
         </div>
-
         {/* ✅ DIALOG - OPENS INSTANTLY WITH SKELETON */}
         <Dialog open={overlayOpen} onOpenChange={setOverlayOpen}>
           <DialogContent className="max-w-md p-0 overflow-hidden rounded-xl border-0 bg-white dark:bg-muted/100">
