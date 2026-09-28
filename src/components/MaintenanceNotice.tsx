@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 //
 // ============================================================
 
-const ENABLED = true;                          // ← flip to true to force-show
+const ENABLED = false;                          // ← flip to true to force-show
 const STORAGE_KEY = "maintenance_notice_dismissed";
 const SESSION_DURATION_MS = 60 * 60 * 1000;    // 1 hour re-show window
 

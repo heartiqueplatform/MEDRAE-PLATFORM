@@ -32,7 +32,7 @@ export interface PaperData {
     description: string;
 }
 
-const UNITS_CACHE_KEY = "dynamic_units_cache_v3"; // bumped version → forces fresh fetch with new fields
+const UNITS_CACHE_KEY = "dynamic_units_cache_v4"; // bumped version → forces fresh fetch with FUN01 support
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour — ONLINE only
 const MIN_FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -107,6 +107,8 @@ const getPaperProperties = (paperNumber: number) => {
             return { color: "emerald", icon: "ClipboardCheck", description: "2026 Updated Full-Length Mock Exams" };
         case 5:
             return { color: "rose", icon: "Heart", description: "Medical-Surgical Nursing Units (MD Series)" };
+        case 6:
+            return { color: "sky", icon: "Sparkles", description: "Take a Break: Nursing Riddles & Brain Teasers" };
         default:
             return { color: "gray", icon: "BookOpen", description: "Nursing Units" };
     }
@@ -114,6 +116,11 @@ const getPaperProperties = (paperNumber: number) => {
 
 // Helper to determine level
 const getUnitLevel = (unitCode: string, title: string): string => {
+    // 🎉 Fun units get their own level label
+    if (unitCode.startsWith("FUN")) {
+        return "Just for Fun";
+    }
+
     const unitCodeNum = parseInt(unitCode.replace(/\D/g, "")) || 0;
 
     if (unitCode.startsWith("MD")) {
@@ -158,6 +165,9 @@ const getPaperFromUnitCode = (
     }
     if (unitCode.startsWith("FP")) {
         return { paper: "Practice Papers", paperNumber: 4 };
+    }
+    if (unitCode.startsWith("FUN")) {
+        return { paper: "Take a Break: Nursing Riddles", paperNumber: 6 };
     }
     return { paper: "Paper 1", paperNumber: 1 };
 };
@@ -471,4 +481,11 @@ export function useFreeUnits() {
     const { allUnits, loading } = useUnits();
     const freeUnits = allUnits.filter((unit) => unit.is_free);
     return { freeUnits, count: freeUnits.length, loading };
+}
+
+// ✅ Optional: Hook for fun/riddle units only (FUN prefix)
+export function useFunUnits() {
+    const { allUnits, loading } = useUnits();
+    const funUnits = allUnits.filter((unit) => unit.code.startsWith("FUN"));
+    return { funUnits, count: funUnits.length, loading };
 }
