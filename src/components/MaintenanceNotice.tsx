@@ -1,90 +1,183 @@
 // src/components/MaintenanceNotice.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 // ============================================================
-// 🔧 MAINTENANCE NOTICE — FULL-SCREEN OVERLAY
+// 🎉 ONE-TIME ANNOUNCEMENT / CELEBRATION OVERLAY
 // ============================================================
-// Show this overlay when a feature is temporarily down.
+// Shows ONCE per user (per browser). After dismissal, it never
+// shows again — unless you bump NOTICE_VERSION below.
 //
-// HOW TO ACTIVATE:
-//   1. Set ENABLED = true below (instant, global)
-//   2. OR open your app with ?maintenance=quiz-bank
-//   3. OR set localStorage.setItem('maintenance_notice', 'quiz-bank')
+// HOW IT WORKS:
+//   - STORAGE_KEY stores the version the user has already seen.
+//   - If NOTICE_VERSION !== stored version → show once.
+//   - After dismiss → store NOTICE_VERSION → never shows again.
 //
-// HOW TO DISMISS:
-//   - User taps the X or "Got it" button
-//   - Dismissal is remembered for SESSION_DURATION_MS
-//   - After that window, the notice reappears on next visit
+// HOW TO RE-SHOW TO EVERYONE:
+//   - Bump NOTICE_VERSION (e.g. "1" → "2") and deploy.
+//   - Everyone sees it once more, then it goes quiet again.
 //
+// HOW TO FORCE-SHOW FOR TESTING (only you):
+//   - Add ?notice=1 to any URL
+//   - OR localStorage.removeItem("medrae_notice_seen_v1")
 // ============================================================
 
-const ENABLED = false;                          // ← flip to true to force-show
-const STORAGE_KEY = "maintenance_notice_dismissed";
-const SESSION_DURATION_MS = 60 * 60 * 1000;    // 1 hour re-show window
+const NOTICE_VERSION = "3";                          // ← bump to re-show to all
+const STORAGE_KEY = `medrae_notice_seen_v${NOTICE_VERSION}`;
 
 // ---- Message content (edit here) ----
 const NOTICE = {
-    badge: "Scheduled maintenance",
-    title: "Question Bank is updating",
+
+    title: "7,000 new questions just landed",
     body:
-        "Our NCK Prep Quiz question bank is temporarily unavailable for the next 24 hours while we deploy a fresh set of fully verified questions.",
+        "We've massively expanded the question bank with 7,000 brand-new, fully verified questions. Every Prep Quiz is now bigger, sharper, and closer to the real exam.",
     tip:
-        "In the meantime, keep learning with Nursing Compass questions — same NCK style, ready now.",
-    ctaLabel: "Continue with Nursing Compass",
-    ctaHref: "/nursing",
-    etaLabel: "Expected back by Monday 28-9-2026",
+        "We'll keep updating regularly — so stay stocked, stay sharp, and check back often. You'll never run out of practice.",
+    ctaLabel: "Go to Prep Quizzes",
+    ctaHref: "/Medrae-quizzes",
+    etaLabel: "Live now — no action needed",
 };
 
-// ---- Compute ETA string (2 hours from mount) ----
-function getEtaLabel(): string {
-    const eta = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    return eta.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-    });
-}
-
-// ---- Was the notice recently dismissed? ----
-function wasRecentlyDismissed(): boolean {
+// ---- Has this version been seen? ----
+function hasSeenNotice(): boolean {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return false;
-        const ts = Number(raw);
-        if (!ts || Number.isNaN(ts)) return false;
-        return Date.now() - ts < SESSION_DURATION_MS;
+        return localStorage.getItem(STORAGE_KEY) === NOTICE_VERSION;
     } catch {
         return false;
     }
 }
 
-function rememberDismissal() {
+function markNoticeSeen() {
     try {
-        localStorage.setItem(STORAGE_KEY, String(Date.now()));
+        localStorage.setItem(STORAGE_KEY, NOTICE_VERSION);
     } catch { /* ignore */ }
+}
+
+// ============================================================
+// 🎊 CONFETTI ENGINE — lightweight, no dependencies
+// ============================================================
+function fireConfetti(canvas: HTMLCanvasElement) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+    ctx.scale(dpr, dpr);
+
+    const COLORS = [
+        "#FF1F1F", "#FF5757", "#FFD700", "#FFA500",
+        "#00C9A7", "#4D96FF", "#B983FF", "#FFFFFF",
+    ];
+
+    type Piece = {
+        x: number; y: number; vx: number; vy: number;
+        w: number; h: number; rot: number; vrot: number;
+        color: string; shape: "rect" | "circle" | "ribbon";
+        life: number; maxLife: number;
+    };
+
+    const pieces: Piece[] = [];
+    const count = 180;
+
+    // Two cannons — left & right corners
+    for (let i = 0; i < count; i++) {
+        const fromLeft = i % 2 === 0;
+        const angle = fromLeft
+            ? -Math.PI / 3 + (Math.random() - 0.5) * 0.5
+            : -Math.PI * 2 / 3 + (Math.random() - 0.5) * 0.5;
+        const speed = 9 + Math.random() * 9;
+
+        pieces.push({
+            x: fromLeft ? 0 : W,
+            y: H * 0.75,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            w: 6 + Math.random() * 6,
+            h: 4 + Math.random() * 8,
+            rot: Math.random() * Math.PI * 2,
+            vrot: (Math.random() - 0.5) * 0.35,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            shape: Math.random() < 0.7 ? "rect" : Math.random() < 0.5 ? "circle" : "ribbon",
+            life: 0,
+            maxLife: 180 + Math.random() * 90,
+        });
+    }
+
+    let raf = 0;
+    const gravity = 0.32;
+    const drag = 0.992;
+
+    const tick = () => {
+        ctx.clearRect(0, 0, W, H);
+        let alive = 0;
+
+        for (const p of pieces) {
+            p.life++;
+            if (p.life > p.maxLife) continue;
+            alive++;
+
+            p.vy += gravity;
+            p.vx *= drag;
+            p.vy *= drag;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.vrot;
+
+            const alpha = Math.max(0, 1 - p.life / p.maxLife);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+
+            if (p.shape === "circle") {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (p.shape === "ribbon") {
+                ctx.fillRect(-p.w / 2, -p.h * 1.5, p.w, p.h * 3);
+            } else {
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            }
+            ctx.restore();
+        }
+
+        if (alive > 0) {
+            raf = requestAnimationFrame(tick);
+        } else {
+            ctx.clearRect(0, 0, W, H);
+        }
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
 }
 
 export default function MaintenanceNotice() {
     const [open, setOpen] = useState(false);
-    const [eta, setEta] = useState<string>("");
+    const [burstKey, setBurstKey] = useState(0);
+    const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        // Show if:
-        //   1. ENABLED is true, OR
-        //   2. ?maintenance=1 (or any value) is in the URL
-        // AND user hasn't dismissed it recently.
-        const urlHasFlag = new URLSearchParams(window.location.search).has("maintenance");
-        const shouldShow = (ENABLED || urlHasFlag) && !wasRecentlyDismissed();
+        const force = new URLSearchParams(window.location.search).has("notice");
+        const shouldShow = force || !hasSeenNotice();
 
         if (shouldShow) {
-            setEta(getEtaLabel());
             setOpen(true);
+            // Slight delay so the entrance animation feels choreographed
+            const t = setTimeout(() => setBurstKey((k) => k + 1), 220);
+            return () => clearTimeout(t);
         }
     }, []);
 
-    // Lock body scroll while overlay is open
+    // Lock body scroll while open
     useEffect(() => {
         if (!open) return;
         const original = document.body.style.overflow;
@@ -94,7 +187,7 @@ export default function MaintenanceNotice() {
         };
     }, [open]);
 
-    // Close on Escape key
+    // Close on Escape
     useEffect(() => {
         if (!open) return;
         const onKey = (e: KeyboardEvent) => {
@@ -105,21 +198,38 @@ export default function MaintenanceNotice() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
+    // Fire confetti each time burstKey changes
+    useEffect(() => {
+        if (!open || !canvasEl || burstKey === 0) return;
+        const stop = fireConfetti(canvasEl);
+        return stop;
+    }, [burstKey, open, canvasEl]);
+
     const dismiss = () => {
-        rememberDismissal();
+        markNoticeSeen();
         setOpen(false);
     };
 
-    if (!open) return null;
+    // SSR guard
+    const isClient = useMemo(() => typeof window !== "undefined", []);
+    if (!open || !isClient) return null;
 
     return (
         <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="maintenance-title"
+            aria-labelledby="announcement-title"
             className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
-            style={{ backgroundColor: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+            style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
         >
+            {/* 🎊 Confetti canvas — sits above the dim, behind the card */}
+            <canvas
+                ref={setCanvasEl}
+                className="pointer-events-none fixed inset-0"
+                style={{ zIndex: 10001 }}
+                aria-hidden="true"
+            />
+
             {/* Card */}
             <div
                 className="
@@ -128,16 +238,29 @@ export default function MaintenanceNotice() {
                     bg-white dark:bg-[#0d0d10]
                     p-6
                     text-left
+                    overflow-hidden
                 "
                 style={{
-                    boxShadow: "0 24px 80px rgba(0,0,0,0.35)",
-                    animation: "medrae-notice-in 260ms cubic-bezier(0.2,0.8,0.2,1) both",
+                    zIndex: 10002,
+                    boxShadow:
+                        "0 24px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,31,31,0.15)",
+                    animation: "medrae-notice-in 320ms cubic-bezier(0.2,0.8,0.2,1) both",
                 }}
             >
+                {/* Red celebration glow */}
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -top-24 -right-24 w-56 h-56 rounded-full"
+                    style={{
+                        background:
+                            "radial-gradient(circle, rgba(255,31,31,0.18), rgba(255,31,31,0) 70%)",
+                    }}
+                />
+
                 {/* Close button */}
                 <button
                     onClick={dismiss}
-                    aria-label="Dismiss notice"
+                    aria-label="Dismiss announcement"
                     className="
                         absolute top-3 right-3
                         w-8 h-8 rounded-full
@@ -153,17 +276,11 @@ export default function MaintenanceNotice() {
                     </svg>
                 </button>
 
-                {/* Badge */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FF1F1F]/10 dark:bg-[#FF1F1F]/15 border border-[#FF1F1F]/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF1F1F] animate-pulse" />
-                    <span className="text-[11px] font-semibold tracking-wide text-[#FF1F1F] dark:text-[#FF5757] uppercase">
-                        {NOTICE.badge}
-                    </span>
-                </div>
+
 
                 {/* Title */}
                 <h2
-                    id="maintenance-title"
+                    id="announcement-title"
                     className="mt-3 text-[22px] md:text-[24px] font-semibold tracking-tight text-slate-900 dark:text-white"
                 >
                     {NOTICE.title}
@@ -181,15 +298,13 @@ export default function MaintenanceNotice() {
                     </p>
                 </div>
 
-                {/* ETA */}
+                {/* ETA / status line */}
                 <div className="mt-4 flex items-center gap-2 text-[12px] md:text-[13px] text-slate-500 dark:text-slate-400">
                     <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="9" />
                         <path d="M12 7v5l3 2" />
                     </svg>
-                    <span>
-                        {NOTICE.etaLabel} <strong className="text-slate-700 dark:text-slate-200 tabular-nums">{eta}</strong>
-                    </span>
+                    <span>{NOTICE.etaLabel}</span>
                 </div>
 
                 {/* Actions */}
@@ -227,10 +342,10 @@ export default function MaintenanceNotice() {
                 </div>
             </div>
 
-            {/* Animation */}
+            {/* Animations */}
             <style>{`
                 @keyframes medrae-notice-in {
-                    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+                    from { opacity: 0; transform: translateY(10px) scale(0.96); }
                     to   { opacity: 1; transform: translateY(0)   scale(1); }
                 }
                 @media (prefers-reduced-motion: reduce) {

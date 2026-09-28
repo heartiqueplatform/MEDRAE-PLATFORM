@@ -32,7 +32,7 @@ export interface PaperData {
     description: string;
 }
 
-const UNITS_CACHE_KEY = "dynamic_units_cache_v4"; // bumped version → forces fresh fetch with FUN01 support
+const UNITS_CACHE_KEY = "dynamic_units_cache_v5"; // bumped version → FUN01 between P1/P2 + NCLEX last
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour — ONLINE only
 const MIN_FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -99,16 +99,16 @@ const getPaperProperties = (paperNumber: number) => {
     switch (paperNumber) {
         case 1:
             return { color: "amber", icon: "BookOpen", description: "Foundational Nursing Units" };
+        case 1.5:
+            return { color: "sky", icon: "Sparkles", description: "Take a Break: Nursing Riddles & Brain Teasers" };
         case 2:
             return { color: "blue", icon: "BookOpen", description: "Leadership, Research & Community Health" };
-        case 3:
-            return { color: "purple", icon: "Trophy", description: "International Nursing Standards & RN Prep" };
         case 4:
             return { color: "emerald", icon: "ClipboardCheck", description: "2026 Updated Full-Length Mock Exams" };
         case 5:
             return { color: "rose", icon: "Heart", description: "Medical-Surgical Nursing Units (MD Series)" };
-        case 6:
-            return { color: "sky", icon: "Sparkles", description: "Take a Break: Nursing Riddles & Brain Teasers" };
+        case 99:
+            return { color: "purple", icon: "Trophy", description: "International Nursing Standards & RN Prep" };
         default:
             return { color: "gray", icon: "BookOpen", description: "Nursing Units" };
     }
@@ -161,13 +161,15 @@ const getPaperFromUnitCode = (
         return { paper: "Paper 2", paperNumber: 2 };
     }
     if (unitCode.startsWith("HNX3")) {
-        return { paper: "Paper 3: NCLEX Mastery", paperNumber: 3 };
+        // 🏆 NCLEX Mastery → always last
+        return { paper: "Paper 3: NCLEX Mastery", paperNumber: 99 };
     }
     if (unitCode.startsWith("FP")) {
         return { paper: "Practice Papers", paperNumber: 4 };
     }
     if (unitCode.startsWith("FUN")) {
-        return { paper: "Take a Break: Nursing Riddles", paperNumber: 6 };
+        // 🎉 Slot between Paper 1 and Paper 2
+        return { paper: "Take a Break: Nursing Riddles", paperNumber: 1.5 };
     }
     return { paper: "Paper 1", paperNumber: 1 };
 };

@@ -29,9 +29,8 @@ import { useUnits, Unit, PaperData } from "../hooks/useUnits";
 import { UnitPics } from "@/components/deco/UnitPics";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 // Category Types
-type CategoryType = "all" | "paper1" | "paper2" | "practice" | "nclex" | "medical";
+type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex";
 
-// Cache keys and durations
 // Cache keys and durations
 const FREE_UNITS_CACHE_KEY = "freeUnits";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
@@ -151,6 +150,8 @@ const getQuizTypeColor = (type: string) => {
       return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
     case "assignment":
       return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
+    case "riddle":
+      return "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300";
     default:
       return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
   }
@@ -168,6 +169,7 @@ const ACCENT_GRADIENTS: Record<string, string> = {
   indigo: "from-indigo-500 to-indigo-700",
   teal: "from-teal-500 to-teal-700",
   cyan: "from-cyan-500 to-cyan-700",
+  sky: "from-sky-400 to-cyan-600",
 };
 
 const getAccentGradient = (accent?: string | null) =>
@@ -187,8 +189,9 @@ const CATEGORY_STORIES: {
     { id: "paper1", label: "Paper 1", avatar: "/indexbackground5.jpg", ring: "ring-amber-500", icon: GraduationCap },
     { id: "paper2", label: "Paper 2", avatar: "/background05.jpg", ring: "ring-blue-500", icon: FileText },
     { id: "practice", label: "Practice", avatar: "/high4.png", ring: "ring-emerald-500", icon: ClipboardCheck },
-    { id: "nclex", label: "NCLEX", avatar: "/pwaa-512x512.png", ring: "ring-purple-500", icon: Globe },
     { id: "medical", label: "Medical", avatar: "/pwaa-512x512.png", ring: "ring-rose-500", icon: Stethoscope },
+    { id: "fun", label: "Fun", avatar: "/pwaa-512x512.png", ring: "ring-sky-500", icon: Sparkles },
+    { id: "nclex", label: "NCLEX", avatar: "/pwaa-512x512.png", ring: "ring-purple-500", icon: Globe },
   ];
 
 const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
@@ -196,8 +199,9 @@ const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
   paper1: "Core Nursing Fundamentals & Foundation Units",
   paper2: "Leadership, Research & Community Health",
   practice: "Full-length mock exams for readiness evaluation",
-  nclex: "International nursing standards (Coming Soon)",
   medical: "Condition-specific quizzes - Hypertension, Diabetes & more",
+  fun: "Take a break with nursing riddles & brain teasers",
+  nclex: "International nursing standards (Coming Soon)",
 };
 
 export function MedraeQuizzes() {
@@ -354,8 +358,9 @@ export function MedraeQuizzes() {
       if (activeCategory === "paper1" && paperNumber !== 1 && paperNumber !== 5) return [];
       if (activeCategory === "paper2" && paperNumber !== 2) return [];
       if (activeCategory === "practice" && paperNumber !== 4) return [];
-      if (activeCategory === "nclex" && paperNumber !== 3) return [];
+      if (activeCategory === "nclex" && paperNumber !== 99) return [];
       if (activeCategory === "medical" && paperNumber !== 5) return [];
+      if (activeCategory === "fun" && paperNumber !== 1.5) return [];
     }
 
     return filtered;
@@ -369,16 +374,15 @@ export function MedraeQuizzes() {
   const getRandomUnit = () => {
     let allAvailableUnits = papers.flatMap(p => p.units);
 
-    if (activeCategory !== "all") {
-      allAvailableUnits = allAvailableUnits.filter(unit => {
-        if (activeCategory === "paper1") return unit.paperNumber === 1 || unit.paperNumber === 5;
-        if (activeCategory === "paper2") return unit.paperNumber === 2;
-        if (activeCategory === "practice") return unit.paperNumber === 4;
-        if (activeCategory === "nclex") return unit.paperNumber === 3;
-        if (activeCategory === "medical") return unit.paperNumber === 5;
-        return true;
-      });
-    }
+    allAvailableUnits = allAvailableUnits.filter(unit => {
+      if (activeCategory === "paper1") return unit.paperNumber === 1 || unit.paperNumber === 5;
+      if (activeCategory === "paper2") return unit.paperNumber === 2;
+      if (activeCategory === "practice") return unit.paperNumber === 4;
+      if (activeCategory === "nclex") return unit.paperNumber === 99;
+      if (activeCategory === "medical") return unit.paperNumber === 5;
+      if (activeCategory === "fun") return unit.paperNumber === 1.5;
+      return true;
+    });
 
     if (allAvailableUnits.length === 0) return null;
     return allAvailableUnits[Math.floor(Math.random() * allAvailableUnits.length)];
@@ -388,16 +392,15 @@ export function MedraeQuizzes() {
     const pastUnits = JSON.parse(localStorage.getItem("submittedUnits") || "[]");
     let allAvailableUnits = papers.flatMap(p => p.units);
 
-    if (activeCategory !== "all") {
-      allAvailableUnits = allAvailableUnits.filter(unit => {
-        if (activeCategory === "paper1") return unit.paperNumber === 1 || unit.paperNumber === 5;
-        if (activeCategory === "paper2") return unit.paperNumber === 2;
-        if (activeCategory === "practice") return unit.paperNumber === 4;
-        if (activeCategory === "nclex") return unit.paperNumber === 3;
-        if (activeCategory === "medical") return unit.paperNumber === 5;
-        return true;
-      });
-    }
+    allAvailableUnits = allAvailableUnits.filter(unit => {
+      if (activeCategory === "paper1") return unit.paperNumber === 1 || unit.paperNumber === 5;
+      if (activeCategory === "paper2") return unit.paperNumber === 2;
+      if (activeCategory === "practice") return unit.paperNumber === 4;
+      if (activeCategory === "nclex") return unit.paperNumber === 99;
+      if (activeCategory === "medical") return unit.paperNumber === 5;
+      if (activeCategory === "fun") return unit.paperNumber === 1.5;
+      return true;
+    });
 
     if (pastUnits.length > 0) {
       const notCompleted = allAvailableUnits.find(u => !pastUnits.includes(u.code));
@@ -471,10 +474,11 @@ export function MedraeQuizzes() {
                       <div className="pt-3 md:pt-4 space-y-2 md:space-y-3 border-t border-gray-200/50 dark:border-gray-700/50 mt-2 md:mt-3">
                         <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
                           <span className="font-semibold text-amber-600">Paper 1:</span> Most frequently tested foundational nursing units<br />
+                          <span className="font-semibold text-sky-600">Take a Break:</span> Nursing riddles & brain teasers<br />
                           <span className="font-semibold text-blue-600">Paper 2:</span> Leadership, research & community health<br />
                           <span className="font-semibold text-emerald-600">Practice Papers:</span> Mixed questions for readiness evaluation<br />
-                          <span className="font-semibold text-purple-600">NCLEX Prep:</span> International standards (in development)<br />
-                          <span className="font-semibold text-rose-600">Medical Conditions:</span> Targeted practice - Hypertension, Diabetes & more!
+                          <span className="font-semibold text-rose-600">Medical Conditions:</span> Targeted practice - Hypertension, Diabetes & more!<br />
+                          <span className="font-semibold text-purple-600">NCLEX Prep:</span> International standards (in development)
                         </p>
                         <div className="flex flex-col gap-1.5 md:gap-2">
                           <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 md:px-3 py-1.5 md:py-2 rounded-lg">
@@ -676,14 +680,16 @@ export function MedraeQuizzes() {
                 let headerDescription = paper.description;
                 if (paper.paperNumber === 1) {
                   headerDescription = "Most frequently tested foundational nursing units";
+                } else if (paper.paperNumber === 1.5) {
+                  headerDescription = "Take a break with nursing riddles & brain teasers";
                 } else if (paper.paperNumber === 2) {
                   headerDescription = "Leadership, research methodology & community health";
-                } else if (paper.paperNumber === 3) {
-                  headerDescription = "International nursing standards & RN preparation (Team working on it)";
                 } else if (paper.paperNumber === 4) {
                   headerDescription = "Mixed questions for knowledge & readiness evaluation";
                 } else if (paper.paperNumber === 5) {
                   headerDescription = "Condition-specific quizzes - Jump directly to any medical condition";
+                } else if (paper.paperNumber === 99) {
+                  headerDescription = "International nursing standards & RN preparation (Team working on it)";
                 }
 
                 return (
@@ -754,6 +760,12 @@ export function MedraeQuizzes() {
                                   </div>
                                 )}
 
+                                {paper.paperNumber === 1.5 && (
+                                  <div className="absolute top-3 left-3 bg-sky-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" /> FUN
+                                  </div>
+                                )}
+
                                 <div className="absolute top-3 right-3">
                                   {isPremium ? (
                                     <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
@@ -816,7 +828,7 @@ export function MedraeQuizzes() {
                                         className={`w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2
                                           ${hasStarted
                                             ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-200 dark:shadow-none"
-                                            : paper.paperNumber === 3
+                                            : paper.paperNumber === 99
                                               ? "bg-purple-600 hover:bg-purple-700 text-white"
                                               : paper.paperNumber === 4
                                                 ? "bg-gray-200 dark:bg-gray-900 text-black dark:text-white hover:opacity-90"
@@ -824,18 +836,40 @@ export function MedraeQuizzes() {
                                                   ? "bg-blue-600 hover:bg-blue-700 text-white"
                                                   : paper.paperNumber === 5
                                                     ? "bg-rose-600 hover:bg-rose-700 text-white"
-                                                    : "bg-gray-200 dark:bg-gray-900 text-black dark:text-white hover:opacity-90"
+                                                    : paper.paperNumber === 1.5
+                                                      ? "bg-sky-500 hover:bg-sky-600 text-white shadow-lg shadow-sky-200 dark:shadow-none"
+                                                      : "bg-gray-200 dark:bg-gray-900 text-black dark:text-white hover:opacity-90"
                                           }`}
                                       >
                                         {hasStarted ? (
                                           <>
                                             <RefreshCw className="h-4 w-4 animate-spin-slow" />
-                                            {paper.paperNumber === 4 ? "Continue Mock" : paper.paperNumber === 3 ? "Resume Mastery" : paper.paperNumber === 5 ? "Continue Practice" : "Continue Practicing"}
+                                            {paper.paperNumber === 4
+                                              ? "Continue Mock"
+                                              : paper.paperNumber === 99
+                                                ? "Resume Mastery"
+                                                : paper.paperNumber === 5
+                                                  ? "Continue Practice"
+                                                  : paper.paperNumber === 1.5
+                                                    ? "Continue Riddles"
+                                                    : "Continue Practicing"}
                                           </>
                                         ) : (
                                           <>
-                                            {paper.paperNumber === 3 ? <Zap className="h-4 w-4 fill-current text-amber-300" /> : <Play className="h-4 w-4 fill-current" />}
-                                            {paper.paperNumber === 4 ? "Take Exam" : paper.paperNumber === 3 ? "Start NCLEX Prep" : paper.paperNumber === 5 ? "Start Quiz" : "Start Practice"}
+                                            {paper.paperNumber === 99
+                                              ? <Zap className="h-4 w-4 fill-current text-amber-300" />
+                                              : paper.paperNumber === 1.5
+                                                ? <Sparkles className="h-4 w-4" />
+                                                : <Play className="h-4 w-4 fill-current" />}
+                                            {paper.paperNumber === 4
+                                              ? "Take Exam"
+                                              : paper.paperNumber === 99
+                                                ? "Start NCLEX Prep"
+                                                : paper.paperNumber === 5
+                                                  ? "Start Quiz"
+                                                  : paper.paperNumber === 1.5
+                                                    ? "Take a Break"
+                                                    : "Start Practice"}
                                           </>
                                         )}
                                       </Button>
@@ -847,7 +881,7 @@ export function MedraeQuizzes() {
                                       disabled
                                     >
                                       <Lock className="w-4 h-4 mr-2" />
-                                      {paper.paperNumber === 3 ? "Upgrade to Mastery" : "Locked for Pro"}
+                                      {paper.paperNumber === 99 ? "Upgrade to Mastery" : "Locked for Pro"}
                                     </Button>
                                   )}
                                 </div>
@@ -1059,10 +1093,16 @@ export function MedraeQuizzes() {
                       if (navigator.vibrate) navigator.vibrate(50);
                       navigate(`/quiz?unit=${encodeURIComponent(selectedUnit.title)}`);
                     }}
-                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30"
+                    className={`w-full py-3.5 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg
+                      ${selectedUnit.paperNumber === 1.5
+                        ? "bg-sky-500 hover:bg-sky-600 shadow-sky-500/30"
+                        : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-blue-500/30"
+                      }`}
                   >
-                    <Play className="w-4 h-4 fill-current" />
-                    Start Quiz
+                    {selectedUnit.paperNumber === 1.5
+                      ? <Sparkles className="w-4 h-4" />
+                      : <Play className="w-4 h-4 fill-current" />}
+                    {selectedUnit.paperNumber === 1.5 ? "Take a Break" : "Start Quiz"}
                   </button>
                 ) : (
                   <button
