@@ -15,7 +15,7 @@ import "@fontsource/poppins/800.css";
 /**
  * App Version Control - Smart Cache Management
  */
-const APP_VERSION = "2.0.01";
+const APP_VERSION = "2.0.021";
 
 
 const CACHE_NAMES = {
@@ -309,6 +309,7 @@ updateSW = registerSW({
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    (window as any).__deferredInstallPrompt = e;  // 👈 ADD THIS LINE
     console.log('App can be installed');
 
     const installEvent = new CustomEvent('pwa-install-ready', {

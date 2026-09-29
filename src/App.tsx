@@ -165,6 +165,7 @@ import {
   PeriodsPage,
 } from "@/staff-cpd/admin/index";
 import MaintenanceNotice from "./components/MaintenanceNotice";
+import InstallPrompt from "./components/pwa/InstallPrompt";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -640,6 +641,8 @@ const AppContent = () => {
                       {/* 🆕 MEDRAE BOT - Lightweight, appears once per day */}
                       <MedraeBot />
 
+                      {/* 🆕 SMART PWA INSTALL PROMPT — browser users only */}
+                      <InstallPrompt />
                       <BottomBarWrapper />
 
                     </AIWrapper>
