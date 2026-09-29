@@ -75,6 +75,7 @@ import { Feedback } from "./pages/Feedback";
 import { Settings } from "./pages/Settings";
 import { Subscription } from "./pages/Subscription";
 import { Notifications } from "./pages/Notifications";
+import { AdminNotificationPanel } from "@/components/AdminNotificationPanel";
 import { Profile } from "./pages/Profile";
 import { RedirectToRoleDashboard } from "./pages/RedirectToRoleDashboard";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -468,7 +469,7 @@ const AppContent = () => {
         <SessionContextProvider supabaseClient={supabase}>
           <QueryClientProvider client={queryClient}>
             <GlobalRealtimeListener />
-
+            <AdminNotificationPanel />
             <GlobalDuelManager />
 
             <TooltipProvider>
