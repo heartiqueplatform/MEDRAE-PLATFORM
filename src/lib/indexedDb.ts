@@ -8,7 +8,6 @@ const NOTES_STORE = "question_notes"; // store aligned with Supabase table
 
 import { supabase } from "./supabaseClient";
 
-
 // ------------------------------------------
 // SAFE openDB
 // ------------------------------------------
@@ -36,8 +35,6 @@ export function openDB(): Promise<IDBDatabase> {
 
             notesStore.createIndex("pending", "pending", { unique: false });
             notesStore.createIndex("user_id", "user_id", { unique: false });
-
-
         };
 
         request.onsuccess = () => {
@@ -84,6 +81,7 @@ export async function saveUnitOffline(payload: {
     quizId: string;
     questions: any[];
     savedAt: number;
+    totalCount?: number;
 }) {
     const db = await openDB();
     return new Promise<void>((resolve, reject) => {
@@ -183,6 +181,48 @@ export async function getNoteOffline(question_id: string, user_id: string) {
 
         const req = store.get(key);
         req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+/**
+ * 🚀 Bulk read — fetch all notes for the given question IDs in ONE transaction.
+ * Returns a map of question_id → note record. Far faster than N sequential
+ * getNoteOffline() calls when loading a quiz with 50+ questions.
+ */
+export async function getNotesOfflineBulk(
+    questionIds: string[],
+    user_id: string
+): Promise<Record<string, any>> {
+    if (!questionIds?.length || !user_id) return {};
+
+    const db = await openDB();
+    return new Promise<Record<string, any>>((resolve, reject) => {
+        const tx = db.transaction(NOTES_STORE, "readonly");
+        const store = tx.objectStore(NOTES_STORE);
+        const result: Record<string, any> = {};
+
+        // Use a single cursor over the whole store and filter in-memory.
+        // This is faster than `getAll` when the store grows large.
+        const req = store.openCursor();
+
+        req.onsuccess = () => {
+            const cursor = req.result;
+            if (cursor) {
+                const row = cursor.value;
+                if (
+                    row &&
+                    row.user_id === user_id &&
+                    questionIds.includes(row.question_id)
+                ) {
+                    result[row.question_id] = row;
+                }
+                cursor.continue();
+            } else {
+                resolve(result);
+            }
+        };
+
         req.onerror = () => reject(req.error);
     });
 }

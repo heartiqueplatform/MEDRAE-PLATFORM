@@ -72,7 +72,7 @@ const ToastNotification = ({
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: 100, opacity: 0 }}
                     transition={{ type: "spring", damping: 22 }}
-                    className="fixed bottom-4 right-4 z-[150] max-w-xs w-[calc(100%-2rem)] sm:w-auto"
+                    className="fixed bottom-4 right-4 z-[9995] max-w-xs w-[calc(100%-2rem)] sm:w-auto"
                 >
                     <div className={`${bg} rounded-xl p-4 shadow-lg`}>
                         <div className="flex items-start gap-3">
@@ -216,7 +216,7 @@ export function CheckpointOverlay({
         <>
             <AnimatePresence mode="wait">
                 {checkpointOverlay?.visible && (
-                    <div className="fixed inset-0 z-[140] flex items-stretch sm:items-center justify-center w-screen h-[100dvh] sm:p-4">
+                    <div className="fixed inset-0 z-[9990] flex items-stretch sm:items-center justify-center w-screen h-[100dvh] sm:p-4">
                         {/* Backdrop — no blur for perf */}
                         <motion.div
                             initial={{ opacity: 0 }}

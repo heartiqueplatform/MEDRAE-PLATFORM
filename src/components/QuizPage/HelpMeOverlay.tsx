@@ -75,7 +75,7 @@ export function HelpMeOverlay({
     return (
         <AnimatePresence>
             <div
-                className="fixed inset-0 z-[2147483647] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+                className="fixed inset-0 z-[999999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
                 onClick={() => setHelpMeOverlayOpen(false)}
             >
                 <motion.div

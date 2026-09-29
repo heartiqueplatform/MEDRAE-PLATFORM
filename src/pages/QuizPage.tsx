@@ -22,6 +22,7 @@ import { NotesEvaluationPanel } from "@/components/QuizPage/NotesEvaluationPanel
 import { useSession } from "@supabase/auth-helpers-react";
 import { cn } from "@/lib/utils";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
+import { ReflectionSheet } from "@/components/QuizPage/ReflectionSheet";
 interface Question {
   id: string;
   quiz_id: string;
@@ -113,6 +114,10 @@ export default function QuizPage() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [explanationOverlayOpen, setExplanationOverlayOpen] = useState(false);
   const [openExplanationFor, setOpenExplanationFor] = useState<string | null>(null);
+  // 🔔 Instagram-style reflection sheet — opened after wrong answers
+  const [reflectionSheetFor, setReflectionSheetFor] = useState<string | null>(null);
+  // Remember which questions still need a reflection (wrong answers w/o a chosen reason yet)
+  const [pendingReflectionIds, setPendingReflectionIds] = useState<Record<string, boolean>>({});
   const [showUnansweredOnly, setShowUnansweredOnly] = useState(false);
   const [recentlyAnsweredId, setRecentlyAnsweredId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -174,6 +179,34 @@ export default function QuizPage() {
   useEffect(() => {
     localStorage.setItem("selectedReason", JSON.stringify(selectedReason));
   }, [selectedReason]);
+
+  // 🔑 RESET everything when switching quizzes
+  useEffect(() => {
+    setAnswers({});
+    setFeedbackShown({});
+    setLockedVisible({});
+    setNotes({});
+    setUnderstood({});
+    setNotUnderstood({});
+    setAttemptsCount({});
+    setConfidenceLevels({});
+    setShowReasonBox({});
+    setSelectedReason({});
+    setCurrentQuestionIndex(0);
+    setLastCheckpoint(0);
+    setQuizFinished(false);
+    setFinalScore(0);
+    setAttempts([]);
+    setOpenExplanationFor(null);
+    setRecentlyAnsweredId(null);
+    setQuestions([]);
+    setQuizId(null);
+    setLoading(true);
+    setSelectedCourse("All");
+    setShowUnansweredOnly(false);
+    setPendingReflectionIds({});
+    setReflectionSheetFor(null);
+  }, [unit]);
   const [lastCheckpoint, setLastCheckpoint] = useState(0);
 
   const [helpMeOverlayOpen, setHelpMeOverlayOpen] = useState(false);
@@ -278,70 +311,50 @@ export default function QuizPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [answers, lastCheckpoint]);
   useEffect(() => {
-    const handleOnline = async () => {
+    if (!questions || questions.length === 0) return;
+
+    // Load localStorage notes once (sync, fast)
+    const offlineNotes: Record<string, string> = JSON.parse(
+      localStorage.getItem("offlineNotes") || "{}"
+    );
+
+    // Build the notes object in memory — no per-question IDB round trips
+    const notesMap: Record<string, string> = {};
+    const understoodMap: Record<string, boolean> = {};
+    const notUnderstoodMap: Record<string, boolean> = {};
+    const attemptsMap: Record<string, number> = {};
+
+    for (const q of questions) {
+      if (offlineNotes[q.id]) {
+        notesMap[q.id] = offlineNotes[q.id];
+      }
+    }
+
+    // One bulk read for all notes/answers
+    (async () => {
       try {
-        const offlineNotes: Record<string, string> = loadOfflineNotes();
-        if (!offlineNotes || Object.keys(offlineNotes).length === 0) return;
         if (!userId) return;
-        for (const questionId of Object.keys(offlineNotes)) {
-          const noteText = offlineNotes[questionId];
-          await supabase
-            .from("question_notes")
-            .upsert([{
-              user_id: userId,
-              question_id: questionId,
-              note_text: noteText,
-              understood: understood[questionId] || false,
-              is_not_understood: notUnderstood[questionId] || false,
-              attempts: attemptsCount[questionId] || 0,
-            }], { onConflict: "question_id,user_id" });
+        const { getNotesOfflineBulk } = await import("@/lib/indexedDb");
+        const all = await getNotesOfflineBulk(
+          questions.map(q => q.id),
+          userId
+        );
+        for (const qid of Object.keys(all)) {
+          const row = all[qid];
+          if (!row) continue;
+          if (row.note_text) notesMap[qid] = row.note_text;
+          if (typeof row.understood !== "undefined") understoodMap[qid] = !!row.understood;
+          if (typeof row.is_not_understood !== "undefined") notUnderstoodMap[qid] = !!row.is_not_understood;
+          if (typeof row.attempts !== "undefined") attemptsMap[qid] = row.attempts || 0;
         }
-        console.log("Offline notes synced successfully!");
       } catch (err) {
-        console.error("Error syncing offline notes:", err);
+        console.warn("[QuizPage] bulk offline load failed:", err);
       }
-    };
-    window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
-  }, [userId, notes, understood, notUnderstood, attemptsCount]);
-
-  useEffect(() => {
-    if (!questions || questions.length === 0) return;
-    const loadOfflineNotesAsync = async () => {
-      const offlineNotes: Record<string, string> = JSON.parse(
-        localStorage.getItem("offlineNotes") || "{}"
-      );
-      for (const q of questions) {
-        if (offlineNotes[q.id]) {
-          setNotes(prev => ({ ...prev, [q.id]: offlineNotes[q.id] }));
-        }
-        const offlineNoteDB = await getNoteOffline(q.id);
-        if (offlineNoteDB?.note_text) {
-          setNotes(prev => ({ ...prev, [q.id]: offlineNoteDB.note_text }));
-        }
-        const offlineAnswer = await getAnswersOffline(q.id);
-        if (offlineAnswer) {
-          setUnderstood(prev => ({ ...prev, [q.id]: offlineAnswer.understood || false }));
-          setNotUnderstood(prev => ({ ...prev, [q.id]: offlineAnswer.not_understood || false }));
-          setAttemptsCount(prev => ({ ...prev, [q.id]: offlineAnswer.attempts || 0 }));
-        }
-      }
-    };
-    loadOfflineNotesAsync();
-  }, [questions]);
-
-  useEffect(() => {
-    if (!questions || questions.length === 0) return;
-    const loadOfflineAnswers = async () => {
-      for (const q of questions) {
-        const offline = await getAnswersOffline(unit);
-        if (offline?.answers && offline.answers[q.id]) {
-          setAnswers(prev => ({ ...prev, [q.id]: offline.answers[q.id] }));
-          setFeedbackShown(prev => ({ ...prev, [q.id]: true }));
-        }
-      }
-    };
-    loadOfflineAnswers();
+      setNotes(prev => ({ ...prev, ...notesMap }));
+      setUnderstood(prev => ({ ...prev, ...understoodMap }));
+      setNotUnderstood(prev => ({ ...prev, ...notUnderstoodMap }));
+      setAttemptsCount(prev => ({ ...prev, ...attemptsMap }));
+    })();
   }, [questions]);
 
   useEffect(() => {
@@ -475,23 +488,21 @@ export default function QuizPage() {
 
         // ✅ GUARD: only proceed if quizError is null AND quiz.id is a real string.
         if (quiz && !quizError && isValidId(quiz.id)) {
-          currentQuizId = quiz.id;
-          if (!cancelled) setQuizId(quiz.id);
-
-          // Get total question count (helper is now also guarded)
-          const total = await fetchTotalQuestionCount(supabase, quiz.id);
-          if (!cancelled) {
-            setTotalQuestions(total);
+          // Only update if different — avoids pointless re-renders that
+          // could race with the restore below.
+          if (currentQuizId !== quiz.id) {
+            currentQuizId = quiz.id;
+            if (!cancelled) setQuizId(quiz.id);
           }
-
+          // Fetch questions first — we can derive the total count from the
+          // returned rows, so we skip the extra network round trip that
+          // fetchTotalQuestionCount used to make.
           const { data: quizQuestions, error: qError } = await supabase
             .from("quiz_questions")
             .select("*")
             .eq("quiz_id", quiz.id)
             .order("created_at", { ascending: true });
 
-          // ✅ GUARD: never overwrite cached questions with an empty array,
-          // and never fire when this run has already been cancelled.
           if (
             !cancelled &&
             !qError &&
@@ -503,17 +514,22 @@ export default function QuizPage() {
               quiz_id: quiz.id,
             }));
 
-            if (JSON.stringify(enriched) !== JSON.stringify(offlineUnit?.questions)) {
-              setQuestions(enriched);
-              setQuestionsSource("remote");
-              await saveUnitOffline({
-                unitId: unit,
-                quizId: quiz.id,
-                questions: enriched,
-                savedAt: Date.now(),
-                totalCount: total,
-              });
-            }
+            const total = enriched.length;
+            if (!cancelled) setTotalQuestions(total);
+
+            // Skip the expensive deep-compare. Just replace state and rewrite
+            // the cache. Fire-and-forget the IDB write so it doesn't block UI.
+            setQuestions(enriched);
+            setQuestionsSource("remote");
+            saveUnitOffline({
+              unitId: unit,
+              quizId: quiz.id,
+              questions: enriched,
+              savedAt: Date.now(),
+              totalCount: total,
+            }).catch(err =>
+              console.warn("[QuizPage] saveUnitOffline failed:", err)
+            );
           }
         } else {
           // quiz lookup failed or returned an invalid id — log it so we can see it
@@ -526,15 +542,32 @@ export default function QuizPage() {
       }
 
       /** STEP 3: Restore State (Answers, Timer, etc.) **/
-      if (currentQuizId) {
+      if (currentQuizId && (offlineUnit?.questions?.length || cachedQuestions?.length)) {
+        const activeQuestions: any[] =
+          (offlineUnit?.questions?.length ? offlineUnit.questions : null) ??
+          cachedQuestions ??
+          [];
+
         const offlineSaved = await getAnswersOffline(unit);
         if (offlineSaved?.answers) {
-          setAnswers(offlineSaved.answers);
-          const fb = {};
+          const validQuestionIds = new Set(activeQuestions.map((qq: any) => qq.id));
+          const filteredOffline: Record<string, string> = {};
           Object.keys(offlineSaved.answers).forEach(id => {
+            if (validQuestionIds.has(id)) {
+              filteredOffline[id] = offlineSaved.answers[id];
+            }
+          });
+          setAnswers(filteredOffline);
+          const fb: Record<string, boolean> = {};
+          Object.keys(filteredOffline).forEach(id => {
             fb[id] = true;
           });
           setFeedbackShown(fb);
+
+          const firstUnansweredIdx = activeQuestions.findIndex(
+            (qq: any) => !filteredOffline[qq.id]
+          );
+          if (firstUnansweredIdx !== -1) setCurrentQuestionIndex(firstUnansweredIdx);
         }
         const savedEnd = localStorage.getItem(`quiz-${currentQuizId}-end`);
         if (savedEnd) {
@@ -547,17 +580,29 @@ export default function QuizPage() {
         const localAnswers = localStorage.getItem(`quiz-${currentQuizId}-answers`);
         if (localAnswers) {
           const parsed = JSON.parse(localAnswers);
-          setAnswers(prev => ({ ...prev, ...parsed }));
+          const validQuestionIds = new Set(activeQuestions.map((qq: any) => qq.id));
+          const filtered: Record<string, string> = {};
+          Object.keys(parsed).forEach(id => {
+            if (validQuestionIds.has(id)) {
+              filtered[id] = parsed[id];
+            }
+          });
+          setAnswers(filtered);
 
-          // FIX: Sync lastCheckpoint with existing answers so it doesn't trigger on reload
-          const currentCount = Object.keys(parsed).length;
+          const currentCount = Object.keys(filtered).length;
           setLastCheckpoint(currentCount);
 
           const feedbackState: Record<string, boolean> = {};
-          Object.keys(parsed).forEach(id => {
+          Object.keys(filtered).forEach(id => {
             feedbackState[id] = true;
           });
-          setFeedbackShown(prev => ({ ...prev, ...feedbackState }));
+          setFeedbackShown(feedbackState);
+
+          // 🎯 Jump the user to the first unanswered question
+          const firstUnansweredIdx = activeQuestions.findIndex(
+            (qq: any) => !filtered[qq.id]
+          );
+          if (firstUnansweredIdx !== -1) setCurrentQuestionIndex(firstUnansweredIdx);
         }
       }
     };
@@ -614,6 +659,7 @@ export default function QuizPage() {
 
 
   const handleAnswer = useCallback((questionId: string, selected: string) => {
+    // Only block double-answers. Trust the click otherwise.
     if (answers[questionId]) return;
     const nextIndex = questions.findIndex(q => q.id === questionId);
     if (nextIndex !== -1) setCurrentQuestionIndex(nextIndex);
@@ -661,6 +707,13 @@ export default function QuizPage() {
     setRecentlyAnsweredId(questionId);
     setFeedbackShown(prev => ({ ...prev, [questionId]: true }));
     setOpenExplanationFor(questionId);
+    // 🔔 If the answer was wrong, queue a reflection prompt for after the
+    // explanation overlay is dismissed.
+    const answeredQuestion = questions.find(q => q.id === questionId);
+    const wasWrong = answeredQuestion && answeredQuestion.correct_answer !== selected;
+    if (wasWrong) {
+      setPendingReflectionIds(prev => ({ ...prev, [questionId]: true }));
+    }
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
     setQuestionStartTime(Date.now());
     if (showUnansweredOnly) {
@@ -1011,13 +1064,18 @@ Please provide a detailed discussion and guidance.`;
                         ? "bg-emerald-50/40 dark:bg-emerald-500/10"
                         : notUnderstood[q.id]
                           ? "bg-rose-50/40 dark:bg-rose-500/10"
-                          : "bg-white dark:bg-muted/100",
+                          : "bg-white dark:bg-muted/40",
                       "text-slate-900 dark:text-slate-100"
                     )}>
-                    <div className="min-h-[60px] md:min-h-[70px] flex items-start">
+                    <div className="min-h-[60px] md:min-h-[70px] flex items-start justify-between gap-2">
                       <p className="font-bold mb-1.5 md:mb-2 leading-relaxed text-sm md:text-base">
                         Q{i + 1}: {q.question_text}
                       </p>
+                      {selectedAnswer && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5">
+                          Answered
+                        </span>
+                      )}
                     </div>
 
                     <div className="space-y-1.5 md:space-y-2 text-sm">
@@ -1040,7 +1098,9 @@ ${selectedAnswer
 
 ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                             onClick={async () => {
-                              if (!!selectedAnswer || quizFinished) return;
+                              // Trust the rendered state. If it shows as answered,
+                              // don't allow a re-answer. Otherwise proceed.
+                              if (selectedAnswer || quizFinished) return;
                               if (!isMuted) {
                                 playSound(q.correct_answer === letter ? "tap-correct" : "tap-wrong");
                               }
@@ -1078,6 +1138,9 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                                 return updated;
                               });
                               handleAnswer(q.id, letter);
+                              if (!correct) {
+                                setPendingReflectionIds(prev => ({ ...prev, [q.id]: true }));
+                              }
                               if (!userId) return;
                               try {
                                 await supabase.from("live_answer_events").insert({
@@ -1213,6 +1276,21 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           <ChevronRight size={16} className="md:size-18" />
                         )}
                       </button>
+                      {selectedAnswer && (() => {
+                        const nextUnanswered = filteredQuestions.findIndex(
+                          (qq, idx) => idx > currentQuestionIndex && !answers[qq.id]
+                        );
+                        if (nextUnanswered === -1) return null;
+                        return (
+                          <button
+                            onClick={() => setCurrentQuestionIndex(nextUnanswered)}
+                            className="inline-flex items-center justify-center gap-1 md:gap-2 px-4 md:px-6 h-10 md:h-11 rounded-lg md:rounded-xl transition-all duration-200 font-semibold shadow-sm active:scale-[0.98] text-xs md:text-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <span>Skip to Q{nextUnanswered + 1}</span>
+                            <ChevronRight size={16} />
+                          </button>
+                        );
+                      })()}
                       <SubmitQuizButton
                         quizFinished={quizFinished}
                         answers={answers}
@@ -1220,7 +1298,6 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                         handleSubmit={handleSubmit}
                       />
                     </div>
-
                     <div className="mt-2 md:mt-1 flex flex-wrap items-center justify-between w-full gap-2 md:gap-3 border-0 pt-3 md:pt-4">
                       <div className="flex items-center gap-1.5 md:gap-2 w-full flex-wrap">
                         <button
@@ -1335,7 +1412,6 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                       </span>
                     </div>
                   </div>
-
                   <QuestionInsights
                     confidenceLevel={confidenceLevels[q.id]}
                     showReasonBox={showReasonBox[q.id]}
@@ -1344,6 +1420,13 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                     onReasonSelect={async (reason) => {
                       setSelectedReason(prev => ({ ...prev, [q.id]: reason }));
                       setShowReasonBox(prev => ({ ...prev, [q.id]: false }));
+                      // 🔔 Reflection done — remove from pending queue and close any open sheet
+                      setPendingReflectionIds(prev => {
+                        const next = { ...prev };
+                        delete next[q.id];
+                        return next;
+                      });
+                      setReflectionSheetFor(null);
                       if (!userId) return;
                       try {
                         const { error } = await supabase
@@ -1357,7 +1440,6 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                       }
                     }}
                   />
-
                   <div className="w-full border-0 bg-transparent">
                     <NotesEvaluationPanel
                       q={q}
@@ -1410,7 +1492,26 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
         </div>
         <ExplanationOverlay
           open={!!openExplanationFor}
-          onClose={() => setOpenExplanationFor(null)}
+          onClose={() => {
+            const closingId = openExplanationFor;
+            setOpenExplanationFor(null);
+
+            // 🔔 If this wrong answer hasn't been reflected on yet, show the sheet
+            const needsReflection =
+              closingId &&
+              pendingReflectionIds[closingId] &&
+              !selectedReason[closingId];
+
+            if (needsReflection) {
+              // small delay so the explanation overlay finishes animating out
+              setTimeout(() => setReflectionSheetFor(closingId), 250);
+            } else {
+              // ✅ No reflection needed — advance to the next question
+              setCurrentQuestionIndex(prev =>
+                prev < filteredQuestions.length - 1 ? prev + 1 : prev
+              );
+            }
+          }}
           isCorrect={
             questions.find(q => q.id === openExplanationFor)?.correct_answer ===
             answers[openExplanationFor || ""]
@@ -1424,6 +1525,43 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
           additional={
             questions.find(q => q.id === openExplanationFor)?.additional
           }
+        />
+
+        {/* 🔔 Instagram-style reflection prompt after wrong answers */}
+        <ReflectionSheet
+          open={!!reflectionSheetFor}
+          onClose={() => {
+            setReflectionSheetFor(null);
+            // ✅ After reflection is dismissed (picked or skipped), advance
+            setCurrentQuestionIndex(prev =>
+              prev < filteredQuestions.length - 1 ? prev + 1 : prev
+            );
+          }}
+          questionText={
+            questions.find(q => q.id === reflectionSheetFor)?.question_text
+          }
+          reasonOptions={reasonOptions}
+          onReasonSelect={async (reason) => {
+            const qid = reflectionSheetFor;
+            if (!qid) return;
+            setSelectedReason(prev => ({ ...prev, [qid]: reason }));
+            setShowReasonBox(prev => ({ ...prev, [qid]: false }));
+            setPendingReflectionIds(prev => {
+              const next = { ...prev };
+              delete next[qid];
+              return next;
+            });
+            if (!userId) return;
+            try {
+              await supabase
+                .from("user_mistakes")
+                .update({ mistake_reason: reason })
+                .eq("user_id", userId)
+                .eq("question_id", qid);
+            } catch (err) {
+              console.error("Error saving mistake reason from sheet:", err);
+            }
+          }}
         />
         <HelpMeOverlay
           helpMeOverlayOpen={helpMeOverlayOpen}

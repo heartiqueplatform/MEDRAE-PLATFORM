@@ -179,7 +179,7 @@ export function NotesEvaluationPanel(props: NotesEvaluationPanelProps) {
     return (
         <>
             {helpModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-none border-0 animate-in zoom-in-95 duration-200">
                         <div className="bg-teal-600 p-6 text-center">
                             <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-3">
