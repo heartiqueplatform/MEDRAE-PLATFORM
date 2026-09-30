@@ -2,7 +2,7 @@
 import { GlobalLoader } from "@/components/GlobalLoader";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useNavigate } from "react-router-dom"; // Add this
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -40,15 +40,28 @@ import { TermsButton } from "@/components/ui/TermsButton";
 import { useSession } from "@supabase/auth-helpers-react";
 import { TriagePopup, TriageLevel } from "@/components/progress/TriagePopup";
 import { TRIAGE_LEVELS, getTriageCode } from "@/components/progress/triageConfig";
-// Cache helpers
+
+// ============ CACHE HELPERS ============
 const progressCache = new Map();
 const profileCache = new Map();
 const simResultsCache = new Map();
 const triviaResultsCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-const LOCAL_STORAGE_KEY = "study_progress_cache";
+// Average time per question in minutes (NCK-style MCQ pace)
+const MINUTES_PER_QUESTION = 1.0;
+
+// Bumped v2 → v3 to invalidate stale "hours" values from the old formula
+const LOCAL_STORAGE_KEY = "study_progress_cache_v3";
 const TRIAGE_POPUP_KEY = "triage_popup_shown";
+
+// One-time cleanup of the old v2 key so nothing reads stale data
+if (typeof window !== "undefined") {
+  try {
+    localStorage.removeItem("study_progress_cache_v2");
+    localStorage.removeItem("study_progress_cache");
+  } catch { }
+}
 
 function saveToLocalStorage(userId: string, data: any) {
   try {
@@ -82,7 +95,6 @@ function isEqualData(a: any[], b: any[]) {
 }
 
 // 🚨 TRIAGE BANNER COMPONENT
-// 🚨 TRIAGE BANNER COMPONENT
 function TriageBanner({
   overallProgress,
   hasData,
@@ -105,8 +117,6 @@ function TriageBanner({
       className={`relative overflow-hidden md:rounded-xl p-4 md:p-5 border-0 ${triage.bgColor} border-0`}
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
-
-
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-1">
             <Badge className={`${triage.bgColor} ${triage.textColor} border-0 text-xs md:text-sm font-normal px-2.5 md:px-4 py-1 md:py-1.5`}>
@@ -151,31 +161,39 @@ function TriageBanner({
           {triage.actionText}
         </button>
       </div>
-
     </motion.div>
   );
 }
 
 // 🚨 UNIT TRIAGE BADGE
+// 🚨 UNIT TRIAGE BADGE (compact single-line summary)
 function UnitTriageBadge({ subject }: { subject: any }) {
   const triage = getTriageCode(subject.progress, true);
 
   return (
-    <div className={`flex items-center justify-between px-2.5 md:px-3 py-1.5 md:py-2 md:rounded-xl border-0 ${triage.bgColor} border-0`}>
-      <div className="flex items-center gap-1.5 md:gap-2">
-        <h4 className={`text-sm font-normal ${triage.textColor}`}>
+    <div className={`flex items-center justify-between px-3 py-2 md:rounded-xl ${triage.bgColor}`}>
+      {/* Left: dot + code + label */}
+      <div className="flex items-center gap-2 min-w-0">
+        <span
+          className={`shrink-0 w-2.5 h-2.5 rounded-full ${(triage.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400"
+            }`}
+        />
+        <span className={`text-sm font-normal truncate ${triage.textColor}`}>
           Code {triage.code}
-        </h4>
+        </span>
+        <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
+          {triage.label}
+        </span>
       </div>
-      <Badge variant="outline" className={`text-[10px] font-normal ${triage.textColor} border-current`}>
-        {triage.label}
-      </Badge>
-      <Badge variant="outline" className={`text-[7px] md:text-[8px] font-black ${triage.textColor} border-current`}>
-        {triage.label}
-      </Badge>
+
+      {/* Right: subject name */}
+      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate ml-2 max-w-[40%]">
+        {subject.name}
+      </span>
     </div>
   );
 }
+
 export function StudyProgress() {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,7 +215,8 @@ export function StudyProgress() {
     if (!user || isFetchingProgress.current) return;
 
     const now = Date.now();
-    const cacheKey = `progress_${user.id}`;
+    // ✅ v3 key forces a clean cache miss after the formula change
+    const cacheKey = `progress_v3_${user.id}`;
 
     if (progressCache.has(cacheKey)) {
       const cached = progressCache.get(cacheKey);
@@ -208,8 +227,6 @@ export function StudyProgress() {
         setTotalTopicsInApp(cached.totalTopicsInApp || 0);
         setHasAnyData(cached.hasAnyData || false);
         if (showLoader) setLoading(false);
-        // Show popup after data loads
-        // Always show popup for testing
         setTimeout(() => setShowTriagePopup(true), 500);
         return;
       }
@@ -230,7 +247,6 @@ export function StudyProgress() {
         timestamp: cached.timestamp
       });
       if (showLoader) setLoading(false);
-      // Always show popup for testing
       setTimeout(() => setShowTriagePopup(true), 500);
     }
 
@@ -256,16 +272,24 @@ export function StudyProgress() {
       const totalTopicsInAppCount = allQuizzes?.length || 0;
       const hasData = data && data.length > 0;
 
-      const grouped: Record<string, { highestProgress: number; attempts: number }> = {};
+      // ✅ Accumulate attempts AND total questions per unit.
+      //    Each quiz_results row = one full quiz (e.g. 10 questions).
+      const grouped: Record<
+        string,
+        { highestProgress: number; attempts: number; totalQuestions: number }
+      > = {};
 
       data?.forEach((res) => {
         const key = res.unit || "Unknown";
         const percent = res.total_questions > 0 ? (res.score / res.total_questions) * 100 : 0;
+        const qCount = res.total_questions || 0;
 
-        if (!grouped[key]) grouped[key] = { highestProgress: percent, attempts: 1 };
-        else {
+        if (!grouped[key]) {
+          grouped[key] = { highestProgress: percent, attempts: 1, totalQuestions: qCount };
+        } else {
           grouped[key].highestProgress = Math.max(grouped[key].highestProgress, percent);
           grouped[key].attempts += 1;
+          grouped[key].totalQuestions += qCount;
         }
       });
 
@@ -284,7 +308,9 @@ export function StudyProgress() {
           id: unitName,
           name: unitName,
           progress: Math.round(stats.highestProgress),
-          hoursStudied: stats.attempts * 1.5,
+          // ✅ Hours = total questions answered × minutes-per-question ÷ 60
+          //    Example: 30 questions × 1 min ÷ 60 = 0.5h
+          hoursStudied: +((stats.totalQuestions * MINUTES_PER_QUESTION) / 60).toFixed(1),
           topicsCompleted: stats.attempts,
           totalTopics: allQuizzes?.filter((q) => q.unit === unitName).length || stats.attempts,
           rating: rating,
@@ -310,8 +336,6 @@ export function StudyProgress() {
         saveToLocalStorage(user.id, newState);
         progressCache.set(cacheKey, { ...newState, timestamp: now });
 
-        // Show popup after data loads (only once)
-        // Always show popup for testing
         setTimeout(() => setShowTriagePopup(true), 500);
       }
     } catch (err) {
@@ -393,9 +417,6 @@ export function StudyProgress() {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
           <CardHeader className="pb-2 px-4 md:px-6 pt-4 md:pt-6">
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="p-2 md:p-2.5 bg-red-50 dark:bg-red-900/20 rounded-xl md:rounded-2xl">
-                <Heart className="h-6 w-6 md:h-7 md:w-7 text-red-500 animate-pulse" fill="currentColor" />
-              </div>
               <div>
                 <CardTitle className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
                   Your <span className="text-blue-600">Growth</span> Story
@@ -420,7 +441,7 @@ export function StudyProgress() {
             <div className="bg-gray-50/80 dark:bg-gray-900/50 rounded-2xl md:rounded-3xl p-4 md:p-5 border-0">
               <motion.div layout>
                 <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                  <h3 className="text-[10px] md:text-xs font-bold   tracking-widest text-gray-500">Metric Guide</h3>
+                  <h3 className="text-[10px] md:text-xs font-bold tracking-widest text-gray-500">Metric Guide</h3>
                   <button
                     onClick={() => setShowProgressDescription(!showProgressDescription)}
                     className="text-[9px] md:text-[10px] font-bold text-blue-600 hover:underline px-1.5 md:px-2 py-0.5 md:py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg"
@@ -452,7 +473,8 @@ export function StudyProgress() {
                         </div>
                         <div className="flex gap-2 md:gap-3">
                           <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg flex items-center justify-center text-indigo-600 font-bold text-[10px] md:text-xs">H</div>
-                          <p className="text-[10px] md:text-[11px] text-gray-500 leading-snug"><strong>Hours:</strong> Calculated as 1.5hrs per unique attempt.</p>
+                          {/* ✅ Corrected description to match new formula */}
+                          <p className="text-[10px] md:text-[11px] text-gray-500 leading-snug"><strong>Hours:</strong> Estimated at {MINUTES_PER_QUESTION} min per question answered.</p>
                         </div>
                       </div>
                       <p className="mt-3 md:mt-4 text-[9px] md:text-[10px] italic text-gray-400 border-l-2 border-blue-500 pl-3">
@@ -480,7 +502,7 @@ export function StudyProgress() {
                   <p className="text-xs font-normal text-gray-400 mt-1 md:mt-2">
                     {triage.label} Status
                   </p>
-                  <p className="text-[9px] md:text-[10px] lg:text-xs font-bold text-gray-400   tracking-tight mt-1 md:mt-2">
+                  <p className="text-[9px] md:text-[10px] lg:text-xs font-bold text-gray-400 tracking-tight mt-1 md:mt-2">
                     {triage.label} Status
                   </p>
                 </CardContent>
@@ -495,7 +517,7 @@ export function StudyProgress() {
               />
               <StatCard
                 icon={<Clock className="w-4 h-4 md:w-5 md:h-5" />}
-                value={overallStats.totalHours}
+                value={`${overallStats.totalHours.toFixed(1)}h`}
                 label="Hours Studied"
                 color="text-indigo-600"
                 bgColor="bg-indigo-50 dark:bg-indigo-900/20"
@@ -534,83 +556,137 @@ export function StudyProgress() {
                 <>
                   {/* 🚨 UNIT TRIAGE SUMMARY */}
                   {subjects.length > 0 && (
-                    <div className="grid grid-cols-1 gap-2 mb-4">
-                      {subjects.slice(0, 3).map((subject) => (
-                        <UnitTriageBadge key={subject.id} subject={subject} />
-                      ))}
-                      {subjects.length > 3 && (
-                        <p className="text-center text-xs text-gray-400 font-medium">
-                          +{subjects.length - 3} more units
-                        </p>
-                      )}
+                    <div className="mb-3 space-y-2">
+
+                      {/* ✅ LEGEND — shows all 4 codes always (GREEN / YELLOW / RED / BLACK) */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-2 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
+                        <span className="text-[10px] font-bold tracking-widest text-slate-400">
+                          KEY
+                        </span>
+                        {TRIAGE_LEVELS.map((level) => {
+                          const dotClass =
+                            (level.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400";
+                          return (
+                            <div key={level.code} className="flex items-center gap-1.5">
+                              <span className={`w-2 h-2 rounded-full ${dotClass}`} />
+                              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                                {level.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Top 3 units */}
+                      <div className="grid grid-cols-1 gap-2">
+                        {subjects.slice(0, 3).map((subject) => (
+                          <UnitTriageBadge key={subject.id} subject={subject} />
+                        ))}
+                        {subjects.length > 3 && (
+                          <p className="text-center text-xs text-gray-400 font-medium">
+                            +{subjects.length - 3} more units
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
-
-                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full px-2">
+                  <div className="flex flex-col w-full">
                     {subjects.map((subject) => {
                       const unitTriage = getTriageCode(subject.progress, true);
+
+                      // Triage dot colors (matches your existing triage code system)
+                      const dotColor =
+                        unitTriage.code === "GREEN" ? "bg-emerald-500" :
+                          unitTriage.code === "YELLOW" ? "bg-amber-500" :
+                            unitTriage.code === "RED" ? "bg-rose-500" :
+                              "bg-slate-400";
+
+                      const barColor =
+                        unitTriage.code === "GREEN" ? "bg-emerald-500" :
+                          unitTriage.code === "YELLOW" ? "bg-amber-500" :
+                            unitTriage.code === "RED" ? "bg-rose-500" :
+                              "bg-slate-400";
+
                       return (
-                        <Card key={subject.id} className="group relative overflow-hidden border-0 bg-white dark:bg-muted/60 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/5 flex flex-col">
-                          <CardHeader className="pb-4">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-1 max-w-[65%]">
-                                <CardTitle className="text-base font-bold leading-tight group-hover:text-blue-600 transition-colors">
-                                  {subject.name}
-                                </CardTitle>
-                                <CardDescription className="text-[10px] font-bold   tracking-wider">
-                                  {subject.topicsCompleted} of {subject.totalTopics} Attempts
-                                </CardDescription>
-                              </div>
-                              <div className="flex flex-col items-end gap-1.5">
-                                <div className="flex items-center gap-0.5 text-amber-400">
-                                  {renderStars(subject.rating)}
-                                </div>
-                                {subject.progress >= 80 && (
-                                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[9px] font-bold border-none">
-                                    Mastered
-                                  </Badge>
-                                )}
-                              </div>
+                        <button
+                          key={subject.id}
+                          type="button"
+                          onClick={() => navigate(`/unit/${encodeURIComponent(subject.id)}`)}
+                          className="group w-full text-left px-3 py-3
+                   flex items-start gap-3
+                   transition-colors duration-150
+                   hover:bg-slate-50 dark:hover:bg-white/5
+                   active:bg-slate-100 dark:active:bg-white/10
+                   rounded-xl"
+                          style={{ touchAction: 'manipulation' }}
+                        >
+                          {/* Left: triage dot + rating */}
+                          <div className="shrink-0 pt-0.5">
+                            <div className="relative w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center">
+                              <span className="text-sm font-black text-slate-700 dark:text-slate-300 leading-none">
+                                {subject.rating}
+                              </span>
+                              <span className={`absolute top-0 right-0 w-3 h-3 rounded-full ${dotColor} ring-2 ring-white dark:ring-slate-950`} />
                             </div>
-                          </CardHeader>
-                          <CardContent className="space-y-6 flex-1 flex flex-col">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-[11px] font-bold   tracking-tighter">
-                                <span className="text-gray-400">Total Mastery</span>
-                                <span className="text-blue-600">{subject.progress}%</span>
-                              </div>
-                              <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                          </div>
+
+                          {/* Middle: title + progress + meta */}
+                          <div className="flex-1 min-w-0">
+                            {/* Row 1: Name + hours pill */}
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight flex-1">
+                                {subject.name}
+                              </h3>
+                              <span className="shrink-0 text-[10px] font-bold text-slate-400 tabular-nums">
+                                {subject.hoursStudied}h
+                              </span>
+                            </div>
+
+                            {/* Row 2: Progress bar */}
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <div className="relative flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <motion.div
                                   initial={{ width: 0 }}
                                   animate={{ width: `${subject.progress}%` }}
-                                  className={`absolute top-0 left-0 h-full rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)] ${unitTriage.code === "GREEN" ? "bg-emerald-500" :
-                                    unitTriage.code === "YELLOW" ? "bg-amber-500" :
-                                      "bg-red-500"
-                                    }`}
+                                  transition={{ duration: 0.4, ease: "easeOut" }}
+                                  className={`absolute top-0 left-0 h-full rounded-full ${barColor}`}
                                 />
                               </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 py-3 border-t border-gray-50 dark:border-gray-900">
-                              <div className="text-center">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.hoursStudied}</p>
-                                <p className="text-[9px] font-bold text-gray-400   mt-1">Hours</p>
-                              </div>
-                              <div className="text-center border-x border-gray-50 dark:border-gray-900">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.topicsCompleted}</p>
-                                <p className="text-[9px] font-bold text-gray-400   mt-1">Attempts</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{subject.rating}/5</p>
-                                <p className="text-[9px] font-bold text-gray-400   mt-1">Rating</p>
-                              </div>
+                              <span className="shrink-0 text-[11px] font-bold text-slate-600 dark:text-slate-300 tabular-nums w-9 text-right">
+                                {subject.progress}%
+                              </span>
                             </div>
 
-                            {/* 🚨 TRIAGE BADGE AT BOTTOM OF CARD */}
-                            <div className="mt-auto pt-2">
-                              <UnitTriageBadge subject={subject} />
+                            {/* Row 3: Meta */}
+                            <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                              <span>{subject.topicsCompleted} {subject.topicsCompleted === 1 ? "attempt" : "attempts"}</span>
+                              <span className="text-slate-300 dark:text-slate-700">•</span>
+                              <span className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-2.5 w-2.5 ${i < subject.rating
+                                      ? "text-amber-400 fill-amber-400"
+                                      : "text-slate-200 dark:text-slate-700"}`}
+                                  />
+                                ))}
+                              </span>
+                              {subject.progress >= 80 && (
+                                <>
+                                  <span className="text-slate-300 dark:text-slate-700">•</span>
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Mastered</span>
+                                </>
+                              )}
                             </div>
-                          </CardContent>
-                        </Card>
+                          </div>
+
+                          {/* Right: chevron (implicit "tap to open") */}
+                          <div className="shrink-0 pt-2.5 text-slate-300 dark:text-slate-700 group-hover:text-slate-400 dark:group-hover:text-slate-500 transition-colors">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9 18l6-6-6-6" />
+                            </svg>
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -662,7 +738,7 @@ export function StudyProgress() {
   );
 }
 
-// Optimized SimulationAndTriviaSummary component with caching
+// ============ SIMULATION + TRIVIA SUMMARY ============
 function SimulationAndTriviaSummary({ user }) {
   const [profile, setProfile] = useState(null);
   const [streak, setStreak] = useState(0);
@@ -948,7 +1024,7 @@ function SimulationAndTriviaSummary({ user }) {
           <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl border border-white/10">
             <Target className="w-5 h-5 text-blue-100" />
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold   tracking-widest opacity-80">Daily Goal</span>
+              <span className="text-[10px] font-bold tracking-widest opacity-80">Daily Goal</span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -979,7 +1055,7 @@ function SimulationAndTriviaSummary({ user }) {
                 <span className="text-2xl font-bold">{streak}</span>
                 <Flame className="w-6 h-6 text-orange-400 fill-orange-400 animate-bounce" />
               </div>
-              <p className="text-[10px] font-bold   tracking-tight opacity-80">Day Streak</p>
+              <p className="text-[10px] font-bold tracking-tight opacity-80">Day Streak</p>
             </div>
             <div className="hidden sm:block w-px h-10 bg-white/20" />
             <p className="hidden sm:block max-w-[140px] text-[10px] leading-tight opacity-90 font-medium">
@@ -1085,11 +1161,12 @@ const streakCache = new Map();
 function StatPill({ label, value, color }: { label: string, value: string | number, color: string }) {
   return (
     <div className="bg-gray-50 dark:bg-gray-900/50 p-2 rounded-xl border-0 text-center">
-      <span className="block text-[9px]   font-bold text-gray-400 tracking-tighter">{label}</span>
+      <span className="block text-[9px] font-bold text-gray-400 tracking-tighter">{label}</span>
       <span className={`text-xs font-bold ${color}`}>{value}</span>
     </div>
   );
 }
+
 function StatCard({ icon, value, label, color, bgColor }: any) {
   return (
     <Card className="border-0 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden">
@@ -1100,7 +1177,7 @@ function StatCard({ icon, value, label, color, bgColor }: any) {
         <h4 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-none">
           {value}
         </h4>
-        <p className="text-[10px] sm:text-xs font-bold text-gray-400   tracking-tight mt-2">
+        <p className="text-[10px] sm:text-xs font-bold text-gray-400 tracking-tight mt-2">
           {label}
         </p>
       </CardContent>
