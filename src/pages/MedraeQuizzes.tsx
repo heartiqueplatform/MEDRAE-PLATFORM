@@ -843,7 +843,7 @@ export function MedraeQuizzes() {
                                       >
                                         {hasStarted ? (
                                           <>
-                                            <RefreshCw className="h-4 w-4 animate-spin-slow" />
+                                            <Play className="h-4 w-4 fill-current" />
                                             {paper.paperNumber === 4
                                               ? "Continue Mock"
                                               : paper.paperNumber === 99

@@ -155,10 +155,10 @@ function ChallengeTabs({
         switch (activeTab) {
             case "find":
                 return (
-                    <div className="space-y-3 w-full px-2">
-                        {/* Search input — full width */}
-                        <div className="relative w-full group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                    <div className="w-full">
+                        {/* Search input — full width, own row */}
+                        <div className="relative w-full group px-2 mb-1">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                             <input
                                 defaultValue={search}
                                 onChange={(e) => handleSearchChange(e.target.value)}
@@ -167,213 +167,164 @@ function ChallengeTabs({
                             />
                         </div>
 
-                        {/* Update List button — centered on its own line */}
-                        <div className="flex justify-center w-full">
-                            <button
-                                onClick={onUpdateList}
-                                disabled={isUpdating}
-                                className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold transition-all border active:scale-95 ${isUpdating
-                                    ? "bg-slate-400 border-0 text-white cursor-not-allowed"
-                                    : "bg-blue-500 border-0 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600"
-                                    }`}
-                                style={{ touchAction: 'manipulation' }}
-                            >
-                                <RefreshCw size={14} className={isUpdating ? "animate-spin" : ""} />
-                                {isUpdating ? "Updating..." : "Update List"}
-                            </button>
-                        </div>
-
-                        {/* User Cards Grid */}
+                        {/* Feed */}
                         <div className="w-full">
-                            <AnimatePresence>
-                                {/* Empty State */}
-                                {filteredPlayers.length === 0 && !loading && (
-                                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 w-full px-2">
-                                        <Users size={48} className="text-slate-300" />
-                                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Players Found</p>
-                                        <p className="text-xs text-slate-400">Tap "Update List" to refresh the player directory</p>
-                                    </div>
-                                )}
+                            {loading ? (
+                                <PlayerRowSkeleton count={6} />
+                            ) : filteredPlayers.length === 0 && inviteCards.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-50 w-full px-2">
+                                    <Users size={48} className="text-slate-300" />
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Players Found</p>
+                                    <p className="text-xs text-slate-400">Tap "Update" to refresh the player directory</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/5">
 
-                                {/* User Cards Grid - 4 columns on desktop */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full">
-
-                                    {/* Invite Card */}
-                                    {!loading && inviteCards.map((card) => (
-                                        <motion.div
+                                    {/* === INVITE ROW (with Update button at the end) === */}
+                                    {inviteCards.map((card) => (
+                                        <div
                                             key={card.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={() => handleInvite(card.type)}
-                                            className="group relative bg-white dark:bg-muted/90 rounded-2xl  border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
-                                            style={{ touchAction: 'manipulation' }}
+                                            className="flex items-center gap-3 px-3 py-2.5
+                                           transition-colors duration-150
+                                           hover:bg-slate-50 dark:hover:bg-white/5"
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-transparent to-transparent dark:from-blue-900/10 pointer-events-none" />
-                                            <div className="px-3 py-4 relative">
-                                                {/* Icon - Centered like other cards */}
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className="relative">
-                                                        <div className="w-16 h-16 rounded-full overflow-hidden bg-blue-900 dark:bg-blue-950 flex items-center justify-center border-0 shadow-inner">
-                                                            <Send size={28} className="text-white rotate-[-20deg]" />
-                                                        </div>
-                                                        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-0 shadow-sm animate-pulse" />
+                                            {/* Invite button — clickable area on the left */}
+                                            <button
+                                                onClick={() => handleInvite(card.type)}
+                                                className="flex items-center gap-3 flex-1 min-w-0 text-left active:opacity-70"
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+                                                <div className="relative shrink-0">
+                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                                                        <Send size={20} className="text-white rotate-[-20deg]" />
                                                     </div>
-
-                                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 px-2 py-1 rounded-full">
-                                                        Invite
-                                                    </span>
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
                                                 </div>
-
-                                                {/* Name and Description */}
-                                                <div className="mb-3">
-                                                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
                                                         {card.name}
-                                                    </h3>
-                                                    <p className="text-xs font-medium text-slate-400 truncate">
-                                                        Strengthen the network
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                                        Strengthen the network • Free
                                                     </p>
                                                 </div>
-                                                {/* Status Badge */}
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                                                        <Users size={10} />
-                                                        Invite Peers
-                                                    </span>
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
-                                                        <Star size={10} className="fill-amber-500" />
-                                                        Free
-                                                    </span>
-                                                </div>
+                                            </button>
 
-                                                {/* Invite Button */}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleInvite(card.type);
-                                                    }}
-                                                    className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 hover:from-blue-950 hover:to-blue-900 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
-                                                    style={{ touchAction: 'manipulation' }}
-                                                >
-                                                    <Send size={14} className="rotate-[-20deg]" />
-                                                    Invite Now
-                                                </button>
-                                            </div>
-                                        </motion.div>
+                                            {/* Invite pill */}
+                                            <button
+                                                onClick={() => handleInvite(card.type)}
+                                                className="shrink-0 text-[11px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 active:scale-95 transition-transform"
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+                                                Invite
+                                            </button>
+
+                                            {/* ✅ UPDATE BUTTON — sits right after Invite */}
+                                            <button
+                                                onClick={onUpdateList}
+                                                disabled={isUpdating}
+                                                className={`shrink-0 flex items-center justify-center h-8 px-3 rounded-xl
+                text-[11px] font-bold transition-all active:scale-95
+                ${isUpdating
+                                                        ? "bg-blue-400/60 text-white cursor-not-allowed"
+                                                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                                                    }`}
+                                                style={{ touchAction: 'manipulation' }}
+                                                title="Refresh player list"
+                                            >
+                                                <span>{isUpdating ? "Updating..." : "Update"}</span>
+                                            </button>
+                                        </div>
                                     ))}
+
+                                    {/* === PLAYER ROWS === */}
                                     {filteredPlayers.map((p: any) => (
-                                        <motion.div
+                                        <div
                                             key={p.user_id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            onClick={() => onSelectUser(p.user_id)}
-                                            className="group relative bg-white dark:bg-muted/80 rounded-2xl border-0 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
-                                            style={{ touchAction: 'manipulation' }}
+                                            className="group flex items-center gap-3 px-3 py-2.5
+                                           transition-colors duration-150
+                                           hover:bg-slate-50 dark:hover:bg-white/5"
                                         >
-                                            {/* Card Content */}
-                                            <div className="px-3 py-4">
-                                                {/* Avatar and Online Status */}
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className="relative">
-                                                        <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">
-                                                            {p.avatar_url ? (
-                                                                <img
-                                                                    src={p.avatar_url}
-                                                                    className="w-full h-full object-cover rounded-full"
-                                                                    alt={p.name}
-                                                                    loading="lazy"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center">
-                                                                    <img
-                                                                        src="/pwa-512x512.png"
-                                                                        className="w-full h-full object-cover rounded-full"
-                                                                        alt="Medrae Logo"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        {p.is_online && (
-                                                            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-0 shadow-sm animate-pulse" />
-                                                        )}
-                                                    </div>
-
-                                                    {/* Pin Button */}
-                                                    <div
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        style={{ touchAction: 'manipulation' }}
-                                                    >
-                                                        <button
-                                                            onClick={() => togglePin(p.user_id)}
-                                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
-                                                            style={{ touchAction: 'manipulation' }}
-                                                            title={p.is_pinned ? "Unpin user" : "Pin user"}
-                                                        >
-                                                            {p.is_pinned ? (
-                                                                <Star size={16} className="text-amber-500 fill-amber-500" />
-                                                            ) : (
-                                                                <StarOff size={16} className="text-slate-400" />
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Name and Username */}
-                                                <div className="mb-3">
-                                                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                                                        {p.name || "Unknown User"}
-                                                    </h3>
-                                                    <p className="text-xs font-medium text-slate-400 truncate">
-                                                        @{p.username || "nurse"}
-                                                    </p>
-                                                </div>
-
-                                                {/* Status Badge */}
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${p.is_online
-                                                        ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
-                                                        : "bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400"
-                                                        }`}>
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${p.is_online ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                                                            }`} />
-                                                        {p.is_online ? "Online" : "Offline"}
-                                                    </span>
-                                                    {p.is_pinned && (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold">
-                                                            <Star size={10} className="fill-amber-500" />
-                                                            Pinned
-                                                        </span>
+                                            <button
+                                                onClick={() => onSelectUser(p.user_id)}
+                                                className="relative shrink-0 active:scale-95 transition-transform"
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+                                                <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                    {p.avatar_url ? (
+                                                        <img
+                                                            src={p.avatar_url}
+                                                            className="w-full h-full object-cover"
+                                                            alt={p.name}
+                                                            loading="lazy"
+                                                        />
+                                                    ) : (
+                                                        <img
+                                                            src="/pwa-512x512.png"
+                                                            className="w-full h-full object-cover"
+                                                            alt="Medrae Logo"
+                                                        />
                                                     )}
                                                 </div>
+                                                {p.is_online && (
+                                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
+                                                )}
+                                                {p.is_pinned && (
+                                                    <span className="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                                        <Star size={8} className="text-white fill-white" />
+                                                    </span>
+                                                )}
+                                            </button>
 
-                                                {/* Challenge Button */}
-                                                <div
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    style={{ touchAction: 'manipulation' }}
-                                                >
-                                                    <Button
-                                                        onClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation();
-                                                            e.preventDefault();
-                                                            sendChallenge(p.user_id);
-                                                        }}
-                                                        size="sm"
-                                                        className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
-                                                        style={{ touchAction: 'manipulation' }}
-                                                    >
-                                                        <Swords size={14} className="mr-1.5" />
-                                                        Challenge
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </motion.div>
+                                            <button
+                                                onClick={() => onSelectUser(p.user_id)}
+                                                className="flex-1 min-w-0 text-left active:opacity-70"
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+                                                <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                                    {p.name || "Unknown User"}
+                                                </p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                                    @{p.username || "nurse"}
+                                                </p>
+                                            </button>
+
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    togglePin(p.user_id);
+                                                }}
+                                                className="shrink-0 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
+                                                style={{ touchAction: 'manipulation' }}
+                                                title={p.is_pinned ? "Unpin user" : "Pin user"}
+                                            >
+                                                {p.is_pinned ? (
+                                                    <Star size={14} className="text-amber-500 fill-amber-500" />
+                                                ) : (
+                                                    <StarOff size={14} className="text-slate-300" />
+                                                )}
+                                            </button>
+
+                                            <Button
+                                                onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    sendChallenge(p.user_id);
+                                                }}
+                                                size="sm"
+                                                className="shrink-0 h-8 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition-colors active:scale-95 shadow-none"
+                                                style={{ touchAction: 'manipulation' }}
+                                            >
+
+                                                Challenge Me
+                                            </Button>
+                                        </div>
                                     ))}
                                 </div>
-                            </AnimatePresence>
+                            )}
                         </div>
                     </div>
                 );
-
             case "pinned":
                 if (pinnedUsers.length === 0) {
                     return (
@@ -385,91 +336,79 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
+                    <div className="flex flex-col">
                         {pinnedUsers.map((p: any) => (
-
-                            <motion.div
+                            <div
                                 key={p.user_id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                onClick={() => onSelectUser(p.user_id)}
-                                className="group relative bg-white dark:bg-muted/50 rounded-2xl border-2 border-amber-500/20 ... cursor-pointer"
-                                style={{ touchAction: 'manipulation' }}
+                                className="group flex items-center gap-3 px-3 py-2.5
+                               transition-colors duration-150
+                               hover:bg-slate-50 dark:hover:bg-white/5"
                             >
-                                <div className="px-3 py-4">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="relative">
-                                            <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-amber-500 shadow-inner">
-                                                {p.avatar_url ? (
-                                                    <img
-                                                        src={p.avatar_url}
-                                                        className="w-full h-full object-cover rounded-full"
-                                                        alt={p.name}
-                                                        loading="lazy"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <img
-                                                            src="/pwa-512x512.png"
-                                                            className="w-full h-full object-cover rounded-full"
-                                                            alt="Medrae Logo"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {p.is_online && (
-                                                <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-0 shadow-sm animate-pulse" />
-                                            )}
-                                        </div>
-                                        <button
-                                            onClick={() => togglePin(p.user_id)}
-                                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
-                                            style={{ touchAction: 'manipulation' }}
-                                            title="Unpin user"
-                                        >
-                                            <StarOff size={16} className="text-slate-400" />
-                                        </button>
+                                <button
+                                    onClick={() => onSelectUser(p.user_id)}
+                                    className="relative shrink-0 active:scale-95 transition-transform"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 ring-2 ring-amber-400/60">
+                                        {p.avatar_url ? (
+                                            <img
+                                                src={p.avatar_url}
+                                                className="w-full h-full object-cover"
+                                                alt={p.name}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <img
+                                                src="/pwa-512x512.png"
+                                                className="w-full h-full object-cover"
+                                                alt="Medrae Logo"
+                                            />
+                                        )}
                                     </div>
+                                    {p.is_online && (
+                                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
+                                    )}
+                                    <span className="absolute -top-1 -left-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                        <Star size={8} className="text-white fill-white" />
+                                    </span>
+                                </button>
 
-                                    <div className="mb-3">
-                                        <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 truncate">
-                                            {p.name || "Unknown User"}
-                                        </h3>
-                                        <p className="text-xs font-medium text-slate-400 truncate">
-                                            @{p.username || "nurse"}
-                                        </p>
-                                    </div>
+                                <button
+                                    onClick={() => onSelectUser(p.user_id)}
+                                    className="flex-1 min-w-0 text-left active:opacity-70"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                        {p.name || "Unknown User"}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                        @{p.username || "nurse"}
+                                    </p>
+                                </button>
 
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
-                                            <Star size={10} className="fill-amber-500" />
-                                            Pinned
-                                        </span>
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${p.is_online
-                                            ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
-                                            : "bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400"
-                                            }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${p.is_online ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                                                }`} />
-                                            {p.is_online ? "Online" : "Offline"}
-                                        </span>
-                                    </div>
+                                <button
+                                    onClick={() => togglePin(p.user_id)}
+                                    className="shrink-0 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-90"
+                                    style={{ touchAction: 'manipulation' }}
+                                    title="Unpin user"
+                                >
+                                    <StarOff size={14} className="text-slate-300" />
+                                </button>
 
-                                    <Button
-                                        onClick={(e: React.MouseEvent) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            sendChallenge(p.user_id);
-                                        }}
-                                        size="sm"
-                                        className="w-full h-10 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-amber-500/20"
-                                        style={{ touchAction: 'manipulation' }}
-                                    >
-                                        <Swords size={14} className="mr-1.5" />
-                                        Challenge
-                                    </Button>
-                                </div>
-                            </motion.div>
+                                <Button
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        sendChallenge(p.user_id);
+                                    }}
+                                    size="sm"
+                                    className="shrink-0 h-8 px-3 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition-colors active:scale-95 shadow-none"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <Swords size={12} className="mr-1" />
+                                    Challenge
+                                </Button>
+                            </div>
                         ))}
                     </div>
                 );
@@ -485,74 +424,59 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
+                    <div className="flex flex-col">
                         {incoming.map((challenge: any) => (
-                            <motion.div
+                            <div
                                 key={challenge.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="group relative bg-white dark:bg-muted/50 rounded-2xl border-2 border-blue-500/20 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                className="group flex items-center gap-3 px-3 py-2.5
+                               transition-colors duration-150
+                               hover:bg-slate-50 dark:hover:bg-white/5"
                             >
-                                <div className="px-3 py-4">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="relative">
-                                            <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-blue-500 shadow-inner">
-                                                {challenge.from_user?.avatar_url ? (
-                                                    <img
-                                                        src={challenge.from_user.avatar_url}
-                                                        className="w-full h-full object-cover rounded-full"
-                                                        alt={challenge.from_user.name}
-                                                        loading="lazy"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-2xl">
-                                                        {challenge.from_user?.name?.[0]?.toUpperCase() || "?"}
-                                                    </div>
-                                                )}
+                                <div className="relative shrink-0">
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                        {challenge.from_user?.avatar_url ? (
+                                            <img
+                                                src={challenge.from_user.avatar_url}
+                                                className="w-full h-full object-cover"
+                                                alt={challenge.from_user.name}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-lg">
+                                                {challenge.from_user?.name?.[0]?.toUpperCase() || "?"}
                                             </div>
-                                            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-blue-500 rounded-full border-0 flex items-center justify-center">
-                                                <Swords size={10} className="text-white" />
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-slate-400">
-                                            {new Date(challenge.created_at).toLocaleDateString()}
-                                        </span>
+                                        )}
                                     </div>
-
-                                    <div className="mb-3">
-                                        <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 truncate">
-                                            {challenge.from_user?.name || "Unknown"}
-                                        </h3>
-                                        <p className="text-xs font-medium text-slate-400 truncate">
-                                            Incoming Challenge
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                                            <Clock size={10} />
-                                            Pending
-                                        </span>
-                                    </div>
-
-                                    <Button
-                                        onClick={(e: React.MouseEvent) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            acceptChallenge(challenge);
-                                        }}
-                                        size="sm"
-                                        className="w-full h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20"
-                                        style={{ touchAction: 'manipulation' }}
-                                    >
-                                        <Check size={14} className="mr-1.5" />
-                                        Accept Challenge
-                                    </Button>
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                        <Swords size={8} className="text-white" />
+                                    </span>
                                 </div>
-                            </motion.div>
-                        ))
-                        }
-                    </div >
+
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                        {challenge.from_user?.name || "Unknown"}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                        Incoming Challenge
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        acceptChallenge(challenge);
+                                    }}
+                                    size="sm"
+                                    className="shrink-0 h-8 px-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition-colors active:scale-95 shadow-none"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <Check size={12} className="mr-1" />
+                                    Accept
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
                 );
 
             case "sent":
@@ -566,68 +490,54 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
+                    <div className="flex flex-col">
                         {outgoing.map((challenge: any) => (
-                            <motion.div
+                            <div
                                 key={challenge.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="group relative bg-white dark:bg-muted/50 rounded-2xl border-0 hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                                className="group flex items-center gap-3 px-3 py-2.5
+                               transition-colors duration-150
+                               hover:bg-slate-50 dark:hover:bg-white/5"
                             >
-                                <div className="px-3 py-4">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="relative">
-                                            <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">
-                                                {challenge.to_user?.avatar_url ? (
-                                                    <img
-                                                        src={challenge.to_user.avatar_url}
-                                                        className="w-full h-full object-cover rounded-full"
-                                                        alt={challenge.to_user.name}
-                                                        loading="lazy"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-2xl">
-                                                        {challenge.to_user?.name?.[0]?.toUpperCase() || "?"}
-                                                    </div>
-                                                )}
+                                <div className="relative shrink-0">
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                        {challenge.to_user?.avatar_url ? (
+                                            <img
+                                                src={challenge.to_user.avatar_url}
+                                                className="w-full h-full object-cover"
+                                                alt={challenge.to_user.name}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-lg">
+                                                {challenge.to_user?.name?.[0]?.toUpperCase() || "?"}
                                             </div>
-                                            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-amber-500 rounded-full border-0 flex items-center justify-center">
-                                                <Clock size={10} className="text-white" />
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-slate-400">
-                                            {new Date(challenge.created_at).toLocaleDateString()}
-                                        </span>
+                                        )}
                                     </div>
-
-                                    <div className="mb-3">
-                                        <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 truncate">
-                                            {challenge.to_user?.name || "Unknown"}
-                                        </h3>
-                                        <p className="text-xs font-medium text-slate-400 truncate">
-                                            Awaiting Response
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
-                                            <Send size={10} />
-                                            Pending
-                                        </span>
-                                    </div>
-
-                                    <Button
-                                        onClick={() => cancelChallenge(challenge.id)}
-                                        size="sm"
-                                        variant="outline"
-                                        className="w-full h-10 rounded-xl border-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-xs transition-all active:scale-95"
-                                        style={{ touchAction: 'manipulation' }}
-                                    >
-                                        <X size={14} className="mr-1.5" />
-                                        Cancel
-                                    </Button>
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                                        <Clock size={8} className="text-white" />
+                                    </span>
                                 </div>
-                            </motion.div>
+
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                        {challenge.to_user?.name || "Unknown"}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                                        Awaiting Response
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={() => cancelChallenge(challenge.id)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="shrink-0 h-8 px-3 rounded-full border-0 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-bold text-[11px] transition-colors active:scale-95"
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <X size={12} className="mr-1" />
+                                    Cancel
+                                </Button>
+                            </div>
                         ))}
                     </div>
                 );
@@ -643,102 +553,64 @@ function ChallengeTabs({
                     );
                 }
                 return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full px-2">
+                    <div className="flex flex-col">
                         {completed.slice(0, 20).map((challenge: any) => {
                             const isWin = challenge.winner_id === user.id;
+                            const opponent = challenge.from_user_id === user.id
+                                ? challenge.to_user
+                                : challenge.from_user;
+
                             return (
-                                <motion.div
+                                <div
                                     key={challenge.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`group relative bg-white dark:bg-muted/80 rounded-2xl border-0 transition-all duration-300 overflow-hidden ${isWin ? "border-0 " : "border-0 "
-                                        } hover:shadow-xl`}
+                                    className="group flex items-center gap-3 px-3 py-2.5
+                                   transition-colors duration-150
+                                   hover:bg-slate-50 dark:hover:bg-white/5"
                                 >
-                                    <div className="px-3 py-4">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="relative">
-                                                <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-0 shadow-inner">
-                                                    {challenge.from_user_id === user.id ? (
-                                                        challenge.to_user?.avatar_url ? (
-                                                            <img
-                                                                src={challenge.to_user.avatar_url}
-                                                                className="w-full h-full object-cover rounded-full"
-                                                                alt={challenge.to_user.name}
-                                                                loading="lazy"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <img
-                                                                    src="/pwa-512x512.png"
-                                                                    className="w-full h-full object-cover rounded-full"
-                                                                    alt="Medrae Logo"
-                                                                />
-                                                            </div>
-                                                        )
-                                                    ) : (
-                                                        challenge.from_user?.avatar_url ? (
-                                                            <img
-                                                                src={challenge.from_user.avatar_url}
-                                                                className="w-full h-full object-cover rounded-full"
-                                                                alt={challenge.from_user.name}
-                                                                loading="lazy"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <img
-                                                                    src="/pwa-512x512.png"
-                                                                    className="w-full h-full object-cover rounded-full"
-                                                                    alt="Medrae Logo"
-                                                                />
-                                                            </div>
-                                                        )
-                                                    )}
-                                                </div>
-                                                {isWin ? (
-                                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-emerald-500 rounded-full border-0 flex items-center justify-center">
-                                                        <Trophy size={10} className="text-white" />
-                                                    </span>
-                                                ) : (
-                                                    <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-rose-500 rounded-full border-0 flex items-center justify-center">
-                                                        <Flame size={10} className="text-white" />
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <span className="text-[10px] font-bold text-slate-400">
-                                                {new Date(challenge.completed_at).toLocaleDateString()}
-                                            </span>
+                                    <div className="relative shrink-0">
+                                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                            {opponent?.avatar_url ? (
+                                                <img
+                                                    src={opponent.avatar_url}
+                                                    className="w-full h-full object-cover"
+                                                    alt={opponent.name}
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="/pwa-512x512.png"
+                                                    className="w-full h-full object-cover"
+                                                    alt="Medrae Logo"
+                                                />
+                                            )}
                                         </div>
-
-                                        <div className="mb-3">
-                                            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 truncate">
-                                                {challenge.from_user_id === user.id ? challenge.to_user?.name : challenge.from_user?.name}
-                                            </h3>
-                                            <p className="text-xs font-medium text-slate-400 truncate">
-                                                {isWin ? "Victory!" : "Defeat"}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${isWin
-                                                ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
-                                                : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400"
-                                                }`}>
-                                                {isWin ? <Trophy size={10} /> : <Flame size={10} />}
-                                                {isWin ? "Win" : "Loss"}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center justify-between text-sm font-bold">
-                                            <span className={isWin ? "text-emerald-600" : "text-rose-600"}>
-                                                {challenge.from_user_id === user.id ? challenge.score_to_beat : challenge.opponent_score}
-                                            </span>
-                                            <span className="text-slate-300 dark:text-slate-600">vs</span>
-                                            <span className="text-slate-600 dark:text-slate-400">
-                                                {challenge.from_user_id === user.id ? challenge.opponent_score : challenge.score_to_beat}
-                                            </span>
-                                        </div>
+                                        <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 ${isWin ? "bg-emerald-500" : "bg-rose-500"
+                                            }`}>
+                                            {isWin ? (
+                                                <Trophy size={8} className="text-white" />
+                                            ) : (
+                                                <Flame size={8} className="text-white" />
+                                            )}
+                                        </span>
                                     </div>
-                                </motion.div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate leading-tight">
+                                            {opponent?.name || "Unknown"}
+                                        </p>
+                                        <p className={`text-xs truncate leading-tight mt-0.5 font-semibold ${isWin ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                            }`}>
+                                            {isWin ? "Victory" : "Defeat"} • {challenge.from_user_id === user.id ? challenge.score_to_beat : challenge.opponent_score} vs {challenge.from_user_id === user.id ? challenge.opponent_score : challenge.score_to_beat}
+                                        </p>
+                                    </div>
+
+                                    <span className={`shrink-0 px-2 py-1 rounded-full text-[10px] font-bold ${isWin
+                                        ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+                                        : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400"
+                                        }`}>
+                                        {isWin ? "Win" : "Loss"}
+                                    </span>
+                                </div>
                             );
                         })}
                     </div>
@@ -828,7 +700,26 @@ function ChallengeTabs({
 function StatCardSkeleton() {
     return <div className="p-3 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse h-20" />;
 }
-
+/* Facebook-style row skeleton for player lists */
+function PlayerRowSkeleton({ count = 6 }: { count?: number }) {
+    return (
+        <div className="flex flex-col" aria-hidden="true">
+            {Array.from({ length: count }).map((_, i) => (
+                <div
+                    key={i}
+                    className="flex items-center gap-3 px-3 py-2.5 animate-pulse"
+                >
+                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="h-3 w-2/3 rounded bg-slate-200 dark:bg-white/10" />
+                        <div className="h-2.5 w-1/3 rounded bg-slate-200 dark:bg-white/10" />
+                    </div>
+                    <div className="h-8 w-16 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+                </div>
+            ))}
+        </div>
+    );
+}
 // Timer beep function using Web Audio API
 const playTimerBeep = () => {
     try {

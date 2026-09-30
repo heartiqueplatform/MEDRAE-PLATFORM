@@ -262,7 +262,18 @@ export async function markNoteSynced(question_id: string, user_id: string) {
         req.onerror = () => reject(req.error);
     });
 }
-
+// ------------------------------------------
+// CLEAR ANSWERS FOR A UNIT (used when the quiz changes)
+// ------------------------------------------
+export async function clearAnswersOffline(unitId: string): Promise<void> {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(ANSWERS_STORE, "readwrite");
+        tx.objectStore(ANSWERS_STORE).delete(unitId);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
 // ------------------------------------------
 // SYNC NOTES TO SUPABASE
 // ------------------------------------------

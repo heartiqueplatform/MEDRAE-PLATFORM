@@ -281,7 +281,7 @@ const getInitialCache = () => {
 const LEADERBOARD_TTL = 60 * 1000; // 5 minutes
 const LEADERBOARD_KEY = "leaderboard_fast";
 
-const readLeaderboardCache = (): any[] | null => {
+const readLeaderboardCache = (): { data: any[]; ts: number } | null => {
   try {
     const raw = localStorage.getItem(LEADERBOARD_KEY);
     if (!raw) return null;
@@ -290,12 +290,11 @@ const readLeaderboardCache = (): any[] | null => {
     const ts = Array.isArray(parsed) ? 0 : (parsed?.ts ?? 0);
     if (!Array.isArray(data)) return null;
     if (Date.now() - ts > LEADERBOARD_TTL) return null; // stale
-    return data;
+    return { data, ts };
   } catch {
     return null;
   }
 };
-
 const writeLeaderboardCache = (data: any[]) => {
   try {
     localStorage.setItem(
@@ -304,6 +303,39 @@ const writeLeaderboardCache = (data: any[]) => {
     );
   } catch { }
 };
+
+/* ============================================================
+   Skeleton Loader — matches leaderboard row layout exactly
+   ============================================================ */
+function SkeletonList({ count = 5 }) {
+  return (
+    <div className="flex flex-col" aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 px-2.5 py-2.5 animate-pulse"
+        >
+          {/* Rank */}
+          <div className="w-6 shrink-0 flex justify-center">
+            <div className="h-3 w-4 rounded bg-slate-200 dark:bg-white/10" />
+          </div>
+
+          {/* Avatar */}
+          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-white/10 shrink-0" />
+
+          {/* Name + institution */}
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="h-3 w-2/3 rounded bg-slate-200 dark:bg-white/10" />
+            <div className="h-2.5 w-1/3 rounded bg-slate-200 dark:bg-white/10" />
+          </div>
+
+          {/* Stars pill */}
+          <div className="shrink-0 h-6 w-12 rounded-full bg-slate-200 dark:bg-white/10" />
+        </div>
+      ))}
+    </div>
+  );
+}
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const user = useUser();
@@ -589,20 +621,20 @@ export default function StudentDashboard() {
       console.log("Simulation papers: Offline mode, keeping current list");
     }
   }, [user?.id]);
-
   const fetchTopStudents = useCallback(async (forceRefresh = false) => {
     if (!user?.id) return;
 
     // 1. Paint cache instantly (even if stale — better than blank)
     const cached = readLeaderboardCache();
-    if (cached && cached.length > 0) {
-      setTopStudents(cached);
-    } else if (forceRefresh || topStudents.length === 0) {
+    if (cached && cached.data.length > 0) {
+      setTopStudents(cached.data);
+      setLeaderboardUpdatedAt(cached.ts);
+    } else {
       setLoadingTopStudents(true);
     }
 
     // 2. If fresh cache exists and not forced, skip network
-    if (!forceRefresh && cached && cached.length > 0) {
+    if (!forceRefresh && cached && cached.data.length > 0) {
       setLoadingTopStudents(false);
       return;
     }
@@ -615,6 +647,7 @@ export default function StudentDashboard() {
       if (data && data.length > 0) {
         setTopStudents(data);
         writeLeaderboardCache(data);
+        setLeaderboardUpdatedAt(Date.now());
 
         // sync into dashboardData blob
         try {
@@ -638,11 +671,10 @@ export default function StudentDashboard() {
       }
     } catch (err) {
       console.error("Leaderboard Error:", err);
-      // keep whatever cache we already painted
     } finally {
       setLoadingTopStudents(false);
     }
-  }, [user?.id, topStudents.length]);
+  }, [user?.id]);
 
   // ✅ handleOpenDialog - OPENS INSTANTLY, LOADS DATA IN BACKGROUND
   // ✅ Opens instantly. Always revalidates in background.
@@ -791,150 +823,198 @@ export default function StudentDashboard() {
           subtitle="Hypertension, Heart Failure & more"
         />
 
-
-        <DailyDose onOpenPlayer={() => window.__studifyOpen?.()} />
         <DailyTriviaCard />
+        <DailyDose onOpenPlayer={() => window.__studifyOpen?.()} />
+
         <ShortPaper1 limit={5} />
         <CountdownFloating />
         <ShortPaper2 limit={5} />
         <Algorithm />
         <Referral />
         {/* Top Students Leaderboard */}
-        <Card className="relative overflow-hidden rounded-xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-none mt-1">
-          <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px]" />
+        <Card className="relative overflow-hidden rounded-2xl border-0 bg-white/50 dark:bg-muted/30 backdrop-blur-xl shadow-none mt-1">
+          {/* Single ambient blur — cheap, GPU-friendly */}
+          <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-[80px] pointer-events-none" />
 
-          <CardHeader className="relative z-10 pb-0">
-            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight py-2">
-              Top Students
-            </CardTitle>
+          <CardHeader className="relative z-10 pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                Top Students
+              </CardTitle>
+              <Link
+                to="/Medrae-quizzes"
+                className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400
+                   hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              >
+                VIEW ALL →
+              </Link>
+            </div>
 
-            <details className="group mt-4 bg-slate-100/50 dark:bg-white/[0.03] rounded-2xl border-0 dark:border-white/5 overflow-hidden transition-all duration-300">
-              <summary className="cursor-pointer list-none p-4 flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-400 tracking-widest">
-                <span>How winners are chosen?</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-4 h-4 transition-transform duration-300 group-open:rotate-180"
-                >
+            {/* === Compact Explainer === */}
+            <details className="group mt-3 bg-slate-100/60 dark:bg-white/[0.04] rounded-xl border-0 overflow-hidden">
+              <summary className="cursor-pointer list-none p-3 flex items-center justify-between
+                          text-[11px] font-bold text-slate-600 dark:text-slate-400
+                          tracking-wider select-none">
+                <span className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className="w-3.5 h-3.5 text-blue-500">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  How winners are chosen
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className="w-3.5 h-3.5 transition-transform duration-200 group-open:rotate-180">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </summary>
-              <div className="px-5 pb-5 pt-2 text-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <h4 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-[11px]   tracking-wider">
-                      <div className="h-1 w-3 bg-blue-500 rounded-full" /> 1. Star Calculation
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { r: "90%+", s: "⭐⭐⭐⭐⭐" },
-                        { r: "75-89%", s: "⭐⭐⭐⭐" },
-                        { r: "60-74%", s: "⭐⭐⭐" },
-                        { r: "40-59%", s: "⭐⭐" },
-                        { r: "1-39%", s: "⭐" },
-                      ].map((item, i) => (
-                        <div key={i} className="flex justify-between p-2 bg-white/50 dark:bg-black/20 rounded-lg text-[10px]">
-                          <span className="font-bold">{item.r}</span>
-                          <span>{item.s}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <h4 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-[11px]   tracking-wider">
-                      <div className="h-1 w-3 bg-emerald-500 rounded-full" /> 2. Ranking Tie-Breakers
-                    </h4>
-                    <ul className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-                      <li className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold">01.</span> Total Stars Earned (Primary)
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold">02.</span> Average Quiz Scores (Secondary)
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold">03.</span> Units Attempted (Tie-breaker)
-                      </li>
-                    </ul>
-                    <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px]   tracking-widest h-9 rounded-xl shadow-none">
-                      <Link to="/Medrae-quizzes">Improve My Rank</Link>
-                    </Button>
+
+              <div className="px-3 pb-3 pt-1 space-y-3">
+                {/* Star tiers — single row of pills instead of grid */}
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-2">
+                    1. STAR CALCULATION
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { r: "90%+", s: 5 },
+                      { r: "75–89%", s: 4 },
+                      { r: "60–74%", s: 3 },
+                      { r: "40–59%", s: 2 },
+                      { r: "1–39%", s: 1 },
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md
+                           bg-white/70 dark:bg-black/20 text-[10px] font-bold"
+                      >
+                        <span className="text-slate-700 dark:text-slate-300 tabular-nums">{item.r}</span>
+                        <span className="flex items-center gap-0.5 text-yellow-600 dark:text-yellow-400">
+                          <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                          {item.s}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
+
+                {/* Tie-breakers — numbered list, tighter */}
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider mb-2">
+                    2. RANKING TIE-BREAKERS
+                  </p>
+                  <ol className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                    <li className="flex items-start gap-2">
+                      <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600
+                               dark:text-emerald-400 text-[9px] font-bold
+                               flex items-center justify-center mt-0.5">1</span>
+                      Total Stars Earned <span className="text-slate-400 dark:text-slate-500">(primary)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600
+                               dark:text-emerald-400 text-[9px] font-bold
+                               flex items-center justify-center mt-0.5">2</span>
+                      Average Quiz Score <span className="text-slate-400 dark:text-slate-500">(secondary)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-600
+                               dark:text-emerald-400 text-[9px] font-bold
+                               flex items-center justify-center mt-0.5">3</span>
+                      Units Attempted <span className="text-slate-400 dark:text-slate-500">(tie-breaker)</span>
+                    </li>
+                  </ol>
+                </div>
+
+                {/* CTA — smaller, inline */}
+                <Button
+                  asChild
+                  className="w-full h-8 bg-blue-600 hover:bg-blue-700 text-white
+                     font-bold text-[10px] tracking-wider rounded-lg shadow-none
+                     transition-colors duration-150"
+                >
+                  <Link to="/Medrae-quizzes">IMPROVE MY RANK</Link>
+                </Button>
               </div>
             </details>
           </CardHeader>
 
-          <CardContent className="px-0 relative z-10">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-3 py-8 px-4 sm:px-6">
-              {topStudents.length > 0 ? (
-                topStudents.map((s, idx) => {
-                  const rankMeta = [
-                    { label: "🥇 Gold", ring: "ring-yellow-400/50", glow: "shadow-yellow-500/20", bg: "from-yellow-500/20 via-yellow-500/5 to-transparent", text: "text-yellow-600 dark:text-yellow-400" },
-                    { label: "🥈 Silver", ring: "ring-slate-300", glow: "shadow-slate-400/20", bg: "from-slate-400/20 via-slate-400/5 to-transparent", text: "text-slate-600 dark:text-slate-300" },
-                    { label: "🥉 Bronze", ring: "ring-amber-600/50", glow: "shadow-amber-700/20", bg: "from-amber-700/20 via-amber-700/5 to-transparent", text: "text-amber-700 dark:text-amber-500" },
-                    { label: `#${idx + 1}`, ring: "ring-slate-100", glow: "shadow-transparent", bg: "from-slate-100 dark:from-white/5 to-transparent", text: "text-slate-400" }
-                  ][idx] || { label: `#${idx + 1}`, ring: "ring-transparent", glow: "", bg: "bg-transparent", text: "text-slate-400" };
+          {/* === Leaderboard List === */}
+          <CardContent className="px-2 sm:px-3 relative z-10 pt-1 pb-2">
+            {loadingTopStudents && topStudents.length === 0 ? (
+              <SkeletonList count={5} />
+            ) : topStudents.length > 0 ? (
+              <div className="flex flex-col">
+                {topStudents.map((s, idx) => {
+                  const isTop3 = idx < 3;
+                  const medals = ["🥇", "🥈", "🥉"];
 
                   return (
-                    <div
+                    <button
                       key={s.userid}
                       onClick={() => setSelectedUserId(s.userid)}
-                      className="relative group cursor-pointer transition-all duration-500 hover:-translate-y-2 w-full min-w-0"
+                      className="group flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left
+                     transition-colors duration-150
+                     hover:bg-slate-50 dark:hover:bg-white/5
+                     active:bg-slate-100 dark:active:bg-white/10"
                     >
-                      <div className={`h-full p-3 sm:p-4 rounded-2xl border-0 bg-white dark:bg-muted/30 shadow-none ${rankMeta.glow} transition-all group-hover:border-blue-500/30 overflow-hidden relative`}>
-                        <div className={`absolute top-0 inset-x-0 h-24 bg-gradient-to-b ${rankMeta.bg} opacity-50`} />
-                        <div className="relative z-10 flex flex-col items-center text-center">
-                          <div className="relative mb-3">
-                            <img
-                              src={s.avatar_url || "/UsersAvatar.jpg"}
-                              alt={s.name}
-                              className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover ring-4 ${rankMeta.ring} shadow-none transition-transform duration-500 group-hover:scale-110`}
-                              loading="lazy"
-                            />
-                            {idx < 3 && (
-                              <div className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full p-1 shadow-none border-0">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                              </div>
-                            )}
-                          </div>
-                          <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white line-clamp-1 w-full tracking-tight">
-                            {s.name || "Unknown"}
-                          </h3>
-                          <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-1   tracking-tighter truncate w-full">
-                            {s.institution || "Institution"}
-                          </p>
-                          <div className="flex justify-center mt-3 gap-0.5">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-3 w-3 ${i < s.stars ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200 dark:text-slate-800'}`}
-                              />
-                            ))}
-                          </div>
-                          <div className={`mt-4 px-3 py-1 rounded-full text-[10px] font-bold   tracking-widest border ${idx < 3 ? 'bg-slate-900 text-white border-transparent' : 'bg-transparent text-slate-400 border-slate-200 dark:border-white/10'}`}>
-                            {rankMeta.label}
-                          </div>
-                        </div>
+                      {/* Rank */}
+                      <div className="w-6 shrink-0 text-center">
+                        {isTop3 ? (
+                          <span className="text-lg leading-none">{medals[idx]}</span>
+                        ) : (
+                          <span className="text-[11px] font-bold text-slate-400 tabular-nums">
+                            {idx + 1}
+                          </span>
+                        )}
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full text-center py-10">
-                  <p className="text-sm font-bold text-slate-500   tracking-[2px]">Competition Starting Soon...</p>
-                </div>
-              )}
 
-            </div>
+                      {/* Avatar */}
+                      <img
+                        src={s.avatar_url || "/UsersAvatar.jpg"}
+                        alt={s.name}
+                        loading="lazy"
+                        decoding="async"
+                        className={`w-10 h-10 rounded-full object-cover shrink-0
+                       ${isTop3
+                            ? "ring-2 ring-yellow-400/60"
+                            : "ring-1 ring-slate-200 dark:ring-white/10"}`}
+                      />
+
+                      {/* Name + institution */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[13px] text-slate-900 dark:text-white truncate leading-tight">
+                          {s.name || "Unknown"}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                          {s.institution || "Institution"}
+                        </p>
+                      </div>
+
+                      {/* Stars pill */}
+                      <div className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full
+                          bg-yellow-50 dark:bg-yellow-500/10">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span className="text-[11px] font-bold text-yellow-700 dark:text-yellow-400 tabular-nums">
+                          {s.stars}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-sm font-bold text-slate-500 tracking-wider">
+                  Competition Starting Soon...
+                </p>
+              </div>
+            )}
           </CardContent>
+
           <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
         </Card>
-
         <ShortPractice limit={5} />
 
 

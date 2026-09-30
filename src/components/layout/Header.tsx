@@ -24,7 +24,7 @@ import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { HardResetButton } from "../HardResetButton";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { SettingsSheet } from "@/components/SettingsSheet";
-import { HeaderCountdown } from "../HeaderCountdown";
+
 // ✅ CACHE VERSION
 const CACHE_VERSION = "v2";
 const CACHE_DURATION = 30 * 60 * 1000;
@@ -617,9 +617,15 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   const handleToggleDarkMode = useCallback(() => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
+
+    // ✅ Write to the canonical key
     localStorage.setItem('medrae_dark_mode', String(newDarkMode));
 
-    // Apply theme to document
+    // ✅ Mirror to keys the bootstrap also checks (belt-and-suspenders)
+    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
+    localStorage.setItem('medrae-theme', newDarkMode ? 'dark' : 'light');
+
+    // Apply theme to document...
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
@@ -694,7 +700,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
             <span className="text-red-500">Medrae</span>{' '}
             <span className="text-gray-900 dark:text-white">Nursing</span>
           </div>
-          <HeaderCountdown isDark={isDarkMode} />
+
         </div>
 
         {/* Desktop — countdown intentionally hidden. NCK message lives below. */}

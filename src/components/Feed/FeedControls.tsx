@@ -32,6 +32,9 @@ const MILESTONES = [
     { value: 10000, label: "10K", tier: "Legend", icon: Crown },
 ];
 
+/* Key milestones visible on mobile (others hidden on small screens) */
+const KEY_MILESTONES = [100, 500, 1000, 5000, 10000];
+
 /* Tier colors */
 const TIER_STYLES: Record<string, { bg: string; text: string; ring: string; label: string }> = {
     Starter: { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-600 dark:text-slate-300", ring: "ring-slate-300 dark:ring-slate-600", label: "Starter" },
@@ -39,6 +42,15 @@ const TIER_STYLES: Record<string, { bg: string; text: string; ring: string; labe
     Skilled: { bg: "bg-purple-100 dark:bg-purple-500/20", text: "text-purple-600 dark:text-purple-300", ring: "ring-purple-300 dark:ring-purple-500", label: "Skilled" },
     Expert: { bg: "bg-orange-100 dark:bg-orange-500/20", text: "text-orange-600 dark:text-orange-300", ring: "ring-orange-300 dark:ring-orange-500", label: "Expert" },
     Legend: { bg: "bg-yellow-100 dark:bg-yellow-500/20", text: "text-yellow-700 dark:text-yellow-300", ring: "ring-yellow-300 dark:ring-yellow-500", label: "Legend" },
+};
+
+/* Log-scale helpers — shared by the bar and the tick row so they line up */
+const LOG_MAX = Math.log1p(MILESTONES[MILESTONES.length - 1].value);
+const LOG_MIN = Math.log1p(1); // safe at 0 questions
+
+const logPositionPct = (value: number) => {
+    const v = Math.max(1, value);
+    return ((Math.log1p(v) - LOG_MIN) / (LOG_MAX - LOG_MIN)) * 100;
 };
 
 export default function FeedControls({
@@ -52,21 +64,34 @@ export default function FeedControls({
     user,
 }: Props) {
     /* ── Compute current tier, next milestone, progress ── */
-    const { next, prev, progress, remaining, currentTier } = useMemo(() => {
+    const { next, prev, progress, stepProgress, remaining, currentTier } = useMemo(() => {
         const nextIdx = MILESTONES.findIndex((m) => m.value > questionCount);
-        const nextM = nextIdx === -1 ? MILESTONES[MILESTONES.length - 1] : MILESTONES[nextIdx];
+        const nextM =
+            nextIdx === -1
+                ? MILESTONES[MILESTONES.length - 1]
+                : MILESTONES[nextIdx];
         const prevM = nextIdx <= 0 ? { value: 0 } : MILESTONES[nextIdx - 1];
-        const span = nextM.value - prevM.value || 1;
-        const pct = Math.min(100, Math.round(((questionCount - prevM.value) / span) * 100));
 
-        // Current tier = last milestone reached, or "Starter" if none
-        const reached = [...MILESTONES].reverse().find((m) => m.value <= questionCount);
+        // Overall progress across the whole 0 → 10K journey (LOG scale — smooth across the full range)
+        const overall = Math.min(100, Math.max(0, logPositionPct(questionCount)));
+
+        // Progress within the current step — LINEAR (3/100 = 3%, honest to the user)
+        const stepSpan = nextM.value - prevM.value || 1;
+        const stepPct = Math.min(
+            100,
+            Math.max(0, ((questionCount - prevM.value) / stepSpan) * 100)
+        );
+
+        const reached = [...MILESTONES]
+            .reverse()
+            .find((m) => m.value <= questionCount);
         const tier = reached?.tier ?? "Starter";
 
         return {
             next: nextM,
             prev: prevM,
-            progress: pct,
+            progress: Math.round(overall * 10) / 10,
+            stepProgress: Math.round(stepPct),
             remaining: Math.max(0, nextM.value - questionCount),
             currentTier: tier,
         };
@@ -121,30 +146,53 @@ export default function FeedControls({
                     </div>
                 </div>
 
-                {/* ── PROGRESS BAR ── */}
+                {/* ── PROGRESS BAR (log scale) ── */}
                 <div className="relative">
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-500"
+                            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-500 ease-out"
                             style={{ width: `${progress}%` }}
                         />
                     </div>
 
-                    {/* Milestone ticks — only show key ones on mobile, all on desktop */}
-                    <div className="mt-2 flex justify-between text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                    {/* Ticks positioned by log scale so they line up with the bar */}
+                    <div className="relative mt-1.5 h-4">
                         {MILESTONES.map((m) => {
                             const reached = questionCount >= m.value;
+                            const leftPct = logPositionPct(m.value);
+                            const isKey = KEY_MILESTONES.includes(m.value);
                             return (
                                 <span
                                     key={m.value}
-                                    className={`${reached ? "text-orange-500 font-semibold" : ""
-                                        } ${m.value >= 1000 ? "hidden sm:inline" : ""}`}
+                                    className={`
+                                        absolute -translate-x-1/2 text-[10px] font-medium whitespace-nowrap
+                                        ${reached ? "text-orange-500 font-semibold" : "text-gray-400 dark:text-gray-500"}
+                                        ${!isKey ? "hidden sm:inline" : ""}
+                                    `}
+                                    style={{ left: `${leftPct}%` }}
                                 >
                                     {m.label}
                                 </span>
                             );
                         })}
                     </div>
+
+                    {/* Step hint — how close to the NEXT milestone */}
+                    <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">
+                        {remaining > 0 ? (
+                            <>
+                                <span className="font-semibold text-orange-500">
+                                    {stepProgress}%
+                                </span>{" "}
+                                of the way to{" "}
+                                <span className="font-semibold">{next.label}</span>
+                            </>
+                        ) : (
+                            <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                                🏆 All milestones reached — you're a Legend
+                            </span>
+                        )}
+                    </p>
                 </div>
 
                 {/* ── TIER LEGEND (subtle, collapsible feel) ── */}

@@ -16,10 +16,10 @@ import { supabase } from "@/lib/supabaseClient";
 import OverlayAI from "@/components/OverlayAI";
 import { ArrowUp, HelpCircle, CheckCircle2, PanelRightOpen, BookOpen, Timer, GraduationCap, ChevronDown, ChevronUp, TimerReset, RotateCcw, Save, Users, MessageCircle, X, Cpu, AlertTriangle, Volume, VolumeX, Filter, ChevronLeft, ChevronRight, AlertCircle, Volume2, Sparkles, PlusCircle } from "lucide-react";
 import FloatingChat from "@/components/FloatingChat";
-import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, } from "@/lib/indexedDb";
+import { getUnitOffline, saveUnitOffline, getAnswersOffline, saveAnswersOffline, clearAnswersOffline } from "@/lib/indexedDb";
 import { saveNoteOffline, getNoteOffline, getPendingNotes, markNoteSynced } from "@/lib/indexedDb";
 import { NotesEvaluationPanel } from "@/components/QuizPage/NotesEvaluationPanel";
-import { useSession } from "@supabase/auth-helpers-react";
+import { useUser } from "@supabase/auth-helpers-react";
 import { cn } from "@/lib/utils";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { ReflectionSheet } from "@/components/QuizPage/ReflectionSheet";
@@ -78,8 +78,7 @@ async function fetchTotalQuestionCount(supabase: any, quizId: string) {
 
 
 export default function QuizPage() {
-  const session = useSession();
-  const user = session?.user;
+  const user = useUser();
   const userId = user?.id;
   const location = useLocation();
   const [progressOpen, setProgressOpen] = useState(false);
@@ -130,13 +129,15 @@ export default function QuizPage() {
   );
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [lastCheckpoint, setLastCheckpoint] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
   const [checkpointOverlay, setCheckpointOverlay] = useState<{
     visible: boolean;
     reached: number;
     total: number;
   } | null>(null);
   const circleRefs = useRef([]);
-
+  const questionTopRef = useRef<HTMLDivElement | null>(null);
   // Total question count (used by premium badge + upgrade banner)
   const [totalQuestions, setTotalQuestions] = useState(0);
   // Memoized filtered questions for performance
@@ -157,7 +158,17 @@ export default function QuizPage() {
       });
     }
   }, [currentQuestionIndex]);
-
+  // ⬅️ NEW: whenever the question changes, snap the card to the top of the viewport.
+  // This kills the "page bouncing" when you tap Next on a long/short question.
+  useEffect(() => {
+    if (!hydrated) return;
+    const node = questionTopRef.current;
+    if (!node) return;
+    // scroll so the top of the question card is just below the sticky header
+    const headerOffset = 96; // px — adjust if your header is taller/shorter
+    const top = node.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({ top, behavior: "auto" }); // "auto" = instant, no janky smooth
+  }, [currentQuestionIndex, hydrated]);
   const [showReasonBox, setShowReasonBox] = useState<{ [key: string]: boolean }>(() => {
     const saved = localStorage.getItem("showReasonBox");
     return saved ? JSON.parse(saved) : {};
@@ -206,8 +217,9 @@ export default function QuizPage() {
     setShowUnansweredOnly(false);
     setPendingReflectionIds({});
     setReflectionSheetFor(null);
+    setHydrated(false);
   }, [unit]);
-  const [lastCheckpoint, setLastCheckpoint] = useState(0);
+
 
   const [helpMeOverlayOpen, setHelpMeOverlayOpen] = useState(false);
   const [helpMeHelpers, setHelpMeHelpers] = useState<
@@ -310,6 +322,7 @@ export default function QuizPage() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [answers, lastCheckpoint]);
+
   useEffect(() => {
     if (!questions || questions.length === 0) return;
 
@@ -364,25 +377,34 @@ export default function QuizPage() {
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
   }, []);
-
   useEffect(() => {
     if (!userId || !questions.length) return;
+
+    // Only run once per unique question set
+    const fingerprint = `${userId}:${questions.length}:${questions[0]?.id ?? ""}`;
+    if ((window as any).__lastNotesFingerprint === fingerprint) return;
+    (window as any).__lastNotesFingerprint = fingerprint;
+
     const loadSavedData = async () => {
       try {
-        const questionIds = questions.map(q => String(q.id));
+        // ⬅️ Query by user_id only — tiny URL, tiny response
         const { data, error } = await supabase
           .from("question_notes")
-          .select("*")
-          .in("question_id", questionIds)
+          .select("question_id, note_text, understood, is_not_understood, attempts, help_others")
           .eq("user_id", String(userId));
         if (error) throw error;
         if (!data) return;
+
+        const questionIdSet = new Set(questions.map(q => String(q.id)));
+        const filtered = data.filter(row => questionIdSet.has(String(row.question_id)));
+
         const newNotes: Record<string, string> = {};
         const newUnderstood: Record<string, boolean> = {};
         const newNotUnderstood: Record<string, boolean> = {};
         const newAttempts: Record<string, number> = {};
         const newHelpDisabled: Record<string, boolean> = {};
-        data.forEach(row => {
+
+        filtered.forEach(row => {
           const qid = String(row.question_id);
           newNotes[qid] = row.note_text || "";
           newUnderstood[qid] = !!row.understood;
@@ -390,6 +412,7 @@ export default function QuizPage() {
           newAttempts[qid] = row.attempts || 0;
           newHelpDisabled[qid] = !!row.help_others;
         });
+
         setNotes(newNotes);
         setUnderstood(newUnderstood);
         setNotUnderstood(newNotUnderstood);
@@ -428,6 +451,7 @@ export default function QuizPage() {
   }, []);
 
   // Optimized loadQuiz with better caching
+  // Optimized loadQuiz — ONLINE: fresh from server. OFFLINE: cached.
   useEffect(() => {
     let cancelled = false;
 
@@ -435,11 +459,8 @@ export default function QuizPage() {
       if (!unit) return;
       setLoading(true);
 
-      // 1. Check user subscription with caching
-
       // 1. Subscription — seed from cache, refresh in background
       if (userId) {
-        // Synchronous seed: this is what fixes offline premium users
         const cached = getCachedPremium(userId);
         if (cached !== null && !cancelled) setIsPremium(cached);
 
@@ -448,162 +469,151 @@ export default function QuizPage() {
           if (!cancelled) setIsPremium(snap.isPremium);
         } catch (err) {
           console.error("Subscription check error:", err);
-          // resolveSubscription already falls back to cache internally,
-          // so nothing to do here — do NOT force isPremium=false.
-        }
-      }
-      /** STEP 1: Load from Cache (IndexedDB) for INSTANT display **/
-      const offlineUnit = await getUnitOffline(unit);
-      let currentQuizId = null;
-      let cachedQuestions = [];
-
-      if (offlineUnit && offlineUnit.questions?.length) {
-        if (!cancelled) {
-          currentQuizId = offlineUnit.quizId;
-          setQuizId(offlineUnit.quizId);
-
-          // For premium users, show all cached questions
-          // For free users, limit to first 20
-          const allQuestions = offlineUnit.questions;
-          cachedQuestions = allQuestions;
-          setQuestions(allQuestions);
-          setQuestionsSource("local");
-          setLoading(false);
-
-          // Get total count from cache if available
-          if (offlineUnit.totalCount) {
-            setTotalQuestions(offlineUnit.totalCount);
-          }
         }
       }
 
-      /** STEP 2: Background Sync - Always check Supabase for new questions **/
-      /** STEP 2: Background Sync - Always check Supabase for new questions **/
-      try {
-        const { data: quiz, error: quizError } = await supabase
-          .from("quizzes")
-          .select("id")
-          .eq("unit", unit)
-          .single();
+      // ⬅️ KEY DECISION: online vs offline
+      const isOnline =
+        typeof navigator !== "undefined" && navigator.onLine;
 
-        // ✅ GUARD: only proceed if quizError is null AND quiz.id is a real string.
-        if (quiz && !quizError && isValidId(quiz.id)) {
-          // Only update if different — avoids pointless re-renders that
-          // could race with the restore below.
-          if (currentQuizId !== quiz.id) {
+      let finalQuestions: Question[] = [];
+      let currentQuizId: string | null = null;
+      let source: "remote" | "local" = "local";
+      let remoteTotal = 0;
+
+      if (isOnline) {
+        /** ONLINE: FRESH PULL. Never touch the cache. */
+        try {
+          const { data: quiz, error: quizError } = await supabase
+            .from("quizzes")
+            .select("id")
+            .eq("unit", unit)
+            .single();
+
+          if (quiz && !quizError && isValidId(quiz.id)) {
             currentQuizId = quiz.id;
-            if (!cancelled) setQuizId(quiz.id);
+
+            const { data: quizQuestions, error: qError } = await supabase
+              .from("quiz_questions")
+              .select("*")
+              .eq("quiz_id", quiz.id)
+              .order("created_at", { ascending: true });
+
+            if (!cancelled && !qError && quizQuestions?.length) {
+              finalQuestions = quizQuestions.map((q: any) => ({
+                ...q,
+                quiz_id: quiz.id,
+              }));
+              remoteTotal = finalQuestions.length;
+              source = "remote";
+            }
+          } else {
+            console.warn("[QuizPage] quizzes lookup failed:", {
+              quiz,
+              quizError,
+              unit,
+            });
           }
-          // Fetch questions first — we can derive the total count from the
-          // returned rows, so we skip the extra network round trip that
-          // fetchTotalQuestionCount used to make.
-          const { data: quizQuestions, error: qError } = await supabase
-            .from("quiz_questions")
-            .select("*")
-            .eq("quiz_id", quiz.id)
-            .order("created_at", { ascending: true });
-
-          if (
-            !cancelled &&
-            !qError &&
-            quizQuestions &&
-            quizQuestions.length > 0
-          ) {
-            const enriched = quizQuestions.map((q: any) => ({
-              ...q,
-              quiz_id: quiz.id,
-            }));
-
-            const total = enriched.length;
-            if (!cancelled) setTotalQuestions(total);
-
-            // Skip the expensive deep-compare. Just replace state and rewrite
-            // the cache. Fire-and-forget the IDB write so it doesn't block UI.
-            setQuestions(enriched);
-            setQuestionsSource("remote");
-            saveUnitOffline({
-              unitId: unit,
-              quizId: quiz.id,
-              questions: enriched,
-              savedAt: Date.now(),
-              totalCount: total,
-            }).catch(err =>
-              console.warn("[QuizPage] saveUnitOffline failed:", err)
-            );
+        } catch (err) {
+          console.warn("[QuizPage] online fetch failed, falling back to cache:", err);
+          // If the network call fails despite being "online", fall back to cache
+          const offlineUnit = await getUnitOffline(unit);
+          if (offlineUnit?.questions?.length) {
+            finalQuestions = offlineUnit.questions;
+            currentQuizId = offlineUnit.quizId;
+            remoteTotal = offlineUnit.totalCount ?? finalQuestions.length;
+            source = "local";
           }
-        } else {
-          // quiz lookup failed or returned an invalid id — log it so we can see it
-          console.warn("[QuizPage] quizzes lookup failed:", { quiz, quizError, unit });
         }
-      } catch (err) {
-        console.error("Background sync failed (likely offline):", err);
-      } finally {
-        if (!cancelled) setLoading(false);
+
+        // Persist the fresh copy for offline use later
+        if (source === "remote" && currentQuizId && finalQuestions.length) {
+          saveUnitOffline({
+            unitId: unit,
+            quizId: currentQuizId,
+            questions: finalQuestions,
+            savedAt: Date.now(),
+            totalCount: remoteTotal,
+          }).catch((err) =>
+            console.warn("[QuizPage] saveUnitOffline failed:", err)
+          );
+        }
+      } else {
+        /** OFFLINE: use cache only. */
+        const offlineUnit = await getUnitOffline(unit);
+        if (offlineUnit?.questions?.length) {
+          finalQuestions = offlineUnit.questions;
+          currentQuizId = offlineUnit.quizId;
+          remoteTotal = offlineUnit.totalCount ?? finalQuestions.length;
+          source = "local";
+        }
       }
 
-      /** STEP 3: Restore State (Answers, Timer, etc.) **/
-      if (currentQuizId && (offlineUnit?.questions?.length || cachedQuestions?.length)) {
-        const activeQuestions: any[] =
-          (offlineUnit?.questions?.length ? offlineUnit.questions : null) ??
-          cachedQuestions ??
-          [];
+      // Apply questions + quizId to state
+      if (!cancelled) {
+        if (finalQuestions.length) {
+          setQuestions(finalQuestions);
+          setQuestionsSource(source);
+        }
+        if (currentQuizId) setQuizId(currentQuizId);
+        if (remoteTotal > 0) setTotalQuestions(remoteTotal);
+      }
+
+      /** STEP 3: Restore answers/timer against finalQuestions */
+      if (currentQuizId && finalQuestions.length) {
+        const validIds = new Set(finalQuestions.map((q: any) => q.id));
 
         const offlineSaved = await getAnswersOffline(unit);
-        if (offlineSaved?.answers) {
-          const validQuestionIds = new Set(activeQuestions.map((qq: any) => qq.id));
-          const filteredOffline: Record<string, string> = {};
-          Object.keys(offlineSaved.answers).forEach(id => {
-            if (validQuestionIds.has(id)) {
-              filteredOffline[id] = offlineSaved.answers[id];
-            }
-          });
-          setAnswers(filteredOffline);
+        const localRaw = localStorage.getItem(`quiz-${currentQuizId}-answers`);
+        const localParsed: Record<string, string> = localRaw
+          ? JSON.parse(localRaw)
+          : {};
+
+        const merged: Record<string, string> = {};
+        const allKeys = new Set([
+          ...Object.keys(offlineSaved?.answers ?? {}),
+          ...Object.keys(localParsed),
+        ]);
+        for (const id of allKeys) {
+          if (validIds.has(id)) {
+            merged[id] = localParsed[id] ?? offlineSaved?.answers?.[id];
+          }
+        }
+
+        if (!cancelled) {
+          setAnswers(merged);
+
           const fb: Record<string, boolean> = {};
-          Object.keys(filteredOffline).forEach(id => {
+          Object.keys(merged).forEach((id) => {
             fb[id] = true;
           });
           setFeedbackShown(fb);
+          setLastCheckpoint(Object.keys(merged).length);
 
-          const firstUnansweredIdx = activeQuestions.findIndex(
-            (qq: any) => !filteredOffline[qq.id]
+          const firstUnanswered = finalQuestions.findIndex(
+            (q: any) => !merged[q.id]
           );
-          if (firstUnansweredIdx !== -1) setCurrentQuestionIndex(firstUnansweredIdx);
-        }
-        const savedEnd = localStorage.getItem(`quiz-${currentQuizId}-end`);
-        if (savedEnd) {
-          setTimerEnd(Number(savedEnd));
-        } else {
-          const endTime = Date.now() + TIMER_DURATION;
-          setTimerEnd(endTime);
-          localStorage.setItem(`quiz-${currentQuizId}-end`, endTime.toString());
-        }
-        const localAnswers = localStorage.getItem(`quiz-${currentQuizId}-answers`);
-        if (localAnswers) {
-          const parsed = JSON.parse(localAnswers);
-          const validQuestionIds = new Set(activeQuestions.map((qq: any) => qq.id));
-          const filtered: Record<string, string> = {};
-          Object.keys(parsed).forEach(id => {
-            if (validQuestionIds.has(id)) {
-              filtered[id] = parsed[id];
-            }
-          });
-          setAnswers(filtered);
+          if (firstUnanswered !== -1) setCurrentQuestionIndex(firstUnanswered);
+          else setCurrentQuestionIndex(0);
 
-          const currentCount = Object.keys(filtered).length;
-          setLastCheckpoint(currentCount);
-
-          const feedbackState: Record<string, boolean> = {};
-          Object.keys(filtered).forEach(id => {
-            feedbackState[id] = true;
-          });
-          setFeedbackShown(feedbackState);
-
-          // 🎯 Jump the user to the first unanswered question
-          const firstUnansweredIdx = activeQuestions.findIndex(
-            (qq: any) => !filtered[qq.id]
-          );
-          if (firstUnansweredIdx !== -1) setCurrentQuestionIndex(firstUnansweredIdx);
+          const savedEnd = localStorage.getItem(`quiz-${currentQuizId}-end`);
+          if (savedEnd) {
+            setTimerEnd(Number(savedEnd));
+          } else {
+            const endTime = Date.now() + TIMER_DURATION;
+            setTimerEnd(endTime);
+            localStorage.setItem(
+              `quiz-${currentQuizId}-end`,
+              endTime.toString()
+            );
+          }
         }
+      }
+
+      /** ✅ DONE */
+      if (!cancelled) {
+        setLoading(false);
+        setHydrated(true);
       }
     };
 
@@ -611,7 +621,7 @@ export default function QuizPage() {
     return () => {
       cancelled = true;
     };
-  }, [unit, userId, session]);
+  }, [unit, userId]);
   // Refresh premium status when the device comes back online
   useEffect(() => {
     if (!userId) return;
@@ -659,7 +669,11 @@ export default function QuizPage() {
 
 
   const handleAnswer = useCallback((questionId: string, selected: string) => {
-    // Only block double-answers. Trust the click otherwise.
+    // ⬅️ CHANGED: hard gate on hydration
+    if (!hydrated) {
+      console.warn("[QuizPage] handleAnswer blocked — not hydrated yet");
+      return;
+    }
     if (answers[questionId]) return;
     const nextIndex = questions.findIndex(q => q.id === questionId);
     if (nextIndex !== -1) setCurrentQuestionIndex(nextIndex);
@@ -722,7 +736,7 @@ export default function QuizPage() {
         [questionId]: true,
       }));
     }
-  }, [answers, questions, unit, notes, lastCheckpoint, isMuted, quizId, showUnansweredOnly]);
+  }, [answers, questions, unit, notes, lastCheckpoint, isMuted, quizId, showUnansweredOnly, hydrated]);
 
   const handleReportQuestion = async (question: Question) => {
     alert("You are reporting this question. A new AI window is opening to discuss this question as Medrae team reviews it. You can send your input directly.");
@@ -846,11 +860,10 @@ Please provide a detailed discussion and guidance.`;
   const isQuestionLocked = useCallback((index: number) => {
     return !isPremium && index >= QUESTIONS_PER_BATCH;
   }, [isPremium]);
-
-  if (loading && questions.length === 0) {
+  // ⬅️ CHANGED: block UI until network + restore have fully settled
+  if (!hydrated) {
     return <GlobalLoader />;
   }
-
   if (questions.length === 0) return <p className="p-4 text-gray-700 dark:text-gray-300">
     No questions found for: <strong>{unit}</strong>. <br /><br />
     This could be due to several reasons: <br />
@@ -878,12 +891,12 @@ Please provide a detailed discussion and guidance.`;
                 <div className="hidden sm:flex p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                   <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 dark:text-white truncate max-w-[250px] sm:max-w-none uppercase">
+                <h1 className="text-lg sm:text-lg font-bold tracking-tight text-gray-900 dark:text-white truncate max-w-[250px] sm:max-w-none uppercase">
                   {unit}
                 </h1>
                 {/* Show total count for premium users */}
                 {isPremium && totalQuestions > 0 && (
-                  <span className="ml-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                  <span className="ml-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-xl">
                     {totalQuestions} total
                   </span>
                 )}
@@ -894,7 +907,7 @@ Please provide a detailed discussion and guidance.`;
                   date={timerEnd ?? new Date().getTime() + TIMER_DURATION}
                   onComplete={() => handleSubmit(true)}
                   renderer={({ hours, minutes, seconds }) => (
-                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-full border-0">
+                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl border-0">
                       <Timer className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
                       <div className="flex items-center font-mono font-bold text-red-600 dark:text-red-400 text-sm sm:text-base">
                         <span>{String(hours).padStart(2, '0')}</span>
@@ -910,7 +923,7 @@ Please provide a detailed discussion and guidance.`;
                 <div className="relative">
                   <button
                     onClick={() => setProgressOpen(!progressOpen)}
-                    className={`group flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-full text-white shadow-md transition-all active:scale-95
+                    className={`group flex items-center gap-3 pl-4 pr-3 py-1.5 rounded-xl text-white shadow-md transition-all active:scale-95
               ${Object.keys(answers).length / questions.length < 0.5
                         ? 'bg-red-600 hover:bg-red-700'
                         : Object.keys(answers).length / questions.length < 0.7
@@ -919,7 +932,7 @@ Please provide a detailed discussion and guidance.`;
             `}
                   >
                     <div className="flex flex-col items-start leading-none">
-                      <span className="text-[10px] uppercase font-bold opacity-80">Progress</span>
+                      <span className="text-[10px]  font-bold opacity-80">Progress</span>
                       <span className="text-sm font-bold">
                         {Object.keys(answers).length}/{questions.length}
                       </span>
@@ -931,7 +944,7 @@ Please provide a detailed discussion and guidance.`;
                       <ChevronDown className="w-4 h-4" />
                     )}
                     <div
-                      className="absolute inset-0 bg-black/10 rounded-full transition-all duration-1000"
+                      className="absolute inset-0 bg-black/10 rounded-xl transition-all duration-1000"
                       style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
                     />
                   </button>
@@ -970,7 +983,10 @@ Please provide a detailed discussion and guidance.`;
       />
       <div className="mt-1 flex justify-between items-center w-full gap-4"></div>
       <div className="flex flex-col items-center">
-        <div className="w-full max-w-6xl min-h-[500px] relative px-0">
+        <div
+          ref={questionTopRef}
+          className="w-full max-w-6xl min-h-[500px] relative px-0"
+        >
           {/* Course Filter Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-4 mt-2 scrollbar-hide">
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
@@ -982,7 +998,7 @@ Please provide a detailed discussion and guidance.`;
                   setCurrentQuestionIndex(0);
                 }}
                 className={cn(
-                  "px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
+                  "px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
                   selectedCourse === course
                     ? "bg-indigo-600 border-0 text-white shadow-md"
                     : "bg-white dark:bg-muted/30 border-0 text-slate-600 dark:text-slate-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
@@ -1010,7 +1026,7 @@ Please provide a detailed discussion and guidance.`;
                 </div>
                 <button
                   onClick={() => navigate("/subscription")}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-2 rounded-full transition-all shadow-md flex items-center gap-2"
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-2 rounded-xl transition-all shadow-md flex items-center gap-2"
                 >
                   <Sparkles size={16} />
                   Upgrade Now
@@ -1033,7 +1049,7 @@ Please provide a detailed discussion and guidance.`;
               if (isLocked) {
                 return (
                   <div key="locked-content" className="flex flex-col items-center justify-center p-8 sm:p-16 bg-white dark:bg-muted/30 rounded-2xl border-0 shadow-xl text-center">
-                    <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-6">
+                    <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-6">
                       <Sparkles className="w-10 h-10 text-amber-600 dark:text-amber-400 animate-pulse" />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -1059,7 +1075,8 @@ Please provide a detailed discussion and guidance.`;
                     className={cn(
                       "flex-1 px-4 md:px-4 py-3 md:py-3 transition-all duration-300",
                       "md:shadow-sm md:rounded-xl md:my-2",
-                      "rounded-none my-0", // full-bleed on phone
+                      "rounded-none my-0",
+                      "min-h-[660px]",        // ⬅️ NEW: prevents layout shift between short/long Qs
                       understood[q.id]
                         ? "bg-emerald-50/40 dark:bg-emerald-500/10"
                         : notUnderstood[q.id]
@@ -1067,17 +1084,16 @@ Please provide a detailed discussion and guidance.`;
                           : "bg-white dark:bg-muted/40",
                       "text-slate-900 dark:text-slate-100"
                     )}>
-                    <div className="min-h-[60px] md:min-h-[70px] flex items-start justify-between gap-2">
-                      <p className="font-bold mb-1.5 md:mb-2 leading-relaxed text-sm md:text-base">
+                    <div className="min-h-[140px] md:min-h-[140px] flex items-start justify-between gap-2 overflow-hidden">
+                      <p className="font-bold mb-1.5 md:mb-2 leading-relaxed text-sm md:text-base line-clamp-6 md:line-clamp-7">
                         Q{i + 1}: {q.question_text}
                       </p>
                       {selectedAnswer && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5">
                           Answered
                         </span>
                       )}
                     </div>
-
                     <div className="space-y-1.5 md:space-y-2 text-sm">
                       {["A", "B", "C", "D"].map((letter) => {
                         const optionText = q[`option_${letter.toLowerCase() as "a" | "b" | "c" | "d"}`];
@@ -1098,8 +1114,11 @@ ${selectedAnswer
 
 ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                             onClick={async () => {
-                              // Trust the rendered state. If it shows as answered,
-                              // don't allow a re-answer. Otherwise proceed.
+                              // ⬅️ CHANGED: hard gate on hydration
+                              if (!hydrated) {
+                                console.warn("[QuizPage] option tap ignored — not hydrated yet");
+                                return;
+                              }
                               if (selectedAnswer || quizFinished) return;
                               if (!isMuted) {
                                 playSound(q.correct_answer === letter ? "tap-correct" : "tap-wrong");
@@ -1184,7 +1203,9 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                           >
                             <div
                               className={`
-    flex justify-between items-center p-2 md:p-2.5 px-2 md:px-3.5 rounded-lg border transition-all duration-200
+    flex justify-between items-center gap-2
+    min-h-[56px] md:min-h-[64px]
+    p-2 md:p-2.5 px-2 md:px-3.5 rounded-lg border transition-all duration-200
     ${!selectedAnswer
                                   ? "border-0 bg-white hover:border-blue-400 dark:bg-slate-800 dark:hover:border-blue-500"
                                   : "border-0 bg-white dark:bg-slate-800"
@@ -1346,7 +1367,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                             ) : (
                               <>
                                 <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-indigo-500 dark:text-indigo-400" />
-                                <span className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-20" />
+                                <span className="absolute inset-0 rounded-xl bg-indigo-400 animate-ping opacity-20" />
                               </>
                             )}
                           </div>
@@ -1482,7 +1503,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
           {/* Premium Badge - Only show for premium users */}
           {isPremium && (
             <div className="text-center mt-4 mb-2">
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-full">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-xl">
                 <Sparkles size={12} />
                 Premium Access
                 <Sparkles size={12} />

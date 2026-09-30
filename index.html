@@ -1075,7 +1075,13 @@
           localStorage.getItem('app_theme') ||
           null;
 
-        // Normalize: some code paths store "true"/"false" or "0"/"1".
+        // ✅ Normalize medrae_dark_mode ("true" / "false") → "dark" / "light"
+        var medraeDark = localStorage.getItem('medrae_dark_mode');
+        if (medraeDark !== null) {
+          userTheme = medraeDark === 'true' ? 'dark' : 'light';
+        }
+
+        // Normalize other keys: "true"/"false" or "0"/"1"
         if (userTheme === 'true' || userTheme === '1') userTheme = 'dark';
         if (userTheme === 'false' || userTheme === '0') userTheme = 'light';
 
