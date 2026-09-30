@@ -166,6 +166,7 @@ import {
 } from "@/staff-cpd/admin/index";
 import MaintenanceNotice from "./components/MaintenanceNotice";
 import InstallPrompt from "./components/pwa/InstallPrompt";
+import Guide from "./pages/Guide";
 
 // ============================================
 // CACHE CONFIGURATION
@@ -562,7 +563,7 @@ const AppContent = () => {
                           <Route path="/grouppay" element={<GroupPayHome />} />
                           <Route path="/grouppay/create" element={<CreateGroupPage />} />
                           <Route path="/grouppay/:id" element={<GroupDetailsPage />} />
-
+                          <Route path="/guide" element={<Guide />} />
                           {/* NURSING CURRICULUM ROUTES */}
                           <Route path="/nursing" element={<NursingHome />} />
                           <Route path="/nursing/:yearId" element={<NursingSemester />} />

@@ -28,18 +28,18 @@ import { TermsButton } from "@/components/ui/TermsButton";
 import { useUnits, Unit, PaperData } from "../hooks/useUnits";
 import { UnitPics } from "@/components/deco/UnitPics";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
+
 // Category Types
-type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex";
+type CategoryType = "all" | "paper1" | "paper2" | "practice" | "medical" | "fun" | "nclex" | "help";
 
 // Cache keys and durations
 const FREE_UNITS_CACHE_KEY = "freeUnits";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-// Request deduplication (free units only — subscription now lives in lib/subscription.ts)
+// Request deduplication
 let freeUnitsFetchInProgress = false;
 let lastFreeUnitsFetch = 0;
 const MIN_FETCH_INTERVAL = 60 * 60 * 1000; // 1 hour minimum between fetches
-
 
 const getCachedFreeUnits = () => {
   try {
@@ -152,6 +152,8 @@ const getQuizTypeColor = (type: string) => {
       return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
     case "riddle":
       return "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300";
+    case "guide":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
     default:
       return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
   }
@@ -170,6 +172,7 @@ const ACCENT_GRADIENTS: Record<string, string> = {
   teal: "from-teal-500 to-teal-700",
   cyan: "from-cyan-500 to-cyan-700",
   sky: "from-sky-400 to-cyan-600",
+  yellow: "from-yellow-400 to-amber-600",
 };
 
 const getAccentGradient = (accent?: string | null) =>
@@ -192,6 +195,7 @@ const CATEGORY_STORIES: {
     { id: "medical", label: "Medical", avatar: "/pwaa-512x512.png", ring: "ring-rose-500", icon: Stethoscope },
     { id: "fun", label: "Fun", avatar: "/pwaa-512x512.png", ring: "ring-sky-500", icon: Sparkles },
     { id: "nclex", label: "NCLEX", avatar: "/pwaa-512x512.png", ring: "ring-purple-500", icon: Globe },
+    { id: "help", label: "Help", avatar: "/pwaa-512x512.png", ring: "ring-yellow-500", icon: HelpCircle },
   ];
 
 const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
@@ -202,6 +206,7 @@ const CATEGORY_DESCRIPTIONS: Record<CategoryType, string> = {
   medical: "Condition-specific quizzes - Hypertension, Diabetes & more",
   fun: "Take a break with nursing riddles & brain teasers",
   nclex: "International nursing standards (Coming Soon)",
+  help: "Study guides, exam tips & how to make the most of each unit",
 };
 
 export function MedraeQuizzes() {
@@ -221,7 +226,6 @@ export function MedraeQuizzes() {
   const { papers, loading: unitsLoading, refreshUnits } = useUnits();
   const { data: unitCounts, loading: countsLoading, refreshCounts } = useUnitQuestionCount();
 
-  const [showDescription, setShowDescription] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [popup, setPopup] = useState<string | null>(null);
   const [popupError, setPopupError] = useState(false);
@@ -235,17 +239,16 @@ export function MedraeQuizzes() {
       isMounted.current = false;
     };
   }, []);
+
   const fetchSubscription = useCallback(async () => {
     if (!user) return;
 
-    // 1. Seed synchronously from cache — works offline, no flash.
     const cached = getCachedPremium(user.id);
     if (cached !== null && isMounted.current) {
       setIsPremium(cached);
       setSubscriptionChecked(true);
     }
 
-    // 2. Background refresh (no-op if offline or cache is fresh).
     try {
       const snap = await resolveSubscription(user.id);
       if (isMounted.current) {
@@ -253,7 +256,6 @@ export function MedraeQuizzes() {
         setSubscriptionChecked(true);
       }
     } catch (err) {
-      // resolveSubscription already falls back to cache internally.
       console.log("Offline mode: using cached subscription", err);
     }
   }, [user]);
@@ -300,6 +302,7 @@ export function MedraeQuizzes() {
     fetchSubscription();
     fetchFreeUnits();
   }, [fetchSubscription, fetchFreeUnits]);
+
   useEffect(() => {
     if (!user) return;
     const onOnline = () => {
@@ -310,6 +313,7 @@ export function MedraeQuizzes() {
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, [user]);
+
   const getQuestionCount = (code: string) => {
     const unit = unitCounts?.find((u) => u.unit_code?.trim() === code.trim());
     return unit ? unit.count : 0;
@@ -361,6 +365,7 @@ export function MedraeQuizzes() {
       if (activeCategory === "nclex" && paperNumber !== 99) return [];
       if (activeCategory === "medical" && paperNumber !== 5) return [];
       if (activeCategory === "fun" && paperNumber !== 1.5) return [];
+      if (activeCategory === "help" && paperNumber !== 6) return [];
     }
 
     return filtered;
@@ -381,6 +386,7 @@ export function MedraeQuizzes() {
       if (activeCategory === "nclex") return unit.paperNumber === 99;
       if (activeCategory === "medical") return unit.paperNumber === 5;
       if (activeCategory === "fun") return unit.paperNumber === 1.5;
+      if (activeCategory === "help") return unit.paperNumber === 6;
       return true;
     });
 
@@ -399,6 +405,7 @@ export function MedraeQuizzes() {
       if (activeCategory === "nclex") return unit.paperNumber === 99;
       if (activeCategory === "medical") return unit.paperNumber === 5;
       if (activeCategory === "fun") return unit.paperNumber === 1.5;
+      if (activeCategory === "help") return unit.paperNumber === 6;
       return true;
     });
 
@@ -417,6 +424,7 @@ export function MedraeQuizzes() {
       [unitCode]: !prev[unitCode]
     }));
   };
+
   const hasSubscriptionCache = getCachedPremium(user?.id) !== null;
   if (!subscriptionChecked && !hasSubscriptionCache && navigator.onLine) {
     return <GlobalLoader />;
@@ -424,7 +432,7 @@ export function MedraeQuizzes() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center">
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-2 px-0 sm:px-6 pt-4 sm:pt-8">
+      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-2 px-0 sm:px-6 -pt-4 sm:pt-4">
         <AnimatePresence>
           {popup && (
             <PopupMessage
@@ -438,62 +446,7 @@ export function MedraeQuizzes() {
         {/* HERO HEADER CARD */}
         <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-transparent dark:bg-transparent border-b border-gray-100 dark:border-gray-800 md:border-b-0">
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-48 md:w-64 h-48 md:h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-
-          <CardHeader className="relative pb-2 px-4 md:px-6 pt-4 md:pt-6">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div>
-                <CardTitle className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">
-                  Your <span className="text-blue-600">Nursing</span> Journey Starts Here
-                </CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-
           <CardContent className="relative space-y-3 md:space-y-4 px-0 md:px-6 pb-4 md:pb-6">
-            {/* Description */}
-            <div className="px-4 md:px-0">
-              <motion.div layout>
-                <p className="text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed">
-                  <span className="font-bold text-blue-600 dark:text-blue-400">Master</span> nursing concepts with our comprehensive quizzes bank. Choose from core units, practice papers, or condition-specific quizzes to build confidence and save time.
-                  <button
-                    onClick={() => setShowDescription(!showDescription)}
-                    className="text-blue-600 dark:text-blue-400 font-semibold ml-1 hover:underline underline-offset-4 inline-flex items-center gap-1 transition-all"
-                  >
-                    {showDescription ? "Show less" : "Learn more"}
-                  </button>
-                </p>
-
-                <AnimatePresence>
-                  {showDescription && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pt-3 md:pt-4 space-y-2 md:space-y-3 border-t border-gray-200/50 dark:border-gray-700/50 mt-2 md:mt-3">
-                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold text-amber-600">Paper 1:</span> Most frequently tested foundational nursing units<br />
-                          <span className="font-semibold text-sky-600">Take a Break:</span> Nursing riddles & brain teasers<br />
-                          <span className="font-semibold text-blue-600">Paper 2:</span> Leadership, research & community health<br />
-                          <span className="font-semibold text-emerald-600">Practice Papers:</span> Mixed questions for readiness evaluation<br />
-                          <span className="font-semibold text-rose-600">Medical Conditions:</span> Targeted practice - Hypertension, Diabetes & more!<br />
-                          <span className="font-semibold text-purple-600">NCLEX Prep:</span> International standards (in development)
-                        </p>
-                        <div className="flex flex-col gap-1.5 md:gap-2">
-                          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 md:px-3 py-1.5 md:py-2 rounded-lg">
-                            <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" /> Finish quiz to unlock submission
-                          </div>
-                          <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 md:px-3 py-1.5 md:py-2 rounded-lg">
-                            <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" /> Progress saved locally to your device
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            </div>
 
             {/* FACEBOOK-STYLE STORY TABS */}
             <div className="relative">
@@ -505,7 +458,10 @@ export function MedraeQuizzes() {
                   return (
                     <button
                       key={cat.id}
-                      onClick={() => setActiveCategory(cat.id)}
+                      onClick={() => {
+                        playSound("tap");
+                        setActiveCategory(cat.id);
+                      }}
                       className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[68px] md:w-[76px]
                           focus:outline-none group"
                     >
@@ -517,11 +473,17 @@ export function MedraeQuizzes() {
                           }`}
                       >
                         <div className="rounded-full p-[2px] bg-background">
-                          <img
-                            src={cat.avatar}
-                            alt={cat.label}
-                            className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover"
-                          />
+                          {cat.id === "help" ? (
+                            <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                              <HelpCircle className="w-7 h-7 md:w-8 md:h-8 text-yellow-600 dark:text-yellow-400" />
+                            </div>
+                          ) : (
+                            <img
+                              src={cat.avatar}
+                              alt={cat.label}
+                              className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover"
+                            />
+                          )}
                         </div>
                         {isActive && (
                           <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-background ${cat.ring.replace('ring-', 'bg-')}`} />
@@ -650,25 +612,19 @@ export function MedraeQuizzes() {
                     key={j}
                     className="rounded-xl overflow-hidden bg-white dark:bg-muted/70 shadow-sm animate-pulse"
                   >
-                    {/* cover image placeholder */}
                     <div className="h-60 sm:h-64 w-full bg-gray-200 dark:bg-gray-800" />
-
-                    {/* header + body placeholders */}
                     <div className="p-4 space-y-3">
                       <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-800 rounded-lg" />
                       <div className="h-4 w-full bg-gray-200 dark:bg-gray-800 rounded-lg" />
                       <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-800 rounded-lg" />
-
                       <div className="flex gap-2 pt-2">
                         <div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full" />
                         <div className="h-6 w-16 bg-gray-200 dark:bg-gray-800 rounded-full" />
                       </div>
-
                       <div className="h-12 w-full bg-gray-200 dark:bg-gray-800 rounded-2xl mt-2" />
                     </div>
                   </div>
                 ))}
-
               </div>
             </div>
           ) : (
@@ -688,6 +644,8 @@ export function MedraeQuizzes() {
                   headerDescription = "Mixed questions for knowledge & readiness evaluation";
                 } else if (paper.paperNumber === 5) {
                   headerDescription = "Condition-specific quizzes - Jump directly to any medical condition";
+                } else if (paper.paperNumber === 6) {
+                  headerDescription = "Study guides, exam tips & how to make the most of each unit";
                 } else if (paper.paperNumber === 99) {
                   headerDescription = "International nursing standards & RN preparation (Team working on it)";
                 }
@@ -714,13 +672,14 @@ export function MedraeQuizzes() {
                       </div>
                     </div>
 
-                    {/* MOBILE EDGE-TO-EDGE GRID */}
+                    {/* GRID */}
                     <div className="grid gap-[8px] sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full">
                       {filteredUnits.map((unit, index) => {
                         const questionCount = getQuestionCount(unit.code);
                         const isUnitFree = freeUnits.includes((unit.code ?? "").trim()) || unit.is_free;
                         const hasStarted = hasStartedQuiz(unit.code);
                         const isExpanded = expandedDescriptions[unit.code] || false;
+                        const isHelpUnit = paper.paperNumber === 6;
 
                         return (
                           <React.Fragment key={unit.code}>
@@ -728,10 +687,6 @@ export function MedraeQuizzes() {
                               className={`group relative overflow-hidden transition-all duration-300 rounded-xl sm:rounded-xl border-0 hover:border-${paper.color}-400 dark:hover:border-${paper.color}-500/50 bg-white dark:bg-muted/70 shadow-sm hover:shadow-xl cursor-pointer p-0`}
                               onClick={() => setSelectedUnit(unit)}
                             >
-                              {/* ============================================
-                                  COVER IMAGE — the ONLY addition
-                                  Sits above the original CardHeader content
-                                  ============================================ */}
                               <div className="relative h-60 sm:h-64 w-full overflow-hidden">
                                 {unit.image_url ? (
                                   <img
@@ -750,7 +705,11 @@ export function MedraeQuizzes() {
                                   />
                                 ) : (
                                   <div className={`h-full w-full bg-gradient-to-br ${getAccentGradient(unit.accent_color ?? paper.color)} flex items-center justify-center`}>
-                                    <BookOpen className="w-12 h-12 text-white/60" />
+                                    {isHelpUnit ? (
+                                      <HelpCircle className="w-12 h-12 text-white/60" />
+                                    ) : (
+                                      <BookOpen className="w-12 h-12 text-white/60" />
+                                    )}
                                   </div>
                                 )}
 
@@ -766,8 +725,18 @@ export function MedraeQuizzes() {
                                   </div>
                                 )}
 
+                                {isHelpUnit && (
+                                  <div className="absolute top-3 left-3 bg-yellow-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                                    <HelpCircle className="w-3 h-3" /> GUIDE
+                                  </div>
+                                )}
+
                                 <div className="absolute top-3 right-3">
-                                  {isPremium ? (
+                                  {isHelpUnit ? (
+                                    <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
+                                      <BookOpen className="w-3 h-3" /> READ
+                                    </div>
+                                  ) : isPremium ? (
                                     <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg shadow">
                                       <CheckCircle2 className="w-3 h-3" /> UNLOCKED
                                     </div>
@@ -797,9 +766,11 @@ export function MedraeQuizzes() {
                                     </p>
                                   )}
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
-                                      {questionCount} Questions
-                                    </Badge>
+                                    {!isHelpUnit && (
+                                      <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-none font-bold">
+                                        {questionCount} Questions
+                                      </Badge>
+                                    )}
                                     {unit.quiz_type && (
                                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getQuizTypeColor(unit.quiz_type)}`}>
                                         {unit.quiz_type.toUpperCase()}
@@ -813,7 +784,19 @@ export function MedraeQuizzes() {
                                     </Badge>
                                   </div>
 
-                                  {(isPremium || isUnitFree) ? (
+                                  {isHelpUnit ? (
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        playSound("tap");
+                                        setSelectedUnit(unit);
+                                      }}
+                                      className="w-full h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white"
+                                    >
+                                      <BookOpen className="h-4 w-4" />
+                                      Read Guide
+                                    </Button>
+                                  ) : (isPremium || isUnitFree) ? (
                                     <Link
                                       to={`/quiz?unit=${encodeURIComponent(unit.title)}`}
                                       onClick={(e) => {
@@ -914,6 +897,7 @@ export function MedraeQuizzes() {
             </>
           )}
         </Card>
+
         {/* Progress & Sync Footer */}
         <Card className="mt-10 mb-8 overflow-hidden rounded-2xl border-0 bg-transparent dark:bg-transparent shadow-none px-[4px] md:px-[4px] mx-0">
           <CardHeader className="pb-2 px-2">
@@ -926,9 +910,6 @@ export function MedraeQuizzes() {
                   Progress synced in real time
                 </p>
               </div>
-
-
-
             </div>
           </CardHeader>
 
@@ -955,7 +936,7 @@ export function MedraeQuizzes() {
         </Card>
       </div>
 
-      {/* DETAILS MODAL — with hero image at top */}
+      {/* DETAILS MODAL */}
       <AnimatePresence>
         {selectedUnit && (
           <motion.div
@@ -973,7 +954,6 @@ export function MedraeQuizzes() {
               className="w-full max-w-md bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Hero image */}
               <div className="relative h-44 w-full overflow-hidden flex-shrink-0">
                 {selectedUnit.image_url ? (
                   <img
@@ -1073,9 +1053,11 @@ export function MedraeQuizzes() {
                     <Badge variant={getLevelVariant(selectedUnit.level)} className="font-bold px-3 py-1.5 text-xs">
                       {selectedUnit.level}
                     </Badge>
-                    <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold px-3 py-1.5 text-xs">
-                      {getQuestionCount(selectedUnit.code)} Questions
-                    </Badge>
+                    {selectedUnit.paperNumber !== 6 && (
+                      <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold px-3 py-1.5 text-xs">
+                        {getQuestionCount(selectedUnit.code)} Questions
+                      </Badge>
+                    )}
                     {selectedUnit.quiz_type && (
                       <Badge className={`${getQuizTypeColor(selectedUnit.quiz_type)} font-bold px-3 py-1.5 text-xs`}>
                         {selectedUnit.quiz_type.toUpperCase()}
@@ -1084,7 +1066,20 @@ export function MedraeQuizzes() {
                   </div>
                 </div>
 
-                {(isPremium || freeUnits.includes(selectedUnit.code?.trim() || "") || selectedUnit.is_free) ? (
+                {selectedUnit.paperNumber === 6 ? (
+                  <button
+                    onClick={() => {
+                      setSelectedUnit(null);
+                      playSound("tap");
+                      if (navigator.vibrate) navigator.vibrate(50);
+                      navigate(`/guide?unit=${encodeURIComponent(selectedUnit.code)}`);
+                    }}
+                    className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/30"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Read Guide
+                  </button>
+                ) : (isPremium || freeUnits.includes(selectedUnit.code?.trim() || "") || selectedUnit.is_free) ? (
                   <button
                     onClick={() => {
                       setSelectedUnit(null);

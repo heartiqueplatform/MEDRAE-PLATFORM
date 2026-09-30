@@ -16,7 +16,6 @@ export interface Unit {
     paperNumber: number;
     question_count: number;
     is_free: boolean;
-    // ✅ NEW: premium image fields
     image_url?: string | null;
     image_alt?: string | null;
     accent_color?: string | null;
@@ -32,7 +31,7 @@ export interface PaperData {
     description: string;
 }
 
-const UNITS_CACHE_KEY = "dynamic_units_cache_v5"; // bumped version → FUN01 between P1/P2 + NCLEX last
+const UNITS_CACHE_KEY = "dynamic_units_cache_v7"; // ⬅️ bumped → Help paper added
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour — ONLINE only
 const MIN_FETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -44,17 +43,127 @@ let fetchInProgress = false;
 let lastFetchTime = 0;
 
 // ---------------------------------------------------------------
+// 🆘 STATIC HELP PAPER — edit freely, no DB needed
+// Content for each guide lives in src/data/helpGuides.ts
+// ---------------------------------------------------------------
+const HELP_PAPER: PaperData = {
+    paper: "Help & Study Guides",
+    paperNumber: 6,
+    total_questions: 0,
+    color: "yellow",
+    icon: "HelpCircle",
+    description: "Study guides, exam tips & how to use Medrae",
+    units: [
+        {
+            code: "HELP01",
+            title: "How to Study a Unit Effectively",
+            description: "A 3-step routine: read → quiz cold → review every wrong answer.",
+            level: "Beginner",
+            paper: "Help & Study Guides",
+            paperNumber: 6,
+            question_count: 0,
+            is_free: true,
+            quiz_type: "guide",
+            topic: "Study Skills",
+            accent_color: "yellow",
+            image_url: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1200&q=80&auto=format&fit=crop",
+            image_alt: "Student studying with books and notes",
+            course: null,
+            block: null,
+            unit: null,
+        },
+        {
+            code: "HELP02",
+            title: "How to Use Medrae Quizzes",
+            description: "Pick a category, take the quiz, submit, review. That's the loop.",
+            level: "Beginner",
+            paper: "Help & Study Guides",
+            paperNumber: 6,
+            question_count: 0,
+            is_free: true,
+            quiz_type: "guide",
+            topic: "Getting Started",
+            accent_color: "yellow",
+            image_url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&q=80&auto=format&fit=crop",
+            image_alt: "Person using a laptop to study online",
+            course: null,
+            block: null,
+            unit: null,
+        },
+        {
+            code: "HELP03",
+            title: "How to Pass ANY Exam",
+            description: "Before, during & after strategies that work for every paper.",
+            level: "Intermediate",
+            paper: "Help & Study Guides",
+            paperNumber: 6,
+            question_count: 0,
+            is_free: true,
+            quiz_type: "guide",
+            topic: "Exam Strategy",
+            accent_color: "yellow",
+            image_url: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1200&q=80&auto=format&fit=crop",
+            image_alt: "Student writing an exam at a desk",
+            course: null,
+            block: null,
+            unit: null,
+        },
+        {
+            code: "HELP04",
+            title: "How to Pass NCLEX",
+            description: "Format, mindset, study routine & day-of strategies for the big one.",
+            level: "Intermediate",
+            paper: "Help & Study Guides",
+            paperNumber: 6,
+            question_count: 0,
+            is_free: true,
+            quiz_type: "guide",
+            topic: "NCLEX Prep",
+            accent_color: "purple",
+            image_url: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200&q=80&auto=format&fit=crop",
+            image_alt: "Nurse in scrubs preparing for NCLEX",
+            course: null,
+            block: null,
+            unit: null,
+        },
+        {
+            code: "HELP05",
+            title: "Exam Day Strategy",
+            description: "Time per question, when to skip, when to guess. The playbook.",
+            level: "Beginner",
+            paper: "Help & Study Guides",
+            paperNumber: 6,
+            question_count: 0,
+            is_free: true,
+            quiz_type: "guide",
+            topic: "Exam Tips",
+            accent_color: "yellow",
+            image_url: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=1200&q=80&auto=format&fit=crop",
+            image_alt: "Clock and notebook — exam day timing",
+            course: null,
+            block: null,
+            unit: null,
+        },
+    ],
+};
+/**
+ * Always ensures HELP_PAPER is present in the papers array,
+ * even when serving from cache. Removes any duplicate paperNumber 6.
+ */
+const mergeHelpPaper = (dbPapers: PaperData[]): PaperData[] => {
+    const withoutHelp = dbPapers.filter((p) => p.paperNumber !== 6);
+    return [...withoutHelp, HELP_PAPER].sort(
+        (a, b) => a.paperNumber - b.paperNumber
+    );
+};
+
+// ---------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------
 
 const isOffline = (): boolean =>
     typeof navigator !== "undefined" && navigator.onLine === false;
 
-/**
- * Read units from localStorage.
- * @param ignoreTTL  when true, returns the cache no matter how old it is.
- *                   Used offline and as a last-resort fallback on fetch failure.
- */
 const getCachedUnits = (
     ignoreTTL = false
 ): { papers: PaperData[]; allUnits: Unit[] } | null => {
@@ -75,18 +184,18 @@ const getCachedUnits = (
     }
 };
 
-// Helper to save data to cache
 const saveUnitsToCache = (papers: PaperData[], allUnits: Unit[]) => {
     try {
+        const merged = mergeHelpPaper(papers); // ⬅️ ensure Help is in cache
         localStorage.setItem(
             UNITS_CACHE_KEY,
             JSON.stringify({
-                papers,
+                papers: merged,
                 allUnits,
                 timestamp: Date.now(),
             })
         );
-        cachedPapers = papers;
+        cachedPapers = merged;
         cachedAllUnits = allUnits;
         cacheTimestamp = Date.now();
     } catch (error) {
@@ -94,7 +203,6 @@ const saveUnitsToCache = (papers: PaperData[], allUnits: Unit[]) => {
     }
 };
 
-// Helper to determine paper properties
 const getPaperProperties = (paperNumber: number) => {
     switch (paperNumber) {
         case 1:
@@ -107,6 +215,8 @@ const getPaperProperties = (paperNumber: number) => {
             return { color: "emerald", icon: "ClipboardCheck", description: "2026 Updated Full-Length Mock Exams" };
         case 5:
             return { color: "rose", icon: "Heart", description: "Medical-Surgical Nursing Units (MD Series)" };
+        case 6:
+            return { color: "yellow", icon: "HelpCircle", description: "Study guides, exam tips & how to use Medrae" };
         case 99:
             return { color: "purple", icon: "Trophy", description: "International Nursing Standards & RN Prep" };
         default:
@@ -114,11 +224,12 @@ const getPaperProperties = (paperNumber: number) => {
     }
 };
 
-// Helper to determine level
 const getUnitLevel = (unitCode: string, title: string): string => {
-    // 🎉 Fun units get their own level label
     if (unitCode.startsWith("FUN")) {
         return "Just for Fun";
+    }
+    if (unitCode.startsWith("HELP")) {
+        return "Guide";
     }
 
     const unitCodeNum = parseInt(unitCode.replace(/\D/g, "")) || 0;
@@ -150,7 +261,6 @@ const getUnitLevel = (unitCode: string, title: string): string => {
     return "Intermediate";
 };
 
-// Helper to determine paper from unit code
 const getPaperFromUnitCode = (
     unitCode: string
 ): { paper: string; paperNumber: number } => {
@@ -161,20 +271,20 @@ const getPaperFromUnitCode = (
         return { paper: "Paper 2", paperNumber: 2 };
     }
     if (unitCode.startsWith("HNX3")) {
-        // 🏆 NCLEX Mastery → always last
         return { paper: "Paper 3: NCLEX Mastery", paperNumber: 99 };
     }
     if (unitCode.startsWith("FP")) {
         return { paper: "Practice Papers", paperNumber: 4 };
     }
     if (unitCode.startsWith("FUN")) {
-        // 🎉 Slot between Paper 1 and Paper 2
         return { paper: "Take a Break: Nursing Riddles", paperNumber: 1.5 };
+    }
+    if (unitCode.startsWith("HELP")) {
+        return { paper: "Help & Study Guides", paperNumber: 6 };
     }
     return { paper: "Paper 1", paperNumber: 1 };
 };
 
-// Transform raw data into units
 const transformUnits = (
     quizzes: any[]
 ): { allUnits: Unit[]; papersMap: Map<number, PaperData> } => {
@@ -199,7 +309,6 @@ const transformUnits = (
                 paperNumber: paperNumber,
                 question_count: quiz.question_count || 0,
                 is_free: quiz.is_free || false,
-                // ✅ NEW: pass through premium image fields
                 image_url: quiz.image_url || null,
                 image_alt: quiz.image_alt || null,
                 accent_color: quiz.accent_color || null,
@@ -229,7 +338,6 @@ const transformUnits = (
         paperData.total_questions += unit.question_count;
     });
 
-    // Sort units within each paper
     papersMap.forEach((paper) => {
         paper.units.sort((a, b) => a.code.localeCompare(b.code));
     });
@@ -242,26 +350,25 @@ const transformUnits = (
 // ---------------------------------------------------------------
 
 export function useUnits() {
-    // ✅ Instant hydration — serve cache no matter how old it is when offline
     const [papers, setPapers] = useState<PaperData[]>(() => {
-        if (typeof window === "undefined") return [];
+        if (typeof window === "undefined") return [HELP_PAPER];
         const cached = getCachedUnits(isOffline());
         if (cached) {
             cachedPapers = cached.papers;
             cachedAllUnits = cached.allUnits;
             cacheTimestamp = Date.now();
-            return cached.papers;
+            return mergeHelpPaper(cached.papers); // ⬅️ ensure Help is present
         }
-        return [];
+        return [HELP_PAPER];
     });
 
     const [allUnits, setAllUnits] = useState<Unit[]>(() => {
-        if (typeof window === "undefined") return [];
+        if (typeof window === "undefined") return HELP_PAPER.units;
         const cached = getCachedUnits(isOffline());
-        return cached ? cached.allUnits : [];
+        if (cached) return cached.allUnits;
+        return HELP_PAPER.units;
     });
 
-    // ✅ Only show loader if we have nothing to show
     const [loading, setLoading] = useState<boolean>(() => {
         if (typeof window === "undefined") return true;
         return getCachedUnits(isOffline()) === null;
@@ -283,11 +390,10 @@ export function useUnits() {
     }, []);
 
     const fetchUnits = useCallback(async () => {
-        // ✅ OFFLINE: skip network entirely, serve cache with TTL ignored
         if (isOffline()) {
             const cached = getCachedUnits(true);
             if (cached && isMounted.current) {
-                setPapers(cached.papers);
+                setPapers(mergeHelpPaper(cached.papers));
                 setAllUnits(cached.allUnits);
                 setError(null);
             }
@@ -297,17 +403,15 @@ export function useUnits() {
 
         const now = Date.now();
 
-        // Rate limiting (online only)
         if (now - lastFetchTime < MIN_FETCH_INTERVAL && cachedPapers) {
             if (isMounted.current) {
-                setPapers(cachedPapers);
+                setPapers(mergeHelpPaper(cachedPapers));
                 setAllUnits(cachedAllUnits || []);
                 setLoading(false);
             }
             return;
         }
 
-        // Prevent concurrent fetches
         if (fetchInProgress) return;
         fetchInProgress = true;
         lastFetchTime = now;
@@ -342,8 +446,10 @@ export function useUnits() {
             }
 
             const { allUnits: transformedUnits, papersMap } = transformUnits(data);
-            const papersArray = Array.from(papersMap.values()).sort(
-                (a, b) => a.paperNumber - b.paperNumber
+            const papersArray = mergeHelpPaper(
+                Array.from(papersMap.values()).sort(
+                    (a, b) => a.paperNumber - b.paperNumber
+                )
             );
 
             if (isMounted.current) {
@@ -355,11 +461,10 @@ export function useUnits() {
         } catch (err) {
             console.error("Error fetching units:", err);
 
-            // ✅ Fallback: use cache regardless of age
             const cached = getCachedUnits(true);
             if (cached && cached.papers.length > 0) {
                 if (isMounted.current) {
-                    setPapers(cached.papers);
+                    setPapers(mergeHelpPaper(cached.papers));
                     setAllUnits(cached.allUnits);
                     setError(null);
                 }
@@ -376,7 +481,6 @@ export function useUnits() {
         }
     }, []);
 
-    // Initial fetch
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchUnits();
@@ -384,14 +488,13 @@ export function useUnits() {
         return () => clearTimeout(timer);
     }, [fetchUnits]);
 
-    // Smart refresh when tab becomes visible (only if cache is stale AND online)
     useEffect(() => {
         let visibilityTimeout: NodeJS.Timeout;
         const handleVisibilityChange = () => {
             if (!document.hidden && isMounted.current) {
                 if (visibilityTimeout) clearTimeout(visibilityTimeout);
                 visibilityTimeout = setTimeout(() => {
-                    if (isOffline()) return; // don't even try offline
+                    if (isOffline()) return;
                     const cached = getCachedUnits();
                     if (!cached || Date.now() - cacheTimestamp > 30 * 60 * 1000) {
                         fetchUnits();
@@ -407,7 +510,6 @@ export function useUnits() {
         };
     }, [fetchUnits]);
 
-    // 🔁 Auto-refresh when connection returns
     useEffect(() => {
         const handleOnline = () => {
             if (isMounted.current) fetchUnits();
@@ -416,7 +518,6 @@ export function useUnits() {
         return () => window.removeEventListener("online", handleOnline);
     }, [fetchUnits]);
 
-    // Listen for cache invalidation from other tabs
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === UNITS_CACHE_KEY && e.newValue && isMounted.current) {
@@ -424,9 +525,10 @@ export function useUnits() {
                     const { papers: cachedPapersData, allUnits: cachedUnitsData } =
                         JSON.parse(e.newValue);
                     if (cachedPapersData && cachedUnitsData) {
-                        setPapers(cachedPapersData);
+                        const merged = mergeHelpPaper(cachedPapersData);
+                        setPapers(merged);
                         setAllUnits(cachedUnitsData);
-                        cachedPapers = cachedPapersData;
+                        cachedPapers = merged;
                         cachedAllUnits = cachedUnitsData;
                         cacheTimestamp = Date.now();
                     }
@@ -441,7 +543,6 @@ export function useUnits() {
     }, []);
 
     const refreshUnits = useCallback(async () => {
-        // Only clear cache if online — offline refresh just re-serves cache
         if (!isOffline()) {
             localStorage.removeItem(UNITS_CACHE_KEY);
             cachedPapers = null;
