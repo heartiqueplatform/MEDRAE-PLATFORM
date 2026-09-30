@@ -93,8 +93,7 @@ function loadFromLocalStorage(userId: string) {
 function isEqualData(a: any[], b: any[]) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
-
-// 🚨 TRIAGE BANNER COMPONENT
+// 🚨 TRIAGE BANNER — Hero card style
 function TriageBanner({
   overallProgress,
   hasData,
@@ -109,54 +108,92 @@ function TriageBanner({
   const navigate = useNavigate();
   const triage = getTriageCode(overallProgress, hasData);
 
+  // Solid color derived from triage's own text color (works for any code)
+  const solidBg =
+    (triage.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400";
+  const solidText =
+    (triage.color || "").split(" ")[0] || "text-slate-500";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, type: "spring" }}
-      className={`relative overflow-hidden md:rounded-xl p-4 md:p-5 border-0 ${triage.bgColor} border-0`}
+      transition={{ duration: 0.4, type: "spring" }}
+      className={`relative overflow-hidden rounded-2xl md:rounded-3xl ${triage.bgColor} p-4 md:p-5`}
     >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-1">
-            <Badge className={`${triage.bgColor} ${triage.textColor} border-0 text-xs md:text-sm font-normal px-2.5 md:px-4 py-1 md:py-1.5`}>
-              Code {triage.code}
-            </Badge>
-            <span className={`text-xs md:text-sm font-normal ${triage.color}`}>
-              {triage.label}
+      {/* Ambient glow blob */}
+      <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full ${solidBg} opacity-20 blur-3xl pointer-events-none`} />
+
+      <div className="relative flex items-center gap-4 md:gap-5">
+        {/* Left: Big code chip — no ring, soft shadow only */}
+        <div className="shrink-0">
+          <div
+            className="w-16 h-16 md:w-20 md:h-20 rounded-2xl flex flex-col items-center justify-center
+                       bg-white dark:bg-slate-900/60
+                       shadow-sm"
+          >
+            <span className={`text-[9px] md:text-[10px] font-bold tracking-widest uppercase ${solidText}`}>
+              Code
+            </span>
+            <span className={`text-lg md:text-2xl font-black leading-none ${solidText} mt-0.5`}>
+              {triage.code}
             </span>
           </div>
-          <p className="text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+        </div>
+
+        {/* Middle: Label + description + metric pills */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2 mb-1">
+            <h2 className={`text-lg md:text-xl font-black tracking-tight ${solidText}`}>
+              {triage.label}
+            </h2>
+            <span className="text-[10px] md:text-[11px] font-bold tracking-widest uppercase text-slate-400">
+              Status
+            </span>
+          </div>
+
+          <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 leading-snug line-clamp-2 md:line-clamp-3 mb-2">
             {triage.description}
           </p>
+
           {hasData && (
-            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1.5 md:mt-2 text-[10px] md:text-xs text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 text-[10px] md:text-[11px] font-bold text-slate-600 dark:text-slate-300">
                 <Activity className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                {overallProgress}% Overall
+                {overallProgress}%
               </span>
-              <span className="w-px h-3 md:h-4 bg-gray-300 dark:bg-gray-600" />
-              <span className="flex items-center gap-1">
-                <Star className="w-2.5 h-2.5 md:w-3 md:h-3 text-yellow-400 fill-current" />
-                {totalStars} Stars
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 text-[10px] md:text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                <Star className="w-2.5 h-2.5 md:w-3 md:h-3 text-amber-500 fill-amber-500" />
+                {totalStars}
               </span>
-              <span className="w-px h-3 md:h-4 bg-gray-300 dark:bg-gray-600" />
-              <span className="flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-white/10 text-[10px] md:text-[11px] font-bold text-slate-600 dark:text-slate-300">
                 <BookOpen className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                {totalUnits} Units
+                {totalUnits}
               </span>
             </div>
           )}
         </div>
 
-        {/* Action Button */}
+        {/* Right: Action button (desktop inline) */}
         <button
           onClick={() => navigate(triage.actionLink)}
-          className={`flex-shrink-0 w-full sm:w-auto px-4 md:px-4 py-2 md:py-2 text-white text-xs md:text-xs font-bold rounded-xl transition-all md:hover:scale-105 md:shadow-lg active:scale-[0.98] ${triage.code === "GREEN" ? "bg-emerald-600 hover:bg-emerald-700 md:shadow-emerald-500/30" :
-            triage.code === "YELLOW" ? "bg-amber-600 hover:bg-amber-700 md:shadow-amber-500/30" :
-              triage.code === "RED" ? "bg-red-600 hover:bg-red-700 md:shadow-red-500/30" :
-                "bg-gray-600 hover:bg-gray-700 md:shadow-gray-500/30"
-            }`}
+          className={`hidden md:inline-flex shrink-0 items-center justify-center
+                      px-4 h-10 rounded-xl ${solidBg} text-white
+                      text-xs font-bold tracking-wide
+                      transition-all hover:scale-[1.03] active:scale-95 shadow-lg`}
+        >
+          {triage.actionText}
+        </button>
+      </div>
+
+      {/* Mobile-only centered pill button (not edge-to-edge) */}
+      <div className="md:hidden mt-3 flex justify-center">
+        <button
+          onClick={() => navigate(triage.actionLink)}
+          className={`inline-flex items-center justify-center
+                      px-5 h-10 rounded-full ${solidBg} text-white
+                      text-xs font-bold tracking-wide
+                      transition-all active:scale-95 shadow-md`}
         >
           {triage.actionText}
         </button>
@@ -164,7 +201,6 @@ function TriageBanner({
     </motion.div>
   );
 }
-
 // 🚨 UNIT TRIAGE BADGE
 // 🚨 UNIT TRIAGE BADGE (compact single-line summary)
 function UnitTriageBadge({ subject }: { subject: any }) {
@@ -411,25 +447,94 @@ export function StudyProgress() {
         )}
       </AnimatePresence>
 
-      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-0 md:space-y-2 px-2 md:px-6 pt-0 md:pt-8">
+      <div className="w-full md:max-w-full md:px-4 lg:px-6 space-y-0 md:space-y-2 px-1 md:px-6 -pt-4 md:-pt-4">
         {/* Main Card - full width on mobile, no rounded corners */}
-        <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-white dark:bg-muted/30 border-b border-gray-100 dark:border-gray-800 md:border-b-0">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
-          <CardHeader className="pb-2 px-4 md:px-6 pt-4 md:pt-6">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div>
-                <CardTitle className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                  Your <span className="text-blue-600">Growth</span> Story
-                </CardTitle>
-                <p className="text-[10px] md:text-xs font-medium text-gray-500 dark:text-gray-400 tracking-[0.12em] mt-1">
-                  Every quiz brings you closer to success
-                </p>
-              </div>
-            </div>
-          </CardHeader>
+        <Card className="relative overflow-hidden md:shadow-xl md:shadow-blue-500/5 transition-all rounded-none md:rounded-xl border-0 bg-white dark:bg-muted/30 ">
+          <div className="absolute top-0 left-0 w-full h-1" />
 
-          <CardContent className="space-y-2 md:space-y-2 px-4 md:px-6 pb-4 md:pb-6">
-            {/* 🚨 TRIAGE BANNER */}
+
+          <CardContent className="space-y-2 md:space-y-2 px-2 md:px-6 pb-4 md:pb-6">
+
+            {/* 🎨 STORY-STYLE STATS ROW */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 pt-3 gap-2 md:gap-3">
+
+              {/* Triage Code Tile */}
+              <div className={`relative overflow-hidden rounded-2xl ${triage.bgColor} p-3 md:p-4`}>
+                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/40 dark:bg-white/5 blur-2xl pointer-events-none" />
+                <div className="relative flex items-start justify-between mb-2">
+                  <span className={`text-[9px] md:text-[10px] font-bold tracking-widest uppercase ${triage.textColor}`}>
+                    Triage
+                  </span>
+                  <span className={`w-2.5 h-2.5 rounded-full mt-1 ${(triage.color || "").split(" ")[0]?.replace(/^text-/, "bg-") || "bg-slate-400"}`} />
+                </div>
+                <div className="relative">
+                  <p className={`text-xl md:text-2xl lg:text-3xl font-black leading-none ${triage.textColor} tracking-tight`}>
+                    {triage.code}
+                  </p>
+                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">
+                    {triage.label}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Tile */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/5 p-3 md:p-4">
+                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-blue-400/20 blur-2xl pointer-events-none" />
+                <div className="relative flex items-start justify-between mb-2">
+                  <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-blue-600 dark:text-blue-400">
+                    Progress
+                  </span>
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+                </div>
+                <div className="relative">
+                  <p className="text-xl md:text-2xl lg:text-3xl font-black leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
+                    {Math.round(overallStats.totalProgress)}<span className="text-sm font-bold text-slate-400 dark:text-slate-500">%</span>
+                  </p>
+                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+                    Overall mastery
+                  </p>
+                </div>
+              </div>
+
+              {/* Hours Tile */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-500/10 dark:to-purple-500/5 p-3 md:p-4">
+                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-violet-400/20 blur-2xl pointer-events-none" />
+                <div className="relative flex items-start justify-between mb-2">
+                  <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-violet-600 dark:text-violet-400">
+                    Hours
+                  </span>
+                  <Clock className="w-3.5 h-3.5 text-violet-500" />
+                </div>
+                <div className="relative">
+                  <p className="text-xl md:text-2xl lg:text-3xl font-black leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
+                    {overallStats.totalHours.toFixed(1)}<span className="text-sm font-bold text-slate-400 dark:text-slate-500">h</span>
+                  </p>
+                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+                    Time invested
+                  </p>
+                </div>
+              </div>
+
+              {/* Stars Tile */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/5 p-3 md:p-4">
+                <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-amber-400/25 blur-2xl pointer-events-none" />
+                <div className="relative flex items-start justify-between mb-2">
+                  <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-amber-600 dark:text-amber-400">
+                    Stars
+                  </span>
+                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                </div>
+                <div className="relative">
+                  <p className="text-xl md:text-2xl lg:text-3xl font-black leading-none text-slate-900 dark:text-white tracking-tight tabular-nums">
+                    {overallStats.totalStars}
+                  </p>
+                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+                    Units earned
+                  </p>
+                </div>
+              </div>
+
+            </div>
             <TriageBanner
               overallProgress={overallStats.totalProgress}
               hasData={hasAnyData}
@@ -485,54 +590,10 @@ export function StudyProgress() {
                 </AnimatePresence>
               </motion.div>
             </div>
-
-            {/* OVERALL STATS GRID */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-2">
-              {/* 🚨 TRIAGE CODE STAT CARD */}
-              <Card className="border-0 bg-white dark:bg-gray-900 md:shadow-sm md:hover:shadow-md transition-all duration-300 md:rounded-xl overflow-hidden border-0 rounded-none border-0">
-                <CardContent className="p-3 md:p-5 flex flex-col items-center text-center">
-                  <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${triage.bgColor} ${triage.color} mb-2 md:mb-3`}>
-                    <Activity className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <span className={`text-sm font-normal ${triage.textColor}`}>
-                      Code {triage.code}
-                    </span>
-                  </div>
-                  <p className="text-xs font-normal text-gray-400 mt-1 md:mt-2">
-                    {triage.label} Status
-                  </p>
-                  <p className="text-[9px] md:text-[10px] lg:text-xs font-bold text-gray-400 tracking-tight mt-1 md:mt-2">
-                    {triage.label} Status
-                  </p>
-                </CardContent>
-              </Card>
-
-              <StatCard
-                icon={<TrendingUp className="w-4 h-4 md:w-5 md:h-5" />}
-                value={`${Math.round(overallStats.totalProgress)}%`}
-                label="Overall Progress"
-                color="text-blue-600"
-                bgColor="bg-blue-50 dark:bg-blue-900/20"
-              />
-              <StatCard
-                icon={<Clock className="w-4 h-4 md:w-5 md:h-5" />}
-                value={`${overallStats.totalHours.toFixed(1)}h`}
-                label="Hours Studied"
-                color="text-indigo-600"
-                bgColor="bg-indigo-50 dark:bg-indigo-900/20"
-              />
-              <StatCard
-                icon={<Star className="w-4 h-4 md:w-5 md:h-5" />}
-                value={`${overallStats.totalStars}`}
-                label="Stars Earned"
-                color="text-amber-500"
-                bgColor="bg-amber-50 dark:bg-amber-900/20"
-              />
-            </div>
+            <SimulationAndTriviaSummary user={user} />
           </CardContent>
 
-          <SimulationAndTriviaSummary user={user} />
+
 
           <Tabs defaultValue="subjects" className="space-y-2">
             <div className="flex justify-center">
