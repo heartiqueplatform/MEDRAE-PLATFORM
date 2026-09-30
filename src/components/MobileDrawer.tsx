@@ -513,7 +513,7 @@ export function MobileDrawer({ userRole: propUserRole, isOpen, setIsOpen }: Mobi
         return [
             { title: "Prep Quizzes", url: "/Medrae-quizzes", icon: QuizzesHeartIcon, iconTone: "practice" as IconTone },
             { title: "NCK Progress", url: "/progress", icon: TrendingUp, iconTone: "progress" as IconTone },
-            { title: "Proctorium", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice" as IconTone },
+            { title: "Proctorium (Dijiproctor styl) ", url: "/simulation/candidate", icon: PlayFilledIcon, iconTone: "practice" as IconTone },
         ];
     }, [isStudent]);
 

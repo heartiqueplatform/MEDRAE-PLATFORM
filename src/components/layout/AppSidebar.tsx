@@ -549,7 +549,7 @@ export function AppSidebar({ userRole: propUserRole }: AppSidebarProps) {
         badge: `${totalStars}★`
       },
       {
-        title: "Proctorium Lite",
+        title: "Proctorium (Dijiproctor styl)",
         url: "/simulation/candidate",
         icon: PlayFilledIcon,
         iconTone: "practice" as IconTone,
