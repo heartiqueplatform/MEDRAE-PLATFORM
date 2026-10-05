@@ -32,7 +32,7 @@ import {
 // ============================================
 // 🎛️ OVERRIDE BUMP SECTION
 // ============================================
-const SHOW_BOT_FOR_PREMIUM = true;   // 🧪 TEST
+const SHOW_BOT_FOR_PREMIUM = false;   // 🧪 TEST
 const BUMP_VERSION = "v2";
 // ============================================
 
