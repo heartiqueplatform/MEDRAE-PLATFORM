@@ -32,14 +32,10 @@ import {
 // ============================================
 // 🎛️ OVERRIDE BUMP SECTION
 // ============================================
-const SHOW_BOT_FOR_PREMIUM = false;   // 🧪 TEST
-const BUMP_VERSION = "v2";
-// ============================================
-
-// ============================================
-// 🧪 TESTING OVERRIDE
-// ============================================
-const FORCE_SHOW_ON_REFRESH = true;
+const SHOW_BOT_FOR_PREMIUM = false;  // premium users → bot hidden
+const BUMP_VERSION = "v2";           // keep as-is (bump only when you want to force a one-time re-show)
+const FORCE_SHOW_ON_REFRESH = false; // respect daily cap + session guard
+// 4 times per day
 // ============================================
 
 // ============================================
@@ -59,7 +55,7 @@ const BOT_OPEN_DATE_KEY = "medrae_bot_open_date";
 const BOT_SESSION_FLAG = "medrae_bot_session_started";
 const BOT_DISMISSED_THIS_OPEN = "medrae_bot_dismissed_this_open";
 
-const MAX_SHOWS_PER_DAY = 3;
+const MAX_SHOWS_PER_DAY = 4;
 
 // ─── Time-aware greeting ───
 const getTimeGreeting = (): string => {
@@ -179,6 +175,11 @@ const MedraeBot = () => {
     }, []);
 
     // ─── Decide visibility ───
+    useEffect(() => {
+        // Reset the check whenever the inputs change
+        setHasChecked(false);
+    }, [session?.user?.id, isPremium, premiumResolved]);
+
     useEffect(() => {
         if (!session?.user) return;
         if (hasChecked) return;
