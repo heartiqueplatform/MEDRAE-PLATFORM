@@ -135,15 +135,8 @@ export function SettingsSheet({
         setTimeout(() => window.location.reload(), 300);
     }, []);
 
-    const handleShare = useCallback(() => {
-        const shareMessage = `Medrae – The Professional Medical Education & Career Network\n\nJoin us: https://medrae.vercel.app`;
-        if (navigator.share) {
-            navigator.share({ title: "Medrae Network", text: shareMessage, url: "https://medrae.vercel.app" }).catch(() => { });
-        } else {
-            navigator.clipboard.writeText(shareMessage);
-            toast({ title: "Copied!", description: "Medrae info copied to clipboard!" });
-        }
-    }, [toast]);
+    // ❌ REMOVED: handleShare — was the old hardcoded Invite Colleagues flow.
+    //    Replaced by the /share page (real referral code + rewards).
 
     const handleMuteToggle = useCallback(() => {
         const newMuteState = toggleSoundMute();
@@ -308,12 +301,8 @@ export function SettingsSheet({
 
                     {/* ===== Group 1: Sharing + Theme + Telegram ===== */}
                     <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#161b22] sm:bg-transparent dark:sm:bg-transparent">
-                        <button onClick={handleShare} className={rowBase}>
-                            <div className={`${iconTile} bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400`}>
-                                <Share2 className="w-4 h-4" />
-                            </div>
-                            <span className={primaryLabel}>Invite Colleagues</span>
-                        </button>
+                        {/* ❌ REMOVED: "Invite Colleagues" button (was handleShare → hardcoded URL).
+                            The real referral flow lives in "Invite a Friend" below. */}
 
                         <button onClick={() => setShowTelegram(true)} className={rowBase}>
                             <div className={`${iconTile} bg-gradient-to-br from-[#2AABEE] to-[#229ED9] shadow-sm`}>
@@ -340,17 +329,17 @@ export function SettingsSheet({
                         </button>
 
                         <button onClick={() => goToPage("/share")} className={rowBase}>
-                            <div className={`${iconTile} bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400`}>
+                            <div className={`${iconTile} bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400`}>
                                 <Share2 className="w-4 h-4" />
                             </div>
                             <div className={labelStack}>
-                                <span className={primaryLabel}>Invite a Friend</span>
-                                <span className={`${secondaryLabel} text-emerald-600/70 dark:text-emerald-400/60`}>
-                                    Share with friends
+                                <span className={primaryLabel}>Invite a Friend & Earn Premium</span>
+                                <span className={`${secondaryLabel} text-violet-600/70 dark:text-violet-400/60`}>
+                                    You get 2 days · They get 1 day
                                 </span>
                             </div>
-                            <Badge className="ml-auto h-5 px-2 shrink-0 bg-gradient-to-r from-blue-500 to-blue-600 text-[9px] font-bold text-white border-0 rounded-full">
-                                Quick
+                            <Badge className="ml-auto h-5 px-2 shrink-0 bg-gradient-to-r from-violet-500 to-purple-600 text-[9px] font-bold text-white border-0 rounded-full">
+                                Reward
                             </Badge>
                         </button>
 

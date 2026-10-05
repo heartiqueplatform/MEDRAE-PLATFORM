@@ -14,11 +14,19 @@ import {
     Users,
     Trophy,
     Zap,
-    X
+    X,
+    Gift,
+    Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSound, loadSound } from "@/lib/soundManager";
 import { useSession } from "@supabase/auth-helpers-react";
+// ✅ Real referral helpers
+import {
+    getMyReferralCode,
+    buildReferralLink,
+    buildWhatsAppMessage,
+} from "@/lib/referrals";
 
 loadSound("start", "/sounds/start.mp3");
 
@@ -40,9 +48,15 @@ const backgroundImages = [
     "high5.png",
     "high6.png",
 ];
-// Add these at the very top of the file, after the imports
+
+// ─── Reward amounts (unchanged — tokens are the instant reward) ───
 const WHATSAPP_TOKENS = 5;
 const TELEGRAM_TOKENS = 10;
+
+// ─── NEW: Premium days you get when a friend actually signs up ───
+const PREMIUM_DAYS_FOR_REFERRER = 2;
+const PREMIUM_DAYS_FOR_REFEREE = 1;
+
 const Referral: React.FC = () => {
     const [showPopup, setShowPopup] = useState(false);
     const [scenario, setScenario] = useState<Scenario | null>(null);
@@ -51,13 +65,14 @@ const Referral: React.FC = () => {
     const [tokens, setTokens] = useState<number>(0);
     const [tokensToday, setTokensToday] = useState<number>(0);
     const [bgIndex, setBgIndex] = useState(0);
+    const [referralCode, setReferralCode] = useState<string | null>(null);
 
     const session = useSession();
     const user = session?.user || null;
 
     const today = new Date().toDateString();
 
-    // Background image slideshow
+    // ─── Background image slideshow ───
     useEffect(() => {
         if (!showPopup) return;
 
@@ -68,19 +83,18 @@ const Referral: React.FC = () => {
         return () => clearInterval(interval);
     }, [showPopup]);
 
-    // Load user data on mount
+    // ─── Load user data on mount ───
     useEffect(() => {
         const loadUser = async () => {
             if (!user) return;
 
             const todayDate = new Date();
             const dayOfWeek = todayDate.getDay();
-            // Check if it's weekend (Saturday = 6, Sunday = 0)
             const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
 
-            // Only proceed if it's weekend
             if (!isWeekend) return;
 
+            // Load tokens
             const { data: profile, error } = await supabase
                 .from("profiles")
                 .select("tokens")
@@ -94,6 +108,9 @@ const Referral: React.FC = () => {
 
             setTokens(profile?.tokens ?? 0);
 
+            // ✅ Load referral code (parallel-safe, doesn't block popup)
+            getMyReferralCode(user.id).then((code) => setReferralCode(code));
+
             // Check if we've already shown the popup today
             const lastShown = localStorage.getItem(`referral_popup_${user.id}`);
             const today = new Date().toDateString();
@@ -106,7 +123,7 @@ const Referral: React.FC = () => {
         loadUser();
     }, [user]);
 
-    // Fetch random scenario
+    // ─── Fetch random scenario ───
     useEffect(() => {
         const fetchScenario = async () => {
             const { data, error } = await supabase
@@ -123,8 +140,12 @@ const Referral: React.FC = () => {
         fetchScenario();
     }, []);
 
-    const referralLink = `https://medrae.vercel.app/`;
+    // ─── Derived: real referral link (falls back to plain home if code missing) ───
+    const referralLink = referralCode
+        ? buildReferralLink(referralCode)
+        : "https://medrae.vercel.app/";
 
+    // ─── Token reward (unchanged) ───
     const giveInviteTokens = async (amount: number, vibrationStrong = false) => {
         if (!user?.id) return;
 
@@ -158,19 +179,28 @@ const Referral: React.FC = () => {
         window.addEventListener("focus", handleFocus);
     };
 
+    // ─── WhatsApp share — now includes the real referral link ───
     const shareOnWhatsApp = () => {
-        const message = encodeURIComponent(
-            `🚀 Join me on MedRae - the ultimate medical challenge platform! Test your knowledge, earn tokens, and compete with colleagues. Start your journey: ${referralLink}`
+        // Use the shared helper so the message is consistent with the rest of the app
+        const message = referralCode
+            ? buildWhatsAppMessage(referralCode)
+            : `🚀 Join me on Medrae — the ultimate nursing study platform! ${referralLink}`;
+
+        openAndReward(
+            `https://wa.me/?text=${encodeURIComponent(message)}`,
+            WHATSAPP_TOKENS,
+            false
         );
-        openAndReward(`https://wa.me/?text=${message}`, WHATSAPP_TOKENS, false);
     };
 
+    // ─── Telegram share — now includes the real referral link ───
     const shareOnTelegram = () => {
-        const message = encodeURIComponent(
-            `🧠 Ready to level up your medical knowledge? Join MedRae and challenge yourself with clinical cases! Earn rewards and become a better clinician. Start here: ${referralLink}`
-        );
+        const text = referralCode
+            ? `🧠 Join me on Medrae — nursing quizzes, past papers, and a full NCK curriculum. You get 1 day of Premium when you sign up:`
+            : `🧠 Ready to level up your nursing knowledge? Join Medrae!`;
+        const url = referralLink;
         openAndReward(
-            `https://t.me/share/url?url=${referralLink}&text=${message}`,
+            `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
             TELEGRAM_TOKENS,
             true
         );
@@ -196,7 +226,6 @@ const Referral: React.FC = () => {
         }
     };
 
-    // Return early if conditions not met
     if (!showPopup || !user?.id) return null;
 
     return (
@@ -207,7 +236,7 @@ const Referral: React.FC = () => {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[9999] flex flex-col md:flex-row bg-muted/100 dark:bg-muted/100"
             >
-                {/* LEFT SIDE - Background Images (Desktop Only) */}
+                {/* LEFT SIDE — Background Images (Desktop Only) */}
                 <div className="hidden md:block md:w-1/2 relative overflow-hidden h-screen sticky top-0">
                     {backgroundImages.map((img, index) => (
                         <div
@@ -215,8 +244,8 @@ const Referral: React.FC = () => {
                             className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === bgIndex ? "opacity-100 scale-105" : "opacity-0 scale-100"
                                 }`}
                             style={{
-                                backgroundImage: `url(/${img})`,  // ← Changed this line
-                                transition: 'opacity 1s ease-in-out, transform 10s linear'
+                                backgroundImage: `url(/${img})`,
+                                transition: "opacity 1s ease-in-out, transform 10s linear",
                             }}
                         />
                     ))}
@@ -235,16 +264,15 @@ const Referral: React.FC = () => {
                             <p className="text-gray-300 text-lg max-w-md">
                                 {scenarioAnswered
                                     ? "Share your success and earn rewards!"
-                                    : "Test your clinical reasoning and earn bonus tokens."
-                                }
+                                    : "Test your clinical reasoning and earn bonus tokens."}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* RIGHT SIDE - Content (Full width on mobile) */}
+                {/* RIGHT SIDE — Content */}
                 <div className="w-full md:w-1/2 flex flex-col h-screen overflow-hidden bg-muted/100 dark:bg-muted/100">
-                    {/* Header - Full width gradient with close button */}
+                    {/* Header */}
                     <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-blue-800 text-white relative shrink-0">
                         <BriefcaseMedical className="absolute -right-8 -top-8 w-32 h-32 opacity-10 rotate-12" />
 
@@ -277,13 +305,13 @@ const Referral: React.FC = () => {
 
                             {scenarioAnswered && (
                                 <p className="text-teal-50/80 text-sm mt-2 font-medium">
-                                    Brilliant work! Now share the knowledge and earn even more tokens.
+                                    Brilliant work! Now share the knowledge and earn even more.
                                 </p>
                             )}
                         </div>
                     </div>
 
-                    {/* Content - Scrollable - Only show if scenario exists */}
+                    {/* Content */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar bg-muted/100 dark:bg-muted/100">
                         <div className="px-6 py-6">
                             {scenario && !scenarioAnswered ? (
@@ -300,7 +328,6 @@ const Referral: React.FC = () => {
                                     onClose={closePopup}
                                 />
                             ) : (
-                                // Loading state
                                 <div className="flex items-center justify-center h-64">
                                     <div className="text-center">
                                         <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -311,7 +338,7 @@ const Referral: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Footer - Edge to edge - Only show if not answered */}
+                    {/* Footer */}
                     {!scenarioAnswered && scenario && (
                         <div className="px-6 py-4 bg-muted/100 dark:bg-muted/100 border-t border-slate-200/50 dark:border-slate-800/50 shrink-0">
                             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
@@ -326,7 +353,7 @@ const Referral: React.FC = () => {
     );
 };
 
-// Question Section Component - No borders
+// ─── Question Section ───
 const QuestionSection: React.FC<{
     scenario: Scenario;
     onAnswer: (index: number) => void;
@@ -340,14 +367,12 @@ const QuestionSection: React.FC<{
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Question - No border, just subtle bg */}
             <div className="bg-slate-100/80 dark:bg-slate-800/50 p-6 rounded-2xl">
                 <p className="text-slate-800 dark:text-slate-100 font-semibold text-base leading-relaxed break-words font-serif">
                     {scenario.question}
                 </p>
             </div>
 
-            {/* Options - No borders */}
             <div className="grid gap-3">
                 {options.map((opt, idx) => (
                     <motion.button
@@ -365,12 +390,11 @@ const QuestionSection: React.FC<{
                 ))}
             </div>
 
-            {/* Progress indicator */}
             <div className="flex justify-center gap-1 mt-2">
                 {[1, 2, 3, 4].map((i) => (
                     <div
                         key={i}
-                        className={`w-2 h-2 rounded-full ${i === 1 ? 'bg-teal-500' : 'bg-slate-200 dark:bg-slate-700'
+                        className={`w-2 h-2 rounded-full ${i === 1 ? "bg-teal-500" : "bg-slate-200 dark:bg-slate-700"
                             }`}
                     />
                 ))}
@@ -379,7 +403,7 @@ const QuestionSection: React.FC<{
     );
 };
 
-// Success Section Component - No borders
+// ─── Success Section — now shows BOTH rewards ───
 const SuccessSection: React.FC<{
     tokensToday: number;
     tokens: number;
@@ -389,8 +413,8 @@ const SuccessSection: React.FC<{
 }> = ({ tokensToday, tokens, onWhatsAppShare, onTelegramShare, onClose }) => {
     return (
         <div className="flex flex-col">
-            {/* Stats Banner - No borders */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Stats Banner */}
+            <div className="grid grid-cols-2 gap-4 mb-5">
                 <div className="bg-emerald-50/80 dark:bg-emerald-900/20 rounded-2xl p-4 text-center">
                     <Trophy className="w-6 h-6 text-emerald-600 dark:text-emerald-400 mx-auto mb-1" />
                     <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-serif">
@@ -411,17 +435,58 @@ const SuccessSection: React.FC<{
                 </div>
             </div>
 
-            {/* Message */}
-            <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100/80 dark:bg-emerald-900/30 rounded-full mb-4">
-                    <GraduationCap className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+            {/* ✅ NEW: Premium reward explainer */}
+            <div className="mb-5 rounded-2xl p-4 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-900/50">
+                <div className="flex items-center gap-2 mb-3">
+                    <Gift className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <p className="text-xs font-black uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                        Share now · Earn twice
+                    </p>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 font-serif">
+
+                <div className="space-y-2">
+                    {/* Instant reward */}
+                    <div className="flex items-center gap-3 bg-white/60 dark:bg-slate-900/40 rounded-xl p-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                            <Zap size={15} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                                Instant tokens
+                            </p>
+                            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 leading-tight">
+                                +5 WhatsApp · +10 Telegram
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Delayed reward */}
+                    <div className="flex items-center gap-3 bg-white/60 dark:bg-slate-900/40 rounded-xl p-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
+                            <Gift size={15} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-violet-900 dark:text-violet-200">
+                                +2 days Premium
+                            </p>
+                            <p className="text-[10px] text-violet-700 dark:text-violet-400 leading-tight">
+                                When your friend creates a real account
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Message */}
+            <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100/80 dark:bg-emerald-900/30 rounded-full mb-3">
+                    <GraduationCap className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1 font-serif">
                     You're on Fire! 🔥
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
-                    Your clinical skills are sharp! Now spread the word and earn even more rewards.
-                    Every referral brings you closer to becoming a MedRae legend.
+                <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed max-w-sm mx-auto">
+                    Share with a nursing friend. Every real signup earns you 2 days of Premium — the more you share, the longer you stay Premium free.
                 </p>
             </div>
 
@@ -431,20 +496,30 @@ const SuccessSection: React.FC<{
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onWhatsAppShare}
-                    className="flex items-center justify-center gap-3 w-full py-4 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-2xl font-bold shadow-lg shadow-green-200/50 dark:shadow-none transition-all text-sm"
+                    className="flex flex-col items-center justify-center gap-0.5 w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-2xl font-bold shadow-lg shadow-green-200/50 dark:shadow-none transition-all"
                 >
-                    <MessageCircle className="w-5 h-5" />
-                    <span>Share on WhatsApp ✨ +{WHATSAPP_TOKENS || 5} tokens</span>
+                    <span className="flex items-center gap-2 text-sm">
+                        <MessageCircle className="w-4 h-4" />
+                        Share on WhatsApp
+                    </span>
+                    <span className="text-[10px] font-medium opacity-90">
+                        +5 tokens now · +2 days Premium when they join
+                    </span>
                 </motion.button>
 
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onTelegramShare}
-                    className="flex items-center justify-center gap-3 w-full py-4 bg-[#0088cc] hover:bg-[#0077b5] text-white rounded-2xl font-bold transition-all text-sm"
+                    className="flex flex-col items-center justify-center gap-0.5 w-full py-3 bg-[#0088cc] hover:bg-[#0077b5] text-white rounded-2xl font-bold transition-all"
                 >
-                    <Send className="w-5 h-5" />
-                    <span>Share on Telegram 🚀 +{TELEGRAM_TOKENS || 10} tokens</span>
+                    <span className="flex items-center gap-2 text-sm">
+                        <Send className="w-4 h-4" />
+                        Share on Telegram
+                    </span>
+                    <span className="text-[10px] font-medium opacity-90">
+                        +10 tokens now · +2 days Premium when they join
+                    </span>
                 </motion.button>
 
                 <button
@@ -456,10 +531,10 @@ const SuccessSection: React.FC<{
             </div>
 
             {/* Motivational Footer */}
-            <div className="mt-6 text-center">
-                <p className="text-xs text-slate-400 dark:text-slate-500">
-                    <Zap className="w-3 h-3 inline mr-1" />
-                    Share the knowledge, earn the rewards
+            <div className="mt-5 text-center">
+                <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Rewards unlock when they actually sign up
                 </p>
             </div>
         </div>

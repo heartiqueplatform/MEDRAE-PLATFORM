@@ -23,6 +23,8 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { cn } from "@/lib/utils";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
 import { ReflectionSheet } from "@/components/QuizPage/ReflectionSheet";
+import { getMyReferralCode, getMyReferralStats, type ReferralStats } from "@/lib/referrals";
+
 interface Question {
   id: string;
   quiz_id: string;
@@ -127,6 +129,8 @@ export default function QuizPage() {
   const [isPremium, setIsPremium] = useState<boolean>(
     () => getCachedPremium(userId) ?? false
   );
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [lastCheckpoint, setLastCheckpoint] = useState(0);
@@ -148,7 +152,8 @@ export default function QuizPage() {
       return matchesCourse && matchesUnanswered;
     });
   }, [questions, selectedCourse, showUnansweredOnly, answers, lockedVisible]);
-
+  // ⬅️ NEW: physically prevents double-recording even under React StrictMode
+  const recordedMistakesRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (currentQuestionIndex !== undefined && circleRefs.current[currentQuestionIndex]) {
       circleRefs.current[currentQuestionIndex].scrollIntoView({
@@ -183,7 +188,20 @@ export default function QuizPage() {
     "Rushed",
     "Guess"
   ];
-
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const [code, stats] = await Promise.all([
+        getMyReferralCode(userId),
+        getMyReferralStats(userId),
+      ]);
+      if (cancelled) return;
+      setReferralCode(code);
+      setReferralStats(stats);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
   useEffect(() => {
     localStorage.setItem("showReasonBox", JSON.stringify(showReasonBox));
   }, [showReasonBox]);
@@ -231,33 +249,6 @@ export default function QuizPage() {
     localStorage.getItem("quizMuted") === "true" ? true : false
   );
 
-  async function recordMistake(userId: string, question: any, selectedOption: string, reason?: string) {
-    try {
-      const { error: upsertError } = await supabase
-        .from("user_mistakes")
-        .upsert(
-          {
-            user_id: userId,
-            question_id: question.id,
-            quiz_id: question.quiz_id,
-            last_wrong_at: new Date(),
-            times_wrong: 1,
-            user_selected: selectedOption,
-            ...(reason ? { mistake_reason: reason } : {}),
-          },
-          { onConflict: "user_id,question_id" }
-        );
-      if (upsertError) throw upsertError;
-      const { data, error } = await supabase.rpc("increment_mistake", {
-        user_uuid: userId,
-        question_uuid: question.id,
-        selected_option: selectedOption,
-      });
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error recording mistake:", error);
-    }
-  }
 
   const saveNoteOfflineFn = async (questionId: string, noteText: string) => {
     try {
@@ -669,16 +660,19 @@ export default function QuizPage() {
 
 
   const handleAnswer = useCallback((questionId: string, selected: string) => {
-    // ⬅️ CHANGED: hard gate on hydration
+    // ⬅️ hard gate on hydration
     if (!hydrated) {
       console.warn("[QuizPage] handleAnswer blocked — not hydrated yet");
       return;
     }
     if (answers[questionId]) return;
+
     const nextIndex = questions.findIndex(q => q.id === questionId);
     if (nextIndex !== -1) setCurrentQuestionIndex(nextIndex);
+
     const updatedAnswers = { ...answers, [questionId]: selected };
     saveAnswersOffline(unit, updatedAnswers);
+
     const now = new Date();
     const date = now.toLocaleDateString();
     const time = now.toLocaleTimeString();
@@ -693,9 +687,7 @@ export default function QuizPage() {
     const CHECKPOINT_SIZE = 10;
     const nextCount = Object.keys(updatedAnswers).length;
 
-    // Trigger ONLY when hitting exactly 10, 20, 30... and only if we haven't processed this batch
     if (nextCount > 0 && nextCount % CHECKPOINT_SIZE === 0 && nextCount > lastCheckpoint) {
-      // Logic to calculate accuracy for the LAST 10 questions
       const startIndex = nextCount - CHECKPOINT_SIZE;
       const checkpointQuestionIds = Object.keys(updatedAnswers).slice(startIndex, nextCount);
 
@@ -706,38 +698,67 @@ export default function QuizPage() {
 
       const percentCompleted = Math.round((correctInCheckpoint / CHECKPOINT_SIZE) * 100);
 
-      // Mark this batch as completed
       setLastCheckpoint(nextCount);
-
       setCheckpointOverlay({
         visible: true,
-        reached: correctInCheckpoint, // This is actual score
+        reached: correctInCheckpoint,
         total: CHECKPOINT_SIZE,
-        percentCompleted, // This is accuracy %
+        percentCompleted,
       });
 
       if (!isMuted) playSound("notification");
     }
+
     setRecentlyAnsweredId(questionId);
     setFeedbackShown(prev => ({ ...prev, [questionId]: true }));
     setOpenExplanationFor(questionId);
-    // 🔔 If the answer was wrong, queue a reflection prompt for after the
-    // explanation overlay is dismissed.
+
+    // 🔔 If the answer was wrong, queue a reflection prompt AND record the mistake once
     const answeredQuestion = questions.find(q => q.id === questionId);
     const wasWrong = answeredQuestion && answeredQuestion.correct_answer !== selected;
+
     if (wasWrong) {
       setPendingReflectionIds(prev => ({ ...prev, [questionId]: true }));
+
+      // ⬅️ Record the mistake ONCE, here, and only here
+      if (userId && answeredQuestion && !recordedMistakesRef.current.has(questionId)) {
+        recordedMistakesRef.current.add(questionId);
+
+        supabase
+          .from("user_mistakes")
+          .upsert(
+            {
+              user_id: userId,
+              question_id: answeredQuestion.id,
+              quiz_id: answeredQuestion.quiz_id,
+              last_wrong_at: new Date(),
+              times_wrong: 1,
+              user_selected: selected,
+            },
+            { onConflict: "user_id,question_id" }
+          )
+          .then(() => {
+            supabase.rpc("increment_mistake", {
+              user_uuid: userId,
+              question_uuid: answeredQuestion.id,
+              selected_option: selected,
+            });
+          })
+          .catch(err => console.error("record mistake failed:", err));
+      }
     }
+
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
     setQuestionStartTime(Date.now());
+
     if (showUnansweredOnly) {
       setLockedVisible(prev => ({
         ...prev,
         [questionId]: true,
       }));
     }
-  }, [answers, questions, unit, notes, lastCheckpoint, isMuted, quizId, showUnansweredOnly, hydrated]);
-
+  }, [answers, questions, unit, notes, lastCheckpoint, isMuted, quizId,
+    showUnansweredOnly, hydrated, userId]);
   const handleReportQuestion = async (question: Question) => {
     alert("You are reporting this question. A new AI window is opening to discuss this question as Medrae team reviews it. You can send your input directly.");
     const reportPayload = {
@@ -847,6 +868,7 @@ Please provide a detailed discussion and guidance.`;
     setTimeout(() => {
       localStorage.removeItem(`quiz-${quizId}-answers`);
       localStorage.removeItem(`quiz-${quizId}-end`);
+      recordedMistakesRef.current.clear();
       setAnswers({});
       setFeedbackShown({});
       setLockedVisible({});
@@ -980,6 +1002,8 @@ Please provide a detailed discussion and guidance.`;
         setCheckpointOverlay={setCheckpointOverlay}
         playSound={playSound}
         isDarkMode={isDarkMode}
+        referralCode={referralCode}          // 👈 pass this
+        referralStats={referralStats}        // 👈 pass this
       />
       <div className="mt-1 flex justify-between items-center w-full gap-4"></div>
       <div className="flex flex-col items-center">
@@ -1173,32 +1197,7 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                               } catch (err) {
                                 console.error("Error inserting live event:", err);
                               }
-                              if (!correct) {
-                                setShowReasonBox(prev => ({ ...prev, [q.id]: true }));
-                                if (!userId) return;
-                                (async () => {
-                                  try {
-                                    await supabase.from("user_mistakes").upsert(
-                                      {
-                                        user_id: userId,
-                                        question_id: q.id,
-                                        quiz_id: q.quiz_id,
-                                        last_wrong_at: new Date(),
-                                        times_wrong: 1,
-                                        user_selected: letter,
-                                      },
-                                      { onConflict: "user_id,question_id" }
-                                    );
-                                    await supabase.rpc("increment_mistake", {
-                                      user_uuid: userId,
-                                      question_uuid: q.id,
-                                      selected_option: letter,
-                                    });
-                                  } catch (error) {
-                                    console.error("Error recording mistake:", error);
-                                  }
-                                })();
-                              }
+
                             }}
                           >
                             <div

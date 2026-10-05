@@ -909,7 +909,7 @@ export function Resources() {
         <div className="w-full max-w-full space-y-0 md:space-y-6 py-0 md:py-6 px-0 sm:px-0">
           <div className="w-full max-w-full mx-auto space-y-0 px-[1px] sm:px-6 pt-0 sm:pt-4">
             {/* REMOVED ALL CARD STYLING ON MOBILE - NO BORDERS, NO ROUNDED, NO PADDING */}
-            <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0 -pt-4 bg-transparent dark:bg-transparent mx-0">
+            <div className="relative overflow-hidden transition-all rounded-none sm:rounded-xl border-0  bg-transparent dark:bg-transparent mx-0">
               <div className="absolute top-0 left-0 w-full h-1.5" />
 
               {/* REMOVED PADDING FROM HEADER ON MOBILE */}
@@ -1481,7 +1481,7 @@ export function Resources() {
       {/* PREMIUM UPGRADE OVERLAY - same as before */}
       <AnimatePresence>
         {showPremiumOverlay && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPremiumOverlay(false)} className="absolute inset-0 bg-black/70 backdrop-blur-md" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden">
               <div className={`relative p-8 text-center ${isTutor ? 'bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500' : 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-500'}`}>

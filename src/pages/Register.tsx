@@ -119,6 +119,9 @@ export function Register() {
     }
     setIsLoading(true);
 
+    // ⬅️ NEW: Read referral code from URL (?ref=MED-XXXXXX)
+    const urlRef = new URLSearchParams(window.location.search).get("ref");
+
     try {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email.trim().toLowerCase(),
@@ -126,7 +129,8 @@ export function Register() {
         options: {
           data: {
             role: role,
-            name: formData.fullName
+            name: formData.fullName,
+            referral_code: urlRef || null   // ⬅️ NEW: attach ref to signup metadata
           }
         }
       });

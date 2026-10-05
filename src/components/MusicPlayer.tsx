@@ -1064,7 +1064,16 @@ const PlayerContent = React.memo(function PlayerContent(props: any) {
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                                         transition={{ duration: 0.15, ease: "easeOut" }}
-                                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 flex flex-col items-center gap-2 rounded-2xl bg-white dark:bg-gh-card shadow-2xl shadow-black/30 dark:shadow-black/60 ring-1 ring-slate-200 dark:ring-white/10 p-3 touch-manipulation"
+                                        className="
+        absolute bottom-full mb-3 z-50
+        right-0 md:left-1/2 md:right-auto md:-translate-x-1/2
+        max-w-[calc(100vw-1.5rem)]
+        flex flex-col items-center gap-2 rounded-xl
+        bg-white dark:bg-gh-card
+        shadow-2xl shadow-black/30 dark:shadow-black/60
+        ring-1 ring-slate-200 dark:ring-white/10
+        p-3 touch-manipulation
+    "
                                     >
                                         <span className="text-[10px] font-black tabular-nums text-slate-500 dark:text-gh-muted">
                                             {volPct}%

@@ -363,70 +363,57 @@ export const DailyTriviaCard = () => {
             isFetchingQuestions.current = true;
 
             const cacheKey = `trivia_questions_${today}`;
-            let hasCache = false;
 
-            // 1. ALWAYS show cached questions immediately (if available)
+            // 1. Cache-first: if today's questions are cached → USE THEM, skip network
             const stored = localStorage.getItem(cacheKey);
             if (stored) {
                 try {
                     const parsed = JSON.parse(stored);
                     if (parsed.data && parsed.data.length > 0) {
-                        hasCache = true;
                         if (isMounted.current) {
                             setQuestions(parsed.data);
                             setLoading(false);
-                            console.log("✅ Questions loaded from cache");
                         }
+                        isFetchingQuestions.current = false;
+                        return; // ← KEY: no network call when cache exists
                     }
-                } catch (e) {
+                } catch {
                     localStorage.removeItem(cacheKey);
                 }
             }
 
-            // 2. If no cache, show loading state
-            if (!hasCache && isMounted.current) {
-                setLoading(true);
-            }
+            // 2. No cache for today → fetch the deterministic daily batch
+            if (isMounted.current) setLoading(true);
 
-            // 3. ALWAYS try to fetch fresh questions in background
             try {
-                const { data, error } = await supabase.rpc("get_random_quiz_questions", {
-                    limit_count: 15,
+                const { data, error } = await supabase.rpc("get_daily_trivia_questions", {
+                    p_date: today,
+                    p_limit: 15,
                 });
 
                 if (!error && data && data.length > 0 && isMounted.current) {
-                    // Update with fresh data
                     setQuestions(data);
-                    setLoading(false);
-
-                    // Update cache with timestamp
-                    const cacheData = { data, timestamp: Date.now() };
-                    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-                    console.log("✅ Fresh questions fetched and cached");
-                } else if (!hasCache) {
-                    // If no cache AND fetch failed, show empty state
-                    if (isMounted.current) {
-                        setQuestions([]);
-                        setLoading(false);
-                    }
+                    localStorage.setItem(
+                        cacheKey,
+                        JSON.stringify({
+                            data,
+                            timestamp: Date.now(),
+                            date: today,
+                        })
+                    );
+                } else if (isMounted.current) {
+                    setQuestions([]);
                 }
             } catch (err) {
                 console.error("❌ Trivia fetch failed:", err);
-                // If we have cache, we already showed it, so just keep it
-                if (!hasCache && isMounted.current) {
-                    setQuestions([]);
-                    setLoading(false);
-                }
+                if (isMounted.current) setQuestions([]);
             } finally {
-                if (isMounted.current) {
-                    setLoading(false);
-                }
+                if (isMounted.current) setLoading(false);
                 isFetchingQuestions.current = false;
             }
         }
         loadQuestions();
     }, [today]);
-
     // ============================================
     // FIXED: Fetch top students with "Always Show Cache First" strategy
     // ============================================
@@ -561,17 +548,33 @@ export const DailyTriviaCard = () => {
         const handleOnline = () => {
             console.log("🌐 Connection restored - retrying data fetch");
 
-            // Retry questions if empty or loading
-            if (questions.length === 0 && !isFetchingQuestions.current) {
-                // Force reload questions by re-triggering the effect
-                setLoading(true);
-                const cacheKey = `trivia_questions_${today}`;
-                localStorage.removeItem(cacheKey);
-                // The useEffect will re-run due to today dependency
-            }
-
             // Retry leaderboard
             fetchTop();
+
+            // Questions: only refetch if we truly have none.
+            // The loadQuestions effect already runs on mount + when `today` changes.
+            // If we came back online with an empty list, re-trigger it manually:
+            if (questions.length === 0 && !isFetchingQuestions.current) {
+                setLoading(true);
+                // Force a fresh run of the loader without nuking cache:
+                (async () => {
+                    try {
+                        const { data, error } = await supabase.rpc("get_daily_trivia_questions", {
+                            p_date: today,
+                            p_limit: 15,
+                        });
+                        if (!error && data?.length && isMounted.current) {
+                            setQuestions(data);
+                            localStorage.setItem(
+                                `trivia_questions_${today}`,
+                                JSON.stringify({ data, timestamp: Date.now(), date: today })
+                            );
+                        }
+                    } finally {
+                        if (isMounted.current) setLoading(false);
+                    }
+                })();
+            }
         };
 
         window.addEventListener('online', handleOnline);

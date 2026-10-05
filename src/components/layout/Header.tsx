@@ -578,15 +578,6 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
     setTimeout(() => window.location.reload(), 300);
   }, []);
 
-  const handleShare = useCallback(() => {
-    const shareMessage = `Medrae – The Professional Medical Education & Career Network\n\nJoin us: https://medrae.vercel.app`;
-    if (navigator.share) {
-      navigator.share({ title: "Medrae Network", text: shareMessage, url: "https://medrae.vercel.app" }).catch(() => { });
-    } else {
-      navigator.clipboard.writeText(shareMessage);
-      toast({ title: "Copied!", description: "Medrae info copied to clipboard!" });
-    }
-  }, [toast]);
 
   const handleProfileClick = useCallback(() => {
     navigate("/profile");

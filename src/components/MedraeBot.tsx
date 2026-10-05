@@ -5,42 +5,50 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     X,
-    MessageCircle,
     Sparkles,
-    Lightbulb,
     Lock,
     Crown,
     ArrowRight,
-    BookOpen,
-    Brain,
-    Home,
     Heart,
     Phone,
+    Gift,
+    Share2,
+    Send,
+    Copy,
+    Check,
+    Flame,
+    Users,
+    Clock,
 } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
 import MedraeSocialFooter from "@/components/MedraeSocialFooter";
 import { getCachedPremium, resolveSubscription } from "@/lib/subscription";
+import {
+    getMyReferralCode,
+    getMyReferralStats,
+    type ReferralStats,
+} from "@/lib/referrals";
 
 // ============================================
 // 🎛️ OVERRIDE BUMP SECTION
 // ============================================
-const SHOW_BOT_FOR_PREMIUM = false;
-const BUMP_VERSION = "v1";
+const SHOW_BOT_FOR_PREMIUM = true;   // 🧪 TEST
+const BUMP_VERSION = "v2";
 // ============================================
 
 // ============================================
-// 🧪 TESTING OVERRIDE — DELETE THIS LINE TO RESTORE NORMAL BEHAVIOR
+// 🧪 TESTING OVERRIDE
 // ============================================
-const FORCE_SHOW_ON_REFRESH = false;
-// ============================================
-
-// ============================================
-// 🔒 LOCKOUT SETTINGS
-// ============================================
-const LOCKOUT_SECONDS = 7;
+const FORCE_SHOW_ON_REFRESH = true;
 // ============================================
 
-// ─── Support number (shown on the card) ───
+// ============================================
+// 🕐 X BUTTON APPEARS AFTER THIS MANY SECONDS
+// ============================================
+const X_APPEAR_AFTER_SECONDS = 5;
+// ============================================
+
+// ─── Support ───
 const SUPPORT_WHATSAPP = "254704473503";
 const SUPPORT_PHONE_DISPLAY = "0704 473 503";
 
@@ -56,17 +64,26 @@ const MAX_SHOWS_PER_DAY = 3;
 // ─── Time-aware greeting ───
 const getTimeGreeting = (): string => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return "Good morning!";
-    if (hour >= 12 && hour < 17) return "Good afternoon!";
-    if (hour >= 17 && hour < 21) return "Good evening!";
-    return "Good night!";
+    if (hour >= 5 && hour < 12) return "Good morning";
+    if (hour >= 12 && hour < 17) return "Good afternoon";
+    if (hour >= 17 && hour < 21) return "Good evening";
+    return "Good night";
+};
+
+// ─── Build share message ───
+const buildShareMessage = (code: string): string => {
+    return (
+        `🎓 I'm studying smarter with *Medrae* — an AI tutor for students.\n\n` +
+        `Use my link and we BOTH get FREE Premium:\n` +
+        `👉 https://medrae.app/?ref=${code}\n\n` +
+        `You get 1 day free. I get 2. Everyone wins 💚`
+    );
 };
 
 const MedraeBot = () => {
     const navigate = useNavigate();
     const session = useSession();
 
-    // ─── Premium status — shared cache, offline-safe, synchronous ───
     const [isPremium, setIsPremium] = useState<boolean>(
         () => getCachedPremium(session?.user?.id) ?? false
     );
@@ -77,13 +94,20 @@ const MedraeBot = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isDismissing, setIsDismissing] = useState(false);
     const [hasChecked, setHasChecked] = useState(false);
-    const [secondsLeft, setSecondsLeft] = useState(LOCKOUT_SECONDS);
     const [isMounted, setIsMounted] = useState(false);
+    const [showX, setShowX] = useState(false);
 
-    // ─── Time-aware greeting, computed once on mount ───
     const [greeting] = useState<string>(() => getTimeGreeting());
 
-    // ─── Premium: seed from cache when auth hydrates ───
+    const [referralCode, setReferralCode] = useState<string | null>(null);
+    const [referralStats, setReferralStats] = useState<ReferralStats>({
+        invites: 0,
+        pending: 0,
+        daysEarned: 0,
+    });
+    const [copied, setCopied] = useState(false);
+
+    // ─── Premium from cache ───
     useEffect(() => {
         if (!session?.user?.id) return;
         const cached = getCachedPremium(session.user.id);
@@ -93,7 +117,7 @@ const MedraeBot = () => {
         }
     }, [session?.user?.id]);
 
-    // ─── Premium: single background refresh, sets resolved flag ───
+    // ─── Premium background refresh ───
     useEffect(() => {
         if (!session?.user?.id) return;
         let cancelled = false;
@@ -109,37 +133,41 @@ const MedraeBot = () => {
         return () => { cancelled = true; };
     }, [session?.user?.id]);
 
-    // ─── Track a fresh app open ───
+    // ─── Referral data ───
+    useEffect(() => {
+        if (!session?.user?.id) return;
+        let cancelled = false;
+        (async () => {
+            const [code, stats] = await Promise.all([
+                getMyReferralCode(session.user.id),
+                getMyReferralStats(session.user.id),
+            ]);
+            if (cancelled) return;
+            setReferralCode(code);
+            setReferralStats(stats);
+        })();
+        return () => { cancelled = true; };
+    }, [session?.user?.id]);
+
+    // ─── Track app open ───
     useEffect(() => {
         if (typeof window === "undefined") return;
         if (FORCE_SHOW_ON_REFRESH) return;
-
-        const alreadyOpened = sessionStorage.getItem(BOT_SESSION_FLAG);
-        if (alreadyOpened) return;
-
+        if (sessionStorage.getItem(BOT_SESSION_FLAG)) return;
         sessionStorage.setItem(BOT_SESSION_FLAG, "true");
-
         try {
             const today = new Date().toDateString();
             const storedDate = localStorage.getItem(BOT_OPEN_DATE_KEY);
-
-            let count = 0;
-
-            if (storedDate === today) {
-                count = parseInt(localStorage.getItem(BOT_OPEN_COUNT_KEY) || "0", 10);
-            } else {
-                count = 0;
-                localStorage.setItem(BOT_OPEN_DATE_KEY, today);
-            }
-
+            let count = storedDate === today
+                ? parseInt(localStorage.getItem(BOT_OPEN_COUNT_KEY) || "0", 10)
+                : 0;
+            if (storedDate !== today) localStorage.setItem(BOT_OPEN_DATE_KEY, today);
             count += 1;
             localStorage.setItem(BOT_OPEN_COUNT_KEY, count.toString());
-        } catch {
-            // ignore
-        }
+        } catch { /* ignore */ }
     }, []);
 
-    // ─── Decide whether to show the bot ───
+    // ─── Decide visibility ───
     useEffect(() => {
         if (!session?.user) return;
         if (hasChecked) return;
@@ -156,28 +184,14 @@ const MedraeBot = () => {
                 setHasChecked(true);
                 return;
             }
-
             const today = new Date().toDateString();
             const storedDate = localStorage.getItem(BOT_OPEN_DATE_KEY);
             const openCount = parseInt(localStorage.getItem(BOT_OPEN_COUNT_KEY) || "0", 10);
             const seenBump = localStorage.getItem(BOT_BUMP_KEY);
 
-            if (seenBump !== BUMP_VERSION) {
-                setIsVisible(true);
-                setHasChecked(true);
-                return;
-            }
-
-            if (storedDate === today && openCount > MAX_SHOWS_PER_DAY) {
-                setHasChecked(true);
-                return;
-            }
-
-            if (sessionStorage.getItem(BOT_DISMISSED_THIS_OPEN)) {
-                setHasChecked(true);
-                return;
-            }
-
+            if (seenBump !== BUMP_VERSION) { setIsVisible(true); setHasChecked(true); return; }
+            if (storedDate === today && openCount > MAX_SHOWS_PER_DAY) { setHasChecked(true); return; }
+            if (sessionStorage.getItem(BOT_DISMISSED_THIS_OPEN)) { setHasChecked(true); return; }
             setIsVisible(true);
             setHasChecked(true);
         } catch {
@@ -185,422 +199,410 @@ const MedraeBot = () => {
         }
     }, [session, isPremium, hasChecked, premiumResolved]);
 
-    // ─── Trigger overlay mount animation (fade + glide in) ───
+    // ─── Mount animation ───
     useEffect(() => {
-        if (!isVisible) {
-            setIsMounted(false);
-            return;
-        }
-
+        if (!isVisible) { setIsMounted(false); return; }
         let raf2: number | null = null;
         const raf1 = requestAnimationFrame(() => {
             raf2 = requestAnimationFrame(() => setIsMounted(true));
         });
-
         return () => {
             cancelAnimationFrame(raf1);
             if (raf2 !== null) cancelAnimationFrame(raf2);
         };
     }, [isVisible]);
 
-    // ─── Countdown timer (lockout) ───
+    // ─── Reveal X after N seconds ───
     useEffect(() => {
-        if (!isVisible) return;
-        if (secondsLeft <= 0) return;
-
-        const timer = setTimeout(() => {
-            setSecondsLeft((s) => Math.max(0, s - 1));
-        }, 1000);
-
-        return () => clearTimeout(timer);
-    }, [isVisible, secondsLeft]);
-
-    const isLocked = secondsLeft > 0;
+        if (!isVisible) { setShowX(false); return; }
+        setShowX(false);
+        const t = setTimeout(() => setShowX(true), X_APPEAR_AFTER_SECONDS * 1000);
+        return () => clearTimeout(t);
+    }, [isVisible]);
 
     const markDismissed = useCallback(() => {
         try {
             sessionStorage.setItem(BOT_DISMISSED_THIS_OPEN, "true");
             localStorage.setItem(BOT_STORAGE_KEY, Date.now().toString());
             localStorage.setItem(BOT_BUMP_KEY, BUMP_VERSION);
-        } catch {
-            // ignore
-        }
+        } catch { /* ignore */ }
     }, []);
 
     const closeAndThen = useCallback((action?: () => void) => {
-        if (isLocked) return;
-
         markDismissed();
         setIsDismissing(true);
-
         setTimeout(() => {
             setIsVisible(false);
             setIsDismissing(false);
             setIsMounted(false);
             if (action) action();
         }, 500);
-    }, [isLocked, markDismissed]);
+    }, [markDismissed]);
 
     const handleDismiss = useCallback(() => closeAndThen(), [closeAndThen]);
     const handleUpgrade = useCallback(() => closeAndThen(() => navigate("/subscription")), [closeAndThen, navigate]);
-    const handleSuggestion = useCallback(() => closeAndThen(() => navigate("/feedback")), [closeAndThen, navigate]);
+    const handleFeedback = useCallback(() => closeAndThen(() => navigate("/feedback")), [closeAndThen, navigate]);
 
-    // ─── If premium resolves mid-session, hide the bot gracefully ───
+    // ─── Share handlers ───
+    const shareUrl = referralCode ? `https://medrae.app/?ref=${referralCode}` : "";
+    const shareMessage = referralCode ? buildShareMessage(referralCode) : "";
+
+    const handleShareWhatsApp = useCallback(() => {
+        if (!referralCode) return;
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, "_blank");
+    }, [referralCode, shareMessage]);
+
+    const handleShareTelegram = useCallback(() => {
+        if (!referralCode) return;
+        window.open(
+            `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(
+                "🎓 Free AI tutor for students — use my link and we both get Premium:"
+            )}`,
+            "_blank"
+        );
+    }, [referralCode, shareUrl]);
+
+    const handleShareNative = useCallback(async () => {
+        if (!referralCode) return;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: "Medrae — free AI tutor for students",
+                    text: "🎓 Use my link and we BOTH get FREE Premium:",
+                    url: shareUrl,
+                });
+            } catch { /* user cancelled */ }
+        } else {
+            handleCopy();
+        }
+    }, [referralCode, shareUrl]);
+
+    const handleCopy = useCallback(async () => {
+        if (!referralCode) return;
+        try {
+            await navigator.clipboard.writeText(shareMessage);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch { /* ignore */ }
+    }, [referralCode, shareMessage]);
+
+    // ─── Hide if premium resolves mid-session ───
     useEffect(() => {
         if (!isPremium || SHOW_BOT_FOR_PREMIUM) return;
         if (!isVisible) return;
-
         setIsVisible(false);
         setIsDismissing(false);
         setIsMounted(false);
-        setSecondsLeft(LOCKOUT_SECONDS);
     }, [isPremium, isVisible]);
 
     // ─── Escape key ───
     useEffect(() => {
         if (!isVisible) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape" && !isLocked) handleDismiss();
+            if (e.key === "Escape" && showX) handleDismiss();
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [isVisible, isLocked, handleDismiss]);
+    }, [isVisible, showX, handleDismiss]);
 
     if (!isVisible && !isDismissing) return null;
     if (isPremium && !SHOW_BOT_FOR_PREMIUM) return null;
 
-    const LockoutRing = () => (
-        <span
-            className="absolute inset-0 rounded-full pointer-events-none"
-            style={{
-                background: `conic-gradient(rgba(255,255,255,0.9) ${((LOCKOUT_SECONDS - secondsLeft) / LOCKOUT_SECONDS) * 360
-                    }deg, transparent 0deg)`,
-                mask: "radial-gradient(circle, transparent 60%, black 62%)",
-                WebkitMask: "radial-gradient(circle, transparent 60%, black 62%)",
-            }}
-        />
-    );
-
-    // ─── Top 3 Features ───
-    const TopFeatures = ({ accent }: { accent: "emerald" | "blue" }) => {
-        const features = [
-            {
-                icon: <BookOpen size={16} />,
-                title: "Full KRCHN Curriculum",
-                desc: "Every unit, semester, and topic mapped to NCK — organized so you study exactly what matters.",
-                path: "/nursing",
-            },
-            {
-                icon: <Brain size={16} />,
-                title: "Medrae Question Bank",
-                desc: "6,000+ verified NCK-style questions arranged by unit and condition. Practice smarter, not harder.",
-                path: "/Medrae-quizzes",
-            },
-            {
-                icon: <Home size={16} />,
-                title: "Survival Hub",
-                desc: "Find exam buddies, housing, hospitals, placements, and exam centers. Everything a nursing student needs.",
-                path: "/survival-hub",
-            },
-        ];
-
-        const iconBg = accent === "emerald"
-            ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
-            : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300";
-
-        const cardBg = accent === "emerald"
-            ? "hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-            : "hover:bg-blue-50 dark:hover:bg-blue-950/20";
-
-        const titleColor = accent === "emerald"
-            ? "text-emerald-800 dark:text-emerald-300"
-            : "text-blue-800 dark:text-blue-300";
-
-        return (
-            <div className="space-y-2">
-                <div className="flex items-center gap-1.5">
-                    <Sparkles size={14} className={titleColor} />
-                    <p className={`text-[11px] font-bold tracking-wider ${titleColor}`}>
-                        Top 3 Features For You
+    // ═══════════════════════════════════════════════════════
+    // 🎁 HERO REFERRAL CARD
+    // ═══════════════════════════════════════════════════════
+    const ReferralHero = () => {
+        if (!referralCode) {
+            return (
+                <div className="rounded-xl p-4 bg-violet-50 dark:bg-violet-950/30 text-center">
+                    <p className="text-xs text-violet-600 dark:text-violet-400 font-medium">
+                        Loading your invite link…
                     </p>
                 </div>
-                {features.map((f, i) => (
+            );
+        }
+
+        const hasInvites = referralStats.invites > 0;
+
+        return (
+            <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600">
+                {/* Glow decoration */}
+                <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -bottom-16 -left-10 w-44 h-44 bg-fuchsia-400/20 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative p-5 text-white">
+                    {/* Eyebrow */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl">
+                            <Flame size={11} /> Limited reward
+                        </span>
+                    </div>
+
+                    {/* Headline */}
+                    <h3 className="text-2xl font-black leading-tight mb-1">
+                        Get <span className="text-yellow-300">FREE Premium</span>
+                        <br />for every friend you invite
+                    </h3>
+
+                    {/* Reward math */}
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center">
+                            <p className="text-3xl font-black text-yellow-300 leading-none">+2</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide mt-1 opacity-90">
+                                Days for you
+                            </p>
+                        </div>
+                        <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center">
+                            <p className="text-3xl font-black text-emerald-300 leading-none">+1</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide mt-1 opacity-90">
+                                Day for them
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Why it matters */}
+                    <div className="mt-4 space-y-2">
+                        <div className="flex items-start gap-2">
+                            <Clock size={14} className="text-yellow-300 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs font-semibold opacity-95">
+                                Premium <strong>stacks</strong> — 5 friends = 10 days free
+                            </p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <Users size={14} className="text-yellow-300 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs font-semibold opacity-95">
+                                Your friend unlocks Premium <strong>instantly</strong> — no card needed
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* ── PRIMARY CTA: WhatsApp ── */}
                     <button
-                        key={i}
-                        onClick={() => !isLocked && closeAndThen(() => navigate(f.path))}
-                        disabled={isLocked}
-                        className={`w-full text-left flex items-start gap-2.5 rounded-2xl p-3 transition-colors ${cardBg} ${isLocked ? "opacity-50 cursor-not-allowed" : "active:scale-[0.99]"
-                            }`}
+                        onClick={handleShareWhatsApp}
+                        className="mt-5 w-full py-3.5 rounded-xl bg-white text-violet-700 font-black text-base flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
                     >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-                            {f.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                                {f.title}
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 leading-relaxed">
-                                {f.desc}
-                            </p>
-                        </div>
-                        <ArrowRight size={14} className="text-gray-400 dark:text-gray-500 mt-1 flex-shrink-0" />
+                        <Share2 size={18} />
+                        Share on WhatsApp
                     </button>
-                ))}
-            </div>
-        );
-    };
 
-    // ─── Listen / Support block ───
-    const ListenBlock = ({ accent }: { accent: "emerald" | "blue" }) => {
-        const wrapperBg = "bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20";
-        const iconColor = "text-rose-600 dark:text-rose-400";
-        const titleColor = "text-rose-800 dark:text-rose-300";
-        const textColor = "text-rose-700 dark:text-rose-400";
-
-        const waLink = `https://wa.me/${SUPPORT_WHATSAPP}`;
-
-        return (
-            <div className={`rounded-2xl p-3 ${wrapperBg}`}>
-                <div className="flex items-start gap-2.5">
-                    <div className="flex-shrink-0 mt-0.5">
-                        <Heart size={16} className={iconColor} />
-                    </div>
-                    <div className="flex-1">
-                        <p className={`text-sm font-bold ${titleColor}`}>
-                            Medrae is here to listen 🤍
-                        </p>
-                        <p className={`text-xs mt-1 leading-relaxed ${textColor}`}>
-                            Not just for support ~ talk to us. Need someone to lean on, a question researched, or help finding your way? Our WhatsApp helpline is open for you.
-                        </p>
-                        <a
-                            href={waLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => isLocked && e.preventDefault()}
-                            className={`mt-2.5 inline-flex items-center gap-2 font-bold text-xs py-2 px-3 rounded-xl transition-all ${isLocked
-                                ? "bg-rose-200 dark:bg-rose-900/40 cursor-not-allowed text-white/70"
-                                : "bg-rose-600 hover:bg-rose-700 text-white active:scale-[0.98]"
-                                }`}
-                        >
-                            <Phone size={14} />
-                            Talk to Us · {SUPPORT_PHONE_DISPLAY}
-                        </a>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    // ─── PREMIUM USER VIEW ───
-    if (isPremium) {
-        return (
-            <div
-                className={`fixed inset-0 z-[9998] flex items-center justify-center p-4 transition-opacity duration-500 ${isDismissing ? "opacity-0" : "opacity-100"
-                    }`}
-            >
-                <div
-                    className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                    onClick={() => !isLocked && handleDismiss()}
-                />
-
-                <div
-                    className={`relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl shadow-emerald-500/20 overflow-hidden max-w-md w-full max-h-[90vh] flex flex-col transition-all duration-500 ease-out ${isMounted && !isDismissing
-                        ? "opacity-100 scale-100 translate-y-0"
-                        : "opacity-0 scale-[0.92] translate-y-4"
-                        }`}
-                >
-                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-5 flex-shrink-0">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
-                                    <Sparkles className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <p className="text-white font-bold text-base leading-tight">{greeting} Medraen</p>
-                                    <p className="text-white/80 text-xs">I'm Medrae, your assistant</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleDismiss}
-                                disabled={isLocked}
-                                className={`relative text-white p-1.5 rounded-full transition-all flex items-center justify-center h-9 w-9 ${isLocked
-                                    ? "opacity-60 cursor-not-allowed"
-                                    : "opacity-90 hover:opacity-100 hover:bg-white/10"
-                                    }`}
-                                aria-label={isLocked ? `Close in ${secondsLeft}s` : "Close"}
-                            >
-                                {isLocked ? (
-                                    <>
-                                        <span className="text-sm font-bold">{secondsLeft}</span>
-                                        <LockoutRing />
-                                    </>
-                                ) : (
-                                    <X size={20} />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="p-5 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                            Hey! Just checking in. If you ever have trouble loading pages, try{" "}
-                            <strong className="text-emerald-600 dark:text-emerald-400">logging out and logging back in</strong>{" "}
-                            — it fixes most issues instantly.
-                        </p>
-
-                        <TopFeatures accent="emerald" />
-
-                        <ListenBlock accent="emerald" />
-
-                        <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl p-3">
-                            <div className="flex items-start gap-2.5">
-                                <Lightbulb className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                                        Have an idea for us?
-                                    </p>
-                                    <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5 leading-relaxed">
-                                        Suggest a special question batch, share a weak area you'd love us to focus on, or tell us what would help you pass.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
+                    {/* ── Secondary row ── */}
+                    <div className="mt-2 grid grid-cols-3 gap-2">
                         <button
-                            onClick={handleSuggestion}
-                            disabled={isLocked}
-                            className={`w-full font-bold text-sm py-3 rounded-2xl transition-all flex items-center justify-center gap-2 ${isLocked
-                                ? "bg-emerald-400 cursor-not-allowed text-white/70"
-                                : "bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98]"
-                                }`}
+                            onClick={handleShareTelegram}
+                            className="h-11 rounded-xl bg-white/15 backdrop-blur text-white font-bold text-xs flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] transition-transform"
                         >
-                            <MessageCircle size={18} />
-                            Share Your Idea
+                            <Send size={15} />
+                            Telegram
                         </button>
-
-                        <MedraeSocialFooter onNavigate={handleDismiss} />
+                        <button
+                            onClick={handleShareNative}
+                            className="h-11 rounded-xl bg-white/15 backdrop-blur text-white font-bold text-xs flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] transition-transform"
+                        >
+                            <Sparkles size={15} />
+                            More
+                        </button>
+                        <button
+                            onClick={handleCopy}
+                            className="h-11 rounded-xl bg-white/15 backdrop-blur text-white font-bold text-xs flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] transition-transform"
+                        >
+                            {copied ? <Check size={15} /> : <Copy size={15} />}
+                            {copied ? "Copied" : "Copy"}
+                        </button>
                     </div>
+
+                    {/* Live stats */}
+                    {hasInvites && (
+                        <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-center gap-4 text-[11px] font-bold">
+                            <span className="flex items-center gap-1">
+                                <Users size={12} className="text-emerald-300" />
+                                {referralStats.invites} joined
+                            </span>
+                            <span className="w-1 h-1 bg-white/40 rounded-full" />
+                            <span className="flex items-center gap-1">
+                                <Gift size={12} className="text-yellow-300" />
+                                {referralStats.daysEarned} days earned
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
         );
-    }
+    };
 
-    // ─── FREE USER VIEW ───
+    // ─── Body content ───
+    const CardBody = ({ accent }: { accent: "emerald" | "blue" }) => {
+        const isEmerald = accent === "emerald";
+
+        const linkColor = isEmerald
+            ? "text-emerald-600 dark:text-emerald-400 hover:underline"
+            : "text-blue-600 dark:text-blue-400 hover:underline";
+
+        const crownBg = isEmerald
+            ? "from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20"
+            : "from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20";
+
+        const crownIcon = isEmerald
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-amber-600 dark:text-amber-400";
+
+        const crownTitle = isEmerald
+            ? "text-emerald-800 dark:text-emerald-300"
+            : "text-amber-800 dark:text-amber-300";
+
+        const crownText = isEmerald
+            ? "text-emerald-700 dark:text-emerald-400"
+            : "text-amber-700 dark:text-amber-400";
+
+        const crownBtn = isEmerald
+            ? "bg-emerald-600 hover:bg-emerald-700"
+            : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600";
+
+        const heartBg = isEmerald
+            ? "from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20"
+            : "from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20";
+
+        const heartIcon = isEmerald
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-rose-600 dark:text-rose-400";
+
+        const heartTitle = isEmerald
+            ? "text-emerald-800 dark:text-emerald-300"
+            : "text-rose-800 dark:text-rose-300";
+
+        const heartText = isEmerald
+            ? "text-emerald-700 dark:text-emerald-400"
+            : "text-rose-700 dark:text-rose-400";
+
+        return (
+            <>
+                {/* 1. Hero referral card */}
+                <ReferralHero />
+
+                {/* 2. Quick tip */}
+                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed text-center px-2">
+                    💡 Pages loading slow? Just{" "}
+                    <strong className={isEmerald ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400"}>
+                        log out and back in
+                    </strong>
+                    {" "}— fixes it every time.
+                </p>
+
+                {/* 3. Support — compact */}
+                <div className={`rounded-xl p-3 bg-gradient-to-r ${heartBg}`}>
+                    <div className="flex items-start gap-2.5">
+                        <Heart size={16} className={`${heartIcon} flex-shrink-0 mt-0.5`} />
+                        <div className="flex-1">
+                            <p className={`text-sm font-bold ${heartTitle}`}>We're here 🤍</p>
+                            <p className={`text-xs mt-0.5 leading-relaxed ${heartText}`}>
+                                Stuck or stressed? We reply on WhatsApp.
+                            </p>
+                            <a
+                                href={`https://wa.me/${SUPPORT_WHATSAPP}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`mt-2 inline-flex items-center gap-1.5 font-bold text-[11px] py-1.5 px-2.5 rounded-xl transition-all bg-rose-600 hover:bg-rose-700 text-white active:scale-[0.98]`}
+                            >
+                                <Phone size={12} />
+                                {SUPPORT_PHONE_DISPLAY}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Upgrade nudge */}
+                {!isEmerald && (
+                    <>
+                        <div className={`rounded-xl p-3 bg-gradient-to-r ${crownBg}`}>
+                            <div className="flex items-start gap-2.5">
+                                <Crown size={16} className={`${crownIcon} flex-shrink-0 mt-0.5`} />
+                                <div className="flex-1">
+                                    <p className={`text-sm font-bold ${crownTitle}`}>Or skip the wait</p>
+                                    <p className={`text-xs mt-0.5 leading-relaxed ${crownText}`}>
+                                        Unlimited questions. Full analytics. No pop-ups.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleUpgrade}
+                            className={`w-full font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${crownBtn} text-white active:scale-[0.98]`}
+                        >
+                            <Lock size={16} />
+                            Go Premium now
+                            <ArrowRight size={14} />
+                        </button>
+                    </>
+                )}
+
+                {/* 5. Feedback link */}
+                <button
+                    onClick={handleFeedback}
+                    className={`w-full text-center text-[11px] font-bold py-1 transition-colors ${linkColor}`}
+                >
+                    Have an idea? Tell us →
+                </button>
+
+                {/* 6. Social footer */}
+                <MedraeSocialFooter onNavigate={handleDismiss} />
+            </>
+        );
+    };
+
+    // ─── Header accent ───
+    const headerGradient = isPremium
+        ? "from-emerald-500 to-teal-500"
+        : "from-blue-500 to-indigo-500";
+
     return (
         <div
-            className={`fixed inset-0 z-[9998] flex items-center justify-center p-4 transition-opacity duration-500 ${isDismissing ? "opacity-0" : "opacity-100"
-                }`}
+            className={`fixed inset-0 z-[9998] flex items-center justify-center p-4 transition-opacity duration-500 ${isDismissing ? "opacity-0" : "opacity-100"}`}
         >
+            {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={() => !isLocked && handleDismiss()}
+                onClick={() => showX && handleDismiss()}
             />
 
             <div
-                className={`relative bg-white dark:bg-gray-900 rounded-2xl shadow-none overflow-hidden max-w-md w-full max-h-[90vh] flex flex-col transition-all duration-500 ease-out ${isMounted && !isDismissing
+                className={`relative bg-white dark:bg-gray-900 rounded-xl overflow-hidden max-w-md w-full max-h-[90vh] flex flex-col transition-all duration-500 ease-out ${isMounted && !isDismissing
                     ? "opacity-100 scale-100 translate-y-0"
                     : "opacity-0 scale-[0.92] translate-y-4"
                     }`}
             >
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-5 flex-shrink-0">
-                    <div className="flex items-start justify-between gap-3">
+                {/* ─── Header ─── */}
+                <div className={`bg-gradient-to-r ${headerGradient} p-4 flex-shrink-0`}>
+                    <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                            <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <p className="text-white font-bold text-base leading-tight">{greeting}</p>
-                                <p className="text-white/80 text-xs">I'm Medrae, your assistant</p>
+                                <p className="text-white font-bold text-sm leading-tight">
+                                    {greeting}{isPremium ? ", Medraen" : ""}
+                                </p>
+                                <p className="text-white/80 text-[11px]">
+                                    I'm Medrae Bot here's something for you
+                                </p>
                             </div>
                         </div>
+
+                        {/* X button */}
                         <button
                             onClick={handleDismiss}
-                            disabled={isLocked}
-                            className={`relative text-white p-1.5 rounded-full transition-all flex items-center justify-center h-9 w-9 ${isLocked
-                                ? "opacity-60 cursor-not-allowed"
-                                : "opacity-90 hover:opacity-100 hover:bg-white/10"
+                            className={`text-white p-1.5 rounded-xl transition-all flex items-center justify-center h-9 w-9 ${showX
+                                ? "opacity-90 hover:opacity-100 hover:bg-white/10"
+                                : "opacity-0 pointer-events-none"
                                 }`}
-                            aria-label={isLocked ? `Close in ${secondsLeft}s` : "Close"}
+                            aria-label="Close"
                         >
-                            {isLocked ? (
-                                <>
-                                    <span className="text-sm font-bold">{secondsLeft}</span>
-                                    <LockoutRing />
-                                </>
-                            ) : (
-                                <X size={20} />
-                            )}
+                            <X size={20} />
                         </button>
                     </div>
                 </div>
 
-                <div className="p-5 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Hey! Just checking in. If you ever have trouble loading pages, try{" "}
-                        <strong className="text-blue-600 dark:text-blue-400">logging out and logging back in</strong>{" "}
-                        — it fixes most issues instantly.
-                    </p>
-
-                    <TopFeatures accent="blue" />
-
-                    <ListenBlock accent="blue" />
-
-                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl p-3">
-                        <div className="flex items-start gap-2.5">
-                            <Lightbulb className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm font-bold text-blue-800 dark:text-blue-300">
-                                    Have an idea for us?
-                                </p>
-                                <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5 leading-relaxed">
-                                    Suggest a special question batch, share a weak area you'd love us to focus on, or tell us what would help you pass.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl p-3">
-                        <div className="flex items-start gap-2.5">
-                            <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
-                                    Go Premium · Hide this forever
-                                </p>
-                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
-                                    Get unlimited questions, full analytics, and never see this card again.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <button
-                            onClick={handleSuggestion}
-                            disabled={isLocked}
-                            className={`w-full font-bold text-sm py-3 rounded-2xl transition-all flex items-center justify-center gap-2 ${isLocked
-                                ? "bg-blue-400 cursor-not-allowed text-white/70"
-                                : "bg-blue-600 hover:bg-blue-700 text-white active:scale-[0.98]"
-                                }`}
-                        >
-                            <MessageCircle size={18} />
-                            Share Your Idea
-                        </button>
-
-                        <button
-                            onClick={handleUpgrade}
-                            disabled={isLocked}
-                            className={`w-full font-bold text-sm py-3 rounded-2xl transition-all flex items-center justify-center gap-2 ${isLocked
-                                ? "bg-amber-300 cursor-not-allowed text-white/70"
-                                : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white active:scale-[0.98]"
-                                }`}
-                        >
-                            <Lock size={18} />
-                            I don't want to see this
-                            <ArrowRight size={16} />
-                        </button>
-                    </div>
-
-                    <MedraeSocialFooter onNavigate={handleDismiss} />
+                {/* ─── Scrollable body ─── */}
+                <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                    <CardBody accent={isPremium ? "emerald" : "blue"} />
                 </div>
             </div>
         </div>

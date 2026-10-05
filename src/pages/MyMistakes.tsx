@@ -15,10 +15,15 @@ import { Button } from "@/components/ui/button";
 import dayjs from "dayjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
+import confetti from "canvas-confetti";
 
-import { Trophy, Sparkles, ArrowRight, Heart, BookOpen, RefreshCw, ChevronRight } from "lucide-react";
+import {
+    Trophy, Sparkles, ArrowRight, Heart, BookOpen, RefreshCw,
+    ChevronRight, CheckCircle2
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MistakesCard } from "@/components/MistakesCard";
+import { cn } from "@/lib/utils";
 
 interface Question {
     id: string;
@@ -45,45 +50,89 @@ interface Mistake {
     mistake_reason?: string;
 }
 
+type Tab = "needs-work" | "understood";
+
 // ═══════════════════════════════════════════════════════════════
 // CACHE
 // ═══════════════════════════════════════════════════════════════
 const MISTAKES_CACHE_KEY = "my_mistakes_cache";
+const RESOLVED_CACHE_KEY = "my_resolved_mistakes_cache";
 const MISTAKES_VERSION_KEY = "my_mistakes_version";
-const CACHE_DURATION = 43200000; // 12 hours
+const RESOLVED_VERSION_KEY = "my_resolved_version";
+const MISTAKES_LAST_FETCH_KEY = "my_mistakes_last_fetch";
+const CACHE_DURATION = 43200000;
+const MIN_FETCH_INTERVAL = 60000;
 
 let fetchInProgress = false;
-const MIN_FETCH_INTERVAL = 43200000;
 
 // ═══════════════════════════════════════════════════════════════
-// SAFE STORAGE — never throws, even in private mode / quota exceeded
+// SAFE STORAGE
 // ═══════════════════════════════════════════════════════════════
 const safeStorage = {
     get(key: string): string | null {
         try {
             if (typeof window === "undefined") return null;
             return window.localStorage.getItem(key);
-        } catch {
-            return null;
-        }
+        } catch { return null; }
     },
     set(key: string, value: string): boolean {
         try {
             if (typeof window === "undefined") return false;
             window.localStorage.setItem(key, value);
             return true;
-        } catch {
-            return false;
-        }
+        } catch { return false; }
     },
     remove(key: string): void {
         try {
             if (typeof window === "undefined") return;
             window.localStorage.removeItem(key);
-        } catch {
-            /* ignore */
-        }
+        } catch { /* ignore */ }
     },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CONFETTI — celebration burst when marking understood
+// ═══════════════════════════════════════════════════════════════
+const fireConfetti = () => {
+    try {
+        const duration = 1200;
+        const end = Date.now() + duration;
+
+        // Center burst
+        confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+            startVelocity: 45,
+            scalar: 0.9,
+            ticks: 180,
+            colors: ['#10b981', '#34d399', '#6ee7b7', '#059669', '#a7f3d0'],
+            disableForReducedMotion: true,
+        });
+
+        // Small streamer bursts from the sides
+        (function frame() {
+            confetti({
+                particleCount: 3,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0, y: 0.7 },
+                colors: ['#10b981', '#34d399', '#6ee7b7'],
+                disableForReducedMotion: true,
+            });
+            confetti({
+                particleCount: 3,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1, y: 0.7 },
+                colors: ['#10b981', '#34d399', '#6ee7b7'],
+                disableForReducedMotion: true,
+            });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        })();
+    } catch {
+        /* confetti is a nice-to-have — never crash if it fails */
+    }
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -113,9 +162,7 @@ async function checkForChanges(userId: string): Promise<boolean> {
             return true;
         }
         return false;
-    } catch {
-        return false;
-    }
+    } catch { return false; }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -132,44 +179,52 @@ const getCachedMistakes = (): Mistake[] => {
                 );
             }
         }
-    } catch (e) {
-        console.error("Failed to parse cached mistakes:", e);
-    }
+    } catch (e) { console.error("Failed to parse cached mistakes:", e); }
     return [];
 };
 
 const setCachedMistakes = (data: Mistake[]) => {
     try {
-        safeStorage.set(
-            MISTAKES_CACHE_KEY,
-            JSON.stringify({ data, timestamp: Date.now() })
-        );
-    } catch {
-        /* ignore */
-    }
+        safeStorage.set(MISTAKES_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch { /* ignore */ }
+};
+
+const getCachedResolvedMistakes = (): Mistake[] => {
+    try {
+        const cached = safeStorage.get(RESOLVED_CACHE_KEY);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.timestamp && Date.now() - parsed.timestamp < CACHE_DURATION) {
+                return (parsed.data || []).filter(
+                    (m: Mistake) => m.questions && Object.keys(m.questions).length > 0
+                );
+            }
+        }
+    } catch (e) { console.error("Failed to parse cached resolved mistakes:", e); }
+    return [];
+};
+
+const setCachedResolvedMistakes = (data: Mistake[]) => {
+    try {
+        safeStorage.set(RESOLVED_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch { /* ignore */ }
 };
 
 // ═══════════════════════════════════════════════════════════════
-// TIMEOUT WRAPPER — no promise can hang the UI forever
+// TIMEOUT WRAPPER
 // ═══════════════════════════════════════════════════════════════
 function withTimeout<T>(promise: Promise<T>, ms = 8000): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const t = setTimeout(() => reject(new Error("timeout")), ms);
         promise.then(
-            (v) => {
-                clearTimeout(t);
-                resolve(v);
-            },
-            (e) => {
-                clearTimeout(t);
-                reject(e);
-            }
+            (v) => { clearTimeout(t); resolve(v); },
+            (e) => { clearTimeout(t); reject(e); }
         );
     });
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SKELETON — explicit colors, no undefined CSS vars
+// SKELETON
 // ═══════════════════════════════════════════════════════════════
 const MistakesSkeleton = () => {
     return (
@@ -222,7 +277,7 @@ const MistakesSkeleton = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// OFFLINE FALLBACK — never a blank screen
+// OFFLINE FALLBACK
 // ═══════════════════════════════════════════════════════════════
 const OfflineFallback = ({ onRetry }: { onRetry: () => void }) => (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
@@ -249,7 +304,6 @@ const OfflineFallback = ({ onRetry }: { onRetry: () => void }) => (
 export default function MyMistakes() {
     const navigate = useNavigate();
 
-    // ── Safe session read (no @supabase/auth-helpers-react) ──
     const [user, setUser] = useState<any>(null);
     const [authReady, setAuthReady] = useState(false);
 
@@ -257,19 +311,22 @@ export default function MyMistakes() {
     const pendingResolves = useRef<Map<string, boolean>>(new Map());
 
     const [mistakes, setMistakes] = useState<Mistake[]>(() => getCachedMistakes());
+    const [resolvedMistakes, setResolvedMistakes] = useState<Mistake[]>(() => getCachedResolvedMistakes());
     const [loading, setLoading] = useState(false);
     const [mistakeCount, setMistakeCount] = useState(mistakes.length);
+    const [resolvedCount, setResolvedCount] = useState(resolvedMistakes.length);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isOffline, setIsOffline] = useState(
         typeof navigator !== "undefined" ? !navigator.onLine : false
     );
     const [hardError, setHardError] = useState(false);
+    const [activeTab, setActiveTab] = useState<Tab>("needs-work");
+    const [movingIds, setMovingIds] = useState<Set<string>>(new Set());
 
-    // ── Auth resolution (offline-safe, never throws) ──
+    // ── Auth ──
     useEffect(() => {
         let cancelled = false;
 
-        // 1. Read cached session from localStorage (sync, no network)
         try {
             const keys = Object.keys(localStorage).filter((k) =>
                 k.startsWith("sb-") && k.endsWith("-auth-token")
@@ -282,49 +339,31 @@ export default function MyMistakes() {
                         setUser(cachedUser);
                         break;
                     }
-                } catch {
-                    /* ignore */
-                }
+                } catch { /* ignore */ }
             }
-        } catch {
-            /* ignore */
-        }
+        } catch { /* ignore */ }
 
-        // 2. Try Supabase (async, guarded)
         supabase.auth
             .getSession()
-            .then(({ data }) => {
-                if (!cancelled) setUser(data?.session?.user ?? null);
-            })
-            .catch(() => {
-                /* offline or no session — keep cached */
-            })
-            .finally(() => {
-                if (!cancelled) setAuthReady(true);
-            });
+            .then(({ data }) => { if (!cancelled) setUser(data?.session?.user ?? null); })
+            .catch(() => { })
+            .finally(() => { if (!cancelled) setAuthReady(true); });
 
-        // 3. Subscribe to changes
         let sub: any = null;
         try {
             const res = supabase.auth.onAuthStateChange((_event, session) => {
                 if (!cancelled) setUser(session?.user ?? null);
             });
             sub = res?.data?.subscription;
-        } catch {
-            /* ignore */
-        }
+        } catch { /* ignore */ }
 
         return () => {
             cancelled = true;
-            try {
-                sub?.unsubscribe?.();
-            } catch {
-                /* ignore */
-            }
+            try { sub?.unsubscribe?.(); } catch { /* ignore */ }
         };
     }, []);
 
-    // ── Online/offline listeners ──
+    // ── Online/offline ──
     useEffect(() => {
         const goOnline = () => setIsOffline(false);
         const goOffline = () => setIsOffline(true);
@@ -336,27 +375,20 @@ export default function MyMistakes() {
         };
     }, []);
 
-    // ── Offline queue helpers ──
+    // ── Offline queue ──
     const getOfflineQueue = useCallback((): string[] => {
         const stored = safeStorage.get("offlineResolved");
         if (!stored) return [];
-        try {
-            return JSON.parse(stored) as string[];
-        } catch {
-            return [];
-        }
+        try { return JSON.parse(stored) as string[]; } catch { return []; }
     }, []);
 
-    const saveToOfflineQueue = useCallback(
-        (questionId: string) => {
-            const queue = getOfflineQueue();
-            if (!queue.includes(questionId)) {
-                queue.push(questionId);
-                safeStorage.set("offlineResolved", JSON.stringify(queue));
-            }
-        },
-        [getOfflineQueue]
-    );
+    const saveToOfflineQueue = useCallback((questionId: string) => {
+        const queue = getOfflineQueue();
+        if (!queue.includes(questionId)) {
+            queue.push(questionId);
+            safeStorage.set("offlineResolved", JSON.stringify(queue));
+        }
+    }, [getOfflineQueue]);
 
     const syncOfflineQueue = useCallback(async () => {
         const queue = getOfflineQueue();
@@ -379,129 +411,150 @@ export default function MyMistakes() {
                         const updatedQueue = getOfflineQueue().filter((id) => id !== questionId);
                         safeStorage.set("offlineResolved", JSON.stringify(updatedQueue));
                     }
-                } catch {
-                    /* keep in queue for next time */
-                }
+                } catch { /* keep in queue */ }
             }
-        } catch (err) {
-            console.error("Sync offline queue failed:", err);
-        }
+        } catch (err) { console.error("Sync offline queue failed:", err); }
     }, [user, getOfflineQueue]);
 
-    // ── Fetch mistakes (fully guarded) ──
-    const fetchMistakes = useCallback(
-        async (forceRefresh = false) => {
-            if (!user || fetchInProgress) return;
+    // ── Fetch both buckets ──
+    const fetchMistakes = useCallback(async (forceRefresh = false) => {
+        if (!user || fetchInProgress) return;
 
-            // OFFLINE: read cache, exit clean
-            if (typeof navigator !== "undefined" && !navigator.onLine) {
-                const cached = getCachedMistakes();
-                if (isMounted.current) {
-                    setMistakes(cached);
-                    setMistakeCount(cached.length);
-                    setLoading(false);
-                    setIsRefreshing(false);
-                }
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+            const cached = getCachedMistakes();
+            const cachedResolved = getCachedResolvedMistakes();
+            if (isMounted.current) {
+                setMistakes(cached);
+                setMistakeCount(cached.length);
+                setResolvedMistakes(cachedResolved);
+                setResolvedCount(cachedResolved.length);
+                setLoading(false);
+                setIsRefreshing(false);
+            }
+            return;
+        }
+
+        const now = Date.now();
+        const lastSync = safeStorage.get(MISTAKES_LAST_FETCH_KEY);
+
+        if (!forceRefresh && lastSync && now - parseInt(lastSync) < MIN_FETCH_INTERVAL) {
+            const cached = getCachedMistakes();
+            const cachedResolved = getCachedResolvedMistakes();
+            if (cached.length > 0 || cachedResolved.length > 0) {
+                setMistakes(cached);
+                setMistakeCount(cached.length);
+                setResolvedMistakes(cachedResolved);
+                setResolvedCount(cachedResolved.length);
+                setLoading(false);
                 return;
             }
+        }
 
-            const now = Date.now();
-            const lastSync = safeStorage.get(MISTAKES_VERSION_KEY + "_time");
+        fetchInProgress = true;
 
-            if (!forceRefresh && lastSync && now - parseInt(lastSync) < MIN_FETCH_INTERVAL) {
-                const cached = getCachedMistakes();
-                if (cached.length > 0) {
-                    setMistakes(cached);
-                    setMistakeCount(cached.length);
-                    setLoading(false);
-                    return;
-                }
-            }
+        if (isMounted.current) {
+            const cached = getCachedMistakes();
+            const cachedResolved = getCachedResolvedMistakes();
+            if (cached.length === 0 && cachedResolved.length === 0) setLoading(true);
+            setIsRefreshing(true);
+        }
 
-            fetchInProgress = true;
+        try {
+            const baseSelect = `
+                id,
+                times_wrong,
+                first_wrong_at,
+                last_wrong_at,
+                resolved,
+                quiz_id,
+                user_selected,
+                mistake_reason,
+                questions:question_id (
+                    id,
+                    question_text,
+                    option_a,
+                    option_b,
+                    option_c,
+                    option_d,
+                    correct_answer,
+                    explanation,
+                    additional,
+                    topic,
+                    difficulty
+                )
+            `;
 
-            if (isMounted.current) {
-                const cached = getCachedMistakes();
-                if (cached.length === 0) setLoading(true);
-                setIsRefreshing(true);
-            }
-
-            try {
-                const { data, error } = await withTimeout(
+            const [openRes, resolvedRes] = await Promise.all([
+                withTimeout(
                     supabase
                         .from("user_mistakes")
-                        .select(`
-                            id,
-                            times_wrong,
-                            first_wrong_at,
-                            last_wrong_at,
-                            resolved,
-                            quiz_id,
-                            user_selected,
-                            mistake_reason,
-                            questions:question_id (
-                                id,
-                                question_text,
-                                option_a,
-                                option_b,
-                                option_c,
-                                option_d,
-                                correct_answer,
-                                explanation,
-                                additional,
-                                topic,
-                                difficulty
-                            )
-                        `)
+                        .select(baseSelect)
                         .eq("user_id", user.id)
                         .eq("resolved", false)
                         .order("last_wrong_at", { ascending: false }) as any,
                     10000
-                );
+                ),
+                withTimeout(
+                    supabase
+                        .from("user_mistakes")
+                        .select(baseSelect)
+                        .eq("user_id", user.id)
+                        .eq("resolved", true)
+                        .order("last_wrong_at", { ascending: false })
+                        .limit(200) as any,
+                    10000
+                ),
+            ]);
 
-                if (error) {
-                    console.error("Supabase error:", error);
-                    // fall back to cache
-                    const cached = getCachedMistakes();
-                    if (isMounted.current && cached.length > 0) {
-                        setMistakes(cached);
-                        setMistakeCount(cached.length);
-                    }
-                    return;
-                }
-
-                if (!isMounted.current) return;
-
-                const userMistakes = (data || []).filter(
-                    (m: any) => m.questions && Object.keys(m.questions).length > 0
-                );
-
-                setMistakes(userMistakes);
-                setMistakeCount(userMistakes.length);
-                setCachedMistakes(userMistakes);
-                safeStorage.set(MISTAKES_VERSION_KEY + "_time", String(Date.now()));
-                setHardError(false);
-            } catch (err) {
-                console.error("Error fetching mistakes:", err);
-                // network error — try cache
+            if (openRes.error) {
+                console.error("Supabase error (open):", openRes.error);
                 const cached = getCachedMistakes();
                 if (isMounted.current && cached.length > 0) {
                     setMistakes(cached);
                     setMistakeCount(cached.length);
-                } else if (isMounted.current) {
-                    // no cache, no network → show fallback, not blank
-                    setHardError(true);
                 }
-            } finally {
-                fetchInProgress = false;
-                if (isMounted.current) {
-                    setIsRefreshing(false);
-                    setLoading(false); // ← ALWAYS
-                }
+                return;
             }
-        },
-        [user]
-    );
+
+            if (!isMounted.current) return;
+
+            const openMistakes = (openRes.data || []).filter(
+                (m: any) => m.questions && Object.keys(m.questions).length > 0
+            );
+            const resolvedList = (resolvedRes.data || []).filter(
+                (m: any) => m.questions && Object.keys(m.questions).length > 0
+            );
+
+            setMistakes(openMistakes);
+            setMistakeCount(openMistakes.length);
+            setCachedMistakes(openMistakes);
+
+            setResolvedMistakes(resolvedList);
+            setResolvedCount(resolvedList.length);
+            setCachedResolvedMistakes(resolvedList);
+
+            safeStorage.set(MISTAKES_LAST_FETCH_KEY, String(Date.now()));
+            setHardError(false);
+        } catch (err) {
+            console.error("Error fetching mistakes:", err);
+            const cached = getCachedMistakes();
+            const cachedResolved = getCachedResolvedMistakes();
+            if (isMounted.current && (cached.length > 0 || cachedResolved.length > 0)) {
+                setMistakes(cached);
+                setMistakeCount(cached.length);
+                setResolvedMistakes(cachedResolved);
+                setResolvedCount(cachedResolved.length);
+            } else if (isMounted.current) {
+                setHardError(true);
+            }
+        } finally {
+            fetchInProgress = false;
+            if (isMounted.current) {
+                setIsRefreshing(false);
+                setLoading(false);
+            }
+        }
+    }, [user]);
 
     // ── Initial load ──
     useEffect(() => {
@@ -509,23 +562,23 @@ export default function MyMistakes() {
         if (!authReady) return;
 
         const cached = getCachedMistakes();
-        if (cached.length > 0) {
+        const cachedResolved = getCachedResolvedMistakes();
+
+        if (cached.length > 0 || cachedResolved.length > 0) {
             setMistakes(cached);
             setMistakeCount(cached.length);
+            setResolvedMistakes(cachedResolved);
+            setResolvedCount(cachedResolved.length);
             setLoading(false);
-            fetchMistakes().catch(() => { });
+            fetchMistakes(true).catch(() => { });
         } else if (!user) {
-            // no user, no cache → not an error, just empty
             setLoading(false);
         } else if (typeof navigator !== "undefined" && !navigator.onLine) {
-            // offline + no cache → show offline fallback, not blank
             setLoading(false);
             setHardError(true);
         } else {
             setLoading(true);
-            fetchMistakes().catch(() => {
-                if (isMounted.current) setLoading(false);
-            });
+            fetchMistakes(true).catch(() => { if (isMounted.current) setLoading(false); });
         }
 
         if (navigator.onLine && user) {
@@ -534,6 +587,7 @@ export default function MyMistakes() {
 
         return () => {
             isMounted.current = false;
+            fetchInProgress = false;
         };
     }, [authReady, user, fetchMistakes, syncOfflineQueue]);
 
@@ -541,7 +595,8 @@ export default function MyMistakes() {
     useEffect(() => {
         if (!authReady || !user) return;
         const cached = getCachedMistakes();
-        if (cached.length === 0) {
+        const cachedResolved = getCachedResolvedMistakes();
+        if (cached.length === 0 && cachedResolved.length === 0) {
             fetchMistakes().catch(() => { });
         }
     }, [authReady, user, fetchMistakes]);
@@ -555,16 +610,10 @@ export default function MyMistakes() {
                 if (typeof navigator !== "undefined" && !navigator.onLine) return;
                 if (!isMounted.current || !user) return;
 
-                const now = Date.now();
-                const lastSync = safeStorage.get(MISTAKES_VERSION_KEY + "_time");
-                if (lastSync && now - parseInt(lastSync) < MIN_FETCH_INTERVAL) return;
-
                 try {
                     const hasChanges = await checkForChanges(user.id);
                     if (hasChanges) fetchMistakes(true).catch(() => { });
-                } catch {
-                    /* ignore */
-                }
+                } catch { /* ignore */ }
             }, 500);
         };
 
@@ -591,65 +640,133 @@ export default function MyMistakes() {
             if (typeof navigator !== "undefined" && "vibrate" in navigator) {
                 navigator.vibrate(duration);
             }
-        } catch {
-            /* ignore */
-        }
+        } catch { /* ignore */ }
     };
 
-    const markAsResolved = useCallback(
-        (questionId: string) => {
-            if (pendingResolves.current.has(questionId)) return;
-            pendingResolves.current.set(questionId, true);
-            setTimeout(() => pendingResolves.current.delete(questionId), 2000);
+    // ── Mark as understood ──
+    const markAsResolved = useCallback((questionId: string) => {
+        if (pendingResolves.current.has(questionId)) return;
+        pendingResolves.current.set(questionId, true);
+        setTimeout(() => pendingResolves.current.delete(questionId), 2000);
 
-            const updated = mistakes.filter((m) => m.questions.id !== questionId);
-            setMistakes(updated);
-            setMistakeCount(updated.length);
-            setCachedMistakes(updated);
+        const item = mistakes.find((m) => m.questions.id === questionId);
+        const updatedOpen = mistakes.filter((m) => m.questions.id !== questionId);
+        const updatedResolved = item
+            ? [{ ...item, resolved: true, last_wrong_at: new Date().toISOString() }, ...resolvedMistakes]
+            : resolvedMistakes;
 
+        setMistakes(updatedOpen);
+        setMistakeCount(updatedOpen.length);
+        setCachedMistakes(updatedOpen);
+
+        setResolvedMistakes(updatedResolved);
+        setResolvedCount(updatedResolved.length);
+        setCachedResolvedMistakes(updatedResolved);
+
+        // 🎉 Confetti + sound
+        fireConfetti();
+        try { playSound("tap-correct", false); } catch { /* ignore */ }
+
+        const updateMistake = async () => {
             try {
-                playSound("tap-correct", false);
-            } catch {
-                /* ignore */
-            }
-
-            const updateMistake = async () => {
-                try {
-                    if (!user || (typeof navigator !== "undefined" && !navigator.onLine)) {
-                        saveToOfflineQueue(questionId);
-                        return;
-                    }
-
-                    const { error } = await withTimeout(
-                        supabase
-                            .from("user_mistakes")
-                            .update({ resolved: true })
-                            .eq("user_id", user.id)
-                            .eq("question_id", questionId) as any,
-                        6000
-                    );
-
-                    if (error) {
-                        saveToOfflineQueue(questionId);
-                        const rollback = mistakes.filter((m) => m.questions.id === questionId);
-                        if (rollback.length > 0 && isMounted.current) {
-                            setMistakes((prev) => [...rollback, ...prev]);
-                            setMistakeCount((prev) => prev + 1);
-                            setCachedMistakes([...rollback, ...mistakes]);
-                        }
-                    } else {
-                        safeStorage.remove(MISTAKES_VERSION_KEY);
-                    }
-                } catch (err) {
+                if (!user || (typeof navigator !== "undefined" && !navigator.onLine)) {
                     saveToOfflineQueue(questionId);
-                    console.error("Error, queued:", questionId, err);
+                    return;
                 }
-            };
 
-            updateMistake().catch(() => { });
-        },
-        [mistakes, user, saveToOfflineQueue]
-    );
+                const { error } = await withTimeout(
+                    supabase
+                        .from("user_mistakes")
+                        .update({ resolved: true })
+                        .eq("user_id", user.id)
+                        .eq("question_id", questionId) as any,
+                    6000
+                );
+
+                if (error) {
+                    saveToOfflineQueue(questionId);
+                    if (item && isMounted.current) {
+                        setMistakes((prev) => [item, ...prev]);
+                        setMistakeCount((prev) => prev + 1);
+                        setCachedMistakes([item, ...mistakes]);
+
+                        setResolvedMistakes((prev) => prev.filter((m) => m.questions.id !== questionId));
+                        setResolvedCount((prev) => Math.max(0, prev - 1));
+                        setCachedResolvedMistakes(
+                            resolvedMistakes.filter((m) => m.questions.id !== questionId)
+                        );
+                    }
+                } else {
+                    safeStorage.remove(MISTAKES_VERSION_KEY);
+                    safeStorage.remove(RESOLVED_VERSION_KEY);
+                }
+            } catch (err) {
+                saveToOfflineQueue(questionId);
+                console.error("Error, queued:", questionId, err);
+            }
+        };
+
+        updateMistake().catch(() => { });
+    }, [mistakes, resolvedMistakes, user, saveToOfflineQueue]);
+
+    // ── Reopen ──
+    const reopenMistake = useCallback((questionId: string) => {
+        if (pendingResolves.current.has(questionId)) return;
+        pendingResolves.current.set(questionId, true);
+        setTimeout(() => pendingResolves.current.delete(questionId), 2000);
+
+        setMovingIds(prev => {
+            const next = new Set(prev);
+            next.add(questionId);
+            return next;
+        });
+
+        const item = resolvedMistakes.find((m) => m.questions.id === questionId);
+        const updatedResolved = resolvedMistakes.filter((m) => m.questions.id !== questionId);
+        const updatedOpen = item
+            ? [{ ...item, resolved: false }, ...mistakes]
+            : mistakes;
+
+        setResolvedMistakes(updatedResolved);
+        setResolvedCount(updatedResolved.length);
+        setCachedResolvedMistakes(updatedResolved);
+
+        setMistakes(updatedOpen);
+        setMistakeCount(updatedOpen.length);
+        setCachedMistakes(updatedOpen);
+
+        try { playSound("tap", false); } catch { /* ignore */ }
+
+        (async () => {
+            if (!user || (typeof navigator !== "undefined" && !navigator.onLine)) return;
+            try {
+                const { error } = await withTimeout(
+                    supabase
+                        .from("user_mistakes")
+                        .update({ resolved: false })
+                        .eq("user_id", user.id)
+                        .eq("question_id", questionId) as any,
+                    6000
+                );
+                if (error) {
+                    safeStorage.remove(MISTAKES_LAST_FETCH_KEY);
+                } else {
+                    safeStorage.remove(MISTAKES_VERSION_KEY);
+                    safeStorage.remove(RESOLVED_VERSION_KEY);
+                }
+            } catch {
+                safeStorage.remove(MISTAKES_LAST_FETCH_KEY);
+            } finally {
+                setTimeout(() => {
+                    setMovingIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(questionId);
+                        return next;
+                    });
+                }, 800);
+            }
+        })();
+    }, [mistakes, resolvedMistakes, user]);
 
     const getReasonClass = (reason?: string) => {
         switch (reason) {
@@ -668,35 +785,25 @@ export default function MyMistakes() {
 
     const handleManualRefresh = async () => {
         setHardError(false);
-        try {
-            await fetchMistakes(true);
-        } catch {
-            /* ignore */
-        }
+        try { await fetchMistakes(true); } catch { /* ignore */ }
     };
 
     // ═══════════════════════════════════════════════════════════════
     // RENDER
     // ═══════════════════════════════════════════════════════════════
-
-    // 1. First paint before auth resolves AND we have no cache → skeleton
-    if (!authReady && loading === false && mistakes.length === 0) {
-        // brief skeleton while auth settles — avoids a flash of "offline" state
+    if (!authReady && loading === false && mistakes.length === 0 && resolvedMistakes.length === 0) {
         return <MistakesSkeleton />;
     }
 
-    // 2. Loading with no cache → skeleton
-    if (loading && mistakes.length === 0) {
+    if (loading && mistakes.length === 0 && resolvedMistakes.length === 0) {
         return <MistakesSkeleton />;
     }
 
-    // 3. Offline + no cached data → explicit fallback (never blank)
-    if (hardError && mistakes.length === 0) {
+    if (hardError && mistakes.length === 0 && resolvedMistakes.length === 0) {
         return <OfflineFallback onRetry={handleManualRefresh} />;
     }
 
-    // 4. User not signed in + no cache → empty achievement state
-    if (!user && mistakes.length === 0 && authReady) {
+    if (!user && mistakes.length === 0 && resolvedMistakes.length === 0 && authReady) {
         return (
             <div className="flex justify-center items-center min-h-[70vh] p-4 md:p-6 bg-transparent">
                 <motion.div
@@ -753,10 +860,8 @@ export default function MyMistakes() {
         );
     }
 
-    // 5. Loaded with data → normal render
     return (
         <div className="w-full max-w-full mx-auto px-0 md:px-4 lg:px-6 space-y-0 md:space-y-2 pb-4 md:pb-6">
-            {/* Offline banner — quiet, non-blocking */}
             {isOffline && (
                 <div className="mb-2 mx-3 md:mx-0 px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/40 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
@@ -768,44 +873,108 @@ export default function MyMistakes() {
 
             <MistakesCard />
 
+            {/* Tab Bar */}
+            <div className="flex items-center gap-1.5 px-3 md:px-0 mt-3 mb-2">
+                {([
+                    { id: "needs-work" as Tab, label: "Needs Work", count: mistakeCount },
+                    { id: "understood" as Tab, label: "Understood", count: resolvedCount },
+                ]).map((t) => {
+                    const active = activeTab === t.id;
+                    return (
+                        <button
+                            key={t.id}
+                            onClick={() => { vibrateTap(20); setActiveTab(t.id); }}
+                            className={cn(
+                                "relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all",
+                                active
+                                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm"
+                                    : "bg-slate-100 dark:bg-[#161b22] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#1c2330]"
+                            )}
+                        >
+                            <span>{t.label}</span>
+                            <span className={cn(
+                                "min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black flex items-center justify-center",
+                                active
+                                    ? "bg-white/20 text-white dark:bg-slate-900/15 dark:text-slate-900"
+                                    : "bg-white dark:bg-[#0d1117] text-slate-500 dark:text-slate-400"
+                            )}>
+                                {t.count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Header Card */}
             <div className="mb-0 md:mb-1">
                 <div className="relative bg-slate-100 dark:bg-[#0d1117] md:rounded-2xl p-4 md:p-6 lg:p-8 text-start overflow-hidden rounded-none">
                     <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
-                                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                                    <Sparkles size={14} className="text-amber-600 dark:text-amber-400" />
+                                <div className={cn(
+                                    "p-1.5 rounded-lg",
+                                    activeTab === "needs-work"
+                                        ? "bg-amber-100 dark:bg-amber-900/30"
+                                        : "bg-emerald-100 dark:bg-emerald-900/30"
+                                )}>
+                                    {activeTab === "needs-work" ? (
+                                        <Sparkles size={14} className="text-amber-600 dark:text-amber-400" />
+                                    ) : (
+                                        <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" />
+                                    )}
                                 </div>
-                                <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                                    Your learning space
+                                <span className={cn(
+                                    "text-xs font-medium",
+                                    activeTab === "needs-work"
+                                        ? "text-amber-700 dark:text-amber-400"
+                                        : "text-emerald-700 dark:text-emerald-400"
+                                )}>
+                                    {activeTab === "needs-work" ? "Your learning space" : "Your archive"}
                                 </span>
                             </div>
 
                             <h1 className="text-lg lg:text-2xl font-semibold text-gray-900 dark:text-white leading-snug">
-                                {mistakeCount === 0 ? (
-                                    <>Everything's clear. Nothing left to revisit.</>
+                                {activeTab === "needs-work" ? (
+                                    mistakeCount === 0 ? (
+                                        <>Everything's clear. Nothing left to revisit.</>
+                                    ) : (
+                                        <>
+                                            You have{" "}
+                                            <span className="font-bold text-rose-600 dark:text-rose-400">
+                                                {mistakeCount}
+                                            </span>{" "}
+                                            {mistakeCount === 1
+                                                ? "question worth revisiting"
+                                                : "questions worth revisiting"}.
+                                        </>
+                                    )
                                 ) : (
-                                    <>
-                                        You have{" "}
-                                        <span className="font-bold text-rose-600 dark:text-rose-400">
-                                            {mistakeCount}
-                                        </span>{" "}
-                                        {mistakeCount === 1
-                                            ? "question worth revisiting"
-                                            : "questions worth revisiting"}
-                                        .
-                                    </>
+                                    resolvedCount === 0 ? (
+                                        <>You haven't marked anything as understood yet.</>
+                                    ) : (
+                                        <>
+                                            You've mastered{" "}
+                                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                {resolvedCount}
+                                            </span>{" "}
+                                            {resolvedCount === 1 ? "question" : "questions"} so far.
+                                        </>
+                                    )
                                 )}
                             </h1>
 
-
                             <p className="text-sm font-normal text-gray-500 dark:text-gray-500 mt-2 max-w-xl leading-relaxed">
-                                {mistakeCount === 0
-                                    ? "Keep going  you're on top of everything right now."
-                                    : "Each one is a small lesson waiting to be understood. Work through them at your own pace."}
+                                {activeTab === "needs-work"
+                                    ? (mistakeCount === 0
+                                        ? "Keep going — you're on top of everything right now."
+                                        : "Each one is a small lesson waiting to be understood. Work through them at your own pace.")
+                                    : (resolvedCount === 0
+                                        ? "When you mark a mistake as understood, it lands here for quick revision later."
+                                        : "These are the ones you've conquered. Revisit them anytime to keep the knowledge sharp.")
+                                }
                             </p>
 
-                            {mistakeCount === 0 && (
+                            {activeTab === "needs-work" && mistakeCount === 0 && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 8 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -819,13 +988,13 @@ export default function MyMistakes() {
                                             navigate("/Medrae-quizzes");
                                         }}
                                         className="h-11 md:h-12 px-5 md:px-6 rounded-2xl
-                bg-gradient-to-r from-emerald-500 to-teal-600
-                hover:from-emerald-600 hover:to-teal-700
-                dark:from-emerald-500 dark:to-teal-600
-                dark:hover:from-emerald-600 dark:hover:to-teal-700
-                text-white font-bold text-sm md:text-base
-                shadow-lg shadow-emerald-500/25
-                transition-all group"
+                                            bg-gradient-to-r from-emerald-500 to-teal-600
+                                            hover:from-emerald-600 hover:to-teal-700
+                                            dark:from-emerald-500 dark:to-teal-600
+                                            dark:hover:from-emerald-600 dark:hover:to-teal-700
+                                            text-white font-bold text-sm md:text-base
+                                            shadow-lg shadow-emerald-500/25
+                                            transition-all group"
                                     >
                                         <div className="flex items-center gap-2">
                                             <Sparkles className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:rotate-12" />
@@ -840,7 +1009,7 @@ export default function MyMistakes() {
                             )}
                         </div>
 
-                        {mistakeCount > 0 && (
+                        {activeTab === "needs-work" && mistakeCount > 0 && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -864,12 +1033,38 @@ export default function MyMistakes() {
                                 </div>
                             </motion.div>
                         )}
+
+                        {activeTab === "understood" && resolvedCount > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
+                                className="flex items-center gap-4 md:gap-6 bg-white/60 dark:bg-[#161b22]/60 backdrop-blur-sm rounded-2xl px-5 py-4 md:px-6 md:py-5"
+                            >
+                                <div className="flex flex-col">
+                                    <span className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tabular-nums">
+                                        {resolvedCount}
+                                    </span>
+                                    <span className="text-[11px] font-normal text-gray-500 dark:text-gray-500">
+                                        mastered
+                                    </span>
+                                </div>
+
+                                <div className="w-px h-10 bg-gray-200 dark:bg-gray-800" />
+
+                                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 size={16} />
+                                    <span className="text-[11px] font-medium">Keep it sharp</span>
+                                </div>
+                            </motion.div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            <AnimatePresence>
-                {mistakes.map((m, i) => (
+            {/* Needs Work List */}
+            <AnimatePresence mode="wait">
+                {activeTab === "needs-work" && mistakes.map((m, i) => (
                     <motion.div
                         key={m.id}
                         initial={{ opacity: 0, x: 50 }}
@@ -975,20 +1170,130 @@ export default function MyMistakes() {
                 ))}
             </AnimatePresence>
 
-            {/* Refresh button — only visible when there are mistakes and not loading */}
-            {mistakes.length > 0 && !isRefreshing && (
-                <div className="flex justify-center pt-4 pb-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleManualRefresh}
-                        className="text-xs text-slate-500 dark:text-slate-400"
+            {/* Understood List */}
+            <AnimatePresence mode="wait">
+                {activeTab === "understood" && resolvedMistakes.map((m, i) => (
+                    <motion.div
+                        key={m.id}
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -200, transition: { duration: 0.3 } }}
+                        layout
+                        className="mb-0 md:mb-4"
                     >
-                        <RefreshCw className="w-3.5 h-3.5 mr-2" />
-                        Refresh
-                    </Button>
+                        <Card className="overflow-visible md:border-0 md:shadow-sm md:rounded-xl bg-white/40 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0 opacity-95">
+                            <CardHeader className="p-3 md:p-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-500/20">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    </div>
+                                    <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                                        Understood
+                                    </span>
+                                </div>
+                                <CardTitle className="text-sm md:text-base lg:text-lg">
+                                    Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}
+                                </CardTitle>
+                                <CardDescription className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 md:gap-1 text-xs md:text-sm">
+                                    <span>
+                                        Wrong {m.times_wrong} {m.times_wrong === 1 ? "time" : "times"}
+                                    </span>
+                                    <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                                        Marked understood {dayjs(m.last_wrong_at).format("DD MMM YYYY, h:mm A")}
+                                    </span>
+                                </CardDescription>
+                            </CardHeader>
+
+                            <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4 text-xs md:text-sm lg:text-base">
+                                <div className="rounded-lg border border-emerald-200/60 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2">
+                                    <p className="font-semibold text-emerald-800 dark:text-emerald-300 mb-1 text-[11px] uppercase tracking-wider">
+                                        Correct Answer
+                                    </p>
+                                    <p className="text-sm md:text-base text-slate-800 dark:text-slate-100">
+                                        <strong>{m.questions?.correct_answer}.</strong>{" "}
+                                        {m.questions?.[`option_${m.questions?.correct_answer?.toLowerCase()}` as keyof Question] ?? "—"}
+                                    </p>
+                                </div>
+
+                                {m.mistake_reason && (
+                                    <div
+                                        className={`px-2 md:px-3 py-1.5 md:py-2 rounded-md border text-xs md:text-sm ${getReasonClass(
+                                            m.mistake_reason
+                                        )} text-black dark:text-white`}
+                                    >
+                                        <strong>Reason for mistake:</strong> {m.mistake_reason}
+                                    </div>
+                                )}
+
+                                <p className="leading-relaxed text-xs md:text-sm">
+                                    <strong>Explanation:</strong>{" "}
+                                    {m.questions?.explanation ?? "No explanation available."}
+                                </p>
+
+                                {m.questions?.additional && (
+                                    <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded border-l-4 border-blue-500 text-xs italic">
+                                        <strong>Pro Tip:</strong> {m.questions.additional}
+                                    </div>
+                                )}
+                                <motion.div whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.02 }}>
+                                    <Button
+                                        variant="outline"
+                                        disabled={movingIds.has(m.questions.id)}
+                                        onClick={() => {
+                                            vibrateTap(40);
+                                            if (m.questions?.id) reopenMistake(m.questions.id);
+                                        }}
+                                        className={cn(
+                                            "w-full sm:w-auto text-xs md:text-sm h-10 md:h-11 rounded-xl font-bold",
+                                            "border-rose-200 dark:border-rose-900/50",
+                                            "text-rose-600 dark:text-rose-400",
+                                            "hover:bg-rose-50 dark:hover:bg-rose-950/30",
+                                            "hover:text-rose-700 dark:hover:text-rose-300",
+                                            "hover:border-rose-300 dark:hover:border-rose-800",
+                                            "disabled:opacity-70 disabled:cursor-wait",
+                                            "transition-all"
+                                        )}
+                                    >
+                                        {movingIds.has(m.questions.id) ? "Moving..." : "Move back to Needs Work"}
+                                    </Button>
+                                </motion.div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                ))}
+            </AnimatePresence>
+
+            {/* Empty state — understood tab */}
+            {activeTab === "understood" && resolvedMistakes.length === 0 && (
+                <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+                        Nothing here yet
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs">
+                        Once you mark a mistake as understood, it'll show up here so you can revisit it anytime.
+                    </p>
                 </div>
             )}
+
+            {/* Refresh */}
+            {((activeTab === "needs-work" && mistakes.length > 0) ||
+                (activeTab === "understood" && resolvedMistakes.length > 0)) &&
+                !isRefreshing && (
+                    <div className="flex justify-center pt-4 pb-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleManualRefresh}
+                            className="text-xs text-slate-500 dark:text-slate-400"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                            Refresh
+                        </Button>
+                    </div>
+                )}
         </div>
     );
 }
