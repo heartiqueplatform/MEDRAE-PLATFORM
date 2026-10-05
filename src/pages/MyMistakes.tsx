@@ -98,7 +98,6 @@ const fireConfetti = () => {
         const duration = 1200;
         const end = Date.now() + duration;
 
-        // Center burst
         confetti({
             particleCount: 80,
             spread: 70,
@@ -110,7 +109,6 @@ const fireConfetti = () => {
             disableForReducedMotion: true,
         });
 
-        // Small streamer bursts from the sides
         (function frame() {
             confetti({
                 particleCount: 3,
@@ -310,6 +308,9 @@ export default function MyMistakes() {
     const isMounted = useRef(true);
     const pendingResolves = useRef<Map<string, boolean>>(new Map());
 
+    // ✅ SCROLL PRESERVATION REFS
+    const scrollLockRef = useRef<number | null>(null);
+
     const [mistakes, setMistakes] = useState<Mistake[]>(() => getCachedMistakes());
     const [resolvedMistakes, setResolvedMistakes] = useState<Mistake[]>(() => getCachedResolvedMistakes());
     const [loading, setLoading] = useState(false);
@@ -322,6 +323,42 @@ export default function MyMistakes() {
     const [hardError, setHardError] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>("needs-work");
     const [movingIds, setMovingIds] = useState<Set<string>>(new Set());
+
+    // ✅ SCROLL PRESERVATION HELPER
+    // Captures current scroll position and restores it across multiple frames
+    // to survive the DOM height shrink caused by list item removal.
+    const preserveScroll = useCallback(() => {
+        if (typeof window === "undefined") return;
+        const target = window.scrollY;
+        scrollLockRef.current = target;
+
+        const restore = () => {
+            if (scrollLockRef.current === null) return;
+            const desired = scrollLockRef.current;
+            const maxScroll =
+                document.documentElement.scrollHeight - window.innerHeight;
+            const clamped = Math.min(desired, Math.max(0, maxScroll));
+            if (Math.abs(window.scrollY - clamped) > 1) {
+                window.scrollTo({ top: clamped, behavior: "instant" as ScrollBehavior });
+            }
+        };
+
+        // Restore across several frames/timers so we catch:
+        // - React's synchronous commit
+        // - framer-motion's popLayout measurement
+        // - the exit animation completing & unmounting
+        // - any late layout recalcs
+        requestAnimationFrame(() => {
+            restore();
+            requestAnimationFrame(restore);
+        });
+        setTimeout(restore, 120);
+        setTimeout(restore, 350);
+        setTimeout(() => {
+            restore();
+            scrollLockRef.current = null;
+        }, 500);
+    }, []);
 
     // ── Auth ──
     useEffect(() => {
@@ -649,6 +686,9 @@ export default function MyMistakes() {
         pendingResolves.current.set(questionId, true);
         setTimeout(() => pendingResolves.current.delete(questionId), 2000);
 
+        // ✅ Capture scroll BEFORE mutating the list
+        preserveScroll();
+
         const item = mistakes.find((m) => m.questions.id === questionId);
         const updatedOpen = mistakes.filter((m) => m.questions.id !== questionId);
         const updatedResolved = item
@@ -707,13 +747,16 @@ export default function MyMistakes() {
         };
 
         updateMistake().catch(() => { });
-    }, [mistakes, resolvedMistakes, user, saveToOfflineQueue]);
+    }, [mistakes, resolvedMistakes, user, saveToOfflineQueue, preserveScroll]); // ✅ added preserveScroll dep
 
     // ── Reopen ──
     const reopenMistake = useCallback((questionId: string) => {
         if (pendingResolves.current.has(questionId)) return;
         pendingResolves.current.set(questionId, true);
         setTimeout(() => pendingResolves.current.delete(questionId), 2000);
+
+        // ✅ Capture scroll BEFORE mutating the list
+        preserveScroll();
 
         setMovingIds(prev => {
             const next = new Set(prev);
@@ -766,7 +809,7 @@ export default function MyMistakes() {
                 }, 800);
             }
         })();
-    }, [mistakes, resolvedMistakes, user]);
+    }, [mistakes, resolvedMistakes, user, preserveScroll]); // ✅ added preserveScroll dep
 
     const getReasonClass = (reason?: string) => {
         switch (reason) {
@@ -1063,14 +1106,15 @@ export default function MyMistakes() {
             </div>
 
             {/* Needs Work List */}
-            <AnimatePresence mode="wait">
+            {/* ✅ mode="popLayout" + initial={false} + short ease-out exit */}
+            <AnimatePresence mode="popLayout" initial={false}>
                 {activeTab === "needs-work" && mistakes.map((m, i) => (
                     <motion.div
                         key={m.id}
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -300, transition: { duration: 0.4, type: "spring", stiffness: 150 } }}
-                        layout
+                        exit={{ opacity: 0, x: -300 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                         className="mb-0 md:mb-4"
                     >
                         <Card className="overflow-visible md:border-0 md:shadow-md md:rounded-xl bg-white/40 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0">
@@ -1171,14 +1215,15 @@ export default function MyMistakes() {
             </AnimatePresence>
 
             {/* Understood List */}
-            <AnimatePresence mode="wait">
+            {/* ✅ mode="popLayout" + initial={false} + short ease-out exit */}
+            <AnimatePresence mode="popLayout" initial={false}>
                 {activeTab === "understood" && resolvedMistakes.map((m, i) => (
                     <motion.div
                         key={m.id}
                         initial={{ opacity: 0, x: 30 }}
                         animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -200, transition: { duration: 0.3 } }}
-                        layout
+                        exit={{ opacity: 0, x: -200 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                         className="mb-0 md:mb-4"
                     >
                         <Card className="overflow-visible md:border-0 md:shadow-sm md:rounded-xl bg-white/40 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0 opacity-95">

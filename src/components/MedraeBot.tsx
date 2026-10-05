@@ -105,6 +105,7 @@ const MedraeBot = () => {
         pending: 0,
         daysEarned: 0,
     });
+    const [referralLoading, setReferralLoading] = useState(true);
     const [copied, setCopied] = useState(false);
 
     // ─── Premium from cache ───
@@ -135,16 +136,26 @@ const MedraeBot = () => {
 
     // ─── Referral data ───
     useEffect(() => {
-        if (!session?.user?.id) return;
+        if (!session?.user?.id) {
+            setReferralLoading(false);
+            return;
+        }
         let cancelled = false;
+        setReferralLoading(true);
         (async () => {
-            const [code, stats] = await Promise.all([
-                getMyReferralCode(session.user.id),
-                getMyReferralStats(session.user.id),
-            ]);
-            if (cancelled) return;
-            setReferralCode(code);
-            setReferralStats(stats);
+            try {
+                const [code, stats] = await Promise.all([
+                    getMyReferralCode(session.user.id),
+                    getMyReferralStats(session.user.id),
+                ]);
+                if (cancelled) return;
+                setReferralCode(code);
+                setReferralStats(stats);
+            } catch {
+                /* ignore */
+            } finally {
+                if (!cancelled) setReferralLoading(false);
+            }
         })();
         return () => { cancelled = true; };
     }, [session?.user?.id]);
@@ -305,21 +316,77 @@ const MedraeBot = () => {
         return () => window.removeEventListener("keydown", onKey);
     }, [isVisible, showX, handleDismiss]);
 
+    // ─── Lock body scroll while open ───
+    useEffect(() => {
+        if (!isVisible) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = prev; };
+    }, [isVisible]);
+
     if (!isVisible && !isDismissing) return null;
     if (isPremium && !SHOW_BOT_FOR_PREMIUM) return null;
+
+    // ═══════════════════════════════════════════════════════
+    // 🦴 SKELETON (shown while referral data loads)
+    // ═══════════════════════════════════════════════════════
+    const ReferralHeroSkeleton = () => (
+        <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 animate-pulse">
+            <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-10 w-44 h-44 bg-fuchsia-400/20 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative p-5 text-white">
+                {/* Eyebrow */}
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur px-2 py-1 rounded-xl">
+                        <Flame size={11} /> Limited reward
+                    </span>
+                </div>
+
+                {/* Headline skeleton */}
+                <div className="space-y-2 mb-1">
+                    <div className="h-6 w-3/4 bg-white/25 rounded-md" />
+                    <div className="h-6 w-1/2 bg-white/25 rounded-md" />
+                </div>
+
+                {/* Reward math skeleton */}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center">
+                        <div className="h-8 w-12 bg-white/25 rounded-md mx-auto" />
+                        <div className="h-2.5 w-16 bg-white/20 rounded-md mx-auto mt-2" />
+                    </div>
+                    <div className="bg-white/15 backdrop-blur rounded-xl p-3 text-center">
+                        <div className="h-8 w-12 bg-white/25 rounded-md mx-auto" />
+                        <div className="h-2.5 w-16 bg-white/20 rounded-md mx-auto mt-2" />
+                    </div>
+                </div>
+
+                {/* Bullets skeleton */}
+                <div className="mt-4 space-y-2">
+                    <div className="h-3.5 w-5/6 bg-white/20 rounded-md" />
+                    <div className="h-3.5 w-4/6 bg-white/20 rounded-md" />
+                </div>
+
+                {/* Primary CTA skeleton */}
+                <div className="mt-5 h-12 w-full bg-white/30 rounded-xl" />
+
+                {/* Secondary row skeleton */}
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                    <div className="h-11 bg-white/15 rounded-xl" />
+                    <div className="h-11 bg-white/15 rounded-xl" />
+                    <div className="h-11 bg-white/15 rounded-xl" />
+                </div>
+            </div>
+        </div>
+    );
 
     // ═══════════════════════════════════════════════════════
     // 🎁 HERO REFERRAL CARD
     // ═══════════════════════════════════════════════════════
     const ReferralHero = () => {
-        if (!referralCode) {
-            return (
-                <div className="rounded-xl p-4 bg-violet-50 dark:bg-violet-950/30 text-center">
-                    <p className="text-xs text-violet-600 dark:text-violet-400 font-medium">
-                        Loading your invite link…
-                    </p>
-                </div>
-            );
+        // ✅ Skeleton instead of "Loading your invite link…"
+        if (referralLoading || !referralCode) {
+            return <ReferralHeroSkeleton />;
         }
 
         const hasInvites = referralStats.invites > 0;
@@ -553,9 +620,11 @@ const MedraeBot = () => {
         ? "from-emerald-500 to-teal-500"
         : "from-blue-500 to-indigo-500";
 
+    // ✅ Responsive container: full screen on mobile, centered card on desktop
     return (
         <div
-            className={`fixed inset-0 z-[9998] flex items-center justify-center p-4 transition-opacity duration-500 ${isDismissing ? "opacity-0" : "opacity-100"}`}
+            className={`fixed inset-0 z-[9998] flex items-stretch md:items-center justify-center md:p-4 transition-opacity duration-500 ${isDismissing ? "opacity-0" : "opacity-100"
+                }`}
         >
             {/* Backdrop */}
             <div
@@ -564,13 +633,13 @@ const MedraeBot = () => {
             />
 
             <div
-                className={`relative bg-white dark:bg-gray-900 rounded-xl overflow-hidden max-w-md w-full max-h-[90vh] flex flex-col transition-all duration-500 ease-out ${isMounted && !isDismissing
+                className={`relative bg-white dark:bg-gray-900 overflow-hidden w-full h-full md:h-auto md:max-h-[90vh] md:max-w-md md:rounded-xl flex flex-col transition-all duration-500 ease-out ${isMounted && !isDismissing
                     ? "opacity-100 scale-100 translate-y-0"
-                    : "opacity-0 scale-[0.92] translate-y-4"
+                    : "opacity-0 scale-[0.92] translate-y-4 md:scale-[0.92]"
                     }`}
             >
                 {/* ─── Header ─── */}
-                <div className={`bg-gradient-to-r ${headerGradient} p-4 flex-shrink-0`}>
+                <div className={`bg-gradient-to-r ${headerGradient} p-4 flex-shrink-0 pt-[max(1rem,env(safe-area-inset-top))] md:pt-4`}>
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
@@ -601,7 +670,7 @@ const MedraeBot = () => {
                 </div>
 
                 {/* ─── Scrollable body ─── */}
-                <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="p-4 space-y-3 overflow-y-auto flex-1 custom-scrollbar pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-4">
                     <CardBody accent={isPremium ? "emerald" : "blue"} />
                 </div>
             </div>
