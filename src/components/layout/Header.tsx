@@ -667,8 +667,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
 
   // Determine theme classes based on isDarkMode state
   const themeClasses = isDarkMode
-    ? 'bg-slate-900/95 dark:bg-slate-900/95 border-0 shadow-[0_2px_20px_rgba(0,0,0,0.3)]'
-    : 'bg-white/95 border-0 shadow-[0_2px_20px_rgba(0,0,0,0.08)]';
+    ? 'bg-slate-900/95 dark:bg-slate-900/95 border-0 shadow-none'
+    : 'bg-white/95 border-0 shadow-none';
   return (
     <>
 
@@ -677,8 +677,8 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
   sticky top-0 z-50 w-full h-16 sm:h-20
   bg-white/95 dark:bg-muted/30 backdrop-blur-xl
   border-0
-  rounded-b-2xl sm:rounded-b-3xl
-  shadow-[0_2px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.3)]
+  rounded-b-xl sm:rounded-b-xl
+  shadow-none
   flex items-center justify-between xl:justify-evenly
   px-4 sm:px-8
   text-base sm:text-lg
@@ -726,7 +726,7 @@ export function Header({ user: propUser, isDarkMode: propIsDarkMode, onToggleDar
               <Popover open={showOnlineUsers} onOpenChange={handleOnlinePopoverOpen}>
                 <PopoverTrigger asChild>
                   <div className="flex items-center shrink-0 cursor-pointer select-none">
-                    <Badge className="h-5 sm:h-6 px-1.5 sm:px-2 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-0 flex items-center gap-1.5 transition-all rounded-full shadow-sm shrink-0">
+                    <Badge className="h-5 sm:h-6 px-1.5 sm:px-2 text-[9px] sm:text-[10px] bg-green-500 hover:bg-green-600 text-white border-0 flex items-center gap-1.5 transition-all rounded-full shadow-none shrink-0">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
