@@ -599,8 +599,8 @@ export function Footer() {
             : 'before:via-black/5 before:to-transparent');
 
     const footerShadow = theme === 'dark'
-        ? 'shadow-[0_-4px_30px_rgba(0,0,0,0.5)]'
-        : 'shadow-[0_-4px_20px_rgba(0,0,0,0.06)]';
+        ? 'shadow-none'
+        : 'shadow-none';
 
     return (
         <>
