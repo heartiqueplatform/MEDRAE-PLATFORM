@@ -296,7 +296,6 @@ const OfflineFallback = ({ onRetry }: { onRetry: () => void }) => (
             made offline is saved.
         </p>
         <Button onClick={onRetry} variant="outline" className="rounded-xl">
-            <RefreshCw className="w-4 h-4 mr-2" />
             Try again
         </Button>
     </div>
@@ -1245,7 +1244,6 @@ export default function MyMistakes() {
                             onClick={handleManualRefresh}
                             className="text-xs text-slate-500 dark:text-slate-400"
                         >
-                            <RefreshCw className="w-3.5 h-3.5 mr-2" />
                             Refresh
                         </Button>
                     </div>
