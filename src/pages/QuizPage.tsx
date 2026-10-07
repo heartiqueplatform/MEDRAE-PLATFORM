@@ -154,6 +154,29 @@ export default function QuizPage() {
   }, [questions, selectedCourse, showUnansweredOnly, answers, lockedVisible]);
   // ⬅️ NEW: physically prevents double-recording even under React StrictMode
   const recordedMistakesRef = useRef<Set<string>>(new Set());
+
+  // ✅ Dedicated mistake recorder — checks errors, allows retry on failure
+  const recordMistake = useCallback(
+    async (question: Question, selected: string) => {
+      if (!userId) return;
+      const key = `${userId}:${question.id}`;
+      if (recordedMistakesRef.current.has(key)) return;
+
+      const { error } = await supabase.rpc("increment_mistake", {
+        user_uuid: userId,
+        question_uuid: question.id,
+        selected_option: selected,
+        // quiz_uuid: question.quiz_id || quizId,  // only if using 4-param RPC
+      });
+
+      if (error) {
+        console.error("[mistake] increment_mistake failed:", error);
+        return;
+      }
+      recordedMistakesRef.current.add(key);
+    },
+    [userId]
+  );
   useEffect(() => {
     if (currentQuestionIndex !== undefined && circleRefs.current[currentQuestionIndex]) {
       circleRefs.current[currentQuestionIndex].scrollIntoView({
@@ -407,7 +430,7 @@ export default function QuizPage() {
         setNotes(newNotes);
         setUnderstood(newUnderstood);
         setNotUnderstood(newNotUnderstood);
-        setAttempts(newAttempts);
+        setAttemptsCount(newAttempts);
         setHelpOthersDisabled(newHelpDisabled);
       } catch (err) {
         console.error("Error loading saved question state:", err);
@@ -714,40 +737,14 @@ export default function QuizPage() {
     setOpenExplanationFor(questionId);
 
     // 🔔 If the answer was wrong, queue a reflection prompt AND record the mistake once
+    // 🔔 If the answer was wrong, queue a reflection prompt AND record the mistake
     const answeredQuestion = questions.find(q => q.id === questionId);
     const wasWrong = answeredQuestion && answeredQuestion.correct_answer !== selected;
 
-    if (wasWrong) {
+    if (wasWrong && answeredQuestion) {
       setPendingReflectionIds(prev => ({ ...prev, [questionId]: true }));
-
-      // ⬅️ Record the mistake ONCE, here, and only here
-      if (userId && answeredQuestion && !recordedMistakesRef.current.has(questionId)) {
-        recordedMistakesRef.current.add(questionId);
-
-        supabase
-          .from("user_mistakes")
-          .upsert(
-            {
-              user_id: userId,
-              question_id: answeredQuestion.id,
-              quiz_id: answeredQuestion.quiz_id,
-              last_wrong_at: new Date(),
-              times_wrong: 1,
-              user_selected: selected,
-            },
-            { onConflict: "user_id,question_id" }
-          )
-          .then(() => {
-            supabase.rpc("increment_mistake", {
-              user_uuid: userId,
-              question_uuid: answeredQuestion.id,
-              selected_option: selected,
-            });
-          })
-          .catch(err => console.error("record mistake failed:", err));
-      }
+      recordMistake(answeredQuestion, selected);
     }
-
     localStorage.setItem(`quiz-${quizId}-answers`, JSON.stringify(updatedAnswers));
     setQuestionStartTime(Date.now());
 
@@ -758,7 +755,8 @@ export default function QuizPage() {
       }));
     }
   }, [answers, questions, unit, notes, lastCheckpoint, isMuted, quizId,
-    showUnansweredOnly, hydrated, userId]);
+    showUnansweredOnly, hydrated, userId, recordMistake]);
+
   const handleReportQuestion = async (question: Question) => {
     alert("You are reporting this question. A new AI window is opening to discuss this question as Medrae team reviews it. You can send your input directly.");
     const reportPayload = {
@@ -1181,9 +1179,6 @@ ${selectedAnswer ? "cursor-default opacity-95" : "cursor-pointer"}`}
                                 return updated;
                               });
                               handleAnswer(q.id, letter);
-                              if (!correct) {
-                                setPendingReflectionIds(prev => ({ ...prev, [q.id]: true }));
-                              }
                               if (!userId) return;
                               try {
                                 await supabase.from("live_answer_events").insert({

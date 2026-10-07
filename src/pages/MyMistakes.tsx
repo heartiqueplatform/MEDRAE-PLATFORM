@@ -13,13 +13,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import dayjs from "dayjs";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { playSound } from "@/lib/soundManager";
 import confetti from "canvas-confetti";
 
 import {
     Trophy, Sparkles, ArrowRight, Heart, BookOpen, RefreshCw,
-    ChevronRight, CheckCircle2
+    ChevronRight, CheckCircle2, RotateCcw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MistakesCard } from "@/components/MistakesCard";
@@ -64,6 +64,12 @@ const CACHE_DURATION = 43200000;
 const MIN_FETCH_INTERVAL = 60000;
 
 let fetchInProgress = false;
+
+// ═══════════════════════════════════════════════════════════════
+// SWIPE CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const SWIPE_THRESHOLD = 120;     // px distance to trigger action
+const SWIPE_VELOCITY = 500;      // px/s flick velocity to trigger action
 
 // ═══════════════════════════════════════════════════════════════
 // SAFE STORAGE
@@ -297,6 +303,88 @@ const OfflineFallback = ({ onRetry }: { onRetry: () => void }) => (
 );
 
 // ═══════════════════════════════════════════════════════════════
+// SWIPE REVEAL LAYER
+// Shows colored panels behind the card as it's dragged
+// ═══════════════════════════════════════════════════════════════
+const SwipeReveal = ({
+    direction,
+    x,
+}: {
+    direction: "needs-work" | "understood";
+    x: ReturnType<typeof useMotionValue<number>>;
+}) => {
+    // Left panel (reveals when swiping right)
+    const leftOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
+    const leftScale = useTransform(x, [0, SWIPE_THRESHOLD], [0.85, 1]);
+
+    // Right panel (reveals when swiping left)
+    const rightOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]);
+    const rightScale = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0.85]);
+
+    // For a "needs-work" card: swipe RIGHT = understood, swipe LEFT = reopen (but item is already open)
+    // So we only reveal the RIGHT-side panel (understood). Left side is a "no-op" hint.
+    // For an "understood" card: swipe LEFT = reopen. Right side is a no-op hint.
+
+    const isNeedsWork = direction === "needs-work";
+
+    return (
+        <>
+            {/* LEFT-side reveal — appears as you drag RIGHT */}
+            <motion.div
+                style={{
+                    opacity: isNeedsWork ? leftOpacity : rightOpacity,
+                    scale: isNeedsWork ? leftScale : rightScale,
+                }}
+                className={cn(
+                    "absolute inset-0 rounded-xl flex items-center px-5 pointer-events-none",
+                    isNeedsWork
+                        ? "justify-start bg-gradient-to-r from-emerald-500/20 to-transparent"
+                        : "justify-start bg-gradient-to-r from-rose-500/20 to-transparent"
+                )}
+            >
+                {isNeedsWork ? (
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span className="text-sm">Understood</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
+                        <RotateCcw className="w-5 h-5" />
+                        <span className="text-sm">Needs Work</span>
+                    </div>
+                )}
+            </motion.div>
+
+            {/* RIGHT-side reveal — appears as you drag LEFT */}
+            <motion.div
+                style={{
+                    opacity: isNeedsWork ? rightOpacity : leftOpacity,
+                    scale: isNeedsWork ? rightScale : leftScale,
+                }}
+                className={cn(
+                    "absolute inset-0 rounded-xl flex items-center justify-end px-5 pointer-events-none",
+                    isNeedsWork
+                        ? "bg-gradient-to-l from-rose-500/20 to-transparent"
+                        : "bg-gradient-to-l from-emerald-500/20 to-transparent"
+                )}
+            >
+                {isNeedsWork ? (
+                    <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
+                        <RotateCcw className="w-5 h-5" />
+                        <span className="text-sm">Needs Work</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span className="text-sm">Understood</span>
+                    </div>
+                )}
+            </motion.div>
+        </>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════════════════
 export default function MyMistakes() {
@@ -324,9 +412,10 @@ export default function MyMistakes() {
     const [activeTab, setActiveTab] = useState<Tab>("needs-work");
     const [movingIds, setMovingIds] = useState<Set<string>>(new Set());
 
+    // ✅ ANIMATION DIRECTION — drives which way a card exits
+    const [exitDirection, setExitDirection] = useState<"left" | "right">("right");
+
     // ✅ SCROLL PRESERVATION HELPER
-    // Captures current scroll position and restores it across multiple frames
-    // to survive the DOM height shrink caused by list item removal.
     const preserveScroll = useCallback(() => {
         if (typeof window === "undefined") return;
         const target = window.scrollY;
@@ -343,11 +432,6 @@ export default function MyMistakes() {
             }
         };
 
-        // Restore across several frames/timers so we catch:
-        // - React's synchronous commit
-        // - framer-motion's popLayout measurement
-        // - the exit animation completing & unmounting
-        // - any late layout recalcs
         requestAnimationFrame(() => {
             restore();
             requestAnimationFrame(restore);
@@ -686,7 +770,7 @@ export default function MyMistakes() {
         pendingResolves.current.set(questionId, true);
         setTimeout(() => pendingResolves.current.delete(questionId), 2000);
 
-        // ✅ Capture scroll BEFORE mutating the list
+        setExitDirection("right");      // exiting card flies right
         preserveScroll();
 
         const item = mistakes.find((m) => m.questions.id === questionId);
@@ -703,7 +787,6 @@ export default function MyMistakes() {
         setResolvedCount(updatedResolved.length);
         setCachedResolvedMistakes(updatedResolved);
 
-        // 🎉 Confetti + sound
         fireConfetti();
         try { playSound("tap-correct", false); } catch { /* ignore */ }
 
@@ -747,7 +830,7 @@ export default function MyMistakes() {
         };
 
         updateMistake().catch(() => { });
-    }, [mistakes, resolvedMistakes, user, saveToOfflineQueue, preserveScroll]); // ✅ added preserveScroll dep
+    }, [mistakes, resolvedMistakes, user, saveToOfflineQueue, preserveScroll]);
 
     // ── Reopen ──
     const reopenMistake = useCallback((questionId: string) => {
@@ -755,7 +838,7 @@ export default function MyMistakes() {
         pendingResolves.current.set(questionId, true);
         setTimeout(() => pendingResolves.current.delete(questionId), 2000);
 
-        // ✅ Capture scroll BEFORE mutating the list
+        setExitDirection("left");       // exiting card flies left
         preserveScroll();
 
         setMovingIds(prev => {
@@ -809,7 +892,7 @@ export default function MyMistakes() {
                 }, 800);
             }
         })();
-    }, [mistakes, resolvedMistakes, user, preserveScroll]); // ✅ added preserveScroll dep
+    }, [mistakes, resolvedMistakes, user, preserveScroll]);
 
     const getReasonClass = (reason?: string) => {
         switch (reason) {
@@ -832,7 +915,7 @@ export default function MyMistakes() {
     };
 
     // ═══════════════════════════════════════════════════════════════
-    // RENDER
+    // RENDER — early returns
     // ═══════════════════════════════════════════════════════════════
     if (!authReady && loading === false && mistakes.length === 0 && resolvedMistakes.length === 0) {
         return <MistakesSkeleton />;
@@ -1105,206 +1188,34 @@ export default function MyMistakes() {
                 </div>
             </div>
 
-            {/* Needs Work List */}
-            {/* ✅ mode="popLayout" + initial={false} + short ease-out exit */}
+            {/* ─────────────────────────────────────────────────────────
+                NEEDS WORK LIST — swipe RIGHT to mark understood
+            ───────────────────────────────────────────────────────── */}
             <AnimatePresence mode="popLayout" initial={false}>
                 {activeTab === "needs-work" && mistakes.map((m, i) => (
-                    <motion.div
+                    <NeedsWorkRow
                         key={m.id}
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -300 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="mb-0 md:mb-4"
-                    >
-                        <Card className="overflow-visible md:border-0 md:shadow-md md:rounded-xl bg-white/40 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0">
-                            <CardHeader className="p-3 md:p-4">
-                                <CardTitle className="text-sm md:text-base lg:text-lg">
-                                    Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}
-                                </CardTitle>
-                                <CardDescription className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 md:gap-1 text-xs md:text-sm">
-                                    <span>
-                                        Wrong {m.times_wrong} {m.times_wrong === 1 ? "time" : "times"}
-                                    </span>
-                                    <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                                        Last Attempt: {dayjs(m.last_wrong_at).format("DD MMM YYYY, h:mm A")}
-                                    </span>
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4 text-xs md:text-sm lg:text-base">
-                                {["A", "B", "C", "D"].map((letter) => {
-                                    const optionText =
-                                        m.questions?.[`option_${letter.toLowerCase()}` as keyof Question] ?? "—";
-                                    const isCorrect = letter === m.questions?.correct_answer;
-                                    const isUserChoice = letter === m.user_selected;
-
-                                    return (
-                                        <div
-                                            key={letter}
-                                            className="flex justify-between items-center py-1.5 md:py-2 flex-wrap gap-1.5 md:gap-2"
-                                        >
-                                            <span
-                                                className={
-                                                    isCorrect
-                                                        ? "font-semibold text-green-700 dark:text-green-400"
-                                                        : isUserChoice
-                                                            ? "font-semibold text-red-700 dark:text-red-400"
-                                                            : ""
-                                                }
-                                            >
-                                                <strong>{letter}.</strong> {optionText}
-                                            </span>
-                                            {isUserChoice && !isCorrect && (
-                                                <span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-medium bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 rounded-full">
-                                                    Your Choice
-                                                </span>
-                                            )}
-                                            {isCorrect && (
-                                                <span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-medium bg-green-200 dark:bg-green-900 text-green-900 dark:text-green-200 rounded-full">
-                                                    Correct Answer
-                                                </span>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-
-                                {m.mistake_reason && (
-                                    <div
-                                        className={`mt-1.5 md:mt-2 px-2 md:px-3 py-1.5 md:py-2 rounded-md border text-xs md:text-sm ${getReasonClass(
-                                            m.mistake_reason
-                                        )} text-black dark:text-white`}
-                                    >
-                                        <strong>Reason for mistake:</strong> {m.mistake_reason}
-                                    </div>
-                                )}
-
-                                <p className="leading-relaxed text-xs md:text-sm">
-                                    <strong>Explanation:</strong>{" "}
-                                    {m.questions?.explanation ?? "No explanation available."}
-                                </p>
-                                {m.questions?.additional && (
-                                    <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded border-l-4 border-blue-500 text-xs italic">
-                                        <strong>Pro Tip:</strong> {m.questions.additional}
-                                    </div>
-                                )}
-                                {m.questions?.topic && (
-                                    <div className="mt-2">
-                                        <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500">
-                                            Topic: {m.questions.topic}
-                                        </span>
-                                    </div>
-                                )}
-                                <motion.div whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.02 }}>
-                                    <Button
-                                        onClick={() => {
-                                            vibrateTap(40);
-                                            if (m.questions?.id) {
-                                                markAsResolved(m.questions.id);
-                                            }
-                                        }}
-                                        className="w-full sm:w-auto text-xs md:text-sm h-10 md:h-11"
-                                    >
-                                        Mark as Understood
-                                    </Button>
-                                </motion.div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                        mistake={m}
+                        index={i}
+                        exitDirection={exitDirection}
+                        onMarkUnderstood={markAsResolved}
+                    />
                 ))}
             </AnimatePresence>
 
-            {/* Understood List */}
-            {/* ✅ mode="popLayout" + initial={false} + short ease-out exit */}
+            {/* ─────────────────────────────────────────────────────────
+                UNDERSTOOD LIST — swipe LEFT to send back to needs-work
+            ───────────────────────────────────────────────────────── */}
             <AnimatePresence mode="popLayout" initial={false}>
                 {activeTab === "understood" && resolvedMistakes.map((m, i) => (
-                    <motion.div
+                    <UnderstoodRow
                         key={m.id}
-                        initial={{ opacity: 0, x: 30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -200 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="mb-0 md:mb-4"
-                    >
-                        <Card className="overflow-visible md:border-0 md:shadow-sm md:rounded-xl bg-white/40 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0 opacity-95">
-                            <CardHeader className="p-3 md:p-4">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-500/20">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    </div>
-                                    <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
-                                        Understood
-                                    </span>
-                                </div>
-                                <CardTitle className="text-sm md:text-base lg:text-lg">
-                                    Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}
-                                </CardTitle>
-                                <CardDescription className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 md:gap-1 text-xs md:text-sm">
-                                    <span>
-                                        Wrong {m.times_wrong} {m.times_wrong === 1 ? "time" : "times"}
-                                    </span>
-                                    <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                                        Marked understood {dayjs(m.last_wrong_at).format("DD MMM YYYY, h:mm A")}
-                                    </span>
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4 text-xs md:text-sm lg:text-base">
-                                <div className="rounded-lg border border-emerald-200/60 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2">
-                                    <p className="font-semibold text-emerald-800 dark:text-emerald-300 mb-1 text-[11px] uppercase tracking-wider">
-                                        Correct Answer
-                                    </p>
-                                    <p className="text-sm md:text-base text-slate-800 dark:text-slate-100">
-                                        <strong>{m.questions?.correct_answer}.</strong>{" "}
-                                        {m.questions?.[`option_${m.questions?.correct_answer?.toLowerCase()}` as keyof Question] ?? "—"}
-                                    </p>
-                                </div>
-
-                                {m.mistake_reason && (
-                                    <div
-                                        className={`px-2 md:px-3 py-1.5 md:py-2 rounded-md border text-xs md:text-sm ${getReasonClass(
-                                            m.mistake_reason
-                                        )} text-black dark:text-white`}
-                                    >
-                                        <strong>Reason for mistake:</strong> {m.mistake_reason}
-                                    </div>
-                                )}
-
-                                <p className="leading-relaxed text-xs md:text-sm">
-                                    <strong>Explanation:</strong>{" "}
-                                    {m.questions?.explanation ?? "No explanation available."}
-                                </p>
-
-                                {m.questions?.additional && (
-                                    <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded border-l-4 border-blue-500 text-xs italic">
-                                        <strong>Pro Tip:</strong> {m.questions.additional}
-                                    </div>
-                                )}
-                                <motion.div whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.02 }}>
-                                    <Button
-                                        variant="outline"
-                                        disabled={movingIds.has(m.questions.id)}
-                                        onClick={() => {
-                                            vibrateTap(40);
-                                            if (m.questions?.id) reopenMistake(m.questions.id);
-                                        }}
-                                        className={cn(
-                                            "w-full sm:w-auto text-xs md:text-sm h-10 md:h-11 rounded-xl font-bold",
-                                            "border-rose-200 dark:border-rose-900/50",
-                                            "text-rose-600 dark:text-rose-400",
-                                            "hover:bg-rose-50 dark:hover:bg-rose-950/30",
-                                            "hover:text-rose-700 dark:hover:text-rose-300",
-                                            "hover:border-rose-300 dark:hover:border-rose-800",
-                                            "disabled:opacity-70 disabled:cursor-wait",
-                                            "transition-all"
-                                        )}
-                                    >
-                                        {movingIds.has(m.questions.id) ? "Moving..." : "Move back to Needs Work"}
-                                    </Button>
-                                </motion.div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                        mistake={m}
+                        index={i}
+                        exitDirection={exitDirection}
+                        movingIds={movingIds}
+                        onReopen={reopenMistake}
+                    />
                 ))}
             </AnimatePresence>
 
@@ -1340,5 +1251,366 @@ export default function MyMistakes() {
                     </div>
                 )}
         </div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NEEDS WORK ROW — swipeable, tap-to-resolve
+// ═══════════════════════════════════════════════════════════════
+function NeedsWorkRow({
+    mistake: m,
+    index: i,
+    exitDirection,
+    onMarkUnderstood,
+}: {
+    mistake: Mistake;
+    index: number;
+    exitDirection: "left" | "right";
+    onMarkUnderstood: (questionId: string) => void;
+}) {
+    const x = useMotionValue(0);
+    const rotate = useTransform(x, [-300, 0, 300], [-6, 0, 6]);
+
+    const handleDragEnd = (_: any, info: any) => {
+        const offset = info.offset.x;
+        const velocity = info.velocity.x;
+        const shouldTrigger =
+            Math.abs(offset) > SWIPE_THRESHOLD ||
+            Math.abs(velocity) > SWIPE_VELOCITY;
+
+        if (!shouldTrigger) return;
+
+        // Right swipe (or right flick) → mark understood
+        if (offset > 0 || velocity > 0) {
+            try {
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(40);
+            } catch { /* ignore */ }
+            if (m.questions?.id) onMarkUnderstood(m.questions.id);
+        }
+        // Left swipe → do nothing (it's already in needs-work)
+    };
+
+    const getReasonClass = (reason?: string) => {
+        switch (reason) {
+            case "Misread question":
+                return "bg-red-100 dark:bg-red-800 border-red-300 dark:border-red-700";
+            case "Concept gap":
+                return "bg-blue-100 dark:bg-blue-800 border-blue-300 dark:border-blue-700";
+            case "Rushed":
+                return "bg-yellow-100 dark:bg-yellow-800 border-yellow-300 dark:border-yellow-700";
+            case "Guess":
+                return "bg-green-100 dark:bg-green-800 border-green-300 dark:border-green-700";
+            default:
+                return "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600";
+        }
+    };
+
+    return (
+        <motion.div
+            key={m.id}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{
+                opacity: 0,
+                x: exitDirection === "right" ? 320 : -320,
+                scale: 0.96,
+                rotate: exitDirection === "right" ? 3 : -3,
+            }}
+            transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+            className="mb-0 md:mb-4 relative"
+        >
+            {/* Swipe reveal layer behind the card */}
+            <SwipeReveal direction="needs-work" x={x} />
+
+            <motion.div
+                drag="x"
+                dragDirectionLock
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.18}
+                dragSnapToOrigin
+                onDragEnd={handleDragEnd}
+                style={{ x, rotate }}
+                className="relative cursor-grab active:cursor-grabbing touch-pan-y"
+            >
+                <Card className="overflow-visible md:border-0 md:shadow-md md:rounded-xl bg-white/95 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0">
+                    <CardHeader className="p-3 md:p-4">
+                        <CardTitle className="text-sm md:text-base lg:text-lg">
+                            Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}
+                        </CardTitle>
+                        <CardDescription className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 md:gap-1 text-xs md:text-sm">
+                            <span>
+                                Wrong {m.times_wrong} {m.times_wrong === 1 ? "time" : "times"}
+                            </span>
+                            <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                                Last Attempt: {dayjs(m.last_wrong_at).format("DD MMM YYYY, h:mm A")}
+                            </span>
+                        </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4 text-xs md:text-sm lg:text-base">
+                        {["A", "B", "C", "D"].map((letter) => {
+                            const optionText =
+                                m.questions?.[`option_${letter.toLowerCase()}` as keyof Question] ?? "—";
+                            const isCorrect = letter === m.questions?.correct_answer;
+                            const isUserChoice = letter === m.user_selected;
+
+                            return (
+                                <div
+                                    key={letter}
+                                    className="flex justify-between items-center py-1.5 md:py-2 flex-wrap gap-1.5 md:gap-2"
+                                >
+                                    <span
+                                        className={
+                                            isCorrect
+                                                ? "font-semibold text-green-700 dark:text-green-400"
+                                                : isUserChoice
+                                                    ? "font-semibold text-red-700 dark:text-red-400"
+                                                    : ""
+                                        }
+                                    >
+                                        <strong>{letter}.</strong> {optionText}
+                                    </span>
+                                    {isUserChoice && !isCorrect && (
+                                        <span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-medium bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 rounded-full">
+                                            Your Choice
+                                        </span>
+                                    )}
+                                    {isCorrect && (
+                                        <span className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs font-medium bg-green-200 dark:bg-green-900 text-green-900 dark:text-green-200 rounded-full">
+                                            Correct Answer
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {m.mistake_reason && (
+                            <div
+                                className={`mt-1.5 md:mt-2 px-2 md:px-3 py-1.5 md:py-2 rounded-md border text-xs md:text-sm ${getReasonClass(
+                                    m.mistake_reason
+                                )} text-black dark:text-white`}
+                            >
+                                <strong>Reason for mistake:</strong> {m.mistake_reason}
+                            </div>
+                        )}
+
+                        <p className="leading-relaxed text-xs md:text-sm">
+                            <strong>Explanation:</strong>{" "}
+                            {m.questions?.explanation ?? "No explanation available."}
+                        </p>
+                        {m.questions?.additional && (
+                            <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded border-l-4 border-blue-500 text-xs italic">
+                                <strong>Pro Tip:</strong> {m.questions.additional}
+                            </div>
+                        )}
+                        {m.questions?.topic && (
+                            <div className="mt-2">
+                                <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500">
+                                    Topic: {m.questions.topic}
+                                </span>
+                            </div>
+                        )}
+                        <motion.div
+                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ scale: 1.02 }}
+                            className="flex items-center gap-3 flex-wrap"
+                        >
+                            <Button
+                                onPointerDown={(e) => {
+                                    // Prevent drag from swallowing the button click
+                                    e.stopPropagation();
+                                }}
+                                onClick={() => {
+                                    try {
+                                        if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(40);
+                                    } catch { /* ignore */ }
+                                    if (m.questions?.id) {
+                                        onMarkUnderstood(m.questions.id);
+                                    }
+                                }}
+                                className="w-full sm:w-auto text-xs md:text-sm h-10 md:h-11"
+                            >
+                                Mark as Understood
+                            </Button>
+                            <span className="hidden md:inline text-[10px] text-slate-400 dark:text-slate-500 italic">
+                                or swipe right →
+                            </span>
+                        </motion.div>
+                    </CardContent>
+                </Card>
+            </motion.div>
+        </motion.div>
+    );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UNDERSTOOD ROW — swipeable, tap-to-reopen
+// ═══════════════════════════════════════════════════════════════
+function UnderstoodRow({
+    mistake: m,
+    index: i,
+    exitDirection,
+    movingIds,
+    onReopen,
+}: {
+    mistake: Mistake;
+    index: number;
+    exitDirection: "left" | "right";
+    movingIds: Set<string>;
+    onReopen: (questionId: string) => void;
+}) {
+    const x = useMotionValue(0);
+    const rotate = useTransform(x, [-300, 0, 300], [-6, 0, 6]);
+
+    const handleDragEnd = (_: any, info: any) => {
+        const offset = info.offset.x;
+        const velocity = info.velocity.x;
+        const shouldTrigger =
+            Math.abs(offset) > SWIPE_THRESHOLD ||
+            Math.abs(velocity) > SWIPE_VELOCITY;
+
+        if (!shouldTrigger) return;
+
+        // Left swipe (or left flick) → reopen
+        if (offset < 0 || velocity < 0) {
+            try {
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(40);
+            } catch { /* ignore */ }
+            if (m.questions?.id) onReopen(m.questions.id);
+        }
+        // Right swipe → no-op (already understood)
+    };
+
+    const getReasonClass = (reason?: string) => {
+        switch (reason) {
+            case "Misread question":
+                return "bg-red-100 dark:bg-red-800 border-red-300 dark:border-red-700";
+            case "Concept gap":
+                return "bg-blue-100 dark:bg-blue-800 border-blue-300 dark:border-blue-700";
+            case "Rushed":
+                return "bg-yellow-100 dark:bg-yellow-800 border-yellow-300 dark:border-yellow-700";
+            case "Guess":
+                return "bg-green-100 dark:bg-green-800 border-green-300 dark:border-green-700";
+            default:
+                return "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600";
+        }
+    };
+
+    return (
+        <motion.div
+            key={m.id}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{
+                opacity: 0,
+                x: exitDirection === "left" ? -320 : 320,
+                scale: 0.96,
+                rotate: exitDirection === "left" ? -3 : 3,
+            }}
+            transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+            className="mb-0 md:mb-4 relative"
+        >
+            <SwipeReveal direction="understood" x={x} />
+
+            <motion.div
+                drag="x"
+                dragDirectionLock
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.18}
+                dragSnapToOrigin
+                onDragEnd={handleDragEnd}
+                style={{ x, rotate }}
+                className="relative cursor-grab active:cursor-grabbing touch-pan-y"
+            >
+                <Card className="overflow-visible md:border-0 md:shadow-sm md:rounded-xl bg-white/95 dark:bg-[#0d1117] rounded-none border-none shadow-none border-b border-slate-100 dark:border-slate-800 md:border-b-0 opacity-95">
+                    <CardHeader className="p-3 md:p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-500/20">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                                Understood
+                            </span>
+                        </div>
+                        <CardTitle className="text-sm md:text-base lg:text-lg">
+                            Q{i + 1}: {m.questions?.question_text ?? "Question unavailable"}
+                        </CardTitle>
+                        <CardDescription className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 md:gap-1 text-xs md:text-sm">
+                            <span>
+                                Wrong {m.times_wrong} {m.times_wrong === 1 ? "time" : "times"}
+                            </span>
+                            <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                                Marked understood {dayjs(m.last_wrong_at).format("DD MMM YYYY, h:mm A")}
+                            </span>
+                        </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4 text-xs md:text-sm lg:text-base">
+                        <div className="rounded-lg border border-emerald-200/60 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2">
+                            <p className="font-semibold text-emerald-800 dark:text-emerald-300 mb-1 text-[11px] uppercase tracking-wider">
+                                Correct Answer
+                            </p>
+                            <p className="text-sm md:text-base text-slate-800 dark:text-slate-100">
+                                <strong>{m.questions?.correct_answer}.</strong>{" "}
+                                {m.questions?.[`option_${m.questions?.correct_answer?.toLowerCase()}` as keyof Question] ?? "—"}
+                            </p>
+                        </div>
+
+                        {m.mistake_reason && (
+                            <div
+                                className={`px-2 md:px-3 py-1.5 md:py-2 rounded-md border text-xs md:text-sm ${getReasonClass(
+                                    m.mistake_reason
+                                )} text-black dark:text-white`}
+                            >
+                                <strong>Reason for mistake:</strong> {m.mistake_reason}
+                            </div>
+                        )}
+
+                        <p className="leading-relaxed text-xs md:text-sm">
+                            <strong>Explanation:</strong>{" "}
+                            {m.questions?.explanation ?? "No explanation available."}
+                        </p>
+
+                        {m.questions?.additional && (
+                            <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded border-l-4 border-blue-500 text-xs italic">
+                                <strong>Pro Tip:</strong> {m.questions.additional}
+                            </div>
+                        )}
+                        <motion.div
+                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ scale: 1.02 }}
+                            className="flex items-center gap-3 flex-wrap"
+                        >
+                            <Button
+                                variant="outline"
+                                disabled={movingIds.has(m.questions.id)}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={() => {
+                                    try {
+                                        if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(40);
+                                    } catch { /* ignore */ }
+                                    if (m.questions?.id) onReopen(m.questions.id);
+                                }}
+                                className={cn(
+                                    "w-full sm:w-auto text-xs md:text-sm h-10 md:h-11 rounded-xl font-bold",
+                                    "border-rose-200 dark:border-rose-900/50",
+                                    "text-rose-600 dark:text-rose-400",
+                                    "hover:bg-rose-50 dark:hover:bg-rose-950/30",
+                                    "hover:text-rose-700 dark:hover:text-rose-300",
+                                    "hover:border-rose-300 dark:hover:border-rose-800",
+                                    "disabled:opacity-70 disabled:cursor-wait",
+                                    "transition-all"
+                                )}
+                            >
+                                {movingIds.has(m.questions.id) ? "Moving..." : "Move back to Needs Work"}
+                            </Button>
+                            <span className="hidden md:inline text-[10px] text-slate-400 dark:text-slate-500 italic">
+                                or swipe left ←
+                            </span>
+                        </motion.div>
+                    </CardContent>
+                </Card>
+            </motion.div>
+        </motion.div>
     );
 }
