@@ -1366,9 +1366,12 @@ export default function StreakCandleWelcome() {
     }, [isOnline, user?.id, flushQueue]);
 
     // ─── Streak death check ───
+    // ─── Streak death check ───
     useEffect(() => {
         if (!user?.id || !isReady) return;
         if (!isOnline) return;
+        if (new Date().getDay() !== 3) return;   // 👈 add this
+
 
         let cancelled = false;
 
@@ -1453,18 +1456,26 @@ export default function StreakCandleWelcome() {
         [user?.id, saveStreakToCache]
     );
 
-    // ─── Show welcome modal ───
+    // ─── Show welcome modal (Wednesday only, max 2 times per Wednesday) ───
     useEffect(() => {
         if (showResuscitation) return;
         if (!isReady) return;
         if (streak === 0) return;
 
-        const sessionId = getSessionId();
-        const shown = safeGetSessionItem("emotion_checkin_shown");
-        if (shown === sessionId) return;
+        // Only on Wednesday (0=Sun, 3=Wed)
+        if (new Date().getDay() !== 3) return;
+
+        // 👇 Persistent per-Wednesday tracking
+        const wednesdayKey = `welcome_wed_${todayStr()}`;  // e.g. welcome_wed_2026-10-07
+        const shownCount = parseInt(safeGetItem(wednesdayKey) || "0", 10);
+
+        // 👇 Cap at 2 shows per Wednesday
+        if (shownCount >= 2) return;
 
         const timer = setTimeout(() => {
-            markShownThisSession();
+            // Increment counter BEFORE showing (avoid race conditions)
+            safeSetItem(wednesdayKey, String(shownCount + 1));
+
             setShowWelcome(true);
             if (!hasFetchedMessages.current) {
                 hasFetchedMessages.current = true;
@@ -1473,8 +1484,7 @@ export default function StreakCandleWelcome() {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [isReady, streak, fetchMessages, showResuscitation, getSessionId, markShownThisSession]);
-
+    }, [isReady, streak, fetchMessages, showResuscitation]);
     // ─── Handlers ───
     const handleOpenResuscitation = useCallback(() => {
         setShowWelcome(false);
